@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Viewport Meta Tag for Responsiveness -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WDV Score Sheets - Landing Page</title>
+  <style>
+    /* Universal Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header,
+    main,
+    footer {
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    header p {
+      text-align: center;
+      font-style: italic;
+      margin-bottom: 20px;
+    }
+
+    nav ul {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    nav ul li {
+      margin: 0;
+    }
+
+    nav ul li a {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+
+    nav ul li a:hover {
+      background-color: #0056b3;
+    }
+
+    main h2 {
+      font-size: 1.4em;
+      margin-bottom: 10px;
+    }
+
+    main p {
+      margin-bottom: 15px;
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 600px) {
+      .container {
+        padding: 15px;
+      }
+
+      nav ul {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      nav ul li a {
+        width: 200px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>WDV Score Sheets</h1>
+      <p>A hub for archery scoring tools and integrations</p>
+    </header>
+
+    <nav>
+      <ul>
+        <!-- Adjust the links to match your actual folder/file names -->
+        <li><a href="score300.html">300 Round</a></li>
+        <li><a href="score360/index.html">360 Round</a></li>
+        <!-- Add more versions or pages as needed -->
+      </ul>
+    </nav>
+
+    <main>
+      <h2>Coming Soon</h2>
+      <p>
+        We’re working on new features and integrations for our WDV Score Sheets, including:
+      </p>
+      <ul style="margin-left: 20px; margin-bottom: 15px;">
+        <li>Google Docs/Google Sheets syncing for advanced tracking</li>
+        <li>make.com integrations to automate data collection</li>
+        <li>Additional round types (e.g., 420, 600, etc.)</li>
+        <li>Improved analytics and reporting</li>
+      </ul>
+      <p>
+        Stay tuned for updates. If you have any suggestions or feature requests, feel free to
+        reach out or contribute!
+      </p>
+    </main>
+
+    <footer>
+      <p>&copy; <span id="year"></span> WDV Score Sheets | 
+        <a href="https://tryentist.com" target="_blank" rel="noopener noreferrer" style="color:#007BFF;">tryentist.com</a>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    // Simple script to update year in footer automatically
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
