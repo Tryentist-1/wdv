@@ -1,0 +1,263 @@
+
+        /* Universal Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+        .container {
+            max-width: 600px; /* Maximum width */
+            width: 100%;       /* Full width on smaller screens */
+            margin: 0 auto;    /* Center horizontally */
+            background-color: #fff;
+            border-radius: 8px;
+            min-height: 100vh; /* Full viewport height */
+            position: relative;
+            /* Removed box-shadow to eliminate border-like appearance */
+        }
+        h1, h2, h3 {
+            text-align: center;
+            margin: 10px 0; /* Reduced margin for seamless look */
+            padding: 0;     /* Remove padding */
+            font-size: 1.2em; /* Consistent font sizing */
+        }
+
+        /* Tabs Styles */
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: nowrap;    /* Prevent wrapping */
+            overflow-x: auto;     /* Allow horizontal scrolling if necessary */
+            border-bottom: 2px solid #ccc; /* Bottom border for tabs */
+            width: 100%;          /* Ensure tabs fit within container */
+        }
+        .tab {
+            padding: 10px;         /* Reduced padding */
+            cursor: pointer;
+            color: white;
+            flex-grow: 1;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.4);
+            transition: background-color 0.3s;
+            white-space: nowrap;   /* Prevent text from wrapping */
+            min-width: 100px;      /* Prevent tabs from being too narrow */
+        }
+        .tab-1 { background-color: #007BFF; }
+        .tab-2 { background-color: #FF5733; }
+        .tab-3 { background-color: #28A745; }
+        .tab-4 { background-color: #FFC300; }
+        .active-tab {
+            font-weight: bold;
+            border-bottom: 5px solid; /* 5px bottom line */
+        }
+        /* Assign the border color based on the tab's background color */
+        .tab-1.active-tab { border-bottom-color: #007BFF; }
+        .tab-2.active-tab { border-bottom-color: #FF5733; }
+        .tab-3.active-tab { border-bottom-color: #28A745; }
+        .tab-4.active-tab { border-bottom-color: #FFC300; }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            /* Removed min-width to prevent overflow on mobile */
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 5px;           /* Further reduced padding */
+            text-align: center;
+            font-size: 0.9em;       /* Smaller font for better fit */
+        }
+        th, .round-header, .r-column {
+            background-color: #ccc;
+        }
+        .calculated-cell {
+            background-color: #e0e0e0;
+        }
+        /* "Total" Row Styles */
+        .total-row td {
+            background-color: #fff; /* White background */
+            font-weight: bold;
+        }
+
+        /* Scores Header Section */
+        .scores-header {
+            display: flex;              /* Use Flexbox for alignment */
+            justify-content: flex-start;/* Align items to the start (left) */
+            align-items: center;        /* Vertically center the items */
+            padding: 10px 10px;         /* Minimal padding */
+            background-color: #007BFF;  /* Default color, will be overridden dynamically */
+        }
+        .scores-header h2 {
+            margin: 0;                   /* Remove default margin */
+            margin-right: 15px;          /* Add right margin to separate from the button */
+            font-size: 1.1em;            /* Slightly larger font for prominence */
+        }
+        .edit-name-button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #ffffff;  /* White background for contrast */
+            color: #000000;             /* Black text */
+            font-size: 0.9em;
+        }
+
+        /* Bottom Buttons Container */
+        .bottom-buttons {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;             /* Full width */
+            max-width: 600px;        /* Match container's max width */
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 0;              /* Removed padding */
+            box-sizing: border-box;
+            z-index: 1000;
+        }
+        .bottom-buttons button {
+            flex: 1;
+            padding: 10px;           /* Reduced padding */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+            min-width: 120px;        /* Prevent buttons from being too narrow */
+        }
+        .reset-button {
+            background-color: #d9534f; /* Red */
+            color: white;
+        }
+        .copy-button {
+            background-color: #28a745; /* Green */
+            color: white;
+        }
+        select {
+            font-size: 1em;
+            padding: 5px;               /* Reduced padding */
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            width: 100%;
+            min-width: 60px;            /* Prevent dropdowns from shrinking too much */
+        }
+        .name-input {
+            width: 100%;
+            padding: 5px;               /* Reduced padding */
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;              /* Hidden by default */
+            position: fixed;            /* Stay in place */
+            z-index: 2000;              /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;                /* Full width */
+            height: 100%;               /* Full height */
+            overflow: auto;             /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;           /* 15% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;           /* Could be more or less, depending on screen size */
+            border-radius: 8px;
+            text-align: center;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        .modal-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s;
+            flex: 1;
+            margin: 0 5px;
+        }
+        .modal-cancel {
+            background-color: #6c757d; /* Gray */
+            color: white;
+        }
+        .modal-reset {
+            background-color: #d9534f; /* Red */
+            color: white;
+        }
+        .modal-sample {
+            background-color: #28a745; /* Green */
+            color: white;
+        }
+
+        /* Conditional Formatting for Avg Cells */
+        .avg-1-2 {
+            background-color: white;
+            color: black;
+        }
+        .avg-3-4 {
+            background-color: darkgrey;
+            color: white;
+        }
+        .avg-5-6 {
+            background-color: blue;
+            color: white;
+        }
+        .avg-7-8 {
+            background-color: red;
+            color: white;
+        }
+        .avg-9-up {
+            background-color: gold;
+            color: black;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 600px) {
+            /* Ensure container width adapts to smaller screens */
+            .container {
+                width: 100%;
+                max-width: 600px;
+            }
+            .tabs {
+                width: 100%;
+            }
+            .bottom-buttons {
+                width: 100%;
+                max-width: 600px;
+            }
+            table {
+                width: 100%;
+            }
+            .scores-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .scores-header h2 {
+                margin-bottom: 10px; /* Add spacing below the header text */
+            }
+            .edit-name-button {
+                align-self: flex-start; /* Ensure button aligns to the start */
+            }
+        }
+    
