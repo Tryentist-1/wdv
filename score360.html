@@ -336,8 +336,8 @@
 
             // Initialize Data from Local Storage or Defaults
             function initializeData() {
-                const storedScores = localStorage.getItem('archeryScores');
-                const storedNames = localStorage.getItem('archerNames');
+                const storedScores = localStorage.getItem('archeryScores360');
+                const storedNames = localStorage.getItem('archerNames360');
                 scores = storedScores ? JSON.parse(storedScores) : initializeDefaultScores();
                 archerNames = storedNames ? JSON.parse(storedNames) : initializeDefaultNames();
             }
@@ -358,8 +358,8 @@
 
             // Save Data to Local Storage
             function saveData() {
-                localStorage.setItem('archeryScores', JSON.stringify(scores));
-                localStorage.setItem('archerNames', JSON.stringify(archerNames));
+                localStorage.setItem('archeryScores360', JSON.stringify(scores));
+                localStorage.setItem('archerNames360', JSON.stringify(archerNames));
             }
 
             // Generate Tabs Content
@@ -862,5 +862,37 @@ document.getElementById('mail-button').addEventListener('click', () => {
 
         })();
     </script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".score-cell").forEach(cell => {
+        cell.addEventListener("click", function () {
+            let existingValue = this.textContent.trim(); // Keep the existing value
+
+            if (!this.querySelector("select")) {
+                let dropdown = document.createElement("select");
+                let scores = ["M", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "X"];
+
+                scores.forEach(score => {
+                    let option = document.createElement("option");
+                    option.value = score;
+                    option.textContent = score;
+                    if (score === existingValue) {
+                        option.selected = true;
+                    }
+                    dropdown.appendChild(option);
+                });
+
+                dropdown.addEventListener("change", function () {
+                    cell.textContent = this.value;  // Show selected value after change
+                });
+
+                cell.innerHTML = "";  // Clear previous content
+                cell.appendChild(dropdown);
+                dropdown.focus();  // Automatically open dropdown
+            }
+        });
+    });
+});
+</script>
 </body>
 </html>
