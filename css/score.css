@@ -159,7 +159,7 @@ select {
   border-radius: 5px;
 }
 
-/* Modal Styles */
+/* Enhanced Reset Modal */
 .modal {
   display: none;
   position: fixed;
@@ -169,45 +169,70 @@ select {
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgba(0,0,0,0.5);
+  background-color: rgba(0,0,0,0.7);
+  animation: fadeIn 0.3s ease;
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .modal-content {
-  background-color: #fefefe;
+  background-color: #fff;
   margin: 15% auto;
-  padding: 20px;
-  border: 1px solid #888;
-  width: 80%;
+  padding: 30px;
+  border-radius: 10px;
+  width: 90%;
   max-width: 400px;
-  border-radius: 8px;
   text-align: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+  animation: slideDown 0.3s ease;
 }
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 .modal-buttons {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   margin-top: 20px;
 }
-.modal-button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.3s;
+
+.modal-buttons button {
   flex: 1;
   margin: 0 5px;
+  padding: 12px 20px;
+  font-size: 1.1em;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.3s ease;
 }
-.modal-cancel {
+
+#modal-cancel {
   background-color: #6c757d;
-  color: white;
+  color: #fff;
 }
-.modal-reset {
+
+#modal-reset {
   background-color: #d9534f;
-  color: white;
+  color: #fff;
 }
-.modal-sample {
+
+#modal-sample {
   background-color: #28a745;
-  color: white;
+  color: #fff;
+}
+
+.modal-buttons button:hover {
+  transform: scale(1.05);
+}
+
+.modal-buttons button:active {
+  transform: scale(1);
 }
 
 /* Conditional Formatting */

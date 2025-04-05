@@ -11,7 +11,7 @@
   let currentTab = 0;
   const tabColors = ['#007BFF', '#FF5733', '#28A745', '#FFC300'];
 
-  const TOTAL_ROUNDS = initConfig.round === '360' ? 12 : 10;
+ const TOTAL_ROUNDS = initConfig.totalEnds || (initConfig.round === '360' ? 12 : 10);
   const TOTAL_ARCHERS = initConfig.archerCount || 4;
   const sessionKey = `archeryScores_${initConfig.round}_${initConfig.school}_${getTodayStamp()}`;
 
@@ -189,25 +189,6 @@
     return '';
   }
 
-<<<<<<< Updated upstream
-=======
-  function updateTotals() {
-    const table = document.getElementById('all-totals');
-    const today = new Date();
-    const formattedDate = `${dayAbbr[today.getDay()]} ${monthAbbr[today.getMonth()]} ${today.getDate().toString().padStart(2, '0')} ${today.getFullYear()}`;
-    table.innerHTML = `<h3>Running Totals for All Archers</h3>
-      <table><thead><tr><th>Archer</th><th>10s</th><th>Xs</th><th>Total</th><th>AVG</th><th>Date</th></tr></thead>
-      <tbody>
-        ${scores.map((archerScores, i) => {
-          const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
-          const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
-          const avgClass = getAvgClass(avg);
-          return `<tr><td>${archerNames[i]}</td><td>${totalTens}</td><td>${totalXs}</td><td>${runningTotal}</td><td class="${avgClass}">${avg}</td><td>${formattedDate}</td></tr>`;
-        }).join('')}
-      </tbody></table>`;
-  }
-
->>>>>>> Stashed changes
   function calculateTotalScores(archerScores) {
     let runningTotal = 0, totalTens = 0, totalXs = 0;
     archerScores.forEach(score => {
@@ -236,7 +217,6 @@
       }
     }
   }
-<<<<<<< Updated upstream
 function updateTotals() {
   const tbody = document.getElementById('total-scores');
   tbody.innerHTML = '';
@@ -254,8 +234,6 @@ function updateTotals() {
     tbody.appendChild(row);
   });
 }
-=======
->>>>>>> Stashed changes
 
   document.getElementById('copy-totals-button')?.addEventListener('click', () => {
     const today = getTodayStamp();
@@ -287,24 +265,55 @@ function updateTotals() {
     }
   });
 
-  document.getElementById('modal-sample')?.addEventListener('click', () => {
-    scores = initializeDefaultScores();
-    archerNames = ["Bobby", "Mary", "Sam", "Fred"];
-    for (let i = 0; i < TOTAL_ARCHERS; i++) {
-      for (let j = 0; j < TOTAL_ROUNDS; j++) {
-        scores[i][j] = {
-          arrow1: ['8','9','10','X'][j % 4],
-          arrow2: ['7','10','M','X'][j % 4],
-          arrow3: ['9','X','8','10'][j % 4],
-        };
-      }
+ document.getElementById('modal-sample')?.addEventListener('click', () => {
+  scores = initializeDefaultScores();
+  archerNames = ["Bobby", "Mary", "Sam", "Fred"];
+
+  // Define distinct sample data for each archer
+  const sampleData = [
+    {
+      // Archer 1: Lower scores
+      arrow1: ['5','6','5','6'],
+      arrow2: ['5','5','6','6'],
+      arrow3: ['4','5','5','6']
+    },
+    {
+      // Archer 2: Average scores
+      arrow1: ['7','8','7','8'],
+      arrow2: ['7','7','8','8'],
+      arrow3: ['7','7','8','8']
+    },
+    {
+      // Archer 3: High scores with occasional X's
+      arrow1: ['10','X','10','10'],
+      arrow2: ['10','10','10','10'],
+      arrow3: ['10','10','X','10']
+    },
+    {
+      // Archer 4: Mixed scores
+      arrow1: ['9','8','10','X'],
+      arrow2: ['10','9','8','7'],
+      arrow3: ['8','7','9','10']
     }
-    saveData();
-    buildTabs();
-    buildArcherTables();
-    updateScores();
-    document.getElementById('reset-modal').style.display = 'none';
-  });
+  ];
+
+  for (let i = 0; i < TOTAL_ARCHERS; i++) {
+    for (let j = 0; j < TOTAL_ROUNDS; j++) {
+      const data = sampleData[i % sampleData.length]; // Cycle if archers > sample data objects
+      scores[i][j] = {
+        arrow1: data.arrow1[j % data.arrow1.length],
+        arrow2: data.arrow2[j % data.arrow2.length],
+        arrow3: data.arrow3[j % data.arrow3.length],
+      };
+    }
+  }
+  saveData();
+  buildTabs();
+  buildArcherTables();
+  updateScores();
+  document.getElementById('reset-modal').style.display = 'none';
+});
+
 
   document.getElementById('sms-button')?.addEventListener('click', () => {
     const today = getTodayStamp();
@@ -349,13 +358,15 @@ function updateTotals() {
       }
     }
   });
+function init() {
+  // Set the main title dynamically based on the round type
+  document.getElementById('main-title').textContent = `WDV Scorecard - ${initConfig.round} Round`;
 
-  function init() {
-    loadData();
-    buildTabs();
-    buildArcherTables();
-    updateScores();
-  }
+  loadData();
+  buildTabs();
+  buildArcherTables();
+  updateScores();
+}
 
-  document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', init);
 })();
