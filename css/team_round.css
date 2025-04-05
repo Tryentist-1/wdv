@@ -1,14 +1,193 @@
-    /* CSS styles specific to the Team Round Scorecard (team_round.html) */
+/* CSS styles specific ONLY to the Team Round Scorecard (team_round.html) */
+/* V2: Improved Match Info Layout using Flexbox */
 
-    /* Example: Style the shoot-off row */
-    /*
-    #shoot-off {
-        background-color: #fffacd; // Light yellow
-        font-style: italic;
+/* Match Info Section Layout */
+.match-info {
+    background-color: #ffffff;
+    padding: 10px 15px; /* Adjusted padding */
+    border-radius: 5px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: flex; /* Use flexbox */
+    flex-direction: column; /* Stack Team 1 and Team 2 info */
+    gap: 15px; /* Space between Team 1 and Team 2 sections */
+}
+
+/* Style the div containing each team's info */
+.match-info > div {
+    display: flex; /* Use flexbox for label/input pairs */
+    flex-wrap: wrap; /* Allow items to wrap to next line */
+    align-items: center; /* Align items vertically */
+    gap: 5px 15px; /* Row gap, Column gap */
+    border-bottom: 1px solid #eee; /* Separator line */
+    padding-bottom: 10px;
+}
+.match-info > div:last-child {
+    border-bottom: none; /* No line after opponent info */
+    padding-bottom: 0;
+}
+
+
+/* Style individual label/input pairs */
+/* Target direct children (label, input, select) within the team info divs */
+.match-info > div > label {
+    font-weight: bold;
+    color: #495057;
+    margin-right: 0; /* Remove default margins if any */
+    margin-left: 0;
+    flex-shrink: 0; /* Prevent labels from shrinking */
+}
+
+/* Adjust input/select widths and margins within flex layout */
+.match-info input[type="text"],
+.match-info select {
+     padding: 6px 8px; /* Consistent padding */
+     margin: 0; /* Remove default margins */
+     font-size: 0.95em;
+     border: 1px solid #ccc; /* Slightly softer border */
+     border-radius: 4px;
+}
+
+/* Specific widths for different fields */
+#t1-school, #t2-school {
+    width: 70px; /* Fixed width for 3-char school code */
+    text-transform: uppercase; /* Force uppercase */
+}
+#t1-gender, #t2-gender {
+    width: 60px; /* Width for M/F dropdown */
+}
+#t1-level, #t2-level {
+    width: 65px; /* Width for V/JV dropdown */
+}
+#t1-num, #t2-num {
+    width: 55px; /* Width for team number */
+}
+
+
+/* --- Styles below remain largely the same as previous version --- */
+
+/* Arrow Score Input Width Override */
+#team_round_table input[type="text"][id*="-a"] {
+    width: 40px; /* Specific width */
+    padding: 5px; /* Match general input padding */
+    margin: 0; /* Remove extra margins for table cells */
+}
+
+
+/* Calculated Score Display Cells */
+.score-display {
+    font-weight: bold;
+    min-width: 40px; /* Ensure space */
+    background-color: #e9ecef; /* Match user's header style? Or #f8f9fa? */
+}
+
+/* Shoot-Off Row Specifics */
+#shoot-off {
+    background-color: #fffacd; /* Light yellow background */
+    font-style: italic;
+}
+#shoot-off input[type="text"] {
+    /* border-color: orange; */
+}
+
+
+/* Shoot-Off Winner Cell & Controls */
+#so-winner-cell {
+    min-width: 150px;
+    vertical-align: middle;
+}
+#so-winner-text {
+     display: inline-block;
+     margin-right: 5px;
+     font-weight: bold;
+}
+.tie-breaker-controls {
+    display: none; /* Hide by default, shown by JS */
+    margin-left: 5px;
+    white-space: nowrap;
+}
+.tie-breaker-controls button {
+    padding: 3px 6px; /* Smaller buttons */
+    font-size: 0.8em;
+    margin-left: 3px;
+    cursor: pointer;
+    border: 1px solid #6c757d;
+    background-color: #f8f9fa;
+    color: #495057;
+    border-radius: 3px;
+}
+.tie-breaker-controls button:hover {
+    background-color: #e2e6ea;
+}
+
+/* Footer Row Styling */
+#team_round_table tfoot td {
+    font-weight: bold;
+    background-color: #e0e0e0; /* Match user's .calculated-cell? */
+}
+
+/* Match Result Display */
+#match-result {
+    padding: 12px;
+    font-size: 1.1em;
+    font-weight: bold;
+    text-align: center;
+    /* Colors are set by JS */
+}
+
+/* Team Round Controls section */
+.controls {
+    padding: 15px 0;
+    text-align: center; /* Center buttons */
+}
+/* Style buttons within .controls specifically if needed */
+/* The #reset-button style from score.css will apply due to ID */
+.controls button {
+    padding: 10px 18px;
+    margin: 0 5px;
+    /* Inherit common styles from score.css unless overridden */
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+     /* Allow match info inputs to take more width and wrap */
+    .match-info > div {
+        gap: 8px 10px; /* Adjust gap for smaller screens */
     }
-    */
+    .match-info input[type="text"],
+    .match-info select {
+        /* Allow inputs to grow if needed, but set a base size */
+        /* Example: flex-grow: 1; flex-basis: 70px; */
+        /* Or just let them wrap with fixed widths from above */
+    }
 
-    /* Add other specific styles for table layout, inputs, etc. for team_round.html here */
-    /* Consider moving the <style> block content from team_round.html here */
+     /* Adjust team round table specifics */
+     #team_round_table th,
+     #team_round_table td {
+        /* font-size: 0.75em; */ /* Inherits from common */
+        /* padding: 3px 1px; */ /* Inherits from common */
+    }
+     #team_round_table input[type="text"][id*="-a"] {
+        width: 30px; /* Smaller inputs */
+        padding: 3px;
+    }
+    #so-winner-cell {
+        min-width: 100px; /* Less space needed */
+    }
+    .tie-breaker-controls {
+        white-space: normal; /* Allow buttons to wrap */
+        display: none; /* Still hidden by default */
+        /* display: block; */ /* Stack text and buttons if shown? */
+        margin-left: 0;
+        margin-top: 3px;
+    }
+     /* Add more rules here to handle table layout */
+     #team_round_table_wrapper { /* Add a wrapper div around the table in HTML if needed */
+         /* overflow-x: auto; */ /* Allow horizontal scroll */
+     }
+     #team_round_table {
+         /* white-space: nowrap; */ /* Prevent table content wrapping if scrolling */
+     }
+}
 
-    

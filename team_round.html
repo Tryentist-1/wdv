@@ -1,243 +1,114 @@
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>OAS Team Round Scorecard</title>
-
-        <link rel="stylesheet" href="css/archery_scorecard.css">
-        <link rel="stylesheet" href="css/team_round.css">
-
-        <style>
-            /* Basic temporary styling for table readability */
-            /* TODO: Move this styling into css/team_round.css */
-            body {
-                font-family: sans-serif;
-                padding: 15px;
-            }
-            table {
-                border-collapse: collapse;
-                width: 100%; /* Make table responsive */
-                margin-top: 15px;
-                margin-bottom: 15px;
-                font-size: 0.9em; /* Adjust font size */
-            }
-            th, td {
-                border: 1px solid #ccc; /* Lighter border */
-                padding: 6px 4px; /* Adjust padding */
-                text-align: center;
-                vertical-align: middle; /* Align content vertically */
-            }
-            th {
-                background-color: #f2f2f2; /* Light grey header */
-            }
-            input[type="text"] {
-                width: 35px; /* Slightly wider inputs */
-                text-align: center;
-                padding: 4px;
-                border: 1px solid #ccc;
-                border-radius: 4px; /* Rounded corners */
-                box-sizing: border-box; /* Include padding/border in width */
-            }
-            .score-display {
-                font-weight: bold;
-                min-width: 40px; /* Ensure space for scores */
-            }
-            .match-info label {
-                margin-right: 5px;
-                margin-left: 10px;
-            }
-            .match-info input[type="text"] {
-                 width: 80px; /* Adjust width */
-                 margin-bottom: 10px;
-            }
-            .notes-section textarea {
-                width: 95%; /* Responsive textarea */
-                max-width: 600px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                padding: 5px;
-            }
-            .controls button {
-                padding: 8px 15px;
-                margin-top: 10px;
-                margin-right: 10px;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                background-color: #007bff; /* Blue button */
-                color: white;
-                font-size: 1em;
-            }
-            .controls button#reset-button {
-                background-color: #6c757d; /* Grey button */
-            }
-            #shoot-off {
-                 /* display: none; */ /* Will be controlled by JS */
-                 background-color: #fffacd; /* Light yellow background */
-            }
-            tfoot td {
-                font-weight: bold;
-            }
-            #match-result {
-                padding: 10px;
-                font-size: 1.1em;
-            }
-        </style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAS Team Round Scorecard</title>
+    <link rel="stylesheet" href="css/score.css">
+    <link rel="stylesheet" href="css/team_round.css">
     </head>
-    <body>
+<body>
 
-        <h1>OAS Team Round Scorecard</h1>
+    <h1>OAS Team Round Scorecard</h1>
 
-        <div class="match-info">
-            <label for="team-name">Team:</label>
-            <input type="text" id="team-name" value="WDV">
-            <label for="team-div">Div:</label>
-            <input type="text" id="team-div" value="JV" size="3">
-            <label for="team-num">Num:</label>
-            <input type="text" id="team-num" value="01" size="3">
-            <br>
-            <label for="opp-name">Opponent:</label>
-            <input type="text" id="opp-name" value="BEA">
-             <label for="opp-div">Div:</label>
-            <input type="text" id="opp-div" value="JV" size="3">
-             <label for="opp-num">Num:</label>
-            <input type="text" id="opp-num" value="1" size="3">
+    <div class="match-info">
+        <div>
+            <label for="t1-school">School:</label>
+            <input type="text" id="t1-school" value="WDV" maxlength="3" size="4" title="3-Letter School Code">
+            <label for="t1-gender">Gender:</label>
+            <select id="t1-gender">
+                <option value="M">M</option>
+                <option value="F">F</option>
+                <option value="X">X</option> </select>
+            <label for="t1-level">Level:</label>
+            <select id="t1-level">
+                <option value="V">V</option>
+                <option value="JV" selected>JV</option>
+            </select>
+            <label for="t1-num">Num:</label>
+            <input type="text" id="t1-num" value="01" size="3">
         </div>
-
-        <hr>
-
-        <table>
-            <thead>
-                <tr>
-                    <th rowspan="2">End</th>
-                    <th colspan="6">Team 1 Arrows</th>
-                    <th colspan="6">Team 2 Arrows</th>
-                    <th colspan="2">End Total</th>
-                    <th colspan="2">Set Points</th>
-                </tr>
-                <tr>
-                    <th>A1</th><th>A2</th><th>A3</th><th>A4</th><th>A5</th><th>A6</th>
-                    <th>A1</th><th>A2</th><th>A3</th><th>A4</th><th>A5</th><th>A6</th>
-                    <th>T1</th><th>T2</th>
-                    <th>T1</th><th>T2</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr id="end-1">
-                    <td>End 1</td>
-                    <td><input type="text" id="t1-e1-a1" maxlength="2"></td>
-                    <td><input type="text" id="t1-e1-a2" maxlength="2"></td>
-                    <td><input type="text" id="t1-e1-a3" maxlength="2"></td>
-                    <td><input type="text" id="t1-e1-a4" maxlength="2"></td>
-                    <td><input type="text" id="t1-e1-a5" maxlength="2"></td>
-                    <td><input type="text" id="t1-e1-a6" maxlength="2"></td>
-                    <td><input type="text" id="t2-e1-a1" maxlength="2"></td>
-                    <td><input type="text" id="t2-e1-a2" maxlength="2"></td>
-                    <td><input type="text" id="t2-e1-a3" maxlength="2"></td>
-                    <td><input type="text" id="t2-e1-a4" maxlength="2"></td>
-                    <td><input type="text" id="t2-e1-a5" maxlength="2"></td>
-                    <td><input type="text" id="t2-e1-a6" maxlength="2"></td>
-                    <td class="score-display" id="t1-e1-total">0</td>
-                    <td class="score-display" id="t2-e1-total">0</td>
-                    <td class="score-display" id="t1-e1-setpts">0</td>
-                    <td class="score-display" id="t2-e1-setpts">0</td>
-                </tr>
-                <tr id="end-2">
-                    <td>End 2</td>
-                     <td><input type="text" id="t1-e2-a1" maxlength="2"></td>
-                    <td><input type="text" id="t1-e2-a2" maxlength="2"></td>
-                    <td><input type="text" id="t1-e2-a3" maxlength="2"></td>
-                    <td><input type="text" id="t1-e2-a4" maxlength="2"></td>
-                    <td><input type="text" id="t1-e2-a5" maxlength="2"></td>
-                    <td><input type="text" id="t1-e2-a6" maxlength="2"></td>
-                    <td><input type="text" id="t2-e2-a1" maxlength="2"></td>
-                    <td><input type="text" id="t2-e2-a2" maxlength="2"></td>
-                    <td><input type="text" id="t2-e2-a3" maxlength="2"></td>
-                    <td><input type="text" id="t2-e2-a4" maxlength="2"></td>
-                    <td><input type="text" id="t2-e2-a5" maxlength="2"></td>
-                    <td><input type="text" id="t2-e2-a6" maxlength="2"></td>
-                    <td class="score-display" id="t1-e2-total">0</td>
-                    <td class="score-display" id="t2-e2-total">0</td>
-                    <td class="score-display" id="t1-e2-setpts">0</td>
-                    <td class="score-display" id="t2-e2-setpts">0</td>
-                </tr>
-                <tr id="end-3">
-                    <td>End 3</td>
-                     <td><input type="text" id="t1-e3-a1" maxlength="2"></td>
-                    <td><input type="text" id="t1-e3-a2" maxlength="2"></td>
-                    <td><input type="text" id="t1-e3-a3" maxlength="2"></td>
-                    <td><input type="text" id="t1-e3-a4" maxlength="2"></td>
-                    <td><input type="text" id="t1-e3-a5" maxlength="2"></td>
-                    <td><input type="text" id="t1-e3-a6" maxlength="2"></td>
-                    <td><input type="text" id="t2-e3-a1" maxlength="2"></td>
-                    <td><input type="text" id="t2-e3-a2" maxlength="2"></td>
-                    <td><input type="text" id="t2-e3-a3" maxlength="2"></td>
-                    <td><input type="text" id="t2-e3-a4" maxlength="2"></td>
-                    <td><input type="text" id="t2-e3-a5" maxlength="2"></td>
-                    <td><input type="text" id="t2-e3-a6" maxlength="2"></td>
-                    <td class="score-display" id="t1-e3-total">0</td>
-                    <td class="score-display" id="t2-e3-total">0</td>
-                    <td class="score-display" id="t1-e3-setpts">0</td>
-                    <td class="score-display" id="t2-e3-setpts">0</td>
-                </tr>
-                <tr id="end-4">
-                    <td>End 4</td>
-                     <td><input type="text" id="t1-e4-a1" maxlength="2"></td>
-                    <td><input type="text" id="t1-e4-a2" maxlength="2"></td>
-                    <td><input type="text" id="t1-e4-a3" maxlength="2"></td>
-                    <td><input type="text" id="t1-e4-a4" maxlength="2"></td>
-                    <td><input type="text" id="t1-e4-a5" maxlength="2"></td>
-                    <td><input type="text" id="t1-e4-a6" maxlength="2"></td>
-                    <td><input type="text" id="t2-e4-a1" maxlength="2"></td>
-                    <td><input type="text" id="t2-e4-a2" maxlength="2"></td>
-                    <td><input type="text" id="t2-e4-a3" maxlength="2"></td>
-                    <td><input type="text" id="t2-e4-a4" maxlength="2"></td>
-                    <td><input type="text" id="t2-e4-a5" maxlength="2"></td>
-                    <td><input type="text" id="t2-e4-a6" maxlength="2"></td>
-                    <td class="score-display" id="t1-e4-total">0</td>
-                    <td class="score-display" id="t2-e4-total">0</td>
-                    <td class="score-display" id="t1-e4-setpts">0</td>
-                    <td class="score-display" id="t2-e4-setpts">0</td>
-                </tr>
-                 <tr id="shoot-off">
-                    <td>Shoot Off*</td>
-                     <td><input type="text" id="t1-so-a1" maxlength="2"></td>
-                    <td><input type="text" id="t1-so-a2" maxlength="2"></td>
-                    <td><input type="text" id="t1-so-a3" maxlength="2"></td>
-                    <td colspan="3"></td> <td><input type="text" id="t2-so-a1" maxlength="2"></td>
-                    <td><input type="text" id="t2-so-a2" maxlength="2"></td>
-                    <td><input type="text" id="t2-so-a3" maxlength="2"></td>
-                     <td colspan="3"></td> <td class="score-display" id="t1-so-total">0</td>
-                    <td class="score-display" id="t2-so-total">0</td>
-                     <td colspan="2" id="so-winner"></td>
-                </tr>
-            </tbody>
-            <tfoot>
-                 <tr>
-                    <td colspan="14" style="text-align: right;">Match Score:</td>
-                    <td class="score-display" id="t1-match-score">0</td>
-                    <td class="score-display" id="t2-match-score">0</td>
-                </tr>
-                 <tr>
-                     <td colspan="16" id="match-result">Enter Scores Above</td>
-                 </tr>
-            </tfoot>
-        </table>
-         <p style="font-size: 0.8em;">*Shoot Off row only used if Set Points tie 4-4 after End 4. Enter 3 arrow scores per team.</p>
-
-        <div class="notes-section">
-            <h3>Notes:</h3>
-            <textarea id="notes" rows="4" placeholder="Enter any match notes here..."></textarea>
+         <div style="margin-top: 10px;">
+             <label for="t2-school">Opponent:</label>
+             <input type="text" id="t2-school" value="BEA" maxlength="3" size="4" title="3-Letter School Code">
+             <label for="t2-gender">Gender:</label>
+             <select id="t2-gender">
+                 <option value="M">M</option>
+                 <option value="F">F</option>
+                 <option value="X">X</option>
+             </select>
+             <label for="t2-level">Level:</label>
+             <select id="t2-level">
+                 <option value="V">V</option>
+                 <option value="JV" selected>JV</option>
+             </select>
+             <label for="t2-num">Num:</label>
+             <input type="text" id="t2-num" value="01" size="3">
         </div>
-
-        <div class="controls">
-            <button type="button" id="calculate-button">Calculate Scores</button>
-            <button type="reset" id="reset-button">Reset Form</button>
-        </div>
-
-        <script src="js/team_round.js"></script>
-
-    </body>
-    </html>
-    
+    </div>
+    <hr>
+    <table id="team_round_table">
+        <thead>
+            <tr>
+                <th rowspan="2">End</th>
+                <th colspan="6">Team 1 Arrows</th>
+                <th colspan="6">Team 2 Arrows</th>
+                <th colspan="2">End Total</th>
+                <th colspan="2">Set Points</th>
+            </tr>
+            <tr>
+                <th>A1</th><th>A2</th><th>A3</th><th>A4</th><th>A5</th><th>A6</th>
+                <th>A1</th><th>A2</th><th>A3</th><th>A4</th><th>A5</th><th>A6</th>
+                <th>T1</th><th>T2</th>
+                <th>T1</th><th>T2</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr id="end-1"><td>End 1</td><td><input type="text" id="t1-e1-a1" maxlength="2"></td><td><input type="text" id="t1-e1-a2" maxlength="2"></td><td><input type="text" id="t1-e1-a3" maxlength="2"></td><td><input type="text" id="t1-e1-a4" maxlength="2"></td><td><input type="text" id="t1-e1-a5" maxlength="2"></td><td><input type="text" id="t1-e1-a6" maxlength="2"></td><td><input type="text" id="t2-e1-a1" maxlength="2"></td><td><input type="text" id="t2-e1-a2" maxlength="2"></td><td><input type="text" id="t2-e1-a3" maxlength="2"></td><td><input type="text" id="t2-e1-a4" maxlength="2"></td><td><input type="text" id="t2-e1-a5" maxlength="2"></td><td><input type="text" id="t2-e1-a6" maxlength="2"></td><td class="score-display" id="t1-e1-total">0</td><td class="score-display" id="t2-e1-total">0</td><td class="score-display" id="t1-e1-setpts">0</td><td class="score-display" id="t2-e1-setpts">0</td></tr>
+             <tr id="end-2"><td>End 2</td><td><input type="text" id="t1-e2-a1" maxlength="2"></td><td><input type="text" id="t1-e2-a2" maxlength="2"></td><td><input type="text" id="t1-e2-a3" maxlength="2"></td><td><input type="text" id="t1-e2-a4" maxlength="2"></td><td><input type="text" id="t1-e2-a5" maxlength="2"></td><td><input type="text" id="t1-e2-a6" maxlength="2"></td><td><input type="text" id="t2-e2-a1" maxlength="2"></td><td><input type="text" id="t2-e2-a2" maxlength="2"></td><td><input type="text" id="t2-e2-a3" maxlength="2"></td><td><input type="text" id="t2-e2-a4" maxlength="2"></td><td><input type="text" id="t2-e2-a5" maxlength="2"></td><td><input type="text" id="t2-e2-a6" maxlength="2"></td><td class="score-display" id="t1-e2-total">0</td><td class="score-display" id="t2-e2-total">0</td><td class="score-display" id="t1-e2-setpts">0</td><td class="score-display" id="t2-e2-setpts">0</td></tr>
+             <tr id="end-3"><td>End 3</td><td><input type="text" id="t1-e3-a1" maxlength="2"></td><td><input type="text" id="t1-e3-a2" maxlength="2"></td><td><input type="text" id="t1-e3-a3" maxlength="2"></td><td><input type="text" id="t1-e3-a4" maxlength="2"></td><td><input type="text" id="t1-e3-a5" maxlength="2"></td><td><input type="text" id="t1-e3-a6" maxlength="2"></td><td><input type="text" id="t2-e3-a1" maxlength="2"></td><td><input type="text" id="t2-e3-a2" maxlength="2"></td><td><input type="text" id="t2-e3-a3" maxlength="2"></td><td><input type="text" id="t2-e3-a4" maxlength="2"></td><td><input type="text" id="t2-e3-a5" maxlength="2"></td><td><input type="text" id="t2-e3-a6" maxlength="2"></td><td class="score-display" id="t1-e3-total">0</td><td class="score-display" id="t2-e3-total">0</td><td class="score-display" id="t1-e3-setpts">0</td><td class="score-display" id="t2-e3-setpts">0</td></tr>
+             <tr id="end-4"><td>End 4</td><td><input type="text" id="t1-e4-a1" maxlength="2"></td><td><input type="text" id="t1-e4-a2" maxlength="2"></td><td><input type="text" id="t1-e4-a3" maxlength="2"></td><td><input type="text" id="t1-e4-a4" maxlength="2"></td><td><input type="text" id="t1-e4-a5" maxlength="2"></td><td><input type="text" id="t1-e4-a6" maxlength="2"></td><td><input type="text" id="t2-e4-a1" maxlength="2"></td><td><input type="text" id="t2-e4-a2" maxlength="2"></td><td><input type="text" id="t2-e4-a3" maxlength="2"></td><td><input type="text" id="t2-e4-a4" maxlength="2"></td><td><input type="text" id="t2-e4-a5" maxlength="2"></td><td><input type="text" id="t2-e4-a6" maxlength="2"></td><td class="score-display" id="t1-e4-total">0</td><td class="score-display" id="t2-e4-total">0</td><td class="score-display" id="t1-e4-setpts">0</td><td class="score-display" id="t2-e4-setpts">0</td></tr>
+             <tr id="shoot-off">
+                <td>Shoot Off*</td>
+                <td><input type="text" id="t1-so-a1" maxlength="2"></td>
+                <td><input type="text" id="t1-so-a2" maxlength="2"></td>
+                <td><input type="text" id="t1-so-a3" maxlength="2"></td>
+                <td colspan="3"></td>
+                <td><input type="text" id="t2-so-a1" maxlength="2"></td>
+                <td><input type="text" id="t2-so-a2" maxlength="2"></td>
+                <td><input type="text" id="t2-so-a3" maxlength="2"></td>
+                <td colspan="3"></td>
+                <td class="score-display" id="t1-so-total">0</td>
+                <td class="score-display" id="t2-so-total">0</td>
+                <td colspan="2" id="so-winner-cell">
+                    <span id="so-winner-text">-</span>
+                    <span class="tie-breaker-controls">
+                        <button type="button" id="t1-so-win-button" title="Team 1 Wins Tie-Breaker">[T1 Wins]</button>
+                        <button type="button" id="t2-so-win-button" title="Team 2 Wins Tie-Breaker">[T2 Wins]</button>
+                    </span>
+                </td>
+            </tr>
+        </tbody>
+        <tfoot>
+             <tr>
+                <td colspan="14" style="text-align: right;">Match Score:</td>
+                <td class="score-display" id="t1-match-score">0</td>
+                <td class="score-display" id="t2-match-score">0</td>
+            </tr>
+             <tr>
+                 <td colspan="16" id="match-result">Enter Scores Above</td>
+             </tr>
+        </tfoot>
+    </table>
+     <p style="font-size: 0.8em;">*Shoot Off row only used if Set Points tie 4-4 after End 4. Enter 3 arrow scores per team.</p>
+    <div class="notes-section">
+        <h3>Notes:</h3>
+        <textarea id="notes" rows="4" placeholder="Enter any match notes here..."></textarea>
+    </div>
+    <div class="controls">
+        <button type="button" id="calculate-button">Calculate Scores</button>
+        <button type="button" id="reset-button">Reset Form</button>
+    </div>
+    <script src="js/team_round.js"></script>
+</body>
+</html>
