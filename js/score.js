@@ -22,7 +22,7 @@
 
   function initializeDefaultScores() {
     return Array.from({ length: TOTAL_ARCHERS }, () =>
-      Array.from({ length: TOTAL_ROUNDS }, () => ({ arrow1: 'M', arrow2: 'M', arrow3: 'M' }))
+      Array.from({ length: TOTAL_ROUNDS }, () => ({ arrow1: '', arrow2: '', arrow3: '' }))
     );
   }
 
@@ -146,24 +146,10 @@
     updateTotals();
   }
 
-  function calculateRound(score) {
-    let total = 0, tens = 0, xs = 0;
-    for (const val of [score.arrow1, score.arrow2, score.arrow3]) {
-      if (val === 'X') {
-        total += 10; xs++; tens++;
-      } else if (val !== 'M') {
-        const num = parseInt(val);
-        total += num;
-        if (num === 10) tens++;
-      }
-    }
-    return { roundTotal: total, roundTens: tens, roundXs: xs };
-  }
-
   function dropdown(archerIndex, roundIndex, arrowKey, selectedValue) {
-    const options = ['M', ...Array.from({ length: 10 }, (_, i) => i + 1), 'X'];
+    const options = ['', 'M', ...Array.from({ length: 10 }, (_, i) => i + 1), 'X'];
     return `<select data-archer="${archerIndex}" data-round="${roundIndex}" data-arrow="${arrowKey}">
-      ${options.map(opt => `<option value="${opt}" ${opt.toString() === selectedValue.toString() ? 'selected' : ''}>${opt}</option>`).join('')}
+      ${options.map(opt => `<option value="${opt}" ${opt.toString() === selectedValue.toString() ? 'selected' : ''}>${opt === '' ? '--' : opt}</option>`).join('')}
     </select>`;
   }
 
@@ -175,6 +161,22 @@
     if (v >= 7 && v < 9) return 'avg-7-8';
     if (v >= 9) return 'avg-9-up';
     return '';
+  }
+
+  function calculateRound(score) {
+    let total = 0, tens = 0, xs = 0;
+    for (const val of [score.arrow1, score.arrow2, score.arrow3]) {
+      if (val === 'X') {
+        total += 10; xs++; tens++;
+      } else if (val !== '' && val !== 'M') {
+        const num = parseInt(val);
+        total += num;
+        if (num === 10) tens++;
+      } else if (val === 'M') {
+        // miss, no points
+      }
+    }
+    return { roundTotal: total, roundTens: tens, roundXs: xs };
   }
 
   function updateTotals() {
@@ -200,7 +202,7 @@
       [score.arrow1, score.arrow2, score.arrow3].forEach(val => {
         if (val === 'X') {
           runningTotal += 10; totalXs++; totalTens++;
-        } else if (val !== 'M') {
+        } else if (val !== '' && val !== 'M') {
           const num = parseInt(val);
           runningTotal += num;
           if (num === 10) totalTens++;
@@ -211,12 +213,11 @@
   }
 
   function copyTotals() {
-    const today = new Date();
-    const formattedDate = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+    const today = getTodayStamp();
     const tsv = scores.map((archerScores, i) => {
       const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
       const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
-      return `${archerNames[i]}\t${totalTens}\t${totalXs}\t${runningTotal}\t${avg}\t${formattedDate}`;
+      return `${archerNames[i]}\t${totalTens}\t${totalXs}\t${runningTotal}\t${avg}\t${today}`;
     }).join("\r\n");
 
     navigator.clipboard.writeText(tsv)
@@ -245,7 +246,6 @@
   });
 
   document.getElementById('modal-sample')?.addEventListener('click', () => {
-    // You can load demo data here
     scores = initializeDefaultScores();
     archerNames = ["Bobby", "Mary", "Sam", "Fred"];
     saveData();
@@ -297,12 +297,13 @@
       }
     }
   });
-function init() {
-  loadData();
-  buildTabs();
-  buildArcherTables();
-  updateScores();
-}
 
-document.addEventListener('DOMContentLoaded', init);
+  function init() {
+    loadData();
+    buildTabs();
+    buildArcherTables();
+    updateScores();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
 })();
