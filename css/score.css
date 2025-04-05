@@ -83,6 +83,11 @@ th, .round-header, .r-column {
   font-weight: bold;
 }
 
+/* Highlighted Row */
+.highlight {
+  background-color: #ffffcc;
+}
+
 /* Scores Header Section */
 .scores-header {
   display: flex;
@@ -117,26 +122,27 @@ th, .round-header, .r-column {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+  padding: 10px;
+  background-color: #fff;
+  border-top: 1px solid #ddd;
   z-index: 1000;
+  box-shadow: 0 -2px 6px rgba(0,0,0,0.1);
 }
 .bottom-buttons button {
   flex: 1;
-  padding: 10px;
+  padding: 10px 15px;
+  font-size: 1em;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.3s;
   min-width: 120px;
 }
-.reset-button {
-  background-color: #d9534f;
-  color: white;
-}
-.copy-button {
-  background-color: #28a745;
-  color: white;
-}
+#reset-button { background-color: #d9534f; color: white; }
+#copy-totals-button { background-color: #28a745; color: white; }
+#sms-button { background-color: #007bff; color: white; }
+#mail-button { background-color: #6f42c1; color: white; }
+
+/* Form Elements */
 select {
   font-size: 1em;
   padding: 5px;
@@ -174,6 +180,7 @@ select {
   max-width: 400px;
   border-radius: 8px;
   text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 .modal-buttons {
   display: flex;
