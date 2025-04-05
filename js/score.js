@@ -99,36 +99,45 @@
     }
   }
 
-  function updateScores() {
-    const archerScores = scores[currentTab];
-    const tbody = document.getElementById(`archer${currentTab + 1}-scores`);
-    tbody.innerHTML = '';
-    let runningTotal = 0;
-    let totalTens = 0;
-    let totalXs = 0;
+function updateScores(highlightIndex = null) {
+  const archerScores = scores[currentTab];
+  const tbody = document.getElementById(`archer${currentTab + 1}-scores`);
+  tbody.innerHTML = '';
+  let runningTotal = 0;
+  let totalTens = 0;
+  let totalXs = 0;
 
-    archerScores.forEach((score, index) => {
-      const { roundTotal, roundTens, roundXs } = calculateRound(score);
-      runningTotal += roundTotal;
-      totalTens += roundTens;
-      totalXs += roundXs;
-      const avg = (roundTotal / 3).toFixed(1);
-      const avgClass = getAvgClass(avg);
+  archerScores.forEach((score, index) => {
+    const { roundTotal, roundTens, roundXs } = calculateRound(score);
+    runningTotal += roundTotal;
+    totalTens += roundTens;
+    totalXs += roundXs;
+    const avg = (roundTotal / 3).toFixed(1);
+    const avgClass = getAvgClass(avg);
 
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td class="r-column">${index + 1}</td>
-        <td>${dropdown(currentTab, index, 'arrow1', score.arrow1)}</td>
-        <td>${dropdown(currentTab, index, 'arrow2', score.arrow2)}</td>
-        <td>${dropdown(currentTab, index, 'arrow3', score.arrow3)}</td>
-        <td class="calculated-cell">${roundTens}</td>
-        <td class="calculated-cell">${roundXs}</td>
-        <td class="calculated-cell">${roundTotal}</td>
-        <td class="calculated-cell">${runningTotal}</td>
-        <td class="calculated-cell ${avgClass}">${avg}</td>
-      `;
-      tbody.appendChild(row);
-    });
+    const row = document.createElement('tr');
+    row.className = 'score-row';
+    row.dataset.index = index;
+
+    // Highlight the row if it was just edited
+    if (highlightIndex === index) {
+      row.style.backgroundColor = '#e0f7ff';
+      row.style.fontWeight = 'bold';
+    }
+
+    row.innerHTML = `
+      <td class="r-column">${index + 1}</td>
+      <td>${dropdown(currentTab, index, 'arrow1', score.arrow1)}</td>
+      <td>${dropdown(currentTab, index, 'arrow2', score.arrow2)}</td>
+      <td>${dropdown(currentTab, index, 'arrow3', score.arrow3)}</td>
+      <td class="calculated-cell">${roundTens}</td>
+      <td class="calculated-cell">${roundXs}</td>
+      <td class="calculated-cell">${roundTotal}</td>
+      <td class="calculated-cell">${runningTotal}</td>
+      <td class="calculated-cell ${avgClass}">${avg}</td>
+    `;
+    tbody.appendChild(row);
+  });
 
     tbody.innerHTML += `
       <tr class="total-row">
@@ -146,10 +155,43 @@
     updateTotals();
   }
 
+  document.addEventListener('change', e => {
+    if (e.target.tagName === 'SELECT') {
+      const s = e.target;
+      const a = parseInt(s.dataset.archer);
+      const r = parseInt(s.dataset.round);
+      const k = s.dataset.arrow;
+      scores[a][r][k] = s.value;
+      highlightRow(r);
+      updateScores();
+    }
+  });
+
+  function highlightRow(index) {
+    document.querySelectorAll('.score-row').forEach((row, i) => {
+      row.style.backgroundColor = i === index ? '#e0f7ff' : '';
+      row.style.fontWeight = i === index ? 'bold' : '';
+    });
+  }
+
+  function calculateRound(score) {
+    let total = 0, tens = 0, xs = 0;
+    for (const val of [score.arrow1, score.arrow2, score.arrow3]) {
+      if (val === 'X') {
+        total += 10; xs++; tens++;
+      } else if (val !== '') {
+        const num = parseInt(val);
+        total += num;
+        if (num === 10) tens++;
+      }
+    }
+    return { roundTotal: total, roundTens: tens, roundXs: xs };
+  }
+
   function dropdown(archerIndex, roundIndex, arrowKey, selectedValue) {
     const options = ['', 'M', ...Array.from({ length: 10 }, (_, i) => i + 1), 'X'];
     return `<select data-archer="${archerIndex}" data-round="${roundIndex}" data-arrow="${arrowKey}">
-      ${options.map(opt => `<option value="${opt}" ${opt.toString() === selectedValue.toString() ? 'selected' : ''}>${opt === '' ? '--' : opt}</option>`).join('')}
+      ${options.map(opt => `<option value="${opt}" ${opt === selectedValue ? 'selected' : ''}>${opt || '--'}</option>`).join('')}
     </select>`;
   }
 
@@ -161,22 +203,6 @@
     if (v >= 7 && v < 9) return 'avg-7-8';
     if (v >= 9) return 'avg-9-up';
     return '';
-  }
-
-  function calculateRound(score) {
-    let total = 0, tens = 0, xs = 0;
-    for (const val of [score.arrow1, score.arrow2, score.arrow3]) {
-      if (val === 'X') {
-        total += 10; xs++; tens++;
-      } else if (val !== '' && val !== 'M') {
-        const num = parseInt(val);
-        total += num;
-        if (num === 10) tens++;
-      } else if (val === 'M') {
-        // miss, no points
-      }
-    }
-    return { roundTotal: total, roundTens: tens, roundXs: xs };
   }
 
   function updateTotals() {
@@ -202,7 +228,7 @@
       [score.arrow1, score.arrow2, score.arrow3].forEach(val => {
         if (val === 'X') {
           runningTotal += 10; totalXs++; totalTens++;
-        } else if (val !== '' && val !== 'M') {
+        } else if (val !== '') {
           const num = parseInt(val);
           runningTotal += num;
           if (num === 10) totalTens++;
@@ -213,11 +239,12 @@
   }
 
   function copyTotals() {
-    const today = getTodayStamp();
+    const today = new Date();
+    const formattedDate = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
     const tsv = scores.map((archerScores, i) => {
       const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
       const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
-      return `${archerNames[i]}\t${totalTens}\t${totalXs}\t${runningTotal}\t${avg}\t${today}`;
+      return `${archerNames[i]}\t${totalTens}\t${totalXs}\t${runningTotal}\t${avg}\t${formattedDate}`;
     }).join("\r\n");
 
     navigator.clipboard.writeText(tsv)
@@ -272,17 +299,6 @@
       return `${archerNames[i]}\t${totalTens}\t${totalXs}\t${runningTotal}\t${avg}\t${today}`;
     }).join("\r\n");
     window.location.href = `mailto:davinciarchers@gmail.com?subject=WDV Scores ${today}&body=${encodeURIComponent(msg)}`;
-  });
-
-  document.addEventListener('change', e => {
-    if (e.target.tagName === 'SELECT') {
-      const s = e.target;
-      const a = parseInt(s.dataset.archer);
-      const r = parseInt(s.dataset.round);
-      const k = s.dataset.arrow;
-      scores[a][r][k] = s.value;
-      updateScores();
-    }
   });
 
   document.addEventListener('click', e => {
