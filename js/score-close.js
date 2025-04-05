@@ -111,8 +111,8 @@
     let totalXs = 0;
 
     archerScores.forEach((score, index) => {
-      const { roundTotal, roundTens, roundXs, isComplete } = calculateRound(score);
-      if (isComplete) runningTotal += roundTotal;
+      const { roundTotal, roundTens, roundXs } = calculateRound(score);
+      runningTotal += roundTotal;
       totalTens += roundTens;
       totalXs += roundXs;
 
@@ -130,7 +130,7 @@
         <td class="calculated-cell">${roundTens}</td>
         <td class="calculated-cell">${roundXs}</td>
         <td class="calculated-cell">${roundTotal}</td>
-        <td class="calculated-cell">${isComplete ? runningTotal : ''}</td>
+        <td class="calculated-cell">${runningTotal}</td>
         <td class="calculated-cell ${avgClass}">${avg}</td>
       `;
       tbody.appendChild(row);
@@ -154,28 +154,65 @@
   }
 
   function calculateRound(score) {
-    let total = 0, tens = 0, xs = 0, count = 0;
+    let total = 0, tens = 0, xs = 0;
     for (const val of [score.arrow1, score.arrow2, score.arrow3]) {
       if (val === 'X') {
-        total += 10; xs++; tens++; count++;
+        total += 10; xs++; tens++;
       } else if (val === 'M' || val === '' || val === '--') {
         total += 0;
       } else {
         const num = parseInt(val);
-        if (!isNaN(num)) {
-          total += num;
-          if (num === 10) tens++;
-          count++;
-        }
+        total += num;
+        if (num === 10) tens++;
       }
     }
-    return { roundTotal: total, roundTens: tens, roundXs: xs, isComplete: count === 3 };
+    return { roundTotal: total, roundTens: tens, roundXs: xs };
   }
 
-  function dropdown(archer, round, arrow, selectedValue) {
-    const options = ['--', 'M', ...Array.from({ length: 10 }, (_, i) => (i + 1).toString()), 'X'];
-    return `<select data-archer="${archer}" data-round="${round}" data-arrow="${arrow}">
-      ${options.map(val => `<option value="${val}" ${val === selectedValue ? 'selected' : ''}>${val}</option>`).join('')}
+  function calculateTotalScores(archerScores) {
+    let runningTotal = 0, totalTens = 0, totalXs = 0;
+    archerScores.forEach(score => {
+      [score.arrow1, score.arrow2, score.arrow3].forEach(val => {
+        if (val === 'X') {
+          runningTotal += 10; totalXs++; totalTens++;
+        } else if (val === 'M' || val === '' || val === '--') {
+          runningTotal += 0;
+        } else {
+          const num = parseInt(val);
+          runningTotal += num;
+          if (num === 10) totalTens++;
+        }
+      });
+    });
+    return { runningTotal, totalTens, totalXs };
+  }
+
+  function updateTotals() {
+    const table = document.getElementById('total-scores');
+    if (!table) return;
+    const today = new Date();
+    const formattedDate = `${dayAbbr[today.getDay()]} ${monthAbbr[today.getMonth()]} ${today.getDate().toString().padStart(2, '0')} ${today.getFullYear()}`;
+    table.innerHTML = scores.map((archerScores, i) => {
+      const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
+      const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
+      const avgClass = getAvgClass(avg);
+      return `
+        <tr>
+          <td>${archerNames[i]}</td>
+          <td>${totalTens}</td>
+          <td>${totalXs}</td>
+          <td>${runningTotal}</td>
+          <td class="calculated-cell ${avgClass}">${avg}</td>
+          <td>${formattedDate}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function dropdown(archerIndex, roundIndex, arrowKey, selectedValue) {
+    const options = ['--', 'M', ...Array.from({ length: 10 }, (_, i) => i + 1), 'X'];
+    return `<select data-archer="${archerIndex}" data-round="${roundIndex}" data-arrow="${arrowKey}">
+      ${options.map(opt => `<option value="${opt}" ${opt.toString() === selectedValue.toString() ? 'selected' : ''}>${opt}</option>`).join('')}
     </select>`;
   }
 
@@ -189,141 +226,81 @@
     return '';
   }
 
-<<<<<<< Updated upstream
-=======
-  function updateTotals() {
-    const table = document.getElementById('all-totals');
-    const today = new Date();
-    const formattedDate = `${dayAbbr[today.getDay()]} ${monthAbbr[today.getMonth()]} ${today.getDate().toString().padStart(2, '0')} ${today.getFullYear()}`;
-    table.innerHTML = `<h3>Running Totals for All Archers</h3>
-      <table><thead><tr><th>Archer</th><th>10s</th><th>Xs</th><th>Total</th><th>AVG</th><th>Date</th></tr></thead>
-      <tbody>
-        ${scores.map((archerScores, i) => {
-          const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
-          const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
-          const avgClass = getAvgClass(avg);
-          return `<tr><td>${archerNames[i]}</td><td>${totalTens}</td><td>${totalXs}</td><td>${runningTotal}</td><td class="${avgClass}">${avg}</td><td>${formattedDate}</td></tr>`;
-        }).join('')}
-      </tbody></table>`;
-  }
-
->>>>>>> Stashed changes
-  function calculateTotalScores(archerScores) {
-    let runningTotal = 0, totalTens = 0, totalXs = 0;
-    archerScores.forEach(score => {
-      [score.arrow1, score.arrow2, score.arrow3].forEach(val => {
-        if (val === 'X') {
-          runningTotal += 10; totalXs++; totalTens++;
-        } else if (val !== 'M' && val !== '' && val !== '--') {
-          const num = parseInt(val);
-          runningTotal += num;
-          if (num === 10) totalTens++;
-        }
-      });
-    });
-    return { runningTotal, totalTens, totalXs };
-  }
-
   function highlightCurrentRow() {
-    document.querySelectorAll('.score-row').forEach(row => row.classList.remove('highlight'));
-    const archerScores = scores[currentTab];
-    for (let i = 0; i < archerScores.length; i++) {
-      const score = archerScores[i];
-      if (score.arrow1 === '' || score.arrow2 === '' || score.arrow3 === '') {
-        const row = document.querySelector(`.score-row[data-index="${i}"]`);
-        if (row) row.classList.add('highlight');
-        break;
-      }
+    const tbody = document.getElementById(`archer${currentTab + 1}-scores`);
+    if (!tbody) return;
+    const selects = tbody.querySelectorAll('select');
+    selects.forEach(sel => sel.closest('tr').classList.remove('current-row'));
+
+    if (document.activeElement && document.activeElement.tagName === 'SELECT') {
+      const row = document.activeElement.closest('tr');
+      if (row) row.classList.add('current-row');
     }
   }
-<<<<<<< Updated upstream
-function updateTotals() {
-  const tbody = document.getElementById('total-scores');
-  tbody.innerHTML = '';
-  const today = getTodayStamp();
-  scores.forEach((archerScores, i) => {
-    const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
-    const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
-    const row = document.createElement('tr');
-    row.innerHTML = `<td>${archerNames[i]}</td>
-                     <td>${totalTens}</td>
-                     <td>${totalXs}</td>
-                     <td>${runningTotal}</td>
-                     <td>${avg}</td>
-                     <td>${today}</td>`;
-    tbody.appendChild(row);
-  });
-}
-=======
->>>>>>> Stashed changes
 
-  document.getElementById('copy-totals-button')?.addEventListener('click', () => {
-    const today = getTodayStamp();
-    const msg = scores.map((archerScores, i) => {
-      const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
-      const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
-      return `${archerNames[i]}\t${totalTens}\t${totalXs}\t${runningTotal}\t${avg}\t${today}`;
-    }).join("\r\n");
-    navigator.clipboard.writeText(msg).then(() => alert("Copied!"));
-  });
-
-  document.getElementById('reset-button')?.addEventListener('click', () => {
-    document.getElementById('reset-modal').style.display = 'block';
-  });
-
-  document.getElementById('modal-cancel')?.addEventListener('click', () => {
-    document.getElementById('reset-modal').style.display = 'none';
-  });
-
-  document.getElementById('modal-reset')?.addEventListener('click', () => {
-    if (confirm("Reset all scores?")) {
-      scores = initializeDefaultScores();
-      archerNames = initializeDefaultNames();
-      saveData();
-      buildTabs();
-      buildArcherTables();
-      updateScores();
-      document.getElementById('reset-modal').style.display = 'none';
-    }
-  });
-
-  document.getElementById('modal-sample')?.addEventListener('click', () => {
-    scores = initializeDefaultScores();
-    archerNames = ["Bobby", "Mary", "Sam", "Fred"];
-    for (let i = 0; i < TOTAL_ARCHERS; i++) {
-      for (let j = 0; j < TOTAL_ROUNDS; j++) {
-        scores[i][j] = {
-          arrow1: ['8','9','10','X'][j % 4],
-          arrow2: ['7','10','M','X'][j % 4],
-          arrow3: ['9','X','8','10'][j % 4],
-        };
-      }
-    }
-    saveData();
+  document.addEventListener('DOMContentLoaded', () => {
+    loadData();
     buildTabs();
     buildArcherTables();
     updateScores();
-    document.getElementById('reset-modal').style.display = 'none';
-  });
 
-  document.getElementById('sms-button')?.addEventListener('click', () => {
-    const today = getTodayStamp();
-    const msg = scores.map((archerScores, i) => {
-      const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
-      const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
-      return `${archerNames[i]}: ${totalTens}/${totalXs}/${runningTotal}/${avg}`;
-    }).join("\n");
-    window.location.href = `sms:14244439811?body=${encodeURIComponent(msg)}`;
-  });
+    document.getElementById('copy-totals-button')?.addEventListener('click', () => {
+      const today = getTodayStamp();
+      const msg = scores.map((archerScores, i) => {
+        const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
+        const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
+        return `${archerNames[i]}\t${totalTens}\t${totalXs}\t${runningTotal}\t${avg}\t${today}`;
+      }).join("\r\n");
+      navigator.clipboard.writeText(msg).then(() => alert("Totals copied!"));
+    });
 
-  document.getElementById('mail-button')?.addEventListener('click', () => {
-    const today = getTodayStamp();
-    const msg = scores.map((archerScores, i) => {
-      const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
-      const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
-      return `${archerNames[i]}\t${totalTens}\t${totalXs}\t${runningTotal}\t${avg}\t${today}`;
-    }).join("\r\n");
-    window.location.href = `mailto:davinciarchers@gmail.com?subject=WDV Scores ${today}&body=${encodeURIComponent(msg)}`;
+    document.getElementById('reset-button')?.addEventListener('click', () => {
+      document.getElementById('reset-modal').style.display = 'block';
+    });
+
+    document.getElementById('modal-cancel')?.addEventListener('click', () => {
+      document.getElementById('reset-modal').style.display = 'none';
+    });
+
+    document.getElementById('modal-reset')?.addEventListener('click', () => {
+      if (confirm("Are you sure you want to reset all scores?")) {
+        scores = initializeDefaultScores();
+        archerNames = initializeDefaultNames();
+        saveData();
+        updateScores();
+        buildTabs();
+        document.getElementById('reset-modal').style.display = 'none';
+      }
+    });
+
+    document.getElementById('modal-sample')?.addEventListener('click', () => {
+      scores = initializeDefaultScores();
+      archerNames = ["Bobby", "Mary", "Sam", "Fred"];
+      saveData();
+      updateScores();
+      buildTabs();
+      document.getElementById('reset-modal').style.display = 'none';
+    });
+
+    document.getElementById('sms-button')?.addEventListener('click', () => {
+      const today = getTodayStamp();
+      const msg = scores.map((archerScores, i) => {
+        const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
+        const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
+        return `${archerNames[i]}: ${totalTens}/${totalXs}/${runningTotal}/${avg}`;
+      }).join("\n");
+      window.location.href = `sms:14244439811?body=${encodeURIComponent(msg)}`;
+    });
+
+    document.getElementById('mail-button')?.addEventListener('click', () => {
+      const today = getTodayStamp();
+      const msg = scores.map((archerScores, i) => {
+        const { runningTotal, totalTens, totalXs } = calculateTotalScores(archerScores);
+        const avg = (runningTotal / (TOTAL_ROUNDS * 3)).toFixed(1);
+        return `${archerNames[i]}\t${totalTens}\t${totalXs}\t${runningTotal}\t${avg}\t${today}`;
+      }).join("\r\n");
+      window.location.href = `mailto:davinciarchers@gmail.com?subject=WDV Scores ${today}&body=${encodeURIComponent(msg)}`;
+    });
   });
 
   document.addEventListener('change', e => {
@@ -332,8 +309,14 @@ function updateTotals() {
       const a = parseInt(s.dataset.archer);
       const r = parseInt(s.dataset.round);
       const k = s.dataset.arrow;
-      scores[a][r][k] = s.value;
+      scores[a][r][k] = s.value === '--' ? '' : s.value;
       updateScores();
+    }
+  });
+
+  document.addEventListener('focusin', e => {
+    if (e.target.tagName === 'SELECT') {
+      highlightCurrentRow();
     }
   });
 
@@ -349,13 +332,4 @@ function updateTotals() {
       }
     }
   });
-
-  function init() {
-    loadData();
-    buildTabs();
-    buildArcherTables();
-    updateScores();
-  }
-
-  document.addEventListener('DOMContentLoaded', init);
 })();
