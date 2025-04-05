@@ -7,11 +7,12 @@
 
 /* General Styles - User's Reverted Version */
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f9f9f9;
+  font-family: Arial, sans-serif; /* User's font */
+  background-color: #f9f9f9; /* User's background */
   overflow-x: hidden;
+  /* Consider adding line-height: 1.5; from common_styles_css if desired */
 }
-.container {
+.container { /* Assuming this wraps content in ranking round HTML */
   max-width: 600px;
   width: 100%;
   margin: 0 auto;
@@ -25,9 +26,10 @@ h1, h2, h3 {
   margin: 10px 0;
   padding: 0;
   font-size: 1.2em;
+  /* Consider color: #0056b3; for h1 from common_styles_css if desired */
 }
 
-/* Tabs Styles */
+/* Tabs Styles (Used by ranking rounds, maybe not team round) */
 .tabs {
   display: flex;
   justify-content: space-around;
@@ -60,37 +62,62 @@ h1, h2, h3 {
 .tab-3.active-tab { border-bottom-color: #28A745; }
 .tab-4.active-tab { border-bottom-color: #FFC300; }
 
-/* Table Styles */
+/* Table Styles - Based on User's Provided CSS */
 table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 20px;
+  /* Note: common_styles_css had background-color, box-shadow */
 }
 th, td {
-  border: 1px solid #ddd;
-  padding: 5px;
+  border: 1px solid #ddd; /* User's border */
+  padding: 5px; /* User's padding */
   text-align: center;
-  font-size: 0.9em;
+  font-size: 0.9em; /* User's font size */
+  vertical-align: middle; /* Added from common_styles_css */
 }
-th, .round-header, .r-column {
-  background-color: #ccc;
+th, .round-header, .r-column { /* .round-header, .r-column specific to ranking? */
+  background-color: #ccc; /* User's header background */
 }
-.calculated-cell {
+.calculated-cell { /* Specific to ranking? */
   background-color: #e0e0e0;
 }
-.total-row td {
+.total-row td { /* Specific to ranking? */
   background-color: #fff;
   font-weight: bold;
 }
 
-/* Highlighted Row */
+/* Highlighted Row (Used by ranking rounds?) */
 .highlight {
   background-color: #ffffcc;
 }
 
 /* (Removed Scores Header Section & Edit Button Styles) */
+/*
+.scores-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 10px 10px;
+  background-color: #007BFF;
+}
+.scores-header h2 {
+  margin: 0;
+  margin-right: 15px;
+  font-size: 1.1em;
+}
+.edit-name-button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: #ffffff;
+  color: #000000;
+  font-size: 0.9em;
+}
+*/
 
-/* Bottom Buttons */
+/* Bottom Buttons (Used by ranking rounds?) */
 .bottom-buttons {
   position: fixed;
   bottom: 20px;
@@ -116,12 +143,15 @@ th, .round-header, .r-column {
   cursor: pointer;
   min-width: 120px;
 }
+/* Specific button colors from user's CSS */
 #reset-button { background-color: #d9534f; color: white; }
 #copy-totals-button { background-color: #28a745; color: white; }
 #sms-button { background-color: #007bff; color: white; }
 #mail-button { background-color: #6f42c1; color: white; }
+/* Note: The .controls button style from common_styles_css might be useful
+   if the team round uses different buttons/location */
 
-/* Form Elements */
+/* Form Elements (Select specific to ranking rounds) */
 select {
   font-size: 1em;
   padding: 5px;

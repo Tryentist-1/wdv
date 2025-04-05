@@ -1,5 +1,5 @@
 /* CSS styles specific ONLY to the Team Round Scorecard (team_round.html) */
-/* V2: Improved Match Info Layout using Flexbox */
+/* V3: Added table wrapper for horizontal scrolling */
 
 /* Match Info Section Layout */
 .match-info {
@@ -64,9 +64,22 @@
 }
 
 
-/* --- Styles below remain largely the same as previous version --- */
+/* Style for the table wrapper */
+.table-wrapper {
+    width: 100%; /* Take up full container width */
+    overflow-x: auto; /* Add horizontal scrollbar ONLY when needed */
+    -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS */
+    margin-bottom: 20px; /* Match table's original bottom margin */
+}
+/* Optional: Ensure table inside doesn't try to force wrapping */
+/* .table-wrapper table { */
+    /* white-space: nowrap; */ /* Might make columns too wide */
+    /* min-width: 700px; */ /* Or set a min-width to force scrolling earlier */
+/* } */
+
 
 /* Arrow Score Input Width Override */
+/* Give table an ID in HTML: <table id="team_round_table"> */
 #team_round_table input[type="text"][id*="-a"] {
     width: 40px; /* Specific width */
     padding: 5px; /* Match general input padding */
@@ -86,6 +99,7 @@
     background-color: #fffacd; /* Light yellow background */
     font-style: italic;
 }
+/* Example: Make SO inputs slightly different */
 #shoot-off input[type="text"] {
     /* border-color: orange; */
 }
@@ -121,6 +135,7 @@
 }
 
 /* Footer Row Styling */
+/* Give table an ID in HTML: <table id="team_round_table"> */
 #team_round_table tfoot td {
     font-weight: bold;
     background-color: #e0e0e0; /* Match user's .calculated-cell? */
@@ -136,6 +151,7 @@
 }
 
 /* Team Round Controls section */
+/* Style the div containing the buttons if needed */
 .controls {
     padding: 15px 0;
     text-align: center; /* Center buttons */
@@ -151,18 +167,16 @@
 
 /* Responsive adjustments */
 @media (max-width: 600px) {
-     /* Allow match info inputs to take more width and wrap */
-    .match-info > div {
-        gap: 8px 10px; /* Adjust gap for smaller screens */
-    }
+     /* Make match info inputs take more width and wrap */
     .match-info input[type="text"],
     .match-info select {
-        /* Allow inputs to grow if needed, but set a base size */
-        /* Example: flex-grow: 1; flex-basis: 70px; */
-        /* Or just let them wrap with fixed widths from above */
+        width: auto; /* Let flexbox handle sizing based on content/label */
+        flex-grow: 1; /* Allow growing */
+        min-width: 50px; /* Minimum size */
     }
 
      /* Adjust team round table specifics */
+     /* Give table an ID in HTML: <table id="team_round_table"> */
      #team_round_table th,
      #team_round_table td {
         /* font-size: 0.75em; */ /* Inherits from common */
@@ -182,12 +196,6 @@
         margin-left: 0;
         margin-top: 3px;
     }
-     /* Add more rules here to handle table layout */
-     #team_round_table_wrapper { /* Add a wrapper div around the table in HTML if needed */
-         /* overflow-x: auto; */ /* Allow horizontal scroll */
-     }
-     #team_round_table {
-         /* white-space: nowrap; */ /* Prevent table content wrapping if scrolling */
-     }
+     /* .table-wrapper handles horizontal scroll */
 }
 
