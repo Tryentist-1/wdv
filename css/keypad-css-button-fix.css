@@ -2,9 +2,9 @@
 .bottom-buttons {
   position: static !important;
   max-width: 600px;
-  width: calc(100% - 40px);
-  margin: 20px auto 50px;
-  padding: 10px;
+  width: 100%;
+  margin: 20px auto 30px;
+  padding: 10px 20px;
   display: flex;
   justify-content: space-between;
   gap: 10px;
@@ -12,6 +12,7 @@
   border-top: none !important;
   background: none;
   z-index: 1;
+  box-sizing: border-box;
 }
 
 .bottom-buttons button {
@@ -39,9 +40,9 @@ td.score-4, td.score-3 {
   border-color: #1a1a1a;
 }
 
-/* Ensure the container has proper padding */
+/* Ensure the container has proper padding and includes the buttons */
 .container {
-  padding: 0 20px;
+  padding: 0 20px 20px;
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
@@ -56,8 +57,8 @@ td.score-4, td.score-3 {
 /* Ensure proper layout on mobile */
 @media (max-width: 600px) {
   .bottom-buttons {
-    width: calc(100% - 20px);
-    padding: 8px 5px;
+    width: 100%;
+    padding: 8px 15px;
     gap: 5px;
   }
   
