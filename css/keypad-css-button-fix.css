@@ -1,0 +1,68 @@
+/* Fix for bottom buttons to be static instead of fixed */
+.bottom-buttons {
+  position: static !important;
+  max-width: 600px;
+  width: calc(100% - 40px);
+  margin: 20px auto 50px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: none !important;
+  border-top: none !important;
+  background: none;
+  z-index: 1;
+}
+
+.bottom-buttons button {
+  flex: 1;
+  padding: 12px 5px;
+  font-size: 0.95em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  min-width: 0;
+  text-align: center;
+}
+
+/* Make sure 4 and 3 on black background have white text */
+td.score-4, td.score-3 {
+  background-color: #333333 !important;
+  color: white !important;
+}
+
+/* Make sure keypad buttons for 4 and 3 have white text */
+#score-keypad button[data-value="4"],
+#score-keypad button[data-value="3"] {
+  background-color: #333333 !important;
+  color: white !important;
+  border-color: #1a1a1a;
+}
+
+/* Ensure the container has proper padding */
+.container {
+  padding: 0 20px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Remove inline styles from bottom buttons */
+#reset-button, #copy-totals-button, #sms-button, #mail-button {
+  margin: 0;
+}
+
+/* Ensure proper layout on mobile */
+@media (max-width: 600px) {
+  .bottom-buttons {
+    width: calc(100% - 20px);
+    padding: 8px 5px;
+    gap: 5px;
+  }
+  
+  .bottom-buttons button {
+    font-size: 0.85em;
+    padding: 10px 5px;
+  }
+}
