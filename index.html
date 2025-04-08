@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Viewport Meta Tag for Responsiveness -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OAS Score Sheets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     /* Universal Reset */
     * {
@@ -13,92 +15,313 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --primary: #0d6efd;
+      --primary-dark: #0a58ca;
+      --secondary: #6c757d;
+      --success: #198754;
+      --warning: #ffc107;
+      --danger: #dc3545;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --border-radius: 8px;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f9f9f9;
+      font-family: 'Montserrat', Arial, sans-serif;
+      background-color: #f1f5f9;
       color: #333;
+      line-height: 1.6;
     }
 
     .container {
-      max-width: 700px;
+      max-width: 1100px;
       margin: 0 auto;
       padding: 20px;
     }
 
-    header,
-    main,
-    footer {
-      margin-bottom: 20px;
+    /* Header Styles */
+    header {
+      text-align: center;
+      padding: 40px 0;
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      border-radius: var(--border-radius);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
     header h1 {
-      font-size: 1.8em;
-      margin-bottom: 10px;
-      text-align: center;
+      font-size: 2.5em;
+      margin-bottom: 15px;
+      font-weight: 700;
     }
 
     header p {
+      font-size: 1.2em;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Card Layout */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+
+    .card {
+      background: white;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-image {
+      height: 150px;
+      background-size: cover;
+      background-position: center;
+      border-bottom: 2px solid #f1f1f1;
+    }
+
+    .scorecard-300 {
+      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"><rect width="200" height="150" fill="%230d6efd" opacity="0.1"/><circle cx="100" cy="75" r="50" stroke="%230d6efd" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="40" stroke="%230d6efd" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="30" stroke="%230d6efd" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="20" stroke="%230d6efd" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="10" stroke="%230d6efd" stroke-width="2" fill="%230d6efd" opacity="0.3"/></svg>');
+    }
+
+    .scorecard-360 {
+      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"><rect width="200" height="150" fill="%23198754" opacity="0.1"/><circle cx="100" cy="75" r="50" stroke="%23198754" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="40" stroke="%23198754" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="30" stroke="%23198754" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="20" stroke="%23198754" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="10" stroke="%23198754" stroke-width="2" fill="%23198754" opacity="0.3"/></svg>');
+    }
+
+    .scorecard-team {
+      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"><rect width="200" height="150" fill="%23dc3545" opacity="0.1"/><circle cx="70" cy="55" r="30" stroke="%23dc3545" stroke-width="2" fill="none"/><circle cx="70" cy="55" r="20" stroke="%23dc3545" stroke-width="2" fill="none"/><circle cx="70" cy="55" r="10" stroke="%23dc3545" stroke-width="2" fill="%23dc3545" opacity="0.3"/><circle cx="130" cy="95" r="30" stroke="%23dc3545" stroke-width="2" fill="none"/><circle cx="130" cy="95" r="20" stroke="%23dc3545" stroke-width="2" fill="none"/><circle cx="130" cy="95" r="10" stroke="%23dc3545" stroke-width="2" fill="%23dc3545" opacity="0.3"/></svg>');
+    }
+
+    .scorecard-solo {
+      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150"><rect width="200" height="150" fill="%23ffc107" opacity="0.1"/><circle cx="100" cy="75" r="50" stroke="%23ffc107" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="40" stroke="%23ffc107" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="30" stroke="%23ffc107" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="20" stroke="%23ffc107" stroke-width="2" fill="none"/><circle cx="100" cy="75" r="10" stroke="%23ffc107" stroke-width="2" fill="%23ffc107" opacity="0.3"/><line x1="10" y1="75" x2="190" y2="75" stroke="%23ffc107" stroke-width="2"/></svg>');
+    }
+
+    .card-content {
+      padding: 20px;
+    }
+
+    .card h3 {
+      font-size: 1.4em;
+      margin-bottom: 10px;
+      color: var(--dark);
+    }
+
+    .card p {
+      color: var(--secondary);
+      margin-bottom: 15px;
+      font-size: 0.95em;
+    }
+
+    .card-link {
+      display: inline-block;
+      padding: 8px 16px;
+      background-color: var(--primary);
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: 600;
+      transition: background-color 0.2s;
+    }
+
+    .card-link:hover {
+      background-color: var(--primary-dark);
+    }
+
+    /* Features Section */
+    .features {
+      background-color: white;
+      padding: 30px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      margin-bottom: 40px;
+    }
+
+    .features h2 {
+      font-size: 1.8em;
+      margin-bottom: 20px;
+      color: var(--dark);
+      position: relative;
+      padding-bottom: 10px;
+    }
+
+    .features h2::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background-color: var(--primary);
+    }
+
+    .features-list {
+      list-style-type: none;
+      margin-left: 10px;
+    }
+
+    .features-list li {
+      margin-bottom: 15px;
+      padding-left: 30px;
+      position: relative;
+    }
+
+    .features-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 5px;
+      width: 16px;
+      height: 16px;
+      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%230d6efd"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>');
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+
+    /* Coming Soon Section */
+    .roadmap {
+      background-color: white;
+      padding: 30px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      margin-bottom: 40px;
+    }
+
+    .roadmap h2 {
+      font-size: 1.8em;
+      margin-bottom: 20px;
+      color: var(--dark);
+      position: relative;
+      padding-bottom: 10px;
+    }
+
+    .roadmap h2::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background-color: var(--primary);
+    }
+
+    .roadmap-list {
+      list-style-type: none;
+      margin-left: 10px;
+    }
+
+    .roadmap-list li {
+      margin-bottom: 15px;
+      padding-left: 30px;
+      position: relative;
+    }
+
+    .roadmap-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 5px;
+      width: 16px;
+      height: 16px;
+      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%236c757d"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 17l5-5h-4V7h-2v5H7z"/></svg>');
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+
+    .feedback {
       text-align: center;
-      font-style: italic;
+      padding: 20px;
+      margin-bottom: 40px;
+    }
+
+    .feedback p {
+      font-size: 1.1em;
       margin-bottom: 20px;
     }
 
-    nav ul {
-      list-style: none;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
-    }
-
-    nav ul li {
-      margin: 0;
-    }
-
-    nav ul li a {
+    .button {
       display: inline-block;
-      padding: 10px 20px;
-      background-color: #007BFF;
-      color: #fff;
+      padding: 10px 25px;
+      background-color: var(--primary);
+      color: white;
       text-decoration: none;
-      border-radius: 5px;
-      transition: background-color 0.3s;
+      border-radius: 30px;
+      font-weight: 600;
+      transition: background-color 0.2s, transform 0.1s;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    nav ul li a:hover {
-      background-color: #0056b3;
+    .button:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-1px);
     }
 
-    main h2 {
-      font-size: 1.4em;
-      margin-bottom: 10px;
+    .button:active {
+      transform: translateY(1px);
     }
 
-    main p {
-      margin-bottom: 15px;
-      line-height: 1.6;
-    }
-
+    /* Footer Styles */
     footer {
       text-align: center;
-      font-size: 0.9em;
-      color: #666;
+      padding: 20px 0;
+      color: var(--secondary);
+      border-top: 1px solid #eaeaea;
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
     }
 
     /* Responsive Adjustments */
-    @media (max-width: 600px) {
+    @media (max-width: 768px) {
+      .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      }
+
+      header {
+        padding: 30px 15px;
+      }
+
+      header h1 {
+        font-size: 2em;
+      }
+
+      .features, .roadmap {
+        padding: 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
       .container {
         padding: 15px;
       }
 
-      nav ul {
-        flex-direction: column;
-        align-items: center;
+      .card-grid {
+        grid-template-columns: 1fr;
       }
 
-      nav ul li a {
-        width: 200px;
-        text-align: center;
+      header h1 {
+        font-size: 1.8em;
+      }
+
+      header p {
+        font-size: 1em;
       }
     }
   </style>
@@ -106,41 +329,80 @@
 <body>
   <div class="container">
     <header>
-      <h1>WDV Score Sheets</h1>
-      <p>A hub for archery scoring tools and integrations</p>
+      <h1>OAS Score Sheets</h1>
+      <p>Digital scoring tools for Olympic Archery in Schools competitions</p>
     </header>
 
-    <nav>
-      <ul>
-        <!-- Adjust the links to match your actual folder/file names -->
-        <li><a href="score300-with-keypad.html">300 Round New</a></li>
-        <li><a href="score360-with-keypad.html">360 Round New</a></li>
-		<li><a href="team_round.html">Team Round</a></li>
-		<li><a href="solo_round.html">Solo Round</a></li>
-        <!-- Add more versions or pages as needed -->
-      </ul>
-    </nav>
+    <section class="card-grid">
+      <div class="card">
+        <div class="card-image scorecard-300"></div>
+        <div class="card-content">
+          <h3>300 Round</h3>
+          <p>Score tracking for 300-point rounds with 10 ends of 3 arrows (30 total).</p>
+          <a href="score300-with-keypad.html" class="card-link">Launch</a>
+        </div>
+      </div>
 
-    <main>
-      <h2>Coming Soon</h2>
-      <p>
-        We’re working on new features and integrations for our OAS Score Sheets, including:
-      </p>
-      <ul style="margin-left: 20px; margin-bottom: 15px;">
-        <li>Google Docs/Google Sheets syncing for advanced tracking</li>
-        <li>make.com integrations to automate data collection</li>
-        <li>Additional round types (e.g., Olympic Solo, Olympic Teams, )</li>
-        <li>Improved analytics and reporting</li>
+      <div class="card">
+        <div class="card-image scorecard-360"></div>
+        <div class="card-content">
+          <h3>360 Round</h3>
+          <p>Score tracking for 360-point rounds with 12 ends of 3 arrows (36 total).</p>
+          <a href="score360-with-keypad.html" class="card-link">Launch</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-image scorecard-team"></div>
+        <div class="card-content">
+          <h3>Team Round</h3>
+          <p>Score tracking for OAS Team Rounds with set-based scoring for team competitions.</p>
+          <a href="team_round.html" class="card-link">Launch</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-image scorecard-solo"></div>
+        <div class="card-content">
+          <h3>Solo Olympic Round</h3>
+          <p>Score tracking for individual Olympic Rounds with set-based scoring.</p>
+          <a href="solo_round.html" class="card-link">Launch</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <h2>Features</h2>
+      <ul class="features-list">
+        <li>Quick and easy score entry with on-screen keypads</li>
+        <li>Automatic calculation of running totals and statistics</li>
+        <li>Mobile-responsive design for use on any device</li>
+        <li>Offline support through browser storage</li>
+        <li>Color-coded scoring to match standard target faces</li>
+        <li>Compatible with OAS competition formats</li>
       </ul>
-      <p>
-        Stay tuned for updates. If you have any suggestions or feature requests, feel free to
-        reach out or contribute!
-      </p>
-    </main>
+    </section>
+
+    <section class="roadmap">
+      <h2>Coming Soon</h2>
+      <ul class="roadmap-list">
+        <li>Google Sheets integration for advanced tracking and analysis</li>
+        <li>Make.com integrations to automate data collection workflows</li>
+        <li>Multi-archer support for team management</li>
+        <li>Tournament bracket management</li>
+        <li>Personal statistics and performance tracking</li>
+        <li>Print-friendly output for official scorecards</li>
+      </ul>
+    </section>
+
+    <div class="feedback">
+      <p>Have suggestions or feature requests? We'd love to hear from you!</p>
+      <a href="mailto:feedback@example.com" class="button">Send Feedback</a>
+    </div>
 
     <footer>
-      <p>&copy; <span id="year"></span> OAS Score Sheets | 
-        <a href="https://tryentist.com/wdv/" target="_blank" rel="noopener noreferrer" style="color:#007BFF;">tryentist.com</a>
+      <p>&copy; <span id="year"></span> Olympic Archery in Schools Score Sheets | 
+        <a href="https://tryentist.com/wdv/" target="_blank" rel="noopener noreferrer">tryentist.com</a>
       </p>
     </footer>
   </div>
