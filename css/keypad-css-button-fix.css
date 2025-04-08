@@ -1,18 +1,12 @@
 /* Fix for bottom buttons to be static instead of fixed */
+/* Simplified bottom buttons styling */
 .bottom-buttons {
-  position: static !important;
-  max-width: 600px;
-  width: 100%;
-  margin: 20px auto 30px;
-  padding: 10px 20px;
+  margin: 30px 0;
+  padding: 0;
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  box-shadow: none !important;
-  border-top: none !important;
-  background: none;
-  z-index: 1;
-  box-sizing: border-box;
+  width: 100%;
 }
 
 .bottom-buttons button {
@@ -53,17 +47,15 @@ td.score-4, td.score-3 {
 #reset-button, #copy-totals-button, #sms-button, #mail-button {
   margin: 0;
 }
-
-/* Ensure proper layout on mobile */
+/* Mobile adjustments */
 @media (max-width: 600px) {
   .bottom-buttons {
-    width: 100%;
-    padding: 8px 15px;
+    margin: 20px 0;
     gap: 5px;
   }
   
   .bottom-buttons button {
     font-size: 0.85em;
-    padding: 10px 5px;
+    padding: 10px 2px;
   }
 }

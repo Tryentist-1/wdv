@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WDV 360 Score</title>
+  <title>WDV 300 Score</title>
   <link rel="stylesheet" href="css/score.css" />
   <link rel="stylesheet" href="css/keypad.css" />
   <link rel="stylesheet" href="css/keypad-css-button-fix.css" />
 </head>
 <body>
   <div class="container">
-    <h1 id="main-title">WDV Scorecard - 360 Round</h1>
+    <h1 id="main-title">WDV Scorecard - 300 Round</h1>
     <div id="tabs" class="tabs"></div>
     <div id="tabs-container"></div>
     <div id="all-totals" class="all-totals">
@@ -32,13 +32,14 @@
         <tbody id="total-scores"></tbody>
       </table>
     </div>
-  </div>
-
-  <div class="bottom-buttons">
-    <button id="reset-button">RESET</button>
-    <button id="copy-totals-button">COPY</button>
-    <button id="sms-button">SMS</button>
-    <button id="mail-button">MAIL</button>
+    
+    <!-- Buttons inside the container -->
+    <div class="bottom-buttons">
+      <button id="reset-button">RESET</button>
+      <button id="copy-totals-button">COPY</button>
+      <button id="sms-button">SMS</button>
+      <button id="mail-button">MAIL</button>
+    </div>
   </div>
 
   <div id="reset-modal" class="modal">
@@ -75,9 +76,10 @@
   <!-- Config for JS -->
   <script>
     const initConfig = {
-      round: "360",
+      round: "300",
       school: "WDV",
       archerCount: 4,
+      totalEnds: 10,
       defaultArcherNames: ["Archer 1", "Archer 2", "Archer 3", "Archer 4"]
     };
   </script>
