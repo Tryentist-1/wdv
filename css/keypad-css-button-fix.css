@@ -1,12 +1,16 @@
-/* Fix for bottom buttons to be static instead of fixed */
 /* Simplified bottom buttons styling */
 .bottom-buttons {
+  position: static;
   margin: 30px 0;
   padding: 0;
   display: flex;
   justify-content: space-between;
   gap: 10px;
   width: 100%;
+  background: none;
+  border-top: none;
+  box-shadow: none;
+  box-sizing: border-box;
 }
 
 .bottom-buttons button {
@@ -19,6 +23,12 @@
   min-width: 0;
   text-align: center;
 }
+
+/* Ensure button colors are maintained */
+#reset-button { background-color: #d9534f; color: white; }
+#copy-totals-button { background-color: #28a745; color: white; }
+#sms-button { background-color: #007bff; color: white; }
+#mail-button { background-color: #6f42c1; color: white; }
 
 /* Make sure 4 and 3 on black background have white text */
 td.score-4, td.score-3 {
@@ -34,19 +44,6 @@ td.score-4, td.score-3 {
   border-color: #1a1a1a;
 }
 
-/* Ensure the container has proper padding and includes the buttons */
-.container {
-  padding: 0 20px 20px;
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  box-sizing: border-box;
-}
-
-/* Remove inline styles from bottom buttons */
-#reset-button, #copy-totals-button, #sms-button, #mail-button {
-  margin: 0;
-}
 /* Mobile adjustments */
 @media (max-width: 600px) {
   .bottom-buttons {

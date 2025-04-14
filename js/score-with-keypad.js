@@ -208,8 +208,7 @@
         <td>${totalXs}</td> 
         <td>${runningTotal}</td> 
         <td>${avg}</td> 
-        <td>${today}</td>
-      `; 
+        <td>${today}</td>`; 
       totalsTbody.appendChild(row); 
     });
   }
@@ -244,6 +243,12 @@
                        (score.arrow2 !== '' && score.arrow2 !== '--') && 
                        (score.arrow3 !== '' && score.arrow3 !== '--'); 
     return { roundTotal: total, roundTens: tens, roundXs: xs, isComplete };
+  }
+  
+  function dropdown(archer, round, arrow, selectedValue) {
+    const options = ['--', 'M', ...Array.from({ length: 10 }, (_, i) => (i + 1).toString()), 'X']; 
+    const currentVal = options.includes(String(selectedValue)) ? selectedValue : '--'; 
+    return `<select data-archer="${archer}" data-round="${round}" data-arrow="${arrow}"> ${options.map(val => `<option value="${val}" ${String(val) === String(currentVal) ? 'selected' : ''}>${val}</option>`).join('')} </select>`;
   }
   
   function getAvgClass(avg) {
@@ -516,17 +521,10 @@
                           activeElement.tagName === 'INPUT' && 
                           activeElement.classList.contains('score-input');
       
-      // Only close the keypad if focus moved to something that's not a score input or keypad button
-      // AND the active element is not a close-related element (like the modal)
-      if (!isKeypadButton && !isScoreInput && 
-          !(activeElement && (activeElement.id === 'reset-modal' || 
-                             activeElement.classList.contains('modal-content') || 
-                             activeElement.classList.contains('modal-buttons')))) {
-        
-        // We're not hiding the keypad automatically anymore - user must click "Close"
-        // However, we still update the currently focused input
-        currentlyFocusedInput = isScoreInput ? activeElement : null;
-        console.log("Focus moved, but keeping keypad open until Close is clicked.");
+      if (!isKeypadButton && !isScoreInput) {
+        console.log("Focus moved outside keypad/inputs, hiding keypad.");
+        if (scoreKeypad) scoreKeypad.style.display = 'none';
+        currentlyFocusedInput = null;
       } else {
         console.log("Focus still within keypad or inputs, not hiding keypad.");
       }
@@ -537,7 +535,9 @@
   // Handle keypad click
   function handleKeypadClick(event) {
     const button = event.target.closest('button');
-    if (!button) return;
+    const scoreKeypad = document.getElementById('score-keypad');
+    
+    if (!button || !scoreKeypad || !scoreKeypad.contains(button)) return;
     
     const value = button.dataset.value;
     const action = button.dataset.action;
@@ -546,7 +546,7 @@
     if (value !== undefined && currentlyFocusedInput) {
       currentlyFocusedInput.value = value;
       
-      // Update the scores array directly
+      // Update the scores array
       const archer = parseInt(currentlyFocusedInput.dataset.archer);
       const round = parseInt(currentlyFocusedInput.dataset.round);
       const arrow = currentlyFocusedInput.dataset.arrow;
@@ -557,7 +557,6 @@
         handleScoreChange();
       }
       
-      // Move to next input - focus will be maintained
       focusNextInput(currentlyFocusedInput);
     } else if (action && currentlyFocusedInput) {
       switch (action) {
@@ -568,7 +567,6 @@
           focusPreviousInput(currentlyFocusedInput);
           break;
         case 'clear':
-          // Clear the current value
           currentlyFocusedInput.value = '';
           
           // Update the scores array
@@ -582,48 +580,44 @@
             handleScoreChange();
           }
           
-          // Keep focus on current input
           currentlyFocusedInput.focus();
           break;
         case 'close':
-          const scoreKeypad = document.getElementById('score-keypad');
           if (scoreKeypad) scoreKeypad.style.display = 'none';
-          // Don't blur the input when closing - maintain focus position
+          if (currentlyFocusedInput) currentlyFocusedInput.blur();
+          currentlyFocusedInput = null;
           break;
       }
     } else if (action === 'close') {
-      const scoreKeypad = document.getElementById('score-keypad');
       if (scoreKeypad) scoreKeypad.style.display = 'none';
-      // Don't reset currentlyFocusedInput when closing, maintain focus
+      currentlyFocusedInput = null;
     }
   }
   
   // Focus next input
   function focusNextInput(currentInput) {
-    if (!currentInput) return;
+    const inputs = Array.from(document.querySelectorAll('.score-input'));
+    const currentIndex = inputs.findIndex(input => input === currentInput);
     
-    const allInputs = Array.from(document.querySelectorAll('.score-input'));
-    const currentIndex = allInputs.findIndex(input => input === currentInput);
-    
-    if (currentIndex !== -1 && currentIndex < allInputs.length - 1) {
-      const nextInput = allInputs[currentIndex + 1];
+    if (currentIndex !== -1 && currentIndex < inputs.length - 1) {
+      const nextInput = inputs[currentIndex + 1];
       if (nextInput) nextInput.focus();
     } else {
-      // Don't hide keypad when reaching the last input
-      // Just keep focus on the last input
+      const scoreKeypad = document.getElementById('score-keypad');
+      if (scoreKeypad) scoreKeypad.style.display = 'none';
+      if (currentInput) currentInput.blur();
+      currentlyFocusedInput = null;
       console.log("Reached last input field.");
     }
   }
   
   // Focus previous input
   function focusPreviousInput(currentInput) {
-    if (!currentInput) return;
-    
-    const allInputs = Array.from(document.querySelectorAll('.score-input'));
-    const currentIndex = allInputs.findIndex(input => input === currentInput);
+    const inputs = Array.from(document.querySelectorAll('.score-input'));
+    const currentIndex = inputs.findIndex(input => input === currentInput);
     
     if (currentIndex > 0) {
-      const prevInput = allInputs[currentIndex - 1];
+      const prevInput = inputs[currentIndex - 1];
       if (prevInput) prevInput.focus();
     }
   }
@@ -662,10 +656,7 @@
       scoreClass = 'score-m';
     }
     
-    // Remove any existing score classes
     cell.className = cell.className.replace(/score-\S+/g, '').trim();
-    
-    // Add the new score class if it's not empty
     if (scoreClass !== 'score-empty') {
       cell.classList.add(scoreClass);
     }
@@ -872,4 +863,5 @@
     // DOMContentLoaded has already fired
     init();
   }
+
 })(); // --- End IIFE ---
