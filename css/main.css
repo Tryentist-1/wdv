@@ -1,0 +1,450 @@
+/* ============================================================================
+   MAIN STYLESHEET - Archery Score Management Suite
+   Version: 1.0
+   Description: A unified stylesheet for all scoring applications.
+   ============================================================================ */
+
+/* ======================
+   1. CSS Variables & Root Styles
+   ====================== */
+
+:root {
+  /* Primary Colors */
+  --primary-blue: #2d7dd9;
+  --primary-green: #28a745;
+  --primary-red: #d92d20;
+  --primary-orange: #f28c18;
+  --primary-yellow: #ffc107;
+  --primary-purple: #6f42c1;
+
+  /* Grays */
+  --light-gray: #f8f9fa;
+  --medium-gray: #6c757d;
+  --dark-gray: #343a40;
+  --border-gray: #dee2e6;
+
+  /* Score Colors (backgrounds) */
+  --score-gold: #ffc107;
+  --score-red: #dc3545;
+  --score-blue: #0dcaf0;
+  --score-black: #000000;
+  --score-white: #ffffff;
+  
+  /* Text Colors */
+  --text-light: #f8f9fa;
+  --text-dark: #212529;
+
+  /* Sizing */
+  --border-radius: 5px;
+}
+
+/* ======================
+   2. General & Reset
+   ====================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  line-height: 1.5;
+  background-color: #f0f2f5;
+  color: var(--text-dark);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: var(--dark-gray);
+}
+
+h1 { font-size: 1.8em; }
+h2 { font-size: 1.5em; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border-gray);
+  margin: 2rem 0;
+}
+
+/* ======================
+   3. Main Layout Containers
+   ====================== */
+
+.main-container {
+  max-width: 900px;
+  margin: 1rem auto;
+  padding: 1rem;
+}
+
+.page-header {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  background-color: var(--score-white);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-header h1 {
+  text-align: left;
+  margin: 0;
+}
+
+/* ======================
+   4. Buttons & Controls
+   ====================== */
+   
+.btn {
+  display: inline-block;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  user-select: none;
+  border: 1px solid transparent;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+
+.btn-primary {
+  color: var(--text-light);
+  background-color: var(--primary-blue);
+  border-color: var(--primary-blue);
+}
+.btn-primary:hover {
+  background-color: #0069d9;
+}
+
+.btn-secondary {
+  color: var(--text-light);
+  background-color: var(--medium-gray);
+  border-color: var(--medium-gray);
+}
+
+.btn-success {
+  color: var(--text-light);
+  background-color: var(--primary-green);
+  border-color: var(--primary-green);
+}
+
+.btn-danger {
+  color: var(--text-light);
+  background-color: var(--primary-red);
+  border-color: var(--primary-red);
+}
+
+.controls-container {
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+/* ======================
+   5. Scorecard Table
+   ====================== */
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--border-gray);
+    border-radius: var(--border-radius);
+    background-color: var(--score-white);
+}
+
+.score-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px; /* Encourages horizontal scroll */
+}
+
+.score-table th, .score-table td {
+  padding: 6px 4px;
+  text-align: center;
+  border: 1px solid var(--border-gray);
+  min-width: 40px;
+}
+
+.score-table th {
+  background-color: #f2f2f2;
+  font-size: 0.8rem;
+}
+
+.score-table tbody tr:nth-child(even) {
+  background-color: var(--light-gray);
+}
+.score-table tbody tr:hover {
+  background-color: #e9ecef;
+}
+
+.score-input {
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+  border: none;
+  text-align: center;
+  background-color: transparent;
+  font-size: 1rem;
+  font-weight: bold;
+  color: inherit;
+  -moz-appearance: textfield;
+}
+
+.score-table td:first-child {
+  min-width: 80px;
+  text-align: left;
+  font-weight: bold;
+}
+
+.score-table .calculated-cell {
+    background-color: #e9ecef;
+    font-weight: 600;
+}
+
+.score-table td, .score-table th {
+    height: 44px; /* Set a fixed height for cells */
+}
+
+.score-table .score-input {
+    font-size: 1.2em !important; /* Ensure input font size is large */
+}
+
+/* Score Color Classes */
+.score-x, .score-10, .score-9 { background-color: var(--score-gold); color: var(--text-dark); }
+.score-8, .score-7 { background-color: var(--score-red); color: var(--text-light); }
+.score-6, .score-5 { background-color: var(--score-blue); color: var(--text-dark); }
+.score-4, .score-3 { background-color: var(--score-black) !important; color: var(--text-light) !important; }
+.score-2, .score-1 { background-color: var(--score-white); color: var(--text-dark); }
+.score-m { background-color: var(--score-white); color: #999; }
+.score-empty { background-color: transparent; }
+
+/* ======================
+   6. Keypad
+   ====================== */
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--dark-gray);
+  padding: 10px;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+  z-index: 1000;
+}
+
+.keypad-btn {
+  padding: 15px 5px;
+  font-size: 1.3em;
+  font-weight: bold;
+  text-align: center;
+  border: 1px solid #555;
+  border-radius: var(--border-radius);
+  background-color: var(--medium-gray);
+  color: var(--text-light);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.keypad-btn:active {
+  filter: brightness(0.8);
+}
+
+/* Keypad Score Buttons */
+.keypad-btn[data-value="X"], .keypad-btn[data-value="10"], .keypad-btn[data-value="9"] { background-color: var(--score-gold); color: var(--text-dark); }
+.keypad-btn[data-value="8"], .keypad-btn[data-value="7"] { background-color: var(--score-red); }
+.keypad-btn[data-value="6"], .keypad-btn[data-value="5"] { background-color: var(--score-blue); color: var(--text-dark); }
+.keypad-btn[data-value="4"], .keypad-btn[data-value="3"] { background-color: var(--score-black) !important; color: var(--text-light) !important; }
+.keypad-btn[data-value="2"], .keypad-btn[data-value="1"] { background-color: var(--score-white); color: var(--text-dark); }
+.keypad-btn[data-value="M"] { background-color: var(--score-white); color: #999; }
+
+/* Keypad Action Buttons */
+.keypad-btn.nav-btn { background-color: var(--primary-orange); }
+.keypad-btn[data-action="clear"] { background-color: var(--primary-red); }
+.keypad-btn[data-action="close"] { background-color: var(--primary-blue); }
+
+
+/* ======================
+   7. Modal
+   ====================== */
+
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 2000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.6);
+}
+
+.modal-content {
+  background-color: var(--score-white);
+  margin: 10% auto;
+  padding: 2rem;
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-content h2 {
+  margin-top: 0;
+}
+
+.modal-content fieldset {
+  border: 1px solid var(--border-gray);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--border-radius);
+}
+
+.modal-content legend {
+  font-weight: 600;
+  padding: 0 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-gray);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+}
+
+.form-group-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-group-row .form-group {
+    flex-grow: 1;
+}
+
+.form-group-row .remove-archer-btn {
+    padding: 0.5rem 0.8rem;
+    line-height: 1.2;
+    height: fit-content;
+}
+
+/* ======================
+   8. Responsive Design
+   ====================== */
+
+@media (max-width: 600px) {
+  body {
+    padding-bottom: 150px; /* Add padding to prevent keypad from hiding content */
+  }
+
+  .main-container {
+    margin: 0.5rem auto;
+    padding: 0.5rem;
+  }
+  
+  h1 { font-size: 1.5em; }
+  h2 { font-size: 1.2em; }
+
+  .keypad {
+    padding: 5px;
+    gap: 5px;
+  }
+    
+  .keypad-btn {
+    padding: 10px 5px;
+    font-size: 1em;
+  }
+
+  .modal-content {
+    margin: 20% auto;
+    padding: 1.5rem;
+  }
+}
+
+body.keypad-visible {
+    padding-bottom: 200px; /* Adjust as needed based on keypad height */
+    scroll-behavior: smooth;
+}
+
+/* Keypad Styles */
+.keypad-container {
+    position: fixed;
+}
+
+.keypad-container .keypad {
+    position: fixed;
+}
+
+.keypad-container .keypad-btn {
+    padding: 15px 5px;
+    font-size: 1.3em;
+    font-weight: bold;
+    text-align: center;
+    border: 1px solid #555;
+    border-radius: var(--border-radius);
+    background-color: var(--medium-gray);
+    color: var(--text-light);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.keypad-container .keypad-btn:active {
+    filter: brightness(0.8);
+}
+
+.keypad-container .keypad-btn[data-value="X"], .keypad-container .keypad-btn[data-value="10"], .keypad-container .keypad-btn[data-value="9"] { background-color: var(--score-gold); color: var(--text-dark); }
+.keypad-container .keypad-btn[data-value="8"], .keypad-container .keypad-btn[data-value="7"] { background-color: var(--score-red); }
+.keypad-container .keypad-btn[data-value="6"], .keypad-container .keypad-btn[data-value="5"] { background-color: var(--score-blue); color: var(--text-dark); }
+.keypad-container .keypad-btn[data-value="4"], .keypad-container .keypad-btn[data-value="3"] { background-color: var(--score-black) !important; color: var(--text-light) !important; }
+.keypad-container .keypad-btn[data-value="2"], .keypad-container .keypad-btn[data-value="1"] { background-color: var(--score-white); color: var(--text-dark); }
+.keypad-container .keypad-btn[data-value="M"] { background-color: var(--score-white); color: #999; }
+
+.keypad-container .keypad-btn.nav-btn { background-color: var(--primary-orange); }
+.keypad-container .keypad-btn[data-action="clear"] { background-color: var(--primary-red); }
+.keypad-container .keypad-btn[data-action="close"] { background-color: var(--primary-blue); }
+
+.score-cell.score-gold, .score-cell.score-red, .score-cell.score-blue, .score-cell.score-black, .score-cell.score-white {
+    background-color: var(--score-white); /* Default */
+}
+
+.score-cell.score-gold { background-color: var(--score-gold); color: var(--text-dark); }
+.score-cell.score-red { background-color: var(--score-red); color: var(--text-light); }
+.score-cell.score-blue { background-color: var(--score-blue); color: var(--text-dark); }
+.score-cell.score-black { background-color: var(--score-black); color: var(--text-light); }
+.score-cell.score-white { background-color: var(--score-white); color: var(--text-dark); }
+
+
+/* Generic calculated cell styles */
+.calculated-cell {
+    background-color: #f8f9fa; /* Light gray for non-score calculated cells */
+} 
