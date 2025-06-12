@@ -165,21 +165,41 @@ hr {
 }
 
 .score-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 800px; /* Encourages horizontal scroll */
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
 }
 
-.score-table th, .score-table td {
-  padding: 6px 4px;
-  text-align: center;
-  border: 1px solid var(--border-gray);
-  min-width: 40px;
+.score-table th,
+.score-table td {
+    height: 40px;
+    padding: 2px 4px;
+    text-align: center;
+    border: 1px solid var(--border-gray);
+    overflow: hidden;
+    white-space: nowrap;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+}
+
+/* Archer name column */
+.score-table th:first-child,
+.score-table td:first-child {
+    width: 120px; 
+    text-align: left;
+    font-weight: bold;
+}
+
+/* Spacer column */
+.score-table .spacer-col {
+    width: auto;
+    padding: 0;
+    border: none;
 }
 
 .score-table th {
-  background-color: #f2f2f2;
-  font-size: 0.8rem;
+    background-color: #f2f2f2;
+    font-weight: bold;
 }
 
 .score-table tbody tr:nth-child(even) {
@@ -190,22 +210,17 @@ hr {
 }
 
 .score-input {
-  width: 100%;
-  height: 100%;
-  padding: 4px;
-  border: none;
-  text-align: center;
-  background-color: transparent;
-  font-size: 1rem;
-  font-weight: bold;
-  color: inherit;
-  -moz-appearance: textfield;
-}
-
-.score-table td:first-child {
-  min-width: 80px;
-  text-align: left;
-  font-weight: bold;
+    width: 100%;
+    height: 100%;
+    padding: 4px;
+    border: none;
+    text-align: center;
+    background-color: transparent;
+    font-weight: bold;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    -moz-appearance: textfield;
 }
 
 .score-table .calculated-cell {
@@ -447,4 +462,46 @@ body.keypad-visible {
 /* Generic calculated cell styles */
 .calculated-cell {
     background-color: #f8f9fa; /* Light gray for non-score calculated cells */
+}
+
+/* Card View Header */
+.view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 10px;
+}
+.view-header h2 {
+    text-align: left;
+    margin: 0;
+}
+.card-details {
+    font-size: 0.8rem;
+    color: #666;
+}
+.card-details span {
+    margin-right: 5px;
+}
+
+/* Scorecard-specific column widths */
+#card-view .score-table th:first-child, 
+#card-view .score-table td:first-child,
+#card-view .score-table th:nth-child(7),
+#card-view .score-table td:nth-child(7) {
+    width: 30px;
+    min-width: 30px;
+}
+
+/* Global Footer */
+.global-footer {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    z-index: 1500;
+}
+
+/* Specific button overrides */
+#next-archer-btn {
+    background-color: #e9ecef;
+    color: #343a40;
 } 
