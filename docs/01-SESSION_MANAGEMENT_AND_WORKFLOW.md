@@ -85,6 +85,38 @@ This document is designed to help us (User and LLM) start, conduct, and pause/en
 
 ---
 
+## Architectural Learnings (As of 2025-06-12)
+
+A major refactoring effort on the Ranking Round app, while ultimately rolled back due to implementation flaws, revealed a superior architectural pattern that should be adopted for all future development.
+
+### Previous Flawed Architecture:
+
+*   **Multiple, Independent Rendering Functions:** The application used separate functions (`renderSetupForm`, `renderScoringView`, `renderCardView`, etc.) that directly manipulated different parts of the DOM.
+*   **Scattered Event Listeners:** Event listeners were attached in various places, some directly in the `init()` function and others incorrectly re-attached inside rendering functions.
+*   **State & DOM Unsynchronized:** The application state was often updated by reading values directly from the DOM, creating an unreliable source of truth.
+
+This architecture proved to be fragile, difficult to debug, and led to cascading bugs, such as unresponsive buttons and inconsistent UI states.
+
+### New, Preferred Architecture: The State-Driven UI
+
+All new application development should follow this more robust pattern:
+
+1.  **Single Source of Truth:** A comprehensive `state` object is the sole authority for all application data (e.g., `currentView`, `archers`, `currentEnd`, `focusedInput`). The UI is a direct, read-only representation of this state.
+
+2.  **Centralized `render()` Function:** A single, master `render()` function is responsible for all DOM manipulation.
+    *   It is called after any state change.
+    *   It clears and redraws the necessary parts of the UI based *only* on the data in the `state` object.
+    *   It uses a `switch` statement on `state.currentView` to determine which primary view to display.
+
+3.  **Centralized, Delegated Event Handling:**
+    *   A single, primary event listener is attached to a static parent container (e.g., `#app-container`).
+    *   This listener uses event delegation to capture all user interactions (clicks, changes, etc.).
+    *   **The Golden Rule:** The *only* job of an event handler is to update the `state` object and then call the master `render()` function. Event handlers should **never** manipulate the DOM directly.
+
+This pattern ensures a predictable, one-way data flow (State -> Render -> DOM), which dramatically improves stability, simplifies debugging, and makes the application's behavior much easier to reason about.
+
+---
+
 ## Current Troubleshooting Status (as of 2025-06-02 16:30 UTC)
 
 
