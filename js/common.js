@@ -73,4 +73,12 @@ function getScoreColor(value) {
         default:
             return 'score-empty';
     }
+}
+
+// Export for Node.js environment (for testing)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        parseScoreValue,
+        getScoreColor
+    };
 } 

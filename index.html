@@ -46,7 +46,7 @@
     /* Header Styles */
     header {
       text-align: center;
-      padding: 40px 0;
+      padding: 40px 20px;
       margin-bottom: 30px;
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: white;
@@ -55,13 +55,13 @@
     }
 
     header h1 {
-      font-size: 2.5em;
+      font-size: clamp(1.8em, 5vw, 2.5em);
       margin-bottom: 15px;
       font-weight: 700;
     }
 
     header p {
-      font-size: 1.2em;
+      font-size: clamp(1em, 3vw, 1.2em);
       opacity: 0.9;
       max-width: 600px;
       margin: 0 auto;
@@ -70,7 +70,7 @@
     /* Card Layout */
     .card-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 20px;
       margin-bottom: 40px;
     }
@@ -81,6 +81,8 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       overflow: hidden;
       transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: flex;
+      flex-direction: column;
     }
 
     .card:hover {
@@ -119,10 +121,13 @@
 
     .card-content {
       padding: 20px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .card h3 {
-      font-size: 1.4em;
+      font-size: clamp(1.2em, 4vw, 1.4em);
       margin-bottom: 10px;
       color: var(--dark);
     }
@@ -130,18 +135,21 @@
     .card p {
       color: var(--secondary);
       margin-bottom: 15px;
-      font-size: 0.95em;
+      font-size: clamp(0.9em, 3vw, 0.95em);
+      flex-grow: 1;
     }
 
     .card-link {
       display: inline-block;
-      padding: 8px 16px;
+      padding: 12px 24px;
       background-color: var(--primary);
       color: white;
       text-decoration: none;
       border-radius: 4px;
       font-weight: 600;
       transition: background-color 0.2s;
+      text-align: center;
+      margin-top: auto;
     }
 
     .card-link:hover {
@@ -151,14 +159,14 @@
     /* Features Section */
     .features {
       background-color: white;
-      padding: 30px;
+      padding: clamp(20px, 5vw, 30px);
       border-radius: var(--border-radius);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       margin-bottom: 40px;
     }
 
     .features h2 {
-      font-size: 1.8em;
+      font-size: clamp(1.5em, 4vw, 1.8em);
       margin-bottom: 20px;
       color: var(--dark);
       position: relative;
@@ -184,6 +192,7 @@
       margin-bottom: 15px;
       padding-left: 30px;
       position: relative;
+      font-size: clamp(0.9em, 3vw, 1em);
     }
 
     .features-list li::before {
@@ -201,14 +210,14 @@
     /* Coming Soon Section */
     .roadmap {
       background-color: white;
-      padding: 30px;
+      padding: clamp(20px, 5vw, 30px);
       border-radius: var(--border-radius);
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       margin-bottom: 40px;
     }
 
     .roadmap h2 {
-      font-size: 1.8em;
+      font-size: clamp(1.5em, 4vw, 1.8em);
       margin-bottom: 20px;
       color: var(--dark);
       position: relative;
@@ -234,6 +243,7 @@
       margin-bottom: 15px;
       padding-left: 30px;
       position: relative;
+      font-size: clamp(0.9em, 3vw, 1em);
     }
 
     .roadmap-list li::before {
@@ -283,9 +293,9 @@
     /* Footer Styles */
     footer {
       text-align: center;
-      padding: 20px 0;
+      padding: 20px;
       color: var(--secondary);
-      border-top: 1px solid #eaeaea;
+      font-size: 0.9em;
     }
 
     footer a {
@@ -297,40 +307,42 @@
       text-decoration: underline;
     }
 
-    /* Responsive Adjustments */
-    @media (max-width: 768px) {
-      .card-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      }
-
-      header {
-        padding: 30px 15px;
-      }
-
-      header h1 {
-        font-size: 2em;
-      }
-
-      .features, .roadmap {
-        padding: 20px;
-      }
+    /* Mobile Navigation */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 10px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
     }
 
-    @media (max-width: 480px) {
+    .mobile-nav a {
+      color: var(--primary);
+      text-decoration: none;
+      padding: 10px;
+      display: block;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .mobile-nav {
+        display: block;
+      }
+      
       .container {
-        padding: 15px;
+        padding-bottom: 70px; /* Space for mobile nav */
       }
-
+      
       .card-grid {
-        grid-template-columns: 1fr; /* Stack cards on small screens */
+        grid-template-columns: 1fr;
       }
-
-      header h1 {
-        font-size: 1.8em;
-      }
-
-      header p {
-        font-size: 1em;
+      
+      header {
+        padding: 30px 15px;
       }
     }
   </style>
@@ -339,66 +351,66 @@
   <div class="container">
     <header>
       <h1>OAS Score Sheets & Tools</h1>
-      <p>Digital scoring and visualization tools for Olympic Archery in Schools</p>
+      <p>Mobile-first scoring tools for Olympic Archery in Schools</p>
     </header>
 
-    <h2 style="text-align: center; margin-bottom: 20px; font-size: 1.6em; color: var(--dark);">Available Tools</h2>
-
-    <section class="card-grid">
+    <div class="card-grid">
       <div class="card">
-        <div class="card-image target-interactive"></div> <div class="card-content">
-          <h3>Interactive Target Scorer</h3>
-          <p>Visualize arrow groups and scores on an interactive target using p5.js.</p>
-          <a href="gemini-oneshot.html" class="card-link">Launch</a>
+        <div class="card-image target-interactive"></div>
+        <div class="card-content">
+          <h3>Interactive Olympic Scorer</h3>
+          <p>Score practice rounds and analyze arrow grouping with our interactive target face.</p>
+          <a href="gemini-oneshot.html" class="card-link">Open Scorer</a>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-image target-360"></div> <div class="card-content">
-          <h3>360 Ranking Round</h3> <p>Score tracking for 360-point rounds (12 ends of 3 arrows).</p>
-          <a href="score360-with-keypad.html" class="card-link">Launch</a>
+        <div class="card-image target-360"></div>
+        <div class="card-content">
+          <h3>Ranking Round Scorer</h3>
+          <p>Score competitive ranking rounds for up to 4 archers with our easy-to-use interface.</p>
+          <a href="ranking_round.html" class="card-link">Open Scorer</a>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-image target-team"></div> <div class="card-content">
-          <h3>Team Round Score Sheet</h3>
-          <p>Score tracking for OAS Team Rounds (set-based scoring).</p>
-          <a href="team_round.html" class="card-link">Launch</a>
+        <div class="card-image target-solo"></div>
+        <div class="card-content">
+          <h3>Solo Match Scorer</h3>
+          <p>Score head-to-head Olympic-style matches between individual archers.</p>
+          <a href="solo_round.html" class="card-link">Open Scorer</a>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-image target-solo"></div> <div class="card-content">
-          <h3>Solo Olympic Round Sheet</h3>
-          <p>Score tracking for individual Olympic Rounds (set-based scoring).</p>
-          <a href="solo_round.html" class="card-link">Launch</a>
+        <div class="card-image target-team"></div>
+        <div class="card-content">
+          <h3>Team Match Scorer</h3>
+          <p>Score team vs. team matches with support for 3 archers per team.</p>
+          <a href="team_round.html" class="card-link">Open Scorer</a>
         </div>
       </div>
-
-    </section>
+    </div>
 
     <section class="features">
-      <h2>Features</h2>
+      <h2>Key Features</h2>
       <ul class="features-list">
-        <li>Quick score entry with keypads (sheets) or target clicks (interactive)</li>
-        <li>Automatic calculation of totals and statistics</li>
-        <li>Mobile-responsive design for use on any device</li>
-        <li>Offline support through browser storage (sheets)</li>
-        <li>Color-coded scoring to match standard target faces</li>
-        <li>Compatible with OAS competition formats</li>
+        <li>Mobile-first design for scoring on the go</li>
+        <li>Offline capability - works without internet</li>
+        <li>Automatic score calculations and statistics</li>
+        <li>Easy-to-use interface with on-screen keypad</li>
+        <li>Save and share results via text or image</li>
+        <li>Support for all Olympic archery scoring formats</li>
       </ul>
     </section>
 
     <section class="roadmap">
       <h2>Coming Soon</h2>
       <ul class="roadmap-list">
-        <li>Google Sheets integration for advanced tracking</li>
-        <li>Make.com integrations for automation</li>
-        <li>Multi-archer support for team management (sheets)</li>
-        <li>Tournament bracket management</li>
-        <li>Personal statistics and performance tracking</li>
-        <li>Print-friendly output for official scorecards</li>
+        <li>Enhanced arrow grouping analysis</li>
+        <li>Team statistics and performance tracking</li>
+        <li>Custom tournament formats</li>
+        <li>Export to PDF and Excel</li>
       </ul>
     </section>
 
@@ -406,16 +418,14 @@
       <p>Have suggestions or feature requests? We'd love to hear from you!</p>
       <a href="mailto:archeryscores@tryentist.com" class="button">Send Feedback</a>
     </div>
-
-    <footer>
-      <p>&copy; <span id="year"></span> Olympic Archery in Schools Tools |
-        <a href="https://tryentist.com" target="_blank" rel="noopener noreferrer">tryentist.com</a>
-      </p>
-    </footer>
   </div>
 
-  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-  </script>
+  <nav class="mobile-nav">
+    <a href="#top">Back to Top</a>
+  </nav>
+
+  <footer>
+    <p>© 2024 OAS Score Sheets & Tools. All rights reserved.</p>
+  </footer>
 </body>
 </html>

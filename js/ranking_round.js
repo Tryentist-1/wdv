@@ -61,6 +61,47 @@ document.addEventListener('DOMContentLoaded', () => {
         currentlyFocusedInput: null,
     };
     
+    // --- UTILITY FUNCTIONS ---
+
+    /**
+     * Parses a score input (e.g., 'X', '10', 'M') into its numerical value.
+     * @param {string|number} score The score to parse.
+     * @returns {number} The numerical value of the score.
+     */
+    function parseScoreValue(score) {
+        if (typeof score === 'string') {
+            const upperScore = score.toUpperCase().trim();
+            if (upperScore === 'X') return 10;
+            if (upperScore === 'M') return 0;
+            const num = parseInt(upperScore, 10);
+            return isNaN(num) ? 0 : num;
+        }
+        if (typeof score === 'number' && !isNaN(score)) {
+            return score;
+        }
+        return 0;
+    }
+
+    /**
+     * Gets the appropriate CSS class for a given score value based on target colors.
+     * @param {string|number} score The score to evaluate.
+     * @returns {string} The CSS class name.
+     */
+    function getScoreColor(score) {
+        const value = parseScoreValue(score);
+        if (score === '' || score === null || score === undefined) return 'score-empty';
+
+        if (value === 10) return 'score-x'; // Handles 'X' and '10'
+        if (value === 9) return 'score-9';
+        if (value >= 7) return 'score-red';
+        if (value >= 5) return 'score-blue';
+        if (value >= 3) return 'score-black';
+        if (value >= 1) return 'score-white';
+        if (score.toString().toUpperCase() === 'M') return 'score-m';
+        
+        return 'score-empty';
+    }
+
     // --- VIEW MANAGEMENT ---
 
     /**
@@ -245,19 +286,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><button class="btn btn-secondary view-card-btn" data-archer-id="${archer.id}">View</button></td>
             `;
             tbody.appendChild(row);
+
+            const scoreInputs = row.querySelectorAll('.score-input');
+            scoreInputs.forEach(input => {
+                const scoreValue = input.value;
+                input.parentElement.className = getScoreColor(scoreValue);
+            });
         });
 
         table.appendChild(tbody);
 
         scoringControls.container.innerHTML = ''; // Clear old table
         scoringControls.container.appendChild(table);
-
-        // Apply score colors
-        document.querySelectorAll('.score-input').forEach(input => {
-            const cell = input.parentElement;
-            cell.className = 'score-cell'; // Reset class
-            cell.classList.add(getScoreColor(input.value));
-        });
     }
     
     /**
