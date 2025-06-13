@@ -36,6 +36,9 @@
 
   /* Sizing */
   --border-radius: 5px;
+  --header-height: 60px;
+  --footer-height: 50px;
+  --controls-height: 50px;
 }
 
 /* ======================
@@ -49,7 +52,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   background-color: #f0f2f5;
   color: var(--text-dark);
@@ -57,13 +60,12 @@ body {
 }
 
 h1, h2, h3 {
-  text-align: center;
-  margin-bottom: 1.5rem;
+  margin: 0;
   color: var(--dark-gray);
 }
 
-h1 { font-size: 1.8em; }
-h2 { font-size: 1.5em; }
+h1 { font-size: clamp(1.2rem, 4vw, 1.8rem); }
+h2 { font-size: clamp(1rem, 3vw, 1.5rem); }
 
 hr {
   border: none;
@@ -76,20 +78,26 @@ hr {
    ====================== */
 
 .main-container {
-  max-width: 900px;
-  margin: 1rem auto;
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0;
 }
 
 .page-header {
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  height: var(--header-height);
+  padding: 0.5rem 1rem;
   background-color: var(--score-white);
-  border-radius: var(--border-radius);
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-left, .header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .page-header h1 {
@@ -102,7 +110,9 @@ hr {
    ====================== */
    
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 600;
   text-align: center;
   white-space: nowrap;
@@ -110,20 +120,18 @@ hr {
   user-select: none;
   border: 1px solid transparent;
   padding: 8px 12px;
-  font-size: 0.9rem;
+  font-size: clamp(0.8rem, 2vw, 0.9rem);
   line-height: 1.5;
   border-radius: var(--border-radius);
   cursor: pointer;
-  transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+  transition: all 0.15s ease-in-out;
+  min-height: 36px;
 }
 
 .btn-primary {
   color: var(--text-light);
   background-color: var(--primary-blue);
   border-color: var(--primary-blue);
-}
-.btn-primary:hover {
-  background-color: #0069d9;
 }
 
 .btn-secondary {
@@ -145,10 +153,13 @@ hr {
 }
 
 .controls-container {
-  padding: 1rem;
+  height: var(--controls-height);
+  padding: 0.5rem;
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.5rem;
+  background-color: var(--score-white);
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
 }
 
 /* ======================
@@ -156,87 +167,87 @@ hr {
    ====================== */
 
 .table-wrapper {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    border: 1px solid var(--border-gray);
-    border-radius: var(--border-radius);
-    background-color: var(--score-white);
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--score-white);
 }
 
 .score-table {
-    border-collapse: collapse;
-    width: 100%;
-    table-layout: fixed;
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+  font-size: clamp(0.8rem, 2vw, 1rem);
 }
 
 .score-table th,
 .score-table td {
-    height: 40px;
-    padding: 2px 4px;
-    text-align: center;
-    border: 1px solid var(--border-gray);
-    overflow: hidden;
-    white-space: nowrap;
-    font-family: Arial, sans-serif;
-    font-size: 12px;
+  height: 40px;
+  padding: 2px 4px;
+  text-align: center;
+  border: 1px solid var(--border-gray);
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: Arial, sans-serif;
 }
 
-/* Archer name column */
+/* Column widths */
 .score-table th:first-child,
 .score-table td:first-child {
-    width: 120px; 
-    text-align: left;
-    font-weight: bold;
+  width: 100px;
+  text-align: left;
+  font-weight: bold;
 }
 
-/* Spacer column */
-.score-table .spacer-col {
-    width: auto;
-    padding: 0;
-    border: none;
-}
+.score-table .v-jv-col { width: 60px; }
+.score-table .arrow-col { width: 40px; }
+.score-table .end-col { width: 40px; }
+.score-table .total-col { width: 50px; }
+.score-table .running-col { width: 50px; }
+.score-table .avg-col { width: 50px; }
+.score-table .rav-col { width: 50px; }
 
+/* Column headers */
 .score-table th {
-    background-color: #f2f2f2;
-    font-weight: bold;
+  background-color: #f2f2f2;
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
+/* Row styling */
 .score-table tbody tr:nth-child(even) {
   background-color: var(--light-gray);
 }
+
 .score-table tbody tr:hover {
   background-color: #e9ecef;
 }
 
+/* Input cells */
 .score-input {
-    width: 100%;
-    height: 100%;
-    padding: 4px;
-    border: none;
-    text-align: center;
-    background-color: transparent;
-    font-weight: bold;
-    color: inherit;
-    font-family: inherit;
-    font-size: inherit;
-    -moz-appearance: textfield;
+  width: 100%;
+  height: 100%;
+  padding: 4px;
+  border: none;
+  text-align: center;
+  background-color: transparent;
+  font-weight: bold;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  -moz-appearance: textfield;
 }
 
-.score-table .calculated-cell {
-    background-color: #e9ecef;
-    font-weight: 600;
+/* Calculated cells */
+.calculated-cell {
+  background-color: #e9ecef;
+  font-weight: 600;
 }
 
-.score-table td, .score-table th {
-    height: 44px; /* Set a fixed height for cells */
-}
-
-.score-table .score-input {
-    font-size: 1.2em !important; /* Ensure input font size is large */
-}
-
-/* Score Color Classes */
+/* Score colors */
 .score-x, .score-10, .score-9 { background-color: var(--score-gold); color: var(--text-dark); }
 .score-8, .score-7 { background-color: var(--score-red); color: var(--text-light); }
 .score-6, .score-5 { background-color: var(--score-blue); color: var(--text-dark); }
@@ -249,172 +260,211 @@ hr {
    6. Keypad
    ====================== */
 
+.keypad-container {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+  bottom: var(--footer-height);
+  background-color: #111;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+  z-index: 1000;
+  padding: 0.25rem 0.25rem calc(0.5rem + env(safe-area-inset-bottom)) 0.25rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  background-clip: padding-box;
+}
+
 .keypad {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-  position: fixed;
-  bottom: 0;
-  left: 0;
   width: 100%;
-  background-color: var(--dark-gray);
-  padding: 10px;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
-  z-index: 1000;
 }
 
 .keypad-btn {
   padding: 15px 5px;
-  font-size: 1.3em;
+  font-size: 1.2em;
   font-weight: bold;
-  text-align: center;
-  border: 1px solid #555;
+  border: none;
   border-radius: var(--border-radius);
-  background-color: var(--medium-gray);
-  color: var(--text-light);
   cursor: pointer;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-clip: padding-box;
 }
-.keypad-btn:active {
-  filter: brightness(0.8);
+
+/* Arrow score color classes - simple selectors */
+.score-table td.score-x, .score-table td.score-10, .score-table td.score-9 { background-color: #FFCC00 !important; color: black !important; }
+.score-table td.score-8, .score-table td.score-7 { background-color: #DD0000 !important; color: white !important; }
+.score-table td.score-6, .score-table td.score-5 { background-color: #66CCFF !important; color: black !important; }
+.score-table td.score-4, .score-table td.score-3 { background-color: #333333 !important; color: white !important; }
+.score-table td.score-2, .score-table td.score-1 { background-color: #FFFFFF !important; color: black !important; }
+.score-table td.score-m { background-color: #FFFFFF !important; color: #adb5bd !important; }
+.score-table td.score-empty { background-color: transparent !important; }
+
+@media (max-width: 600px) {
+  .keypad {
+    gap: 5px;
+  }
+  .keypad-btn {
+    padding: 10px 5px;
+    font-size: 1em;
+  }
 }
-
-/* Keypad Score Buttons */
-.keypad-btn[data-value="X"], .keypad-btn[data-value="10"], .keypad-btn[data-value="9"] { background-color: var(--score-gold); color: var(--text-dark); }
-.keypad-btn[data-value="8"], .keypad-btn[data-value="7"] { background-color: var(--score-red); }
-.keypad-btn[data-value="6"], .keypad-btn[data-value="5"] { background-color: var(--score-blue); color: var(--text-dark); }
-.keypad-btn[data-value="4"], .keypad-btn[data-value="3"] { background-color: var(--score-black) !important; color: var(--text-light) !important; }
-.keypad-btn[data-value="2"], .keypad-btn[data-value="1"] { background-color: var(--score-white); color: var(--text-dark); }
-.keypad-btn[data-value="M"] { background-color: var(--score-white); color: #999; }
-
-/* Keypad Action Buttons */
-.keypad-btn.nav-btn { background-color: var(--primary-orange); }
-.keypad-btn[data-action="clear"] { background-color: var(--primary-red); }
-.keypad-btn[data-action="close"] { background-color: var(--primary-blue); }
-
 
 /* ======================
    7. Modal
    ====================== */
 
-.modal {
-  display: none; /* Hidden by default */
+.modal-overlay {
   position: fixed;
-  z-index: 2000;
-  left: 0;
   top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.6);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
 .modal-content {
   background-color: var(--score-white);
-  margin: 10% auto;
-  padding: 2rem;
+  padding: 1.5rem;
   border-radius: var(--border-radius);
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  max-width: 90%;
+  width: 400px;
 }
 
 .modal-content h2 {
-  margin-top: 0;
-}
-
-.modal-content fieldset {
-  border: 1px solid var(--border-gray);
-  padding: 1rem;
   margin-bottom: 1rem;
-  border-radius: var(--border-radius);
+  text-align: center;
 }
 
-.modal-content legend {
-  font-weight: 600;
-  padding: 0 0.5rem;
-  margin-left: 0.5rem;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-
-.form-group input, .form-group select {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--border-gray);
-  border-radius: var(--border-radius);
-  font-size: 1rem;
-}
-
-.form-group-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.form-group-row .form-group {
-    flex-grow: 1;
-}
-
-.form-group-row .remove-archer-btn {
-    padding: 0.5rem 0.8rem;
-    line-height: 1.2;
-    height: fit-content;
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
 /* ======================
-   8. Responsive Design
+   8. Footer
+   ====================== */
+
+.global-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--footer-height);
+  padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom)) 0.5rem;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background-color: var(--score-white);
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+  z-index: 1100;
+  background-clip: padding-box;
+}
+
+/* ======================
+   9. View Transitions
+   ====================== */
+
+.view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--score-white);
+  z-index: 1;
+}
+
+.view-header {
+  height: var(--header-height);
+  padding: 0.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--score-white);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.card-details {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: var(--medium-gray);
+}
+
+.view-footer {
+  height: var(--footer-height);
+  padding: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--score-white);
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+}
+
+/* ======================
+   10. Mobile Optimizations
    ====================== */
 
 @media (max-width: 600px) {
-  body {
-    padding-bottom: 150px; /* Add padding to prevent keypad from hiding content */
-  }
-
-  .main-container {
-    margin: 0.5rem auto;
+  .page-header {
     padding: 0.5rem;
   }
-  
-  h1 { font-size: 1.5em; }
-  h2 { font-size: 1.2em; }
+
+  .btn {
+    padding: 6px 10px;
+  }
+
+  .score-table {
+    font-size: 0.8rem;
+  }
+
+  .score-table th:first-child,
+  .score-table td:first-child {
+    width: 80px;
+  }
+
+  .score-table .v-jv-col { width: 50px; }
+  .score-table .arrow-col { width: 35px; }
+  .score-table .end-col { width: 35px; }
+  .score-table .total-col { width: 45px; }
+  .score-table .running-col { width: 45px; }
+  .score-table .avg-col { width: 45px; }
+  .score-table .rav-col { width: 45px; }
 
   .keypad {
-    padding: 5px;
-    gap: 5px;
+    max-width: 220px;
+    gap: 0.15rem;
   }
-    
   .keypad-btn {
-    padding: 10px 5px;
-    font-size: 1em;
-  }
-
-  .modal-content {
-    margin: 20% auto;
-    padding: 1.5rem;
+    width: 55px;
+    height: 55px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 0.95rem;
+    padding: 0.15rem;
   }
 }
 
 body.keypad-visible {
-    padding-bottom: 200px; /* Adjust as needed based on keypad height */
-    scroll-behavior: smooth;
+  /* padding-bottom: calc(200px + var(--footer-height)); */
+  /* scroll-behavior: smooth; */
 }
 
 /* Keypad Styles */
-.keypad-container {
-    position: fixed;
-}
-
 .keypad-container .keypad {
     position: fixed;
 }
@@ -492,16 +542,16 @@ body.keypad-visible {
     min-width: 30px;
 }
 
-/* Global Footer */
-.global-footer {
-    position: fixed;
-    bottom: 10px;
-    left: 10px;
-    z-index: 1500;
-}
-
 /* Specific button overrides */
 #next-archer-btn {
     background-color: #e9ecef;
     color: #343a40;
-} 
+}
+
+/* Fix score color classes to be more specific */
+.score-table td.score-x, .score-table td.score-10, .score-table td.score-9 { background-color: var(--score-gold) !important; color: var(--text-dark) !important; }
+.score-table td.score-8, .score-table td.score-7 { background-color: var(--score-red) !important; color: var(--text-light) !important; }
+.score-table td.score-6, .score-table td.score-5 { background-color: var(--score-blue) !important; color: var(--text-dark) !important; }
+.score-table td.score-4, .score-table td.score-3 { background-color: var(--score-black) !important; color: var(--text-light) !important; }
+.score-table td.score-2, .score-table td.score-1 { background-color: var(--score-white) !important; color: var(--text-dark) !important; }
+.score-table td.score-m { background-color: var(--score-white) !important; color: #999 !important; } 

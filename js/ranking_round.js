@@ -91,14 +91,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const value = parseScoreValue(score);
         if (score === '' || score === null || score === undefined) return 'score-empty';
 
-        if (value === 10) return 'score-x'; // Handles 'X' and '10'
-        if (value === 9) return 'score-9';
-        if (value >= 7) return 'score-red';
-        if (value >= 5) return 'score-blue';
-        if (value >= 3) return 'score-black';
-        if (value >= 1) return 'score-white';
-        if (score.toString().toUpperCase() === 'M') return 'score-m';
-        
+        const strScore = String(score).toUpperCase().trim();
+        if (strScore === 'X') return 'score-x';
+        if (strScore === 'M') return 'score-m';
+        if (strScore === '10') return 'score-10';
+        if (strScore === '9') return 'score-9';
+        if (strScore === '8') return 'score-8';
+        if (strScore === '7') return 'score-7';
+        if (strScore === '6') return 'score-6';
+        if (strScore === '5') return 'score-5';
+        if (strScore === '4') return 'score-4';
+        if (strScore === '3') return 'score-3';
+        if (strScore === '2') return 'score-2';
+        if (strScore === '1') return 'score-1';
         return 'score-empty';
     }
 
@@ -217,7 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <thead>
                 <tr>
                     <th>Archer</th>
-                    <th class="spacer-col"></th>
                     <th>A1</th>
                     <th>A2</th>
                     <th>A3</th>
@@ -276,21 +280,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const displayName = `${archer.firstName} ${archer.lastName.charAt(0)}.`;
             row.innerHTML = `
                 <td>${displayName}</td>
-                <td class="spacer-col"></td>
                 ${arrowInputs}
                 <td class="calculated-cell">${endTotal > 0 ? endTens : ''}</td>
                 <td class="calculated-cell">${endTotal > 0 ? endXs : ''}</td>
                 <td class="end-total">${endTotal > 0 ? endTotal : ''}</td>
                 <td class="calculated-cell">${runningTotal > 0 ? runningTotal : ''}</td>
                 <td class="calculated-cell score-cell ${avgClass}">${endAvg}</td>
-                <td><button class="btn btn-secondary view-card-btn" data-archer-id="${archer.id}">View</button></td>
+                <td><button class="btn btn-secondary view-card-btn" data-archer-id="${archer.id}">>></button></td>
             `;
             tbody.appendChild(row);
 
+            // Apply color classes to arrow score cells
             const scoreInputs = row.querySelectorAll('.score-input');
-            scoreInputs.forEach(input => {
+            scoreInputs.forEach((input, idx) => {
                 const scoreValue = input.value;
-                input.parentElement.className = getScoreColor(scoreValue);
+                const td = input.parentElement;
+                // Remove all classes
+                td.className = '';
+                // Add only the color class
+                td.classList.add(getScoreColor(scoreValue));
             });
         });
 
