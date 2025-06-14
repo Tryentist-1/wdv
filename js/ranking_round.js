@@ -155,60 +155,64 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSetupForm() {
         if (!setupControls.container) return;
 
-        setupControls.container.innerHTML = ''; // Clear previous content
-        
-        state.archers.forEach(archer => {
-            const archerDiv = document.createElement('div');
-            archerDiv.className = 'form-group-row';
-            archerDiv.dataset.archerId = archer.id;
+        // Load master list for selection
+        const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
+        setupControls.container.innerHTML = '';
 
-            archerDiv.innerHTML = `
-                <div class="form-group">
-                    <label>First Name</label>
-                    <input type="text" class="archer-firstname-input" value="${archer.firstName}" placeholder="First">
-                </div>
-                 <div class="form-group">
-                    <label>Last Name</label>
-                    <input type="text" class="archer-lastname-input" value="${archer.lastName}" placeholder="Last">
-                </div>
-                <div class="form-group">
-                    <label>School</label>
-                    <input type="text" class="archer-school-input" value="${archer.school}" placeholder="School" maxlength="3">
-                </div>
-                <div class="form-group">
-                    <label>Level</label>
-                    <select class="archer-level-select">
-                        <option value="V" ${archer.level === 'V' ? 'selected' : ''}>Varsity</option>
-                        <option value="JV" ${archer.level === 'JV' ? 'selected' : ''}>Junior Varsity</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Gender</label>
-                    <select class="archer-gender-select">
-                        <option value="M" ${archer.gender === 'M' ? 'selected' : ''}>M</option>
-                        <option value="F" ${archer.gender === 'F' ? 'selected' : ''}>F</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Target Size</label>
-                    <input type="text" class="archer-targetsize-input" value="${archer.targetSize || '40cm'}" placeholder="Target Size (e.g. 40cm)">
-                </div>
-                <button class="btn btn-danger remove-archer-btn">&times;</button>
-            `;
-            
-            setupControls.container.appendChild(archerDiv);
-        });
+        // Search bar
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.placeholder = 'Search archers...';
+        searchInput.className = 'archer-search-bar';
+        setupControls.container.appendChild(searchInput);
 
-        // Add event listeners for the new remove buttons
-        document.querySelectorAll('.remove-archer-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const archerDiv = e.target.closest('.form-group-row');
-                const archerId = parseInt(archerDiv.dataset.archerId);
-                state.archers = state.archers.filter(a => a.id !== archerId);
-                renderSetupForm(); // Re-render the form
-                saveData(); // Save after removing
+        // Multi-select list
+        const listDiv = document.createElement('div');
+        listDiv.style.maxHeight = '250px';
+        listDiv.style.overflowY = 'auto';
+        listDiv.style.marginBottom = '1em';
+        setupControls.container.appendChild(listDiv);
+
+        // Helper to render the list
+        function renderArcherSelectList(filter = '') {
+            listDiv.innerHTML = '';
+            masterList.forEach((archer, idx) => {
+                const name = `${archer.first} ${archer.last}`.toLowerCase();
+                if (!name.includes(filter.toLowerCase())) return;
+                const row = document.createElement('div');
+                row.style.display = 'flex';
+                row.style.alignItems = 'center';
+                row.style.marginBottom = '0.3em';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = idx;
+                // Pre-select favorites on first render
+                if (
+                  (state.archers.length === 0 && archer.fave) ||
+                  state.archers.some(a => a.firstName === archer.first && a.lastName === archer.last)
+                ) {
+                  checkbox.checked = true;
+                }
+                row.appendChild(checkbox);
+                const label = document.createElement('label');
+                label.textContent = `${archer.fave ? '★ ' : ''}${archer.first} ${archer.last} (${archer.grade || ''} ${archer.gender || ''} ${archer.level || ''})`;
+                label.style.marginLeft = '0.5em';
+                row.appendChild(label);
+                listDiv.appendChild(row);
             });
-        });
+        }
+        renderArcherSelectList();
+        searchInput.oninput = () => renderArcherSelectList(searchInput.value);
+
+        // Add Archer button
+        const addBtn = document.createElement('button');
+        addBtn.textContent = '+ Add Archer';
+        addBtn.className = 'btn btn-secondary';
+        addBtn.style.marginBottom = '1em';
+        addBtn.onclick = () => {
+            alert('Add Archer: Please use the Archer List page for now. (Integration coming soon)');
+        };
+        setupControls.container.appendChild(addBtn);
     }
 
     /**
@@ -705,7 +709,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         setupControls.startScoringBtn.addEventListener('click', () => {
-            updateStateFromSetupForm();
+            // Get selected archers from the checkboxes
+            const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
+            const selectedIdxs = Array.from(document.querySelectorAll('#archer-setup-container input[type=checkbox]:checked')).map(cb => parseInt(cb.value));
+            state.archers = selectedIdxs.map(idx => {
+                const a = masterList[idx];
+                return {
+                    id: a.id || idx + 1,
+                    firstName: a.first || '',
+                    lastName: a.last || '',
+                    school: a.school || '',
+                    level: a.level || 'V',
+                    gender: a.gender || 'M',
+                    targetSize: a.size || '40cm',
+                    scores: Array.from({ length: state.totalEnds }, () => ['', '', ''])
+                };
+            });
             state.currentView = 'scoring';
             renderView();
             saveData();
