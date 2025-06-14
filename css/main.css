@@ -332,7 +332,7 @@ hr {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: 5vh;
+  padding-top: 2vh;
   z-index: 2000;
 }
 
@@ -386,7 +386,7 @@ body {
 
 /* Debug styles - will show if CSS is loading */
 body::before {
-    content: 'CSS Loaded';
+    content: 'inline css.1 loaded';
     position: fixed;
     top: 0;
     right: 0;
