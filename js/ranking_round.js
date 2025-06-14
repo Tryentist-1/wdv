@@ -192,24 +192,61 @@ document.addEventListener('DOMContentLoaded', () => {
         // Helper to render the list
         function renderArcherSelectList(filter = '') {
             listDiv.innerHTML = '';
+            
+            // Add a favorites section header if there are favorites
+            const hasFavorites = masterList.some(a => a.fave);
+            if (hasFavorites) {
+                const favHeader = document.createElement('div');
+                favHeader.style.padding = '0.8em';
+                favHeader.style.backgroundColor = '#f8f9fa';
+                favHeader.style.borderBottom = '1px solid #dee2e6';
+                favHeader.style.fontWeight = 'bold';
+                favHeader.style.fontSize = '1.1em';
+                favHeader.textContent = '★ Favorites';
+                listDiv.appendChild(favHeader);
+            }
+
             // Sort: favorites first, then by name
             const sorted = masterList.slice().sort((a, b) => {
                 if (b.fave !== a.fave) return b.fave - a.fave;
                 return (a.last + a.first).localeCompare(b.last + b.first);
             });
+
             sorted.forEach((archer, idx) => {
                 const name = `${archer.first} ${archer.last}`.toLowerCase();
                 if (!name.includes(filter.toLowerCase())) return;
+
+                // Add a separator between favorites and non-favorites
+                if (idx > 0 && archer.fave !== sorted[idx-1].fave) {
+                    const separator = document.createElement('div');
+                    separator.style.padding = '0.8em';
+                    separator.style.backgroundColor = '#f8f9fa';
+                    separator.style.borderBottom = '1px solid #dee2e6';
+                    separator.style.fontWeight = 'bold';
+                    separator.style.fontSize = '1.1em';
+                    separator.textContent = '☆ All Archers';
+                    listDiv.appendChild(separator);
+                }
+
                 const row = document.createElement('div');
                 row.style.display = 'flex';
                 row.style.alignItems = 'center';
-                row.style.marginBottom = '0.3em';
+                row.style.marginBottom = '0.5em';
+                row.style.padding = '0.8em';
+                row.style.borderRadius = '8px';
+                row.style.cursor = 'pointer';
+                row.style.backgroundColor = '#ffffff';
+                row.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+
                 // Star (favorite toggle)
                 const star = document.createElement('span');
                 star.textContent = archer.fave ? '★' : '☆';
                 star.style.cursor = 'pointer';
-                star.style.fontSize = '1.2em';
+                star.style.fontSize = '1.4em';
                 star.style.color = archer.fave ? '#e6b800' : '#ccc';
+                star.style.marginRight = '0.8em';
+                star.style.minWidth = '1.2em';
+                star.style.textAlign = 'center';
                 star.onclick = (e) => {
                     e.stopPropagation();
                     const realIdx = masterList.findIndex(a => a.first === archer.first && a.last === archer.last);
@@ -220,23 +257,39 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
                 row.appendChild(star);
+
                 // Checkbox
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.value = masterList.indexOf(archer);
+                checkbox.style.marginRight = '0.8em';
+                checkbox.style.width = '1.2em';
+                checkbox.style.height = '1.2em';
                 // Pre-select favorites on first render
                 if (
-                  (state.archers.length === 0 && archer.fave) ||
-                  state.archers.some(a => a.firstName === archer.first && a.lastName === archer.last)
+                    (state.archers.length === 0 && archer.fave) ||
+                    state.archers.some(a => a.firstName === archer.first && a.lastName === archer.last)
                 ) {
-                  checkbox.checked = true;
+                    checkbox.checked = true;
                 }
                 row.appendChild(checkbox);
+
                 // Name label
                 const label = document.createElement('label');
-                label.textContent = ` ${archer.first} ${archer.last} (${archer.grade || ''} ${archer.gender || ''} ${archer.level || ''})`;
-                label.style.marginLeft = '0.5em';
+                label.textContent = `${archer.first} ${archer.last}`;
+                label.style.flex = '1';
+                label.style.cursor = 'pointer';
+                label.style.fontSize = '1.1em';
                 row.appendChild(label);
+
+                // Details
+                const details = document.createElement('span');
+                details.textContent = `(${archer.grade || ''} ${archer.gender || ''} ${archer.level || ''})`;
+                details.style.color = '#6c757d';
+                details.style.fontSize = '0.9em';
+                details.style.marginLeft = '0.5em';
+                row.appendChild(details);
+
                 listDiv.appendChild(row);
             });
         }
@@ -663,13 +716,18 @@ document.addEventListener('DOMContentLoaded', () => {
      * Resets the application state to its initial default.
      */
     function resetState() {
+        // First hide the modal
+        resetModal.element.style.display = 'none';
+        
+        // Then reset the state
         state.archers = [];
         state.currentEnd = 1;
         state.currentView = 'setup';
+        
+        // Save and render
         saveData();
         renderView();
         renderSetupForm(); // Re-import the master list after reset
-        resetModal.element.style.display = 'none';
     }
     
     /**
@@ -770,9 +828,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // --- RESET MODAL LISTENERS ---
-        scoringControls.newRoundBtn.addEventListener('click', () => resetModal.element.style.display = 'block');
-        resetModal.cancelBtn.addEventListener('click', () => resetModal.element.style.display = 'none');
-        resetModal.resetBtn.addEventListener('click', resetState);
+        scoringControls.newRoundBtn.addEventListener('click', () => {
+            resetModal.element.style.display = 'flex'; // Use flex to ensure proper centering
+        });
+        
+        resetModal.cancelBtn.addEventListener('click', () => {
+            resetModal.element.style.display = 'none';
+        });
+        
+        resetModal.resetBtn.addEventListener('click', () => {
+            resetState();
+        });
+        
         resetModal.sampleBtn.addEventListener('click', () => {
             loadSampleData();
             state.currentView = 'scoring';
