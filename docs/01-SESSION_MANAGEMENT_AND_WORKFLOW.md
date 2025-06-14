@@ -132,3 +132,26 @@ This pattern ensures a predictable, one-way data flow (State -> Render -> DOM), 
 
 
 **Overall Goal:** 
+
+## Progress
+- Designed and iterated Archer Module UI/UX mockups (compressed detail form, list view)
+- Defined CSV import/export structure matching Google Sheets for easy data round-tripping
+- Established folder structure: `app-imports/` and `app-exports/` for future automation
+- Agreed on using local storage for the master archer list, accessible across all scoring modules
+- Planned for import/export features and SMS export for results
+
+## Plan
+1. **Implement Archer Management Module**
+   - Load/save archer list from/to local storage
+   - Import from CSV (manual or via file picker)
+   - Add, edit, delete archers in the UI
+   - Export current list as CSV
+2. **Integrate with Ranking Round App**
+   - Select archers from the master list for each round
+   - Store round data (archers + scores) in local storage
+   - Export round/bale results as CSV and SMS
+
+## Notes
+- All archer data is managed in local storage for now (per device/browser)
+- Import/export folders (`app-imports/`, `app-exports/`) will support future automation and batch operations
+- CSV format is kept consistent for easy syncing with Google Sheets 

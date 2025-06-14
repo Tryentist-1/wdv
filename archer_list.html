@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archer List</title>
+  <link rel="stylesheet" href="css/main.css" onerror="this.onerror=null;this.href='css/style.css';">
+  <style>
+    body { background: #f7f7f7; }
+    .archer-list-container { max-width: 500px; margin: 1.5em auto 4em auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); padding: 1em 0.5em 0.5em 0.5em; }
+    .archer-list-header { text-align: center; font-size: 1.3em; font-weight: 600; margin-bottom: 0.7em; }
+    .archer-search-bar { width: 100%; padding: 0.5em; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 0.7em; font-size: 1em; }
+    .archer-table { width: 100%; border-collapse: collapse; font-size: 0.98em; }
+    .archer-table th, .archer-table td { padding: 0.35em 0.2em; text-align: center; }
+    .archer-table th { background: #f0f0f0; font-weight: 600; font-size: 0.97em; }
+    .archer-table tr { border-bottom: 1px solid #eee; }
+    .fave-star { font-size: 1.2em; color: #e6b800; cursor: pointer; user-select: none; }
+    .fave-star.not { color: #ccc; }
+    .edit-btn, .delete-btn { background: none; border: none; font-size: 1.1em; margin: 0 0.2em; cursor: pointer; padding: 0.2em 0.5em; border-radius: 4px; transition: background 0.2s; }
+    .edit-btn { color: #2d8f4e; }
+    .edit-btn:hover { background: #e6f7ea; }
+    .delete-btn { color: #b23c3c; font-weight: bold; }
+    .delete-btn:hover { background: #fbeaea; }
+    .add-archer-btn { position: fixed; bottom: 1.2em; left: 50%; transform: translateX(-50%); background: #2d8f4e; color: #fff; border: none; border-radius: 50px; padding: 0.9em 2.2em; font-size: 1.1em; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.13); cursor: pointer; z-index: 100; transition: background 0.2s; }
+    .add-archer-btn:hover { background: #23703b; }
+    .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
+    .modal-content { background: #fff; padding: 1.2em 1em; border-radius: 8px; max-width: 400px; width: 95vw; }
+    .modal-header { font-weight: bold; margin-bottom: 1em; text-align: center; }
+    .modal-actions { margin-top: 1em; text-align: right; }
+    .form-row { display: flex; gap: 0.5em; margin-bottom: 0.6em; }
+    .form-row .form-group { flex: 1; display: flex; flex-direction: column; }
+    .form-group label { font-size: 0.92em; font-weight: 500; margin-bottom: 0.1em; }
+    .form-group input, .form-group select { padding: 0.35em 0.4em; border: 1px solid #ccc; border-radius: 4px; font-size: 0.98em; }
+    @media (max-width: 600px) { .archer-list-container { max-width: 99vw; padding: 0.5em 0.1em 0.5em 0.1em; } .archer-table th, .archer-table td { font-size: 0.93em; padding: 0.25em 0.1em; } .add-archer-btn { font-size: 1em; padding: 0.7em 1.5em; } .modal-content { max-width: 98vw; } }
+  </style>
+</head>
+<body>
+  <div class="archer-list-container">
+    <div class="archer-list-header">Archer List</div>
+    <input class="archer-search-bar" type="text" id="search" placeholder="Search archers...">
+    <table class="archer-table">
+      <thead>
+        <tr>
+          <th>FAVE</th>
+          <th>First</th>
+          <th>Last</th>
+          <th>Grade</th>
+          <th>Gend</th>
+          <th>Level</th>
+          <th>EDIT</th>
+          <th>X</th>
+        </tr>
+      </thead>
+      <tbody id="archer-list-tbody">
+        <!-- Dynamic rows -->
+      </tbody>
+    </table>
+  </div>
+  <button class="add-archer-btn" id="add-archer-btn">+ Add Archer</button>
+
+  <!-- Archer Modal -->
+  <div class="modal" id="archer-modal">
+    <div class="modal-content">
+      <div class="modal-header" id="modal-title">Add Archer</div>
+      <form id="archer-form">
+        <input type="hidden" id="archer-index">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="first">First Name*</label>
+            <input type="text" id="first" required>
+          </div>
+          <div class="form-group">
+            <label for="last">Last Name*</label>
+            <input type="text" id="last" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="school">School</label>
+            <input type="text" id="school">
+          </div>
+          <div class="form-group">
+            <label for="grade">Grade*</label>
+            <select id="grade" required>
+              <option value="09">09</option>
+              <option value="10" selected>10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="gender">Gender*</label>
+            <select id="gender" required>
+              <option value="M">M</option>
+              <option value="F">F</option>
+              <option value="X">X</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="level">Level</label>
+            <select id="level">
+              <option value="VAR">VAR</option>
+              <option value="JV">JV</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email">
+          </div>
+          <div class="form-group">
+            <label for="usarchery">USArchery</label>
+            <input type="text" id="usarchery">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="bale">Bale</label>
+            <input type="text" id="bale" maxlength="2">
+          </div>
+          <div class="form-group">
+            <label for="target">Target</label>
+            <input type="text" id="target" maxlength="1">
+          </div>
+          <div class="form-group">
+            <label for="size">Size</label>
+            <input type="text" id="size" maxlength="7">
+          </div>
+          <div class="form-group">
+            <label for="jvpr">JV PR</label>
+            <input type="number" id="jvpr" min="0" max="360">
+          </div>
+          <div class="form-group">
+            <label for="varpr">VAR PR</label>
+            <input type="number" id="varpr" min="0" max="360">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fave">Favorite</label>
+            <select id="fave">
+              <option value="false">☆</option>
+              <option value="true">★</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-save">Save</button>
+          <button type="button" class="btn btn-cancel" id="cancel-archer-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="global-footer">
+    <a href="index.html" class="btn btn-secondary">Home</a>
+    <button id="save-export-btn" class="btn btn-success">Save & Export</button>
+    <button id="new-list-btn" class="btn btn-danger">New List</button>
+  </footer>
+
+  <script src="js/archer_module.js"></script>
+  <script>
+    // --- State ---
+    let archerList = [];
+    let editingIndex = null;
+
+    // --- Render List ---
+    function renderList() {
+      const tbody = document.getElementById('archer-list-tbody');
+      const search = document.getElementById('search').value.toLowerCase();
+      tbody.innerHTML = '';
+      archerList.forEach((a, idx) => {
+        if (
+          a.first.toLowerCase().includes(search) ||
+          a.last.toLowerCase().includes(search) ||
+          (a.grade || '').toString().includes(search) ||
+          (a.gender || '').toLowerCase().includes(search) ||
+          (a.level || '').toLowerCase().includes(search)
+        ) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><span class="fave-star${a.fave ? '' : ' not'}" onclick="toggleFave(${idx})">${a.fave ? '★' : '☆'}</span></td>
+            <td>${a.first}</td>
+            <td>${a.last}</td>
+            <td>${a.grade}</td>
+            <td>${a.gender}</td>
+            <td>${a.level}</td>
+            <td><button class="edit-btn" onclick="editArcher(${idx})">Edit</button></td>
+            <td><button class="delete-btn" onclick="deleteArcher(${idx})">X</button></td>
+          `;
+          tbody.appendChild(tr);
+        }
+      });
+    }
+
+    // --- Modal Logic ---
+    const modal = document.getElementById('archer-modal');
+    document.getElementById('add-archer-btn').onclick = () => {
+      editingIndex = null;
+      document.getElementById('modal-title').textContent = 'Add Archer';
+      document.getElementById('archer-form').reset();
+      document.getElementById('fave').value = 'false';
+      modal.style.display = 'flex';
+    };
+    document.getElementById('cancel-archer-btn').onclick = () => {
+      modal.style.display = 'none';
+    };
+    window.onclick = function(event) {
+      if (event.target == modal) modal.style.display = 'none';
+    };
+
+    // --- Add/Edit Archer ---
+    document.getElementById('archer-form').onsubmit = function(e) {
+      e.preventDefault();
+      const archer = {
+        first: document.getElementById('first').value.trim(),
+        last: document.getElementById('last').value.trim(),
+        school: document.getElementById('school').value.trim(),
+        grade: document.getElementById('grade').value,
+        gender: document.getElementById('gender').value,
+        level: document.getElementById('level').value,
+        email: document.getElementById('email').value.trim(),
+        usarchery: document.getElementById('usarchery').value.trim(),
+        bale: document.getElementById('bale').value.trim(),
+        target: document.getElementById('target').value.trim(),
+        size: document.getElementById('size').value.trim(),
+        jvPr: document.getElementById('jvpr').value,
+        varPr: document.getElementById('varpr').value,
+        fave: document.getElementById('fave').value === 'true',
+      };
+      if (editingIndex !== null) {
+        ArcherModule.editArcher(editingIndex, archer);
+      } else {
+        ArcherModule.addArcher(archer);
+      }
+      archerList = ArcherModule.loadList();
+      renderList();
+      modal.style.display = 'none';
+    };
+
+    // --- Edit Archer ---
+    window.editArcher = function(idx) {
+      editingIndex = idx;
+      const a = archerList[idx];
+      document.getElementById('modal-title').textContent = 'Edit Archer';
+      document.getElementById('first').value = a.first;
+      document.getElementById('last').value = a.last;
+      document.getElementById('school').value = a.school || '';
+      document.getElementById('grade').value = a.grade;
+      document.getElementById('gender').value = a.gender;
+      document.getElementById('level').value = a.level;
+      document.getElementById('email').value = a.email || '';
+      document.getElementById('usarchery').value = a.usarchery || '';
+      document.getElementById('bale').value = a.bale || '';
+      document.getElementById('target').value = a.target || '';
+      document.getElementById('size').value = a.size || '';
+      document.getElementById('jvpr').value = a.jvPr || '';
+      document.getElementById('varpr').value = a.varPr || '';
+      document.getElementById('fave').value = a.fave ? 'true' : 'false';
+      modal.style.display = 'flex';
+    };
+
+    // --- Delete Archer ---
+    window.deleteArcher = function(idx) {
+      if (confirm('Delete this archer?')) {
+        ArcherModule.deleteArcher(idx);
+        archerList = ArcherModule.loadList();
+        renderList();
+      }
+    };
+
+    // --- Toggle Fave ---
+    window.toggleFave = function(idx) {
+      archerList[idx].fave = !archerList[idx].fave;
+      ArcherModule.editArcher(idx, archerList[idx]);
+      archerList = ArcherModule.loadList();
+      renderList();
+    };
+
+    // --- Search ---
+    document.getElementById('search').oninput = renderList;
+
+    // --- Initial Load ---
+    (async function() {
+      await ArcherModule.loadDefaultCSVIfNeeded();
+      archerList = ArcherModule.loadList();
+      renderList();
+    })();
+  </script>
+</body>
+</html> 
