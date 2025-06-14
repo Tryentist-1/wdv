@@ -3,8 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>OAS Ranking Round</title>
-    <link rel="stylesheet" href="css/main.css">
+    <!-- Debug styles -->
+    <style>
+        body::before {
+            content: 'Inline CSS Loaded';
+            position: fixed;
+            top: 0;
+            right: 0;
+            background: #000;
+            color: #fff;
+            padding: 2px 5px;
+            font-size: 10px;
+            z-index: 9999;
+        }
+        .global-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background-color: #ffffff !important;
+            border-top: 1px solid #dee2e6;
+            padding: 0.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            z-index: 1000;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/main.css" onerror="console.error('Failed to load main.css')">
+    <script>
+        // Debug logging
+        console.log('Protocol:', window.location.protocol);
+        console.log('Host:', window.location.host);
+        console.log('Path:', window.location.pathname);
+        
+        // Monitor CSS loading
+        document.addEventListener('DOMContentLoaded', function() {
+            const styles = document.styleSheets;
+            console.log('Loaded stylesheets:', styles.length);
+            for(let i = 0; i < styles.length; i++) {
+                try {
+                    console.log('Stylesheet', i, ':', styles[i].href);
+                } catch(e) {
+                    console.log('Stylesheet', i, ': (CORS restricted)');
+                }
+            }
+        });
+    </script>
 </head>
 <body>
 

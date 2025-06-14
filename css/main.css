@@ -57,6 +57,7 @@ body {
   background-color: #f0f2f5;
   color: var(--text-dark);
   -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--footer-height) + 10px);
 }
 
 h1, h2, h3 {
@@ -330,7 +331,7 @@ hr {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 2000;
 }
 
 .modal-content {
@@ -339,6 +340,7 @@ hr {
   border-radius: var(--border-radius);
   max-width: 90%;
   width: 400px;
+  z-index: 2001;
 }
 
 .modal-content h2 {
@@ -357,20 +359,39 @@ hr {
    8. Footer
    ====================== */
 
-.global-footer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--footer-height);
-  padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom)) 0.5rem;
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  background-color: var(--score-white);
-  box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
-  z-index: 1100;
-  background-clip: padding-box;
+/* Global Footer - Updated with more specific selectors */
+body .global-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--footer-height);
+    background-color: #ffffff !important;
+    border-top: 1px solid var(--border-gray);
+    padding: 0.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    z-index: 1000;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+}
+
+/* Ensure content doesn't overlap with footer */
+body {
+    padding-bottom: calc(var(--footer-height) + 10px) !important;
+}
+
+/* Debug styles - will show if CSS is loading */
+body::before {
+    content: 'CSS Loaded';
+    position: fixed;
+    top: 0;
+    right: 0;
+    background: #000;
+    color: #fff;
+    padding: 2px 5px;
+    font-size: 10px;
+    z-index: 9999;
 }
 
 /* ======================
