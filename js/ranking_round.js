@@ -837,7 +837,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         resetModal.resetBtn.addEventListener('click', () => {
-            resetState();
+            resetState(); // This will reset state and hide the modal
         });
         
         resetModal.sampleBtn.addEventListener('click', () => {
