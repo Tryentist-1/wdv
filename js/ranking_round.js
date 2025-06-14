@@ -716,18 +716,11 @@ document.addEventListener('DOMContentLoaded', () => {
      * Resets the application state to its initial default.
      */
     function resetState() {
-        // First hide the modal
-        resetModal.element.style.display = 'none';
-        
-        // Then reset the state
-        state.archers = [];
-        state.currentEnd = 1;
         state.currentView = 'setup';
-        
-        // Save and render
+        state.currentEnd = 1;
+        state.archers = [];
+        state.activeArcherId = null;
         saveData();
-        renderView();
-        renderSetupForm(); // Re-import the master list after reset
     }
     
     /**
@@ -795,6 +788,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         setupControls.startScoringBtn.addEventListener('click', () => {
+            // Force reload the master list first
+            if (typeof ArcherModule !== 'undefined') {
+                ArcherModule.loadList();
+            }
+            
+            // Then refresh the setup form to get latest archer list
+            renderSetupForm();
+            
             // Get selected archers from the checkboxes
             const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
             const selectedIdxs = Array.from(document.querySelectorAll('#archer-setup-container input[type=checkbox]:checked')).map(cb => parseInt(cb.value));
@@ -837,17 +838,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         resetModal.resetBtn.addEventListener('click', () => {
-            resetState(); // This will reset state and hide the modal
+            resetState();
+            resetModal.element.style.display = 'none';
+            showSetupView();
         });
         
         resetModal.sampleBtn.addEventListener('click', () => {
             loadSampleData();
-            state.currentView = 'scoring';
-            renderSetupForm();
-            renderScoringView();
-            renderView();
-            saveData();
             resetModal.element.style.display = 'none';
+            showScoringView();
         });
 
         // --- SCORING & CARD VIEW LISTENERS (STATIC ELEMENTS) ---
