@@ -332,7 +332,7 @@ hr {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding-top: 20vh;
+  padding-top: 10vh;
   z-index: 1000;
 }
 

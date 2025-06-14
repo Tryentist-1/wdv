@@ -840,7 +840,8 @@ document.addEventListener('DOMContentLoaded', () => {
         resetModal.resetBtn.addEventListener('click', () => {
             resetState();
             resetModal.element.style.display = 'none';
-            showSetupView();
+            renderView(); // Re-render the view after reset
+            renderSetupForm(); // Refresh the setup form
         });
         
         resetModal.sampleBtn.addEventListener('click', () => {
