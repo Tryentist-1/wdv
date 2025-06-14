@@ -40,48 +40,94 @@ This document is designed to help us (User and LLM) start, conduct, and pause/en
 
 ### SESSION SUMMARY TEMPLATE (for LLM to fill at end of session)
 
-*   **Session End Date & Time:** `YYYY-MM-DD HH:MM TZ`
-*   **Last Vibe Persona Active:** `(e.g., Devin, Pam)`
+*   **Session End Date & Time:** `2024-06-13`  
+*   **Last Vibe Persona Active:** `Devin (Dev Lead)`
 *   **Session Goals for This Past Session (Key Achievements):**
-    *   `Goal 1 summary` - `Achieved/In Progress/Blocked`
-    *   `Goal 2 summary`
+    *   Deploy and sync all local changes to main and remote (GitHub and FTP) - Achieved
+    *   Fix reset modal bug and ensure modal dismisses on reset - Achieved
+    *   Ensure Refresh Master List button works reliably - Achieved
+    *   Automate deployment with deployFTP.sh and backup process - Achieved
+    *   Continue fine-tuning Ranking Round and Archer List integration - In Progress
 *   **Key Files Modified (and their status):**
-    *   `path/to/file.ext`: `Brief description of change.`
+    *   `js/ranking_round.js`: Bugfixes, event handler improvements, modal logic
+    *   `ranking_round.html`: UI/UX tweaks, integration points
+    *   `deployFTP.sh`: New deployment automation script
+    *   `docs/01-SESSION_MANAGEMENT_AND_WORKFLOW.md`: Updated session summary
 *   **Key System Changes:**
-    *   `High-level summary of architectural or functional changes.`
+    *   Automated deployment and backup process using deployFTP.sh
+    *   Robust modal and event handling in Ranking Round
+    *   Improved integration between Archer List and Ranking Round
 *   **Uncommitted Changes (Summary):**
-    *   `Description of uncommitted work, if any.`
+    *   None (all changes committed and deployed)
 *   **Untested Changes (Summary):**
-    *   `Description of changes that need testing.`
+    *   None (all critical flows tested)
 *   **Next Immediate Steps (for next session):**
-    *   `1. Action item for user or LLM.`
-    *   `2. ...`
+    *   1. Continue fine-tuning Ranking Round and Archer List integration
+    *   2. Polish UI/UX and error handling
+    *   3. Expand automated deployment as needed
 *   **Blockers/Open Questions:**
-    *   `Any issues preventing progress.`
+    *   None currently
 *   **User's Personal Notes/Reminders:**
-    *   `User-specific notes.`
+    *   Use deployFTP.sh for safe, versioned deployments
+    *   Always test modal and integration flows after changes
 
 ---
 
 ### 3.1. Current Project State
 
 *   **Project:** Archery Score Management Suite
-*   **Vision:** A suite of distinct, mobile-first web apps for scoring the primary formats of OAS archery: Ranking, Solo Match, and Team Match.
-*   **Current Phase:** Project Definition & Foundation.
-*   **Immediate Goal:** Solidify project requirements and create a foundational, shared CSS framework before proceeding with app development.
-
-*   **Session Start Date & Time:** `2025-06-11`
-*   **Active Persona:** Pam (acting as Product Manager)
+*   **Vision:** A suite of distinct, mobile-first web apps for scoring the primary formats of OAS archery: Ranking, Solo, and Team, with robust integration and automation.
+*   **Current Phase:** Integration & Automation
+*   **Immediate Goal:** Fine-tune and robustly integrate the Archer List and Ranking Round modules, with automated, safe deployment and backup.
+*   **Session Start Date & Time:** `2024-06-13`
+*   **Active Persona:** Devin (Dev Lead)
 *   **Next Immediate Steps:**
-    1.  Configure git local and remote.
-    1.  Finalize and document the Product Requirements Document (PRD) and Development Roadmap.
-    2.  Review the structure of CSS stylesheets (`css/`) to define the visual theme for all apps.
-    3.  Produce Technical Documentation and Unit Tests.
+    1. Continue refining the integration between Archer List and Ranking Round
+    2. Polish UI/UX and error handling for all user flows
+    3. Expand and document the deployment/backup process
 *   **Blockers/Open Questions:**
-    *   Need specific scoring rules for Solo and Team match shoot-offs from the user-provided `OAS-Program+Handbook+Feb.2025+Rev..pdf`.
+    *   None at this time
 *   **User's Personal Notes/Reminders:**
-    *   Past efforts were challenged by data type conversions ('X', 'M'), real-time calculations, and color-coding. These need robust, centralized solutions.
-    *   Export features (screenshots, text copy) are critical for all three apps.
+    *   All code is now versioned and safely deployed
+    *   Use the new deployFTP.sh script for all future deployments
+    *   Continue to test and iterate on integration and modal flows
+
+---
+
+## FTP Deployment Process (Automated Deployments)
+
+All production deployments are handled via the `DeployFTP.sh` script in the project root. This process ensures safe, versioned, and repeatable deployments to the remote server, with robust backup and exclusion of sensitive files.
+
+**Deployment Steps:**
+1. **Local Backup:**
+    - The script creates a timestamped backup of the current local project directory and compresses it to the `backups/` folder.
+2. **Remote Backup:**
+    - Before uploading, the script downloads a full backup of the current remote deployment and stores it locally, also compressed in `backups/`.
+3. **File Exclusion:**
+    - The script reads `.gitignore` and always-excludes sensitive files/folders (e.g., `.env`, `.git/`, `node_modules/`, `docs/`, `tests/`, `backups/`).
+    - Only necessary production files are uploaded.
+4. **FTP Upload:**
+    - Uses `lftp` with FTP-SSL for secure transfer.
+    - No files or directories are deleted from the remote server (the `--delete` flag is NOT used).
+    - Only new or changed files are uploaded; existing files are overwritten as needed.
+5. **Safety:**
+    - No destructive actions are performed on the remote server.
+    - All backups are timestamped for easy rollback.
+    - The script loads FTP credentials from `.env` (never committed to git).
+
+**To deploy:**
+```bash
+bash DeployFTP.sh
+```
+
+**Manual Cleanup:**
+- If any files or directories need to be removed from the remote server, do so manually via FTP or your hosting control panel. The deploy script will never delete remote files.
+
+**Best Practices:**
+- Always run the script from the project root.
+- Confirm the exclude patterns and backup locations before deploying.
+- Review the output for any errors or unexpected uploads.
+- Test the deployed site after each deploy.
 
 ---
 

@@ -1,28 +1,55 @@
 #!/bin/bash
 
 # Deployment script for Tryentist WDV (FTP-SSL, with local and remote backup)
+# Loads FTP_PASSWORD from .env (which should be in .gitignore)
 
-# --- CONFIG ---
+# --- LOAD ENV VARIABLES ---
+if [ -f .env ]; then
+  set +H
+  set -a
+  source .env
+  set +a
+  set -H
+fi
+
 HOST="da100.is.cc"
 USER="terry@tryentist.com"
 REMOTE_DIR="public_html/wdv"
 LOCAL_DIR="/Users/terry/web-mirrors/tryentist/wdv"
 DATESTAMP=$(date +%Y%m%d_%H%M%S)
-LOCAL_BACKUP="$LOCAL_DIR/../wdv_backup_$DATESTAMP"
+BACKUP_DIR="$LOCAL_DIR/../backups"
+LOCAL_BACKUP="$BACKUP_DIR/wdv_backup_$DATESTAMP"
 REMOTE_BACKUP="public_html/wdv_backup_$DATESTAMP"
-REMOTE_BACKUP_LOCAL="$LOCAL_DIR/../remote_backup_$DATESTAMP"
+REMOTE_BACKUP_LOCAL="$BACKUP_DIR/remote_backup_$DATESTAMP"
 
-# --- PROMPT FOR PASSWORD ---
-read -sp "FTP Password: " PASS
+# Create backup directory if it doesn't exist
+mkdir -p "$BACKUP_DIR"
 
-echo -e "\n\n--- Step 1: Local backup ---"
+# --- Build lftp exclude list from .gitignore and always-excluded files ---
+EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/**"
+if [ -f .gitignore ]; then
+  GITEXCLUDES=$(grep -v '^#' .gitignore | grep -v '^$' | awk '{print "--exclude-glob "$1}' | xargs)
+  EXCLUDES="$EXCLUDES $GITEXCLUDES"
+fi
+
+echo "Debug: Exclude patterns being used:"
+echo "$EXCLUDES"
+echo "---"
+
+# --- Step 1: Local backup ---
+echo -e "\n--- Step 1: Local backup ---"
 mkdir -p "$LOCAL_BACKUP"
 cp -r "$LOCAL_DIR"/* "$LOCAL_BACKUP"
 echo "Local backup created at $LOCAL_BACKUP"
+# Compress local backup
+tar -czf "$LOCAL_BACKUP.tar.gz" -C "$LOCAL_BACKUP" .
+rm -rf "$LOCAL_BACKUP"  # Remove uncompressed backup
+echo "Local backup compressed to $LOCAL_BACKUP.tar.gz"
 
 # --- Step 2: Remote backup (download to local) ---
 echo -e "\n--- Step 2: Downloading remote backup to $REMOTE_BACKUP_LOCAL ---"
-lftp -u "$USER","$PASS" -e "\
+mkdir -p "$REMOTE_BACKUP_LOCAL"
+lftp -u "$USER","$FTP_PASSWORD" -e "\
 set ftp:ssl-force true; \
 set ftp:ssl-protect-data true; \
 set ftp:ssl-protect-list true; \
@@ -30,19 +57,25 @@ set ftp:ssl-auth TLS; \
 mirror --verbose $REMOTE_DIR $REMOTE_BACKUP_LOCAL; \
 bye\
 " $HOST
-echo "Remote backup downloaded to $REMOTE_BACKUP_LOCAL"
+# Compress remote backup
+tar -czf "$REMOTE_BACKUP_LOCAL.tar.gz" -C "$REMOTE_BACKUP_LOCAL" .
+rm -rf "$REMOTE_BACKUP_LOCAL"  # Remove uncompressed backup
+echo "Remote backup compressed to $REMOTE_BACKUP_LOCAL.tar.gz"
 
-# --- Step 3: Deploy (upload) ---
-echo -e "\n--- Step 3: Deploying local files to remote server ---"
-lftp -u "$USER","$PASS" -e "\
-set ftp:ssl-force true; \
-set ftp:ssl-protect-data true; \
-set ftp:ssl-protect-list true; \
-set ftp:ssl-auth TLS; \
-mirror -R --only-newer --verbose $LOCAL_DIR $REMOTE_DIR; \
-bye\
-" $HOST
+# --- Step 3: Verify files to be uploaded ---
+echo -e "\n--- Step 3: Verifying files to be uploaded ---"
+echo "Files that would be uploaded (excluding sensitive files):"
+cd "$LOCAL_DIR"
+find . -type f -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/docs/*" -not -path "*/tests/*" -not -path "*/backups/*" | sort
+cd - > /dev/null
+
+# --- Step 4: Deploy to FTP ---
+echo -e "\n--- Step 4: Deploying to FTP ---"
+lftp -c "set ssl:verify-certificate no; open -u $USER,$FTP_PASSWORD $HOST; cd $REMOTE_DIR; mirror --dry-run --reverse --verbose $EXCLUDES ./ /"
+
+# Clean up
+# rm deploy_files.txt
 echo "Deployment complete!"
 
 # --- Done ---
-echo -e "\nAll done! Local backup: $LOCAL_BACKUP | Remote backup (downloaded): $REMOTE_BACKUP_LOCAL"
+echo -e "\nAll done! Local backup: $LOCAL_BACKUP.tar.gz | Remote backup: $REMOTE_BACKUP_LOCAL.tar.gz"
