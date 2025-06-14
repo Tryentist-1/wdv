@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentEnd: 1,
         totalEnds: 12, // Default for a 360 round
         date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-        archers: [], // { id, firstName, lastName, school, level, gender, scores }
+        archers: [], // { id, firstName, lastName, school, level, gender, scores, targetSize? }
         activeArcherId: null, // For card view
     };
 
@@ -188,6 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <option value="M" ${archer.gender === 'M' ? 'selected' : ''}>M</option>
                         <option value="F" ${archer.gender === 'F' ? 'selected' : ''}>F</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label>Target Size</label>
+                    <input type="text" class="archer-targetsize-input" value="${archer.targetSize || '40cm'}" placeholder="Target Size (e.g. 40cm)">
                 </div>
                 <button class="btn btn-danger remove-archer-btn">&times;</button>
             `;
@@ -627,7 +631,8 @@ document.addEventListener('DOMContentLoaded', () => {
             id: 1, 
             firstName: 'Archer', lastName: '1', 
             school: '', level: 'V', gender: 'M',
-            scores: Array.from({ length: state.totalEnds }, () => ['', '', '']) 
+            scores: Array.from({ length: state.totalEnds }, () => ['', '', '']),
+            targetSize: '40cm'
         });
         renderSetupForm();
         renderScoringView();
@@ -650,6 +655,23 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Initializing Ranking Round App...");
         loadData(); // Load data first
 
+        // Load master archer list if no archers in session
+        if (typeof ArcherModule !== 'undefined' && state.archers.length === 0) {
+            const masterList = ArcherModule.loadList();
+            if (masterList.length > 0) {
+                state.archers = masterList.map((a, i) => ({
+                    id: a.id || i + 1,
+                    firstName: a.first || '',
+                    lastName: a.last || '',
+                    school: a.school || '',
+                    level: a.level || 'V',
+                    gender: a.gender || 'M',
+                    targetSize: a.size || '40cm',
+                    scores: Array.from({ length: state.totalEnds }, () => ['', '', ''])
+                }));
+            }
+        }
+
         renderKeypad();
 
         // If no archers, add a default one. Otherwise, render the loaded state.
@@ -658,7 +680,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: 1, 
                 firstName: 'Archer', lastName: '1', 
                 school: '', level: 'V', gender: 'M',
-                scores: Array.from({ length: state.totalEnds }, () => ['', '', '']) 
+                scores: Array.from({ length: state.totalEnds }, () => ['', '', '']),
+                targetSize: '40cm'
             });
         }
         
@@ -674,7 +697,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 id: newId, 
                 firstName: 'Archer', lastName: `${newId}`, 
                 school: '', level: 'V', gender: 'M',
-                scores: Array.from({ length: state.totalEnds }, () => ['', '', '']) 
+                scores: Array.from({ length: state.totalEnds }, () => ['', '', '']),
+                targetSize: '40cm'
             });
             renderSetupForm();
             saveData();
@@ -776,7 +800,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 school: row.querySelector('.archer-school-input').value.toUpperCase(),
                 level: row.querySelector('.archer-level-select').value,
                 gender: row.querySelector('.archer-gender-select').value,
-                scores: scores
+                scores: scores,
+                targetSize: row.querySelector('.archer-targetsize-input').value || '40cm'
             });
         });
         state.archers = newArchers;
@@ -787,19 +812,19 @@ document.addEventListener('DOMContentLoaded', () => {
             { id: 1, firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', scores: [
                 ['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],
                 ['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9'], ['10','10','10'], ['8','8','7']
-            ] },
+            ], targetSize: '40cm' },
             { id: 2, firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', scores: [
                 ['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],
                 ['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M'], ['7','7','8'], ['9','9','10']
-            ] },
+            ], targetSize: '40cm' },
             { id: 3, firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', scores: [
                 ['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],
                 ['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M'], ['7','6','X'], ['10','9','8']
-            ] },
+            ], targetSize: '40cm' },
             { id: 4, firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', scores: [
                 ['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],
                 ['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6'], ['X','X','X'], ['9','9','8']
-            ] },
+            ], targetSize: '40cm' },
         ];
     }
 
