@@ -192,16 +192,38 @@ document.addEventListener('DOMContentLoaded', () => {
         // Helper to render the list
         function renderArcherSelectList(filter = '') {
             listDiv.innerHTML = '';
-            masterList.forEach((archer, idx) => {
+            // Sort: favorites first, then by name
+            const sorted = masterList.slice().sort((a, b) => {
+                if (b.fave !== a.fave) return b.fave - a.fave;
+                return (a.last + a.first).localeCompare(b.last + b.first);
+            });
+            sorted.forEach((archer, idx) => {
                 const name = `${archer.first} ${archer.last}`.toLowerCase();
                 if (!name.includes(filter.toLowerCase())) return;
                 const row = document.createElement('div');
                 row.style.display = 'flex';
                 row.style.alignItems = 'center';
                 row.style.marginBottom = '0.3em';
+                // Star (favorite toggle)
+                const star = document.createElement('span');
+                star.textContent = archer.fave ? '★' : '☆';
+                star.style.cursor = 'pointer';
+                star.style.fontSize = '1.2em';
+                star.style.color = archer.fave ? '#e6b800' : '#ccc';
+                star.onclick = (e) => {
+                    e.stopPropagation();
+                    const realIdx = masterList.findIndex(a => a.first === archer.first && a.last === archer.last);
+                    if (realIdx !== -1) {
+                        masterList[realIdx].fave = !masterList[realIdx].fave;
+                        if (typeof ArcherModule !== 'undefined') ArcherModule.saveList(masterList);
+                        renderArcherSelectList(filter);
+                    }
+                };
+                row.appendChild(star);
+                // Checkbox
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
-                checkbox.value = idx;
+                checkbox.value = masterList.indexOf(archer);
                 // Pre-select favorites on first render
                 if (
                   (state.archers.length === 0 && archer.fave) ||
@@ -210,8 +232,9 @@ document.addEventListener('DOMContentLoaded', () => {
                   checkbox.checked = true;
                 }
                 row.appendChild(checkbox);
+                // Name label
                 const label = document.createElement('label');
-                label.textContent = `${archer.fave ? '★ ' : ''}${archer.first} ${archer.last} (${archer.grade || ''} ${archer.gender || ''} ${archer.level || ''})`;
+                label.textContent = ` ${archer.first} ${archer.last} (${archer.grade || ''} ${archer.gender || ''} ${archer.level || ''})`;
                 label.style.marginLeft = '0.5em';
                 row.appendChild(label);
                 listDiv.appendChild(row);
