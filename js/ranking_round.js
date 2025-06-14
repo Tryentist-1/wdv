@@ -157,6 +157,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Load master list for selection
         const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
+        
+        // Sort master list to put favorites first
+        masterList.sort((a, b) => {
+            if (a.fave && !b.fave) return -1;
+            if (!a.fave && b.fave) return 1;
+            return 0;
+        });
+
         if (state.archers.length === 0) {
             // If no archers are set, load the master list and pre-select favorites
             masterList.forEach(archer => {
@@ -198,19 +206,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (hasFavorites) {
                 const favHeader = document.createElement('div');
                 favHeader.style.padding = '0.8em';
-                favHeader.style.backgroundColor = '#f8f9fa';
-                favHeader.style.borderBottom = '1px solid #dee2e6';
                 favHeader.style.fontWeight = 'bold';
-                favHeader.style.fontSize = '1.1em';
-                favHeader.textContent = '★ Favorites';
+                favHeader.style.backgroundColor = '#f8f9fa';
+                favHeader.textContent = 'Favorites';
                 listDiv.appendChild(favHeader);
             }
-
-            // Sort: favorites first, then by name
-            const sorted = masterList.slice().sort((a, b) => {
-                if (b.fave !== a.fave) return b.fave - a.fave;
-                return (a.last + a.first).localeCompare(b.last + b.first);
-            });
 
             sorted.forEach((archer, idx) => {
                 const name = `${archer.first} ${archer.last}`.toLowerCase();
@@ -799,6 +799,16 @@ document.addEventListener('DOMContentLoaded', () => {
             // Get selected archers from the checkboxes
             const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
             const selectedIdxs = Array.from(document.querySelectorAll('#archer-setup-container input[type=checkbox]:checked')).map(cb => parseInt(cb.value));
+            
+            // If no archers are selected, keep the current list
+            if (selectedIdxs.length === 0) {
+                state.currentView = 'scoring';
+                renderView();
+                saveData();
+                return;
+            }
+            
+            // Otherwise, update with selected archers
             state.archers = selectedIdxs.map(idx => {
                 const a = masterList[idx];
                 return {
