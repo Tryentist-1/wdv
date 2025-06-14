@@ -155,3 +155,10 @@ This pattern ensures a predictable, one-way data flow (State -> Render -> DOM), 
 - All archer data is managed in local storage for now (per device/browser)
 - Import/export folders (`app-imports/`, `app-exports/`) will support future automation and batch operations
 - CSV format is kept consistent for easy syncing with Google Sheets 
+
+## Integration Plan: Archer List with Ranking Round
+- Created a feature branch (`feature/ranking-round-archer-integration`) for safe, isolated development
+- Tagged the current MVP as `archer-list-mvp` for easy rollback if needed
+- Goal: Allow the Ranking Round app to select archers from the master list managed by the Archer Management module
+- All integration work will be committed incrementally to the feature branch
+- If any issues arise, we can revert to the `archer-list-mvp` tag for a stable baseline 

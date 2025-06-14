@@ -251,16 +251,14 @@
             
             // Process the form data with split name fields
             const setupData = { 
-                t1School: setupT1School ? setupT1School.value : '',
-                t1Gender: setupT1Gender ? setupT1Gender.value : 'M',
-                t1Level: setupT1Level ? setupT1Level.value : 'JV',
-                t1Group: setupT1Group ? setupT1Group.value : '',
-                t2School: setupT2School ? setupT2School.value : '',
-                t2Gender: setupT2Gender ? setupT2Gender.value : 'M',
-                t2Level: setupT2Level ? setupT2Level.value : 'JV',
-                t2Group: setupT2Group ? setupT2Group.value : '',
+                a1School: setupT1School ? setupT1School.value : '',
+                a1Gender: setupT1Gender ? setupT1Gender.value : 'M',
+                a1Level: setupT1Level ? setupT1Level.value : 'JV',
+                a2School: setupT2School ? setupT2School.value : '',
+                a2Gender: setupT2Gender ? setupT2Gender.value : 'M',
+                a2Level: setupT2Level ? setupT2Level.value : 'JV',
                 
-                // Process split name fields for Team 1
+                // Process split name fields for Archers
                 t1ArcherNames: [ 
                     {
                         first: document.getElementById('setup-t1-archer1-first')?.value.trim() || '', 
@@ -853,7 +851,7 @@
             t1ArcherNames: team1ArcherNames, 
             t2ArcherNames: team2ArcherNames, 
             scores: {}, 
-            shootOffWinnerOverride: shootOffWinnerOverride 
+            shootOffWinnerOverride: shootOffWinnerOverride
         }; 
         const scoreInputsForSave = document.querySelectorAll('table input[type="text"][id*="-a"]'); 
         scoreInputsForSave.forEach(input => { 

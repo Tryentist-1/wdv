@@ -388,7 +388,7 @@
         if(setupA1Gender) setupA1Gender.value = 'M'; 
         if(setupA1Level) setupA1Level.value = 'JV'; 
         
-        // Clear archer 1 name fields
+        // Clear all archer name fields for Archer 1
         const firstNameField1 = document.getElementById('setup-a1-first');
         const lastNameField1 = document.getElementById('setup-a1-last');
         

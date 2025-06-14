@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archer Module Prototype</title>
+  <!-- Use common CSS -->
+  <link rel="stylesheet" href="css/main.css" onerror="this.onerror=null;this.href='css/style.css';">
+  <style>
+    /* Minimal extra styles for modal and layout */
+    .modal { display: none; position: fixed; z-index: 10; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
+    .modal-content { background: #fff; padding: 1.5em; border-radius: 8px; max-width: 400px; width: 95vw; }
+    .modal-header { font-weight: bold; margin-bottom: 1em; }
+    .modal-actions { margin-top: 1em; text-align: right; }
+    .archer-list-table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
+    .archer-list-table th, .archer-list-table td { padding: 0.5em; border-bottom: 1px solid #ddd; }
+    .archer-list-table th { background: #f5f5f5; }
+    .bale-group-section { margin: 1.5em 0; }
+    .sms-export-section { margin: 1.5em 0; }
+    @media (max-width: 600px) {
+      .modal-content { max-width: 98vw; }
+      .archer-list-table th, .archer-list-table td { font-size: 0.95em; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Archer Module Prototype</h1>
+    <!-- Archer List View -->
+    <section>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5em;">
+        <input type="text" id="archer-search" placeholder="Search archers..." style="flex:1; max-width: 200px;">
+        <button id="add-archer-btn" style="margin-left: 1em;">Add Archer</button>
+        <button id="import-archers-btn" style="margin-left: 0.5em;">Import</button>
+      </div>
+      <table class="archer-list-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Level</th>
+            <th>Active</th>
+            <th>Edit</th>
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody id="archer-list-tbody">
+          <!-- Archer rows will go here -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Bale Group Assignment -->
+    <section class="bale-group-section">
+      <h2>Bale Group Assignment</h2>
+      <div>
+        <label>Select Archers:</label>
+        <select id="bale-archer-select" multiple size="4" style="width: 100%; max-width: 300px;"></select>
+      </div>
+      <div style="margin-top: 0.5em;">
+        <label>Bale:</label>
+        <input type="text" id="bale-assignment" value="01" style="width: 3em;">
+        <label style="margin-left:1em;">Target:</label>
+        <input type="text" id="target-assignment" value="A" style="width: 2em;">
+        <button id="create-scorecard-btn" style="margin-left: 1em;">Create Score Card</button>
+      </div>
+    </section>
+
+    <!-- Export/SMS Results -->
+    <section class="sms-export-section">
+      <h2>Export / SMS Results</h2>
+      <textarea id="sms-results" rows="4" style="width:100%;"></textarea>
+      <button id="copy-sms-btn" style="margin-top:0.5em;">Copy SMS</button>
+    </section>
+  </main>
+
+  <!-- Add/Edit Archer Modal -->
+  <div class="modal" id="archer-modal">
+    <div class="modal-content">
+      <div class="modal-header" id="modal-title">Add Archer</div>
+      <form id="archer-form">
+        <input type="hidden" id="archer-id">
+        <div><label>First Name*</label><input type="text" id="first-name" required></div>
+        <div><label>Last Name*</label><input type="text" id="last-name" required></div>
+        <div><label>Email</label><input type="email" id="email"></div>
+        <div><label>USArchery</label><input type="text" id="usarchery"></div>
+        <div><label>Gender*</label>
+          <select id="gender" required>
+            <option value="M">M</option>
+            <option value="F">F</option>
+            <option value="X">X</option>
+          </select>
+        </div>
+        <div><label>Grade*</label><input type="number" id="grade" min="1" max="12" required></div>
+        <div><label>Age*</label><input type="number" id="age" min="7" max="20" required></div>
+        <div><label>Level</label>
+          <select id="level">
+            <option value="Varsity">Varsity</option>
+            <option value="JV">JV</option>
+          </select>
+        </div>
+        <div><label>School</label><input type="text" id="school" value="WDV"></div>
+        <div><label>Active</label>
+          <select id="active">
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+        <div><label>Bale Assignment</label><input type="text" id="bale" value="01"></div>
+        <div><label>Target Assignment</label><input type="text" id="target" value="A"></div>
+        <div><label>Target Size</label><input type="text" id="target-size" value="40cm"></div>
+        <div class="modal-actions">
+          <button type="submit" id="save-archer-btn">Save</button>
+          <button type="button" id="cancel-archer-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // --- Archer Data (in-memory for prototype) ---
+    let archers = [];
+    let editingArcherId = null;
+
+    // --- Utility Functions ---
+    function renderArcherList() {
+      const tbody = document.getElementById('archer-list-tbody');
+      tbody.innerHTML = '';
+      archers.forEach((archer, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${archer.firstName} ${archer.lastName}</td>
+          <td>${archer.level || ''}</td>
+          <td>${archer.active || 'Active'}</td>
+          <td><button onclick="editArcher(${idx})">Edit</button></td>
+          <td><button onclick="deleteArcher(${idx})">Delete</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      renderBaleArcherSelect();
+    }
+
+    function renderBaleArcherSelect() {
+      const select = document.getElementById('bale-archer-select');
+      select.innerHTML = '';
+      archers.filter(a => a.active !== 'Inactive').forEach((archer, idx) => {
+        const option = document.createElement('option');
+        option.value = idx;
+        option.textContent = `${archer.firstName} ${archer.lastName}`;
+        select.appendChild(option);
+      });
+    }
+
+    // --- Modal Logic ---
+    const modal = document.getElementById('archer-modal');
+    document.getElementById('add-archer-btn').onclick = () => {
+      editingArcherId = null;
+      document.getElementById('modal-title').textContent = 'Add Archer';
+      document.getElementById('archer-form').reset();
+      modal.style.display = 'flex';
+    };
+    document.getElementById('cancel-archer-btn').onclick = () => {
+      modal.style.display = 'none';
+    };
+    window.onclick = function(event) {
+      if (event.target == modal) modal.style.display = 'none';
+    };
+
+    // --- Add/Edit Archer ---
+    document.getElementById('archer-form').onsubmit = function(e) {
+      e.preventDefault();
+      const archer = {
+        firstName: document.getElementById('first-name').value.trim(),
+        lastName: document.getElementById('last-name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        usarchery: document.getElementById('usarchery').value.trim(),
+        gender: document.getElementById('gender').value,
+        grade: document.getElementById('grade').value,
+        age: document.getElementById('age').value,
+        level: document.getElementById('level').value,
+        school: document.getElementById('school').value.trim(),
+        active: document.getElementById('active').value,
+        bale: document.getElementById('bale').value.trim(),
+        target: document.getElementById('target').value.trim(),
+        targetSize: document.getElementById('target-size').value.trim()
+      };
+      if (editingArcherId !== null) {
+        archers[editingArcherId] = archer;
+      } else {
+        archers.push(archer);
+      }
+      modal.style.display = 'none';
+      renderArcherList();
+    };
+
+    function editArcher(idx) {
+      editingArcherId = idx;
+      const archer = archers[idx];
+      document.getElementById('modal-title').textContent = 'Edit Archer';
+      document.getElementById('first-name').value = archer.firstName;
+      document.getElementById('last-name').value = archer.lastName;
+      document.getElementById('email').value = archer.email;
+      document.getElementById('usarchery').value = archer.usarchery;
+      document.getElementById('gender').value = archer.gender;
+      document.getElementById('grade').value = archer.grade;
+      document.getElementById('age').value = archer.age;
+      document.getElementById('level').value = archer.level;
+      document.getElementById('school').value = archer.school;
+      document.getElementById('active').value = archer.active;
+      document.getElementById('bale').value = archer.bale;
+      document.getElementById('target').value = archer.target;
+      document.getElementById('target-size').value = archer.targetSize;
+      modal.style.display = 'flex';
+    }
+    function deleteArcher(idx) {
+      if (confirm('Delete this archer?')) {
+        archers.splice(idx, 1);
+        renderArcherList();
+      }
+    }
+
+    // --- Bale Group Assignment ---
+    document.getElementById('create-scorecard-btn').onclick = function() {
+      const select = document.getElementById('bale-archer-select');
+      const selectedIdxs = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+      const bale = document.getElementById('bale-assignment').value.trim();
+      const target = document.getElementById('target-assignment').value.trim();
+      const group = selectedIdxs.map(idx => archers[idx]);
+      // For prototype, just show a summary in the SMS box
+      let sms = `Bale: ${bale}${target}\n`;
+      group.forEach(a => {
+        sms += `${a.firstName} ${a.lastName} (${a.level || ''})\n`;
+      });
+      document.getElementById('sms-results').value = sms;
+    };
+
+    // --- Copy SMS ---
+    document.getElementById('copy-sms-btn').onclick = function() {
+      const sms = document.getElementById('sms-results').value;
+      navigator.clipboard.writeText(sms);
+      alert('Copied to clipboard!');
+    };
+
+    // --- Search Filter ---
+    document.getElementById('archer-search').oninput = function() {
+      const q = this.value.toLowerCase();
+      const tbody = document.getElementById('archer-list-tbody');
+      Array.from(tbody.children).forEach(tr => {
+        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+      });
+    };
+
+    // --- Import (placeholder) ---
+    document.getElementById('import-archers-btn').onclick = function() {
+      alert('Import feature coming soon!');
+    };
+
+    // Initial render
+    renderArcherList();
+  </script>
+</body>
+</html> 

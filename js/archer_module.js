@@ -68,8 +68,8 @@ const ArcherModule = {
   },
 
   // Load default CSV if localStorage is empty
-  loadDefaultCSVIfNeeded: async function() {
-    if (localStorage.getItem(ARCHER_LIST_KEY)) return; // Already loaded
+  loadDefaultCSVIfNeeded: async function(force = false) {
+    if (!force && localStorage.getItem(ARCHER_LIST_KEY)) return; // Already loaded
     try {
       const resp = await fetch('app-imports/listimport-01.csv');
       if (!resp.ok) throw new Error('Failed to fetch CSV');
@@ -93,7 +93,7 @@ const ArcherModule = {
           fave: false // default
         };
       });
-      ArcherModule.saveList(list);
+      ArcherModule.saveList(list); // Always overwrite if force is true
     } catch (e) {
       console.error('Failed to load default CSV:', e);
     }
@@ -102,3 +102,8 @@ const ArcherModule = {
 
 // Make available globally
 window.ArcherModule = ArcherModule; 
+
+const refreshBtn = document.getElementById('refresh-master-list-btn'); 
+console.log('Button at attach time:', refreshBtn); 
+
+console.log('Refresh Master List button clicked!'); 

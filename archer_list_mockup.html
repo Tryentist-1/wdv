@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archer List Mockup</title>
+  <link rel="stylesheet" href="css/main.css" onerror="this.onerror=null;this.href='css/style.css';">
+  <style>
+    body {
+      background: #f7f7f7;
+    }
+    .archer-list-container {
+      max-width: 500px;
+      margin: 1.5em auto 4em auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+      padding: 1em 0.5em 0.5em 0.5em;
+    }
+    .archer-list-header {
+      text-align: center;
+      font-size: 1.3em;
+      font-weight: 600;
+      margin-bottom: 0.7em;
+    }
+    .archer-search-bar {
+      width: 100%;
+      padding: 0.5em;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 0.7em;
+      font-size: 1em;
+    }
+    .archer-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.98em;
+    }
+    .archer-table th, .archer-table td {
+      padding: 0.35em 0.2em;
+      text-align: left;
+    }
+    .archer-table th {
+      background: #f0f0f0;
+      font-weight: 600;
+      font-size: 0.97em;
+      text-align: center;
+    }
+    .archer-table td {
+      text-align: center;
+    }
+    .archer-table tr {
+      border-bottom: 1px solid #eee;
+    }
+    .fave-star {
+      font-size: 1.2em;
+      color: #e6b800;
+      cursor: pointer;
+      user-select: none;
+    }
+    .fave-star.not {
+      color: #ccc;
+    }
+    .edit-btn, .delete-btn {
+      background: none;
+      border: none;
+      font-size: 1.1em;
+      margin: 0 0.2em;
+      cursor: pointer;
+      padding: 0.2em 0.5em;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .edit-btn {
+      color: #2d8f4e;
+    }
+    .edit-btn:hover {
+      background: #e6f7ea;
+    }
+    .delete-btn {
+      color: #b23c3c;
+      font-weight: bold;
+    }
+    .delete-btn:hover {
+      background: #fbeaea;
+    }
+    .add-archer-btn {
+      position: fixed;
+      bottom: 1.2em;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2d8f4e;
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      padding: 0.9em 2.2em;
+      font-size: 1.1em;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.13);
+      cursor: pointer;
+      z-index: 100;
+      transition: background 0.2s;
+    }
+    .add-archer-btn:hover {
+      background: #23703b;
+    }
+    @media (max-width: 600px) {
+      .archer-list-container {
+        max-width: 99vw;
+        padding: 0.5em 0.1em 0.5em 0.1em;
+      }
+      .archer-table th, .archer-table td {
+        font-size: 0.93em;
+        padding: 0.25em 0.1em;
+      }
+      .add-archer-btn {
+        font-size: 1em;
+        padding: 0.7em 1.5em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="archer-list-container">
+    <div class="archer-list-header">Archer List</div>
+    <input class="archer-search-bar" type="text" placeholder="Search archers...">
+    <table class="archer-table">
+      <thead>
+        <tr>
+          <th>FAVE</th>
+          <th>First</th>
+          <th>Last</th>
+          <th>Grade</th>
+          <th>Gend</th>
+          <th>Level</th>
+          <th>EDIT</th>
+          <th>X</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="fave-star">★</span></td>
+          <td>Jane</td>
+          <td>Smith</td>
+          <td>10</td>
+          <td>F</td>
+          <td>VAR</td>
+          <td><button class="edit-btn">Edit</button></td>
+          <td><button class="delete-btn">X</button></td>
+        </tr>
+        <tr>
+          <td><span class="fave-star not">☆</span></td>
+          <td>Alex</td>
+          <td>Lee</td>
+          <td>11</td>
+          <td>M</td>
+          <td>JV</td>
+          <td><button class="edit-btn">Edit</button></td>
+          <td><button class="delete-btn">X</button></td>
+        </tr>
+        <tr>
+          <td><span class="fave-star">★</span></td>
+          <td>Sam</td>
+          <td>Nguyen</td>
+          <td>12</td>
+          <td>M</td>
+          <td>VAR</td>
+          <td><button class="edit-btn">Edit</button></td>
+          <td><button class="delete-btn">X</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <button class="add-archer-btn">+ Add Archer</button>
+</body>
+</html> 

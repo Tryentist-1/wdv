@@ -157,6 +157,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Load master list for selection
         const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
+        if (state.archers.length === 0) {
+            // If no archers are set, load the master list and pre-select favorites
+            masterList.forEach(archer => {
+                if (archer.fave) {
+                    state.archers.push({
+                        id: Date.now() + Math.random(),
+                        firstName: archer.first,
+                        lastName: archer.last,
+                        school: archer.school || '',
+                        level: archer.level || '',
+                        gender: archer.gender || '',
+                        scores: Array(state.totalEnds).fill(null)
+                    });
+                }
+            });
+        }
         setupControls.container.innerHTML = '';
 
         // Search bar
@@ -624,23 +640,12 @@ document.addEventListener('DOMContentLoaded', () => {
      * Resets the application state to its initial default.
      */
     function resetState() {
-        localStorage.removeItem(sessionKey);
-        Object.assign(state, {
-            currentView: 'setup',
-            currentEnd: 1,
-            archers: [],
-            activeArcherId: null,
-        });
-        state.archers.push({ 
-            id: 1, 
-            firstName: 'Archer', lastName: '1', 
-            school: '', level: 'V', gender: 'M',
-            scores: Array.from({ length: state.totalEnds }, () => ['', '', '']),
-            targetSize: '40cm'
-        });
-        renderSetupForm();
-        renderScoringView();
+        state.archers = [];
+        state.currentEnd = 1;
+        state.currentView = 'setup';
+        saveData();
         renderView();
+        renderSetupForm(); // Re-import the master list after reset
         resetModal.element.style.display = 'none';
     }
     
@@ -803,6 +808,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveData();
             }
         });
+
+        const refreshBtn = document.getElementById('refresh-master-list-btn');
+        if (refreshBtn) {
+          console.log('Refresh Master List button found and event attached!');
+          refreshBtn.onclick = async function() {
+            console.log('Refresh Master List button clicked!');
+            if (confirm('This will overwrite your current master archer list with the default CSV. Continue?')) {
+              await ArcherModule.loadDefaultCSVIfNeeded(true); // force reload
+              if (typeof ArcherModule !== 'undefined') {
+                const masterList = ArcherModule.loadList();
+                state.archers = [];
+                masterList.forEach(archer => {
+                  if (archer.fave) {
+                    state.archers.push({
+                      id: Date.now() + Math.random(),
+                      firstName: archer.first,
+                      lastName: archer.last,
+                      school: archer.school || '',
+                      level: archer.level || '',
+                      gender: archer.gender || '',
+                      scores: Array(state.totalEnds).fill(null)
+                    });
+                  }
+                });
+                renderSetupForm();
+                alert('Master list refreshed from default CSV.');
+              }
+            }
+          };
+        } else {
+          console.log('Refresh Master List button NOT found in DOM!');
+        }
     }
 
     function updateStateFromSetupForm() {
