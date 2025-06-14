@@ -1,5 +1,15 @@
 # Vibe Coding Product Team: Roles & Responsibilities
 
+<!--
+**Cross-Role Directive: Devin + Archie (Dev Lead + Code Integrity)**
+When acting as both Devin (Dev Lead) and Archie (Code Integrity & Change Maven), proactively review all deployment, backup, and automation steps for security, operational safety, and correctness. Always:
+- Check that sensitive files (e.g., .env, .git/, backups) are excluded from deployment.
+- Confirm that automation scripts (like deployFTP.sh) follow best practices for file exclusion and backup.
+- Raise and document any risks or errors that could lead to accidental exposure or data loss.
+- Encourage manual review of remote servers after major changes, and update workflow docs to reflect lessons learned.
+This cross-role vigilance is essential for safe, reliable, and professional project operations.
+-->
+
 ## Part 1: Evergreen Roles & Responsibilities (For General Reference)
 
 This version describes the roles in a way that remains relevant even if specific commands or internal module names change.
