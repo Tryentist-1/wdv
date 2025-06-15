@@ -106,6 +106,77 @@ hr {
   margin: 0;
 }
 
+.page-subheader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--light-gray);
+  border-bottom: 1px solid var(--border-gray);
+}
+
+.page-subheader .archer-search-bar {
+  flex-grow: 1; /* Makes search bar take available space */
+  padding: 8px;
+  border: 1px solid var(--border-gray);
+  border-radius: var(--border-radius);
+  font-size: clamp(0.8rem, 2vw, 0.9rem);
+}
+
+.archer-select-list {
+  padding: 0 0.5rem;
+}
+
+.list-header {
+  padding: 0.8rem 0.4rem;
+  font-weight: bold;
+  font-size: 1.1em;
+  color: var(--medium-gray);
+  background-color: #f0f2f5;
+  border-bottom: 1px solid var(--border-gray);
+  border-top: 1px solid var(--border-gray);
+}
+
+.archer-select-row {
+  display: flex;
+  align-items: center;
+  padding: 0.8rem 0.4rem;
+  border-bottom: 1px solid #f0f2f5;
+  cursor: pointer;
+  background-color: var(--score-white);
+  transition: background-color 0.2s;
+}
+
+.archer-select-row:hover {
+  background-color: #f8f9fa;
+}
+
+.archer-select-row .favorite-star {
+  font-size: 1.4em;
+  margin-right: 0.8rem;
+  min-width: 1.2em;
+  text-align: center;
+}
+
+.archer-select-row input[type="checkbox"] {
+  margin-right: 0.8rem;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.archer-select-row .archer-name-label {
+  flex-grow: 1;
+  font-size: 1.1em;
+  font-weight: 500;
+  text-align: left;
+}
+
+.archer-select-row .archer-details-label {
+  font-size: 0.9em;
+  color: var(--medium-gray);
+  padding: 0 0.5rem;
+}
+
 /* ======================
    4. Buttons & Controls
    ====================== */
