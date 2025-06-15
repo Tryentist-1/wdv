@@ -30,8 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const setupControls = {
         container: document.getElementById('archer-setup-container'),
-        addArcherBtn: document.getElementById('add-archer-btn'),
-        startScoringBtn: document.getElementById('start-scoring-btn'),
+        subheader: document.querySelector('#setup-view .page-subheader'),
     };
 
     const scoringControls = {
@@ -119,6 +118,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (views[state.currentView]) {
             views[state.currentView].style.display = 'block';
         }
+
+        // Rerender components if the view is active
+        if (state.currentView === 'setup') {
+            renderSetupForm();
+        } else if (state.currentView === 'scoring') {
+            renderScoringView();
+        }
     }
 
     // --- PERSISTENCE ---
@@ -155,156 +161,116 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSetupForm() {
         if (!setupControls.container) return;
 
+        // The subheader is cleared and rebuilt in init(), so we only handle the list here.
+        setupControls.container.innerHTML = '';
+
         // Load master list for selection
         const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
         
-        // Sort master list to put favorites first
+        // Sort master list to put favorites first, then alphabetically
         masterList.sort((a, b) => {
             if (a.fave && !b.fave) return -1;
             if (!a.fave && b.fave) return 1;
+            const nameA = `${a.first} ${a.last}`.toLowerCase();
+            const nameB = `${b.first} ${b.last}`.toLowerCase();
+            if (nameA < nameB) return -1;
+            if (nameA > nameB) return 1;
             return 0;
         });
 
-        if (state.archers.length === 0) {
-            // If no archers are set, load the master list and pre-select favorites
-            masterList.forEach(archer => {
-                if (archer.fave) {
-                    state.archers.push({
-                        id: Date.now() + Math.random(),
-                        firstName: archer.first,
-                        lastName: archer.last,
-                        school: archer.school || '',
-                        level: archer.level || '',
-                        gender: archer.gender || '',
-                        scores: Array(state.totalEnds).fill(null)
-                    });
-                }
-            });
-        }
-        setupControls.container.innerHTML = '';
+        // Search functionality is now tied to the input in the subheader
+        const searchInput = setupControls.subheader.querySelector('.archer-search-bar');
+        const filter = searchInput ? searchInput.value : '';
+        
+        renderArcherSelectList(masterList, filter);
+    }
 
-        // Search bar
-        const searchInput = document.createElement('input');
-        searchInput.type = 'text';
-        searchInput.placeholder = 'Search archers...';
-        searchInput.className = 'archer-search-bar';
-        setupControls.container.appendChild(searchInput);
+    /**
+     * Renders just the list of archers based on the master list and a filter.
+     * This is separated to be called by the search input's oninput event.
+     */
+    function renderArcherSelectList(masterList, filter = '') {
+        if (!setupControls.container) return;
+        setupControls.container.innerHTML = ''; // Clear previous list
 
         // Multi-select list
         const listDiv = document.createElement('div');
-        listDiv.style.maxHeight = '250px';
-        listDiv.style.overflowY = 'auto';
-        listDiv.style.marginBottom = '1em';
+        listDiv.className = 'archer-select-list';
         setupControls.container.appendChild(listDiv);
 
-        // Helper to render the list
-        function renderArcherSelectList(filter = '') {
-            listDiv.innerHTML = '';
-            
-            // Add a favorites section header if there are favorites
-            const hasFavorites = masterList.some(a => a.fave);
-            if (hasFavorites) {
-                const favHeader = document.createElement('div');
-                favHeader.style.padding = '0.8em';
-                favHeader.style.fontWeight = 'bold';
-                favHeader.style.backgroundColor = '#f8f9fa';
-                favHeader.textContent = 'Favorites';
-                listDiv.appendChild(favHeader);
+        const hasFavorites = masterList.some(a => a.fave);
+        if (hasFavorites) {
+            const favHeader = document.createElement('div');
+            favHeader.className = 'list-header';
+            favHeader.textContent = 'Favorites';
+            listDiv.appendChild(favHeader);
+        }
+
+        const filteredList = masterList.filter(archer => {
+            const name = `${archer.first} ${archer.last}`.toLowerCase();
+            return name.includes(filter.toLowerCase());
+        });
+
+        filteredList.forEach((archer, idx) => {
+            // Add "All Archers" separator
+            if (idx > 0 && archer.fave !== filteredList[idx-1].fave) {
+                const separator = document.createElement('div');
+                separator.className = 'list-header';
+                separator.textContent = '☆ All Archers';
+                listDiv.appendChild(separator);
             }
 
-            masterList.forEach((archer, idx) => {
-                const name = `${archer.first} ${archer.last}`.toLowerCase();
-                if (!name.includes(filter.toLowerCase())) return;
+            const row = document.createElement('div');
+            row.className = 'archer-select-row';
 
-                // Add a separator between favorites and non-favorites
-                if (idx > 0 && archer.fave !== masterList[idx-1].fave) {
-                    const separator = document.createElement('div');
-                    separator.style.padding = '0.8em';
-                    separator.style.backgroundColor = '#f8f9fa';
-                    separator.style.borderBottom = '1px solid #dee2e6';
-                    separator.style.fontWeight = 'bold';
-                    separator.style.fontSize = '1.1em';
-                    separator.textContent = '☆ All Archers';
-                    listDiv.appendChild(separator);
-                }
-
-                const row = document.createElement('div');
-                row.style.display = 'flex';
-                row.style.alignItems = 'center';
-                row.style.marginBottom = '0.5em';
-                row.style.padding = '0.8em';
-                row.style.borderRadius = '8px';
-                row.style.cursor = 'pointer';
-                row.style.backgroundColor = '#ffffff';
-                row.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-
-                // Star (favorite toggle)
-                const star = document.createElement('span');
-                star.textContent = archer.fave ? '★' : '☆';
-                star.style.cursor = 'pointer';
-                star.style.fontSize = '1.4em';
-                star.style.color = archer.fave ? '#e6b800' : '#ccc';
-                star.style.marginRight = '0.8em';
-                star.style.minWidth = '1.2em';
-                star.style.textAlign = 'center';
-                star.onclick = (e) => {
-                    e.stopPropagation();
-                    const realIdx = masterList.findIndex(a => a.first === archer.first && a.last === archer.last);
-                    if (realIdx !== -1) {
-                        masterList[realIdx].fave = !masterList[realIdx].fave;
-                        if (typeof ArcherModule !== 'undefined') ArcherModule.saveList(masterList);
-                        renderArcherSelectList(filter);
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = state.archers.some(a => a.firstName === archer.first && a.lastName === archer.last);
+            checkbox.onchange = () => {
+                if (checkbox.checked) {
+                    // Add archer to state
+                    if (!state.archers.some(a => a.firstName === archer.first && a.lastName === archer.last)) {
+                        state.archers.push({
+                            id: Date.now() + Math.random(),
+                            firstName: archer.first,
+                            lastName: archer.last,
+                            school: archer.school || '',
+                            level: archer.level || '',
+                            gender: archer.gender || '',
+                            scores: Array(state.totalEnds).fill(null).map(() => Array(3).fill(null))
+                        });
                     }
-                };
-                row.appendChild(star);
-
-                // Checkbox
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.value = masterList.indexOf(archer);
-                checkbox.style.marginRight = '0.8em';
-                checkbox.style.width = '1.2em';
-                checkbox.style.height = '1.2em';
-                // Pre-select favorites on first render
-                if (
-                    (state.archers.length === 0 && archer.fave) ||
-                    state.archers.some(a => a.firstName === archer.first && a.lastName === archer.last)
-                ) {
-                    checkbox.checked = true;
+                } else {
+                    // Remove archer from state
+                    state.archers = state.archers.filter(a => !(a.firstName === archer.first && a.lastName === archer.last));
                 }
-                row.appendChild(checkbox);
+                saveData();
+            };
 
-                // Name label
-                const label = document.createElement('label');
-                label.textContent = `${archer.first} ${archer.last}`;
-                label.style.flex = '1';
-                label.style.cursor = 'pointer';
-                label.style.fontSize = '1.1em';
-                row.appendChild(label);
+            const star = document.createElement('span');
+            star.textContent = archer.fave ? '★' : '☆';
+            star.className = 'favorite-star';
+            star.style.color = archer.fave ? '#e6b800' : '#ccc';
+            star.onclick = (e) => {
+                e.stopPropagation();
+                ArcherModule.toggleFavorite(archer.first, archer.last);
+                renderSetupForm(); // Re-render the form to reflect the change
+            };
 
-                // Details
-                const details = document.createElement('span');
-                details.textContent = `(${archer.grade || ''} ${archer.gender || ''} ${archer.level || ''})`;
-                details.style.color = '#6c757d';
-                details.style.fontSize = '0.9em';
-                details.style.marginLeft = '0.5em';
-                row.appendChild(details);
+            const nameLabel = document.createElement('span');
+            nameLabel.textContent = `${archer.first} ${archer.last}`;
+            nameLabel.className = 'archer-name-label';
+            
+            row.appendChild(checkbox);
+            row.appendChild(star);
+            row.appendChild(nameLabel);
+            listDiv.appendChild(row);
 
-                listDiv.appendChild(row);
-            });
-        }
-        renderArcherSelectList();
-        searchInput.oninput = () => renderArcherSelectList(searchInput.value);
-
-        // Add Archer button
-        const addBtn = document.createElement('button');
-        addBtn.textContent = '+ Add Archer';
-        addBtn.className = 'btn btn-secondary';
-        addBtn.style.marginBottom = '1em';
-        addBtn.onclick = () => {
-            alert('Add Archer: Please use the Archer List page for now. (Integration coming soon)');
-        };
-        setupControls.container.appendChild(addBtn);
+            row.onclick = () => {
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event('change'));
+            };
+        });
     }
 
     /**
@@ -772,199 +738,110 @@ document.addEventListener('DOMContentLoaded', () => {
         renderScoringView(); // Also render scoring view in case we load into it
         renderView(); // Show the correct view based on loaded state
 
-        // --- SETUP VIEW LISTENERS ---
-        setupControls.addArcherBtn.addEventListener('click', () => {
-            const newId = state.archers.length > 0 ? Math.max(...state.archers.map(a => a.id)) + 1 : 1;
-            updateStateFromSetupForm(); // Save any changes first
-            state.archers.push({ 
-                id: newId, 
-                firstName: 'Archer', lastName: `${newId}`, 
-                school: '', level: 'V', gender: 'M',
-                scores: Array.from({ length: state.totalEnds }, () => ['', '', '']),
-                targetSize: '40cm'
-            });
-            renderSetupForm();
-            saveData();
-        });
+        // --- SETUP VIEW CONTROLS ---
+        if (setupControls.subheader) {
+            setupControls.subheader.innerHTML = ''; // Clear on init
 
-        setupControls.startScoringBtn.addEventListener('click', () => {
-            // Force reload the master list first
-            if (typeof ArcherModule !== 'undefined') {
-                ArcherModule.loadList();
-            }
+            // Search Input
+            const searchInput = document.createElement('input');
+            searchInput.type = 'text';
+            searchInput.placeholder = 'Search archers...';
+            searchInput.className = 'archer-search-bar';
+            searchInput.oninput = () => {
+                const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
+                renderArcherSelectList(masterList, searchInput.value);
+            };
             
-            // Then refresh the setup form to get latest archer list
-            renderSetupForm();
-            
-            // Get selected archers from the checkboxes
-            const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
-            const selectedIdxs = Array.from(document.querySelectorAll('#archer-setup-container input[type=checkbox]:checked')).map(cb => parseInt(cb.value));
-            
-            // If no archers are selected, keep the current list
-            if (selectedIdxs.length === 0) {
-                state.currentView = 'scoring';
-                renderScoringView(); // Force refresh scoring view
-                renderView();
-                saveData();
-                return;
-            }
-            
-            // Otherwise, update with selected archers
-            state.archers = selectedIdxs.map(idx => {
-                const a = masterList[idx];
-                return {
-                    id: a.id || idx + 1,
-                    firstName: a.first || '',
-                    lastName: a.last || '',
-                    school: a.school || '',
-                    level: a.level || 'V',
-                    gender: a.gender || 'M',
-                    targetSize: a.size || '40cm',
-                    scores: Array.from({ length: state.totalEnds }, () => ['', '', ''])
-                };
-            });
-            state.currentView = 'scoring';
-            renderScoringView(); // Force refresh scoring view
-            renderView();
-            saveData();
-        });
-        
-        // Using event delegation for remove buttons since they are created dynamically
-        setupControls.container.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove-archer-btn')) {
-                const archerDiv = e.target.closest('.form-group-row');
-                const archerId = parseInt(archerDiv.dataset.archerId);
-                state.archers = state.archers.filter(a => a.id !== archerId);
+            // Refresh Button
+            const refreshBtn = document.createElement('button');
+            refreshBtn.id = 'refresh-btn';
+            refreshBtn.className = 'btn btn-secondary';
+            refreshBtn.textContent = 'Refresh';
+            refreshBtn.onclick = () => {
+                // Simply re-render the setup form which re-loads the master list
                 renderSetupForm();
-                saveData();
-            }
-        });
+            };
 
-        // --- RESET MODAL LISTENERS ---
-        scoringControls.newRoundBtn.addEventListener('click', () => {
-            resetModal.element.style.display = 'flex'; // Use flex to ensure proper centering
-        });
+            // Reset Button
+            const resetBtn = document.createElement('button');
+            resetBtn.id = 'reset-btn';
+            resetBtn.className = 'btn btn-danger';
+            resetBtn.textContent = 'Reset';
+            resetBtn.onclick = () => {
+                resetModal.element.style.display = 'flex';
+            };
+
+            // Scoring Button
+            const scoringBtn = document.createElement('button');
+            scoringBtn.id = 'scoring-btn';
+            scoringBtn.className = 'btn btn-primary';
+            scoringBtn.textContent = 'Scoring';
+            scoringBtn.style.marginLeft = 'auto'; // Push to the right
+            scoringBtn.onclick = showScoringView;
+
+            setupControls.subheader.appendChild(searchInput);
+            setupControls.subheader.appendChild(refreshBtn);
+            setupControls.subheader.appendChild(resetBtn);
+            setupControls.subheader.appendChild(scoringBtn);
+        }
+
+        // --- FOOTER CONTROLS ---
+        const setupBaleBtn = document.getElementById('setup-bale-btn');
+        if (setupBaleBtn) {
+            setupBaleBtn.onclick = () => {
+                state.currentView = 'setup';
+                renderView();
+            };
+        }
         
-        resetModal.cancelBtn.addEventListener('click', () => {
-            resetModal.element.style.display = 'none';
-        });
+        // --- SCORING VIEW CONTROLS ---
+        scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
+        scoringControls.nextEndBtn.onclick = () => changeEnd(1);
         
-        resetModal.resetBtn.addEventListener('click', () => {
+        // --- MODAL CONTROLS ---
+        resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
+        resetModal.resetBtn.onclick = () => {
             resetState();
             resetModal.element.style.display = 'none';
-            renderView(); // Re-render the view after reset
-            renderSetupForm(); // Refresh the setup form
-        });
-        
-        resetModal.sampleBtn.addEventListener('click', () => {
+        };
+        resetModal.sampleBtn.onclick = () => {
             loadSampleData();
             resetModal.element.style.display = 'none';
-            showScoringView();
-        });
+        };
 
-        // --- SCORING & CARD VIEW LISTENERS (STATIC ELEMENTS) ---
-        scoringControls.prevEndBtn.addEventListener('click', () => changeEnd(-1));
-        scoringControls.nextEndBtn.addEventListener('click', () => changeEnd(1));
-        cardControls.backToScoringBtn.addEventListener('click', showScoringView);
-        cardControls.exportCardBtn.addEventListener('click', () => {
-             const archerId = document.querySelector('#card-view .score-table').dataset.archerId;
-             if (archerId) exportCardAsText(archerId);
-        });
-        document.getElementById('prev-archer-btn')?.addEventListener('click', () => navigateArchers(-1));
-        document.getElementById('next-archer-btn')?.addEventListener('click', () => navigateArchers(1));
-        
-        // --- KEYPAD LISTENERS & DYNAMIC ELEMENT HANDLING (DELEGATION) ---
-        keypad.element.addEventListener('click', handleKeypadClick);
-        
-        // Use event delegation on a static parent for dynamically created elements
-        document.body.addEventListener('click', (e) => {
-            // Show Card View
-            if (e.target.classList.contains('view-card-btn')) {
-                state.currentView = 'card';
-                // The button's dataset has the archer ID as a string.
-                renderCardView(e.target.dataset.archerId);
-                renderView();
-                keypad.element.style.display = 'none';
+        // --- CARD VIEW CONTROLS ---
+        cardControls.backToScoringBtn.onclick = () => {
+            state.currentView = 'scoring';
+            renderView();
+        };
+        cardControls.exportCardBtn.onclick = () => {
+            if (state.activeArcherId) {
+                exportCardAsText(state.activeArcherId);
             }
-        });
+        };
+        document.getElementById('next-archer-btn').onclick = () => navigateArchers(1);
 
-        document.body.addEventListener('focusin', (e) => {
-            // Show Keypad
-            if (e.target.classList.contains('score-input')) {
-                keypad.currentlyFocusedInput = e.target;
-                keypad.element.style.display = 'grid';
-                document.body.classList.add('keypad-visible');
-            }
-        });
-
-        // Handle state updates from score inputs
-        document.body.addEventListener('input', (e) => {
-            if (e.target.classList.contains('score-input')) {
-                handleScoreInput(e);
-            }
-        });
-
-        document.body.addEventListener('change', (e) => {
-             if (e.target.classList.contains('archer-firstname-input') || e.target.classList.contains('archer-lastname-input') || e.target.classList.contains('archer-school-input') || e.target.classList.contains('archer-level-select') || e.target.classList.contains('archer-gender-select')) {
-                updateStateFromSetupForm();
-                saveData();
-            }
-        });
-
-        const refreshBtn = document.getElementById('refresh-master-list-btn');
-        if (refreshBtn) {
-          console.log('Refresh Master List button found and event attached!');
-          refreshBtn.onclick = async function() {
-            console.log('Refresh Master List button clicked!');
-            if (confirm('This will overwrite your current master archer list with the default CSV. Continue?')) {
-              await ArcherModule.loadDefaultCSVIfNeeded(true); // force reload
-              if (typeof ArcherModule !== 'undefined') {
-                const masterList = ArcherModule.loadList();
-                state.archers = [];
-                masterList.forEach(archer => {
-                  if (archer.fave) {
-                    state.archers.push({
-                      id: Date.now() + Math.random(),
-                      firstName: archer.first,
-                      lastName: archer.last,
-                      school: archer.school || '',
-                      level: archer.level || '',
-                      gender: archer.gender || '',
-                      scores: Array(state.totalEnds).fill(null)
-                    });
-                  }
-                });
-                renderSetupForm();
-                alert('Master list refreshed from default CSV.');
-              }
-            }
-          };
-        } else {
-          console.log('Refresh Master List button NOT found in DOM!');
-        }
+        // --- INITIAL LOAD ---
+        loadData();
+        renderKeypad(); // Render keypad once
+        renderView(); // Initial view render based on loaded or default state
     }
 
+    /**
+     * Updates the application state based on the selections in the setup form.
+     * This function is now less critical as selections update state directly,
+     * but can be used as a final check before moving to scoring.
+     */
     function updateStateFromSetupForm() {
-        const newArchers = [];
-        document.querySelectorAll('#archer-setup-container .form-group-row').forEach(row => {
-            const archerId = parseInt(row.dataset.archerId);
-            const existingArcher = state.archers.find(a => a.id === archerId);
-            const scores = existingArcher ? existingArcher.scores : Array.from({ length: state.totalEnds }, () => ['', '', '']);
-
-            newArchers.push({
-                id: archerId,
-                firstName: row.querySelector('.archer-firstname-input').value || 'Archer',
-                lastName: row.querySelector('.archer-lastname-input').value || archerId.toString(),
-                school: row.querySelector('.archer-school-input').value.toUpperCase(),
-                level: row.querySelector('.archer-level-select').value,
-                gender: row.querySelector('.archer-gender-select').value,
-                scores: scores,
-                targetSize: row.querySelector('.archer-targetsize-input').value || '40cm'
-            });
-        });
-        state.archers = newArchers;
+        // This function can be simplified or removed if the checkbox onchange
+        // proves reliable enough. For now, it's a good safeguard.
+        console.log("Final check of selected archers before scoring.");
+        saveData();
     }
 
+    /**
+     * Loads sample data for demonstration or testing purposes.
+     */
     function loadSampleData() {
         state.archers = [
             { id: 1, firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', scores: [
