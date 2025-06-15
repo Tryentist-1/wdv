@@ -30,24 +30,34 @@
       --border-radius: 8px;
     }
 
+    html, body {
+      height: 100%;
+      overflow: hidden; /* Prevent scrolling */
+    }
+
     body {
       font-family: 'Montserrat', Arial, sans-serif;
       background-color: #f1f5f9;
       color: #333;
-      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
     }
 
     .container {
-      max-width: 1100px;
+      width: 100%;
+      max-width: 500px; /* Constrain width for a cleaner look on larger screens */
       margin: 0 auto;
-      padding: 20px;
+      text-align: center;
     }
 
     /* Header Styles */
     header {
-      text-align: center;
-      padding: 40px 20px;
-      margin-bottom: 30px;
+      width: 100%;
+      padding: 1.5rem 1rem;
+      margin-bottom: 2rem;
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: white;
       border-radius: var(--border-radius);
@@ -55,16 +65,61 @@
     }
 
     header h1 {
-      font-size: clamp(1.8em, 5vw, 2.5em);
-      margin-bottom: 15px;
+      font-size: clamp(1.5em, 5vw, 2em);
       font-weight: 700;
+      margin: 0;
     }
 
-    header p {
-      font-size: clamp(1em, 3vw, 1.2em);
-      opacity: 0.9;
-      max-width: 600px;
-      margin: 0 auto;
+    /* Button Menu Layout */
+    .button-menu {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      width: 100%;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      font-size: 1.1em;
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--white);
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+      text-align: center;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-large {
+      padding: 1.25rem;
+      font-size: 1.25em;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+    }
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background-color: var(--secondary);
+    }
+    .btn-secondary:hover {
+      background-color: #5a6268;
+    }
+
+    .round-buttons {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
     }
 
     /* Card Layout */
@@ -350,82 +405,18 @@
 <body>
   <div class="container">
     <header>
-      <h1>OAS Score Sheets & Tools</h1>
-      <p>Mobile-first scoring tools for Olympic Archery in Schools</p>
+      <h1>OAS Scoring</h1>
     </header>
 
-    <div class="card-grid">
-      <div class="card">
-        <div class="card-image target-interactive"></div>
-        <div class="card-content">
-          <h3>Archer List</h3>
-          <p>Manage your master list of archers, favorites, and details for all scoring modules.</p>
-          <a href="archer_list.html" class="card-link">Open Archer List</a>
-        </div>
+    <div class="button-menu">
+      <a href="archer_list.html" class="btn btn-primary btn-large">Archer Setup</a>
+      
+      <div class="round-buttons">
+        <a href="ranking_round.html" class="btn btn-secondary">Ranking</a>
+        <a href="solo_round.html" class="btn btn-secondary">Solo</a>
+        <a href="team_round.html" class="btn btn-secondary">Team</a>
+        <a href="#" class="btn btn-secondary" style="opacity: 0.6; cursor: not-allowed;" title="Coming Soon">Practice</a>
       </div>
-
-      <div class="card">
-        <div class="card-image target-interactive"></div>
-        <div class="card-content">
-          <h3>Interactive Olympic Scorer</h3>
-          <p>Score practice rounds and analyze arrow grouping with our interactive target face.</p>
-          <a href="gemini-oneshot.html" class="card-link">Open Scorer</a>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-image target-360"></div>
-        <div class="card-content">
-          <h3>Ranking Round NEW</h3>
-          <p>Score competitive ranking rounds for up to 4 archers with our easy-to-use interface.</p>
-          <a href="ranking_round.html" class="card-link">Open Scorer</a>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-image target-team"></div>
-        <div class="card-content">
-          <h3>Team Match Scorer</h3>
-          <p>Score team vs. team matches with support for 3 archers per team.</p>
-          <a href="team_round.html" class="card-link">Open Scorer</a>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-image target-solo"></div>
-        <div class="card-content">
-          <h3>Solo Match Scorer</h3>
-          <p>Score head-to-head Olympic-style matches between individual archers.</p>
-          <a href="solo_round.html" class="card-link">Open Scorer</a>
-        </div>
-      </div>
-    </div>
-
-    <section class="features">
-      <h2>Key Features</h2>
-      <ul class="features-list">
-        <li>Mobile-first design for scoring on the go</li>
-        <li>Offline capability - works without internet</li>
-        <li>Automatic score calculations and statistics</li>
-        <li>Easy-to-use interface with on-screen keypad</li>
-        <li>Save and share results via text or image</li>
-        <li>Support for all Olympic archery scoring formats</li>
-      </ul>
-    </section>
-
-    <section class="roadmap">
-      <h2>Coming Soon</h2>
-      <ul class="roadmap-list">
-        <li>Enhanced arrow grouping analysis</li>
-        <li>Team statistics and performance tracking</li>
-        <li>Custom tournament formats</li>
-        <li>Export to PDF and Excel</li>
-      </ul>
-    </section>
-
-    <div class="feedback">
-      <p>Have suggestions or feature requests? We'd love to hear from you!</p>
-      <a href="mailto:archeryscores@tryentist.com" class="button">Send Feedback</a>
     </div>
   </div>
 
