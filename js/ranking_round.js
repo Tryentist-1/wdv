@@ -212,12 +212,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 listDiv.appendChild(favHeader);
             }
 
-            sorted.forEach((archer, idx) => {
+            masterList.forEach((archer, idx) => {
                 const name = `${archer.first} ${archer.last}`.toLowerCase();
                 if (!name.includes(filter.toLowerCase())) return;
 
                 // Add a separator between favorites and non-favorites
-                if (idx > 0 && archer.fave !== sorted[idx-1].fave) {
+                if (idx > 0 && archer.fave !== masterList[idx-1].fave) {
                     const separator = document.createElement('div');
                     separator.style.padding = '0.8em';
                     separator.style.backgroundColor = '#f8f9fa';
@@ -803,6 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // If no archers are selected, keep the current list
             if (selectedIdxs.length === 0) {
                 state.currentView = 'scoring';
+                renderScoringView(); // Force refresh scoring view
                 renderView();
                 saveData();
                 return;
@@ -823,6 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
             });
             state.currentView = 'scoring';
+            renderScoringView(); // Force refresh scoring view
             renderView();
             saveData();
         });

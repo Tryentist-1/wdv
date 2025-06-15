@@ -36,6 +36,12 @@ echo "Debug: Exclude patterns being used:"
 echo "$EXCLUDES"
 echo "---"
 
+# --- Parse command-line arguments for reset mode ---
+RESET_MODE=0
+if [[ "$1" == "--reset" ]]; then
+  RESET_MODE=1
+fi
+
 # --- Step 1: Local backup ---
 echo -e "\n--- Step 1: Local backup ---"
 mkdir -p "$LOCAL_BACKUP"
@@ -71,7 +77,16 @@ cd - > /dev/null
 
 # --- Step 4: Deploy to FTP ---
 echo -e "\n--- Step 4: Deploying to FTP ---"
-lftp -c "set ssl:verify-certificate no; open -u $USER,$FTP_PASSWORD $HOST; cd $REMOTE_DIR; mirror --dry-run --reverse --verbose $EXCLUDES ./ /"
+if [[ $RESET_MODE -eq 1 ]]; then
+  # Full reset: force upload and delete remote files not present locally
+  LFTP_CMD="mirror --reverse --verbose --delete $EXCLUDES ./ $REMOTE_DIR"
+  echo "RESET MODE: Full re-upload and remote cleanup (remote files not present locally will be deleted)."
+else
+  # Normal: only changed files, no deletes
+  LFTP_CMD="mirror --reverse --verbose $EXCLUDES ./ $REMOTE_DIR"
+fi
+
+lftp -c "set ssl:verify-certificate no; open -u $USER,$FTP_PASSWORD $HOST; $LFTP_CMD"
 
 # Clean up
 # rm deploy_files.txt
