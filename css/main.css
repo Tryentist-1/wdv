@@ -115,6 +115,21 @@ hr {
   border-bottom: 1px solid var(--border-gray);
 }
 
+.page-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #e9ecef;
+  border-bottom: 1px solid var(--border-gray);
+}
+
+.page-controls .btn.active {
+    background-color: var(--primary-blue);
+    color: var(--text-light);
+    font-weight: bold;
+}
+
 .page-subheader .archer-search-bar {
   flex-grow: 1; /* Makes search bar take available space */
   padding: 8px;

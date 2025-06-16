@@ -18,6 +18,11 @@
             <input class="archer-search-bar" type="text" id="search-input" placeholder="Search archers...">
             <button id="add-archer-btn" class="btn btn-primary"><i class="fas fa-plus"></i> Add</button>
         </div>
+        
+        <div class="page-controls">
+            <button id="sort-by-name-btn" class="btn btn-secondary active">Sort by Name</button>
+            <button id="sort-by-bale-btn" class="btn btn-secondary">Sort by Bale</button>
+        </div>
 
         <div id="archer-list-container" class="archer-select-list">
             <!-- Archer list will be rendered here -->
@@ -36,11 +41,7 @@
         <div class="modal-content">
             <h2 id="modal-title">Add Archer</h2>
             <form id="archer-form">
-                <!-- Form content will be structured here -->
-                <div class="modal-buttons">
-                    <button type="button" id="cancel-archer-btn" class="btn btn-secondary">Cancel</button>
-                    <button type="submit" class="btn btn-success">Save</button>
-                </div>
+                <!-- Form content will be injected by JS -->
             </form>
         </div>
     </div>
@@ -50,18 +51,41 @@
         document.addEventListener('DOMContentLoaded', () => {
             const modal = document.getElementById('archer-modal');
             const addArcherBtn = document.getElementById('add-archer-btn');
-            const cancelBtn = document.getElementById('cancel-archer-btn');
             const searchInput = document.getElementById('search-input');
             const newListBtn = document.getElementById('new-list-btn');
             const refreshBtn = document.getElementById('refresh-master-list-btn');
+            const sortByNameBtn = document.getElementById('sort-by-name-btn');
+            const sortByBaleBtn = document.getElementById('sort-by-bale-btn');
 
             let editingIndex = null;
+            let sortMode = 'name'; // 'name' or 'bale'
 
             function renderList() {
                 const container = document.getElementById('archer-list-container');
                 const filter = searchInput.value.toLowerCase();
                 container.innerHTML = '';
-                const archerList = ArcherModule.loadList();
+                let archerList = ArcherModule.loadList();
+
+                if (sortMode === 'name') {
+                    archerList.sort((a, b) => {
+                        if (a.fave && !b.fave) return -1;
+                        if (!a.fave && b.fave) return 1;
+                        const nameA = `${a.first} ${a.last}`.toLowerCase();
+                        const nameB = `${b.first} ${b.last}`.toLowerCase();
+                        return nameA.localeCompare(nameB);
+                    });
+                } else if (sortMode === 'bale') {
+                    archerList.sort((a, b) => {
+                        const baleA = parseInt(a.bale, 10) || 999;
+                        const baleB = parseInt(b.bale, 10) || 999;
+                        const targetA = a.target || 'Z';
+                        const targetB = b.target || 'Z';
+                        if (baleA !== baleB) {
+                            return baleA - baleB;
+                        }
+                        return targetA.localeCompare(targetB);
+                    });
+                }
 
                 const filteredList = archerList.filter(a =>
                     a.first.toLowerCase().includes(filter) ||
@@ -74,8 +98,8 @@
                     return;
                 }
 
-                filteredList.forEach((archer, originalIndex) => {
-                    const archerIndex = archerList.findIndex(a => a.first === archer.first && a.last === archer.last);
+                filteredList.forEach((archer) => {
+                    const archerIndex = ArcherModule.loadList().findIndex(item => item.first === archer.first && item.last === archer.last);
 
                     const row = document.createElement('div');
                     row.className = 'archer-select-row';
@@ -96,7 +120,9 @@
                     nameLabel.className = 'archer-name-label';
 
                     const detailsLabel = document.createElement('div');
-                    detailsLabel.textContent = `${archer.school || 'N/A'} | ${archer.level || 'VAR'} | ${archer.grade || 'N/A'}`;
+                    const baleInfo = archer.bale ? `Bale ${archer.bale}` : 'N/A';
+                    const targetInfo = archer.target ? `Tgt ${archer.target}` : '';
+                    detailsLabel.textContent = `${baleInfo} ${targetInfo} | ${archer.school || 'N/A'} | Lvl: ${archer.level || 'VAR'}`;
                     detailsLabel.className = 'archer-details-label';
                     
                     nameDiv.appendChild(nameLabel);
@@ -114,7 +140,18 @@
             function openModal(index = null) {
                 editingIndex = index;
                 const form = document.getElementById('archer-form');
-                form.innerHTML = createFormFieldsHTML(); // Recreate fields to prevent stale data issues
+                form.innerHTML = createFormFieldsHTML();
+                
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'modal-buttons';
+                buttonContainer.innerHTML = `
+                    <button type="button" id="cancel-archer-btn-modal" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save</button>
+                `;
+                form.appendChild(buttonContainer);
+                
+                form.querySelector('#cancel-archer-btn-modal').onclick = closeModal;
+
                 const modalTitle = document.getElementById('modal-title');
 
                 if (index !== null) {
@@ -123,14 +160,9 @@
                     Object.keys(archer).forEach(key => {
                         const input = form.querySelector(`#${key}`);
                         if (input) {
-                            if (input.type === 'checkbox') {
-                                input.checked = key === 'fave' ? archer[key] : false;
-                            } else {
-                                input.value = archer[key] || '';
-                            }
+                            input.value = archer[key] || '';
                         }
                     });
-                     // Special handling for fave dropdown
                     const faveSelect = form.querySelector('#fave');
                     if (faveSelect) faveSelect.value = archer.fave ? 'true' : 'false';
 
@@ -150,6 +182,13 @@
                     <div class="form-row">
                         <div class="form-group"><label for="first">First Name*</label><input type="text" id="first" required></div>
                         <div class="form-group"><label for="last">Last Name*</label><input type="text" id="last" required></div>
+                    </div>
+                     <div class="form-row">
+                        <div class="form-group"><label for="bale">Bale</label><input type="number" id="bale" min="1" max="99"></div>
+                        <div class="form-group">
+                            <label for="target">Target</label>
+                            <select id="target"><option value="">-</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="H">H</option></select>
+                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label for="school">School</label><input type="text" id="school"></div>
@@ -184,7 +223,6 @@
                 `;
             }
 
-
             function closeModal() {
                 modal.style.display = 'none';
             }
@@ -202,7 +240,7 @@
             }
 
             addArcherBtn.onclick = () => openModal();
-            cancelBtn.onclick = closeModal;
+            
             window.onclick = (event) => {
                 if (event.target == modal) closeModal();
             };
@@ -222,6 +260,8 @@
                     jvPr: form.querySelector('#jvPr').value,
                     email: form.querySelector('#email').value.trim(),
                     usarchery: form.querySelector('#usarchery').value.trim(),
+                    bale: form.querySelector('#bale').value.trim(),
+                    target: form.querySelector('#target').value,
                 };
 
                 if (editingIndex !== null) {
@@ -245,10 +285,24 @@
             
             refreshBtn.onclick = async () => {
                 if (confirm('This will overwrite your current list with the master file from the server. Are you sure?')) {
-                    await ArcherModule.loadDefaultCSVIfNeeded(true); // Force refresh
+                    await ArcherModule.loadDefaultCSVIfNeeded(true);
                     renderList();
                     alert('List has been refreshed from master file.');
                 }
+            };
+            
+            sortByNameBtn.onclick = () => {
+                sortMode = 'name';
+                sortByNameBtn.classList.add('active');
+                sortByBaleBtn.classList.remove('active');
+                renderList();
+            };
+
+            sortByBaleBtn.onclick = () => {
+                sortMode = 'bale';
+                sortByBaleBtn.classList.add('active');
+                sortByNameBtn.classList.remove('active');
+                renderList();
             };
 
             (async function init() {
