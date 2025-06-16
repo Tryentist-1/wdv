@@ -474,6 +474,41 @@ hr {
   margin-top: 1rem;
 }
 
+.modal-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.form-group {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px; /* Prevent fields from becoming too squished */
+}
+
+.form-group label {
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--medium-gray);
+}
+
+.form-group input,
+.form-group select {
+  padding: 8px;
+  border: 1px solid var(--border-gray);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  width: 100%;
+}
+
 /* ======================
    8. Footer
    ====================== */
