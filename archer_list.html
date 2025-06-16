@@ -281,6 +281,16 @@
     // --- Search ---
     document.getElementById('search').oninput = renderList;
 
+    // --- Footer Actions ---
+    document.getElementById('new-list-btn').onclick = () => {
+      if (confirm('Are you sure you want to delete the entire archer list? This cannot be undone.')) {
+        ArcherModule.clearList();
+        archerList = [];
+        renderList();
+        alert('Archer list has been cleared. Refresh the page to load a new default CSV if available.');
+      }
+    };
+
     // --- Initial Load ---
     (async function() {
       await ArcherModule.loadDefaultCSVIfNeeded();

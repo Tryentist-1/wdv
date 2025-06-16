@@ -28,6 +28,10 @@ const ArcherModule = {
     localStorage.setItem(ARCHER_LIST_KEY, JSON.stringify(list));
   },
 
+  clearList() {
+    localStorage.removeItem(ARCHER_LIST_KEY);
+  },
+
   // Add a new archer
   addArcher(archer) {
     const list = this.loadList();
@@ -96,6 +100,7 @@ const ArcherModule = {
       ArcherModule.saveList(list); // Always overwrite if force is true
     } catch (e) {
       console.error('Failed to load default CSV:', e);
+      alert('Error: Could not load the default archer list from "app-imports/listimport-01.csv".\n\nPlease check that the file exists and the server is running correctly.\n\nDetails: ' + e.message);
     }
   }
 };
