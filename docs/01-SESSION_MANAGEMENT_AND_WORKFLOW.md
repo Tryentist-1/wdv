@@ -40,31 +40,29 @@ This document is designed to help us (User and LLM) start, conduct, and pause/en
 
 ### SESSION SUMMARY TEMPLATE (for LLM to fill at end of session)
 
-* **Session End Date & Time:** `2024-06-13`  
-* **Last Vibe Persona Active:** `Devin (Dev Lead)`
+* **Session End Date & Time:** `2025-06-16`  
+* **Last Vibe Persona Active:** `Pam (Product Manager)`
 * **Session Goals for This Past Session (Key Achievements):**
-* Deploy and sync all local changes to main and remote (GitHub and FTP) - Achieved
-* Fix reset modal bug and ensure modal dismisses on reset - Achieved
-* Ensure Refresh Master List button works reliably - Achieved
-* Automate deployment with deployFTP.sh and backup process - Achieved
-* Continue fine-tuning Ranking Round and Archer List integration - In Progress
+    *   Completed and deployed "Ranking Round 2.0".
+    *   Implemented a new "Verify & Send" workflow for sending bale totals via SMS.
+    *   Added critical Bale Number and Target Assignment (A-H) functionality.
+    *   Refined UX by moving the final "Send" action to the card review screen.
 * **Key Files Modified (and their status):**
-* `js/ranking_round.js`: Bugfixes, event handler improvements, modal logic
-* `ranking_round.html`: UI/UX tweaks, integration points
+    *   `js/ranking_round.js`: Major refactor for new features and UX. (Committed)
+    *   `ranking_round.html`: UI changes for new features. (Committed)
+    *   `css/main.css`: Added styles for new UI elements. (Committed)
 * **Key System Changes:**
-* Improved integration between Archer List and Ranking Round
+    *   The Ranking Round app now fully supports a bale-centric scoring model.
 * **Uncommitted Changes (Summary):**
-* 
+    *   None. Workspace is clean.
 * **Untested Changes (Summary):**
-* No Automated testing was updated
+    *   Manual testing performed, but no new automated unit tests were added for the new logic.
 * **Next Immediate Steps (for next session):**
-* 1. Continue fine-tuning Ranking Round and Archer List integration
-* 2. Polish UI/UX and error handling
+    *   Begin the UI/UX cleanup for the Home Page (`index.html`).
 * **Blockers/Open Questions:**
-* None currently
+    *   None currently.
 * **User's Personal Notes/Reminders:**
-* Use deployFTP.sh for safe, versioned deployments
-* Always test modal and integration flows after changes
+    *   Ranking Round 2.0 is a major success. The workflow feels much more natural.
 
 ---
 
@@ -72,51 +70,20 @@ This document is designed to help us (User and LLM) start, conduct, and pause/en
 
 * **Project:** Archery Score Management Suite
 * **Vision:** A suite of distinct, mobile-first web apps for scoring the primary formats of OAS archery: Ranking, Solo, and Team, with robust integration and automation.
-* **Current Phase:** 
-Ranking Round Export and Sync Functions
-Create Round Total Block
-Export and SMS Total Block
-Create Export to app-export
-
-
-* **Immediate Goal:** 
-PAUSE TO CONFIRM EACH STEP BEFORE COMPLETING
-Create "Round Total" and "Round Export" 
-Optimize the Home Landing Page.
+* **Current Phase:** UI/UX Cleanup Initiative
+* **Immediate Goal:** Overhaul the Home Page (`index.html`) and Archer List (`archer_list.html`) to improve usability and visual appeal.
 
 * **Session Start Date & Time:** `2025-06-16`
-* **Active Persona:** Devin (Dev Lead)
+* **Active Persona:** Pam (Product Manager)
 * **Next Immediate Steps:**
-reference the screen shot for totals
-* **Global Footer & Header Cleanup:**
-for reference there are 3 "Panels" in the "Ranking Round" 
-Setup Bale
-Score End
-Card Review
-all the panels share a common footer
-All panels have Header with variable data based on state and the selected archer
-Introduce a "Sub Header" that can be used for "Search" or Panel specific buttons
-Tasks
- 
-*** Bale Setup Screen (`ranking_round.html`) Cleanup:**
-
-* **Home (`index.html`) Cleanup:**
-    *Achieve a no-scroll, clean page layout.
-  * Shrink the header.
-    *Implement a wide button for "Archer Setup".
-  * Add buttons for "Ranking", "Solo", "Team", and "Practice" rounds.
-  * Theme of Buttons "Ranking" Row of People, "Solo" is 2 people, "Team" is 3v3, "Practice" is 1 person
-
-* **Archer List (`archer_list.html`) Cleanup:**
-  * Add a "Me" option for quick user selection.
-  * Clean up the "Edit" modal for clarity.
-  * Move "Add Archer" to the subheader.
-  * Implement sorting: favorites first, then alphabetically by First and Last name.
-  * Ensure names are left-aligned.
+    *   **Home (`index.html`) Cleanup:**
+        *   Achieve a no-scroll, clean page layout.
+        *   Shrink the header.
+        *   Implement a wide button for "Archer Setup".
+        *   Add themed buttons for "Ranking", "Solo", "Team", and "Practice" rounds.
 * **Blockers/Open Questions:**
 * None at this time
 * **User's Personal Notes/Reminders:**
-PAUSE TO CONFIRM EACH STEP BEFORE COMPLETING
 * Use the new deployFTP.sh script for all future deployments
 * Continue to test and iterate on integration and modal flows
 
