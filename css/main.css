@@ -486,19 +486,6 @@ body {
     padding-bottom: calc(var(--footer-height) + 10px) !important;
 }
 
-/* Debug styles - will show if CSS is loading */
-body::before {
-    content: 'inline css.1 loaded';
-    position: fixed;
-    top: 0;
-    right: 0;
-    background: #000;
-    color: #fff;
-    padding: 2px 5px;
-    font-size: 10px;
-    z-index: 9999;
-}
-
 /* ======================
    9. View Transitions
    ====================== */

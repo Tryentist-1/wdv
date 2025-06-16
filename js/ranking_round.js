@@ -407,9 +407,9 @@ document.addEventListener('DOMContentLoaded', () => {
         table.innerHTML = `
             <thead>
                 <tr>
-                    <th>R</th>
-                    <th>Arrow 1</th><th>Arrow 2</th><th>Arrow 3</th>
-                    <th>10s</th><th>Xs</th><th>E</th><th>TOT</th><th>AVG</th>
+                    <th>E</th>
+                    <th>A1</th><th>A2</th><th>A3</th>
+                    <th>10s</th><th>Xs</th><th>END</th><th>RUN</th><th>AVG</th>
                 </tr>
             </thead>
         `;
