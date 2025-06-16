@@ -224,6 +224,12 @@ hr {
   border-color: var(--primary-red);
 }
 
+.btn-purple {
+  color: var(--text-light);
+  background-color: var(--primary-purple);
+  border-color: var(--primary-purple);
+}
+
 .controls-container {
   height: var(--controls-height);
   padding: 0.5rem;
