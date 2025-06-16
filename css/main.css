@@ -592,6 +592,69 @@ body {
   box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
 }
 
+/* =================================
+   SOLO & TEAM ROUND SPECIFIC STYLES
+   ================================= */
+
+/* Archer Selection in Setup for Solo Card */
+.archer-select-row .selection-buttons {
+    margin-left: auto;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.archer-select-row.selected-a1 {
+    background-color: #e7f1ff !important; /* Light blue */
+    border-left: 4px solid var(--primary-blue);
+}
+
+.archer-select-row.selected-a2 {
+    background-color: #ffeeee !important; /* Light red */
+    border-left: 4px solid var(--primary-red);
+}
+
+/* Match summary styling in scoring view headers */
+#match-summary-display .a1-summary,
+.match-info-display .a1-summary {
+    font-weight: bold;
+    color: var(--primary-blue);
+}
+
+#match-summary-display .a2-summary,
+.match-info-display .a2-summary {
+    font-weight: bold;
+    color: var(--primary-red);
+}
+
+/* Make score inputs fill the cell */
+#solo_round_table input[type="text"] {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background-color: transparent;
+    text-align: center;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+#solo_round_table input[type="text"]:focus {
+    outline: 2px solid var(--primary-blue);
+}
+
+/* Tie-breaker buttons in solo card */
+#solo_round_table .tie-breaker-controls .btn[data-winner="a1"] {
+    background-color: var(--primary-blue);
+    color: var(--text-light);
+}
+#solo_round_table .tie-breaker-controls .btn[data-winner="a2"] {
+    background-color: var(--primary-red);
+    color: var(--text-light);
+}
+
 /* ======================
    10. Mobile Optimizations
    ====================== */
