@@ -177,6 +177,14 @@ hr {
   padding: 0 0.5rem;
 }
 
+.archer-select-row .target-assignment-select {
+  margin-left: auto;
+  padding: 0.2rem 0.4rem;
+  font-size: 1rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-gray);
+}
+
 /* ======================
    4. Buttons & Controls
    ====================== */
@@ -662,4 +670,23 @@ body.keypad-visible {
 .score-table td.score-6, .score-table td.score-5 { background-color: var(--score-blue) !important; color: var(--text-dark) !important; }
 .score-table td.score-4, .score-table td.score-3 { background-color: var(--score-black) !important; color: var(--text-light) !important; }
 .score-table td.score-2, .score-table td.score-1 { background-color: var(--score-white) !important; color: var(--text-dark) !important; }
-.score-table td.score-m { background-color: var(--score-white) !important; color: #999 !important; } 
+.score-table td.score-m { background-color: var(--score-white) !important; color: #999 !important; }
+
+.bale-number-setup {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bale-number-setup label {
+    font-weight: bold;
+}
+
+.bale-number-setup input {
+    width: 60px;
+    padding: 0.3rem;
+    font-size: 1.1rem;
+    text-align: center;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-gray);
+} 

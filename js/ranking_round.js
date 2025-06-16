@@ -14,8 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
         currentView: 'setup', // 'setup', 'scoring', 'card'
         currentEnd: 1,
         totalEnds: 12, // Default for a 360 round
+        baleNumber: 1,
         date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-        archers: [], // { id, firstName, lastName, school, level, gender, scores, targetSize? }
+        archers: [], // { id, firstName, lastName, school, level, gender, targetAssignment, scores, targetSize? }
         activeArcherId: null, // For card view
     };
 
@@ -185,13 +186,33 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const row = document.createElement('div');
             row.className = 'archer-select-row';
+
             const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
+            const existingArcher = state.archers.find(a => a.id === uniqueId);
+
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.checked = state.archers.some(a => a.id === uniqueId);
+            checkbox.checked = !!existingArcher;
+            
+            const targetSelect = document.createElement('select');
+            targetSelect.className = 'target-assignment-select';
+            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter => {
+                const option = document.createElement('option');
+                option.value = letter;
+                option.textContent = letter;
+                targetSelect.appendChild(option);
+            });
+            targetSelect.style.display = checkbox.checked ? 'inline-block' : 'none';
+            if (existingArcher) {
+                targetSelect.value = existingArcher.targetAssignment;
+            }
+            
             checkbox.onchange = () => {
                 if (checkbox.checked) {
                     if (!state.archers.some(a => a.id === uniqueId)) {
+                        const usedTargets = state.archers.map(a => a.targetAssignment);
+                        const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
+                        const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
                         state.archers.push({
                             id: uniqueId,
                             firstName: archer.first,
@@ -199,6 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             school: archer.school || '',
                             level: archer.level || '',
                             gender: archer.gender || '',
+                            targetAssignment: nextTarget,
                             scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
                         });
                     }
@@ -206,7 +228,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.archers = state.archers.filter(a => a.id !== uniqueId);
                 }
                 saveData();
+                renderSetupForm(); // Re-render to show/hide select and update state
             };
+
+            targetSelect.onchange = () => {
+                const archerInState = state.archers.find(a => a.id === uniqueId);
+                if (archerInState) {
+                    archerInState.targetAssignment = targetSelect.value;
+                    saveData();
+                }
+            };
+            
             const star = document.createElement('span');
             star.textContent = archer.fave ? '★' : '☆';
             star.className = 'favorite-star';
@@ -226,17 +258,20 @@ document.addEventListener('DOMContentLoaded', () => {
             row.appendChild(star);
             row.appendChild(nameLabel);
             row.appendChild(detailsLabel);
+            row.appendChild(targetSelect);
             listDiv.appendChild(row);
-            row.onclick = () => {
-                checkbox.checked = !checkbox.checked;
-                checkbox.dispatchEvent(new Event('change'));
+            row.onclick = (e) => {
+                if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change'));
+                }
             };
         });
     }
 
     function renderScoringView() {
         if (!scoringControls.container) return;
-        scoringControls.currentEndDisplay.textContent = state.currentEnd;
+        scoringControls.currentEndDisplay.textContent = `Bale ${state.baleNumber} - End ${state.currentEnd}`;
         let tableHTML = `
             <table class="score-table">
                 <thead>
@@ -278,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             tableHTML += `
                 <tr data-archer-id="${archer.id}">
-                    <td>${archer.firstName} ${archer.lastName.charAt(0)}.</td>
+                    <td>${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
                     <td><input type="text" class="score-input ${getScoreColor(safeEndScores[0])}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" readonly></td>
                     <td><input type="text" class="score-input ${getScoreColor(safeEndScores[1])}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" readonly></td>
                     <td><input type="text" class="score-input ${getScoreColor(safeEndScores[2])}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" readonly></td>
@@ -303,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
         header.querySelectorAll('.card-details').forEach(el => el.remove());
         const detailsDiv = document.createElement('div');
         detailsDiv.className = 'card-details';
-        detailsDiv.innerHTML = `<span>${archer.school}</span><span>${archer.level}</span><span>${archer.gender}</span><span>${state.date}</span>`;
+        detailsDiv.innerHTML = `<span>Bale ${state.baleNumber} - Target ${archer.targetAssignment}</span><span>${archer.school}</span><span>${archer.level} / ${archer.gender}</span>`;
         header.appendChild(detailsDiv);
         const table = document.createElement('table');
         table.className = 'score-table';
@@ -529,6 +564,15 @@ document.addEventListener('DOMContentLoaded', () => {
         loadData();
         renderKeypad();
         renderView();
+
+        const baleNumberInput = document.getElementById('bale-number-input');
+        if (baleNumberInput) {
+            baleNumberInput.value = state.baleNumber;
+            baleNumberInput.onchange = () => {
+                state.baleNumber = parseInt(baleNumberInput.value, 10) || 1;
+                saveData();
+            };
+        }
 
         if (setupControls.subheader) {
             setupControls.subheader.innerHTML = '';
