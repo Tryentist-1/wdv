@@ -626,8 +626,33 @@ body {
     color: var(--primary-red);
 }
 
+/* Archer Selection in Setup for Team Card */
+.archer-select-row.selected-t1 {
+    background-color: #eafaf1 !important; /* Light green */
+    border-left: 4px solid var(--primary-green);
+}
+
+.archer-select-row.selected-t2 {
+    background-color: #fff4e8 !important; /* Light orange */
+    border-left: 4px solid var(--primary-orange);
+}
+
+/* Team summary styling in scoring view headers */
+#match-summary-display .t1-summary,
+.match-info-display .t1-summary {
+    font-weight: bold;
+    color: var(--primary-green);
+}
+
+#match-summary-display .t2-summary,
+.match-info-display .t2-summary {
+    font-weight: bold;
+    color: var(--primary-orange);
+}
+
 /* Make score inputs fill the cell */
-#solo_round_table input[type="text"] {
+#solo_round_table input[type="text"],
+#team_round_table input[type="text"] {
     width: 100%;
     height: 100%;
     padding: 0;
@@ -641,7 +666,8 @@ body {
     box-sizing: border-box;
 }
 
-#solo_round_table input[type="text"]:focus {
+#solo_round_table input[type="text"]:focus,
+#team_round_table input[type="text"]:focus {
     outline: 2px solid var(--primary-blue);
 }
 
@@ -652,6 +678,16 @@ body {
 }
 #solo_round_table .tie-breaker-controls .btn[data-winner="a2"] {
     background-color: var(--primary-red);
+    color: var(--text-light);
+}
+
+/* Tie-breaker buttons in team card */
+#team_round_table .tie-breaker-controls .btn[data-winner="t1"] {
+    background-color: var(--primary-green);
+    color: var(--text-light);
+}
+#team_round_table .tie-breaker-controls .btn[data-winner="t2"] {
+    background-color: var(--primary-orange);
     color: var(--text-light);
 }
 
