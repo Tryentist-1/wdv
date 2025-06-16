@@ -575,9 +575,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         cardControls.verifySendBtn.onclick = renderVerifyModal;
 
-        document.getElementById('prev-archer-btn').onclick = () => navigateArchers(-1);
-        document.getElementById('next-archer-btn').onclick = () => navigateArchers(1);
-
         document.body.addEventListener('focusin', (e) => {
             if (e.target.classList.contains('score-input')) {
                 keypad.currentlyFocusedInput = e.target;
