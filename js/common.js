@@ -10,69 +10,45 @@
  */
 
 /**
- * Parses a raw score input string and returns its numerical value.
- * Handles special archery values 'X' (10) and 'M' (0).
- * 
- * @param {string | number} value The score to parse. Can be 'X', 'M', or a number.
- * @returns {number} The numerical value of the score. Returns 0 for invalid inputs.
+ * Parses a score value from a string (e.g., 'X', '10', 'M') into a number.
+ * @param {string|number} score The score to parse.
+ * @returns {number} The numeric value of the score.
  */
-function parseScoreValue(value) {
-  if (typeof value === 'string') {
-    const upperVal = value.trim().toUpperCase();
-    if (upperVal === 'X') {
-      return 10;
+function parseScoreValue(score) {
+    if (typeof score === 'string') {
+        const upperScore = score.toUpperCase().trim();
+        if (upperScore === 'X') return 10;
+        if (upperScore === 'M') return 0;
+        const num = parseInt(upperScore, 10);
+        return isNaN(num) ? 0 : num;
     }
-    if (upperVal === 'M') {
-      return 0;
+    if (typeof score === 'number' && !isNaN(score)) {
+        return score;
     }
-    const num = parseInt(upperVal, 10);
-    return isNaN(num) ? 0 : num;
-  }
-  if (typeof value === 'number' && !isNaN(value)) {
-    return value;
-  }
-  return 0;
+    return 0;
 }
 
 /**
- * Determines the appropriate CSS class for a score value based on standard
- * Olympic archery target colors.
- * 
- * @param {string | number} value The score value ('X', 'M', 1-10).
- * @returns {string} The corresponding CSS class name (e.g., 'score-x', 'score-9', etc.).
- *                   Returns 'score-empty' for non-scoring values.
+ * Gets the appropriate CSS class for a given score value for color-coding.
+ * @param {string|number} score The score value.
+ * @returns {string} The CSS class name.
  */
-function getScoreColor(value) {
-    const strValue = String(value).trim().toUpperCase();
-
-    switch (strValue) {
-        case 'X':
-            return 'score-x';
-        case '10':
-            return 'score-10';
-        case '9':
-            return 'score-9';
-        case '8':
-            return 'score-8';
-        case '7':
-            return 'score-7';
-        case '6':
-            return 'score-6';
-        case '5':
-            return 'score-5';
-        case '4':
-            return 'score-4';
-        case '3':
-            return 'score-3';
-        case '2':
-            return 'score-2';
-        case '1':
-            return 'score-1';
-        case 'M':
-            return 'score-m';
-        default:
-            return 'score-empty';
-    }
+function getScoreColor(score) {
+    if (score === '' || score === null || score === undefined) return 'score-empty';
+    const strScore = String(score).toUpperCase().trim();
+    if (strScore === 'X') return 'score-x';
+    if (strScore === 'M') return 'score-m';
+    if (strScore === '10') return 'score-10';
+    if (strScore === '9') return 'score-9';
+    if (strScore === '8') return 'score-8';
+    if (strScore === '7') return 'score-7';
+    if (strScore === '6') return 'score-6';
+    if (strScore === '5') return 'score-5';
+    if (strScore === '4') return 'score-4';
+    if (strScore === '3') return 'score-3';
+    if (strScore === '2') return 'score-2';
+    if (strScore === '1') return 'score-1';
+    return 'score-empty';
 }
 
 // Export for Node.js environment (for testing)

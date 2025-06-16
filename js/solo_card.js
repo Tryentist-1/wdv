@@ -39,38 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- UTILITY FUNCTIONS ---
-    function parseScoreValue(score) {
-        if (typeof score === 'string') {
-            const upperScore = score.toUpperCase().trim();
-            if (upperScore === 'X') return 10;
-            if (upperScore === 'M') return 0;
-            const num = parseInt(upperScore, 10);
-            return isNaN(num) ? 0 : num;
-        }
-        if (typeof score === 'number' && !isNaN(score)) {
-            return score;
-        }
-        return 0;
-    }
-
-    function getScoreColor(score) {
-        if (score === '' || score === null || score === undefined) return 'score-empty';
-        const strScore = String(score).toUpperCase().trim();
-        if (strScore === 'X') return 'score-x';
-        if (strScore === 'M') return 'score-m';
-        if (strScore === '10') return 'score-10';
-        if (strScore === '9') return 'score-9';
-        if (strScore === '8') return 'score-8';
-        if (strScore === '7') return 'score-7';
-        if (strScore === '6') return 'score-6';
-        if (strScore === '5') return 'score-5';
-        if (strScore === '4') return 'score-4';
-        if (strScore === '3') return 'score-3';
-        if (strScore === '2') return 'score-2';
-        if (strScore === '1') return 'score-1';
-        return 'score-empty';
-    }
-
 
     // --- VIEW MANAGEMENT ---
     function renderView() {
@@ -232,12 +200,12 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < 5; i++) {
             tableHTML += `<tr id="end-${i+1}">
                 <td>End ${i+1}</td>
-                <td><input type="text" data-archer="a1" data-end="${i}" data-arrow="0" value="${state.scores.a1[i][0]}" readonly></td>
-                <td><input type="text" data-archer="a1" data-end="${i}" data-arrow="1" value="${state.scores.a1[i][1]}" readonly></td>
-                <td><input type="text" data-archer="a1" data-end="${i}" data-arrow="2" value="${state.scores.a1[i][2]}" readonly></td>
-                <td><input type="text" data-archer="a2" data-end="${i}" data-arrow="0" value="${state.scores.a2[i][0]}" readonly></td>
-                <td><input type="text" data-archer="a2" data-end="${i}" data-arrow="1" value="${state.scores.a2[i][1]}" readonly></td>
-                <td><input type="text" data-archer="a2" data-end="${i}" data-arrow="2" value="${state.scores.a2[i][2]}" readonly></td>
+                <td class="${getScoreColor(state.scores.a1[i][0])}"><input type="text" data-archer="a1" data-end="${i}" data-arrow="0" value="${state.scores.a1[i][0]}" readonly></td>
+                <td class="${getScoreColor(state.scores.a1[i][1])}"><input type="text" data-archer="a1" data-end="${i}" data-arrow="1" value="${state.scores.a1[i][1]}" readonly></td>
+                <td class="${getScoreColor(state.scores.a1[i][2])}"><input type="text" data-archer="a1" data-end="${i}" data-arrow="2" value="${state.scores.a1[i][2]}" readonly></td>
+                <td class="${getScoreColor(state.scores.a2[i][0])}"><input type="text" data-archer="a2" data-end="${i}" data-arrow="0" value="${state.scores.a2[i][0]}" readonly></td>
+                <td class="${getScoreColor(state.scores.a2[i][1])}"><input type="text" data-archer="a2" data-end="${i}" data-arrow="1" value="${state.scores.a2[i][1]}" readonly></td>
+                <td class="${getScoreColor(state.scores.a2[i][2])}"><input type="text" data-archer="a2" data-end="${i}" data-arrow="2" value="${state.scores.a2[i][2]}" readonly></td>
                 <td class="calculated-cell" id="a1-e${i+1}-total"></td>
                 <td class="calculated-cell" id="a2-e${i+1}-total"></td>
                 <td class="calculated-cell" id="a1-e${i+1}-setpts"></td>
@@ -248,8 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tableHTML += `
             <tr id="shoot-off" style="display: none;">
                 <td>S.O.</td>
-                <td colspan="2"><input type="text" data-archer="a1" data-end="so" data-arrow="0" value="${state.scores.so.a1}" readonly></td><td></td>
-                <td colspan="2"><input type="text" data-archer="a2" data-end="so" data-arrow="0" value="${state.scores.so.a2}" readonly></td><td></td>
+                <td colspan="2" class="${getScoreColor(state.scores.so.a1)}"><input type="text" data-archer="a1" data-end="so" data-arrow="0" value="${state.scores.so.a1}" readonly></td><td></td>
+                <td colspan="2" class="${getScoreColor(state.scores.so.a2)}"><input type="text" data-archer="a2" data-end="so" data-arrow="0" value="${state.scores.so.a2}" readonly></td><td></td>
                 <td class="calculated-cell" id="a1-so-total"></td>
                 <td class="calculated-cell" id="a2-so-total"></td>
                 <td colspan="2" id="so-winner-cell">
@@ -406,14 +374,22 @@ document.addEventListener('DOMContentLoaded', () => {
             input.value = value;
         }
 
-        // Directly call the handler
-        handleScoreInput({ target: input });
+        // Dispatch an event to trigger the update
+        input.dispatchEvent(new Event('input', { bubbles: true }));
 
         // Auto-advance focus after score entry (but not for clear)
         if (value) {
+            // Re-fetch the list of inputs as the DOM may have been updated
             const allInputs = Array.from(document.querySelectorAll('#scoring-view input[type="text"]'));
-            const currentIndex = allInputs.indexOf(input);
-            if (currentIndex < allInputs.length - 1) {
+            // Find the index of the *current* input by its unique data attributes,
+            // not by object reference, which can be stale.
+            const currentIndex = allInputs.findIndex(el => 
+                el.dataset.archer === input.dataset.archer &&
+                el.dataset.end === input.dataset.end &&
+                el.dataset.arrow === input.dataset.arrow
+            );
+
+            if (currentIndex !== -1 && currentIndex < allInputs.length - 1) {
                 allInputs[currentIndex + 1].focus();
             } else {
                 // If it's the last input, close the keypad
@@ -430,11 +406,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (end === 'so') {
             state.scores.so[archer] = input.value;
         } else {
-            state.scores[archer][parseInt(end,10)][parseInt(arrow,10)] = input.value;
+            state.scores[archer][parseInt(end, 10)][parseInt(arrow, 10)] = input.value;
         }
 
-        input.parentElement.className = `score-cell ${getScoreColor(input.value)}`;
-        updateScoreHighlightsAndTotals();
+        // Re-render the entire view to ensure consistency
+        renderScoringView();
         saveData();
     }
     
@@ -486,6 +462,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         keypadElement.addEventListener('click', handleKeypadClick);
         
+        scoreTableContainer.addEventListener('input', (e) => {
+            if(e.target.matches('input[type="text"]')) {
+                handleScoreInput(e);
+            }
+        });
+        
         scoreTableContainer.addEventListener('click', (e) => {
             if (e.target.matches('.tie-breaker-controls button')) {
                 state.shootOffWinner = e.target.dataset.winner;
@@ -495,5 +477,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    init();
+    // Only initialize the app if we are on the solo card page
+    if (document.title.includes('Solo Match')) {
+        init();
+    }
 });
