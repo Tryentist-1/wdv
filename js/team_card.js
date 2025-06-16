@@ -230,18 +230,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${state.scores.so.t1.map((s,a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t1" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`).join('')}<td colspan="3"></td>
                 ${state.scores.so.t2.map((s,a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t2" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`).join('')}<td colspan="3"></td>
                 <td class="calculated-cell" id="t1-so-total"></td><td class="calculated-cell" id="t2-so-total"></td>
-                <td colspan="2" id="so-winner-cell">
+                <td colspan="2" id="so-winner-cell" class="calculated-cell">
                     <span id="so-winner-text"></span>
-                    <span class="tie-breaker-controls" style="display:none;">
-                        <button class="btn btn-sm" data-winner="t1">T1 Wins</button>
-                        <button class="btn btn-sm" data-winner="t2">T2 Wins</button>
-                    </span>
                 </td>
             </tr></tbody>
             <tfoot>
-                <tr><td colspan="14" style="text-align: right; font-weight: bold;">Match Score:</td>
-                    <td class="calculated-cell" id="t1-match-score"></td><td class="calculated-cell" id="t2-match-score"></td></tr>
-                <tr><td colspan="16" id="match-result"></td></tr>
+                <tr><td colspan="15" style="text-align: right; font-weight: bold;">Match Score:</td>
+                    <td class="calculated-cell" id="t1-match-score"></td>
+                    <td class="calculated-cell" id="t2-match-score"></td>
+                </tr>
+                <tr id="judge-call-row" style="display: none;">
+                    <td colspan="17" style="text-align: center; padding: 8px; background-color: #fffacd;">
+                        <span style="font-weight: bold; margin-right: 10px;">Judge Call (Closest to Center):</span>
+                        <span class="tie-breaker-controls">
+                            <button class="btn" data-winner="t1">Team 1 Wins</button>
+                            <button class="btn" data-winner="t2">Team 2 Wins</button>
+                        </span>
+                    </td>
+                </tr>
+                <tr><td colspan="17" id="match-result"></td></tr>
             </tfoot>
         </table>`;
         scoreTableContainer.innerHTML = tableHTML;
@@ -276,6 +283,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('t2-match-score').textContent = t2MatchScore;
 
         const shootOffRow = document.getElementById('shoot-off');
+        const judgeCallRow = document.getElementById('judge-call-row');
+        judgeCallRow.style.display = 'none'; // Hide by default
+
         if (!matchOver && t1MatchScore === 4 && t2MatchScore === 4) {
             shootOffRow.style.display = 'table-row';
             const t1SoTotal = state.scores.so.t1.reduce((sum, s) => sum + parseScoreValue(s), 0);
@@ -283,18 +293,43 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('t1-so-total').textContent = t1SoTotal;
             document.getElementById('t2-so-total').textContent = t2SoTotal;
             const soComplete = state.scores.so.t1.every(s => s !== '') && state.scores.so.t2.every(s => s !== '');
+            
+            const soWinnerText = document.getElementById('so-winner-text');
+            
             if (soComplete) {
-                if (t1SoTotal > t2SoTotal) { winner = 't1'; matchOver = true; } 
-                else if (t2SoTotal > t1SoTotal) { winner = 't2'; matchOver = true; } 
-                else { // Tied shootoff
-                    if(state.shootOffWinner) {
-                        winner = state.shootOffWinner;
+                if (t1SoTotal > t2SoTotal) { 
+                    winner = 't1'; 
+                    matchOver = true; 
+                    soWinnerText.textContent = 'T1 Wins S.O.';
+                } else if (t2SoTotal > t1SoTotal) { 
+                    winner = 't2'; 
+                    matchOver = true; 
+                    soWinnerText.textContent = 'T2 Wins S.O.';
+                } else { // Tied shoot-off total, check highest arrow
+                    const t1Max = Math.max(...state.scores.so.t1.map(s => parseScoreValue(s)));
+                    const t2Max = Math.max(...state.scores.so.t2.map(s => parseScoreValue(s)));
+
+                    if (t1Max > t2Max) {
+                        winner = 't1';
                         matchOver = true;
-                    } else {
-                        document.getElementById('so-winner-text').textContent = 'Judge Call:';
-                        document.querySelector('.tie-breaker-controls').style.display = 'inline-block';
+                        soWinnerText.textContent = 'T1 Wins (High Arrow)';
+                    } else if (t2Max > t1Max) {
+                        winner = 't2';
+                        matchOver = true;
+                        soWinnerText.textContent = 'T2 Wins (High Arrow)';
+                    } else { // Still tied, must be a judge call
+                        if (state.shootOffWinner) {
+                            winner = state.shootOffWinner;
+                            matchOver = true;
+                            soWinnerText.textContent = `T${winner === 't1' ? 1 : 2} Wins (Closest)`;
+                        } else {
+                            soWinnerText.textContent = 'Tied!';
+                            judgeCallRow.style.display = 'table-row';
+                        }
                     }
                 }
+            } else {
+                soWinnerText.textContent = 'Enter S.O. Scores';
             }
         } else {
             shootOffRow.style.display = 'none';
