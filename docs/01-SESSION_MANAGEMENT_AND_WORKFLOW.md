@@ -51,20 +51,15 @@ This document is designed to help us (User and LLM) start, conduct, and pause/en
 * **Key Files Modified (and their status):**
 * `js/ranking_round.js`: Bugfixes, event handler improvements, modal logic
 * `ranking_round.html`: UI/UX tweaks, integration points
-* `deployFTP.sh`: New deployment automation script
-* `docs/01-SESSION_MANAGEMENT_AND_WORKFLOW.md`: Updated session summary
 * **Key System Changes:**
-* Automated deployment and backup process using deployFTP.sh
-* Robust modal and event handling in Ranking Round
 * Improved integration between Archer List and Ranking Round
 * **Uncommitted Changes (Summary):**
-* None (all changes committed and deployed)
+* 
 * **Untested Changes (Summary):**
-* None (all critical flows tested)
+* No Automated testing was updated
 * **Next Immediate Steps (for next session):**
 * 1. Continue fine-tuning Ranking Round and Archer List integration
 * 2. Polish UI/UX and error handling
-* 3. Expand automated deployment as needed
 * **Blockers/Open Questions:**
 * None currently
 * **User's Personal Notes/Reminders:**
@@ -77,12 +72,22 @@ This document is designed to help us (User and LLM) start, conduct, and pause/en
 
 * **Project:** Archery Score Management Suite
 * **Vision:** A suite of distinct, mobile-first web apps for scoring the primary formats of OAS archery: Ranking, Solo, and Team, with robust integration and automation.
-* **Current Phase:** UI/UX Cleanup and Consolidation
-* **Immediate Goal:** Refactor and standardize the UI/UX across the main application views (Home, Archer List, Ranking Round) for consistency and improved usability. In STEPS, with Git Commits for each step
-* **Session Start Date & Time:** `2025-06-15`
+* **Current Phase:** 
+Ranking Round Export and Sync Functions
+Create Round Total Block
+Export and SMS Total Block
+Create Export to app-export
+
+
+* **Immediate Goal:** 
+PAUSE TO CONFIRM EACH STEP BEFORE COMPLETING
+Create "Round Total" and "Round Export" 
+Optimize the Home Landing Page.
+
+* **Session Start Date & Time:** `2025-06-16`
 * **Active Persona:** Devin (Dev Lead)
 * **Next Immediate Steps:**
-reference the screen shot with notations
+reference the screen shot for totals
 * **Global Footer & Header Cleanup:**
 for reference there are 3 "Panels" in the "Ranking Round" 
 Setup Bale
@@ -92,33 +97,26 @@ all the panels share a common footer
 All panels have Header with variable data based on state and the selected archer
 Introduce a "Sub Header" that can be used for "Search" or Panel specific buttons
 Tasks
-    *Move "Home" to the left corner of the footer.
-    Add a "Setup" navigation button (blue) that goes to the Setup Bale navigation panel. This should be a navigation only and not perform any data modificiations
-  * Rename "New R" to "Reset" it will be moved to the subheader of the Bale Setup Panel
-  * Ensure "Setup" navigates to the "Bale Setup" screen.
+ 
 *** Bale Setup Screen (`ranking_round.html`) Cleanup:**
-  * Add Subheader with Search Box,*Resize the search bar for better readability and aesthetics.
-  * Move "Refresh Master List" to the subheader and rename "Refresh"
-  * Add the "Reset" button to the subheader that invokes the "Reset Modal"
-  * Rename "Start Scoring" to "Scoring" and move it to the subheader, right-aligned.
-  * Delete "Add Archer" button.
-  * Fix body spacing to keep buttons out of the list management area. there should be NO BUTTONS on the Bale Setup Panel body, save it for making the working list of archers larger.
+
 * **Home (`index.html`) Cleanup:**
     *Achieve a no-scroll, clean page layout.
   * Shrink the header.
     *Implement a wide button for "Archer Setup".
   * Add buttons for "Ranking", "Solo", "Team", and "Practice" rounds.
+  * Theme of Buttons "Ranking" Row of People, "Solo" is 2 people, "Team" is 3v3, "Practice" is 1 person
+
 * **Archer List (`archer_list.html`) Cleanup:**
-    *Adjust the global footer to match the new standard.
   * Add a "Me" option for quick user selection.
-    *Clean up the "Edit" modal for clarity.
+  * Clean up the "Edit" modal for clarity.
   * Move "Add Archer" to the subheader.
-    *Implement sorting: favorites first, then alphabetically by First and Last name.
+  * Implement sorting: favorites first, then alphabetically by First and Last name.
   * Ensure names are left-aligned.
 * **Blockers/Open Questions:**
 * None at this time
 * **User's Personal Notes/Reminders:**
-* All code is now versioned and safely deployed
+PAUSE TO CONFIRM EACH STEP BEFORE COMPLETING
 * Use the new deployFTP.sh script for all future deployments
 * Continue to test and iterate on integration and modal flows
 
@@ -167,33 +165,9 @@ bash DeployFTP.sh
 
 ## Architectural Learnings (As of 2025-06-12)
 
-A major refactoring effort on the Ranking Round app, while ultimately rolled back due to implementation flaws, revealed a superior architectural pattern that should be adopted for all future development.
-
-### Previous Flawed Architecture
-
-* **Multiple, Independent Rendering Functions:** The application used separate functions (`renderSetupForm`, `renderScoringView`, `renderCardView`, etc.) that directly manipulated different parts of the DOM.
-* **Scattered Event Listeners:** Event listeners were attached in various places, some directly in the `init()` function and others incorrectly re-attached inside rendering functions.
-* **State & DOM Unsynchronized:** The application state was often updated by reading values directly from the DOM, creating an unreliable source of truth.
-
-This architecture proved to be fragile, difficult to debug, and led to cascading bugs, such as unresponsive buttons and inconsistent UI states.
-
-### New, Preferred Architecture: The State-Driven UI
-
-All new application development should follow this more robust pattern:
-
-1. **Single Source of Truth:** A comprehensive `state` object is the sole authority for all application data (e.g., `currentView`, `archers`, `currentEnd`, `focusedInput`). The UI is a direct, read-only representation of this state.
-
-2. **Centralized `render()` Function:** A single, master `render()` function is responsible for all DOM manipulation.
-    * It is called after any state change.
-    * It clears and redraws the necessary parts of the UI based *only* on the data in the `state` object.
-    * It uses a `switch` statement on `state.currentView` to determine which primary view to display.
-
-3. **Centralized, Delegated Event Handling:**
-    * A single, primary event listener is attached to a static parent container (e.g., `#app-container`).
-    * This listener uses event delegation to capture all user interactions (clicks, changes, etc.).
-    * **The Golden Rule:** The *only* job of an event handler is to update the `state` object and then call the master `render()` function. Event handlers should **never** manipulate the DOM directly.
-
-This pattern ensures a predictable, one-way data flow (State -> Render -> DOM), which dramatically improves stability, simplifies debugging, and makes the application's behavior much easier to reason about.
+Mobile Web App
+Usability on Phones with Safari and Chrome mixed and local storage.
+No Horizantal Scrolling Interface
 
 ---
 
@@ -221,10 +195,8 @@ This pattern ensures a predictable, one-way data flow (State -> Render -> DOM), 
 ## Plan
 
 1. **Implement Archer Management Module**
-   * Load/save archer list from/to local storage
-   * Import from CSV (manual or via file picker)
-   * Add, edit, delete archers in the UI
-   * Export current list as CSV
+   * Optimize Archer Module Subheader and Buttons
+   
 2. **Integrate with Ranking Round App**
    * Select archers from the master list for each round
    * Store round data (archers + scores) in local storage
@@ -239,9 +211,8 @@ This pattern ensures a predictable, one-way data flow (State -> Render -> DOM), 
 
 ## Integration Plan: Archer List with Ranking Round
 
-* Created a feature branch (`feature/ranking-round-archer-integration`) for safe, isolated development
+* Created a development branch (`development`) for safe, isolated development
 
 * Tagged the current MVP as `archer-list-mvp` for easy rollback if needed
 * Goal: Allow the Ranking Round app to select archers from the master list managed by the Archer Management module
 * All integration work will be committed incrementally to the feature branch
-* If any issues arise, we can revert to the `archer-list-mvp` tag for a stable baseline

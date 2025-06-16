@@ -820,6 +820,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 exportCardAsText(state.activeArcherId);
             }
         };
+        document.getElementById('prev-archer-btn').onclick = () => navigateArchers(-1);
         document.getElementById('next-archer-btn').onclick = () => navigateArchers(1);
 
         // --- DELEGATED EVENT LISTENERS (for dynamic elements) ---
@@ -835,7 +836,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show Card View
             if (e.target.classList.contains('view-card-btn')) {
                 state.currentView = 'card';
-                renderCardView(e.target.dataset.archerId);
+                state.activeArcherId = e.target.dataset.archerId;
+                renderCardView(state.activeArcherId);
                 renderView();
                 keypad.element.style.display = 'none';
             }
@@ -872,19 +874,19 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function loadSampleData() {
         state.archers = [
-            { id: 1, firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', scores: [
+            { id: '1', firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', scores: [
                 ['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],
                 ['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9'], ['10','10','10'], ['8','8','7']
             ], targetSize: '40cm' },
-            { id: 2, firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', scores: [
+            { id: '2', firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', scores: [
                 ['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],
                 ['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M'], ['7','7','8'], ['9','9','10']
             ], targetSize: '40cm' },
-            { id: 3, firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', scores: [
+            { id: '3', firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', scores: [
                 ['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],
                 ['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M'], ['7','6','X'], ['10','9','8']
             ], targetSize: '40cm' },
-            { id: 4, firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', scores: [
+            { id: '4', firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', scores: [
                 ['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],
                 ['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6'], ['X','X','X'], ['9','9','8']
             ], targetSize: '40cm' },
@@ -896,9 +898,14 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {number} direction -1 for previous, 1 for next.
      */
     function navigateArchers(direction) {
-        const currentArcherId = parseInt(document.querySelector('#card-view .score-table').dataset.archerId);
-        const currentIndex = state.archers.findIndex(a => a.id === currentArcherId);
+        const currentArcherId = state.activeArcherId;
+        const currentIndex = state.archers.findIndex(a => a.id == currentArcherId);
         
+        if (currentIndex === -1) {
+            console.error("Could not find active archer in state.");
+            return;
+        }
+
         let nextIndex = currentIndex + direction;
 
         // Wrap around
@@ -910,6 +917,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const nextArcherId = state.archers[nextIndex].id;
+        state.activeArcherId = nextArcherId; // Update state with the new active archer
         renderCardView(nextArcherId);
     }
 
