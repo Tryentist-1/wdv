@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container: document.getElementById('individual-card-container'),
         archerNameDisplay: document.getElementById('card-view-archer-name'),
         backToScoringBtn: document.getElementById('back-to-scoring-btn'),
-        exportCardBtn: document.getElementById('export-card-btn'),
+        verifySendBtn: document.getElementById('verify-send-btn'), // Changed from export
     };
 
     const resetModal = {
@@ -394,38 +394,6 @@ document.addEventListener('DOMContentLoaded', () => {
         cardControls.container.appendChild(table);
     }
     
-    function exportCardAsText(archerId) {
-        const archer = state.archers.find(a => a.id == archerId);
-        if (!archer) {
-            alert('Could not find archer to export.');
-            return;
-        }
-        let totalScore = 0, totalArrows = 0, tens = 0, xs = 0;
-        archer.scores.forEach(end => {
-            end.forEach(scoreStr => {
-                if (scoreStr !== '' && scoreStr !== null) {
-                    totalArrows++;
-                    const scoreVal = parseScoreValue(scoreStr);
-                    totalScore += scoreVal;
-                    if (scoreVal === 10) {
-                        if (String(scoreStr).toUpperCase() === 'X') xs++;
-                        tens++;
-                    }
-                }
-            });
-        });
-        const avgArrow = totalArrows > 0 ? (totalScore / totalArrows).toFixed(2) : '0.00';
-        const timestamp = new Date().toLocaleDateString('en-US');
-        const archerName = `${archer.firstName} ${archer.lastName}`;
-        const data = [archerName, tens, xs, totalScore, avgArrow, timestamp, archer.gender || 'N/A'].join('\t');
-        navigator.clipboard.writeText(data).then(() => {
-            alert(`Score data for ${archerName} copied to clipboard!`);
-        }).catch(err => {
-            console.error('Failed to copy text: ', err);
-            alert('Could not copy data. Please try again.');
-        });
-    }
-
     function getBaleTotals() {
         return state.archers.map(archer => {
             let totalScore = 0, totalArrows = 0, tens = 0, xs = 0;
@@ -616,7 +584,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
         scoringControls.nextEndBtn.onclick = () => changeEnd(1);
-        document.getElementById('verify-send-btn').onclick = renderVerifyModal;
         
         resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
         resetModal.resetBtn.onclick = () => {
@@ -638,11 +605,8 @@ document.addEventListener('DOMContentLoaded', () => {
             state.currentView = 'scoring';
             renderView();
         };
-        cardControls.exportCardBtn.onclick = () => {
-            if (state.activeArcherId) {
-                exportCardAsText(state.activeArcherId);
-            }
-        };
+        cardControls.verifySendBtn.onclick = renderVerifyModal;
+
         document.getElementById('prev-archer-btn').onclick = () => navigateArchers(-1);
         document.getElementById('next-archer-btn').onclick = () => navigateArchers(1);
 
