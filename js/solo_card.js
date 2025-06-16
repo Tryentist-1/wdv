@@ -376,32 +376,50 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleKeypadClick(e) {
         const button = e.target.closest('.keypad-btn');
         if (!button || !keypad.currentlyFocusedInput) return;
+
         const action = button.dataset.action;
         const value = button.dataset.value;
         const input = keypad.currentlyFocusedInput;
-        const allInputs = Array.from(document.querySelectorAll('#scoring-view input[type="text"]'));
-        const currentIndex = allInputs.indexOf(input);
 
-        if (action === 'prev') {
-            if (currentIndex > 0) allInputs[currentIndex - 1].focus();
+        // --- Navigation ---
+        if (action === 'prev' || action === 'next') {
+            const allInputs = Array.from(document.querySelectorAll('#scoring-view input[type="text"]'));
+            const currentIndex = allInputs.indexOf(input);
+            if (action === 'prev' && currentIndex > 0) {
+                allInputs[currentIndex - 1].focus();
+            } else if (action === 'next' && currentIndex < allInputs.length - 1) {
+                allInputs[currentIndex + 1].focus();
+            }
             return;
         }
-        if (action === 'next') {
-            if (currentIndex < allInputs.length - 1) allInputs[currentIndex + 1].focus();
-            return;
-        }
+
         if (action === 'close') {
             keypadElement.style.display = 'none';
             document.body.classList.remove('keypad-visible');
             return;
         }
 
-        if (action === 'clear') input.value = '';
-        else if (value) input.value = value;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        
-        if (value && currentIndex < allInputs.length - 1) {
-            allInputs[currentIndex + 1].focus();
+        // --- Score Entry ---
+        if (action === 'clear') {
+            input.value = '';
+        } else if (value) {
+            input.value = value;
+        }
+
+        // Directly call the handler
+        handleScoreInput({ target: input });
+
+        // Auto-advance focus after score entry (but not for clear)
+        if (value) {
+            const allInputs = Array.from(document.querySelectorAll('#scoring-view input[type="text"]'));
+            const currentIndex = allInputs.indexOf(input);
+            if (currentIndex < allInputs.length - 1) {
+                allInputs[currentIndex + 1].focus();
+            } else {
+                // If it's the last input, close the keypad
+                keypadElement.style.display = 'none';
+                document.body.classList.remove('keypad-visible');
+            }
         }
     }
 
@@ -463,12 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 keypad.currentlyFocusedInput = e.target;
                 keypadElement.style.display = 'grid';
                 document.body.classList.add('keypad-visible');
-            }
-        });
-        
-        document.body.addEventListener('input', (e) => {
-            if (e.target.matches('#scoring-view input[type="text"]')) {
-                handleScoreInput(e);
             }
         });
         
