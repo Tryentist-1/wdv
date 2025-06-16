@@ -211,38 +211,40 @@ document.addEventListener('DOMContentLoaded', () => {
             return name.includes(filter.toLowerCase());
         });
 
+        let allArchersHeaderAdded = !hasFavorites;
         filteredList.forEach((archer, idx) => {
             // Add "All Archers" separator
-            if (idx > 0 && archer.fave !== filteredList[idx-1].fave) {
+            if (!archer.fave && !allArchersHeaderAdded) {
                 const separator = document.createElement('div');
                 separator.className = 'list-header';
                 separator.textContent = '☆ All Archers';
                 listDiv.appendChild(separator);
+                allArchersHeaderAdded = true;
             }
 
             const row = document.createElement('div');
             row.className = 'archer-select-row';
 
+            const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
+            
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.checked = state.archers.some(a => a.firstName === archer.first && a.lastName === archer.last);
+            checkbox.checked = state.archers.some(a => a.id === uniqueId);
             checkbox.onchange = () => {
                 if (checkbox.checked) {
-                    // Add archer to state
-                    if (!state.archers.some(a => a.firstName === archer.first && a.lastName === archer.last)) {
+                    if (!state.archers.some(a => a.id === uniqueId)) {
                         state.archers.push({
-                            id: Date.now() + Math.random(),
+                            id: uniqueId,
                             firstName: archer.first,
                             lastName: archer.last,
                             school: archer.school || '',
                             level: archer.level || '',
                             gender: archer.gender || '',
-                            scores: Array(state.totalEnds).fill(null).map(() => Array(3).fill(null))
+                            scores: Array(state.totalEnds).fill(null).map(() => ['', '', '']) // Use empty strings for empty scores
                         });
                     }
                 } else {
-                    // Remove archer from state
-                    state.archers = state.archers.filter(a => !(a.firstName === archer.first && a.lastName === archer.last));
+                    state.archers = state.archers.filter(a => a.id !== uniqueId);
                 }
                 saveData();
             };
@@ -250,22 +252,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const star = document.createElement('span');
             star.textContent = archer.fave ? '★' : '☆';
             star.className = 'favorite-star';
-            star.style.color = archer.fave ? '#e6b800' : '#ccc';
+            star.style.color = archer.fave ? '#ffc107' : '#ccc';
             star.onclick = (e) => {
                 e.stopPropagation();
                 ArcherModule.toggleFavorite(archer.first, archer.last);
-                renderSetupForm(); // Re-render the form to reflect the change
+                renderSetupForm();
             };
 
             const nameLabel = document.createElement('span');
             nameLabel.textContent = `${archer.first} ${archer.last}`;
             nameLabel.className = 'archer-name-label';
             
+            const detailsLabel = document.createElement('span');
+            detailsLabel.className = 'archer-details-label';
+            detailsLabel.textContent = `(${archer.level || 'VAR'})`;
+            
             row.appendChild(checkbox);
             row.appendChild(star);
             row.appendChild(nameLabel);
+            row.appendChild(detailsLabel);
             listDiv.appendChild(row);
 
+            // Make the whole row clickable
             row.onclick = () => {
                 checkbox.checked = !checkbox.checked;
                 checkbox.dispatchEvent(new Event('change'));
@@ -280,59 +288,63 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!scoringControls.container) return;
         scoringControls.currentEndDisplay.textContent = state.currentEnd;
 
-        const table = document.createElement('table');
-        table.className = 'score-table';
-
-        // Create table header
-        table.innerHTML = `
-            <thead>
-                <tr>
-                    <th>Archer</th>
-                    <th>A1</th>
-                    <th>A2</th>
-                    <th>A3</th>
-                    <th>10s</th>
-                    <th>X</th>
-                    <th>End</th>
-                    <th>Run</th>
-                    <th>Avg</th>
-                    <th>Card</th>
-                </tr>
-            </thead>
+        let tableHTML = `
+            <table class="score-table">
+                <thead>
+                    <tr>
+                        <th>Archer</th>
+                        <th>A1</th>
+                        <th>A2</th>
+                        <th>A3</th>
+                        <th>10s</th>
+                        <th>X</th>
+                        <th>End</th>
+                        <th>Run</th>
+                        <th>Avg</th>
+                        <th>Card</th>
+                    </tr>
+                </thead>
+                <tbody>
         `;
-
-        // Create table body
-        const tbody = document.createElement('tbody');
+        
         state.archers.forEach(archer => {
             const endScores = archer.scores[state.currentEnd - 1] || ['', '', ''];
-            
-            const arrowInputs = endScores.map((score, i) => {
-                return `<td><input type="text" class="score-input" value="${score}" data-archer-id="${archer.id}" data-arrow-index="${i}" readonly></td>`;
-            }).join('');
+            const safeEndScores = Array.isArray(endScores) ? endScores : ['', '', ''];
 
-            const endTotal = endScores.reduce((acc, s) => acc + parseScoreValue(s), 0);
-            const endTens = endScores.filter(s => parseScoreValue(s) === 10).length;
-            const endXs = endScores.filter(s => s.toUpperCase() === 'X').length;
+            let endTotal = 0;
+            let endTens = 0;
+            let endXs = 0;
+
+            safeEndScores.forEach(score => {
+                const upperScore = String(score).toUpperCase();
+                endTotal += parseScoreValue(score);
+                if (upperScore === '10') {
+                    endTens++;
+                } else if (upperScore === 'X') {
+                    endXs++;
+                }
+            });
 
             let runningTotal = 0;
-            let arrowsShot = 0;
-            // Loop through all ends up to the current one to calculate running totals/averages
-            for(let i = 0; i < state.currentEnd; i++) {
-                const loopEndScores = archer.scores[i] || [];
-                loopEndScores.forEach(score => {
-                    if (score !== '') {
-                        runningTotal += parseScoreValue(score);
-                    }
-                });
-            }
-            
-            // Calculate END average (for "Avg" column)
-            let endAvg = '';
+            let completedArrows = 0;
+            archer.scores.forEach(end => {
+                if (Array.isArray(end)) {
+                    end.forEach(score => {
+                        if (score !== null && score !== '') {
+                            runningTotal += parseScoreValue(score);
+                            completedArrows++;
+                        }
+                    });
+                }
+            });
+
+            // Calculate END average, not running average
+            const arrowsInEnd = safeEndScores.filter(s => s !== '' && s !== null).length;
+            const endAvg = arrowsInEnd > 0 ? (endTotal / arrowsInEnd).toFixed(1) : '0.0';
+
             let avgClass = '';
-            const arrowsInEnd = endScores.filter(s => s !== '').length;
-            if (arrowsInEnd > 0) {
-                const avgNum = endTotal / arrowsInEnd;
-                endAvg = avgNum.toFixed(1);
+            const avgNum = parseFloat(endAvg);
+            if (avgNum > 0) {
                 if (avgNum >= 9) avgClass = 'score-gold';
                 else if (avgNum >= 7) avgClass = 'score-red';
                 else if (avgNum >= 5) avgClass = 'score-blue';
@@ -340,38 +352,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 else avgClass = 'score-white';
             }
 
-            const row = document.createElement('tr');
-            row.dataset.archerId = archer.id;
-            // Use a shortened name for the main scoring view to save space
-            const displayName = `${archer.firstName} ${archer.lastName.charAt(0)}.`;
-            row.innerHTML = `
-                <td>${displayName}</td>
-                ${arrowInputs}
-                <td class="calculated-cell">${endTotal > 0 ? endTens : ''}</td>
-                <td class="calculated-cell">${endTotal > 0 ? endXs : ''}</td>
-                <td class="end-total">${endTotal > 0 ? endTotal : ''}</td>
-                <td class="calculated-cell">${runningTotal > 0 ? runningTotal : ''}</td>
-                <td class="calculated-cell score-cell ${avgClass}">${endAvg}</td>
-                <td><button class="btn btn-secondary view-card-btn" data-archer-id="${archer.id}">>></button></td>
+            tableHTML += `
+                <tr data-archer-id="${archer.id}">
+                    <td>${archer.firstName} ${archer.lastName.charAt(0)}.</td>
+                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[0])}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" readonly></td>
+                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[1])}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" readonly></td>
+                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[2])}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" readonly></td>
+                    <td class="calculated-cell">${endTens + endXs}</td>
+                    <td class="calculated-cell">${endXs}</td>
+                    <td class="calculated-cell">${endTotal}</td>
+                    <td class="calculated-cell">${runningTotal}</td>
+                    <td class="calculated-cell ${avgClass}">${endAvg}</td>
+                    <td><button class="btn view-card-btn" data-archer-id="${archer.id}">»</button></td>
+                </tr>
             `;
-            tbody.appendChild(row);
-
-            // Apply color classes to arrow score cells
-            const scoreInputs = row.querySelectorAll('.score-input');
-            scoreInputs.forEach((input, idx) => {
-                const scoreValue = input.value;
-                const td = input.parentElement;
-                // Remove all classes
-                td.className = '';
-                // Add only the color class
-                td.classList.add(getScoreColor(scoreValue));
-            });
         });
 
-        table.appendChild(tbody);
-
-        scoringControls.container.innerHTML = ''; // Clear old table
-        scoringControls.container.appendChild(table);
+        tableHTML += `</tbody></table>`;
+        scoringControls.container.innerHTML = tableHTML;
     }
     
     /**
@@ -575,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="keypad-btn" data-value="5">5</button>
                 <button class="keypad-btn" data-value="4">4</button>
                 <button class="keypad-btn" data-value="3">3</button>
-                <button class="keypad-btn" data-action="clear">Clear</button>
+                <button class="keypad-btn" data-action="clear">CLR</button>
                 <button class="keypad-btn" data-value="2">2</button>
                 <button class="keypad-btn" data-value="1">1</button>
                 <button class="keypad-btn" data-value="M">M</button>
@@ -595,56 +593,50 @@ document.addEventListener('DOMContentLoaded', () => {
         const action = button.dataset.action;
         const value = button.dataset.value;
         const input = keypad.currentlyFocusedInput;
+        const allInputs = Array.from(document.querySelectorAll('#scoring-view .score-input'));
+        const currentIndex = allInputs.indexOf(input);
 
-        if (value) {
-            // --- Identify the next input BEFORE re-rendering ---
-            const allInputs = [...document.querySelectorAll('.score-input')];
-            const currentIndex = allInputs.indexOf(input);
-            
-            let nextInputToFocus = null;
-            if (currentIndex < allInputs.length - 1) {
-                nextInputToFocus = allInputs[currentIndex + 1];
-            }
-
-            // --- Update value and state, which triggers the re-render ---
-            input.value = value;
-            input.dispatchEvent(new Event('input', { bubbles: true })); // This calls renderScoringView()
-            
-            // --- After re-render, focus the correct new input ---
-            if (nextInputToFocus) {
-                const archerId = nextInputToFocus.dataset.archerId;
-                const arrowIndex = nextInputToFocus.dataset.arrowIndex;
-                // The DOM is new, so we must re-query
-                const newNextInput = document.querySelector(`.score-input[data-archer-id='${archerId}'][data-arrow-index='${arrowIndex}']`);
-                if (newNextInput) {
-                    newNextInput.focus();
-                }
-            } else { // This was the last input in the list
-                keypad.element.style.display = 'none';
-                document.body.classList.remove('keypad-visible');
-            }
-        } else if (action === 'clear') {
-            const archerId = input.dataset.archerId;
-            const arrowIndex = input.dataset.arrowIndex;
-            
-            input.value = '';
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-
-            const sameInputAfterRender = document.querySelector(`.score-input[data-archer-id='${archerId}'][data-arrow-index='${arrowIndex}']`);
-            if(sameInputAfterRender) {
-                sameInputAfterRender.focus();
-            }
-        } else if (action === 'close') {
+        // --- Handle navigation first, as it doesn't require re-rendering ---
+        if (action === 'prev') {
+            if (currentIndex > 0) allInputs[currentIndex - 1].focus();
+            return;
+        }
+        if (action === 'next') {
+            if (currentIndex < allInputs.length - 1) allInputs[currentIndex + 1].focus();
+            return;
+        }
+        
+        if (action === 'close') {
             keypad.element.style.display = 'none';
             document.body.classList.remove('keypad-visible');
-        } else if (action === 'prev' || action === 'next') {
-            const allInputs = [...document.querySelectorAll('.score-input')];
-            const currentIndex = allInputs.indexOf(keypad.currentlyFocusedInput);
-            let nextIndex = action === 'next' ? currentIndex + 1 : currentIndex - 1;
+            return;
+        }
 
-            if (nextIndex >= 0 && nextIndex < allInputs.length) {
-                allInputs[nextIndex].focus();
-            }
+        // --- Handle value changes, which DO require re-rendering ---
+        if (action === 'clear') {
+            input.value = '';
+        } else if (value) {
+            input.value = value;
+        }
+
+        // Dispatch an 'input' event to trigger handleScoreInput, which saves state and re-renders the view.
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+
+        // --- Post-render focus logic ---
+        // Since renderScoringView() replaces the DOM elements, we must find the new elements to focus them.
+        if (value && currentIndex < allInputs.length - 1) {
+            // A score was entered, and it wasn't the last input. Advance to the next one.
+            const nextInputInOldList = allInputs[currentIndex + 1];
+            const nextInputInNewDom = document.querySelector(`[data-archer-id="${nextInputInOldList.dataset.archerId}"][data-arrow-idx="${nextInputInOldList.dataset.arrowIdx}"]`);
+            if (nextInputInNewDom) nextInputInNewDom.focus();
+        } else if (action === 'clear') {
+            // Keep focus on the same input after clearing.
+             const currentInputInNewDom = document.querySelector(`[data-archer-id="${input.dataset.archerId}"][data-arrow-idx="${input.dataset.arrowIdx}"]`);
+            if (currentInputInNewDom) currentInputInNewDom.focus();
+        } else {
+            // It was the last input, so close the keypad.
+            keypad.element.style.display = 'none';
+            document.body.classList.remove('keypad-visible');
         }
     }
 
@@ -654,11 +646,15 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function handleScoreInput(e) {
         const input = e.target;
-        const archerId = parseInt(input.dataset.archerId);
-        const arrowIndex = parseInt(input.dataset.arrowIndex);
+        const archerId = input.dataset.archerId;
+        const arrowIndex = parseInt(input.dataset.arrowIdx, 10);
         const archer = state.archers.find(a => a.id === archerId);
 
         if (archer) {
+            // Ensure the scores array for the current end exists
+            if (!Array.isArray(archer.scores[state.currentEnd - 1])) {
+                archer.scores[state.currentEnd - 1] = ['', '', ''];
+            }
             archer.scores[state.currentEnd - 1][arrowIndex] = input.value;
             renderScoringView(); // Re-render to update totals and colors
             saveData();
@@ -682,10 +678,10 @@ document.addEventListener('DOMContentLoaded', () => {
      * Resets the application state to its initial default.
      */
     function resetState() {
-        state.currentView = 'setup';
-        state.currentEnd = 1;
         state.archers = [];
-        state.activeArcherId = null;
+        state.currentEnd = 1;
+        state.currentView = 'setup';
+        renderView();
         saveData();
     }
     
@@ -693,8 +689,13 @@ document.addEventListener('DOMContentLoaded', () => {
      * Switches the view to the main scoring view.
      */
     function showScoringView() {
+        if (state.archers.length === 0) {
+            alert("Please select at least one archer to start scoring.");
+            return;
+        }
         state.currentView = 'scoring';
         renderView();
+        saveData();
     }
 
     /**
@@ -821,9 +822,36 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         document.getElementById('next-archer-btn').onclick = () => navigateArchers(1);
 
+        // --- DELEGATED EVENT LISTENERS (for dynamic elements) ---
+        document.body.addEventListener('focusin', (e) => {
+            if (e.target.classList.contains('score-input')) {
+                keypad.currentlyFocusedInput = e.target;
+                keypad.element.style.display = 'grid';
+                document.body.classList.add('keypad-visible');
+            }
+        });
+
+        document.body.addEventListener('click', (e) => {
+            // Show Card View
+            if (e.target.classList.contains('view-card-btn')) {
+                state.currentView = 'card';
+                renderCardView(e.target.dataset.archerId);
+                renderView();
+                keypad.element.style.display = 'none';
+            }
+        });
+        
+        document.body.addEventListener('input', (e) => {
+            if (e.target.classList.contains('score-input')) {
+                handleScoreInput(e);
+            }
+        });
+
+        keypad.element.addEventListener('click', handleKeypadClick);
+
         // --- INITIAL LOAD ---
         loadData();
-        renderKeypad(); // Render keypad once
+        renderKeypad(); // Render keypad once, it's always in the DOM
         renderView(); // Initial view render based on loaded or default state
     }
 

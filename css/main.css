@@ -315,9 +315,18 @@ hr {
 
 /* Calculated cells */
 .calculated-cell {
-  background-color: #e9ecef;
-  font-weight: 600;
+  font-weight: 500;
+  text-align: center;
+  background-color: #f8f9fa;
+  color: var(--dark-gray);
 }
+
+/* Color coding for calculated cells like Average */
+.calculated-cell.score-gold { background-color: var(--score-gold); color: var(--text-dark); }
+.calculated-cell.score-red { background-color: var(--score-red); color: var(--text-light); }
+.calculated-cell.score-blue { background-color: var(--score-blue); color: var(--text-dark); }
+.calculated-cell.score-black { background-color: var(--score-black); color: var(--text-light); }
+.calculated-cell.score-white { background-color: var(--score-white); color: var(--text-dark); }
 
 /* Score colors */
 .score-x, .score-10, .score-9 { background-color: var(--score-gold); color: var(--text-dark); }
