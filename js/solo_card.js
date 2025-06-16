@@ -111,8 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         masterList.forEach(archer => {
-            const isSelectedA1 = state.archer1 && state.archer1.id === archer.id;
-            const isSelectedA2 = state.archer2 && state.archer2.id === archer.id;
+            const archerId = `${(archer.first || '').trim()}-${(archer.last || '').trim()}`;
+            const isSelectedA1 = state.archer1 && state.archer1.id === archerId;
+            const isSelectedA2 = state.archer2 && state.archer2.id === archerId;
 
             const row = document.createElement('div');
             row.className = 'archer-select-row';
@@ -124,8 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="archer-name-label">${archer.first} ${archer.last}</div>
                 <div class="archer-details-label">(${archer.level || 'VAR'})</div>
                 <div class="selection-buttons">
-                    <button class="btn btn-sm ${isSelectedA1 ? 'btn-primary' : 'btn-secondary'}" data-id="${archer.id}" data-role="a1">A1</button>
-                    <button class="btn btn-sm ${isSelectedA2 ? 'btn-danger' : 'btn-secondary'}" data-id="${archer.id}" data-role="a2">A2</button>
+                    <button class="btn btn-sm ${isSelectedA1 ? 'btn-primary' : 'btn-secondary'}" data-id="${archerId}" data-role="a1">A1</button>
+                    <button class="btn btn-sm ${isSelectedA2 ? 'btn-danger' : 'btn-secondary'}" data-id="${archerId}" data-role="a2">A2</button>
                 </div>
             `;
             archerSelectionContainer.appendChild(row);
@@ -141,6 +142,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const archerId = button.dataset.id;
         const role = button.dataset.role;
         const archer = ArcherModule.getArcherById(archerId);
+
+        if (!archer) return; // Archer not found, something is wrong.
+
+        // Add the generated ID to the archer object so we can reference it later
+        archer.id = archerId;
 
         if (role === 'a1') {
             if (state.archer2 && state.archer2.id === archerId) state.archer2 = null; // Unset from other role if needed

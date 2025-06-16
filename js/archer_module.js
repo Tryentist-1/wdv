@@ -28,6 +28,14 @@ const ArcherModule = {
     localStorage.setItem(ARCHER_LIST_KEY, JSON.stringify(list));
   },
 
+  getArcherById(id) {
+    const list = this.loadList();
+    return list.find(archer => {
+      const archerId = `${(archer.first || '').trim()}-${(archer.last || '').trim()}`;
+      return archerId === id;
+    });
+  },
+
   clearList() {
     localStorage.removeItem(ARCHER_LIST_KEY);
   },
