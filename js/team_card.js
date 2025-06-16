@@ -39,33 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- UTILITY FUNCTIONS ---
-    function parseScoreValue(score) {
-        if (typeof score === 'string') {
-            const upperScore = score.toUpperCase().trim();
-            if (upperScore === 'X') return 10;
-            if (upperScore === 'M') return 0;
-            const num = parseInt(score, 10);
-            return isNaN(num) ? 0 : num;
-        }
-        return (typeof score === 'number' && !isNaN(score)) ? score : 0;
-    }
-
-    function getScoreColor(score) {
-        if (score === '' || score === null || score === undefined) return 'score-empty';
-        const strScore = String(score).toUpperCase().trim();
-        if (strScore === 'X') return 'score-x';
-        if (strScore === 'M') return 'score-m';
-        if (strScore === '10') return 'score-10';
-        if (strScore === '9') return 'score-9';
-        if (strScore === '8') return 'score-8';
-        if (strScore === '7') return 'score-7';
-        if (strScore === '6') return 'score-6';
-        if (strScore === '5') return 'score-5';
-        if (strScore === '4') return 'score-4';
-        if (strScore === '3') return 'score-3';
-        if (strScore === '2') return 'score-2';
-        if (strScore === '1') return 'score-1';
-        return 'score-empty';
+    /**
+     * Gives 'X' a higher value for sorting/comparison in tie-breaks,
+     * without affecting its score value of 10 for totals.
+     * @param {string|number} score The arrow score.
+     * @returns {number} The value for tie-breaking.
+     */
+    function getArrowValueForTiebreak(score) {
+        const upperScore = String(score).toUpperCase().trim();
+        if (upperScore === 'X') return 10.1;
+        return parseScoreValue(score);
     }
 
     // --- VIEW MANAGEMENT & PERSISTENCE ---
@@ -156,20 +139,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateStartButtonState() {
-        startScoringBtn.disabled = !(state.team1.length === 3 && state.team2.length === 3);
-        startScoringBtn.classList.toggle('btn-primary', !startScoringBtn.disabled);
-        startScoringBtn.classList.toggle('btn-secondary', startScoringBtn.disabled);
+        const t1Count = state.team1.length;
+        const t2Count = state.team2.length;
+        const isValid = t1Count > 0 && t1Count === t2Count;
+        startScoringBtn.disabled = !isValid;
+        startScoringBtn.classList.toggle('btn-primary', isValid);
+        startScoringBtn.classList.toggle('btn-secondary', !isValid);
     }
     
     function startScoring() {
-        if (state.team1.length !== 3 || state.team2.length !== 3) {
-            alert("Please select exactly 3 archers for each team.");
+        const t1Count = state.team1.length;
+        const t2Count = state.team2.length;
+
+        if (t1Count === 0 || t1Count !== t2Count) {
+            alert("Please select an equal number of archers for each team (1, 2, or 3).");
             return;
         }
+        
         // Initialize scores if they don't exist
-        state.scores.t1 = Array(4).fill(null).map(() => Array(6).fill(''));
-        state.scores.t2 = Array(4).fill(null).map(() => Array(6).fill(''));
-        state.scores.so = { t1: ['','',''], t2: ['','',''] };
+        const numArrows = t1Count * 2; // Each archer shoots 2 arrows per end
+        state.scores.t1 = Array(4).fill(null).map(() => Array(numArrows).fill(''));
+        state.scores.t2 = Array(4).fill(null).map(() => Array(numArrows).fill(''));
+        state.scores.so = { t1: Array(t1Count).fill(''), t2: Array(t1Count).fill('') };
+        
         state.currentView = 'scoring';
         renderScoringView();
         renderView();
@@ -305,9 +297,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     winner = 't2'; 
                     matchOver = true; 
                     soWinnerText.textContent = 'T2 Wins S.O.';
-                } else { // Tied shoot-off total, check highest arrow
-                    const t1Max = Math.max(...state.scores.so.t1.map(s => parseScoreValue(s)));
-                    const t2Max = Math.max(...state.scores.so.t2.map(s => parseScoreValue(s)));
+                } else { // Tied shoot-off total, check highest arrow using the correct tie-break logic
+                    const t1Max = Math.max(...state.scores.so.t1.map(getArrowValueForTiebreak));
+                    const t2Max = Math.max(...state.scores.so.t2.map(getArrowValueForTiebreak));
 
                     if (t1Max > t2Max) {
                         winner = 't1';
@@ -427,5 +419,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    init();
+    // Only initialize the app if we are on the team card page
+    if (document.title.includes('Team Match')) {
+        init();
+    }
 });
