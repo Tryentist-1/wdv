@@ -14,7 +14,7 @@ module.exports = {
   moduleNameMapper: {
     // This regex matches the require('../js/common.js') pattern
     // and maps it to the actual common.js file path relative to the project root
-    "^\\.\\.\\/js\\/common\\.js$": "<rootDir>/js/common.js"
+    "^/home/user/wdv/js/common\\.js$": "/home/user/wdv/js/common.js"
   },
 
   // Specify setup files to run before each test file
@@ -26,4 +26,5 @@ module.exports = {
 // Ignore the QUnit library file so Jest doesn't try to run it as a test suite
 module.exports.testPathIgnorePatterns = [
   "<rootDir>/tests/qunit-2.20.0.js"
+  ,"<rootDir>/tests/jest.setup.js"
 ];
