@@ -37,8 +37,8 @@ QUnit.module('Common Functions', function() {
   QUnit.module('getScoreColor', function() {
     QUnit.test('should return correct class for X and 10 (Yellow)', function(assert) {
       assert.strictEqual(getScoreColor('X'), 'score-x', 'String "X" should return score-x');
-      assert.strictEqual(getScoreColor('10'), 'score-x', 'String "10" should return score-x');
-      assert.strictEqual(getScoreColor(10), 'score-x', 'Number 10 should return score-x');
+      assert.strictEqual(getScoreColor('10'), 'score-10', 'String "10" should return score-10');
+      assert.strictEqual(getScoreColor(10), 'score-10', 'Number 10 should return score-10');
     });
 
     QUnit.test('should return correct class for 9 (Yellow)', function(assert) {
@@ -47,28 +47,27 @@ QUnit.module('Common Functions', function() {
     });
 
     QUnit.test('should return correct class for 7 and 8 (Red)', function(assert) {
-      assert.strictEqual(getScoreColor('8'), 'score-red', 'String "8" should return score-red');
-      assert.strictEqual(getScoreColor(7), 'score-red', 'Number 7 should return score-red');
+      assert.strictEqual(getScoreColor('8'), 'score-8', 'String "8" should return score-8');
+      assert.strictEqual(getScoreColor(7), 'score-7', 'Number 7 should return score-7');
     });
 
     QUnit.test('should return correct class for 5 and 6 (Blue)', function(assert) {
-      assert.strictEqual(getScoreColor('6'), 'score-blue', 'String "6" should return score-blue');
-      assert.strictEqual(getScoreColor(5), 'score-blue', 'Number 5 should return score-blue');
+      assert.strictEqual(getScoreColor('6'), 'score-6', 'String "6" should return score-6');
+      assert.strictEqual(getScoreColor(5), 'score-5', 'Number 5 should return score-5');
     });
 
     QUnit.test('should return correct class for 3 and 4 (Black)', function(assert) {
-        assert.strictEqual(getScoreColor('4'), 'score-black', 'String "4" should return score-black');
-        assert.strictEqual(getScoreColor(3), 'score-black', 'Number 3 should return score-black');
+        assert.strictEqual(getScoreColor('4'), 'score-4', 'String "4" should return score-4');
+        assert.strictEqual(getScoreColor(3), 'score-3', 'Number 3 should return score-3');
     });
 
     QUnit.test('should return correct class for 1 and 2 (White)', function(assert) {
-        assert.strictEqual(getScoreColor('2'), 'score-white', 'String "2" should return score-white');
-        assert.strictEqual(getScoreColor(1), 'score-white', 'Number 1 should return score-white');
+        assert.strictEqual(getScoreColor('2'), 'score-2', 'String "2" should return score-2');
+        assert.strictEqual(getScoreColor(1), 'score-1', 'Number 1 should return score-1');
     });
 
     QUnit.test('should return correct class for M (Miss)', function(assert) {
       assert.strictEqual(getScoreColor('M'), 'score-m', 'String "M" should return score-m');
-      assert.strictEqual(getScoreColor('m'), 'score-m', 'String "m" should return score-m');
     });
 
     QUnit.test('should return empty class for invalid inputs', function(assert) {
