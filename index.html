@@ -88,6 +88,133 @@
     .btn-team { background-color: #f4a261; color: var(--text-dark); }
     .btn-practice { background-color: #e76f51; color: white; }
 
+    /* Onboarding Modal Styles */
+    .onboarding-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .onboarding-content {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 90%;
+      width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .onboarding-step {
+      display: none;
+    }
+
+    .onboarding-step.active {
+      display: block;
+    }
+
+    .onboarding-step h2 {
+      color: var(--primary);
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+
+    .onboarding-step p {
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+      color: var(--secondary);
+    }
+
+    .onboarding-step .step-number {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      line-height: 30px;
+      text-align: center;
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+
+    .onboarding-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .onboarding-actions .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .onboarding-actions .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .onboarding-actions .btn-secondary {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .onboarding-actions .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .onboarding-progress {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ddd;
+      margin: 0 0.25rem;
+      transition: background 0.3s;
+    }
+
+    .progress-dot.active {
+      background: var(--primary);
+    }
+
+    .onboarding-feature {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 8px;
+      margin: 1rem 0;
+      border-left: 4px solid var(--primary);
+    }
+
+    .onboarding-feature h3 {
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .onboarding-feature p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
     /* Card Layout */
     .card-grid {
       display: grid;
@@ -340,34 +467,219 @@
   </style>
 </head>
 <body>
+  <!-- Onboarding Modal -->
+  <div id="onboarding-modal" class="onboarding-modal" style="display: none;">
+    <div class="onboarding-content">
+      <!-- Step 1: Welcome -->
+      <div id="step-1" class="onboarding-step active">
+        <div class="onboarding-progress">
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <h2><span class="step-number">1</span>Welcome to Archery Tools!</h2>
+        <p>This app helps you score archery rounds and manage your team. Let's get you set up in just a few steps.</p>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-trophy"></i> Ranking Rounds</h3>
+          <p>Score competitive ranking rounds with multiple archers</p>
+        </div>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-user-friends"></i> Solo & Team Matches</h3>
+          <p>Track head-to-head matches and team competitions</p>
+        </div>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-bullseye"></i> Practice Sessions</h3>
+          <p>Analyze your arrow grouping and improve accuracy</p>
+        </div>
+        <div class="onboarding-actions">
+          <button class="btn btn-primary" onclick="nextStep()">Get Started</button>
+          <button class="btn btn-secondary" onclick="skipOnboarding()">Skip Tutorial</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Find Yourself -->
+      <div id="step-2" class="onboarding-step">
+        <div class="onboarding-progress">
+          <div class="progress-dot"></div>
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <h2><span class="step-number">2</span>Find Yourself & Bale Mates</h2>
+        <p>First, let's make sure you and your teammates are in the system. You'll need to:</p>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-users"></i> Archer Setup</h3>
+          <p>Add yourself and your teammates to the archer list</p>
+        </div>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-star"></i> Mark Favorites</h3>
+          <p>Star your teammates so they appear at the top of the list</p>
+        </div>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-sync-alt"></i> Sync with Master List</h3>
+          <p>Import the latest archer list from your coach</p>
+        </div>
+        <div class="onboarding-actions">
+          <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+          <button class="btn btn-primary" onclick="nextStep()">Continue</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Sync Archer List -->
+      <div id="step-3" class="onboarding-step">
+        <div class="onboarding-progress">
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot active"></div>
+          <div class="progress-dot"></div>
+        </div>
+        <h2><span class="step-number">3</span>Sync Your Archer List</h2>
+        <p>Keep your archer list up to date with the latest information from your coach:</p>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-download"></i> Import from Master List</h3>
+          <p>Get the latest archer information and assignments</p>
+        </div>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-edit"></i> Add Missing Archers</h3>
+          <p>Add any archers who aren't in the master list</p>
+        </div>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-check"></i> Verify Information</h3>
+          <p>Make sure bale assignments and target letters are correct</p>
+        </div>
+        <div class="onboarding-actions">
+          <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+          <button class="btn btn-primary" onclick="nextStep()">Continue</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Start Scoring -->
+      <div id="step-4" class="onboarding-step">
+        <div class="onboarding-progress">
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot"></div>
+          <div class="progress-dot active"></div>
+        </div>
+        <h2><span class="step-number">4</span>Start Scoring!</h2>
+        <p>You're all set! Choose the type of scoring you want to do:</p>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-trophy"></i> Ranking Round</h3>
+          <p>Score a competitive ranking round with multiple archers</p>
+        </div>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-user-friends"></i> Solo Match</h3>
+          <p>Track a 1v1 match (first to 6 set points wins)</p>
+        </div>
+        <div class="onboarding-feature">
+          <h3><i class="fas fa-users-cog"></i> Team Match</h3>
+          <p>Score a team vs team match (first to 5 set points wins)</p>
+        </div>
+        <div class="onboarding-actions">
+          <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+          <button class="btn btn-primary" onclick="completeOnboarding()">Let's Go!</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="home-container">
     <header class="home-header">
       <h1>Archery Tools</h1>
     </header>
 
     <div class="button-menu">
-      <a href="archer_list.html" class="btn btn-archer-setup">
+      <a href="archer_list.html" class="btn btn-archer-setup" title="Add archers and sync with master list">
         <i class="fas fa-users btn-icon"></i>Archer Setup
       </a>
       
       <div class="round-buttons">
-        <a href="ranking_round.html" class="btn btn-ranking">
+        <a href="ranking_round.html" class="btn btn-ranking" title="Score competitive ranking rounds with multiple archers">
           <i class="fas fa-trophy btn-icon"></i>Ranking
         </a>
-        <a href="solo_card.html" class="btn btn-solo">
+        <a href="solo_card.html" class="btn btn-solo" title="Track 1v1 matches (first to 6 set points wins)">
           <i class="fas fa-user-friends btn-icon"></i>Solo
         </a>
-        <a href="team_card.html" class="btn btn-team">
+        <a href="team_card.html" class="btn btn-team" title="Score team vs team matches (first to 5 set points wins)">
           <i class="fas fa-users-cog btn-icon"></i>Team
         </a>
-        <a href="gemini-oneshot.html" class="btn btn-practice">
+        <a href="gemini-oneshot.html" class="btn btn-practice" title="Practice sessions with arrow grouping analysis">
           <i class="fas fa-bullseye btn-icon"></i>Practice
         </a>
       </div>
+      
+      <button id="help-btn" class="btn btn-secondary" style="margin-top: 1rem;" title="Show the tutorial again">
+        <i class="fas fa-question-circle btn-icon"></i>Show Tutorial
+      </button>
     </div>
     <footer>
       <p>© 2024 OAS Score Sheets & Tools. All rights reserved.</p>
     </footer>
   </div>
+
+  <script>
+    // Onboarding functionality
+    let currentStep = 1;
+    const totalSteps = 4;
+
+    // Check if this is the first visit
+    function shouldShowOnboarding() {
+      const hasVisited = localStorage.getItem('archery_tools_onboarding_complete');
+      return !hasVisited;
+    }
+
+    function showOnboarding() {
+      if (shouldShowOnboarding()) {
+        document.getElementById('onboarding-modal').style.display = 'flex';
+      }
+    }
+
+    function nextStep() {
+      if (currentStep < totalSteps) {
+        document.getElementById(`step-${currentStep}`).classList.remove('active');
+        currentStep++;
+        document.getElementById(`step-${currentStep}`).classList.add('active');
+        updateProgressDots();
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        document.getElementById(`step-${currentStep}`).classList.remove('active');
+        currentStep--;
+        document.getElementById(`step-${currentStep}`).classList.add('active');
+        updateProgressDots();
+      }
+    }
+
+    function updateProgressDots() {
+      const dots = document.querySelectorAll('.progress-dot');
+      dots.forEach((dot, index) => {
+        dot.classList.toggle('active', index === currentStep - 1);
+      });
+    }
+
+    function completeOnboarding() {
+      localStorage.setItem('archery_tools_onboarding_complete', 'true');
+      document.getElementById('onboarding-modal').style.display = 'none';
+    }
+
+    function skipOnboarding() {
+      localStorage.setItem('archery_tools_onboarding_complete', 'true');
+      document.getElementById('onboarding-modal').style.display = 'none';
+    }
+
+    // Show onboarding on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      showOnboarding();
+      
+      // Add help button functionality
+      document.getElementById('help-btn').addEventListener('click', function() {
+        localStorage.removeItem('archery_tools_onboarding_complete');
+        showOnboarding();
+      });
+    });
+  </script>
 </body>
 </html>
