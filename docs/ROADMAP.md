@@ -1,8 +1,8 @@
 # Archery Score Management Suite: Development Roadmap
 
-**Version:** 1.1
-**Date:** 2025-06-10
-**Status:** Defined
+**Version:** 1.2
+**Date:** 2025-07-16
+**Status:** Updated
 
 ---
 
@@ -30,6 +30,80 @@ Phase 0: Implement a Git structure for local and remote management
         *   Create a reusable JavaScript module for the "Copy as Text" feature.
     5.  **Final Review:** Polish the UI/UX and confirm all Ranking App requirements from the PRD are met.
 
-### Phase 2: Refactor CSS and Javascript and UX
+### Phase 2: Complete Solo and Team Card Apps
 *   **Goal:** 
-*	Implement a new separate version with shared backend of data for archers, schools, rounds and scores.
+*	Complete the Solo and Team Card applications with full functionality.
+*   **Tasks:**
+    1. **Complete Solo Card App:**
+        * Implement set points calculation (first to 6 set points wins)
+        * Add 1-arrow shoot-off handling for 5-5 ties
+        * Complete scoring interface and match progression
+        * Add export functionality
+    2. **Complete Team Card App:**
+        * Implement team scoring logic (6 arrows per team per end)
+        * Add set points calculation (first to 5 set points wins)
+        * Implement 3-arrow shoot-off for 4-4 ties
+        * Add export functionality
+    3. **Add Export Features:**
+        * Create reusable "Save as Image" module
+        * Create reusable "Copy as Text" module
+        * Integrate with Solo and Team Card apps
+
+### Phase 3: Comprehensive Tutorial System
+*   **Goal:** 
+*	Create detailed, step-by-step tutorials for each scoring application to improve user onboarding and reduce support requests.
+*   **Tasks:**
+    1. **Ranking Round Tutorial:**
+        * Setup tutorial (Bale Number, Group Members, Scoring button)
+        * Score entry tutorial (Navigate Ends, Score Card access)
+        * Individual archer card navigation
+        * Save and Send functionality
+    2. **Solo Card Tutorial:**
+        * Archer selection and setup
+        * Match progression and set points
+        * Shoot-off handling
+        * Export and sharing
+    3. **Team Card Tutorial:**
+        * Team setup and archer assignment
+        * Team scoring workflow
+        * Shoot-off procedures
+        * Results export
+    4. **Practice App Tutorial:**
+        * Target face interaction
+        * Arrow placement and scoring
+        * Group analysis features
+        * Session management
+
+### Phase 4: Advanced Features and Optimization
+*   **Goal:** 
+*	Implement advanced features and optimize performance for mobile use.
+*   **Tasks:**
+    1. **Performance Optimization:**
+        * Optimize for offline use
+        * Improve mobile responsiveness
+        * Reduce loading times
+    2. **Advanced Features:**
+        * Data backup and restore
+        * Advanced analytics
+        * Custom scoring rules
+    3. **Integration Features:**
+        * Cloud sync capabilities
+        * Multi-device support
+        * API integration
+
+### Phase 5: Documentation and Training
+*   **Goal:** 
+*	Complete comprehensive documentation and training materials.
+*   **Tasks:**
+    1. **User Documentation:**
+        * Complete user manuals
+        * Video tutorials
+        * FAQ sections
+    2. **Technical Documentation:**
+        * API documentation
+        * Deployment guides
+        * Maintenance procedures
+    3. **Training Materials:**
+        * Coach training guides
+        * Tournament official guides
+        * Student training materials
