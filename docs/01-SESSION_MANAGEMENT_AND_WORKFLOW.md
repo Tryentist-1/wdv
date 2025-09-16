@@ -40,29 +40,32 @@ This document is designed to help us (User and LLM) start, conduct, and pause/en
 
 ### SESSION SUMMARY TEMPLATE (for LLM to fill at end of session)
 
-* **Session End Date & Time:** `2025-06-16`  
+* **Session End Date & Time:** `2025-09-16`  
 * **Last Vibe Persona Active:** `Pam (Product Manager)`
 * **Session Goals for This Past Session (Key Achievements):**
-    *   Completed and deployed "Ranking Round 2.0".
-    *   Implemented a new "Verify & Send" workflow for sending bale totals via SMS.
-    *   Added critical Bale Number and Target Assignment (A-H) functionality.
-    *   Refined UX by moving the final "Send" action to the card review screen.
+    *   Implemented Ranking Round 300 (10 ends of 3) as default entry point.
+    *   Consolidated export controls into a single Export modal (Verify, Screenshot, JSON, Email).
+    *   Updated Ranking UI with "← Scoring" back label and Prev/Next archer cycling.
 * **Key Files Modified (and their status):**
-    *   `js/ranking_round.js`: Major refactor for new features and UX. (Committed)
-    *   `ranking_round.html`: UI changes for new features. (Committed)
-    *   `css/main.css`: Added styles for new UI elements. (Committed)
+    *   `ranking_round_300.html`: New 300-round entry page. (Uncommitted/Committed as applicable)
+    *   `js/ranking_round_300.js`: New 300-round logic (totalEnds=10). (Uncommitted/Committed)
+    *   `ranking_round.html`: Card footer + export modal integration. (Uncommitted/Committed)
+    *   `js/ranking_round.js`: Export modal wiring; archer cycling. (Uncommitted/Committed)
+    *   `index.html`: Ranking button now links to 300 round. (Uncommitted/Committed)
 * **Key System Changes:**
-    *   The Ranking Round app now fully supports a bale-centric scoring model.
+    *   Default Ranking experience points to a 300-round flow while preserving the 360 page.
+    *   Export functions unified behind a single modal to streamline user actions.
 * **Uncommitted Changes (Summary):**
-    *   None. Workspace is clean.
+    *   Review working tree for pending edits across HTML/JS.
 * **Untested Changes (Summary):**
-    *   Manual testing performed, but no new automated unit tests were added for the new logic.
+    *   Manual testing recommended for export modal flows and archer cycling.
 * **Next Immediate Steps (for next session):**
-    *   Begin the UI/UX cleanup for the Home Page (`index.html`).
+    *   Optional: Add round selector (300/360) in setup to toggle `totalEnds` without separate pages.
+    *   Update tutorial docs to reflect Export modal and 300-round flow.
 * **Blockers/Open Questions:**
     *   None currently.
 * **User's Personal Notes/Reminders:**
-    *   Ranking Round 2.0 is a major success. The workflow feels much more natural.
+    *   Verify SMS formatting with coaches ahead of first tournament.
 
 ---
 
@@ -70,22 +73,18 @@ This document is designed to help us (User and LLM) start, conduct, and pause/en
 
 * **Project:** Archery Score Management Suite
 * **Vision:** A suite of distinct, mobile-first web apps for scoring the primary formats of OAS archery: Ranking, Solo, and Team, with robust integration and automation.
-* **Current Phase:** UI/UX Cleanup Initiative
-* **Immediate Goal:** Overhaul the Home Page (`index.html`) and Archer List (`archer_list.html`) to improve usability and visual appeal.
+* **Current Phase:** UI/UX Cleanup + Season 2025 prep
+* **Immediate Goal:** Ship Ranking Round 300 and consolidate export actions.
 
-* **Session Start Date & Time:** `2025-06-16`
+* **Session Start Date & Time:** `2025-09-16`
 * **Active Persona:** Pam (Product Manager)
 * **Next Immediate Steps:**
-    *   **Home (`index.html`) Cleanup:**
-        *   Achieve a no-scroll, clean page layout.
-        *   Shrink the header.
-        *   Implement a wide button for "Archer Setup".
-        *   Add themed buttons for "Ranking", "Solo", "Team", and "Practice" rounds.
+    *   Consider adding a setup-time round selector to flex between 300/360.
+    *   Confirm copy and styling on the Export modal.
 * **Blockers/Open Questions:**
 * None at this time
 * **User's Personal Notes/Reminders:**
-* Use the new deployFTP.sh script for all future deployments
-* Continue to test and iterate on integration and modal flows
+* Use the deploy script for releases; validate on-device UX before events.
 
 ---
 

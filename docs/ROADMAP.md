@@ -1,7 +1,7 @@
 # Archery Score Management Suite: Development Roadmap
 
-**Version:** 1.2
-**Date:** 2025-07-16
+**Version:** 1.3
+**Date:** 2025-09-16
 **Status:** Updated
 
 ---
@@ -29,6 +29,7 @@ Phase 0: Implement a Git structure for local and remote management
         *   Create a reusable JavaScript module for the "Save as Image" feature.
         *   Create a reusable JavaScript module for the "Copy as Text" feature.
     5.  **Final Review:** Polish the UI/UX and confirm all Ranking App requirements from the PRD are met.
+    6.  [Completed 2025-09-16] Introduce Ranking Round 300 default (10x3) and consolidate export actions under one modal; update home link.
 
 ### Phase 2: Complete Solo and Team Card Apps
 *   **Goal:** 

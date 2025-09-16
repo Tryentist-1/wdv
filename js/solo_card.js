@@ -432,6 +432,194 @@ document.addEventListener('DOMContentLoaded', () => {
         renderView();
     }
 
+    // --- SCREENSHOT & EXPORT FUNCTIONS ---
+
+    function takeScreenshot() {
+        const scoreTableContainer = document.getElementById('score-table-container');
+        if (!scoreTableContainer) {
+            alert('No scorecard to capture');
+            return;
+        }
+
+        // Show loading state
+        const originalContent = scoreTableContainer.innerHTML;
+        scoreTableContainer.innerHTML = '<div style="text-align: center; padding: 2rem;">Generating screenshot...</div>';
+
+        html2canvas(scoreTableContainer, {
+            scale: 2, // Higher resolution
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            width: scoreTableContainer.offsetWidth,
+            height: scoreTableContainer.offsetHeight
+        }).then(canvas => {
+            // Restore original content
+            scoreTableContainer.innerHTML = originalContent;
+
+            // Create download link
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            const filename = `solo_match_${state.archer1?.first}_vs_${state.archer2?.first}_${timestamp}.png`;
+            
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }).catch(error => {
+            console.error('Screenshot failed:', error);
+            scoreTableContainer.innerHTML = originalContent;
+            alert('Failed to generate screenshot. Please try again.');
+        });
+    }
+
+    function exportJSON() {
+        if (!state.archer1 || !state.archer2) {
+            alert('No match data to export');
+            return;
+        }
+
+        const exportData = {
+            metadata: {
+                app: 'SoloCard',
+                version: state.version,
+                exportDate: new Date().toISOString(),
+                matchType: 'Solo Olympic Round'
+            },
+            archers: {
+                archer1: {
+                    id: state.archer1.id,
+                    firstName: state.archer1.first,
+                    lastName: state.archer1.last,
+                    school: state.archer1.school,
+                    level: state.archer1.level,
+                    gender: state.archer1.gender
+                },
+                archer2: {
+                    id: state.archer2.id,
+                    firstName: state.archer2.first,
+                    lastName: state.archer2.last,
+                    school: state.archer2.school,
+                    level: state.archer2.level,
+                    gender: state.archer2.gender
+                }
+            },
+            scores: state.scores,
+            matchResult: calculateMatchResult()
+        };
+
+        return JSON.stringify(exportData, null, 2);
+    }
+
+    function downloadJSON() {
+        const jsonData = exportJSON();
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+        const filename = `solo_match_${state.archer1?.first}_vs_${state.archer2?.first}_${timestamp}.json`;
+        
+        link.href = url;
+        link.download = filename;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function copyJSONToClipboard() {
+        const jsonData = exportJSON();
+        navigator.clipboard.writeText(jsonData).then(() => {
+            alert('JSON data copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy to clipboard:', err);
+            alert('Failed to copy to clipboard. Please try again.');
+        });
+    }
+
+    function emailCoach() {
+        const jsonData = exportJSON();
+        const subject = `Solo Match - ${state.archer1?.first} vs ${state.archer2?.first}`;
+        const body = `Please find attached the solo match data.\n\nArcher 1: ${state.archer1?.first} ${state.archer1?.last}\nArcher 2: ${state.archer2?.first} ${state.archer2?.last}\n\nJSON Data:\n${jsonData}`;
+        
+        window.location.href = `mailto:davinciarchers@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    }
+
+    function calculateMatchResult() {
+        let a1MatchScore = 0;
+        let a2MatchScore = 0;
+        let matchOver = false;
+        let winner = null;
+
+        for (let i = 0; i < 5; i++) {
+            const endScoresA1 = state.scores.a1[i];
+            const endScoresA2 = state.scores.a2[i];
+            
+            const isCompleteA1 = endScoresA1.every(s => s !== '' && s !== null);
+            const isCompleteA2 = endScoresA2.every(s => s !== '' && s !== null);
+            const endComplete = isCompleteA1 && isCompleteA2;
+
+            if (!matchOver && endComplete) {
+                const a1EndTotal = endScoresA1.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                const a2EndTotal = endScoresA2.reduce((sum, s) => sum + parseScoreValue(s), 0);
+
+                let a1SetPoints = 0;
+                let a2SetPoints = 0;
+                
+                if (a1EndTotal > a2EndTotal) a1SetPoints = 2;
+                else if (a2EndTotal > a1EndTotal) a2SetPoints = 2;
+                else { a1SetPoints = 1; a2SetPoints = 1; }
+                
+                a1MatchScore += a1SetPoints;
+                a2MatchScore += a2SetPoints;
+
+                if (a1MatchScore >= 6 || a2MatchScore >= 6) {
+                    matchOver = true;
+                    winner = a1MatchScore > a2MatchScore ? 'a1' : 'a2';
+                }
+            }
+        }
+
+        // Check shoot-off if match is tied
+        if (!matchOver && a1MatchScore === 5 && a2MatchScore === 5) {
+            const soScoreA1 = state.scores.so.a1;
+            const soScoreA2 = state.scores.so.a2;
+            const soValueA1 = parseScoreValue(soScoreA1);
+            const soValueA2 = parseScoreValue(soScoreA2);
+
+            if (soScoreA1 !== '' && soScoreA2 !== '') {
+                if (soValueA1 > soValueA2) {
+                    winner = 'a1';
+                    matchOver = true;
+                } else if (soValueA2 > soValueA1) {
+                    winner = 'a2';
+                    matchOver = true;
+                } else if (state.shootOffWinner) {
+                    winner = state.shootOffWinner;
+                    matchOver = true;
+                }
+            }
+        }
+
+        return {
+            a1MatchScore,
+            a2MatchScore,
+            matchOver,
+            winner: winner ? (winner === 'a1' ? state.archer1.first : state.archer2.first) : null
+        };
+    }
+
+    function showExportModal() {
+        const exportModal = document.getElementById('export-modal');
+        if (exportModal) {
+            exportModal.style.display = 'flex';
+        }
+    }
+
+    function hideExportModal() {
+        const exportModal = document.getElementById('export-modal');
+        if (exportModal) {
+            exportModal.style.display = 'none';
+        }
+    }
+
     // --- INITIALIZATION ---
     async function init() {
         await ArcherModule.loadDefaultCSVIfNeeded();
@@ -475,6 +663,51 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveData();
             }
         });
+
+        // Export functionality
+        const exportBtn = document.getElementById('export-btn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', showExportModal);
+        }
+
+        // Export modal button handlers
+        const takeScreenshotBtn = document.getElementById('take-screenshot-btn');
+        const downloadJsonBtn = document.getElementById('download-json-btn');
+        const copyJsonBtn = document.getElementById('copy-json-btn');
+        const emailCoachBtn = document.getElementById('email-coach-btn');
+        const modalCloseExport = document.getElementById('modal-close-export');
+
+        if (takeScreenshotBtn) {
+            takeScreenshotBtn.addEventListener('click', () => {
+                takeScreenshot();
+                hideExportModal();
+            });
+        }
+
+        if (downloadJsonBtn) {
+            downloadJsonBtn.addEventListener('click', () => {
+                downloadJSON();
+                hideExportModal();
+            });
+        }
+
+        if (copyJsonBtn) {
+            copyJsonBtn.addEventListener('click', () => {
+                copyJSONToClipboard();
+                hideExportModal();
+            });
+        }
+
+        if (emailCoachBtn) {
+            emailCoachBtn.addEventListener('click', () => {
+                emailCoach();
+                hideExportModal();
+            });
+        }
+
+        if (modalCloseExport) {
+            modalCloseExport.addEventListener('click', hideExportModal);
+        }
     }
 
     // Only initialize the app if we are on the solo card page

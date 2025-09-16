@@ -1,26 +1,25 @@
 /**
- * js/ranking_round.js
+ * js/ranking_round_300.js
  * 
- * Manages the state and user interface for the redesigned "Bale-centric"
- * Ranking Round scoring application.
+ * 300 Round variant: 10 ends of 3 arrows. Bale-centric UI.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- STATE MANAGEMENT ---
     const state = {
-        app: 'RankingRound',
-        version: '1.1',
+        app: 'RankingRound300',
+        version: '1.0-300',
         currentView: 'setup', // 'setup', 'scoring', 'card'
         currentEnd: 1,
-        totalEnds: 12, // Default for a 360 round
+        totalEnds: 10, // 300 round: 10 ends of 3
         baleNumber: 1,
         date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-        archers: [], // { id, firstName, lastName, school, level, gender, targetAssignment, scores, targetSize? }
+        archers: [], // { id, firstName, lastName, school, level, gender, targetAssignment, scores }
         activeArcherId: null, // For card view
     };
 
-    const sessionKey = `rankingRound_${new Date().toISOString().split('T')[0]}`;
+    const sessionKey = `rankingRound300_${new Date().toISOString().split('T')[0]}`;
 
     // --- DOM ELEMENT REFERENCES ---
     const views = {
@@ -56,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         prevArcherBtn: document.getElementById('prev-archer-btn'),
         nextArcherBtn: document.getElementById('next-archer-btn'),
     };
-
+    
     const resetModal = {
         element: document.getElementById('reset-modal'),
         cancelBtn: document.getElementById('modal-cancel'),
@@ -69,10 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentlyFocusedInput: null,
     };
     
-    // --- UTILITY FUNCTIONS ---
-
     // --- VIEW MANAGEMENT ---
-
     function renderView() {
         Object.values(views).forEach(view => view.style.display = 'none');
         if (views[state.currentView]) {
@@ -109,7 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- LOGIC ---
-
     function renderSetupForm() {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
@@ -198,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.archers = state.archers.filter(a => a.id !== uniqueId);
                 }
                 saveData();
-                renderSetupForm(); // Re-render to show/hide select and update state
+                renderSetupForm();
             };
 
             targetSelect.onchange = () => {
@@ -498,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function init() {
-        console.log("Initializing Ranking Round App...");
+        console.log("Initializing Ranking Round 300 App...");
         loadData();
         renderKeypad();
         renderView();
@@ -579,7 +574,6 @@ document.addEventListener('DOMContentLoaded', () => {
             cardControls.exportBtn.onclick = showExportModal;
         }
 
-        // Prev/Next Archer cycling in card view
         if (cardControls.prevArcherBtn) {
             cardControls.prevArcherBtn.onclick = () => navigateArchers(-1);
         }
@@ -630,10 +624,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        if (modalCloseExport) {
-            modalCloseExport.onclick = hideExportModal;
-        }
-
         document.body.addEventListener('focusin', (e) => {
             if (e.target.classList.contains('score-input')) {
                 keypad.currentlyFocusedInput = e.target;
@@ -663,10 +653,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadSampleData() {
         state.archers = [
-            { id: '1', firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', scores: [['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9'], ['10','10','10'], ['8','8','7']] },
-            { id: '2', firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', scores: [['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M'], ['7','7','8'], ['9','9','10']] },
-            { id: '3', firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', scores: [['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M'], ['7','6','X'], ['10','9','8']] },
-            { id: '4', firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', scores: [['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6'], ['X','X','X'], ['9','9','8']] },
+            { id: '1', firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', scores: [['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9']] },
+            { id: '2', firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', scores: [['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M']] },
+            { id: '3', firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', scores: [['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M']] },
+            { id: '4', firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', scores: [['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6']] },
         ];
     }
 
@@ -686,7 +676,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- SCREENSHOT & EXPORT FUNCTIONS ---
-
     function takeScreenshot() {
         const cardContainer = document.getElementById('individual-card-container');
         if (!cardContainer) {
@@ -694,27 +683,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Show loading state
         const originalContent = cardContainer.innerHTML;
         cardContainer.innerHTML = '<div style="text-align: center; padding: 2rem;">Generating screenshot...</div>';
 
         html2canvas(cardContainer, {
-            scale: 2, // Higher resolution
+            scale: 2,
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
             width: cardContainer.offsetWidth,
             height: cardContainer.offsetHeight
         }).then(canvas => {
-            // Restore original content
             cardContainer.innerHTML = originalContent;
-
-            // Create download link
             const link = document.createElement('a');
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
             const archer = state.archers.find(a => a.id === state.activeArcherId);
             const filename = `scorecard_${archer?.firstName}_${archer?.lastName}_${timestamp}.png`;
-            
             link.download = filename;
             link.href = canvas.toDataURL('image/png');
             link.click();
@@ -734,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const exportData = {
             metadata: {
-                app: 'RankingRound',
+                app: 'RankingRound300',
                 version: state.version,
                 exportDate: new Date().toISOString(),
                 baleNumber: state.baleNumber,
@@ -798,7 +782,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalXs = 0;
         let completedEnds = 0;
 
-        archer.scores.forEach((endScores, endIndex) => {
+        archer.scores.forEach((endScores) => {
             const isComplete = endScores.every(score => score !== '' && score !== null);
             if (isComplete) {
                 completedEnds++;
@@ -806,7 +790,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const scoreValue = parseScoreValue(score);
                     totalScore += scoreValue;
                     if (score === '10') totalTens++;
-                    if (score.toUpperCase() === 'X') totalXs++;
+                    if (String(score).toUpperCase() === 'X') totalXs++;
                 });
             }
         });
@@ -839,3 +823,24 @@ document.addEventListener('DOMContentLoaded', () => {
         init();
     }
 });
+
+// --- Helpers reused from 360 variant (no external deps) ---
+function parseScoreValue(score) {
+    const s = String(score).toUpperCase();
+    if (s === 'X') return 10;
+    if (s === 'M' || s === '') return 0;
+    const n = parseInt(s, 10);
+    return isNaN(n) ? 0 : Math.max(0, Math.min(10, n));
+}
+
+function getScoreColor(score) {
+    const s = String(score).toUpperCase();
+    if (s === 'X' || s === '10') return 'score-gold';
+    if (s === '9' || s === '8') return 'score-red';
+    if (s === '7' || s === '6') return 'score-blue';
+    if (s === '5' || s === '4') return 'score-black';
+    if (s === '3' || s === '2' || s === '1') return 'score-white';
+    return '';
+}
+
+

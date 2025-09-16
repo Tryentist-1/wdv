@@ -1,21 +1,21 @@
 # Ranking Round Tutorial
 
-**Version:** 1.0  
-**Date:** 2025-07-16  
-**Status:** Draft  
+**Version:** 1.1  
+**Date:** 2025-09-16  
+**Status:** Updated  
 
 ---
 
 ## Overview
 
-This tutorial will guide you through using the Ranking Round scoring application. The Ranking Round is used for competitive scoring with multiple archers on the same bale, typically 12 ends of 3 arrows each.
+This tutorial will guide you through using the Ranking Round scoring application. For the 2025 season, Ranking Round defaults to 10 ends of 3 arrows each (R300). A 360 variant remains available if needed.
 
 ## Table of Contents
 
 1. [Setup](#1-setup)
 2. [How to Enter Scores](#2-how-to-enter-scores)
 3. [How to Access Score Cards](#3-how-to-access-score-cards)
-4. [Save and Send](#4-save-and-send)
+4. [Export and Share](#4-export-and-share)
 
 ---
 
@@ -41,7 +41,7 @@ This tutorial will guide you through using the Ranking Round scoring application
 ### Step 3: Start Scoring
 
 1. **Click the blue "Scoring" button** at the bottom
-2. **You'll be taken to the scoring screen** showing "R Round - E1"
+2. **You'll be taken to the scoring screen** showing "R300 - E1"
 3. **Verify your bale number** is displayed correctly
 
 ---
@@ -94,38 +94,38 @@ This tutorial will guide you through using the Ranking Round scoring application
 
 ### Card View Features
 
-- **Complete score history** for all 12 ends
+- **Complete score history** for all 10 ends (R300)
 - **Running totals** and averages
 - **X and 10 counts** for the round
 - **Export options** (Save, Copy, SMS)
 
 ---
 
-## 4. Save and Send
+## 4. Export and Share
 
 ### Verify Scores
 
 1. **Go to any archer's card** using the "»" button
-2. **Review the complete scorecard** for accuracy
-3. **Check running totals** and final scores
+2. **Tap the green "Export" button**
+3. **Choose "Verify & Send"** to review bale totals and send via SMS
 
 ### Send Results via SMS
 
-1. **Click "Verify & Send"** on any archer's card
+1. **Click "Verify & Send"** in the Export modal
 2. **Review the bale totals** in the popup modal
 3. **Click "Send SMS"** to open your phone's messaging app
 4. **The formatted results** will be ready to paste into a Google Sheet
 
 ### Save Results
 
-1. **Click "Save"** on any archer's card
+1. **Click "Take Screenshot"** in the Export modal
 2. **A screenshot** of the scorecard will be saved to your device
 3. **Use for records** or sharing with coaches
 
 ### Copy Results
 
-1. **Click "Copy"** on any archer's card
-2. **Text format** of the results is copied to clipboard
+1. **Click "Copy to Clipboard"** in the Export modal
+2. **JSON format** of the results is copied to clipboard
 3. **Paste anywhere** for sharing or record keeping
 
 ---
@@ -170,9 +170,11 @@ This tutorial will guide you through using the Ranking Round scoring application
 | Enter Scores | Scoring screen | Keypad |
 | Navigate Ends | Scoring screen | "← E" / "E →" buttons |
 | View Cards | Scoring screen | "»" buttons |
-| Send Results | Card view | "Verify & Send" |
-| Save Results | Card view | "Save" button |
-| Copy Results | Card view | "Copy" button |
+| Export | Card view | Green "Export" button |
+| Verify & Send SMS | Export modal | "Verify & Send" |
+| Take Screenshot | Export modal | "Take Screenshot" |
+| Download JSON | Export modal | "Download JSON" |
+| Copy JSON | Export modal | "Copy to Clipboard" |
 
 ---
 

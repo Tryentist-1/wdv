@@ -253,6 +253,17 @@ hr {
   border-color: var(--primary-purple);
 }
 
+.btn-orange {
+  color: var(--text-light);
+  background-color: #fd7e14;
+  border-color: #fd7e14;
+}
+
+.btn-orange:hover {
+  background-color: #e8690b;
+  border-color: #e8690b;
+}
+
 .controls-container {
   height: var(--controls-height);
   padding: 0.5rem;
@@ -447,6 +458,24 @@ hr {
     padding: 10px 5px;
     font-size: 1em;
   }
+
+  /* Medium mobile modal optimizations */
+  .modal-overlay {
+    padding: 0.75rem;
+  }
+
+  .modal-content {
+    padding: 1.25rem;
+    max-height: 92vh;
+  }
+
+  .form-row {
+    gap: 0.75rem;
+  }
+
+  .modal-buttons {
+    gap: 0.75rem;
+  }
 }
 
 /* ======================
@@ -462,9 +491,10 @@ hr {
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: flex-start;
-  padding-top: 2vh;
+  align-items: center;
+  padding: 1rem;
   z-index: 2000;
+  overflow-y: auto;
 }
 
 .modal-content {
@@ -472,9 +502,11 @@ hr {
   padding: 1.5rem;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  width: 90%;
+  width: 95%;
   max-width: 400px;
-  margin: 0 auto;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: auto;
 }
 
 .modal-content h2 {
@@ -487,6 +519,11 @@ hr {
   justify-content: center;
   gap: 0.5rem;
   margin-top: 1rem;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--border-gray);
 }
 
 .modal-content form {
@@ -522,6 +559,38 @@ hr {
   border-radius: var(--border-radius);
   font-size: 1rem;
   width: 100%;
+}
+
+/* Export Modal Styles */
+.export-options {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+
+.export-option {
+  padding: 1rem;
+  border: 1px solid var(--border-gray);
+  border-radius: var(--border-radius);
+  background-color: #f8f9fa;
+}
+
+.export-option h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: var(--dark-gray);
+}
+
+.export-option p {
+  margin: 0 0 1rem 0;
+  color: var(--medium-gray);
+  font-size: 0.9rem;
+}
+
+.export-option .btn {
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 /* ======================
@@ -732,6 +801,36 @@ body {
     min-height: 44px;
     font-size: 0.95rem;
     padding: 0.15rem;
+  }
+
+  /* Mobile modal optimizations */
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .modal-content {
+    padding: 1rem;
+    width: 100%;
+    max-height: 95vh;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-group {
+    min-width: auto;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .modal-buttons .btn {
+    width: 100%;
+    padding: 0.75rem;
   }
 }
 
