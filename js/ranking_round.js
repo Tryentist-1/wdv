@@ -694,10 +694,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Show loading state
-        const originalContent = cardContainer.innerHTML;
-        cardContainer.innerHTML = '<div style="text-align: center; padding: 2rem;">Generating screenshot...</div>';
-
         html2canvas(cardContainer, {
             scale: 2, // Higher resolution
             useCORS: true,
@@ -706,9 +702,6 @@ document.addEventListener('DOMContentLoaded', () => {
             width: cardContainer.offsetWidth,
             height: cardContainer.offsetHeight
         }).then(canvas => {
-            // Restore original content
-            cardContainer.innerHTML = originalContent;
-
             // Create download link
             const link = document.createElement('a');
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
@@ -720,7 +713,6 @@ document.addEventListener('DOMContentLoaded', () => {
             link.click();
         }).catch(error => {
             console.error('Screenshot failed:', error);
-            cardContainer.innerHTML = originalContent;
             alert('Failed to generate screenshot. Please try again.');
         });
     }

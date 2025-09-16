@@ -683,9 +683,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const originalContent = cardContainer.innerHTML;
-        cardContainer.innerHTML = '<div style="text-align: center; padding: 2rem;">Generating screenshot...</div>';
-
         html2canvas(cardContainer, {
             scale: 2,
             useCORS: true,
@@ -694,7 +691,6 @@ document.addEventListener('DOMContentLoaded', () => {
             width: cardContainer.offsetWidth,
             height: cardContainer.offsetHeight
         }).then(canvas => {
-            cardContainer.innerHTML = originalContent;
             const link = document.createElement('a');
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
             const archer = state.archers.find(a => a.id === state.activeArcherId);
@@ -704,7 +700,6 @@ document.addEventListener('DOMContentLoaded', () => {
             link.click();
         }).catch(error => {
             console.error('Screenshot failed:', error);
-            cardContainer.innerHTML = originalContent;
             alert('Failed to generate screenshot. Please try again.');
         });
     }
