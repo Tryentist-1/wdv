@@ -26,3 +26,6 @@ yarn-error.log*
 # Build output
 dist/
 build/ 
+
+# API local config (do not commit or deploy)
+api/config.local.php
