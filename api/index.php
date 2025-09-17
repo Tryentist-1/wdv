@@ -127,6 +127,68 @@ if (preg_match('#^/v1/rounds/recent$#', $route) && $method === 'GET') {
     exit;
 }
 
+// Create an event (and optionally seed 12 rounds)
+if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
+    require_api_key();
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $name = trim($input['name'] ?? 'Event');
+    $date = $input['date'] ?? date('Y-m-d');
+    $seed = !!($input['seedRounds'] ?? false);
+    $pdo = db();
+    $eventId = $genUuid();
+    $pdo->prepare('INSERT INTO events (id,name,date,created_at) VALUES (?,?,?,NOW())')->execute([$eventId,$name,$date]);
+    if ($seed) {
+        $ins = $pdo->prepare('INSERT INTO rounds (id,event_id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,?,NOW())');
+        for (let $b = 1; $b <= 12; $b++) {
+            $rid = $genUuid();
+            $ins->execute([$rid,$eventId,'R300',$date,$b]);
+        }
+    }
+    json_response(['eventId' => $eventId], 201);
+    exit;
+}
+
+// List recent events
+if (preg_match('#^/v1/events/recent$#', $route) && $method === 'GET') {
+    require_api_key();
+    $pdo = db();
+    $rows = $pdo->query('SELECT id,name,date,created_at as createdAt FROM events ORDER BY created_at DESC LIMIT 50')->fetchAll();
+    json_response(['events' => $rows]);
+    exit;
+}
+
+// Get an event snapshot: rounds and their latest state
+if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $eventId = $m[1];
+    $pdo = db();
+    $rounds = $pdo->prepare('SELECT id, round_type as roundType, date, bale_number as baleNumber FROM rounds WHERE event_id=? ORDER BY bale_number');
+    $rounds->execute([$eventId]);
+    $rs = $rounds->fetchAll();
+    // Attach quick archer counts and totals
+    foreach ($rs as &$r) {
+        $archers = $pdo->prepare('SELECT ra.id as roundArcherId, ra.archer_name as archerName FROM round_archers ra WHERE ra.round_id=?');
+        $archers->execute([$r['id']]);
+        $as = $archers->fetchAll();
+        $r['archers'] = [];
+        foreach ($as as $a) {
+            $ee = $pdo->prepare('SELECT end_number as endNumber, end_total as endTotal, running_total as runningTotal FROM end_events WHERE round_archer_id=? ORDER BY end_number');
+            $ee->execute([$a['roundArcherId']]);
+            $ends = $ee->fetchAll();
+            $completed = count($ends);
+            $running = $completed ? end($ends)['runningTotal'] : 0;
+            $r['archers'][] = [
+                'roundArcherId' => $a['roundArcherId'],
+                'archerName' => $a['archerName'],
+                'endsCompleted' => $completed,
+                'runningTotal' => $running,
+            ];
+        }
+    }
+    json_response(['eventId' => $eventId, 'rounds' => $rs]);
+    exit;
+}
+
 // Upsert a master archer by extId (or derived composite)
 if (preg_match('#^/v1/archers/upsert$#', $route) && $method === 'POST') {
     require_api_key();

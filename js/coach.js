@@ -52,6 +52,18 @@
     }
   }
 
+  async function createEventAndRounds() {
+    const date = new Date().toISOString().slice(0, 10);
+    const name = prompt('Event name:', `Event ${date}`) || `Event ${date}`;
+    try {
+      const res = await req('/events', 'POST', { name, date, seedRounds: true });
+      alert(`Event created: ${res.eventId}`);
+      loadRounds();
+    } catch (e) {
+      alert('Create event failed: ' + e.message);
+    }
+  }
+
   async function createRound() {
     const date = new Date().toISOString().slice(0, 10);
     const type = prompt('Round Type (R300/R360):', 'R300') || 'R300';
@@ -69,7 +81,7 @@
     const keyInput = document.getElementById('api-key-input');
     keyInput.value = getKey();
     document.getElementById('save-key-btn').onclick = () => { setKey(keyInput.value.trim()); loadRounds(); };
-    document.getElementById('new-round-btn').onclick = createRound;
+    document.getElementById('new-round-btn').onclick = createEventAndRounds;
     loadRounds();
   });
 })();

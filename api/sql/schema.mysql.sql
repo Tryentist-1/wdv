@@ -16,11 +16,23 @@ CREATE TABLE IF NOT EXISTS archers (
 
 CREATE TABLE IF NOT EXISTS rounds (
   id CHAR(36) NOT NULL DEFAULT (UUID()),
+  event_id CHAR(36) NULL,
   round_type VARCHAR(20) NOT NULL,
   date DATE NOT NULL,
   bale_number INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  KEY idx_rounds_event (event_id),
+  KEY idx_rounds_date (date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS events (
+  id CHAR(36) NOT NULL DEFAULT (UUID()),
+  name VARCHAR(200) NOT NULL,
+  date DATE NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_events_date (date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS round_archers (
