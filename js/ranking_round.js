@@ -467,6 +467,22 @@ document.addEventListener('DOMContentLoaded', () => {
             archer.scores[state.currentEnd - 1][arrowIndex] = input.value;
             renderScoringView();
             saveData();
+
+            // Live Updates: best-effort post of current end state
+            try {
+                const cfg = window.LIVE_UPDATES || {};
+                if (cfg.enabled && typeof LiveUpdates !== 'undefined') {
+                    const endScores = archer.scores[state.currentEnd - 1];
+                    const [a1,a2,a3] = [endScores[0]||'', endScores[1]||'', endScores[2]||''];
+                    let endTotal = 0, tens = 0, xs = 0, running = 0;
+                    const add = (s) => { const u = String(s).toUpperCase(); if (!u) return; if (u==='X') { endTotal+=10; running+=10; xs++; tens++; } else if (u==='10') { endTotal+=10; running+=10; tens++; } else if (/^[0-9]$|^10$/.test(u)) { const n=parseInt(u,10); endTotal+=n; running+=n; } };
+                    [a1,a2,a3].forEach(add);
+                    archer.scores.forEach(end => { if (Array.isArray(end)) end.forEach(add); });
+                    if (LiveUpdates._state && LiveUpdates._state.roundId) {
+                        LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs });
+                    }
+                }
+            } catch (e) { /* noop */ }
         }
     }
 
@@ -659,6 +675,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         keypad.element.addEventListener('click', handleKeypadClick);
+
+        // --- Live Updates wiring (feature-flag) ---
+        try {
+            const cfg = window.LIVE_UPDATES || {};
+            LiveUpdates.setConfig({
+                enabled: !!cfg.enabled,
+                apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1',
+                apiKey: cfg.apiKey || '',
+            });
+
+            const onStartScoring = () => {
+                if (!LiveUpdates || !LiveUpdates._state || !LiveUpdates.setConfig) return;
+                if (!LiveUpdates._state.roundId && cfg.enabled) {
+                    LiveUpdates.ensureRound({
+                        roundType: 'R360',
+                        date: new Date().toISOString().slice(0, 10),
+                        baleNumber: state.baleNumber,
+                    }).then(() => {
+                        state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
+                    }).catch(() => {});
+                } else if (cfg.enabled) {
+                    state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
+                }
+            };
+
+            const scoringBtn = document.getElementById('scoring-btn');
+            if (scoringBtn) {
+                const orig = scoringBtn.onclick;
+                scoringBtn.onclick = (ev) => { if (orig) orig(ev); onStartScoring(); };
+            } else {
+                onStartScoring();
+            }
+        } catch (e) { /* noop */ }
     }
 
     function loadSampleData() {
