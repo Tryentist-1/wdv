@@ -10,11 +10,17 @@
   }
 
   async function req(path, method = 'GET', body = null) {
-    const key = getKey();
+    const keyInput = document.getElementById('api-key-input');
+    const key = (keyInput && keyInput.value && keyInput.value.trim()) || getKey();
+    if (!key) throw new Error('API key missing. Enter it above and click Save.');
     const headers = { 'Content-Type': 'application/json' };
-    if (key) headers['X-API-Key'] = key;
+    headers['X-API-Key'] = key;
     const res = await fetch(`${API_BASE}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try { msg += `: ${await res.text()}`; } catch (_) {}
+      throw new Error(msg);
+    }
     return res.json();
   }
 
@@ -32,9 +38,13 @@
       container.innerHTML = html;
       container.querySelectorAll('button[data-round-id]').forEach(btn => {
         btn.onclick = async () => {
-          const id = btn.getAttribute('data-round-id');
-          const snap = await req(`/rounds/${id}/snapshot`);
-          alert(`Round ${snap.round.roundType} Bale ${snap.round.baleNumber} with ${snap.archers.length} archers loaded.`);
+          try {
+            const id = btn.getAttribute('data-round-id');
+            const snap = await req(`/rounds/${id}/snapshot`);
+            alert(`Round ${snap.round.roundType} Bale ${snap.round.baleNumber} with ${snap.archers.length} archers loaded.`);
+          } catch (e) {
+            alert('Snapshot failed: ' + e.message);
+          }
         };
       });
     } catch (e) {
