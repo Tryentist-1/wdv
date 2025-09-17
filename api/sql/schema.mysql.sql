@@ -2,13 +2,16 @@
 
 CREATE TABLE IF NOT EXISTS archers (
   id CHAR(36) NOT NULL DEFAULT (UUID()),
+  ext_id VARCHAR(128) NULL,
   first_name VARCHAR(100) NOT NULL,
   last_name VARCHAR(100) NOT NULL,
   school VARCHAR(100),
   level VARCHAR(50),
   gender VARCHAR(20),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_archers_ext (ext_id),
+  KEY idx_archers_name (last_name, first_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS rounds (
@@ -56,5 +59,6 @@ CREATE TABLE IF NOT EXISTS end_events (
   CONSTRAINT fk_ev_round FOREIGN KEY (round_id) REFERENCES rounds(id) ON DELETE CASCADE,
   CONSTRAINT fk_ev_ra FOREIGN KEY (round_archer_id) REFERENCES round_archers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 

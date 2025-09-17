@@ -21,6 +21,15 @@ if ($route === '/v1/health') {
     exit;
 }
 
+// Helpers
+$slugify = function(string $s): string {
+    $s = strtolower($s);
+    $s = preg_replace('/\s+/', '-', $s);
+    $s = preg_replace('/[^a-z0-9\-]/', '', $s);
+    $s = preg_replace('/-+/', '-', $s);
+    return trim($s, '-');
+};
+
 if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
     require_api_key();
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -106,6 +115,75 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
         }
     }
     json_response(['round' => $round, 'archers' => $rows]);
+    exit;
+}
+
+// Upsert a master archer by extId (or derived composite)
+if (preg_match('#^/v1/archers/upsert$#', $route) && $method === 'POST') {
+    require_api_key();
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $extId = trim($input['extId'] ?? '');
+    $first = trim($input['firstName'] ?? '');
+    $last = trim($input['lastName'] ?? '');
+    $school = trim($input['school'] ?? '');
+    $level = trim($input['level'] ?? '');
+    $gender = trim($input['gender'] ?? '');
+    if ($first === '' || $last === '') { json_response(['error' => 'firstName and lastName required'], 400); exit; }
+    if ($extId === '') {
+        $extId = $slugify($first) . '-' . $slugify($last) . ($school !== '' ? '-' . $slugify($school) : '');
+    }
+    $pdo = db();
+    // Check existing by ext_id
+    $sel = $pdo->prepare('SELECT id FROM archers WHERE ext_id=? LIMIT 1');
+    $sel->execute([$extId]);
+    $row = $sel->fetch();
+    if ($row) {
+        $id = $row['id'];
+        $upd = $pdo->prepare('UPDATE archers SET first_name=?, last_name=?, school=?, level=?, gender=? WHERE id=?');
+        $upd->execute([$first,$last,$school,$level,$gender,$id]);
+        json_response(['archerId' => $id, 'updated' => true]);
+        exit;
+    } else {
+        $id = $genUuid();
+        $ins = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?,?,?,?,?,?,?,NOW())');
+        $ins->execute([$id,$extId,$first,$last,$school,$level,$gender]);
+        json_response(['archerId' => $id, 'created' => true], 201);
+        exit;
+    }
+}
+
+// Bulk upsert master archers
+if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
+    require_api_key();
+    $items = json_decode(file_get_contents('php://input'), true) ?? [];
+    if (!is_array($items)) { json_response(['error' => 'array body required'], 400); exit; }
+    $pdo = db();
+    $upserted = 0; $created = 0; $updated = 0;
+    $sel = $pdo->prepare('SELECT id FROM archers WHERE ext_id=? LIMIT 1');
+    $ins = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?,?,?,?,?,?,?,NOW())');
+    $upd = $pdo->prepare('UPDATE archers SET first_name=?, last_name=?, school=?, level=?, gender=? WHERE id=?');
+    foreach ($items as $it) {
+        $first = trim($it['firstName'] ?? '');
+        $last = trim($it['lastName'] ?? '');
+        if ($first === '' || $last === '') continue;
+        $school = trim($it['school'] ?? '');
+        $level = trim($it['level'] ?? '');
+        $gender = trim($it['gender'] ?? '');
+        $extId = trim($it['extId'] ?? '');
+        if ($extId === '') { $extId = $slugify($first) . '-' . $slugify($last) . ($school !== '' ? '-' . $slugify($school) : ''); }
+        $sel->execute([$extId]);
+        $row = $sel->fetch();
+        if ($row) {
+            $upd->execute([$first,$last,$school,$level,$gender,$row['id']]);
+            $updated++;
+        } else {
+            $id = $genUuid();
+            $ins->execute([$id,$extId,$first,$last,$school,$level,$gender]);
+            $created++;
+        }
+        $upserted++;
+    }
+    json_response(['upserted' => $upserted, 'created' => $created, 'updated' => $updated]);
     exit;
 }
 
