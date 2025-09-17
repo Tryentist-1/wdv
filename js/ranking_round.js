@@ -543,6 +543,18 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshBtn.className = 'btn btn-secondary';
             refreshBtn.textContent = 'Refresh';
             refreshBtn.onclick = () => renderSetupForm();
+            const syncBtn = document.createElement('button');
+            syncBtn.id = 'sync-db-btn';
+            syncBtn.className = 'btn btn-secondary';
+            syncBtn.textContent = 'Sync to DB';
+            syncBtn.onclick = async () => {
+                try {
+                    const result = await ArcherModule.bulkUpsertMasterList();
+                    alert(`Synced to DB: ${result.upserted || 0} (created ${result.created || 0}, updated ${result.updated || 0})`);
+                } catch (e) {
+                    alert('Sync failed: ' + e.message);
+                }
+            };
             const resetBtn = document.createElement('button');
             resetBtn.id = 'reset-btn';
             resetBtn.className = 'btn btn-danger';
@@ -556,6 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
             scoringBtn.onclick = showScoringView;
             setupControls.subheader.appendChild(searchInput);
             setupControls.subheader.appendChild(refreshBtn);
+            setupControls.subheader.appendChild(syncBtn);
             setupControls.subheader.appendChild(resetBtn);
             setupControls.subheader.appendChild(scoringBtn);
         }

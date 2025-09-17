@@ -23,6 +23,60 @@ const ArcherModule = {
     }
   },
 
+  // Utility: slugify
+  _slug(s) {
+    return String(s || '')
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9\-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  },
+
+  // Build extId from fields (first-last-school)
+  _buildExtId(archer) {
+    const a = archer || {};
+    const first = this._slug(a.first);
+    const last = this._slug(a.last);
+    const school = this._slug(a.school);
+    return [first, last, school].filter(Boolean).join('-');
+  },
+
+  // Sync current master list to DB via API bulk upsert
+  async bulkUpsertMasterList() {
+    const cfg = (window && window.LIVE_UPDATES) ? window.LIVE_UPDATES : {};
+    if (!cfg || !cfg.apiBase || !cfg.apiKey) {
+      alert('Live Updates API is not configured. Please set window.LIVE_UPDATES.apiBase and apiKey.');
+      return { ok: false };
+    }
+    const list = this.loadList();
+    if (!Array.isArray(list) || list.length === 0) {
+      alert('No master list found in local storage to sync.');
+      return { ok: false };
+    }
+    const payload = list.map(a => ({
+      extId: this._buildExtId(a),
+      firstName: a.first || '',
+      lastName: a.last || '',
+      school: a.school || '',
+      level: a.level || '',
+      gender: a.gender || ''
+    }));
+    const res = await fetch(`${cfg.apiBase}/archers/bulk_upsert`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': cfg.apiKey
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`Bulk upsert failed (HTTP ${res.status}): ${txt}`);
+    }
+    return res.json();
+  },
+
   // Save archer list to localStorage
   saveList(list) {
     localStorage.setItem(ARCHER_LIST_KEY, JSON.stringify(list));
