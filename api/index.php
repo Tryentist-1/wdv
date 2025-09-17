@@ -118,6 +118,15 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
     exit;
 }
 
+// Recent rounds list for coach (last 50 by created_at)
+if (preg_match('#^/v1/rounds/recent$#', $route) && $method === 'GET') {
+    require_api_key();
+    $pdo = db();
+    $rows = $pdo->query('SELECT id, round_type as roundType, date, bale_number as baleNumber, created_at as createdAt FROM rounds ORDER BY created_at DESC LIMIT 50')->fetchAll();
+    json_response(['rounds' => $rows]);
+    exit;
+}
+
 // Upsert a master archer by extId (or derived composite)
 if (preg_match('#^/v1/archers/upsert$#', $route) && $method === 'POST') {
     require_api_key();
