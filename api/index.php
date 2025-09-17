@@ -3,6 +3,13 @@ require_once __DIR__ . '/db.php';
 
 cors();
 
+$genUuid = function(): string {
+    $data = random_bytes(16);
+    $data[6] = chr((ord($data[6]) & 0x0f) | 0x40); // version 4
+    $data[8] = chr((ord($data[8]) & 0x3f) | 0x80); // variant
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+};
+
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
@@ -21,8 +28,8 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
     $date = $input['date'] ?? date('Y-m-d');
     $bale = (int)($input['baleNumber'] ?? 1);
     $pdo = db();
-    $pdo->prepare('INSERT INTO rounds (round_type,date,bale_number,created_at) VALUES (?,?,?,NOW())')->execute([$roundType,$date,$bale]);
-    $id = $pdo->lastInsertId();
+    $id = $genUuid();
+    $pdo->prepare('INSERT INTO rounds (id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,NOW())')->execute([$id,$roundType,$date,$bale]);
     json_response(['roundId' => $id], 201);
     exit;
 }
@@ -38,9 +45,9 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
     $target = $input['targetAssignment'] ?? '';
     if ($name === '') { json_response(['error' => 'archerName required'], 400); exit; }
     $pdo = db();
-    $stmt = $pdo->prepare('INSERT INTO round_archers (round_id, archer_name, school, level, gender, target_assignment, created_at) VALUES (?,?,?,?,?,?,NOW())');
-    $stmt->execute([$roundId,$name,$school,$level,$gender,$target]);
-    $id = $pdo->lastInsertId();
+    $id = $genUuid();
+    $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_name, school, level, gender, target_assignment, created_at) VALUES (?,?,?,?,?,?,?,NOW())');
+    $stmt->execute([$id,$roundId,$name,$school,$level,$gender,$target]);
     json_response(['roundArcherId' => $id], 201);
     exit;
 }
@@ -103,4 +110,5 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
 }
 
 json_response(['error' => 'Not Found', 'route' => $route], 404);
+
 
