@@ -169,18 +169,23 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
     $name = trim($input['name'] ?? 'Event');
     $date = $input['date'] ?? date('Y-m-d');
     $seed = !!($input['seedRounds'] ?? false);
-    $pdo = db();
-    ensure_events_schema($pdo);
-    $eventId = $genUuid();
-    $pdo->prepare('INSERT INTO events (id,name,date,created_at) VALUES (?,?,?,NOW())')->execute([$eventId,$name,$date]);
-    if ($seed) {
-        $ins = $pdo->prepare('INSERT INTO rounds (id,event_id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,?,NOW())');
-        for ($b = 1; $b <= 12; $b++) {
-            $rid = $genUuid();
-            $ins->execute([$rid,$eventId,'R300',$date,$b]);
+    try {
+        $pdo = db();
+        ensure_events_schema($pdo);
+        $eventId = $genUuid();
+        $pdo->prepare('INSERT INTO events (id,name,date,created_at) VALUES (?,?,?,NOW())')->execute([$eventId,$name,$date]);
+        if ($seed) {
+            $ins = $pdo->prepare('INSERT INTO rounds (id,event_id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,?,NOW())');
+            for ($b = 1; $b <= 12; $b++) {
+                $rid = $genUuid();
+                $ins->execute([$rid,$eventId,'R300',$date,$b]);
+            }
         }
+        json_response(['eventId' => $eventId], 201);
+    } catch (Exception $e) {
+        error_log("Event creation failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
-    json_response(['eventId' => $eventId], 201);
     exit;
 }
 
@@ -253,24 +258,28 @@ if (preg_match('#^/v1/archers/upsert$#', $route) && $method === 'POST') {
     if ($extId === '') {
         $extId = $slugify($first) . '-' . $slugify($last) . ($school !== '' ? '-' . $slugify($school) : '');
     }
-    $pdo = db();
-    // Check existing by ext_id
-    $sel = $pdo->prepare('SELECT id FROM archers WHERE ext_id=? LIMIT 1');
-    $sel->execute([$extId]);
-    $row = $sel->fetch();
-    if ($row) {
-        $id = $row['id'];
-        $upd = $pdo->prepare('UPDATE archers SET first_name=?, last_name=?, school=?, level=?, gender=? WHERE id=?');
-        $upd->execute([$first,$last,$school,$level,$gender,$id]);
-        json_response(['archerId' => $id, 'updated' => true]);
-        exit;
-    } else {
-        $id = $genUuid();
-        $ins = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?,?,?,?,?,?,?,NOW())');
-        $ins->execute([$id,$extId,$first,$last,$school,$level,$gender]);
-        json_response(['archerId' => $id, 'created' => true], 201);
-        exit;
+    try {
+        $pdo = db();
+        // Check existing by ext_id
+        $sel = $pdo->prepare('SELECT id FROM archers WHERE ext_id=? LIMIT 1');
+        $sel->execute([$extId]);
+        $row = $sel->fetch();
+        if ($row) {
+            $id = $row['id'];
+            $upd = $pdo->prepare('UPDATE archers SET first_name=?, last_name=?, school=?, level=?, gender=? WHERE id=?');
+            $upd->execute([$first,$last,$school,$level,$gender,$id]);
+            json_response(['archerId' => $id, 'updated' => true]);
+        } else {
+            $id = $genUuid();
+            $ins = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?,?,?,?,?,?,?,NOW())');
+            $ins->execute([$id,$extId,$first,$last,$school,$level,$gender]);
+            json_response(['archerId' => $id, 'created' => true], 201);
+        }
+    } catch (Exception $e) {
+        error_log("Archer upsert failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
+    exit;
 }
 
 // Bulk upsert master archers
@@ -278,33 +287,38 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
     require_api_key();
     $items = json_decode(file_get_contents('php://input'), true) ?? [];
     if (!is_array($items)) { json_response(['error' => 'array body required'], 400); exit; }
-    $pdo = db();
-    $upserted = 0; $created = 0; $updated = 0;
-    $sel = $pdo->prepare('SELECT id FROM archers WHERE ext_id=? LIMIT 1');
-    $ins = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?,?,?,?,?,?,?,NOW())');
-    $upd = $pdo->prepare('UPDATE archers SET first_name=?, last_name=?, school=?, level=?, gender=? WHERE id=?');
-    foreach ($items as $it) {
-        $first = trim($it['firstName'] ?? '');
-        $last = trim($it['lastName'] ?? '');
-        if ($first === '' || $last === '') continue;
-        $school = trim($it['school'] ?? '');
-        $level = trim($it['level'] ?? '');
-        $gender = trim($it['gender'] ?? '');
-        $extId = trim($it['extId'] ?? '');
-        if ($extId === '') { $extId = $slugify($first) . '-' . $slugify($last) . ($school !== '' ? '-' . $slugify($school) : ''); }
-        $sel->execute([$extId]);
-        $row = $sel->fetch();
-        if ($row) {
-            $upd->execute([$first,$last,$school,$level,$gender,$row['id']]);
-            $updated++;
-        } else {
-            $id = $genUuid();
-            $ins->execute([$id,$extId,$first,$last,$school,$level,$gender]);
-            $created++;
+    try {
+        $pdo = db();
+        $upserted = 0; $created = 0; $updated = 0;
+        $sel = $pdo->prepare('SELECT id FROM archers WHERE ext_id=? LIMIT 1');
+        $ins = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?,?,?,?,?,?,?,NOW())');
+        $upd = $pdo->prepare('UPDATE archers SET first_name=?, last_name=?, school=?, level=?, gender=? WHERE id=?');
+        foreach ($items as $it) {
+            $first = trim($it['firstName'] ?? '');
+            $last = trim($it['lastName'] ?? '');
+            if ($first === '' || $last === '') continue;
+            $school = trim($it['school'] ?? '');
+            $level = trim($it['level'] ?? '');
+            $gender = trim($it['gender'] ?? '');
+            $extId = trim($it['extId'] ?? '');
+            if ($extId === '') { $extId = $slugify($first) . '-' . $slugify($last) . ($school !== '' ? '-' . $slugify($school) : ''); }
+            $sel->execute([$extId]);
+            $row = $sel->fetch();
+            if ($row) {
+                $upd->execute([$first,$last,$school,$level,$gender,$row['id']]);
+                $updated++;
+            } else {
+                $id = $genUuid();
+                $ins->execute([$id,$extId,$first,$last,$school,$level,$gender]);
+                $created++;
+            }
+            $upserted++;
         }
-        $upserted++;
+        json_response(['upserted' => $upserted, 'created' => $created, 'updated' => $updated]);
+    } catch (Exception $e) {
+        error_log("Bulk archer upsert failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
-    json_response(['upserted' => $upserted, 'created' => $created, 'updated' => $updated]);
     exit;
 }
 
