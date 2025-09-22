@@ -37,7 +37,7 @@
       const rows = events.events || [];
       let html = '<table class="score-table"><thead><tr><th>Date</th><th>Event</th><th>Actions</th></tr></thead><tbody>';
       rows.forEach(ev => {
-        html += `<tr><td>${ev.date}</td><td>${ev.name}</td><td><button class="btn btn-primary" data-event-id="${ev.id}">Open Leaderboard</button></td></tr>`;
+        html += `<tr><td>${ev.date}</td><td>${ev.name}</td><td><button class="btn btn-primary" data-event-id="${ev.id}">Open Leaderboard</button> <button class="btn btn-danger" data-delete-event="${ev.id}" style="margin-left: 0.5rem;">Delete</button></td></tr>`;
       });
       html += '</tbody></table>';
       container.innerHTML = html;
@@ -52,19 +52,43 @@
           }
         };
       });
+      
+      container.querySelectorAll('button[data-delete-event]').forEach(btn => {
+        btn.onclick = async () => {
+          if (confirm('Are you sure you want to delete this event? This cannot be undone.')) {
+            try {
+              const evId = btn.getAttribute('data-delete-event');
+              await req(`/events/${evId}`, 'DELETE');
+              loadRounds(); // Refresh the list
+            } catch (e) {
+              alert('Delete failed: ' + e.message);
+            }
+          }
+        };
+      });
     } catch (e) {
       container.innerHTML = `<div class="error">Failed to load rounds: ${e.message}</div>`;
     }
   }
 
   function renderLeaderboard(container, snap) {
-    let html = '<div class="features"><h2>Rounds Summary</h2>';
+    let html = '<div class="features">';
+    html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">';
+    html += '<h2>Rounds Summary</h2>';
+    html += '<button id="back-to-events-btn" class="btn btn-secondary">← Back to Events</button>';
+    html += '</div>';
     html += '<table class="score-table"><thead><tr><th>Bale</th><th>Type</th><th>Archers</th><th>Status</th></tr></thead><tbody>';
     
     (snap.rounds || []).forEach(r => {
       const archerCount = r.totalArchers || r.archerCount || (r.archers ? r.archers.length : 0);
       const hasScores = r.archers && r.archers.some(a => a.runningTotal > 0);
-      const status = hasScores ? 'Active' : (archerCount > 0 ? 'Ready' : 'Empty');
+      const isCompleted = r.archers && r.archers.every(a => a.endsCompleted >= 10); // R300 = 10 ends
+      let status = 'Empty';
+      if (archerCount > 0) {
+        if (isCompleted) status = 'Completed';
+        else if (hasScores) status = 'Active';
+        else status = 'Ready';
+      }
       html += `<tr><td>${r.baleNumber || 'N/A'}</td><td>${r.roundType || 'N/A'}</td><td>${archerCount}</td><td>${status}</td></tr>`;
     });
     
@@ -108,6 +132,12 @@
     });
     
     container.innerHTML = html;
+    
+    // Add back button handler
+    const backBtn = container.querySelector('#back-to-events-btn');
+    if (backBtn) {
+      backBtn.onclick = () => loadRounds();
+    }
   }
 
   async function createEventAndRounds() {

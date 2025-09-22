@@ -225,6 +225,32 @@ if (preg_match('#^/v1/events/recent$#', $route) && $method === 'GET') {
     exit;
 }
 
+// Delete event
+if (preg_match('#^/v1/events/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
+    require_api_key();
+    $eventId = $m[1];
+    try {
+        $pdo = db();
+        // First unlink all rounds from this event
+        $unlink = $pdo->prepare('UPDATE rounds SET event_id=NULL WHERE event_id=?');
+        $unlink->execute([$eventId]);
+        
+        // Then delete the event
+        $delete = $pdo->prepare('DELETE FROM events WHERE id=?');
+        $delete->execute([$eventId]);
+        
+        if ($delete->rowCount() > 0) {
+            json_response(['message' => 'Event deleted successfully'], 200);
+        } else {
+            json_response(['error' => 'Event not found'], 404);
+        }
+    } catch (Exception $e) {
+        error_log("Event deletion failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // Get an event snapshot: rounds and their latest state
 if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method === 'GET') {
     require_api_key();

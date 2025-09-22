@@ -541,11 +541,35 @@ document.addEventListener('DOMContentLoaded', () => {
         saveData();
     }
 
+    // Load event information for display
+    async function loadEventInfo() {
+        try {
+            const today = new Date().toISOString().slice(0, 10);
+            const response = await fetch(`/wdv/api/v1/events/recent`);
+            const data = await response.json();
+            
+            if (data.events && data.events.length > 0) {
+                // Find today's event
+                const todayEvent = data.events.find(ev => ev.date === today);
+                if (todayEvent) {
+                    const eventNameEl = document.getElementById('event-name');
+                    const baleDisplayEl = document.getElementById('current-bale-display');
+                    
+                    if (eventNameEl) eventNameEl.textContent = todayEvent.name;
+                    if (baleDisplayEl) baleDisplayEl.textContent = state.baleNumber;
+                }
+            }
+        } catch (e) {
+            console.log('Could not load event info:', e.message);
+        }
+    }
+
     function init() {
         console.log("Initializing Ranking Round App...");
         loadData();
         renderKeypad();
         renderView();
+        loadEventInfo();
 
         const baleNumberInput = document.getElementById('bale-number-input');
         if (baleNumberInput) {

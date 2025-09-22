@@ -91,6 +91,11 @@ Phase 0: Implement a Git structure for local and remote management
         * Cloud sync capabilities
         * Multi-device support
         * API integration
+    4. **Live Updates (Real-time scoring feed):**
+		* Persist per-end records to a master database so coaches can watch round results in real time.
+		* Record fields: ArcherID, ArcherName, Varsity/JV, Date, Bale, TargetAssignment, EndNumber, Arrow scores (A1/A2/A3), EndTotal, RunningTotal.
+		* Expose secure write endpoints from devices and read endpoints for a coaches dashboard.
+		* Aggregate totals across multiple sessions to support team rankings and season reporting.
 
 ### Phase 5: Documentation and Training
 *   **Goal:** 
