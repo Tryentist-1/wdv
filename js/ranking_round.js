@@ -542,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshBtn.id = 'refresh-btn';
             refreshBtn.className = 'btn btn-secondary';
             refreshBtn.textContent = 'Refresh';
-            refreshBtn.onclick = () => renderSetupForm();
+            refreshBtn.onclick = async () => { await ArcherModule.loadDefaultCSVIfNeeded(true); renderSetupForm(); };
             const syncBtn = document.createElement('button');
             syncBtn.id = 'sync-db-btn';
             syncBtn.className = 'btn btn-secondary';

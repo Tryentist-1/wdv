@@ -137,7 +137,8 @@ const ArcherModule = {
   loadDefaultCSVIfNeeded: async function(force = false) {
     if (!force && localStorage.getItem(ARCHER_LIST_KEY)) return; // Already loaded
     try {
-      const resp = await fetch('app-imports/listimport-01.csv');
+      const url = force ? `app-imports/listimport-01.csv?v=${Date.now()}` : 'app-imports/listimport-01.csv';
+      const resp = await fetch(url);
       if (!resp.ok) throw new Error('Failed to fetch CSV');
       const text = await resp.text();
       const lines = text.trim().split(/\r?\n/);
