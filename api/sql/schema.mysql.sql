@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS events (
   id CHAR(36) NOT NULL DEFAULT (UUID()),
   name VARCHAR(200) NOT NULL,
   date DATE NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'Upcoming',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_events_date (date)
@@ -44,6 +45,7 @@ CREATE TABLE IF NOT EXISTS round_archers (
   level VARCHAR(50),
   gender VARCHAR(20),
   target_assignment VARCHAR(2),
+  target_size INT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_ra_round (round_id),

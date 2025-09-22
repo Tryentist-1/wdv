@@ -85,6 +85,7 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
     $level = $input['level'] ?? '';
     $gender = $input['gender'] ?? '';
     $target = $input['targetAssignment'] ?? '';
+    $targetSize = $input['targetSize'] ?? null;
     if ($name === '') { json_response(['error' => 'archerName required'], 400); exit; }
     try {
         $pdo = db();
@@ -99,8 +100,8 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
         } else {
             // Create new archer
             $id = $genUuid();
-            $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_name, school, level, gender, target_assignment, created_at) VALUES (?,?,?,?,?,?,?,NOW())');
-            $stmt->execute([$id,$roundId,$name,$school,$level,$gender,$target]);
+            $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_name, school, level, gender, target_assignment, target_size, created_at) VALUES (?,?,?,?,?,?,?,?,NOW())');
+            $stmt->execute([$id,$roundId,$name,$school,$level,$gender,$target,$targetSize]);
             json_response(['roundArcherId' => $id], 201);
         }
     } catch (Exception $e) {
@@ -182,12 +183,13 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $name = trim($input['name'] ?? 'Event');
     $date = $input['date'] ?? date('Y-m-d');
+    $status = $input['status'] ?? 'Upcoming';
     $seed = !!($input['seedRounds'] ?? false);
     try {
         $pdo = db();
         ensure_events_schema($pdo);
         $eventId = $genUuid();
-        $pdo->prepare('INSERT INTO events (id,name,date,created_at) VALUES (?,?,?,NOW())')->execute([$eventId,$name,$date]);
+        $pdo->prepare('INSERT INTO events (id,name,date,status,created_at) VALUES (?,?,?,?,NOW())')->execute([$eventId,$name,$date,$status]);
         if ($seed) {
             $ins = $pdo->prepare('INSERT INTO rounds (id,event_id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,?,NOW())');
             for ($b = 1; $b <= 12; $b++) {
@@ -220,7 +222,7 @@ if (preg_match('#^/v1/events/recent$#', $route) && $method === 'GET') {
     require_api_key();
     $pdo = db();
     ensure_events_schema($pdo);
-    $rows = $pdo->query('SELECT id,name,date,created_at as createdAt FROM events ORDER BY created_at DESC LIMIT 50')->fetchAll();
+    $rows = $pdo->query('SELECT id,name,date,status,created_at as createdAt FROM events ORDER BY created_at DESC LIMIT 50')->fetchAll();
     json_response(['events' => $rows]);
     exit;
 }
