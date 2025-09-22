@@ -18,7 +18,12 @@ if (!defined('DB_PASS')) {
 if (!defined('API_KEY')) {
     define('API_KEY', 'set-a-strong-key');
 }
+if (!defined('PASSCODE')) {
+    // Shared coach passcode (can be rotated in config.local.php)
+    define('PASSCODE', 'wdva26');
+}
 if (!defined('CORS_ORIGIN')) {
     define('CORS_ORIGIN', 'https://tryentist.com');
 }
+
 

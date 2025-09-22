@@ -13,9 +13,10 @@
   async function req(path, method = 'GET', body = null) {
     const keyInput = document.getElementById('api-key-input');
     const key = (keyInput && keyInput.value && keyInput.value.trim()) || getKey();
-    if (!key) throw new Error('API key missing. Enter it above and click Save.');
+    const usePasscode = /^\w{4,}$/.test(key) && key.length <= 16; // heuristic: short word-like => passcode
+    if (!key) throw new Error('Passcode missing. Enter it above and click Save.');
     const headers = { 'Content-Type': 'application/json' };
-    headers['X-API-Key'] = key;
+    if (usePasscode) headers['X-Passcode'] = key; else headers['X-API-Key'] = key;
     const res = await fetch(`${API_BASE}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
     if (!res.ok) {
       let msg = `HTTP ${res.status}`;

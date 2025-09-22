@@ -20,7 +20,8 @@ function json_response($data, int $code = 200): void {
 
 function require_api_key(): void {
     $key = $_SERVER['HTTP_X_API_KEY'] ?? '';
-    if ($key !== API_KEY) {
+    $pass = $_SERVER['HTTP_X_PASSCODE'] ?? '';
+    if ($key !== API_KEY && $pass !== PASSCODE) {
         json_response(['error' => 'Unauthorized'], 401);
         exit;
     }
@@ -28,12 +29,13 @@ function require_api_key(): void {
 
 function cors(): void {
     header('Access-Control-Allow-Origin: ' . CORS_ORIGIN);
-    header('Access-Control-Allow-Headers: Content-Type, X-API-Key');
+    header('Access-Control-Allow-Headers: Content-Type, X-API-Key, X-Passcode');
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
         http_response_code(204);
         exit;
     }
 }
+
 
 
