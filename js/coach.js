@@ -16,7 +16,7 @@
     const usePasscode = /^\w{4,}$/.test(key) && key.length <= 16; // heuristic: short word-like => passcode
     if (!key) throw new Error('Passcode missing. Enter it above and click Save.');
     const headers = { 'Content-Type': 'application/json' };
-    // Send both headers to avoid heuristics issues
+    // Send both headers to avoid heuristics issues; server accepts either
     headers['X-Passcode'] = key;
     headers['X-API-Key'] = key;
     const res = await fetch(`${API_BASE}${path}`, { method, headers, body: body ? JSON.stringify(body) : undefined });

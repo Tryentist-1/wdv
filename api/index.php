@@ -17,7 +17,9 @@ $route = '/' . ltrim(substr($path, strlen($base)), '/');
 
 // Basic router
 if ($route === '/v1/health') {
-    json_response(['ok' => true, 'time' => time()]);
+    $key = $_SERVER['HTTP_X_API_KEY'] ?? '';
+    $pass = $_SERVER['HTTP_X_PASSCODE'] ?? '';
+    json_response(['ok' => true, 'time' => time(), 'hasApiKey' => !!$key, 'hasPass' => !!$pass]);
     exit;
 }
 

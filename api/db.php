@@ -21,7 +21,8 @@ function json_response($data, int $code = 200): void {
 function require_api_key(): void {
     $key = $_SERVER['HTTP_X_API_KEY'] ?? '';
     $pass = $_SERVER['HTTP_X_PASSCODE'] ?? '';
-    if ($key !== API_KEY && $pass !== PASSCODE) {
+    $passOk = (strlen($pass) > 0) && (strtolower($pass) === strtolower(PASSCODE));
+    if ($key !== API_KEY && !$passOk) {
         json_response(['error' => 'Unauthorized'], 401);
         exit;
     }
