@@ -225,6 +225,35 @@ if (preg_match('#^/v1/events/recent$#', $route) && $method === 'GET') {
     exit;
 }
 
+// Link round to event
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)/link-event$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $roundId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $eventId = $input['eventId'] ?? '';
+    
+    if (!$eventId) {
+        json_response(['error' => 'eventId required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        $stmt = $pdo->prepare('UPDATE rounds SET event_id=? WHERE id=?');
+        $stmt->execute([$eventId, $roundId]);
+        
+        if ($stmt->rowCount() > 0) {
+            json_response(['message' => 'Round linked to event successfully'], 200);
+        } else {
+            json_response(['error' => 'Round not found'], 404);
+        }
+    } catch (Exception $e) {
+        error_log("Round linking failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // Delete event
 if (preg_match('#^/v1/events/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
     require_api_key();

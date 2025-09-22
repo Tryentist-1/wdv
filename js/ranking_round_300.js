@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
         archers: [], // { id, firstName, lastName, school, level, gender, targetAssignment, scores }
         activeArcherId: null, // For card view
+        selectedEventId: null, // Selected event for this bale
     };
 
     const sessionKey = `rankingRound300_${new Date().toISOString().split('T')[0]}`;
@@ -539,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveData();
     }
 
-    // Load event information for display
+    // Load event information for display and selector
     async function loadEventInfo() {
         try {
             const today = new Date().toISOString().slice(0, 10);
@@ -547,7 +548,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             
             if (data.events && data.events.length > 0) {
-                // Find today's event
+                // Populate event selector
+                const eventSelector = document.getElementById('event-selector');
+                if (eventSelector) {
+                    eventSelector.innerHTML = '<option value="">Select Event...</option>';
+                    data.events.forEach(ev => {
+                        const option = document.createElement('option');
+                        option.value = ev.id;
+                        option.textContent = `${ev.name} (${ev.date})`;
+                        eventSelector.appendChild(option);
+                    });
+                    
+                    // Auto-select today's event if available
+                    const todayEvent = data.events.find(ev => ev.date === today);
+                    if (todayEvent) {
+                        eventSelector.value = todayEvent.id;
+                        state.selectedEventId = todayEvent.id;
+                    }
+                }
+                
+                // Update display info
                 const todayEvent = data.events.find(ev => ev.date === today);
                 if (todayEvent) {
                     const eventNameEl = document.getElementById('event-name');
@@ -578,6 +598,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        const eventSelector = document.getElementById('event-selector');
+        if (eventSelector) {
+            eventSelector.onchange = () => {
+                state.selectedEventId = eventSelector.value || null;
+                saveData();
+            };
+        }
+
         if (setupControls.subheader) {
             setupControls.subheader.innerHTML = '';
             const searchInput = document.createElement('input');
@@ -593,16 +621,88 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshBtn.className = 'btn btn-secondary';
             refreshBtn.textContent = 'Refresh';
             refreshBtn.onclick = async () => { await ArcherModule.loadDefaultCSVIfNeeded(true); renderSetupForm(); };
-            const syncBtn = document.createElement('button');
-            syncBtn.id = 'sync-db-btn';
-            syncBtn.className = 'btn btn-secondary';
-            syncBtn.textContent = 'Sync to DB';
-            syncBtn.onclick = async () => {
+            const masterUpsertBtn = document.createElement('button');
+            masterUpsertBtn.id = 'master-upsert-btn';
+            masterUpsertBtn.className = 'btn btn-primary';
+            masterUpsertBtn.textContent = 'Master Upsert';
+            masterUpsertBtn.onclick = async () => {
+                if (!state.selectedEventId) {
+                    alert('Please select an event first');
+                    return;
+                }
                 try {
+                    // First sync the master archer list
                     const result = await ArcherModule.bulkUpsertMasterList();
-                    alert(`Synced to DB: ${result.upserted || 0} (created ${result.created || 0}, updated ${result.updated || 0})`);
+                    
+                    // Then create/update the round and assign to event
+                    const roundData = {
+                        roundType: 'R300',
+                        date: new Date().toISOString().slice(0, 10),
+                        baleNumber: state.baleNumber
+                    };
+                    
+                    const roundResponse = await fetch('/wdv/api/v1/rounds', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': localStorage.getItem('coach_api_key') || '',
+                            'X-Passcode': localStorage.getItem('coach_api_key') || ''
+                        },
+                        body: JSON.stringify(roundData)
+                    });
+                    
+                    if (!roundResponse.ok) {
+                        throw new Error(`Round creation failed: ${roundResponse.status}`);
+                    }
+                    
+                    const roundResult = await roundResponse.json();
+                    state.roundId = roundResult.roundId;
+                    
+                    // Link round to event
+                    const linkResponse = await fetch(`/wdv/api/v1/rounds/${state.roundId}/link-event`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': localStorage.getItem('coach_api_key') || '',
+                            'X-Passcode': localStorage.getItem('coach_api_key') || ''
+                        },
+                        body: JSON.stringify({ eventId: state.selectedEventId })
+                    });
+                    
+                    if (!linkResponse.ok) {
+                        console.warn('Could not link round to event:', linkResponse.status);
+                    }
+                    
+                    // Add archers to the round
+                    for (const archer of state.archers) {
+                        const archerData = {
+                            archerName: `${archer.firstName} ${archer.lastName}`,
+                            school: archer.school,
+                            level: archer.level,
+                            gender: archer.gender,
+                            targetAssignment: archer.targetAssignment
+                        };
+                        
+                        const archerResponse = await fetch(`/wdv/api/v1/rounds/${state.roundId}/archers`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-API-Key': localStorage.getItem('coach_api_key') || '',
+                                'X-Passcode': localStorage.getItem('coach_api_key') || ''
+                            },
+                            body: JSON.stringify(archerData)
+                        });
+                        
+                        if (archerResponse.ok) {
+                            const archerResult = await archerResponse.json();
+                            state.roundArcherIds[archer.id] = archerResult.roundArcherId;
+                        }
+                    }
+                    
+                    saveData();
+                    alert(`Master Upsert Complete!\nArchers: ${result.upserted || 0} synced\nRound: ${state.roundId}\nEvent: ${state.selectedEventId}`);
                 } catch (e) {
-                    alert('Sync failed: ' + e.message);
+                    alert('Master Upsert failed: ' + e.message);
                 }
             };
             const selectedChip = document.createElement('span');
@@ -668,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
             scoringBtn.onclick = showScoringView;
             setupControls.subheader.appendChild(searchInput);
             setupControls.subheader.appendChild(refreshBtn);
-            setupControls.subheader.appendChild(syncBtn);
+            setupControls.subheader.appendChild(masterUpsertBtn);
             setupControls.subheader.appendChild(liveBtn);
             setupControls.subheader.appendChild(selectedChip);
             setupControls.subheader.appendChild(resetBtn);
