@@ -53,6 +53,20 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
             $id = $genUuid();
             $stmt = $pdo->prepare('INSERT INTO rounds (id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,NOW())');
             $stmt->execute([$id,$roundType,$date,$bale]);
+            
+            // Try to link to most recent event for this date
+            try {
+                $event = $pdo->prepare('SELECT id FROM events WHERE date=? ORDER BY created_at DESC LIMIT 1');
+                $event->execute([$date]);
+                $eventRow = $event->fetch();
+                if ($eventRow) {
+                    $link = $pdo->prepare('UPDATE rounds SET event_id=? WHERE id=?');
+                    $link->execute([$eventRow['id'], $id]);
+                }
+            } catch (Exception $e) {
+                // Ignore event linking errors
+            }
+            
             json_response(['roundId' => $id], 201);
         }
     } catch (Exception $e) {
@@ -177,8 +191,20 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
         if ($seed) {
             $ins = $pdo->prepare('INSERT INTO rounds (id,event_id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,?,NOW())');
             for ($b = 1; $b <= 12; $b++) {
-                $rid = $genUuid();
-                $ins->execute([$rid,$eventId,'R300',$date,$b]);
+                // Check if round already exists before creating
+                $existing = $pdo->prepare('SELECT id FROM rounds WHERE round_type=? AND date=? AND bale_number=? LIMIT 1');
+                $existing->execute(['R300', $date, $b]);
+                $existingRound = $existing->fetch();
+                
+                if ($existingRound) {
+                    // Link existing round to this event
+                    $link = $pdo->prepare('UPDATE rounds SET event_id=? WHERE id=?');
+                    $link->execute([$eventId, $existingRound['id']]);
+                } else {
+                    // Create new round
+                    $rid = $genUuid();
+                    $ins->execute([$rid,$eventId,'R300',$date,$b]);
+                }
             }
         }
         json_response(['eventId' => $eventId], 201);
@@ -204,8 +230,13 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
     require_api_key();
     $eventId = $m[1];
     $pdo = db();
-    $rounds = $pdo->prepare('SELECT id, round_type as roundType, date, bale_number as baleNumber FROM rounds WHERE event_id=? ORDER BY bale_number');
-    $rounds->execute([$eventId]);
+    // Get rounds for this event, plus any unlinked rounds for the same date
+    $event = $pdo->prepare('SELECT date FROM events WHERE id=? LIMIT 1');
+    $event->execute([$eventId]);
+    $eventDate = $event->fetch()['date'] ?? date('Y-m-d');
+    
+    $rounds = $pdo->prepare('SELECT id, round_type as roundType, date, bale_number as baleNumber FROM rounds WHERE (event_id=? OR (event_id IS NULL AND date=?)) ORDER BY bale_number');
+    $rounds->execute([$eventId, $eventDate]);
     $rs = $rounds->fetchAll();
     // Attach quick archer counts and totals
     foreach ($rs as &$r) {
