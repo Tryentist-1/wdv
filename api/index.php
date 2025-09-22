@@ -40,10 +40,21 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
     $bale = (int)($input['baleNumber'] ?? 1);
     try {
         $pdo = db();
-        $id = $genUuid();
-        $stmt = $pdo->prepare('INSERT INTO rounds (id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,NOW())');
-        $stmt->execute([$id,$roundType,$date,$bale]);
-        json_response(['roundId' => $id], 201);
+        // Check if round already exists
+        $existing = $pdo->prepare('SELECT id FROM rounds WHERE round_type=? AND date=? AND bale_number=? LIMIT 1');
+        $existing->execute([$roundType, $date, $bale]);
+        $row = $existing->fetch();
+        
+        if ($row) {
+            // Return existing round ID
+            json_response(['roundId' => $row['id']], 200);
+        } else {
+            // Create new round
+            $id = $genUuid();
+            $stmt = $pdo->prepare('INSERT INTO rounds (id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,NOW())');
+            $stmt->execute([$id,$roundType,$date,$bale]);
+            json_response(['roundId' => $id], 201);
+        }
     } catch (Exception $e) {
         error_log("Round creation failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
