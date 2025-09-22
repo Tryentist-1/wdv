@@ -575,7 +575,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const setLiveEnabled = (v) => { try { if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ enabled: !!v }); else localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); } catch(_) {} };
             const renderLiveBtn = () => { const on = getLiveEnabled(); liveBtn.textContent = on ? 'Live: On' : 'Live: Off'; liveBtn.className = on ? 'btn btn-success' : 'btn btn-secondary'; };
             renderLiveBtn();
-            liveBtn.onclick = () => { setLiveEnabled(!getLiveEnabled()); renderLiveBtn(); };
+            liveBtn.onclick = () => {
+                if (!getLiveEnabled()) {
+                    let key = (localStorage.getItem('coach_api_key')||'').trim();
+                    if (!key) {
+                        key = prompt('Enter coach passcode to enable Live Updates:','');
+                        if (!key) return;
+                        try { localStorage.setItem('coach_api_key', key); if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ apiKey: key }); } catch(_) {}
+                    } else {
+                        try { if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ apiKey: key }); } catch(_) {}
+                    }
+                }
+                setLiveEnabled(!getLiveEnabled());
+                renderLiveBtn();
+            };
 
             const resetBtn = document.createElement('button');
             resetBtn.id = 'reset-btn';

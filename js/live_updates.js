@@ -6,7 +6,13 @@ const LiveUpdates = (() => {
   function readStoredConfig() {
     try {
       const raw = localStorage.getItem('live_updates_config');
-      return raw ? JSON.parse(raw) : {};
+      const cfg = raw ? JSON.parse(raw) : {};
+      // Fallback to coach key if present
+      if (!cfg.apiKey) {
+        const coachKey = localStorage.getItem('coach_api_key');
+        if (coachKey) cfg.apiKey = coachKey;
+      }
+      return cfg;
     } catch (_) { return {}; }
   }
 
@@ -45,7 +51,7 @@ const LiveUpdates = (() => {
   async function request(path, method, body) {
     if (!config.enabled) return null;
     const headers = { 'Content-Type': 'application/json' };
-    if (config.apiKey) headers['X-API-Key'] = config.apiKey;
+    if (config.apiKey) { headers['X-API-Key'] = config.apiKey; headers['X-Passcode'] = config.apiKey; }
     const res = await fetch(`${config.apiBase}${path}`, {
       method,
       headers,
