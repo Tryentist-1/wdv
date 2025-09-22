@@ -174,6 +174,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             checkbox.onchange = () => {
                 if (checkbox.checked) {
+                    // Enforce max 4 archers per bale (A-D)
+                    const selectedCount = state.archers.length;
+                    if (selectedCount >= 4) {
+                        checkbox.checked = false;
+                        alert('Bale is full (4 archers).');
+                        return;
+                    }
                     if (!state.archers.some(a => a.id === uniqueId)) {
                         const usedTargets = state.archers.map(a => a.targetAssignment);
                         const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
@@ -193,6 +200,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.archers = state.archers.filter(a => a.id !== uniqueId);
                 }
                 saveData();
+                // Update selected count chip
+                const chip = document.getElementById('selected-count-chip');
+                if (chip) chip.textContent = `${state.archers.length}/4`;
                 renderSetupForm();
             };
 
@@ -550,6 +560,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('Sync failed: ' + e.message);
                 }
             };
+            const selectedChip = document.createElement('span');
+            selectedChip.id = 'selected-count-chip';
+            selectedChip.className = 'btn';
+            selectedChip.style.cursor = 'default';
+            selectedChip.textContent = `${state.archers.length}/4`;
             const resetBtn = document.createElement('button');
             resetBtn.id = 'reset-btn';
             resetBtn.className = 'btn btn-danger';
@@ -564,6 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setupControls.subheader.appendChild(searchInput);
             setupControls.subheader.appendChild(refreshBtn);
             setupControls.subheader.appendChild(syncBtn);
+            setupControls.subheader.appendChild(selectedChip);
             setupControls.subheader.appendChild(resetBtn);
             setupControls.subheader.appendChild(scoringBtn);
         }

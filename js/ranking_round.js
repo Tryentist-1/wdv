@@ -179,6 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             checkbox.onchange = () => {
                 if (checkbox.checked) {
+                    const selectedCount = state.archers.length;
+                    if (selectedCount >= 4) {
+                        checkbox.checked = false;
+                        alert('Bale is full (4 archers).');
+                        return;
+                    }
                     if (!state.archers.some(a => a.id === uniqueId)) {
                         const usedTargets = state.archers.map(a => a.targetAssignment);
                         const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
@@ -198,6 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.archers = state.archers.filter(a => a.id !== uniqueId);
                 }
                 saveData();
+                const chip = document.getElementById('selected-count-chip');
+                if (chip) chip.textContent = `${state.archers.length}/4`;
                 renderSetupForm(); // Re-render to show/hide select and update state
             };
 
@@ -543,6 +551,11 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshBtn.className = 'btn btn-secondary';
             refreshBtn.textContent = 'Refresh';
             refreshBtn.onclick = async () => { await ArcherModule.loadDefaultCSVIfNeeded(true); renderSetupForm(); };
+            const selectedChip = document.createElement('span');
+            selectedChip.id = 'selected-count-chip';
+            selectedChip.className = 'btn';
+            selectedChip.style.cursor = 'default';
+            selectedChip.textContent = `${state.archers.length}/4`;
             const syncBtn = document.createElement('button');
             syncBtn.id = 'sync-db-btn';
             syncBtn.className = 'btn btn-secondary';
@@ -569,6 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setupControls.subheader.appendChild(searchInput);
             setupControls.subheader.appendChild(refreshBtn);
             setupControls.subheader.appendChild(syncBtn);
+            setupControls.subheader.appendChild(selectedChip);
             setupControls.subheader.appendChild(resetBtn);
             setupControls.subheader.appendChild(scoringBtn);
         }
