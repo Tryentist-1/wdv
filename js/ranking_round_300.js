@@ -576,6 +576,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const setLiveEnabled = (v) => { try { if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ enabled: !!v }); else localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); } catch(_) {} };
             const renderLiveBtn = () => { const on = getLiveEnabled(); liveBtn.textContent = on ? 'Live: On' : 'Live: Off'; liveBtn.className = on ? 'btn btn-success' : 'btn btn-secondary'; };
             renderLiveBtn();
+            // Initialize round/archers immediately when enabling live
+            const initLiveRoundAndArchers = () => {
+                try {
+                    let isEnabled = getLiveEnabled();
+                    if (!isEnabled || !window.LiveUpdates || !LiveUpdates.setConfig) return;
+                    const cfg = window.LIVE_UPDATES || {};
+                    LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1' });
+                    if (!LiveUpdates._state.roundId) {
+                        LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
+                          .then(() => { state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a)); })
+                          .catch(() => {});
+                    } else {
+                        state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
+                    }
+                    const badge = document.getElementById('live-status-badge');
+                    if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
+                } catch(_) {}
+            };
             liveBtn.onclick = () => {
                 if (!getLiveEnabled()) {
                     let key = (localStorage.getItem('coach_api_key')||'').trim();
@@ -589,6 +607,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 setLiveEnabled(!getLiveEnabled());
                 renderLiveBtn();
+                // If turned on, initialize immediately
+                if (getLiveEnabled()) initLiveRoundAndArchers();
             };
 
             const resetBtn = document.createElement('button');
