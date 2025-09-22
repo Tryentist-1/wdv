@@ -726,6 +726,17 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 onStartScoring();
             }
+            // Visual sync indicator on end rows
+            window.addEventListener('liveSyncPending', (e) => {
+                const id = e.detail.archerId;
+                const row = document.querySelector(`tr[data-archer-id="${id}"]`);
+                if (row) row.classList.add('sync-pending');
+            });
+            window.addEventListener('liveSyncSuccess', (e) => {
+                const id = e.detail.archerId;
+                const row = document.querySelector(`tr[data-archer-id="${id}"]`);
+                if (row) { row.classList.remove('sync-pending'); row.classList.add('sync-ok'); setTimeout(()=>row.classList.remove('sync-ok'),1200); }
+            });
         } catch (e) { /* noop */ }
     }
 

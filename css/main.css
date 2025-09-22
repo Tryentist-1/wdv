@@ -138,6 +138,10 @@ hr {
   font-size: clamp(0.8rem, 2vw, 0.9rem);
 }
 
+/* Live sync feedback on scoring rows */
+tr.sync-pending td { outline: 2px solid #ffb84d; outline-offset: -2px; }
+tr.sync-ok td { outline: 2px solid #28a745; outline-offset: -2px; }
+
 .archer-select-list {
   padding: 0 0.5rem;
 }

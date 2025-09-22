@@ -109,6 +109,8 @@ const LiveUpdates = (() => {
     enqueue(async () => {
       const raId = state.archerMap.get(localId);
       if (!state.roundId || !raId) throw new Error('Round/Archer not initialized');
+      // Notify pending
+      try { window.dispatchEvent(new CustomEvent('liveSyncPending', { detail: { archerId: localId, endNumber } })); } catch(_) {}
       await request(`/rounds/${state.roundId}/archers/${raId}/ends`, 'POST', {
         endNumber,
         a1: payload.a1, a2: payload.a2, a3: payload.a3,
@@ -118,6 +120,8 @@ const LiveUpdates = (() => {
         xs: payload.xs,
         deviceTs: new Date().toISOString(),
       });
+      // Notify success
+      try { window.dispatchEvent(new CustomEvent('liveSyncSuccess', { detail: { archerId: localId, endNumber } })); } catch(_) {}
     });
   }
 
