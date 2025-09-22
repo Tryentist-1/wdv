@@ -152,7 +152,20 @@ const LiveUpdates = (() => {
     });
   }
 
-  return { setConfig, ensureRound, ensureArcher, postEnd, saveConfig, _state: state };
+  // --- PUBLIC API ---
+  window.LiveUpdates = {
+      setConfig,
+      saveConfig,
+      ensureRound,
+      ensureArcher,
+      postEnd,
+      request, // Expose the request function
+      _state: {
+          roundId: null,
+          archerIds: {},
+      },
+  };
+
 })();
 
 
