@@ -32,28 +32,65 @@
     const container = document.getElementById('rounds-list');
     container.innerHTML = '<div class="loading">Loading rounds...</div>';
     try {
-      const data = await req('/rounds/recent');
-      const rows = data.rounds || [];
-      let html = '<table class="score-table"><thead><tr><th>Date</th><th>Type</th><th>Bale</th><th>ID</th><th>Actions</th></tr></thead><tbody>';
-      rows.forEach(r => {
-        html += `<tr><td>${r.date}</td><td>${r.roundType}</td><td>${r.baleNumber}</td><td style="font-size:0.8em;">${r.id}</td><td><button class="btn btn-primary" data-round-id="${r.id}">Open Snapshot</button></td></tr>`;
+      // Show recent events with a leaderboard link
+      const events = await req('/events/recent');
+      const rows = events.events || [];
+      let html = '<table class="score-table"><thead><tr><th>Date</th><th>Event</th><th>Actions</th></tr></thead><tbody>';
+      rows.forEach(ev => {
+        html += `<tr><td>${ev.date}</td><td>${ev.name}</td><td><button class="btn btn-primary" data-event-id="${ev.id}">Open Leaderboard</button></td></tr>`;
       });
       html += '</tbody></table>';
       container.innerHTML = html;
-      container.querySelectorAll('button[data-round-id]').forEach(btn => {
+      container.querySelectorAll('button[data-event-id]').forEach(btn => {
         btn.onclick = async () => {
           try {
-            const id = btn.getAttribute('data-round-id');
-            const snap = await req(`/rounds/${id}/snapshot`);
-            alert(`Round ${snap.round.roundType} Bale ${snap.round.baleNumber} with ${snap.archers.length} archers loaded.`);
+            const evId = btn.getAttribute('data-event-id');
+            const snap = await req(`/events/${evId}/snapshot`);
+            renderLeaderboard(container, snap);
           } catch (e) {
-            alert('Snapshot failed: ' + e.message);
+            alert('Load failed: ' + e.message);
           }
         };
       });
     } catch (e) {
       container.innerHTML = `<div class="error">Failed to load rounds: ${e.message}</div>`;
     }
+  }
+
+  function renderLeaderboard(container, snap) {
+    // Flatten archers across rounds
+    const all = [];
+    (snap.rounds || []).forEach(r => {
+      (r.archers || []).forEach(a => {
+        all.push({
+          name: a.archerName,
+          gender: (a.gender||'').toUpperCase(),
+          level: (a.level||'').toUpperCase(),
+          lastEnd: a.lastEnd||0,
+          endScore: a.endScore||0,
+          runningTotal: a.runningTotal||0,
+        });
+      });
+    });
+    // Group by Girls V, Girls JV, Boys V, Boys JV
+    const groups = [
+      { key: 'GV', title: 'Girls V', filter: x => x.gender==='F' && x.level.startsWith('V') },
+      { key: 'GJV', title: 'Girls JV', filter: x => x.gender==='F' && x.level.startsWith('J') },
+      { key: 'BV', title: 'Boys V', filter: x => x.gender==='M' && x.level.startsWith('V') },
+      { key: 'BJV', title: 'Boys JV', filter: x => x.gender==='M' && x.level.startsWith('J') },
+    ];
+    let html = '';
+    groups.forEach(g => {
+      const arr = all.filter(g.filter).sort((a,b)=> b.runningTotal - a.runningTotal);
+      html += `<div class="features"><h2>${g.title}</h2>`;
+      html += '<table class="score-table"><thead><tr><th>Name</th><th>End</th><th>EndScore</th><th>Running</th></tr></thead><tbody>';
+      arr.forEach(p => {
+        const short = p.name.replace(/^(\S+)\s+(\S).*$/, '$1 $2.');
+        html += `<tr><td>${short}</td><td>${p.lastEnd||''}</td><td>${p.endScore||''}</td><td>${p.runningTotal||0}</td></tr>`;
+      });
+      html += '</tbody></table></div>';
+    });
+    container.innerHTML = html;
   }
 
   async function createEventAndRounds() {

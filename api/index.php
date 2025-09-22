@@ -171,21 +171,34 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
     $rs = $rounds->fetchAll();
     // Attach quick archer counts and totals
     foreach ($rs as &$r) {
-        $archers = $pdo->prepare('SELECT ra.id as roundArcherId, ra.archer_name as archerName FROM round_archers ra WHERE ra.round_id=?');
+        $archers = $pdo->prepare('SELECT ra.id as roundArcherId, ra.archer_name as archerName, ra.gender as gender, ra.level as level, ra.target_assignment as target FROM round_archers ra WHERE ra.round_id=?');
         $archers->execute([$r['id']]);
         $as = $archers->fetchAll();
         $r['archers'] = [];
         foreach ($as as $a) {
-            $ee = $pdo->prepare('SELECT end_number as endNumber, end_total as endTotal, running_total as runningTotal FROM end_events WHERE round_archer_id=? ORDER BY end_number');
+            $ee = $pdo->prepare('SELECT end_number as endNumber, end_total as endTotal, running_total as runningTotal, server_ts as serverTs FROM end_events WHERE round_archer_id=? ORDER BY end_number');
             $ee->execute([$a['roundArcherId']]);
             $ends = $ee->fetchAll();
             $completed = count($ends);
-            $running = $completed ? end($ends)['runningTotal'] : 0;
+            $lastEnd = 0; $endScore = 0; $running = 0; $updatedAt = null;
+            if ($completed) {
+                $last = end($ends);
+                $lastEnd = (int)$last['endNumber'];
+                $endScore = (int)$last['endTotal'];
+                $running = (int)$last['runningTotal'];
+                $updatedAt = $last['serverTs'];
+            }
             $r['archers'][] = [
                 'roundArcherId' => $a['roundArcherId'],
                 'archerName' => $a['archerName'],
+                'gender' => $a['gender'],
+                'level' => $a['level'],
+                'target' => $a['target'],
                 'endsCompleted' => $completed,
+                'lastEnd' => $lastEnd,
+                'endScore' => $endScore,
                 'runningTotal' => $running,
+                'updatedAt' => $updatedAt,
             ];
         }
     }
