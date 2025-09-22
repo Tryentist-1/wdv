@@ -731,11 +731,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = e.detail.archerId;
                 const row = document.querySelector(`tr[data-archer-id="${id}"]`);
                 if (row) row.classList.add('sync-pending');
+                const badge = document.getElementById('live-status-badge');
+                if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
             });
             window.addEventListener('liveSyncSuccess', (e) => {
                 const id = e.detail.archerId;
                 const row = document.querySelector(`tr[data-archer-id="${id}"]`);
                 if (row) { row.classList.remove('sync-pending'); row.classList.add('sync-ok'); setTimeout(()=>row.classList.remove('sync-ok'),1200); }
+                const badge = document.getElementById('live-status-badge');
+                if (badge) { badge.textContent = 'Synced'; badge.className = 'status-badge status-ok'; }
             });
         } catch (e) { /* noop */ }
     }

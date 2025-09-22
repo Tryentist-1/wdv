@@ -95,6 +95,11 @@ hr {
   align-items: center;
 }
 
+.status-badge { margin-left: 0.5rem; padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.85em; }
+.status-off { background: #f8d7da; color: #842029; }
+.status-pending { background: #fff3cd; color: #664d03; }
+.status-ok { background: #d1e7dd; color: #0f5132; }
+
 .header-left, .header-right {
   display: flex;
   align-items: center;
