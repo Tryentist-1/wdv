@@ -72,11 +72,16 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
     $gender = $input['gender'] ?? '';
     $target = $input['targetAssignment'] ?? '';
     if ($name === '') { json_response(['error' => 'archerName required'], 400); exit; }
-    $pdo = db();
-    $id = $genUuid();
-    $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_name, school, level, gender, target_assignment, created_at) VALUES (?,?,?,?,?,?,?,NOW())');
-    $stmt->execute([$id,$roundId,$name,$school,$level,$gender,$target]);
-    json_response(['roundArcherId' => $id], 201);
+    try {
+        $pdo = db();
+        $id = $genUuid();
+        $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_name, school, level, gender, target_assignment, created_at) VALUES (?,?,?,?,?,?,?,NOW())');
+        $stmt->execute([$id,$roundId,$name,$school,$level,$gender,$target]);
+        json_response(['roundArcherId' => $id], 201);
+    } catch (Exception $e) {
+        error_log("Archer creation failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
     exit;
 }
 
