@@ -275,6 +275,38 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
     exit;
 }
 
+// Upload CSV to app-imports (coach roster)
+if (preg_match('#^/v1/upload_csv$#', $route) && $method === 'POST') {
+    require_api_key();
+    if (!isset($_FILES['file'])) {
+        json_response(['error' => 'No file uploaded. Expected field name "file".'], 400);
+        return;
+    }
+    $f = $_FILES['file'];
+    if ($f['error'] !== UPLOAD_ERR_OK) {
+        json_response(['error' => 'Upload failed', 'code' => $f['error']], 400);
+        return;
+    }
+    $name = strtolower($f['name']);
+    if (!preg_match('/\.csv$/', $name)) {
+        json_response(['error' => 'Only .csv files are allowed'], 400);
+        return;
+    }
+    if ($f['size'] > 2 * 1024 * 1024) {
+        json_response(['error' => 'File too large'], 400);
+        return;
+    }
+    $targetDir = dirname(__DIR__) . '/app-imports';
+    if (!is_dir($targetDir)) @mkdir($targetDir, 0755, true);
+    $target = $targetDir . '/listimport-01.csv';
+    if (!move_uploaded_file($f['tmp_name'], $target)) {
+        json_response(['error' => 'Could not save file'], 500);
+        return;
+    }
+    json_response(['ok' => true, 'path' => 'app-imports/listimport-01.csv']);
+    return;
+}
+
 json_response(['error' => 'Not Found', 'route' => $route], 404);
 
 

@@ -128,6 +128,23 @@
     };
     document.getElementById('save-key-btn').onclick = () => { setKey(keyInput.value.trim()); loadRounds(); };
     document.getElementById('new-round-btn').onclick = createEventAndRounds;
+    const csvInput = document.getElementById('csv-input');
+    csvInput.onchange = async () => {
+      const file = csvInput.files && csvInput.files[0];
+      if (!file) return;
+      const key = (keyInput && keyInput.value && keyInput.value.trim()) || getKey();
+      const fd = new FormData();
+      fd.append('file', file, 'listimport-01.csv');
+      try {
+        const res = await fetch(`${API_BASE}/upload_csv`, { method: 'POST', headers: { 'X-Passcode': key, 'X-API-Key': key }, body: fd });
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+        alert('CSV uploaded. Tap Refresh on Ranking to load.');
+      } catch (e) {
+        alert('Upload failed: ' + e.message);
+      } finally {
+        csvInput.value = '';
+      }
+    };
     loadRounds();
   });
 })();
