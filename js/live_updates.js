@@ -48,15 +48,36 @@ const LiveUpdates = (() => {
     } catch (_) {}
   }
 
-  async function request(path, method, body) {
+  async function request(path, method, body, _retried) {
     if (!config.enabled) return null;
     const headers = { 'Content-Type': 'application/json' };
-    if (config.apiKey) { headers['X-API-Key'] = config.apiKey; headers['X-Passcode'] = config.apiKey; }
+    let key = config.apiKey || localStorage.getItem('coach_api_key') || '';
+    if (!key) {
+      try {
+        key = prompt('Enter coach passcode for Live Updates:', '') || '';
+        if (key) {
+          saveConfig({ apiKey: key });
+          localStorage.setItem('coach_api_key', key);
+        }
+      } catch (_) {}
+    }
+    if (key) { headers['X-API-Key'] = key; headers['X-Passcode'] = key; }
     const res = await fetch(`${config.apiBase}${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
+    if (res.status === 401 && !_retried) {
+      // Prompt once and retry
+      try {
+        const retryKey = prompt('Passcode required for Live Updates:', '') || '';
+        if (retryKey) {
+          saveConfig({ apiKey: retryKey });
+          localStorage.setItem('coach_api_key', retryKey);
+          return request(path, method, body, true);
+        }
+      } catch (_) {}
+    }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     if (res.status === 204) return null;
     return res.json();
