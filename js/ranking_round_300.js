@@ -635,15 +635,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadData();
         renderKeypad();
         renderView();
-        
-        if (window.LiveUpdates && window.LiveUpdates.isReady) {
-            window.LiveUpdates.isReady().then(() => {
-                loadEventInfo();
-            });
-        } else {
-            // Fallback if the LiveUpdates module isn't loaded
-            setTimeout(loadEventInfo, 100);
-        }
+        loadEventInfo();
 
         const baleNumberInput = document.getElementById('bale-number-input');
         if (baleNumberInput) {
