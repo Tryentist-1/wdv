@@ -38,5 +38,22 @@ function cors(): void {
     }
 }
 
+// Ensure minimal schema for events feature exists (idempotent)
+function ensure_events_schema(PDO $pdo): void {
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS events (
+            id CHAR(36) NOT NULL,
+            name VARCHAR(200) NOT NULL,
+            date DATE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_events_date (date)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE rounds ADD COLUMN event_id CHAR(36) NULL"); } catch (Exception $e) { /* ignore if exists */ }
+    try { $pdo->exec("CREATE INDEX idx_rounds_event ON rounds (event_id)"); } catch (Exception $e) { /* ignore */ }
+    try { $pdo->exec("CREATE INDEX idx_rounds_date ON rounds (date)"); } catch (Exception $e) { /* ignore */ }
+}
+
 
 

@@ -137,6 +137,7 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
     $date = $input['date'] ?? date('Y-m-d');
     $seed = !!($input['seedRounds'] ?? false);
     $pdo = db();
+    ensure_events_schema($pdo);
     $eventId = $genUuid();
     $pdo->prepare('INSERT INTO events (id,name,date,created_at) VALUES (?,?,?,NOW())')->execute([$eventId,$name,$date]);
     if ($seed) {
@@ -154,6 +155,7 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
 if (preg_match('#^/v1/events/recent$#', $route) && $method === 'GET') {
     require_api_key();
     $pdo = db();
+    ensure_events_schema($pdo);
     $rows = $pdo->query('SELECT id,name,date,created_at as createdAt FROM events ORDER BY created_at DESC LIMIT 50')->fetchAll();
     json_response(['events' => $rows]);
     exit;
