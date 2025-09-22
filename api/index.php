@@ -38,10 +38,16 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
     $roundType = $input['roundType'] ?? 'R300';
     $date = $input['date'] ?? date('Y-m-d');
     $bale = (int)($input['baleNumber'] ?? 1);
-    $pdo = db();
-    $id = $genUuid();
-    $pdo->prepare('INSERT INTO rounds (id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,NOW())')->execute([$id,$roundType,$date,$bale]);
-    json_response(['roundId' => $id], 201);
+    try {
+        $pdo = db();
+        $id = $genUuid();
+        $stmt = $pdo->prepare('INSERT INTO rounds (id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,NOW())');
+        $stmt->execute([$id,$roundType,$date,$bale]);
+        json_response(['roundId' => $id], 201);
+    } catch (Exception $e) {
+        error_log("Round creation failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
     exit;
 }
 
