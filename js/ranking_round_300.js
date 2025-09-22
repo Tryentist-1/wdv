@@ -579,14 +579,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             console.log('Loading events...');
             const today = new Date().toISOString().slice(0, 10);
-            const response = await fetch(`/wdv/api/v1/events/recent`);
-            console.log('Events response status:', response.status);
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
+            // Use LiveUpdates.request to automatically handle API key
+            const data = await LiveUpdates.request('/events/recent');
             console.log('Events data:', data);
             
             if (data.events && data.events.length > 0) {
@@ -626,7 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('No events found in response');
             }
         } catch (e) {
-            console.error('Could not load event info:', e.message);
+            console.error('Could not load event info:', e);
             // Show error in the dropdown
             const eventSelector = document.getElementById('event-selector');
             if (eventSelector) {

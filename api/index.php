@@ -302,17 +302,22 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
         $r['totalArchers'] = count($as);
         $r['archerCount'] = count($as); // For backward compatibility
         foreach ($as as $a) {
-            $ee = $pdo->prepare('SELECT end_number as endNumber, end_total as endTotal, running_total as runningTotal, server_ts as serverTs FROM end_events WHERE round_archer_id=? ORDER BY end_number');
+            $ee = $pdo->prepare('SELECT end_number as endNumber, end_total as endTotal, running_total as runningTotal, tens, xs, server_ts as serverTs FROM end_events WHERE round_archer_id=? ORDER BY end_number');
             $ee->execute([$a['roundArcherId']]);
             $ends = $ee->fetchAll();
             $completed = count($ends);
             $lastEnd = 0; $endScore = 0; $running = 0; $updatedAt = null;
+            $totalTens = 0; $totalXs = 0;
             if ($completed) {
                 $last = end($ends);
                 $lastEnd = (int)$last['endNumber'];
                 $endScore = (int)$last['endTotal'];
                 $running = (int)$last['runningTotal'];
-                $updatedAt = $last['serverTs'];
+                $updatedAt = (string)$last['serverTs'];
+                foreach ($ends as $end) {
+                    $totalTens += (int)$end['tens'];
+                    $totalXs += (int)$end['xs'];
+                }
             }
             $r['archers'][] = [
                 'roundArcherId' => $a['roundArcherId'],
@@ -324,6 +329,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
                 'lastEnd' => $lastEnd,
                 'endScore' => $endScore,
                 'runningTotal' => $running,
+                'tens' => $totalTens,
+                'xs' => $totalXs,
                 'updatedAt' => $updatedAt,
             ];
         }

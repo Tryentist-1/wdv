@@ -545,8 +545,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadEventInfo() {
         try {
             const today = new Date().toISOString().slice(0, 10);
-            const response = await fetch(`/wdv/api/v1/events/recent`);
-            const data = await response.json();
+            
+            // Use LiveUpdates.request to automatically handle API key
+            const data = await LiveUpdates.request('/events/recent');
             
             if (data.events && data.events.length > 0) {
                 // Find today's event

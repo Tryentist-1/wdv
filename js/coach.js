@@ -103,10 +103,13 @@
           name: a.archerName,
           gender: (a.gender||'').toUpperCase(),
           level: (a.level||'').toUpperCase(),
+          school: a.school || 'N/A',
           lastEnd: a.lastEnd||0,
           endScore: a.endScore||0,
           runningTotal: a.runningTotal||0,
-          target: a.target || 'N/A',
+          tens: a.tens || 0,
+          xs: a.xs || 0,
+          avg: a.endsCompleted > 0 ? (a.runningTotal / a.endsCompleted).toFixed(1) : '0.0',
         });
       });
     });
@@ -123,10 +126,10 @@
       const arr = all.filter(g.filter).sort((a,b)=> b.runningTotal - a.runningTotal);
       if (arr.length > 0) {
         html += `<div class="features"><h2>${g.title}</h2>`;
-        html += '<table class="score-table"><thead><tr><th>Name</th><th>Target</th><th>End</th><th>EndScore</th><th>Running</th></tr></thead><tbody>';
-        arr.forEach(p => {
-          const short = p.name.replace(/^(\S+)\s+(\S).*$/, '$1 $2.');
-          html += `<tr><td>${short}</td><td>${p.target}</td><td>${p.lastEnd||''}</td><td>${p.endScore||''}</td><td>${p.runningTotal||0}</td></tr>`;
+        html += '<table class="score-table"><thead><tr><th>R</th><th>FNAME</th><th>L</th><th>SCH</th><th>END</th><th>XS</th><th>10S</th><th>AVG</th></tr></thead><tbody>';
+        arr.forEach((p, idx) => {
+          const [first, last] = p.name.split(' ');
+          html += `<tr><td>${idx+1}</td><td>${first}</td><td>${last.charAt(0)}</td><td>${p.school}</td><td>${p.lastEnd||''}</td><td>${p.xs||0}</td><td>${p.tens||0}</td><td>${p.avg}</td></tr>`;
         });
         html += '</tbody></table></div>';
       }
