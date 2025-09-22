@@ -565,6 +565,18 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedChip.className = 'btn';
             selectedChip.style.cursor = 'default';
             selectedChip.textContent = `${state.archers.length}/4`;
+            // Live toggle
+            const liveBtn = document.createElement('button');
+            liveBtn.id = 'live-toggle-btn';
+            liveBtn.className = 'btn btn-secondary';
+            const getLiveEnabled = () => {
+                try { return !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) { return false; }
+            };
+            const setLiveEnabled = (v) => { try { if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ enabled: !!v }); else localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); } catch(_) {} };
+            const renderLiveBtn = () => { const on = getLiveEnabled(); liveBtn.textContent = on ? 'Live: On' : 'Live: Off'; liveBtn.className = on ? 'btn btn-success' : 'btn btn-secondary'; };
+            renderLiveBtn();
+            liveBtn.onclick = () => { setLiveEnabled(!getLiveEnabled()); renderLiveBtn(); };
+
             const resetBtn = document.createElement('button');
             resetBtn.id = 'reset-btn';
             resetBtn.className = 'btn btn-danger';
@@ -579,6 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setupControls.subheader.appendChild(searchInput);
             setupControls.subheader.appendChild(refreshBtn);
             setupControls.subheader.appendChild(syncBtn);
+            setupControls.subheader.appendChild(liveBtn);
             setupControls.subheader.appendChild(selectedChip);
             setupControls.subheader.appendChild(resetBtn);
             setupControls.subheader.appendChild(scoringBtn);
@@ -741,6 +754,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const badge = document.getElementById('live-status-badge');
                 if (badge) { badge.textContent = 'Synced'; badge.className = 'status-badge status-ok'; }
             });
+            // Initialize badge if live is on
+            const badge = document.getElementById('live-status-badge');
+            const liveOn = !!cfg.enabled;
+            if (badge) {
+                if (liveOn) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
+                else { badge.textContent = 'Not Live Scoring'; badge.className = 'status-badge status-off'; }
+            }
         } catch (e) { /* noop */ }
     }
 
