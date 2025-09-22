@@ -484,11 +484,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     const add = (s) => { const u = String(s).toUpperCase(); if (!u) return; if (u==='X') { endTotal+=10; running+=10; xs++; tens++; } else if (u==='10') { endTotal+=10; running+=10; tens++; } else if (/^[0-9]$|^10$/.test(u)) { const n=parseInt(u,10); endTotal+=n; running+=n; } };
                     [a1,a2,a3].forEach(add);
                     archer.scores.forEach(end => { if (Array.isArray(end)) end.forEach(add); });
+                    
+                    // Debug logging
+                    console.log('Live update attempt:', { 
+                        enabled: isEnabled, 
+                        hasLiveUpdates: !!LiveUpdates, 
+                        hasState: !!LiveUpdates._state, 
+                        roundId: LiveUpdates._state?.roundId,
+                        archerId: archer.id,
+                        endNumber: state.currentEnd,
+                        scores: { a1, a2, a3, endTotal, runningTotal: running, tens, xs }
+                    });
+                    
                     if (LiveUpdates._state && LiveUpdates._state.roundId) {
                         LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs });
+                    } else {
+                        console.log('Live update skipped: no roundId or state');
                     }
                 }
-            } catch (e) { /* noop */ }
+            } catch (e) { console.error('Live update error:', e); }
         }
     }
 
