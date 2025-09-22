@@ -80,6 +80,11 @@
   document.addEventListener('DOMContentLoaded', () => {
     const keyInput = document.getElementById('api-key-input');
     keyInput.value = getKey();
+    const toggleBtn = document.getElementById('toggle-key-btn');
+    toggleBtn.onclick = () => {
+      keyInput.type = keyInput.type === 'password' ? 'text' : 'password';
+      toggleBtn.textContent = keyInput.type === 'password' ? 'Show' : 'Hide';
+    };
     document.getElementById('save-key-btn').onclick = () => { setKey(keyInput.value.trim()); loadRounds(); };
     document.getElementById('new-round-btn').onclick = createEventAndRounds;
     loadRounds();
