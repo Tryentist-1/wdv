@@ -475,8 +475,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Live Updates: best-effort post of current end state
             try {
-                const cfg = window.LIVE_UPDATES || {};
-                if (cfg.enabled && typeof LiveUpdates !== 'undefined') {
+                let isEnabled = false;
+                try { isEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) {}
+                if (isEnabled && typeof LiveUpdates !== 'undefined') {
                     const endScores = archer.scores[state.currentEnd - 1];
                     const [a1,a2,a3] = [endScores[0]||'', endScores[1]||'', endScores[2]||''];
                     let endTotal = 0, tens = 0, xs = 0, running = 0;
@@ -724,15 +725,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Live Updates wiring (feature-flag) ---
         try {
             const cfg = window.LIVE_UPDATES || {};
-            LiveUpdates.setConfig({
-                enabled: !!cfg.enabled,
-                apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1',
-                apiKey: cfg.apiKey || '',
-            });
+            let isEnabled = false;
+            try { isEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) {}
+            LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1', apiKey: cfg.apiKey || '' });
 
             const onStartScoring = () => {
                 if (!LiveUpdates || !LiveUpdates._state || !LiveUpdates.setConfig) return;
-                if (!LiveUpdates._state.roundId && cfg.enabled) {
+                if (!LiveUpdates._state.roundId && isEnabled) {
                     LiveUpdates.ensureRound({
                         roundType: 'R300',
                         date: new Date().toISOString().slice(0, 10),
@@ -740,7 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }).then(() => {
                         state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
                     }).catch(() => {});
-                } else if (cfg.enabled) {
+                } else if (isEnabled) {
                     state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
                 }
             };
@@ -769,7 +768,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             // Initialize badge if live is on
             const badge = document.getElementById('live-status-badge');
-            const liveOn = !!cfg.enabled;
+            const liveOn = !!isEnabled;
             if (badge) {
                 if (liveOn) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
                 else { badge.textContent = 'Not Live Scoring'; badge.className = 'status-badge status-off'; }
