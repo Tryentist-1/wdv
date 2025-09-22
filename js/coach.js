@@ -40,6 +40,7 @@
         html += `<tr><td>${ev.date}</td><td>${ev.name}</td><td><button class="btn btn-primary" data-event-id="${ev.id}">Open Leaderboard</button> <button class="btn btn-danger" data-delete-event="${ev.id}" style="margin-left: 0.5rem;">Delete</button></td></tr>`;
       });
       html += '</tbody></table>';
+      console.log('Events HTML:', html);
       container.innerHTML = html;
       container.querySelectorAll('button[data-event-id]').forEach(btn => {
         btn.onclick = async () => {

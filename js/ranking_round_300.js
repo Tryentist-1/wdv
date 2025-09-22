@@ -519,6 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.currentEnd = newEnd;
             renderScoringView();
             saveData();
+            updateCompleteButton();
         }
     }
     
@@ -538,19 +539,61 @@ document.addEventListener('DOMContentLoaded', () => {
         state.currentView = 'scoring';
         renderView();
         saveData();
+        updateCompleteButton();
+    }
+
+    function completeRound() {
+        // Mark all archers as completed (10 ends)
+        state.archers.forEach(archer => {
+            if (archer.scores.length < 10) {
+                // Fill remaining ends with 0s if needed
+                while (archer.scores.length < 10) {
+                    archer.scores.push([0, 0, 0]);
+                }
+            }
+        });
+        
+        saveData();
+        alert('Round completed! All archers have finished 10 ends.');
+        updateCompleteButton();
+    }
+
+    function updateCompleteButton() {
+        const completeBtn = document.getElementById('complete-round-btn');
+        if (!completeBtn) return;
+        
+        // Check if all archers have completed 10 ends
+        const allComplete = state.archers.length > 0 && state.archers.every(archer => 
+            archer.scores && archer.scores.length >= 10
+        );
+        
+        if (allComplete) {
+            completeBtn.style.display = 'inline-block';
+        } else {
+            completeBtn.style.display = 'none';
+        }
     }
 
     // Load event information for display and selector
     async function loadEventInfo() {
         try {
+            console.log('Loading events...');
             const today = new Date().toISOString().slice(0, 10);
             const response = await fetch(`/wdv/api/v1/events/recent`);
+            console.log('Events response status:', response.status);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
             const data = await response.json();
+            console.log('Events data:', data);
             
             if (data.events && data.events.length > 0) {
                 // Populate event selector
                 const eventSelector = document.getElementById('event-selector');
                 if (eventSelector) {
+                    console.log('Populating event selector with', data.events.length, 'events');
                     eventSelector.innerHTML = '<option value="">Select Event...</option>';
                     data.events.forEach(ev => {
                         const option = document.createElement('option');
@@ -564,7 +607,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (todayEvent) {
                         eventSelector.value = todayEvent.id;
                         state.selectedEventId = todayEvent.id;
+                        console.log('Auto-selected today\'s event:', todayEvent.name);
                     }
+                } else {
+                    console.log('Event selector element not found');
                 }
                 
                 // Update display info
@@ -576,9 +622,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (eventNameEl) eventNameEl.textContent = todayEvent.name;
                     if (baleDisplayEl) baleDisplayEl.textContent = state.baleNumber;
                 }
+            } else {
+                console.log('No events found in response');
             }
         } catch (e) {
-            console.log('Could not load event info:', e.message);
+            console.error('Could not load event info:', e.message);
+            // Show error in the dropdown
+            const eventSelector = document.getElementById('event-selector');
+            if (eventSelector) {
+                eventSelector.innerHTML = '<option value="">Error loading events</option>';
+            }
         }
     }
 
@@ -603,6 +656,16 @@ document.addEventListener('DOMContentLoaded', () => {
             eventSelector.onchange = () => {
                 state.selectedEventId = eventSelector.value || null;
                 saveData();
+            };
+        }
+
+        // Complete round button
+        const completeBtn = document.getElementById('complete-round-btn');
+        if (completeBtn) {
+            completeBtn.onclick = () => {
+                if (confirm('Are you sure you want to complete this round? This will mark all archers as finished.')) {
+                    completeRound();
+                }
             };
         }
 
