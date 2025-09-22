@@ -502,7 +502,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (LiveUpdates._state && LiveUpdates._state.roundId) {
                         LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs });
                     } else {
-                        console.log('Live update skipped: no roundId or state');
+                        const badge = document.getElementById('live-status-badge');
+                        if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
+                        LiveUpdates.ensureRound({ roundType: 'R360', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
+                          .then(() => LiveUpdates.ensureArcher(archer.id, archer))
+                          .then(() => LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
+                          .catch(err => console.error('Live init/post failed:', err));
                     }
                 }
             } catch (e) { console.error('Live update error:', e); }
