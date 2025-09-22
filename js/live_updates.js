@@ -2,11 +2,19 @@
 // Usage: LiveUpdates.init({ enabled, apiBase, apiKey, corsOrigin })
 
 const LiveUpdates = (() => {
-  let config = {
+  // Load any persisted config once
+  function readStoredConfig() {
+    try {
+      const raw = localStorage.getItem('live_updates_config');
+      return raw ? JSON.parse(raw) : {};
+    } catch (_) { return {}; }
+  }
+
+  let config = Object.assign({
     enabled: false,
     apiBase: 'https://tryentist.com/wdv/api/v1',
     apiKey: '',
-  };
+  }, readStoredConfig());
 
   const state = {
     roundId: null,
@@ -16,7 +24,22 @@ const LiveUpdates = (() => {
   };
 
   function setConfig(overrides) {
-    Object.assign(config, overrides || {});
+    const stored = readStoredConfig();
+    Object.assign(config, stored || {}, overrides || {});
+    // Persist (without enabling unless explicitly requested)
+    try {
+      const toStore = Object.assign({}, stored, overrides || {}, { enabled: (overrides && typeof overrides.enabled!== 'undefined') ? !!overrides.enabled : (stored.enabled || false) });
+      localStorage.setItem('live_updates_config', JSON.stringify(toStore));
+    } catch (_) {}
+  }
+
+  function saveConfig(partial) {
+    try {
+      const current = readStoredConfig();
+      const merged = Object.assign({}, current, partial || {});
+      localStorage.setItem('live_updates_config', JSON.stringify(merged));
+      Object.assign(config, merged);
+    } catch (_) {}
   }
 
   async function request(path, method, body) {
@@ -98,7 +121,7 @@ const LiveUpdates = (() => {
     });
   }
 
-  return { setConfig, ensureRound, ensureArcher, postEnd, _state: state };
+  return { setConfig, ensureRound, ensureArcher, postEnd, saveConfig, _state: state };
 })();
 
 

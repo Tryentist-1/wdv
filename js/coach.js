@@ -7,6 +7,7 @@
   }
   function setKey(k) {
     localStorage.setItem(STORAGE_KEY, k || '');
+    try { if (window.LiveUpdates && window.LiveUpdates.saveConfig) LiveUpdates.saveConfig({ apiKey: k }); } catch (_) {}
   }
 
   async function req(path, method = 'GET', body = null) {
