@@ -22,12 +22,20 @@ const LiveUpdates = (() => {
     apiKey: '',
   }, readStoredConfig());
 
+  // --- PRIVATE STATE ---
   const state = {
     roundId: null,
     archerMap: new Map(), // localId -> roundArcherId
     queue: [],
     flushing: false,
   };
+
+  // --- INITIALIZATION PROMISE ---
+  let isInitialized = false;
+  let resolveInit;
+  const initPromise = new Promise(resolve => {
+    resolveInit = resolve;
+  });
 
   function setConfig(overrides) {
     const stored = readStoredConfig();
@@ -153,19 +161,30 @@ const LiveUpdates = (() => {
   }
 
   // --- PUBLIC API ---
-  window.LiveUpdates = {
-      setConfig,
-      saveConfig,
-      ensureRound,
-      ensureArcher,
-      postEnd,
-      request, // Expose the request function
-      _state: {
-          roundId: null,
-          archerIds: {},
-      },
+  const publicApi = {
+    setConfig,
+    saveConfig,
+    ensureRound,
+    ensureArcher,
+    postEnd,
+    request,
+    isReady: () => initPromise, // Expose the promise
+    _state: {
+      roundId: null,
+      archerIds: {},
+    },
   };
 
+  // --- INITIALIZATION ---
+  // loadConfig(); // Load initial config from localStorage
+
+  window.LiveUpdates = publicApi;
+
+  // Resolve the promise to signal that the module is ready
+  if (!isInitialized) {
+    isInitialized = true;
+    resolveInit(publicApi);
+  }
 })();
 
 
