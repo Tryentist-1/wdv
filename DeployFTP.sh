@@ -26,7 +26,8 @@ REMOTE_BACKUP_LOCAL="$BACKUP_DIR/remote_backup_$DATESTAMP"
 mkdir -p "$BACKUP_DIR"
 
 # --- Build lftp exclude list from .gitignore and always-excluded files ---
-EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/**"
+# Never deploy local app-imports to prod (coach uploads live CSVs there)
+EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/** --exclude-glob app-imports/**"
 if [ -f .gitignore ]; then
   GITEXCLUDES=$(grep -v '^#' .gitignore | grep -v '^$' | awk '{print "--exclude-glob "$1}' | xargs)
   EXCLUDES="$EXCLUDES $GITEXCLUDES"
@@ -72,7 +73,7 @@ echo "Remote backup compressed to $REMOTE_BACKUP_LOCAL.tar.gz"
 echo -e "\n--- Step 3: Verifying files to be uploaded ---"
 echo "Files that would be uploaded (excluding sensitive files):"
 cd "$LOCAL_DIR"
-find . -type f -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/docs/*" -not -path "*/tests/*" -not -path "*/backups/*" | sort
+find . -type f -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/docs/*" -not -path "*/tests/*" -not -path "*/backups/*" -not -path "*/app-imports/*" | sort
 cd - > /dev/null
 
 # --- Step 4: Deploy to FTP ---
