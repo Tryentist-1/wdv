@@ -139,7 +139,7 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
     $pdo->prepare('INSERT INTO events (id,name,date,created_at) VALUES (?,?,?,NOW())')->execute([$eventId,$name,$date]);
     if ($seed) {
         $ins = $pdo->prepare('INSERT INTO rounds (id,event_id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,?,NOW())');
-        for (let $b = 1; $b <= 12; $b++) {
+        for ($b = 1; $b <= 12; $b++) {
             $rid = $genUuid();
             $ins->execute([$rid,$eventId,'R300',$date,$b]);
         }
