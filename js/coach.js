@@ -58,7 +58,19 @@
   }
 
   function renderLeaderboard(container, snap) {
-    // Flatten archers across rounds
+    let html = '<div class="features"><h2>Rounds Summary</h2>';
+    html += '<table class="score-table"><thead><tr><th>Bale</th><th>Type</th><th>Archers</th><th>Status</th></tr></thead><tbody>';
+    
+    (snap.rounds || []).forEach(r => {
+      const archerCount = r.totalArchers || r.archerCount || (r.archers ? r.archers.length : 0);
+      const hasScores = r.archers && r.archers.some(a => a.runningTotal > 0);
+      const status = hasScores ? 'Active' : (archerCount > 0 ? 'Ready' : 'Empty');
+      html += `<tr><td>${r.baleNumber || 'N/A'}</td><td>${r.roundType || 'N/A'}</td><td>${archerCount}</td><td>${status}</td></tr>`;
+    });
+    
+    html += '</tbody></table></div>';
+    
+    // Flatten archers across rounds for leaderboard
     const all = [];
     (snap.rounds || []).forEach(r => {
       (r.archers || []).forEach(a => {
@@ -69,9 +81,11 @@
           lastEnd: a.lastEnd||0,
           endScore: a.endScore||0,
           runningTotal: a.runningTotal||0,
+          target: a.target || 'N/A',
         });
       });
     });
+    
     // Group by Girls V, Girls JV, Boys V, Boys JV
     const groups = [
       { key: 'GV', title: 'Girls V', filter: x => x.gender==='F' && x.level.startsWith('V') },
@@ -79,17 +93,20 @@
       { key: 'BV', title: 'Boys V', filter: x => x.gender==='M' && x.level.startsWith('V') },
       { key: 'BJV', title: 'Boys JV', filter: x => x.gender==='M' && x.level.startsWith('J') },
     ];
-    let html = '';
+    
     groups.forEach(g => {
       const arr = all.filter(g.filter).sort((a,b)=> b.runningTotal - a.runningTotal);
-      html += `<div class="features"><h2>${g.title}</h2>`;
-      html += '<table class="score-table"><thead><tr><th>Name</th><th>End</th><th>EndScore</th><th>Running</th></tr></thead><tbody>';
-      arr.forEach(p => {
-        const short = p.name.replace(/^(\S+)\s+(\S).*$/, '$1 $2.');
-        html += `<tr><td>${short}</td><td>${p.lastEnd||''}</td><td>${p.endScore||''}</td><td>${p.runningTotal||0}</td></tr>`;
-      });
-      html += '</tbody></table></div>';
+      if (arr.length > 0) {
+        html += `<div class="features"><h2>${g.title}</h2>`;
+        html += '<table class="score-table"><thead><tr><th>Name</th><th>Target</th><th>End</th><th>EndScore</th><th>Running</th></tr></thead><tbody>';
+        arr.forEach(p => {
+          const short = p.name.replace(/^(\S+)\s+(\S).*$/, '$1 $2.');
+          html += `<tr><td>${short}</td><td>${p.target}</td><td>${p.lastEnd||''}</td><td>${p.endScore||''}</td><td>${p.runningTotal||0}</td></tr>`;
+        });
+        html += '</tbody></table></div>';
+      }
     });
+    
     container.innerHTML = html;
   }
 

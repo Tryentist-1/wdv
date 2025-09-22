@@ -244,6 +244,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
         $archers->execute([$r['id']]);
         $as = $archers->fetchAll();
         $r['archers'] = [];
+        $r['totalArchers'] = count($as);
+        $r['archerCount'] = count($as); // For backward compatibility
         foreach ($as as $a) {
             $ee = $pdo->prepare('SELECT end_number as endNumber, end_total as endTotal, running_total as runningTotal, server_ts as serverTs FROM end_events WHERE round_archer_id=? ORDER BY end_number');
             $ee->execute([$a['roundArcherId']]);
