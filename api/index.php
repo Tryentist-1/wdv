@@ -222,7 +222,7 @@ if (preg_match('#^/v1/events/recent$#', $route) && $method === 'GET') {
     require_api_key();
     $pdo = db();
     ensure_events_schema($pdo);
-    $rows = $pdo->query('SELECT id,name,date,created_at as createdAt FROM events ORDER BY created_at DESC LIMIT 50')->fetchAll();
+    $rows = $pdo->query('SELECT id,name,date,status,created_at as createdAt FROM events ORDER BY created_at DESC LIMIT 50')->fetchAll();
     json_response(['events' => $rows]);
     exit;
 }
