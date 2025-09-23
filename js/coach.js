@@ -35,9 +35,9 @@
       // Show recent events with a leaderboard link
       const events = await req('/events/recent');
       const rows = events.events || [];
-      let html = '<table class="score-table"><thead><tr><th>Date</th><th>Event</th><th>Actions</th></tr></thead><tbody>';
+      let html = '<table class="score-table"><thead><tr><th>Date</th><th>Event</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
       rows.forEach(ev => {
-        html += `<tr><td>${ev.date}</td><td>${ev.name}</td><td><button class="btn btn-primary" data-event-id="${ev.id}">Open Leaderboard</button> <button class="btn btn-danger" data-delete-event="${ev.id}" style="margin-left: 0.5rem;">Delete</button></td></tr>`;
+        html += `<tr><td>${ev.date}</td><td>${ev.name}</td><td>${ev.status || 'Upcoming'}</td><td><button class="btn btn-primary" data-event-id="${ev.id}">Open Leaderboard</button> <button class="btn btn-danger" data-delete-event="${ev.id}" style="margin-left: 0.5rem;">Delete</button></td></tr>`;
       });
       html += '</tbody></table>';
       console.log('Events HTML:', html);
@@ -147,8 +147,9 @@
   async function createEventAndRounds() {
     const date = new Date().toISOString().slice(0, 10);
     const name = prompt('Event name:', `Event ${date}`) || `Event ${date}`;
+    const status = prompt('Event status (Upcoming, Active, Completed):', 'Upcoming') || 'Upcoming';
     try {
-      const res = await req('/events', 'POST', { name, date, seedRounds: true });
+      const res = await req('/events', 'POST', { name, date, seedRounds: true, status });
       alert(`Event created: ${res.eventId}`);
       loadRounds();
     } catch (e) {

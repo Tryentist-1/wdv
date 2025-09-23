@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             level: archer.level || '',
                             gender: archer.gender || '',
                             targetAssignment: nextTarget,
+                            targetSize: archer.level === 'V' ? 122 : 80,
                             scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
                         });
                     }
@@ -505,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const badge = document.getElementById('live-status-badge');
                         if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
                         LiveUpdates.ensureRound({ roundType: 'R360', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
-                          .then(() => LiveUpdates.ensureArcher(archer.id, archer))
+                          .then(() => LiveUpdates.ensureArcher(archer.id, { ...archer, targetSize: archer.targetSize || (archer.level === 'V' ? 122 : 80) }))
                           .then(() => LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
                           .catch(err => console.error('Live init/post failed:', err));
                     }
@@ -843,10 +844,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadSampleData() {
         state.archers = [
-            { id: '1', firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', scores: [['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9'], ['10','10','10'], ['8','8','7']] },
-            { id: '2', firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', scores: [['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M'], ['7','7','8'], ['9','9','10']] },
-            { id: '3', firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', scores: [['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M'], ['7','6','X'], ['10','9','8']] },
-            { id: '4', firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', scores: [['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6'], ['X','X','X'], ['9','9','8']] },
+            { id: '1', firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', targetAssignment: 'A', targetSize: 122, scores: [['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9'], ['10','10','10'], ['8','8','7']] },
+            { id: '2', firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', targetAssignment: 'B', targetSize: 122, scores: [['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M'], ['7','7','8'], ['9','9','10']] },
+            { id: '3', firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', targetAssignment: 'C', targetSize: 80, scores: [['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M'], ['7','6','X'], ['10','9','8']] },
+            { id: '4', firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', targetAssignment: 'D', targetSize: 122, scores: [['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6'], ['X','X','X'], ['9','9','8']] },
         ];
     }
 
@@ -920,7 +921,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 school: archer.school,
                 level: archer.level,
                 gender: archer.gender,
-                targetAssignment: archer.targetAssignment
+                targetAssignment: archer.targetAssignment,
+                targetSize: archer.targetSize
             },
             scores: archer.scores,
             totals: calculateArcherTotals(archer)

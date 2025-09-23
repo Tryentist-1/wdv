@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         totalEnds: 10, // 300 round: 10 ends of 3
         baleNumber: 1,
         date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-        archers: [], // { id, firstName, lastName, school, level, gender, targetAssignment, scores }
+        archers: [], // { id, firstName, lastName, school, level, gender, targetAssignment, targetSize, scores }
         activeArcherId: null, // For card view
         selectedEventId: null, // Selected event for this bale
     };
@@ -194,6 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             level: archer.level || '',
                             gender: archer.gender || '',
                             targetAssignment: nextTarget,
+                            targetSize: archer.level === 'V' ? 122 : 80, // Example logic: V gets 122cm, JV gets 80cm
                             scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
                         });
                     }
@@ -738,7 +739,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             school: archer.school,
                             level: archer.level,
                             gender: archer.gender,
-                            targetAssignment: archer.targetAssignment
+                            targetAssignment: archer.targetAssignment,
+                            targetSize: archer.targetSize
                         };
                         
                         const archerResponse = await fetch(`/wdv/api/v1/rounds/${state.roundId}/archers`, {
@@ -1000,10 +1002,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadSampleData() {
         state.archers = [
-            { id: '1', firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', scores: [['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9']] },
-            { id: '2', firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', scores: [['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M']] },
-            { id: '3', firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', scores: [['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M']] },
-            { id: '4', firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', scores: [['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6']] },
+            { id: '1', firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', targetAssignment: 'A', targetSize: 122, scores: [['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9']] },
+            { id: '2', firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', targetAssignment: 'B', targetSize: 122, scores: [['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M']] },
+            { id: '3', firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', targetAssignment: 'C', targetSize: 80, scores: [['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M']] },
+            { id: '4', firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', targetAssignment: 'D', targetSize: 122, scores: [['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6']] },
         ];
     }
 
@@ -1074,7 +1076,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 school: archer.school,
                 level: archer.level,
                 gender: archer.gender,
-                targetAssignment: archer.targetAssignment
+                targetAssignment: archer.targetAssignment,
+                targetSize: archer.targetSize
             },
             scores: archer.scores,
             totals: calculateArcherTotals(archer)
