@@ -40,35 +40,48 @@ This document is designed to help us (User and LLM) start, conduct, and pause/en
 
 ### SESSION SUMMARY TEMPLATE (for LLM to fill at end of session)
 
-* **Session End Date & Time:** `2025-09-22`  
+* **Session End Date & Time:** `2025-10-06`  
 * **Last Vibe Persona Active:** `Devin (Full-Stack Developer)`
 * **Session Goals for This Past Session (Key Achievements):**
-    *   Aligned client-side data model with database schema by adding `target_size` field to archer objects.
-    *   Enhanced Coach Console to display event status and allow status setting during event creation.
-    *   Updated both ranking round scripts to include `target_size` in API payloads and localStorage.
-    *   Resolved data model inconsistencies between localStorage and MySQL database.
+    *   ✅ Completed Phase 1 & 2: Division-based event management with auto-bale assignment
+    *   ✅ Standardized data model across entire codebase (VAR/JV, M/F, 3-letter schools)
+    *   ✅ Implemented MySQL as master archer list with sync functionality
+    *   ✅ Created auto-bale assignment algorithm (2-4 archers per bale, continuous numbering)
+    *   ✅ Built division-based leaderboards with running totals and arrow averages
+    *   ✅ Enhanced Coach Console with event creation and real-time leaderboard viewing
 * **Key Files Modified (and their status):**
-    *   `js/ranking_round_300.js`: Added `target_size` property to archer state and API payloads. (Committed)
-    *   `js/ranking_round.js`: Added `target_size` property to archer state and API payloads. (Committed)
-    *   `js/coach.js`: Added event status display and status input for event creation. (Committed)
-    *   Database schema updated with `status` field in events table and `target_size` field in round_archers table.
+    *   `api/index.php`: Added archer endpoints, bale assignment logic, enhanced event creation (Committed & Deployed)
+    *   `api/sql/schema.mysql.sql`: Updated for division-based structure (Committed & Deployed)
+    *   `api/sql/migration_division_refactor.sql`: Database migration script (Committed & Deployed)
+    *   `js/archer_module.js`: Added MySQL sync and normalization (Committed & Deployed)
+    *   `js/coach.js`: Division-based leaderboards and auto-assign event creation (Committed & Deployed)
+    *   `js/live_updates.js`: Fixed to work with API key for management features (Committed & Deployed)
+    *   `js/ranking_round.js` & `ranking_round_300.js`: Updated for VAR/JV values (Committed & Deployed)
+    *   `archer_list.html`: Added MySQL sync buttons, removed CSV as master (Committed & Deployed)
 * **Key System Changes:**
-    *   Client-side data model now matches database schema exactly.
-    *   Live Updates system properly sends `target_size` data to API.
-    *   Coach Console provides better event management with status tracking.
+    *   **Database:** Rounds are now division-based (BVAR, BJV, GVAR, GJV) not bale-based
+    *   **Event Structure:** 1 Event → 4 Division Rounds → Individual Scorecards
+    *   **Bale Assignment:** Automatic distribution across divisions with continuous numbering
+    *   **Master List:** MySQL is now source of truth (not CSV)
+    *   **API:** New endpoints for archer management and division-based snapshots
 * **Uncommitted Changes (Summary):**
-    *   All changes committed and deployed to production.
+    *   All changes committed and deployed to production (3 commits total)
 * **Untested Changes (Summary):**
-    *   Live Updates with `target_size` should be tested during next scoring session.
-    *   Event status functionality in Coach Console ready for testing.
+    *   Auto-bale assignment algorithm needs real-world testing
+    *   Division-based leaderboards need live scoring data
+    *   End-to-end workflow from event creation → scoring → leaderboard
 * **Next Immediate Steps (for next session):**
-    *   Test live scoring with new `target_size` field integration.
-    *   Verify event status changes are reflected in Coach Console.
-    *   Consider adding target size configuration UI for archers.
+    *   Test creating an auto-assigned event with real archers
+    *   Update Ranking Round apps to show bale assignments (pre-assigned mode)
+    *   Add sync status indicators (Pending/Synced/Failed) to scoring apps
+    *   Implement offline resilience with Master Sync button
+    *   End-to-end testing of complete workflow
 * **Blockers/Open Questions:**
-    *   None currently.
+    *   None currently - ready for testing and Phase 3 development
 * **User's Personal Notes/Reminders:**
-    *   Database schema is now fully aligned with client-side models.
+    *   Passcode: `wdva26`
+    *   Test data: 27 archers loaded in MySQL (10 BVAR, 6 GVAR, 7 BJV, 4 GJV)
+    *   3 SQL files ready: migration, helper queries, test data
 
 ---
 
