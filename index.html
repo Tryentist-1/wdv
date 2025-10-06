@@ -675,20 +675,6 @@
       <h1>Archery Tools</h1>
     </header>
 
-    <!-- Active Event Indicator -->
-    <div id="active-event-banner" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <div style="font-size: 0.75rem; opacity: 0.9; margin-bottom: 0.25rem;">🔴 ACTIVE EVENT</div>
-          <div id="active-event-name" style="font-weight: bold; font-size: 1.1rem; margin-bottom: 0.25rem;">Loading...</div>
-          <div id="active-event-details" style="font-size: 0.85rem; opacity: 0.9;"></div>
-        </div>
-        <div>
-          <a id="active-event-link" href="#" class="btn" style="background: white; color: #667eea; font-weight: bold; padding: 0.6rem 1rem; text-decoration: none; border-radius: 6px; white-space: nowrap;">Select Bale →</a>
-        </div>
-      </div>
-    </div>
-
     <div class="button-menu">
       <a href="archer_list.html" class="btn btn-archer-setup" title="Add archers and sync with master list">
         <i class="fas fa-users btn-icon"></i>Archer Setup
@@ -811,7 +797,7 @@
     // Show onboarding on page load
     document.addEventListener('DOMContentLoaded', function() {
       showOnboarding();
-      loadActiveEvent();
+      // Note: Active event banner disabled - requires authentication that archers don't have
       
       // Add help button functionality
       document.getElementById('help-btn').addEventListener('click', function() {

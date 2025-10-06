@@ -755,8 +755,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Load event information for display and selector
+    // Load event information for display and selector (requires authentication)
     async function loadEventInfo() {
+        // Check if authenticated before making API calls
+        if (!window.LiveUpdates || !LiveUpdates._state || !LiveUpdates._state.apiKey) {
+            console.log('Event info requires authentication (not configured for archers)');
+            const eventSelector = document.getElementById('event-selector');
+            if (eventSelector) {
+                eventSelector.innerHTML = '<option value="">Manual Mode - Use Archer Setup</option>';
+                eventSelector.disabled = true;
+            }
+            return;
+        }
+        
         try {
             console.log('Loading events...');
             const today = new Date().toISOString().slice(0, 10);
@@ -805,12 +816,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('No events found in response');
             }
         } catch (e) {
-            console.error('Could not load event info:', e);
-            // Show error in the dropdown
-            const eventSelector = document.getElementById('event-selector');
-            if (eventSelector) {
-                eventSelector.innerHTML = '<option value="">Error loading events</option>';
-            }
+            console.log('Could not load event info:', e.message);
+            // Silent fail - archers use manual mode
         }
     }
 
@@ -1021,12 +1028,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.baleNumber = newBale;
                 saveData();
                 
-                // If event is selected, try to load archers for this bale
-                if (state.selectedEventId) {
+                // If event is selected and authenticated, try to load archers for this bale
+                if (state.selectedEventId && window.LiveUpdates && LiveUpdates._state && LiveUpdates._state.apiKey) {
                     try {
                         await loadPreAssignedBale(state.selectedEventId, newBale);
                     } catch (err) {
-                        console.error('Could not load bale:', err);
+                        console.log('Could not load bale:', err.message);
                     }
                 }
             };
@@ -1038,20 +1045,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.selectedEventId = eventSelector.value || null;
                 saveData();
                 
-                // Load archers from this event
-                if (state.selectedEventId) {
+                // Load archers from this event (requires authentication)
+                if (state.selectedEventId && window.LiveUpdates && LiveUpdates._state && LiveUpdates._state.apiKey) {
                     try {
                         // Load all archers from this event to show in the list
-                        const res = await fetch(`${API_BASE}/events/${state.selectedEventId}/snapshot`);
-                        if (!res.ok) throw new Error('Failed to fetch event');
+                        const snapshot = await LiveUpdates.request(`/events/${state.selectedEventId}/snapshot`);
                         
-                        const data = await res.json();
-                        const snap = data.snapshot;
+                        if (!snapshot || !snapshot.divisions) {
+                            console.log('No divisions found in event snapshot');
+                            return;
+                        }
                         
                         // Extract archers from all divisions
                         const allArchers = [];
-                        Object.keys(snap.divisions || {}).forEach(divKey => {
-                            const div = snap.divisions[divKey];
+                        Object.keys(snapshot.divisions || {}).forEach(divKey => {
+                            const div = snapshot.divisions[divKey];
                             (div.archers || []).forEach(archer => {
                                 allArchers.push({
                                     first: archer.first_name,
@@ -1070,9 +1078,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
                         renderSetupForm();
                     } catch (err) {
-                        console.error('Could not load event archers:', err);
-                        alert('Failed to load archers from this event');
+                        console.log('Could not load event archers:', err.message);
+                        // Silently fail if not authenticated
                     }
+                } else if (state.selectedEventId) {
+                    console.log('Event selector requires authentication (API key not configured)');
                 }
             };
         }
