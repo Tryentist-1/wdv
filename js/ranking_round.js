@@ -751,24 +751,17 @@ document.addEventListener('DOMContentLoaded', () => {
         saveData();
     }
 
-    // Load event information for display
+    // Load event information for display (PUBLIC - no authentication required)
     async function loadEventInfo() {
-        // Check if authenticated before making API calls
-        if (!window.LiveUpdates || !LiveUpdates._state || !LiveUpdates._state.apiKey) {
-            console.log('Event info requires authentication (not configured for archers)');
-            const eventSelector = document.getElementById('event-selector');
-            if (eventSelector) {
-                eventSelector.innerHTML = '<option value="">Manual Mode - Use Archer Setup</option>';
-                eventSelector.disabled = true;
-            }
-            return;
-        }
-        
         try {
             const today = new Date().toISOString().slice(0, 10);
             
-            // Use LiveUpdates.request to automatically handle API key
-            const data = await LiveUpdates.request('/events/recent');
+            // Fetch events from public API endpoint
+            const res = await fetch(`${API_BASE}/events/recent`);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            const data = await res.json();
             
             if (data.events && data.events.length > 0) {
                 // Find today's event
@@ -786,14 +779,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (e) {
             console.log('Could not load event info:', e.message);
-            // Silent fail - archers use manual mode
+            // Silent fail - archers can use manual mode
         }
     }
 
-    // Check if this bale has pre-assigned archers from an event
+    // Check if this bale has pre-assigned archers from an event (PUBLIC - no authentication required)
     async function loadPreAssignedBale(eventId, baleNumber = null) {
         try {
-            const snapshot = await LiveUpdates.request(`/events/${eventId}/snapshot`);
+            // Fetch snapshot from public API endpoint
+            const res = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            const data = await res.json();
+            const snapshot = data.snapshot;
             
             if (!snapshot || !snapshot.divisions) {
                 console.log('No divisions found in event snapshot');
@@ -968,8 +967,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.baleNumber = newBale;
                 saveData();
                 
-                // If event is selected and authenticated, try to load archers for this bale
-                if (state.selectedEventId && window.LiveUpdates && LiveUpdates._state && LiveUpdates._state.apiKey) {
+                // If event is selected, try to load archers for this bale
+                if (state.selectedEventId) {
                     try {
                         await loadPreAssignedBale(state.selectedEventId, newBale);
                     } catch (err) {
@@ -985,11 +984,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.selectedEventId = eventSelector.value || null;
                 saveData();
                 
-                // Load archers from this event (requires authentication)
-                if (state.selectedEventId && window.LiveUpdates && LiveUpdates._state && LiveUpdates._state.apiKey) {
+                // Load archers from this event
+                if (state.selectedEventId) {
                     try {
                         // Load all archers from this event to show in the list
-                        const snapshot = await LiveUpdates.request(`/events/${state.selectedEventId}/snapshot`);
+                        const res = await fetch(`${API_BASE}/events/${state.selectedEventId}/snapshot`);
+                        if (!res.ok) {
+                            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                        }
+                        const data = await res.json();
+                        const snapshot = data.snapshot;
                         
                         if (!snapshot || !snapshot.divisions) {
                             console.log('No divisions found in event snapshot');
@@ -1019,10 +1023,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderSetupForm();
                     } catch (err) {
                         console.log('Could not load event archers:', err.message);
-                        // Silently fail if not authenticated
                     }
-                } else if (state.selectedEventId) {
-                    console.log('Event selector requires authentication (API key not configured)');
                 }
             };
         }

@@ -325,9 +325,8 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
     exit;
 }
 
-// List recent events
+// List recent events (PUBLIC - no auth required for archers to see events)
 if (preg_match('#^/v1/events/recent$#', $route) && $method === 'GET') {
-    require_api_key();
     $pdo = db();
     ensure_events_schema($pdo);
     $rows = $pdo->query('SELECT id,name,date,status,created_at as createdAt FROM events ORDER BY created_at DESC LIMIT 50')->fetchAll();
@@ -390,9 +389,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELET
     exit;
 }
 
-// Get an event snapshot: division-based rounds with archer data
+// Get an event snapshot: division-based rounds with archer data (PUBLIC - no auth required for archers to see assignments)
 if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method === 'GET') {
-    require_api_key();
     $eventId = $m[1];
     $pdo = db();
     
