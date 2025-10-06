@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
         date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
         archers: [], // { id, firstName, lastName, school, level, gender, targetAssignment, scores, targetSize? }
         activeArcherId: null, // For card view
+        activeEventId: null, // Event ID if pre-assigned mode
+        assignmentMode: 'manual', // 'manual' or 'pre-assigned'
+        syncStatus: {}, // Track sync status per archer per end: { archerId: { endNumber: 'synced'|'pending'|'failed' } }
     };
 
     const sessionKey = `rankingRound_${new Date().toISOString().split('T')[0]}`;
@@ -113,6 +116,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSetupForm() {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
+        
+        // Pre-assigned mode: show read-only archer list
+        if (state.assignmentMode === 'pre-assigned' && state.archers.length > 0) {
+            renderPreAssignedArchers();
+            return;
+        }
+        
+        // Manual mode: show checkbox list
         const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
         masterList.sort((a, b) => {
             if (a.fave && !b.fave) return -1;
@@ -126,6 +137,62 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchInput = setupControls.subheader.querySelector('.archer-search-bar');
         const filter = searchInput ? searchInput.value : '';
         renderArcherSelectList(masterList, filter);
+    }
+
+    function renderPreAssignedArchers() {
+        if (!setupControls.container) return;
+        
+        const banner = document.createElement('div');
+        banner.className = 'pre-assigned-banner';
+        banner.style.cssText = 'background: #e3f2fd; padding: 12px; margin-bottom: 12px; border-radius: 4px; border-left: 4px solid #2196f3;';
+        banner.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 4px;">📌 Pre-Assigned Bale</div>
+            <div style="font-size: 0.9em;">Bale ${state.baleNumber} - ${state.divisionName || 'Division'}</div>
+            <div style="font-size: 0.85em; color: #666; margin-top: 4px;">These archers are pre-assigned by your coach</div>
+        `;
+        setupControls.container.appendChild(banner);
+        
+        const listDiv = document.createElement('div');
+        listDiv.className = 'archer-select-list';
+        listDiv.style.cssText = 'background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;';
+        
+        state.archers.forEach(archer => {
+            const row = document.createElement('div');
+            row.className = 'archer-select-row';
+            row.style.cssText = 'padding: 12px; border-bottom: 1px solid #ddd; background: white; margin: 4px; border-radius: 4px;';
+            
+            row.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: bold;">${archer.targetAssignment}: ${archer.firstName} ${archer.lastName}</div>
+                        <div style="font-size: 0.85em; color: #666;">${archer.school} • ${archer.level} / ${archer.gender}</div>
+                    </div>
+                    <div style="padding: 4px 8px; background: #4caf50; color: white; border-radius: 12px; font-size: 0.75em; font-weight: bold;">
+                        ASSIGNED
+                    </div>
+                </div>
+            `;
+            
+            listDiv.appendChild(row);
+        });
+        
+        setupControls.container.appendChild(listDiv);
+        
+        // Add switch to manual mode button
+        const manualBtn = document.createElement('button');
+        manualBtn.className = 'btn btn-secondary';
+        manualBtn.textContent = 'Switch to Manual Mode';
+        manualBtn.style.cssText = 'margin-top: 12px; width: 100%;';
+        manualBtn.onclick = () => {
+            if (confirm('Switch to manual mode? This will clear pre-assigned archers.')) {
+                state.assignmentMode = 'manual';
+                state.activeEventId = null;
+                state.archers = [];
+                saveData();
+                renderSetupForm();
+            }
+        };
+        setupControls.container.appendChild(manualBtn);
     }
 
     function renderArcherSelectList(masterList, filter = '') {
@@ -251,13 +318,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderScoringView() {
         if (!scoringControls.container) return;
         scoringControls.currentEndDisplay.textContent = `Bale ${state.baleNumber} - End ${state.currentEnd}`;
+        
+        // Check if Live Updates is enabled to show sync column
+        let isLiveEnabled = false;
+        try { isLiveEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) {}
+        
         let tableHTML = `
             <table class="score-table">
                 <thead>
                     <tr>
                         <th>Archer</th>
                         <th>A1</th><th>A2</th><th>A3</th>
-                        <th>10s</th><th>X</th><th>End</th><th>Run</th><th>Avg</th><th>Card</th>
+                        <th>10s</th><th>X</th><th>End</th><th>Run</th><th>Avg</th>${isLiveEnabled ? '<th style="width: 30px;">⟳</th>' : ''}<th>Card</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -290,6 +362,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (avgNum >= 3) avgClass = 'score-black';
                 else avgClass = 'score-white';
             }
+            
+            // Get sync status for this archer/end
+            const syncStatus = (state.syncStatus[archer.id] && state.syncStatus[archer.id][state.currentEnd]) || '';
+            const syncIcon = getSyncStatusIcon(syncStatus);
+            
             tableHTML += `
                 <tr data-archer-id="${archer.id}">
                     <td>${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
@@ -300,8 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="calculated-cell">${endXs}</td>
                     <td class="calculated-cell">${endTotal}</td>
                     <td class="calculated-cell">${runningTotal}</td>
-                    <td class="calculated-cell ${avgClass}">${endAvg}</td>
-                    <td><button class="btn view-card-btn" data-archer-id="${archer.id}">»</button></td>
+                    <td class="calculated-cell ${avgClass}">${endAvg}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus}" style="text-align: center;">${syncIcon}</td>` : ''}<td><button class="btn view-card-btn" data-archer-id="${archer.id}">»</button></td>
                 </tr>`;
         });
         tableHTML += `</tbody></table>`;
@@ -500,19 +576,60 @@ document.addEventListener('DOMContentLoaded', () => {
                         scores: { a1, a2, a3, endTotal, runningTotal: running, tens, xs }
                     });
                     
+                    // Set sync status to pending
+                    updateSyncStatus(archer.id, state.currentEnd, 'pending');
+                    
                     if (LiveUpdates._state && LiveUpdates._state.roundId) {
-                        LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs });
+                        LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs })
+                          .then(() => updateSyncStatus(archer.id, state.currentEnd, 'synced'))
+                          .catch(() => updateSyncStatus(archer.id, state.currentEnd, 'failed'));
                     } else {
                         const badge = document.getElementById('live-status-badge');
                         if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
                         LiveUpdates.ensureRound({ roundType: 'R360', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
                           .then(() => LiveUpdates.ensureArcher(archer.id, { ...archer, targetSize: archer.targetSize || ((archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80) }))
                           .then(() => LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
-                          .catch(err => console.error('Live init/post failed:', err));
+                          .then(() => updateSyncStatus(archer.id, state.currentEnd, 'synced'))
+                          .catch(err => {
+                            console.error('Live init/post failed:', err);
+                            updateSyncStatus(archer.id, state.currentEnd, 'failed');
+                          });
                     }
                 }
-            } catch (e) { console.error('Live update error:', e); }
+            } catch (e) { 
+                console.error('Live update error:', e);
+                updateSyncStatus(archer.id, state.currentEnd, 'failed');
+            }
         }
+    }
+
+    function updateSyncStatus(archerId, endNumber, status) {
+        if (!state.syncStatus[archerId]) {
+            state.syncStatus[archerId] = {};
+        }
+        state.syncStatus[archerId][endNumber] = status;
+        
+        // Update UI indicator if visible
+        const row = document.querySelector(`tr[data-archer-id="${archerId}"]`);
+        if (row) {
+            const statusCell = row.querySelector('.sync-status-indicator');
+            if (statusCell) {
+                const icon = getSyncStatusIcon(status);
+                statusCell.innerHTML = icon;
+                statusCell.className = `sync-status-indicator sync-status-${status}`;
+            }
+        }
+        
+        saveData();
+    }
+
+    function getSyncStatusIcon(status) {
+        const icons = {
+            'synced': '<span style="color: #4caf50; font-size: 0.9em;" title="Synced">✓</span>',
+            'pending': '<span style="color: #ff9800; font-size: 0.9em;" title="Pending">⟳</span>',
+            'failed': '<span style="color: #f44336; font-size: 0.9em;" title="Failed">✗</span>'
+        };
+        return icons[status] || '';
     }
 
     function changeEnd(direction) {
@@ -559,10 +676,173 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     if (eventNameEl) eventNameEl.textContent = todayEvent.name;
                     if (baleDisplayEl) baleDisplayEl.textContent = state.baleNumber;
+                    
+                    // Try to load pre-assigned bale
+                    await loadPreAssignedBale(todayEvent.id);
                 }
             }
         } catch (e) {
             console.log('Could not load event info:', e.message);
+        }
+    }
+
+    // Check if this bale has pre-assigned archers from an event
+    async function loadPreAssignedBale(eventId) {
+        try {
+            const snapshot = await LiveUpdates.request(`/events/${eventId}/snapshot`);
+            
+            if (!snapshot || !snapshot.divisions) {
+                console.log('No divisions found in event snapshot');
+                return;
+            }
+            
+            // Search all divisions for archers assigned to our bale number
+            let foundArchers = [];
+            let divisionName = '';
+            
+            for (const [divCode, divData] of Object.entries(snapshot.divisions)) {
+                if (divData.archers && divData.archers.length > 0) {
+                    const baleArchers = divData.archers.filter(a => a.bale === state.baleNumber);
+                    if (baleArchers.length > 0) {
+                        foundArchers = baleArchers;
+                        divisionName = getDivisionDisplayName(divCode);
+                        break;
+                    }
+                }
+            }
+            
+            if (foundArchers.length > 0) {
+                // Convert to our state format
+                state.archers = foundArchers.map(a => ({
+                    id: a.roundArcherId,
+                    firstName: a.archerName.split(' ')[0] || '',
+                    lastName: a.archerName.split(' ').slice(1).join(' ') || '',
+                    school: a.school || '',
+                    level: a.level || 'VAR',
+                    gender: a.gender || 'M',
+                    targetAssignment: a.target || 'A',
+                    targetSize: (a.level === 'VAR' || a.level === 'V' || a.level === 'Varsity') ? 122 : 80,
+                    scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
+                }));
+                
+                state.activeEventId = eventId;
+                state.assignmentMode = 'pre-assigned';
+                state.divisionName = divisionName;
+                
+                console.log(`Pre-assigned mode: ${foundArchers.length} archers on bale ${state.baleNumber} (${divisionName})`);
+                saveData();
+                renderSetupForm();
+            }
+        } catch (e) {
+            console.log('Could not load pre-assigned bale:', e.message);
+        }
+    }
+
+    function getDivisionDisplayName(code) {
+        const names = {
+            'BVAR': 'Boys Varsity',
+            'GVAR': 'Girls Varsity',
+            'BJV': 'Boys JV',
+            'GJV': 'Girls JV'
+        };
+        return names[code] || code;
+    }
+
+    async function performMasterSync() {
+        if (!window.LiveUpdates || !LiveUpdates._state) {
+            alert('Live Updates not initialized');
+            return;
+        }
+        
+        const btn = document.getElementById('master-sync-btn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Syncing...';
+        }
+        
+        let totalAttempts = 0;
+        let successCount = 0;
+        let failCount = 0;
+        
+        // Ensure round exists first
+        try {
+            if (!LiveUpdates._state.roundId) {
+                await LiveUpdates.ensureRound({ 
+                    roundType: 'R360', 
+                    date: new Date().toISOString().slice(0, 10), 
+                    baleNumber: state.baleNumber 
+                });
+            }
+            
+            // Ensure all archers exist
+            for (const archer of state.archers) {
+                if (!LiveUpdates._state.archerIds[archer.id]) {
+                    await LiveUpdates.ensureArcher(archer.id, {
+                        ...archer,
+                        targetSize: archer.targetSize || ((archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80)
+                    });
+                }
+            }
+            
+            // Sync all ends for all archers
+            for (const archer of state.archers) {
+                for (let endNum = 1; endNum <= state.totalEnds; endNum++) {
+                    const endScores = archer.scores[endNum - 1];
+                    if (!endScores || !Array.isArray(endScores)) continue;
+                    
+                    // Only sync if end has at least one score
+                    const hasScores = endScores.some(s => s !== '' && s !== null);
+                    if (!hasScores) continue;
+                    
+                    // Check sync status - sync if pending, failed, or never synced
+                    const currentStatus = (state.syncStatus[archer.id] && state.syncStatus[archer.id][endNum]) || '';
+                    if (currentStatus === 'synced') continue; // Skip already synced
+                    
+                    totalAttempts++;
+                    const [a1, a2, a3] = [endScores[0] || '', endScores[1] || '', endScores[2] || ''];
+                    let endTotal = 0, tens = 0, xs = 0, running = 0;
+                    const add = (s) => { 
+                        const u = String(s).toUpperCase(); 
+                        if (!u) return; 
+                        if (u === 'X') { endTotal += 10; running += 10; xs++; tens++; } 
+                        else if (u === '10') { endTotal += 10; running += 10; tens++; } 
+                        else if (/^[0-9]$|^10$/.test(u)) { const n = parseInt(u, 10); endTotal += n; running += n; }
+                    };
+                    [a1, a2, a3].forEach(add);
+                    
+                    // Calculate running total up to this end
+                    for (let i = 0; i < endNum; i++) {
+                        if (archer.scores[i] && Array.isArray(archer.scores[i])) {
+                            archer.scores[i].forEach(add);
+                        }
+                    }
+                    
+                    try {
+                        updateSyncStatus(archer.id, endNum, 'pending');
+                        await LiveUpdates.postEnd(archer.id, endNum, { 
+                            a1, a2, a3, endTotal, runningTotal: running, tens, xs 
+                        });
+                        updateSyncStatus(archer.id, endNum, 'synced');
+                        successCount++;
+                    } catch (e) {
+                        console.error(`Failed to sync archer ${archer.id} end ${endNum}:`, e);
+                        updateSyncStatus(archer.id, endNum, 'failed');
+                        failCount++;
+                    }
+                }
+            }
+            
+            const message = `Master Sync Complete!\n\nAttempted: ${totalAttempts}\nSucceeded: ${successCount}\nFailed: ${failCount}`;
+            alert(message);
+            
+        } catch (e) {
+            console.error('Master sync error:', e);
+            alert('Master Sync failed: ' + e.message);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Master Sync';
+            }
         }
     }
 
@@ -621,6 +901,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const setLiveEnabled = (v) => { try { if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ enabled: !!v }); else localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); } catch(_) {} };
             const renderLiveBtn = () => { const on = getLiveEnabled(); liveBtn.textContent = on ? 'Live: On' : 'Live: Off'; liveBtn.className = on ? 'btn btn-success' : 'btn btn-secondary'; };
             renderLiveBtn();
+            
+            const masterSyncBtn = document.createElement('button');
+            masterSyncBtn.id = 'master-sync-btn';
+            masterSyncBtn.className = 'btn btn-warning';
+            masterSyncBtn.textContent = 'Master Sync';
+            masterSyncBtn.style.cssText = 'font-size: 0.9em;';
+            masterSyncBtn.onclick = async () => {
+                if (!getLiveEnabled()) {
+                    alert('Enable Live Updates first to sync scores.');
+                    return;
+                }
+                await performMasterSync();
+            };
             const initLiveRoundAndArchers = () => {
                 try {
                     let isEnabled = getLiveEnabled();
@@ -670,6 +963,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setupControls.subheader.appendChild(syncBtn);
             setupControls.subheader.appendChild(selectedChip);
             setupControls.subheader.appendChild(liveBtn);
+            setupControls.subheader.appendChild(masterSyncBtn);
             setupControls.subheader.appendChild(resetBtn);
             setupControls.subheader.appendChild(scoringBtn);
         }

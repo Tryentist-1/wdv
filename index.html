@@ -675,6 +675,20 @@
       <h1>Archery Tools</h1>
     </header>
 
+    <!-- Active Event Indicator -->
+    <div id="active-event-banner" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 0.75rem; opacity: 0.9; margin-bottom: 0.25rem;">🔴 ACTIVE EVENT</div>
+          <div id="active-event-name" style="font-weight: bold; font-size: 1.1rem; margin-bottom: 0.25rem;">Loading...</div>
+          <div id="active-event-details" style="font-size: 0.85rem; opacity: 0.9;"></div>
+        </div>
+        <div>
+          <a id="active-event-link" href="#" class="btn" style="background: white; color: #667eea; font-weight: bold; padding: 0.6rem 1rem; text-decoration: none; border-radius: 6px; white-space: nowrap;">Select Bale →</a>
+        </div>
+      </div>
+    </div>
+
     <div class="button-menu">
       <a href="archer_list.html" class="btn btn-archer-setup" title="Add archers and sync with master list">
         <i class="fas fa-users btn-icon"></i>Archer Setup
@@ -759,9 +773,40 @@
       document.getElementById('onboarding-modal').style.display = 'none';
     }
 
+    // Load active event indicator
+    async function loadActiveEvent() {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const res = await fetch('https://tryentist.com/wdv/api/v1/events/recent');
+        
+        if (!res.ok) return;
+        
+        const data = await res.json();
+        const events = data.events || [];
+        
+        // Find active event for today
+        const activeEvent = events.find(ev => ev.date === today && ev.status === 'Active');
+        
+        if (activeEvent) {
+          const banner = document.getElementById('active-event-banner');
+          const nameEl = document.getElementById('active-event-name');
+          const detailsEl = document.getElementById('active-event-details');
+          const linkEl = document.getElementById('active-event-link');
+          
+          nameEl.textContent = activeEvent.name;
+          detailsEl.textContent = `Today - ${today}`;
+          linkEl.href = 'ranking_round_300.html';
+          banner.style.display = 'block';
+        }
+      } catch (e) {
+        console.log('Could not load active event:', e);
+      }
+    }
+
     // Show onboarding on page load
     document.addEventListener('DOMContentLoaded', function() {
       showOnboarding();
+      loadActiveEvent();
       
       // Add help button functionality
       document.getElementById('help-btn').addEventListener('click', function() {

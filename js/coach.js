@@ -98,17 +98,19 @@
       
       html += `<div class="features" style="margin-top: 1.5rem;">`;
       html += `<h2>${divisionNames[divCode]} (${sortedArchers.length})</h2>`;
-      html += '<table class="score-table"><thead><tr>';
-      html += '<th>Rank</th><th>Name</th><th>School</th><th>Bale</th><th>End</th><th>Total</th><th>Avg</th><th>Xs</th><th>10s</th><th>Status</th>';
+      html += '<div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">';
+      html += '<table class="score-table" style="min-width: 100%;"><thead><tr>';
+      html += '<th style="width: 40px;">Rank</th><th style="min-width: 100px;">Name</th><th style="width: 50px;">Scho</th><th style="width: 45px;">Bale</th><th style="width: 50px;">End</th><th style="width: 55px;">Total</th><th style="width: 50px;">Avg</th><th style="width: 35px;">Xs</th><th style="width: 40px;">10s</th><th style="width: 75px;">Status</th>';
       html += '</tr></thead><tbody>';
       
       sortedArchers.forEach((archer, idx) => {
         const statusClass = archer.completed ? 'status-synced' : (archer.runningTotal > 0 ? 'status-active' : 'status-pending');
-        const statusText = archer.completed ? 'Complete' : (archer.runningTotal > 0 ? 'Active' : 'Ready');
+        const statusText = archer.completed ? '✓' : (archer.runningTotal > 0 ? '●' : '○');
+        const statusTitle = archer.completed ? 'Complete' : (archer.runningTotal > 0 ? 'Active' : 'Ready');
         
         html += '<tr>';
         html += `<td>${idx + 1}</td>`;
-        html += `<td>${archer.archerName}</td>`;
+        html += `<td style="text-align: left; padding-left: 8px;">${archer.archerName}</td>`;
         html += `<td>${archer.school || 'N/A'}</td>`;
         html += `<td>${archer.bale || '-'}</td>`;
         html += `<td>${archer.endsCompleted}/10</td>`;
@@ -116,11 +118,11 @@
         html += `<td>${archer.avgPerArrow.toFixed(2)}</td>`;
         html += `<td>${archer.xs || 0}</td>`;
         html += `<td>${archer.tens || 0}</td>`;
-        html += `<td><span class="status-badge ${statusClass}">${statusText}</span></td>`;
+        html += `<td><span class="status-badge ${statusClass}" title="${statusTitle}">${statusText}</span></td>`;
         html += '</tr>';
       });
       
-      html += '</tbody></table></div>';
+      html += '</div>';
     });
     
     container.innerHTML = html;

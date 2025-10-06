@@ -99,6 +99,8 @@ hr {
 .status-off { background: #f8d7da; color: #842029; }
 .status-pending { background: #fff3cd; color: #664d03; }
 .status-ok { background: #d1e7dd; color: #0f5132; }
+.status-synced { background: #d1e7dd; color: #0f5132; font-weight: bold; }
+.status-active { background: #fff3cd; color: #664d03; font-weight: bold; }
 
 .header-left, .header-right {
   display: flex;
@@ -118,6 +120,13 @@ hr {
   padding: 0.5rem 1rem;
   background-color: var(--light-gray);
   border-bottom: 1px solid var(--border-gray);
+  flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+}
+
+.page-subheader .btn {
+  font-size: clamp(0.75rem, 2vw, 0.9rem);
+  padding: 0.4rem 0.6rem;
+  white-space: nowrap;
 }
 
 .page-controls {
@@ -369,6 +378,7 @@ tr.sync-ok td { outline: 2px solid #28a745; outline-offset: -2px; }
   color: inherit;
   font-family: inherit;
   font-size: inherit;
+  appearance: textfield;
   -moz-appearance: textfield;
 }
 
@@ -843,10 +853,7 @@ body {
   }
 }
 
-body.keypad-visible {
-  /* padding-bottom: calc(200px + var(--footer-height)); */
-  /* scroll-behavior: smooth; */
-}
+/* Keypad visibility handled inline */
 
 /* Keypad Styles */
 .keypad-container .keypad {
@@ -928,6 +935,33 @@ body.keypad-visible {
 .score-table td.score-4, .score-table td.score-3 { background-color: var(--score-black) !important; color: var(--text-light) !important; }
 .score-table td.score-2, .score-table td.score-1 { background-color: var(--score-white) !important; color: var(--text-dark) !important; }
 .score-table td.score-m { background-color: var(--score-white) !important; color: #999 !important; }
+
+/* Score colors for INPUT elements (used in scoring view) */
+.score-input.score-gold, .score-input.score-x, .score-input.score-10, .score-input.score-9 { 
+    background-color: var(--score-gold) !important; 
+    color: var(--text-dark) !important; 
+}
+.score-input.score-red, .score-input.score-8, .score-input.score-7 { 
+    background-color: var(--score-red) !important; 
+    color: var(--text-light) !important; 
+}
+.score-input.score-blue, .score-input.score-6, .score-input.score-5 { 
+    background-color: var(--score-blue) !important; 
+    color: var(--text-dark) !important; 
+}
+.score-input.score-black, .score-input.score-4, .score-input.score-3 { 
+    background-color: var(--score-black) !important; 
+    color: var(--text-light) !important; 
+}
+.score-input.score-white, .score-input.score-2, .score-input.score-1 { 
+    background-color: var(--score-white) !important; 
+    color: var(--text-dark) !important; 
+    border: 1px solid var(--border-gray) !important;
+}
+.score-input.score-m { 
+    background-color: var(--score-white) !important; 
+    color: #999 !important; 
+}
 
 .bale-number-setup {
     display: flex;
