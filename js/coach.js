@@ -75,64 +75,52 @@
   function renderLeaderboard(container, snap) {
     let html = '<div class="features">';
     html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">';
-    html += '<h2>Rounds Summary</h2>';
+    html += `<h2>${snap.event?.name || 'Event'} - Live Leaderboard</h2>`;
     html += '<button id="back-to-events-btn" class="btn btn-secondary">← Back to Events</button>';
     html += '</div>';
-    html += '<table class="score-table"><thead><tr><th>Bale</th><th>Type</th><th>Archers</th><th>Status</th></tr></thead><tbody>';
     
-    (snap.rounds || []).forEach(r => {
-      const archerCount = r.totalArchers || r.archerCount || (r.archers ? r.archers.length : 0);
-      const hasScores = r.archers && r.archers.some(a => a.runningTotal > 0);
-      const isCompleted = r.archers && r.archers.every(a => a.endsCompleted >= 10); // R300 = 10 ends
-      let status = 'Empty';
-      if (archerCount > 0) {
-        if (isCompleted) status = 'Completed';
-        else if (hasScores) status = 'Active';
-        else status = 'Ready';
-      }
-      html += `<tr><td>${r.baleNumber || 'N/A'}</td><td>${r.roundType || 'N/A'}</td><td>${archerCount}</td><td>${status}</td></tr>`;
-    });
+    // Division tabs/cards
+    const divisions = snap.divisions || {};
+    const divisionOrder = ['BVAR', 'GVAR', 'BJV', 'GJV'];
+    const divisionNames = {
+      'BVAR': 'Boys Varsity',
+      'GVAR': 'Girls Varsity',
+      'BJV': 'Boys JV',
+      'GJV': 'Girls JV'
+    };
     
-    html += '</tbody></table></div>';
-    
-    // Flatten archers across rounds for leaderboard
-    const all = [];
-    (snap.rounds || []).forEach(r => {
-      (r.archers || []).forEach(a => {
-        all.push({
-          name: a.archerName,
-          gender: (a.gender||'').toUpperCase(),
-          level: (a.level||'').toUpperCase(),
-          school: a.school || 'N/A',
-          lastEnd: a.lastEnd||0,
-          endScore: a.endScore||0,
-          runningTotal: a.runningTotal||0,
-          tens: a.tens || 0,
-          xs: a.xs || 0,
-          avg: a.endsCompleted > 0 ? (a.runningTotal / a.endsCompleted).toFixed(1) : '0.0',
-        });
+    divisionOrder.forEach(divCode => {
+      const div = divisions[divCode];
+      if (!div || !div.archers || div.archers.length === 0) return;
+      
+      // Sort archers by running total (descending)
+      const sortedArchers = [...div.archers].sort((a, b) => b.runningTotal - a.runningTotal);
+      
+      html += `<div class="features" style="margin-top: 1.5rem;">`;
+      html += `<h2>${divisionNames[divCode]} (${sortedArchers.length})</h2>`;
+      html += '<table class="score-table"><thead><tr>';
+      html += '<th>Rank</th><th>Name</th><th>School</th><th>Bale</th><th>End</th><th>Total</th><th>Avg</th><th>Xs</th><th>10s</th><th>Status</th>';
+      html += '</tr></thead><tbody>';
+      
+      sortedArchers.forEach((archer, idx) => {
+        const statusClass = archer.completed ? 'status-synced' : (archer.runningTotal > 0 ? 'status-active' : 'status-pending');
+        const statusText = archer.completed ? 'Complete' : (archer.runningTotal > 0 ? 'Active' : 'Ready');
+        
+        html += '<tr>';
+        html += `<td>${idx + 1}</td>`;
+        html += `<td>${archer.archerName}</td>`;
+        html += `<td>${archer.school || 'N/A'}</td>`;
+        html += `<td>${archer.bale || '-'}</td>`;
+        html += `<td>${archer.endsCompleted}/10</td>`;
+        html += `<td><strong>${archer.runningTotal}</strong></td>`;
+        html += `<td>${archer.avgPerArrow.toFixed(2)}</td>`;
+        html += `<td>${archer.xs || 0}</td>`;
+        html += `<td>${archer.tens || 0}</td>`;
+        html += `<td><span class="status-badge ${statusClass}">${statusText}</span></td>`;
+        html += '</tr>';
       });
-    });
-    
-    // Group by Girls V, Girls JV, Boys V, Boys JV
-    const groups = [
-      { key: 'GV', title: 'Girls V', filter: x => x.gender==='F' && x.level.startsWith('V') },
-      { key: 'GJV', title: 'Girls JV', filter: x => x.gender==='F' && x.level.startsWith('J') },
-      { key: 'BV', title: 'Boys V', filter: x => x.gender==='M' && x.level.startsWith('V') },
-      { key: 'BJV', title: 'Boys JV', filter: x => x.gender==='M' && x.level.startsWith('J') },
-    ];
-    
-    groups.forEach(g => {
-      const arr = all.filter(g.filter).sort((a,b)=> b.runningTotal - a.runningTotal);
-      if (arr.length > 0) {
-        html += `<div class="features"><h2>${g.title}</h2>`;
-        html += '<table class="score-table"><thead><tr><th>R</th><th>FNAME</th><th>L</th><th>SCH</th><th>END</th><th>XS</th><th>10S</th><th>AVG</th></tr></thead><tbody>';
-        arr.forEach((p, idx) => {
-          const [first, last] = p.name.split(' ');
-          html += `<tr><td>${idx+1}</td><td>${first}</td><td>${last.charAt(0)}</td><td>${p.school}</td><td>${p.lastEnd||''}</td><td>${p.xs||0}</td><td>${p.tens||0}</td><td>${p.avg}</td></tr>`;
-        });
-        html += '</tbody></table></div>';
-      }
+      
+      html += '</tbody></table></div>';
     });
     
     container.innerHTML = html;
@@ -147,10 +135,29 @@
   async function createEventAndRounds() {
     const date = new Date().toISOString().slice(0, 10);
     const name = prompt('Event name:', `Event ${date}`) || `Event ${date}`;
-    const status = prompt('Event status (Upcoming, Active, Completed):', 'Upcoming') || 'Upcoming';
+    const eventType = confirm('Auto-assign archers to bales?\n\nOK = Auto-assign (recommended)\nCancel = Self-select at bales') ? 'auto_assign' : 'self_select';
+    const status = 'Planned'; // Events start as Planned by default
+    
     try {
-      const res = await req('/events', 'POST', { name, date, seedRounds: true, status });
-      alert(`Event created: ${res.eventId}`);
+      const res = await req('/events', 'POST', { 
+        name, 
+        date, 
+        status,
+        eventType,
+        autoAssignBales: eventType === 'auto_assign',
+        roundType: 'R300'
+      });
+      
+      let message = `Event created: ${res.eventId}\n\n`;
+      if (res.rounds && res.rounds.length > 0) {
+        message += 'Division Rounds:\n';
+        res.rounds.forEach(r => {
+          message += `- ${r.division}: ${r.archerCount} archers on ${r.bales} bale(s)\n`;
+        });
+        message += `\nTotal Bales: ${res.totalBales}`;
+      }
+      
+      alert(message);
       loadRounds();
     } catch (e) {
       alert('Create event failed: ' + e.message);

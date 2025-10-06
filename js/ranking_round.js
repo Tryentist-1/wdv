@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             level: archer.level || '',
                             gender: archer.gender || '',
                             targetAssignment: nextTarget,
-                            targetSize: archer.level === 'V' ? 122 : 80,
+                            targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
                             scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
                         });
                     }
@@ -506,7 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const badge = document.getElementById('live-status-badge');
                         if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
                         LiveUpdates.ensureRound({ roundType: 'R360', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
-                          .then(() => LiveUpdates.ensureArcher(archer.id, { ...archer, targetSize: archer.targetSize || (archer.level === 'V' ? 122 : 80) }))
+                          .then(() => LiveUpdates.ensureArcher(archer.id, { ...archer, targetSize: archer.targetSize || ((archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80) }))
                           .then(() => LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
                           .catch(err => console.error('Live init/post failed:', err));
                     }

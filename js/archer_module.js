@@ -42,39 +42,85 @@ const ArcherModule = {
     return [first, last, school].filter(Boolean).join('-');
   },
 
+  // Normalize values to database standards
+  _normalizeGender(gender) {
+    if (!gender) return 'M'; // default
+    const g = String(gender).toUpperCase().trim();
+    if (g === 'F' || g === 'FEMALE' || g === 'GIRL' || g === 'GIRLS') return 'F';
+    return 'M'; // Default to M for Male, Boys, or anything else
+  },
+
+  _normalizeLevel(level) {
+    if (!level) return 'VAR'; // default
+    const l = String(level).toUpperCase().trim();
+    if (l === 'JV' || l === 'JUNIOR VARSITY' || l === 'JUNIOR') return 'JV';
+    // V, VAR, VARSITY all become VAR
+    return 'VAR';
+  },
+
+  _normalizeSchool(school) {
+    if (!school) return 'UNK'; // Unknown
+    return String(school).substring(0, 3).toUpperCase().trim();
+  },
+
   // Sync current master list to DB via API bulk upsert
   async bulkUpsertMasterList() {
-    const cfg = (window && window.LIVE_UPDATES) ? window.LIVE_UPDATES : {};
-    if (!cfg || !cfg.apiBase || !cfg.apiKey) {
-      alert('Live Updates API is not configured. Please set window.LIVE_UPDATES.apiBase and apiKey.');
+    if (!window.LiveUpdates || !window.LiveUpdates.request) {
+      alert('Live Updates API is not available. Please ensure live_updates.js is loaded.');
       return { ok: false };
     }
+    
     const list = this.loadList();
     if (!Array.isArray(list) || list.length === 0) {
       alert('No master list found in local storage to sync.');
       return { ok: false };
     }
+    
+    // Normalize data before sending to database
     const payload = list.map(a => ({
       extId: this._buildExtId(a),
       firstName: a.first || '',
       lastName: a.last || '',
-      school: a.school || '',
-      level: a.level || '',
-      gender: a.gender || ''
+      school: this._normalizeSchool(a.school),
+      level: this._normalizeLevel(a.level),
+      gender: this._normalizeGender(a.gender)
     }));
-    const res = await fetch(`${cfg.apiBase}/archers/bulk_upsert`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': cfg.apiKey
-      },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) {
-      const txt = await res.text();
-      throw new Error(`Bulk upsert failed (HTTP ${res.status}): ${txt}`);
+    
+    try {
+      const result = await window.LiveUpdates.request('/archers/bulk_upsert', 'POST', payload);
+      return result;
+    } catch (error) {
+      console.error('Bulk upsert failed:', error);
+      throw error;
     }
-    return res.json();
+  },
+
+  // Load master list from MySQL database
+  async loadFromMySQL() {
+    if (!window.LiveUpdates || !window.LiveUpdates.request) {
+      throw new Error('Live Updates API is not available');
+    }
+    
+    try {
+      const result = await window.LiveUpdates.request('/archers', 'GET');
+      return result.archers || [];
+    } catch (error) {
+      console.error('Load from MySQL failed:', error);
+      throw error;
+    }
+  },
+
+  // Sync: Push localStorage to MySQL (one-way sync)
+  async syncToMySQL() {
+    try {
+      const result = await this.bulkUpsertMasterList();
+      console.log('Sync to MySQL complete:', result);
+      return result;
+    } catch (error) {
+      console.error('Sync to MySQL failed:', error);
+      alert('Failed to sync archer list to database: ' + error.message);
+      return { ok: false, error: error.message };
+    }
   },
 
   // Save archer list to localStorage

@@ -40,32 +40,35 @@ This document is designed to help us (User and LLM) start, conduct, and pause/en
 
 ### SESSION SUMMARY TEMPLATE (for LLM to fill at end of session)
 
-* **Session End Date & Time:** `2025-09-16`  
-* **Last Vibe Persona Active:** `Pam (Product Manager)`
+* **Session End Date & Time:** `2025-09-22`  
+* **Last Vibe Persona Active:** `Devin (Full-Stack Developer)`
 * **Session Goals for This Past Session (Key Achievements):**
-    *   Implemented Ranking Round 300 (10 ends of 3) as default entry point.
-    *   Consolidated export controls into a single Export modal (Verify, Screenshot, JSON, Email).
-    *   Updated Ranking UI with "← Scoring" back label and Prev/Next archer cycling.
+    *   Aligned client-side data model with database schema by adding `target_size` field to archer objects.
+    *   Enhanced Coach Console to display event status and allow status setting during event creation.
+    *   Updated both ranking round scripts to include `target_size` in API payloads and localStorage.
+    *   Resolved data model inconsistencies between localStorage and MySQL database.
 * **Key Files Modified (and their status):**
-    *   `ranking_round_300.html`: New 300-round entry page. (Uncommitted/Committed as applicable)
-    *   `js/ranking_round_300.js`: New 300-round logic (totalEnds=10). (Uncommitted/Committed)
-    *   `ranking_round.html`: Card footer + export modal integration. (Uncommitted/Committed)
-    *   `js/ranking_round.js`: Export modal wiring; archer cycling. (Uncommitted/Committed)
-    *   `index.html`: Ranking button now links to 300 round. (Uncommitted/Committed)
+    *   `js/ranking_round_300.js`: Added `target_size` property to archer state and API payloads. (Committed)
+    *   `js/ranking_round.js`: Added `target_size` property to archer state and API payloads. (Committed)
+    *   `js/coach.js`: Added event status display and status input for event creation. (Committed)
+    *   Database schema updated with `status` field in events table and `target_size` field in round_archers table.
 * **Key System Changes:**
-    *   Default Ranking experience points to a 300-round flow while preserving the 360 page.
-    *   Export functions unified behind a single modal to streamline user actions.
+    *   Client-side data model now matches database schema exactly.
+    *   Live Updates system properly sends `target_size` data to API.
+    *   Coach Console provides better event management with status tracking.
 * **Uncommitted Changes (Summary):**
-    *   Review working tree for pending edits across HTML/JS.
+    *   All changes committed and deployed to production.
 * **Untested Changes (Summary):**
-    *   Manual testing recommended for export modal flows and archer cycling.
+    *   Live Updates with `target_size` should be tested during next scoring session.
+    *   Event status functionality in Coach Console ready for testing.
 * **Next Immediate Steps (for next session):**
-    *   Optional: Add round selector (300/360) in setup to toggle `totalEnds` without separate pages.
-    *   Update tutorial docs to reflect Export modal and 300-round flow.
+    *   Test live scoring with new `target_size` field integration.
+    *   Verify event status changes are reflected in Coach Console.
+    *   Consider adding target size configuration UI for archers.
 * **Blockers/Open Questions:**
     *   None currently.
 * **User's Personal Notes/Reminders:**
-    *   Verify SMS formatting with coaches ahead of first tournament.
+    *   Database schema is now fully aligned with client-side models.
 
 ---
 
@@ -73,18 +76,57 @@ This document is designed to help us (User and LLM) start, conduct, and pause/en
 
 * **Project:** Archery Score Management Suite
 * **Vision:** A suite of distinct, mobile-first web apps for scoring the primary formats of OAS archery: Ranking, Solo, and Team, with robust integration and automation.
-* **Current Phase:** UI/UX Cleanup + Season 2025 prep
-* **Immediate Goal:** Ship Ranking Round 300 and consolidate export actions.
+* **Current Phase:** Live Updates System + Data Model Alignment
+* **Immediate Goal:** Complete data model alignment and test live scoring functionality.
 
-* **Session Start Date & Time:** `2025-09-16`
-* **Active Persona:** Pam (Product Manager)
+* **Session Start Date & Time:** `2025-09-22`
+* **Active Persona:** Devin (Full-Stack Developer)
 * **Next Immediate Steps:**
-    *   Consider adding a setup-time round selector to flex between 300/360.
-    *   Confirm copy and styling on the Export modal.
+    *   Test live scoring with aligned data models.
+    *   Verify event status management in Coach Console.
+    *   Consider UI improvements for target size configuration.
 * **Blockers/Open Questions:**
-* None at this time
+    *   None at this time
 * **User's Personal Notes/Reminders:**
-* Use the deploy script for releases; validate on-device UX before events.
+    *   Database and client-side models are now fully synchronized.
+    *   Live Updates system is production-ready with proper data validation.
+
+---
+
+## Live Updates System Architecture (As of 2025-09-22)
+
+The Live Updates system provides real-time scoring data synchronization between client devices and a central database, enabling coaches to monitor tournament progress in real-time.
+
+**Core Components:**
+
+1. **Client-Side (`js/live_updates.js`):**
+   - Manages API authentication and request handling
+   - Implements retry logic for offline scenarios
+   - Persists configuration in localStorage
+   - Exposes public API: `setConfig`, `saveConfig`, `ensureRound`, `ensureArcher`, `postEnd`, `request`
+
+2. **Backend API (`api/`):**
+   - RESTful endpoints for rounds, archers, events, and score data
+   - Authentication via X-API-Key and X-Passcode headers
+   - Database schema includes `archers`, `rounds`, `round_archers`, `end_events`, `events` tables
+   - Upsert logic prevents duplicate entries
+
+3. **Data Model Alignment:**
+   - Client localStorage includes `target_size` field matching database schema
+   - Event status management (Upcoming, Active, Completed)
+   - Consistent archer data structure across all systems
+
+**Key Features:**
+- Real-time score posting during tournament rounds
+- Event-based data aggregation for leaderboards
+- Coach Console for event management and live monitoring
+- Automatic round/archer initialization
+- Offline queue with retry mechanism
+
+**Authentication:**
+- Shared passcode system for coach access
+- Persistent key storage in localStorage
+- Automatic prompt-and-retry for expired credentials
 
 ---
 

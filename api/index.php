@@ -32,6 +32,57 @@ $slugify = function(string $s): string {
     return trim($s, '-');
 };
 
+// Bale Assignment Algorithm
+// Distributes archers across bales (2-4 per bale, no singles, continuous numbering)
+$assignArchersToBales = function(array $archers, int $startBaleNumber = 1): array {
+    $total = count($archers);
+    if ($total === 0) return [];
+    
+    $assignments = [];
+    $baleNum = $startBaleNumber;
+    $remaining = $archers;
+    
+    while (count($remaining) > 0) {
+        $baleSize = 4; // Default to 4 per bale
+        
+        if (count($remaining) === 1) {
+            // Single archer - add to previous bale if possible
+            if (!empty($assignments) && count($assignments[count($assignments) - 1]) < 4) {
+                $assignments[count($assignments) - 1][] = array_shift($remaining);
+                continue;
+            } else {
+                // Edge case: single archer with no previous bale (shouldn't happen in practice)
+                $baleSize = 1;
+            }
+        } elseif (count($remaining) === 2) {
+            $baleSize = 2;
+        } elseif (count($remaining) === 3) {
+            $baleSize = 3;
+        } elseif (count($remaining) === 5) {
+            $baleSize = 3; // Split 5 as 3+2
+        } elseif (count($remaining) >= 4) {
+            $baleSize = 4;
+        }
+        
+        $baleArchers = array_splice($remaining, 0, $baleSize);
+        $assignments[] = $baleArchers;
+        $baleNum++;
+    }
+    
+    return $assignments;
+};
+
+// Get division code from gender + level
+$getDivisionCode = function(string $gender, string $level): string {
+    $g = strtoupper($gender);
+    $l = strtoupper($level);
+    if ($g === 'M' && $l === 'VAR') return 'BVAR';
+    if ($g === 'M' && $l === 'JV') return 'BJV';
+    if ($g === 'F' && $l === 'VAR') return 'GVAR';
+    if ($g === 'F' && $l === 'JV') return 'GJV';
+    return 'UNKNOWN';
+};
+
 if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
     require_api_key();
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -183,33 +234,90 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $name = trim($input['name'] ?? 'Event');
     $date = $input['date'] ?? date('Y-m-d');
-    $status = $input['status'] ?? 'Upcoming';
-    $seed = !!($input['seedRounds'] ?? false);
+    $status = $input['status'] ?? 'Planned';
+    $eventType = $input['eventType'] ?? 'auto_assign'; // auto_assign or self_select
+    $autoAssign = !!($input['autoAssignBales'] ?? ($eventType === 'auto_assign'));
+    $roundType = $input['roundType'] ?? 'R300';
+    
     try {
         $pdo = db();
         ensure_events_schema($pdo);
         $eventId = $genUuid();
-        $pdo->prepare('INSERT INTO events (id,name,date,status,created_at) VALUES (?,?,?,?,NOW())')->execute([$eventId,$name,$date,$status]);
-        if ($seed) {
-            $ins = $pdo->prepare('INSERT INTO rounds (id,event_id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,?,NOW())');
-            for ($b = 1; $b <= 12; $b++) {
-                // Check if round already exists before creating
-                $existing = $pdo->prepare('SELECT id FROM rounds WHERE round_type=? AND date=? AND bale_number=? LIMIT 1');
-                $existing->execute(['R300', $date, $b]);
-                $existingRound = $existing->fetch();
+        
+        // Create event
+        $pdo->prepare('INSERT INTO events (id,name,date,status,event_type,created_at) VALUES (?,?,?,?,?,NOW())')
+            ->execute([$eventId, $name, $date, $status, $eventType]);
+        
+        // Define divisions in order: Boys Varsity, Girls Varsity, Boys JV, Girls JV
+        $divisions = [
+            ['code' => 'BVAR', 'gender' => 'M', 'level' => 'VAR', 'name' => 'Boys Varsity'],
+            ['code' => 'GVAR', 'gender' => 'F', 'level' => 'VAR', 'name' => 'Girls Varsity'],
+            ['code' => 'BJV', 'gender' => 'M', 'level' => 'JV', 'name' => 'Boys JV'],
+            ['code' => 'GJV', 'gender' => 'F', 'level' => 'JV', 'name' => 'Girls JV']
+        ];
+        
+        $responseRounds = [];
+        $currentBaleNumber = 1; // Continuous bale numbering across all divisions
+        
+        foreach ($divisions as $div) {
+            // Create division round
+            $roundId = $genUuid();
+            $pdo->prepare('INSERT INTO rounds (id,event_id,round_type,division,gender,level,date,status,created_at) VALUES (?,?,?,?,?,?,?,?,NOW())')
+                ->execute([$roundId, $eventId, $roundType, $div['code'], $div['gender'], $div['level'], $date, 'Created']);
+            
+            $roundInfo = [
+                'roundId' => $roundId,
+                'division' => $div['code'],
+                'gender' => $div['gender'],
+                'level' => $div['level'],
+                'bales' => 0,
+                'archerCount' => 0
+            ];
+            
+            // Auto-assign bales if requested
+            if ($autoAssign) {
+                // Get archers for this division
+                $stmt = $pdo->prepare('SELECT id,first_name,last_name,school,level,gender FROM archers WHERE gender=? AND level=? ORDER BY last_name,first_name');
+                $stmt->execute([$div['gender'], $div['level']]);
+                $archers = $stmt->fetchAll();
                 
-                if ($existingRound) {
-                    // Link existing round to this event
-                    $link = $pdo->prepare('UPDATE rounds SET event_id=? WHERE id=?');
-                    $link->execute([$eventId, $existingRound['id']]);
-                } else {
-                    // Create new round
-                    $rid = $genUuid();
-                    $ins->execute([$rid,$eventId,'R300',$date,$b]);
+                if (!empty($archers)) {
+                    // Assign to bales
+                    $baleAssignments = $assignArchersToBales($archers, $currentBaleNumber);
+                    $targetLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+                    
+                    foreach ($baleAssignments as $baleArchers) {
+                        $baleNum = $currentBaleNumber;
+                        $targetIdx = 0;
+                        
+                        foreach ($baleArchers as $archer) {
+                            $raId = $genUuid();
+                            $archerName = trim($archer['first_name'] . ' ' . $archer['last_name']);
+                            $target = $targetLetters[$targetIdx] ?? 'A';
+                            $targetSize = ($archer['level'] === 'VAR') ? 122 : 80;
+                            
+                            $pdo->prepare('INSERT INTO round_archers (id,round_id,archer_id,archer_name,school,level,gender,target_assignment,target_size,bale_number,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW())')
+                                ->execute([$raId, $roundId, $archer['id'], $archerName, $archer['school'], $archer['level'], $archer['gender'], $target, $targetSize, $baleNum]);
+                            
+                            $targetIdx++;
+                        }
+                        
+                        $currentBaleNumber++;
+                    }
+                    
+                    $roundInfo['bales'] = count($baleAssignments);
+                    $roundInfo['archerCount'] = count($archers);
                 }
             }
+            
+            $responseRounds[] = $roundInfo;
         }
-        json_response(['eventId' => $eventId], 201);
+        
+        json_response([
+            'eventId' => $eventId,
+            'rounds' => $responseRounds,
+            'totalBales' => $currentBaleNumber - 1
+        ], 201);
     } catch (Exception $e) {
         error_log("Event creation failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
@@ -282,62 +390,112 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELET
     exit;
 }
 
-// Get an event snapshot: rounds and their latest state
+// Get an event snapshot: division-based rounds with archer data
 if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method === 'GET') {
     require_api_key();
     $eventId = $m[1];
     $pdo = db();
-    // Get rounds for this event, plus any unlinked rounds for the same date
-    $event = $pdo->prepare('SELECT date FROM events WHERE id=? LIMIT 1');
-    $event->execute([$eventId]);
-    $eventDate = $event->fetch()['date'] ?? date('Y-m-d');
     
-    $rounds = $pdo->prepare('SELECT id, round_type as roundType, date, bale_number as baleNumber FROM rounds WHERE (event_id=? OR (event_id IS NULL AND date=?)) ORDER BY bale_number');
-    $rounds->execute([$eventId, $eventDate]);
+    // Get event info
+    $event = $pdo->prepare('SELECT id, name, date, status FROM events WHERE id=? LIMIT 1');
+    $event->execute([$eventId]);
+    $eventData = $event->fetch();
+    
+    if (!$eventData) {
+        json_response(['error' => 'Event not found'], 404);
+        exit;
+    }
+    
+    // Get division rounds for this event
+    $rounds = $pdo->prepare('SELECT id, round_type as roundType, division, gender, level, status FROM rounds WHERE event_id=? ORDER BY 
+        CASE division 
+            WHEN \'BVAR\' THEN 1 
+            WHEN \'GVAR\' THEN 2 
+            WHEN \'BJV\' THEN 3 
+            WHEN \'GJV\' THEN 4 
+            ELSE 5 
+        END');
+    $rounds->execute([$eventId]);
     $rs = $rounds->fetchAll();
-    // Attach quick archer counts and totals
-    foreach ($rs as &$r) {
-        $archers = $pdo->prepare('SELECT ra.id as roundArcherId, ra.archer_name as archerName, ra.gender as gender, ra.level as level, ra.target_assignment as target FROM round_archers ra WHERE ra.round_id=?');
+    
+    $divisions = [];
+    
+    foreach ($rs as $r) {
+        $divCode = $r['division'];
+        
+        // Get archers for this division round
+        $archers = $pdo->prepare('SELECT ra.id as roundArcherId, ra.archer_name as archerName, ra.school, ra.gender, ra.level, ra.target_assignment as target, ra.bale_number as bale, ra.completed FROM round_archers ra WHERE ra.round_id=? ORDER BY ra.bale_number, ra.target_assignment');
         $archers->execute([$r['id']]);
         $as = $archers->fetchAll();
-        $r['archers'] = [];
-        $r['totalArchers'] = count($as);
-        $r['archerCount'] = count($as); // For backward compatibility
+        
+        $divisionArchers = [];
+        
         foreach ($as as $a) {
+            // Get end events for this archer
             $ee = $pdo->prepare('SELECT end_number as endNumber, end_total as endTotal, running_total as runningTotal, tens, xs, server_ts as serverTs FROM end_events WHERE round_archer_id=? ORDER BY end_number');
             $ee->execute([$a['roundArcherId']]);
             $ends = $ee->fetchAll();
-            $completed = count($ends);
-            $lastEnd = 0; $endScore = 0; $running = 0; $updatedAt = null;
+            
+            $endsCompleted = count($ends);
+            $lastEnd = 0; $lastEndTotal = 0; $runningTotal = 0; $lastSyncTime = null;
             $totalTens = 0; $totalXs = 0;
-            if ($completed) {
+            
+            if ($endsCompleted > 0) {
                 $last = end($ends);
                 $lastEnd = (int)$last['endNumber'];
-                $endScore = (int)$last['endTotal'];
-                $running = (int)$last['runningTotal'];
-                $updatedAt = (string)$last['serverTs'];
+                $lastEndTotal = (int)$last['endTotal'];
+                $runningTotal = (int)$last['runningTotal'];
+                $lastSyncTime = $last['serverTs'];
+                
                 foreach ($ends as $end) {
                     $totalTens += (int)$end['tens'];
                     $totalXs += (int)$end['xs'];
                 }
             }
-            $r['archers'][] = [
+            
+            // Calculate average per arrow
+            $totalArrows = $endsCompleted * 3;
+            $avgPerArrow = ($totalArrows > 0) ? round($runningTotal / $totalArrows, 2) : 0.00;
+            
+            $divisionArchers[] = [
                 'roundArcherId' => $a['roundArcherId'],
                 'archerName' => $a['archerName'],
+                'school' => $a['school'],
                 'gender' => $a['gender'],
                 'level' => $a['level'],
                 'target' => $a['target'],
-                'endsCompleted' => $completed,
+                'bale' => (int)$a['bale'],
+                'endsCompleted' => $endsCompleted,
                 'lastEnd' => $lastEnd,
-                'endScore' => $endScore,
-                'runningTotal' => $running,
+                'lastEndTotal' => $lastEndTotal,
+                'runningTotal' => $runningTotal,
+                'avgPerArrow' => $avgPerArrow,
                 'tens' => $totalTens,
                 'xs' => $totalXs,
-                'updatedAt' => $updatedAt,
+                'completed' => (bool)$a['completed'],
+                'lastSyncTime' => $lastSyncTime,
             ];
         }
+        
+        $divisions[$divCode] = [
+            'roundId' => $r['id'],
+            'roundType' => $r['roundType'],
+            'division' => $divCode,
+            'status' => $r['status'],
+            'archerCount' => count($as),
+            'archers' => $divisionArchers
+        ];
     }
-    json_response(['eventId' => $eventId, 'rounds' => $rs]);
+    
+    json_response([
+        'event' => [
+            'id' => $eventData['id'],
+            'name' => $eventData['name'],
+            'date' => $eventData['date'],
+            'status' => $eventData['status']
+        ],
+        'divisions' => $divisions
+    ]);
     exit;
 }
 
@@ -449,6 +607,164 @@ if (preg_match('#^/v1/upload_csv$#', $route) && $method === 'POST') {
     }
     json_response(['ok' => true, 'path' => 'app-imports/listimport-01.csv']);
     return;
+}
+
+// ==============================================================================
+// ARCHER MASTER LIST ENDPOINTS
+// ==============================================================================
+
+// POST /v1/archers/bulk_upsert - Sync archer master list from client
+if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
+    require_api_key();
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    if (!is_array($input) || empty($input)) {
+        json_response(['error' => 'Array of archers required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        $inserted = 0;
+        $updated = 0;
+        
+        foreach ($input as $archer) {
+            $extId = $archer['extId'] ?? '';
+            $firstName = trim($archer['firstName'] ?? '');
+            $lastName = trim($archer['lastName'] ?? '');
+            $school = strtoupper(substr(trim($archer['school'] ?? ''), 0, 3));
+            $level = strtoupper(trim($archer['level'] ?? 'VAR'));
+            $gender = strtoupper(substr(trim($archer['gender'] ?? 'M'), 0, 1));
+            
+            // Validate required fields
+            if (empty($firstName) || empty($lastName)) continue;
+            
+            // Normalize values
+            if (!in_array($level, ['VAR', 'JV'])) $level = 'VAR';
+            if (!in_array($gender, ['M', 'F'])) $gender = 'M';
+            if (empty($school)) $school = 'UNK';
+            
+            // Upsert by extId
+            $existing = $pdo->prepare('SELECT id FROM archers WHERE ext_id = ? LIMIT 1');
+            $existing->execute([$extId]);
+            $row = $existing->fetch();
+            
+            if ($row) {
+                // Update existing
+                $stmt = $pdo->prepare('UPDATE archers SET first_name=?, last_name=?, school=?, level=?, gender=? WHERE id=?');
+                $stmt->execute([$firstName, $lastName, $school, $level, $gender, $row['id']]);
+                $updated++;
+            } else {
+                // Insert new
+                $id = $genUuid();
+                $stmt = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+                $stmt->execute([$id, $extId, $firstName, $lastName, $school, $level, $gender]);
+                $inserted++;
+            }
+        }
+        
+        json_response(['ok' => true, 'inserted' => $inserted, 'updated' => $updated], 200);
+    } catch (Exception $e) {
+        error_log("Bulk upsert failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// GET /v1/archers - Load all archers from master list
+if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
+    require_api_key();
+    
+    // Optional query params for filtering
+    $division = $_GET['division'] ?? null; // BVAR, BJV, GVAR, GJV
+    $gender = $_GET['gender'] ?? null;
+    $level = $_GET['level'] ?? null;
+    
+    try {
+        $pdo = db();
+        $sql = 'SELECT id, ext_id as extId, first_name as firstName, last_name as lastName, school, level, gender, created_at as createdAt FROM archers WHERE 1=1';
+        $params = [];
+        
+        if ($division) {
+            // Parse division code (e.g., BVAR = M + VAR)
+            if ($division === 'BVAR') { $gender = 'M'; $level = 'VAR'; }
+            elseif ($division === 'BJV') { $gender = 'M'; $level = 'JV'; }
+            elseif ($division === 'GVAR') { $gender = 'F'; $level = 'VAR'; }
+            elseif ($division === 'GJV') { $gender = 'F'; $level = 'JV'; }
+        }
+        
+        if ($gender && in_array($gender, ['M', 'F'])) {
+            $sql .= ' AND gender = ?';
+            $params[] = $gender;
+        }
+        
+        if ($level && in_array($level, ['VAR', 'JV'])) {
+            $sql .= ' AND level = ?';
+            $params[] = $level;
+        }
+        
+        $sql .= ' ORDER BY last_name, first_name';
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $archers = $stmt->fetchAll();
+        
+        json_response(['archers' => $archers], 200);
+    } catch (Exception $e) {
+        error_log("Load archers failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/archers - Create single archer
+if (preg_match('#^/v1/archers$#', $route) && $method === 'POST') {
+    require_api_key();
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $extId = $input['extId'] ?? '';
+    $firstName = trim($input['firstName'] ?? '');
+    $lastName = trim($input['lastName'] ?? '');
+    $school = strtoupper(substr(trim($input['school'] ?? ''), 0, 3));
+    $level = strtoupper(trim($input['level'] ?? 'VAR'));
+    $gender = strtoupper(substr(trim($input['gender'] ?? 'M'), 0, 1));
+    
+    if (empty($firstName) || empty($lastName)) {
+        json_response(['error' => 'firstName and lastName required'], 400);
+        exit;
+    }
+    
+    // Normalize
+    if (!in_array($level, ['VAR', 'JV'])) $level = 'VAR';
+    if (!in_array($gender, ['M', 'F'])) $gender = 'M';
+    if (empty($school)) $school = 'UNK';
+    
+    try {
+        $pdo = db();
+        
+        // Upsert by extId if provided
+        if ($extId) {
+            $existing = $pdo->prepare('SELECT id FROM archers WHERE ext_id = ? LIMIT 1');
+            $existing->execute([$extId]);
+            $row = $existing->fetch();
+            
+            if ($row) {
+                json_response(['archerId' => $row['id'], 'existed' => true], 200);
+                exit;
+            }
+        }
+        
+        // Insert new
+        $id = $genUuid();
+        $stmt = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+        $stmt->execute([$id, $extId, $firstName, $lastName, $school, $level, $gender]);
+        
+        json_response(['archerId' => $id], 201);
+    } catch (Exception $e) {
+        error_log("Archer creation failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
 }
 
 json_response(['error' => 'Not Found', 'route' => $route], 404);

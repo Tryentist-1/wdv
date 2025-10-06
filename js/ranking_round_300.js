@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             level: archer.level || '',
                             gender: archer.gender || '',
                             targetAssignment: nextTarget,
-                            targetSize: archer.level === 'V' ? 122 : 80, // Example logic: V gets 122cm, JV gets 80cm
+                            targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
                             scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
                         });
                     }
