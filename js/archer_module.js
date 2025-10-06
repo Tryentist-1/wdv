@@ -103,6 +103,17 @@ const ArcherModule = {
     
     try {
       const result = await window.LiveUpdates.request('/archers', 'GET');
+      console.log('API Response:', result); // Debug logging
+      
+      if (!result) {
+        throw new Error('API returned null/undefined response');
+      }
+      
+      if (!result.archers) {
+        console.error('Unexpected API response format:', result);
+        throw new Error('API response missing "archers" property');
+      }
+      
       return result.archers || [];
     } catch (error) {
       console.error('Load from MySQL failed:', error);

@@ -36,36 +36,58 @@
     }
 
     async function request(path, method, body, _retried) {
-        if (!state.config.enabled) return null;
+        // Auto-enable if we have an API key (for archer management and coach console features)
+        const key = state.config.apiKey || localStorage.getItem('coach_api_key') || '';
+        
+        // Only check enabled flag if this is a live scoring request (has roundId in state)
+        // For admin/management features (archers, events), always allow if we have a key
+        if (!state.config.enabled && !key && state.roundId) {
+            return null; // Live Updates disabled and no key for live scoring
+        }
+        
         const headers = { 'Content-Type': 'application/json' };
-        let key = state.config.apiKey || localStorage.getItem('coach_api_key') || '';
+        
         if (!key) {
             try {
-                key = prompt('Enter coach passcode for Live Updates:', '') || '';
-                if (key) {
-                    saveConfig({ apiKey: key });
-                    localStorage.setItem('coach_api_key', key);
+                const newKey = prompt('Enter coach passcode for Live Updates:', '') || '';
+                if (newKey) {
+                    saveConfig({ apiKey: newKey, enabled: true });
+                    localStorage.setItem('coach_api_key', newKey);
+                    // Retry with new key
+                    return request(path, method, body, true);
+                } else {
+                    throw new Error('API key required');
                 }
-            } catch (_) {}
+            } catch (_) {
+                throw new Error('API key required');
+            }
         }
+        
         if (key) { headers['X-API-Key'] = key; headers['X-Passcode'] = key; }
+        
         const res = await fetch(`${state.config.apiBase}${path}`, {
             method,
             headers,
             body: body ? JSON.stringify(body) : undefined,
         });
+        
         if (res.status === 401 && !_retried) {
             // Prompt once and retry
             try {
                 const retryKey = prompt('Passcode required for Live Updates:', '') || '';
                 if (retryKey) {
-                    saveConfig({ apiKey: retryKey });
+                    saveConfig({ apiKey: retryKey, enabled: true });
                     localStorage.setItem('coach_api_key', retryKey);
                     return request(path, method, body, true);
                 }
             } catch (_) {}
         }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        if (!res.ok) {
+            const errorText = await res.text().catch(() => 'Unknown error');
+            throw new Error(`HTTP ${res.status}: ${errorText}`);
+        }
+        
         if (res.status === 204) return null;
         return res.json();
     }
