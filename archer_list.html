@@ -28,9 +28,11 @@
             <!-- Archer list will be rendered here -->
         </div>
 
-        <footer class="global-footer">
+        <footer class="global-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: space-between;">
             <a href="index.html" class="btn btn-secondary">Home</a>
-            <button id="refresh-master-list-btn" class="btn btn-primary"><i class="fas fa-sync-alt"></i> Refresh from Master</button>
+            <button id="load-from-mysql-btn" class="btn btn-primary"><i class="fas fa-cloud-download-alt"></i> Load from MySQL</button>
+            <button id="sync-to-mysql-btn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Sync to MySQL</button>
+            <button id="import-csv-btn" class="btn btn-secondary"><i class="fas fa-file-csv"></i> Import CSV</button>
             <button id="new-list-btn" class="btn btn-danger"><i class="fas fa-trash-alt"></i> New List</button>
         </footer>
 
@@ -46,6 +48,7 @@
         </div>
     </div>
 
+    <script src="js/live_updates.js"></script>
     <script src="js/archer_module.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -53,7 +56,9 @@
             const addArcherBtn = document.getElementById('add-archer-btn');
             const searchInput = document.getElementById('search-input');
             const newListBtn = document.getElementById('new-list-btn');
-            const refreshBtn = document.getElementById('refresh-master-list-btn');
+            const loadFromMySQLBtn = document.getElementById('load-from-mysql-btn');
+            const syncToMySQLBtn = document.getElementById('sync-to-mysql-btn');
+            const importCSVBtn = document.getElementById('import-csv-btn');
             const sortByNameBtn = document.getElementById('sort-by-name-btn');
             const sortByBaleBtn = document.getElementById('sort-by-bale-btn');
 
@@ -283,11 +288,56 @@
                 }
             };
             
-            refreshBtn.onclick = async () => {
-                if (confirm('This will overwrite your current list with the master file from the server. Are you sure?')) {
+            // Load from MySQL (replaces old "Refresh from Master")
+            loadFromMySQLBtn.onclick = async () => {
+                if (confirm('This will overwrite your current localStorage list with archers from the MySQL database. Continue?')) {
+                    try {
+                        const archers = await ArcherModule.loadFromMySQL();
+                        
+                        // Convert MySQL format to localStorage format
+                        const convertedList = archers.map(a => ({
+                            first: a.firstName,
+                            last: a.lastName,
+                            school: a.school,
+                            level: a.level,
+                            gender: a.gender,
+                            grade: '',  // Not in MySQL
+                            bale: '',   // Not in MySQL master list
+                            target: '', // Not in MySQL master list
+                            fave: false,
+                            varPr: '',
+                            jvPr: '',
+                            email: '',
+                            usarchery: ''
+                        }));
+                        
+                        ArcherModule.saveList(convertedList);
+                        renderList();
+                        alert(`Loaded ${archers.length} archers from MySQL database.`);
+                    } catch (error) {
+                        alert('Failed to load from MySQL: ' + error.message + '\n\nMake sure you have entered your API key in Coach Console first.');
+                    }
+                }
+            };
+            
+            // Sync to MySQL (push localStorage to database)
+            syncToMySQLBtn.onclick = async () => {
+                if (confirm('This will sync your current localStorage list TO the MySQL database. Continue?')) {
+                    try {
+                        const result = await ArcherModule.syncToMySQL();
+                        alert(`Sync complete!\n\nInserted: ${result.inserted}\nUpdated: ${result.updated}`);
+                    } catch (error) {
+                        alert('Failed to sync to MySQL: ' + error.message + '\n\nMake sure you have entered your API key in Coach Console first.');
+                    }
+                }
+            };
+            
+            // Import CSV (keeps old CSV functionality)
+            importCSVBtn.onclick = async () => {
+                if (confirm('This will overwrite your current list with the CSV file from the server. Are you sure?')) {
                     await ArcherModule.loadDefaultCSVIfNeeded(true);
                     renderList();
-                    alert('List has been refreshed from master file.');
+                    alert('List has been refreshed from CSV file.');
                 }
             };
             
