@@ -197,120 +197,212 @@ document.addEventListener('DOMContentLoaded', () => {
         const listDiv = document.createElement('div');
         listDiv.className = 'archer-select-list';
         setupControls.container.appendChild(listDiv);
-        const hasFavorites = masterList.some(a => a.fave);
-        if (hasFavorites) {
-            const favHeader = document.createElement('div');
-            favHeader.className = 'list-header';
-            favHeader.textContent = 'Favorites';
-            listDiv.appendChild(favHeader);
-        }
-        const filteredList = masterList.filter(archer => {
+        
+        // Group archers by bale if they have bale assignments
+        const baleGroups = {};
+        const unassigned = [];
+        
+        masterList.forEach(archer => {
+            if (archer.bale) {
+                if (!baleGroups[archer.bale]) baleGroups[archer.bale] = [];
+                baleGroups[archer.bale].push(archer);
+            } else {
+                unassigned.push(archer);
+            }
+        });
+        
+        // Filter logic
+        const filteredBaleGroups = {};
+        Object.keys(baleGroups).forEach(bale => {
+            const filtered = baleGroups[bale].filter(archer => {
+                const name = `${archer.first} ${archer.last}`.toLowerCase();
+                return name.includes(filter.toLowerCase());
+            });
+            if (filtered.length > 0) {
+                filteredBaleGroups[bale] = filtered;
+            }
+        });
+        
+        const filteredUnassigned = unassigned.filter(archer => {
             const name = `${archer.first} ${archer.last}`.toLowerCase();
             return name.includes(filter.toLowerCase());
         });
-        let allArchersHeaderAdded = !hasFavorites;
-        filteredList.forEach((archer) => {
-            if (!archer.fave && !allArchersHeaderAdded) {
-                const separator = document.createElement('div');
-                separator.className = 'list-header';
-                separator.textContent = '☆ All Archers';
-                listDiv.appendChild(separator);
-                allArchersHeaderAdded = true;
-            }
-            const row = document.createElement('div');
-            row.className = 'archer-select-row';
-
-            const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
-            const existingArcher = state.archers.find(a => a.id === uniqueId);
-
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = !!existingArcher;
+        
+        // Render bale groups first
+        const sortedBales = Object.keys(filteredBaleGroups).sort((a, b) => parseInt(a) - parseInt(b));
+        
+        sortedBales.forEach(bale => {
+            const baleHeader = document.createElement('div');
+            baleHeader.className = 'list-header';
+            baleHeader.textContent = `Bale ${bale}`;
+            baleHeader.style.cssText = 'background: #e3f2fd; color: #1976d2; font-weight: bold; cursor: pointer;';
+            baleHeader.title = 'Click to load this entire bale';
             
-            const targetSelect = document.createElement('select');
-            targetSelect.className = 'target-assignment-select';
-            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter => {
-                const option = document.createElement('option');
-                option.value = letter;
-                option.textContent = letter;
-                targetSelect.appendChild(option);
+            baleHeader.onclick = () => {
+                loadEntireBale(bale, filteredBaleGroups[bale]);
+            };
+            
+            listDiv.appendChild(baleHeader);
+            
+            filteredBaleGroups[bale].forEach((archer) => {
+                const row = document.createElement('div');
+                row.className = 'archer-select-row';
+                row.style.cssText = 'cursor: pointer; padding-left: 20px;';
+                
+                row.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-weight: bold;">${archer.first} ${archer.last}</span>
+                            <span style="font-size: 0.85em; color: #666; margin-left: 8px;">(${archer.level || 'VAR'})</span>
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <span style="background: #4caf50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;">Bale ${archer.bale}</span>
+                            <span style="background: #2196f3; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;">Target ${archer.target || 'A'}</span>
+                        </div>
+                    </div>
+                `;
+                
+                row.onclick = () => {
+                    loadEntireBale(bale, filteredBaleGroups[bale]);
+                };
+                
+                listDiv.appendChild(row);
             });
-            targetSelect.style.display = checkbox.checked ? 'inline-block' : 'none';
-            if (existingArcher) {
-                targetSelect.value = existingArcher.targetAssignment;
-            }
-            
-            checkbox.onchange = () => {
-                if (checkbox.checked) {
-                    // Enforce max 4 archers per bale (A-D)
-                    const selectedCount = state.archers.length;
-                    if (selectedCount >= 4) {
-                        checkbox.checked = false;
-                        alert('Bale is full (4 archers).');
-                        return;
-                    }
-                    if (!state.archers.some(a => a.id === uniqueId)) {
-                        const usedTargets = state.archers.map(a => a.targetAssignment);
-                        const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
-                        const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
-                        state.archers.push({
-                            id: uniqueId,
-                            firstName: archer.first,
-                            lastName: archer.last,
-                            school: archer.school || '',
-                            level: archer.level || '',
-                            gender: archer.gender || '',
-                            targetAssignment: nextTarget,
-                            targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
-                            scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
-                        });
-                    }
-                } else {
-                    state.archers = state.archers.filter(a => a.id !== uniqueId);
-                }
-                saveData();
-                // Update selected count chip
-                const chip = document.getElementById('selected-count-chip');
-                if (chip) chip.textContent = `${state.archers.length}/4`;
-                renderSetupForm();
-            };
-
-            targetSelect.onchange = () => {
-                const archerInState = state.archers.find(a => a.id === uniqueId);
-                if (archerInState) {
-                    archerInState.targetAssignment = targetSelect.value;
-                    saveData();
-                }
-            };
-            
-            const star = document.createElement('span');
-            star.textContent = archer.fave ? '★' : '☆';
-            star.className = 'favorite-star';
-            star.style.color = archer.fave ? '#ffc107' : '#ccc';
-            star.onclick = (e) => {
-                e.stopPropagation();
-                ArcherModule.toggleFavorite(archer.first, archer.last);
-                renderSetupForm();
-            };
-            const nameLabel = document.createElement('span');
-            nameLabel.textContent = `${archer.first} ${archer.last}`;
-            nameLabel.className = 'archer-name-label';
-            const detailsLabel = document.createElement('span');
-            detailsLabel.className = 'archer-details-label';
-            detailsLabel.textContent = `(${archer.level || 'VAR'})`;
-            row.appendChild(checkbox);
-            row.appendChild(star);
-            row.appendChild(nameLabel);
-            row.appendChild(detailsLabel);
-            row.appendChild(targetSelect);
-            listDiv.appendChild(row);
-            row.onclick = (e) => {
-                if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
-                    checkbox.checked = !checkbox.checked;
-                    checkbox.dispatchEvent(new Event('change'));
-                }
-            };
         });
+        
+        // Render unassigned archers (old manual selection mode)
+        if (filteredUnassigned.length > 0) {
+            const unassignedHeader = document.createElement('div');
+            unassignedHeader.className = 'list-header';
+            unassignedHeader.textContent = '☆ Unassigned Archers (Manual Selection)';
+            listDiv.appendChild(unassignedHeader);
+            
+            filteredUnassigned.forEach((archer) => {
+                const row = document.createElement('div');
+                row.className = 'archer-select-row';
+
+                const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
+                const existingArcher = state.archers.find(a => a.id === uniqueId);
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = !!existingArcher;
+                
+                const targetSelect = document.createElement('select');
+                targetSelect.className = 'target-assignment-select';
+                ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter => {
+                    const option = document.createElement('option');
+                    option.value = letter;
+                    option.textContent = letter;
+                    targetSelect.appendChild(option);
+                });
+                targetSelect.style.display = checkbox.checked ? 'inline-block' : 'none';
+                if (existingArcher) {
+                    targetSelect.value = existingArcher.targetAssignment;
+                }
+                
+                checkbox.onchange = () => {
+                    if (checkbox.checked) {
+                        // Enforce max 4 archers per bale (A-D)
+                        const selectedCount = state.archers.length;
+                        if (selectedCount >= 4) {
+                            checkbox.checked = false;
+                            alert('Bale is full (4 archers).');
+                            return;
+                        }
+                        if (!state.archers.some(a => a.id === uniqueId)) {
+                            const usedTargets = state.archers.map(a => a.targetAssignment);
+                            const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
+                            const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
+                            state.archers.push({
+                                id: uniqueId,
+                                firstName: archer.first,
+                                lastName: archer.last,
+                                school: archer.school || '',
+                                level: archer.level || '',
+                                gender: archer.gender || '',
+                                targetAssignment: nextTarget,
+                                targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
+                                scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
+                            });
+                        }
+                    } else {
+                        state.archers = state.archers.filter(a => a.id !== uniqueId);
+                    }
+                    saveData();
+                    // Update selected count chip
+                    const chip = document.getElementById('selected-count-chip');
+                    if (chip) chip.textContent = `${state.archers.length}/4`;
+                    renderSetupForm();
+                };
+
+                targetSelect.onchange = () => {
+                    const archerInState = state.archers.find(a => a.id === uniqueId);
+                    if (archerInState) {
+                        archerInState.targetAssignment = targetSelect.value;
+                        saveData();
+                    }
+                };
+                
+                const star = document.createElement('span');
+                star.textContent = archer.fave ? '★' : '☆';
+                star.className = 'favorite-star';
+                star.style.color = archer.fave ? '#ffc107' : '#ccc';
+                star.onclick = (e) => {
+                    e.stopPropagation();
+                    ArcherModule.toggleFavorite(archer.first, archer.last);
+                    renderSetupForm();
+                };
+                const nameLabel = document.createElement('span');
+                nameLabel.textContent = `${archer.first} ${archer.last}`;
+                nameLabel.className = 'archer-name-label';
+                const detailsLabel = document.createElement('span');
+                detailsLabel.className = 'archer-details-label';
+                detailsLabel.textContent = `(${archer.level || 'VAR'})`;
+                row.appendChild(checkbox);
+                row.appendChild(star);
+                row.appendChild(nameLabel);
+                row.appendChild(detailsLabel);
+                row.appendChild(targetSelect);
+                listDiv.appendChild(row);
+                row.onclick = (e) => {
+                    if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                };
+            });
+        }
+    }
+    
+    // Function to load entire bale when clicking on any archer
+    function loadEntireBale(baleNumber, archersInBale) {
+        // Clear existing archers
+        state.archers = [];
+        state.baleNumber = parseInt(baleNumber);
+        
+        // Add all archers from this bale
+        const targets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+        archersInBale.forEach((archer, index) => {
+            const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
+            state.archers.push({
+                id: uniqueId,
+                firstName: archer.first,
+                lastName: archer.last,
+                school: archer.school || '',
+                level: archer.level || '',
+                gender: archer.gender || '',
+                targetAssignment: archer.target || targets[index],
+                targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
+                scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
+            });
+        });
+        
+        saveData();
+        renderSetupForm();
+        
+        // Scroll to the top to show the selected archers
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function renderScoringView() {
@@ -723,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Check if this bale has pre-assigned archers from an event
-    async function loadPreAssignedBale(eventId) {
+    async function loadPreAssignedBale(eventId, baleNumber = null) {
         try {
             const snapshot = await LiveUpdates.request(`/events/${eventId}/snapshot`);
             
@@ -732,13 +824,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
+            // Use provided bale number or current state bale
+            const targetBale = baleNumber !== null ? baleNumber : state.baleNumber;
+            
             // Search all divisions for archers assigned to our bale number
             let foundArchers = [];
             let divisionName = '';
             
             for (const [divCode, divData] of Object.entries(snapshot.divisions)) {
                 if (divData.archers && divData.archers.length > 0) {
-                    const baleArchers = divData.archers.filter(a => a.bale === state.baleNumber);
+                    const baleArchers = divData.archers.filter(a => a.bale === targetBale);
                     if (baleArchers.length > 0) {
                         foundArchers = baleArchers;
                         divisionName = getDivisionDisplayName(divCode);
@@ -921,17 +1016,64 @@ document.addEventListener('DOMContentLoaded', () => {
         const baleNumberInput = document.getElementById('bale-number-input');
         if (baleNumberInput) {
             baleNumberInput.value = state.baleNumber;
-            baleNumberInput.onchange = () => {
-                state.baleNumber = parseInt(baleNumberInput.value, 10) || 1;
+            baleNumberInput.onchange = async () => {
+                const newBale = parseInt(baleNumberInput.value, 10) || 1;
+                state.baleNumber = newBale;
                 saveData();
+                
+                // If event is selected, try to load archers for this bale
+                if (state.selectedEventId) {
+                    try {
+                        await loadPreAssignedBale(state.selectedEventId, newBale);
+                    } catch (err) {
+                        console.error('Could not load bale:', err);
+                    }
+                }
             };
         }
 
         const eventSelector = document.getElementById('event-selector');
         if (eventSelector) {
-            eventSelector.onchange = () => {
+            eventSelector.onchange = async () => {
                 state.selectedEventId = eventSelector.value || null;
                 saveData();
+                
+                // Load archers from this event
+                if (state.selectedEventId) {
+                    try {
+                        // Load all archers from this event to show in the list
+                        const res = await fetch(`${API_BASE}/events/${state.selectedEventId}/snapshot`);
+                        if (!res.ok) throw new Error('Failed to fetch event');
+                        
+                        const data = await res.json();
+                        const snap = data.snapshot;
+                        
+                        // Extract archers from all divisions
+                        const allArchers = [];
+                        Object.keys(snap.divisions || {}).forEach(divKey => {
+                            const div = snap.divisions[divKey];
+                            (div.archers || []).forEach(archer => {
+                                allArchers.push({
+                                    first: archer.first_name,
+                                    last: archer.last_name,
+                                    school: archer.school,
+                                    level: archer.level,
+                                    gender: archer.gender,
+                                    bale: archer.bale,
+                                    target: archer.target,
+                                    fave: false
+                                });
+                            });
+                        });
+                        
+                        // Save to localStorage as master list
+                        localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
+                        renderSetupForm();
+                    } catch (err) {
+                        console.error('Could not load event archers:', err);
+                        alert('Failed to load archers from this event');
+                    }
+                }
             };
         }
 

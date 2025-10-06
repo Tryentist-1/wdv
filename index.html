@@ -779,7 +779,11 @@
         const today = new Date().toISOString().slice(0, 10);
         const res = await fetch('https://tryentist.com/wdv/api/v1/events/recent');
         
-        if (!res.ok) return;
+        // Handle 401 gracefully - events endpoint requires auth
+        if (!res.ok) {
+          console.log('Events endpoint requires authentication');
+          return;
+        }
         
         const data = await res.json();
         const events = data.events || [];
@@ -799,7 +803,8 @@
           banner.style.display = 'block';
         }
       } catch (e) {
-        console.log('Could not load active event:', e);
+        // Silently fail - this is an optional enhancement
+        console.log('Could not load active event:', e.message);
       }
     }
 
