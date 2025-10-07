@@ -102,9 +102,14 @@ if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
     -H "Content-Type: application/json" \
     --data '{"purge_everything":true}')
   
-  # Check if purge was successful
-  if echo "$PURGE_RESPONSE" | grep -q '"success":true'; then
-    echo "✓ Cloudflare cache purged successfully!"
+  # Check if purge was successful (handle both "success":true and "success": true)
+  if echo "$PURGE_RESPONSE" | grep -q '"success"'; then
+    if echo "$PURGE_RESPONSE" | grep -q 'true'; then
+      echo "✓ Cloudflare cache purged successfully!"
+    else
+      echo "✗ Cloudflare cache purge failed:"
+      echo "$PURGE_RESPONSE"
+    fi
   else
     echo "✗ Cloudflare cache purge failed:"
     echo "$PURGE_RESPONSE"
