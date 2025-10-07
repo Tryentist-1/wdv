@@ -40,10 +40,12 @@ CREATE TABLE IF NOT EXISTS events (
   date DATE NOT NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'Planned' COMMENT 'Planned, Active, Completed',
   event_type VARCHAR(20) DEFAULT 'auto_assign' COMMENT 'auto_assign or self_select',
+  entry_code VARCHAR(20) NULL COMMENT 'Optional entry code for archer access (e.g., for QR codes)',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_events_date (date),
-  KEY idx_events_status (status)
+  KEY idx_events_status (status),
+  KEY idx_events_entry_code (entry_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS round_archers (

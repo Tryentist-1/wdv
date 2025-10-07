@@ -6,6 +6,11 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    // Check for URL parameters (event and code for QR code access)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlEventId = urlParams.get('event');
+    const urlEntryCode = urlParams.get('code');
+
     // --- STATE MANAGEMENT ---
     const state = {
         app: 'RankingRound300',
@@ -755,6 +760,73 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Verify entry code and auto-load event
+    async function verifyAndLoadEventByCode(eventId, entryCode) {
+        try {
+            const res = await fetch(`${API_BASE}/events/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ eventId, entryCode })
+            });
+            
+            const data = await res.json();
+            
+            if (!data.verified) {
+                alert(`Entry code invalid: ${data.error || 'Unknown error'}`);
+                return false;
+            }
+            
+            // Success - load the event
+            console.log('Entry code verified! Loading event:', data.event.name);
+            state.selectedEventId = eventId;
+            state.activeEventId = eventId;
+            
+            // Load event data and show archer list
+            try {
+                const eventRes = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
+                if (!eventRes.ok) throw new Error(`HTTP ${eventRes.status}`);
+                
+                const eventData = await eventRes.json();
+                const snapshot = eventData.snapshot;
+                
+                if (snapshot && snapshot.divisions) {
+                    // Extract all archers
+                    const allArchers = [];
+                    Object.keys(snapshot.divisions).forEach(divKey => {
+                        const div = snapshot.divisions[divKey];
+                        (div.archers || []).forEach(archer => {
+                            allArchers.push({
+                                first: archer.first_name,
+                                last: archer.last_name,
+                                school: archer.school,
+                                level: archer.level,
+                                gender: archer.gender,
+                                bale: archer.bale,
+                                target: archer.target,
+                                fave: false
+                            });
+                        });
+                    });
+                    
+                    // Save to localStorage
+                    localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
+                    console.log(`Loaded ${allArchers.length} archers from event`);
+                }
+                
+                renderSetupForm();
+                return true;
+            } catch (err) {
+                console.error('Failed to load event data:', err);
+                alert('Entry code verified, but failed to load event data');
+                return false;
+            }
+        } catch (err) {
+            console.error('Failed to verify entry code:', err);
+            alert('Failed to verify entry code. Please check your connection.');
+            return false;
+        }
+    }
+    
     // Load event information for display and selector (PUBLIC - no authentication required)
     async function loadEventInfo() {
         try {
@@ -1012,12 +1084,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function init() {
+    async function init() {
         console.log("Initializing Ranking Round 300 App...");
         loadData();
         renderKeypad();
         renderView();
-        loadEventInfo();
+        
+        // Check for URL parameters (QR code access)
+        if (urlEventId && urlEntryCode) {
+            console.log('QR code detected - verifying entry code...');
+            const verified = await verifyAndLoadEventByCode(urlEventId, urlEntryCode);
+            if (verified) {
+                // Event loaded successfully - skip normal event loading
+                console.log('Event loaded from QR code');
+            } else {
+                // Verification failed - load normal event list
+                await loadEventInfo();
+            }
+        } else {
+            // Normal load
+            await loadEventInfo();
+        }
 
         const baleNumberInput = document.getElementById('bale-number-input');
         if (baleNumberInput) {

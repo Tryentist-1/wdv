@@ -137,6 +137,7 @@
   async function createEventAndRounds() {
     const date = new Date().toISOString().slice(0, 10);
     const name = prompt('Event name:', `Event ${date}`) || `Event ${date}`;
+    const entryCode = prompt('Entry code (for archers to access via QR code):', '');
     const eventType = confirm('Auto-assign archers to bales?\n\nOK = Auto-assign (recommended)\nCancel = Self-select at bales') ? 'auto_assign' : 'self_select';
     const status = 'Planned'; // Events start as Planned by default
     
@@ -144,6 +145,7 @@
       const res = await req('/events', 'POST', { 
         name, 
         date, 
+        entryCode,
         status,
         eventType,
         autoAssignBales: eventType === 'auto_assign',

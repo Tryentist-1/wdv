@@ -238,6 +238,7 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
     $eventType = $input['eventType'] ?? 'auto_assign'; // auto_assign or self_select
     $autoAssign = !!($input['autoAssignBales'] ?? ($eventType === 'auto_assign'));
     $roundType = $input['roundType'] ?? 'R300';
+    $entryCode = trim($input['entryCode'] ?? '');
     
     try {
         $pdo = db();
@@ -245,8 +246,8 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
         $eventId = $genUuid();
         
         // Create event
-        $pdo->prepare('INSERT INTO events (id,name,date,status,event_type,created_at) VALUES (?,?,?,?,?,NOW())')
-            ->execute([$eventId, $name, $date, $status, $eventType]);
+        $pdo->prepare('INSERT INTO events (id,name,date,status,event_type,entry_code,created_at) VALUES (?,?,?,?,?,?,NOW())')
+            ->execute([$eventId, $name, $date, $status, $eventType, $entryCode]);
         
         // Define divisions in order: Boys Varsity, Girls Varsity, Boys JV, Girls JV
         $divisions = [
@@ -329,8 +330,51 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
 if (preg_match('#^/v1/events/recent$#', $route) && $method === 'GET') {
     $pdo = db();
     ensure_events_schema($pdo);
+    // Note: entry_code is NOT returned here for security - must use verify endpoint
     $rows = $pdo->query('SELECT id,name,date,status,created_at as createdAt FROM events ORDER BY created_at DESC LIMIT 50')->fetchAll();
     json_response(['events' => $rows]);
+    exit;
+}
+
+// Verify event entry code (PUBLIC - allows archers to access event via code)
+if (preg_match('#^/v1/events/verify$#', $route) && $method === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $eventId = $input['eventId'] ?? '';
+    $entryCode = trim($input['entryCode'] ?? '');
+    
+    if (empty($eventId) || empty($entryCode)) {
+        json_response(['error' => 'Missing eventId or entryCode'], 400);
+        exit;
+    }
+    
+    $pdo = db();
+    ensure_events_schema($pdo);
+    
+    $stmt = $pdo->prepare('SELECT id, name, date, status, entry_code FROM events WHERE id = ? LIMIT 1');
+    $stmt->execute([$eventId]);
+    $event = $stmt->fetch();
+    
+    if (!$event) {
+        json_response(['verified' => false, 'error' => 'Event not found'], 404);
+        exit;
+    }
+    
+    // Check if entry code matches (case-insensitive)
+    if (empty($event['entry_code']) || strtolower($event['entry_code']) !== strtolower($entryCode)) {
+        json_response(['verified' => false, 'error' => 'Invalid entry code'], 403);
+        exit;
+    }
+    
+    // Success - return event info
+    json_response([
+        'verified' => true,
+        'event' => [
+            'id' => $event['id'],
+            'name' => $event['name'],
+            'date' => $event['date'],
+            'status' => $event['status']
+        ]
+    ]);
     exit;
 }
 
