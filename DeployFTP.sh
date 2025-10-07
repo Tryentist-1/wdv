@@ -93,5 +93,26 @@ lftp -c "set ssl:verify-certificate no; open -u $USER,$FTP_PASSWORD $HOST; $LFTP
 # rm deploy_files.txt
 echo "Deployment complete!"
 
+# --- Step 5: Purge Cloudflare Cache (Optional) ---
+if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ZONE_ID" ]; then
+  echo -e "\n--- Step 5: Purging Cloudflare cache ---"
+  
+  PURGE_RESPONSE=$(curl -s -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/purge_cache" \
+    -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+    -H "Content-Type: application/json" \
+    --data '{"purge_everything":true}')
+  
+  # Check if purge was successful
+  if echo "$PURGE_RESPONSE" | grep -q '"success":true'; then
+    echo "✓ Cloudflare cache purged successfully!"
+  else
+    echo "✗ Cloudflare cache purge failed:"
+    echo "$PURGE_RESPONSE"
+  fi
+else
+  echo -e "\n--- Step 5: Skipping Cloudflare cache purge (credentials not set) ---"
+  echo "To enable cache purging, add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID to .env"
+fi
+
 # --- Done ---
 echo -e "\nAll done! Local backup: $LOCAL_BACKUP.tar.gz | Remote backup: $REMOTE_BACKUP_LOCAL.tar.gz"
