@@ -5,30 +5,325 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Coach Console</title>
   <link rel="stylesheet" href="css/main.css">
+  <style>
+    /* Coach Authentication Modal */
+    .coach-auth-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .coach-auth-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    
+    .coach-auth-content h2 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    
+    .coach-auth-content input {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 1rem 0;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    
+    .coach-auth-content input:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    
+    .coach-auth-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    
+    .error-message {
+      color: #e74c3c;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+    
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      overflow-y: auto;
+    }
+    
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+    
+    .modal-content h2 {
+      margin-top: 0;
+      color: #2c3e50;
+    }
+    
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: #34495e;
+    }
+    
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+    
+    /* Archer Filter/Select UI */
+    .archer-filters {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .archer-filters select {
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    .archer-list {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      padding: 0.5rem;
+    }
+    
+    .archer-item {
+      display: flex;
+      align-items: center;
+      padding: 0.5rem;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .archer-item:last-child {
+      border-bottom: none;
+    }
+    
+    .archer-item input[type="checkbox"] {
+      margin-right: 0.75rem;
+      width: 18px;
+      height: 18px;
+    }
+    
+    .archer-item label {
+      flex: 1;
+      cursor: pointer;
+      margin: 0;
+    }
+    
+    .archer-details {
+      font-size: 0.85rem;
+      color: #7f8c8d;
+      margin-left: 0.5rem;
+    }
+    
+    .selection-summary {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: #ecf0f1;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+  </style>
 </head>
 <body>
+  <!-- Coach Authentication Modal -->
+  <div id="coach-auth-modal" class="coach-auth-modal">
+    <div class="coach-auth-content">
+      <h2>🔐 Coach Access</h2>
+      <p>Enter the coach passcode to continue:</p>
+      <input type="password" id="coach-passcode-input" placeholder="Enter passcode" autocomplete="off" />
+      <div id="auth-error" class="error-message">Incorrect passcode. Please try again.</div>
+      <div class="coach-auth-buttons">
+        <button id="auth-cancel-btn" class="btn btn-secondary" style="flex:1;">Cancel</button>
+        <button id="auth-submit-btn" class="btn btn-primary" style="flex:1;">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Event Modal -->
+  <div id="create-event-modal" class="modal">
+    <div class="modal-content">
+      <h2>Create New Event</h2>
+      <div class="form-group">
+        <label for="event-name">Event Name</label>
+        <input type="text" id="event-name" placeholder="Fall Tournament" />
+      </div>
+      <div class="form-group">
+        <label for="event-date">Event Date</label>
+        <input type="date" id="event-date" />
+      </div>
+      <div class="form-group">
+        <label for="event-status">Event Status</label>
+        <select id="event-status">
+          <option value="Planned">Planned</option>
+          <option value="Active">Active</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="event-code">Entry Code (for archer QR access)</label>
+        <input type="text" id="event-code" placeholder="FALL2024" />
+      </div>
+      <div class="modal-buttons">
+        <button id="cancel-event-btn" class="btn btn-secondary" style="flex:1;">Cancel</button>
+        <button id="submit-event-btn" class="btn btn-primary" style="flex:1;">Create Event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Archers Modal -->
+  <div id="add-archers-modal" class="modal">
+    <div class="modal-content">
+      <h2>Add Archers to Event</h2>
+      <div class="archer-filters">
+        <select id="filter-school">
+          <option value="">All Schools</option>
+        </select>
+        <select id="filter-gender">
+          <option value="">All Genders</option>
+          <option value="M">Boys</option>
+          <option value="F">Girls</option>
+        </select>
+        <select id="filter-level">
+          <option value="">All Levels</option>
+          <option value="VAR">Varsity</option>
+          <option value="JV">JV</option>
+        </select>
+      </div>
+      <div id="archer-list" class="archer-list">
+        <!-- Populated dynamically -->
+      </div>
+      <div class="selection-summary">
+        Selected: <span id="selected-count">0</span> archer(s)
+      </div>
+      <div class="modal-buttons">
+        <button id="cancel-add-archers-btn" class="btn btn-secondary" style="flex:1;">Cancel</button>
+        <button id="submit-add-archers-btn" class="btn btn-primary" style="flex:1;">Add to Event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assignment Mode Modal -->
+  <div id="assignment-mode-modal" class="modal">
+    <div class="modal-content">
+      <h2>Bale Assignment Mode</h2>
+      <p>How should archers be assigned to bales?</p>
+      <div style="margin: 1.5rem 0;">
+        <label style="display: flex; align-items: center; padding: 1rem; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 1rem; cursor: pointer;">
+          <input type="radio" name="assignment-mode" value="auto_assign" checked style="margin-right: 1rem; width: 20px; height: 20px;" />
+          <div>
+            <div style="font-weight: 500; margin-bottom: 0.25rem;">Auto-Assign Bales</div>
+            <div style="font-size: 0.85rem; color: #7f8c8d;">Coach assigns archers to bales automatically (2-4 per bale, continuous numbering)</div>
+          </div>
+        </label>
+        <label style="display: flex; align-items: center; padding: 1rem; border: 2px solid #ddd; border-radius: 8px; cursor: pointer;">
+          <input type="radio" name="assignment-mode" value="manual" style="margin-right: 1rem; width: 20px; height: 20px;" />
+          <div>
+            <div style="font-weight: 500; margin-bottom: 0.25rem;">Manual Signup</div>
+            <div style="font-size: 0.85rem; color: #7f8c8d;">Archers select their own bales via the Ranking Round app</div>
+          </div>
+        </label>
+      </div>
+      <div class="modal-buttons">
+        <button id="cancel-assignment-btn" class="btn btn-secondary" style="flex:1;">Cancel</button>
+        <button id="submit-assignment-btn" class="btn btn-primary" style="flex:1;">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Summary Modal -->
+  <div id="import-summary-modal" class="modal">
+    <div class="modal-content">
+      <h2>✓ Import Complete</h2>
+      <div id="import-summary" style="margin: 1.5rem 0; font-size: 1.1rem;">
+        <!-- Populated dynamically -->
+      </div>
+      <div class="modal-buttons">
+        <button id="close-import-btn" class="btn btn-primary" style="width: 100%;">Continue to Add Archers</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
   <div class="main-container">
     <div class="page-header">
       <h1>Coach Console</h1>
     </div>
-    <div class="page-subheader" style="display:flex;gap:0.5rem;align-items:center;">
-      <input id="api-key-input" type="text" placeholder="API Key" class="archer-search-bar" style="flex:1;" autocomplete="off" autocapitalize="none" spellcheck="false" />
-      <button id="toggle-key-btn" class="btn btn-secondary" aria-label="Hide/Show">Hide</button>
-      <button id="save-key-btn" class="btn btn-secondary">Save</button>
-      <button id="new-round-btn" class="btn btn-primary">Create Round</button>
-      <label class="btn btn-secondary" style="margin-left:0.25rem;">
-        Upload CSV
+    
+    <div class="page-subheader" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+      <button id="create-event-btn" class="btn btn-primary">Create Event</button>
+      <label class="btn btn-secondary">
+        Import CSV
         <input id="csv-input" type="file" accept=".csv" style="display:none;" />
       </label>
     </div>
-    <div id="rounds-list" class="table-wrapper"></div>
+    
+    <div id="events-list" class="table-wrapper">
+      <!-- Events table populated dynamically -->
+    </div>
   </div>
 
   <script src="js/coach.js"></script>
-  <footer class="global-footer" style="justify-content: space-between;">
+  <footer class="global-footer">
     <a href="index.html" class="btn btn-secondary">Home</a>
   </footer>
 </body>
 </html>
-
-

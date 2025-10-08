@@ -1016,3 +1016,117 @@ body.practice-target-page html {
 body.practice-target-page .main-container {
     height: 100vh;
 } 
+/* =================================
+   12. Coach Console Styles
+   ================================= */
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-planned {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-active {
+  background: #c8e6c9;
+  color: #388e3c;
+}
+
+.status-completed {
+  background: #f5f5f5;
+  color: #616161;
+}
+
+/* Button Sizes */
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+}
+
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--medium-gray);
+  font-style: italic;
+}
+
+/* Error State */
+.error {
+  padding: 2rem;
+  text-align: center;
+  color: var(--primary-red);
+  background: #ffebee;
+  border-radius: var(--border-radius);
+  margin: 1rem;
+}
+
+/* Table Wrapper */
+.table-wrapper {
+  margin-top: 1rem;
+  overflow-x: auto;
+}
+
+/* Responsive Score Table */
+.score-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.score-table thead {
+  background: var(--primary-blue);
+  color: white;
+}
+
+.score-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.score-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-gray);
+}
+
+.score-table tbody tr:hover {
+  background: var(--light-gray);
+}
+
+.score-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Mobile Responsive Tables */
+@media (max-width: 768px) {
+  .score-table {
+    font-size: 0.9rem;
+  }
+  
+  .score-table th,
+  .score-table td {
+    padding: 0.5rem;
+  }
+  
+  .btn-sm {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
+  }
+}

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Event Results</title>
+  <link rel="stylesheet" href="css/main.css">
+  <style>
+    .results-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .results-header h1 {
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .results-meta {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+      font-size: 0.95rem;
+      opacity: 0.95;
+    }
+    
+    .division-section {
+      margin-bottom: 3rem;
+    }
+    
+    .division-header {
+      background: #2c3e50;
+      color: white;
+      padding: 1rem;
+      border-radius: 8px 8px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .division-name {
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+    
+    .division-count {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+    
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 0 0 8px 8px;
+      overflow: hidden;
+    }
+    
+    .leaderboard-table thead {
+      background: #34495e;
+      color: white;
+    }
+    
+    .leaderboard-table th {
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    
+    .leaderboard-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #ecf0f1;
+    }
+    
+    .leaderboard-table tbody tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .rank-cell {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #2c3e50;
+      width: 50px;
+      text-align: center;
+    }
+    
+    .rank-1 { color: #f39c12; }
+    .rank-2 { color: #95a5a6; }
+    .rank-3 { color: #cd7f32; }
+    
+    .archer-name {
+      font-weight: 600;
+    }
+    
+    .score-total {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #27ae60;
+    }
+    
+    .no-scores {
+      text-align: center;
+      padding: 3rem;
+      color: #7f8c8d;
+      font-style: italic;
+    }
+    
+    .empty-division {
+      text-align: center;
+      padding: 2rem;
+      color: #95a5a6;
+      background: #ecf0f1;
+      border-radius: 0 0 8px 8px;
+    }
+    
+    @media (max-width: 768px) {
+      .results-header {
+        padding: 1.5rem 1rem;
+      }
+      
+      .results-meta {
+        font-size: 0.85rem;
+        gap: 1rem;
+      }
+      
+      .leaderboard-table {
+        font-size: 0.85rem;
+      }
+      
+      .leaderboard-table th,
+      .leaderboard-table td {
+        padding: 0.5rem 0.3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <!-- Results Header -->
+    <div id="results-header" class="results-header">
+      <h1 id="event-name">Loading...</h1>
+      <div class="results-meta">
+        <span>📅 <span id="event-date">-</span></span>
+        <span>📊 Status: <span id="event-status">-</span></span>
+      </div>
+    </div>
+
+    <!-- Division Sections -->
+    <div id="divisions-container">
+      <!-- Populated dynamically -->
+    </div>
+  </div>
+
+  <footer class="global-footer">
+    <a href="coach.html" class="btn btn-secondary">← Back to Coach Console</a>
+    <button id="refresh-btn" class="btn btn-primary">🔄 Refresh</button>
+  </footer>
+
+  <script>
+    const API_BASE = 'https://tryentist.com/wdv/api/v1';
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventId = urlParams.get('event');
+
+    const DIVISION_NAMES = {
+      'BVAR': 'Boys Varsity',
+      'GVAR': 'Girls Varsity',
+      'BJV': 'Boys JV',
+      'GJV': 'Girls JV'
+    };
+
+    async function loadResults() {
+      if (!eventId) {
+        alert('No event ID provided');
+        window.location.href = 'coach.html';
+        return;
+      }
+
+      try {
+        // Fetch event snapshot (PUBLIC endpoint - no auth required)
+        const res = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        const data = await res.json();
+        const snapshot = data.snapshot;
+
+        // Update header
+        document.getElementById('event-name').textContent = snapshot.event.name;
+        document.getElementById('event-date').textContent = snapshot.event.date;
+        document.getElementById('event-status').textContent = snapshot.event.status;
+
+        // Render divisions
+        renderDivisions(snapshot.divisions || {});
+      } catch (err) {
+        console.error('Error loading results:', err);
+        alert('Error loading results: ' + err.message);
+      }
+    }
+
+    function renderDivisions(divisions) {
+      const container = document.getElementById('divisions-container');
+      container.innerHTML = '';
+
+      // Define division order
+      const divisionOrder = ['BVAR', 'GVAR', 'BJV', 'GJV'];
+
+      divisionOrder.forEach(divCode => {
+        const division = divisions[divCode];
+        const section = document.createElement('div');
+        section.className = 'division-section';
+
+        // Division Header
+        const header = document.createElement('div');
+        header.className = 'division-header';
+        header.innerHTML = `
+          <div class="division-name">${DIVISION_NAMES[divCode]}</div>
+          <div class="division-count">${division ? (division.archers || []).length : 0} archers</div>
+        `;
+        section.appendChild(header);
+
+        // Division Table
+        if (!division || !division.archers || division.archers.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-division';
+          empty.textContent = 'No archers assigned to this division';
+          section.appendChild(empty);
+        } else {
+          const table = createLeaderboardTable(division.archers);
+          section.appendChild(table);
+        }
+
+        container.appendChild(section);
+      });
+    }
+
+    function createLeaderboardTable(archers) {
+      // Sort by running total (descending)
+      const sorted = [...archers].sort((a, b) => (b.runningTotal || 0) - (a.runningTotal || 0));
+
+      const table = document.createElement('table');
+      table.className = 'leaderboard-table';
+
+      // Table Header
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Archer</th>
+            <th>School</th>
+            <th>Bale</th>
+            <th>Target</th>
+            <th>Total</th>
+            <th>Avg</th>
+            <th>Xs</th>
+            <th>10s</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      `;
+
+      const tbody = table.querySelector('tbody');
+
+      sorted.forEach((archer, index) => {
+        const rank = index + 1;
+        const row = document.createElement('tr');
+        
+        const rankClass = rank <= 3 ? `rank-${rank}` : '';
+        const total = archer.runningTotal || 0;
+        const avg = archer.avgPerArrow ? archer.avgPerArrow.toFixed(1) : '0.0';
+
+        row.innerHTML = `
+          <td class="rank-cell ${rankClass}">${rank}</td>
+          <td class="archer-name">${archer.archerName}</td>
+          <td>${archer.school || '-'}</td>
+          <td>${archer.bale || '-'}</td>
+          <td>${archer.target || '-'}</td>
+          <td class="score-total">${total}</td>
+          <td>${avg}</td>
+          <td>${archer.xs || 0}</td>
+          <td>${archer.tens || 0}</td>
+        `;
+
+        tbody.appendChild(row);
+      });
+
+      return table;
+    }
+
+    // Load results on page load
+    document.addEventListener('DOMContentLoaded', loadResults);
+
+    // Refresh button
+    document.getElementById('refresh-btn').onclick = loadResults;
+
+    // Auto-refresh every 30 seconds for active events
+    setInterval(() => {
+      const status = document.getElementById('event-status').textContent;
+      if (status === 'Active') {
+        loadResults();
+      }
+    }, 30000);
+  </script>
+</body>
+</html>
+

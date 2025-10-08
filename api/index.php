@@ -235,7 +235,7 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
     $name = trim($input['name'] ?? 'Event');
     $date = $input['date'] ?? date('Y-m-d');
     $status = $input['status'] ?? 'Planned';
-    $eventType = $input['eventType'] ?? 'auto_assign'; // auto_assign or self_select
+    $eventType = $input['eventType'] ?? 'auto_assign'; // auto_assign, self_select, or manual
     $autoAssign = !!($input['autoAssignBales'] ?? ($eventType === 'auto_assign'));
     $roundType = $input['roundType'] ?? 'R300';
     $entryCode = trim($input['entryCode'] ?? '');
@@ -248,6 +248,18 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
         // Create event
         $pdo->prepare('INSERT INTO events (id,name,date,status,event_type,entry_code,created_at) VALUES (?,?,?,?,?,?,NOW())')
             ->execute([$eventId, $name, $date, $status, $eventType, $entryCode]);
+        
+        // If event type is 'manual', don't create division rounds yet
+        // Rounds will be created when archers are added via POST /events/{id}/archers
+        if ($eventType === 'manual') {
+            json_response([
+                'eventId' => $eventId,
+                'message' => 'Event created. Add archers to create division rounds.',
+                'rounds' => [],
+                'totalBales' => 0
+            ], 201);
+            exit;
+        }
         
         // Define divisions in order: Boys Varsity, Girls Varsity, Boys JV, Girls JV
         $divisions = [
@@ -321,6 +333,154 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
         ], 201);
     } catch (Exception $e) {
         error_log("Event creation failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// Add archers to an event (creates/updates division rounds and assigns bales)
+if (preg_match('#^/v1/events/([0-9a-f-]+)/archers$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $eventId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $archerIds = $input['archerIds'] ?? [];
+    $assignmentMode = $input['assignmentMode'] ?? 'auto_assign'; // 'auto_assign' or 'manual'
+    
+    if (empty($archerIds) || !is_array($archerIds)) {
+        json_response(['error' => 'archerIds array required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Get event details
+        $stmt = $pdo->prepare('SELECT id,name,date,status,event_type FROM events WHERE id=?');
+        $stmt->execute([$eventId]);
+        $event = $stmt->fetch();
+        
+        if (!$event) {
+            json_response(['error' => 'Event not found'], 404);
+            exit;
+        }
+        
+        // Get archers
+        $placeholders = implode(',', array_fill(0, count($archerIds), '?'));
+        $stmt = $pdo->prepare("SELECT id,first_name,last_name,school,gender,level FROM archers WHERE id IN ($placeholders)");
+        $stmt->execute($archerIds);
+        $archers = $stmt->fetchAll();
+        
+        if (empty($archers)) {
+            json_response(['error' => 'No valid archers found'], 400);
+            exit;
+        }
+        
+        // Group archers by division
+        $divisionArchers = [];
+        foreach ($archers as $archer) {
+            $divCode = ($archer['gender'] === 'M' ? 'B' : 'G') . $archer['level'];
+            if (!isset($divisionArchers[$divCode])) {
+                $divisionArchers[$divCode] = [];
+            }
+            $divisionArchers[$divCode][] = $archer;
+        }
+        
+        // Get or create division rounds
+        $divisions = [
+            'BVAR' => ['gender' => 'M', 'level' => 'VAR', 'name' => 'Boys Varsity'],
+            'GVAR' => ['gender' => 'F', 'level' => 'VAR', 'name' => 'Girls Varsity'],
+            'BJV' => ['gender' => 'M', 'level' => 'JV', 'name' => 'Boys JV'],
+            'GJV' => ['gender' => 'F', 'level' => 'JV', 'name' => 'Girls JV']
+        ];
+        
+        // Get current max bale number for this event
+        $stmt = $pdo->prepare('SELECT COALESCE(MAX(ra.bale_number), 0) AS max_bale FROM round_archers ra JOIN rounds r ON ra.round_id = r.id WHERE r.event_id = ?');
+        $stmt->execute([$eventId]);
+        $currentBaleNumber = (int)$stmt->fetchColumn() + 1;
+        
+        $addedCount = 0;
+        $updatedRounds = [];
+        
+        foreach ($divisionArchers as $divCode => $divArchers) {
+            $div = $divisions[$divCode] ?? null;
+            if (!$div) continue;
+            
+            // Get or create round for this division
+            $stmt = $pdo->prepare('SELECT id FROM rounds WHERE event_id=? AND division=? LIMIT 1');
+            $stmt->execute([$eventId, $divCode]);
+            $roundId = $stmt->fetchColumn();
+            
+            if (!$roundId) {
+                // Create round
+                $roundId = $genUuid();
+                $pdo->prepare('INSERT INTO rounds (id,event_id,round_type,division,gender,level,date,status,created_at) VALUES (?,?,?,?,?,?,?,?,NOW())')
+                    ->execute([$roundId, $eventId, 'R300', $divCode, $div['gender'], $div['level'], $event['date'], 'Created']);
+            }
+            
+            // Add archers to round
+            if ($assignmentMode === 'auto_assign') {
+                // Auto-assign to bales (2-4 per bale)
+                $baleAssignments = $assignArchersToBales($divArchers, $currentBaleNumber);
+                $targetLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+                
+                foreach ($baleAssignments as $baleArchers) {
+                    $baleNum = $currentBaleNumber;
+                    $targetIdx = 0;
+                    
+                    foreach ($baleArchers as $archer) {
+                        // Check if archer already exists in this round
+                        $stmt = $pdo->prepare('SELECT id FROM round_archers WHERE round_id=? AND archer_id=?');
+                        $stmt->execute([$roundId, $archer['id']]);
+                        $exists = $stmt->fetchColumn();
+                        
+                        if (!$exists) {
+                            $raId = $genUuid();
+                            $archerName = trim($archer['first_name'] . ' ' . $archer['last_name']);
+                            $target = $targetLetters[$targetIdx] ?? 'A';
+                            $targetSize = ($archer['level'] === 'VAR') ? 122 : 80;
+                            
+                            $pdo->prepare('INSERT INTO round_archers (id,round_id,archer_id,archer_name,school,level,gender,target_assignment,target_size,bale_number,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW())')
+                                ->execute([$raId, $roundId, $archer['id'], $archerName, $archer['school'], $archer['level'], $archer['gender'], $target, $targetSize, $baleNum]);
+                            
+                            $addedCount++;
+                        }
+                        
+                        $targetIdx++;
+                    }
+                    
+                    $currentBaleNumber++;
+                }
+            } else {
+                // Manual mode: don't assign bales/targets yet
+                foreach ($divArchers as $archer) {
+                    // Check if archer already exists in this round
+                    $stmt = $pdo->prepare('SELECT id FROM round_archers WHERE round_id=? AND archer_id=?');
+                    $stmt->execute([$roundId, $archer['id']]);
+                    $exists = $stmt->fetchColumn();
+                    
+                    if (!$exists) {
+                        $raId = $genUuid();
+                        $archerName = trim($archer['first_name'] . ' ' . $archer['last_name']);
+                        $targetSize = ($archer['level'] === 'VAR') ? 122 : 80;
+                        
+                        $pdo->prepare('INSERT INTO round_archers (id,round_id,archer_id,archer_name,school,level,gender,target_size,created_at) VALUES (?,?,?,?,?,?,?,?,NOW())')
+                            ->execute([$raId, $roundId, $archer['id'], $archerName, $archer['school'], $archer['level'], $archer['gender'], $targetSize]);
+                        
+                        $addedCount++;
+                    }
+                }
+            }
+            
+            $updatedRounds[] = $roundId;
+        }
+        
+        json_response([
+            'added' => $addedCount,
+            'assignmentMode' => $assignmentMode,
+            'updatedRounds' => $updatedRounds
+        ], 200);
+    } catch (Exception $e) {
+        error_log("Add archers to event failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
     exit;
