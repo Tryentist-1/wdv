@@ -919,6 +919,21 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
     exit;
 }
 
+// GET /v1/archers - List all archers from master list
+if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
+    require_api_key();
+    try {
+        $pdo = db();
+        $stmt = $pdo->query('SELECT id, ext_id as extId, first_name as firstName, last_name as lastName, school, gender, level, created_at as createdAt, updated_at as updatedAt FROM archers ORDER BY last_name, first_name');
+        $archers = $stmt->fetchAll();
+        json_response(['archers' => $archers], 200);
+    } catch (Exception $e) {
+        error_log("List archers failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // POST /v1/archers - Create single archer
 if (preg_match('#^/v1/archers$#', $route) && $method === 'POST') {
     require_api_key();

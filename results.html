@@ -186,15 +186,15 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         
         const data = await res.json();
-        const snapshot = data.snapshot;
+        console.log('API Response:', data);
 
         // Update header
-        document.getElementById('event-name').textContent = snapshot.event.name;
-        document.getElementById('event-date').textContent = snapshot.event.date;
-        document.getElementById('event-status').textContent = snapshot.event.status;
+        document.getElementById('event-name').textContent = data.event.name;
+        document.getElementById('event-date').textContent = data.event.date;
+        document.getElementById('event-status').textContent = data.event.status;
 
         // Render divisions
-        renderDivisions(snapshot.divisions || {});
+        renderDivisions(data.divisions || {});
       } catch (err) {
         console.error('Error loading results:', err);
         alert('Error loading results: ' + err.message);

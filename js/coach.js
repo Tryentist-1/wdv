@@ -343,7 +343,7 @@
       const label = document.createElement('label');
       label.htmlFor = `archer-${archer.id}`;
       label.innerHTML = `
-        <strong>${archer.first_name} ${archer.last_name}</strong>
+        <strong>${archer.firstName} ${archer.lastName}</strong>
         <span class="archer-details">(${archer.school}, ${archer.gender === 'M' ? 'Boys' : 'Girls'}, ${archer.level})</span>
       `;
 
@@ -479,10 +479,12 @@
     const modal = document.getElementById('import-summary-modal');
     const summaryDiv = document.getElementById('import-summary');
 
+    const total = (summary.inserted || 0) + (summary.updated || 0);
+
     summaryDiv.innerHTML = `
       <ul style="list-style: none; padding: 0;">
-        <li style="padding: 0.5rem 0; font-size: 1.1rem;">📊 <strong>${summary.upserted || 0}</strong> archers processed</li>
-        <li style="padding: 0.5rem 0; color: #27ae60;">✓ <strong>${summary.created || 0}</strong> created (new)</li>
+        <li style="padding: 0.5rem 0; font-size: 1.1rem;">📊 <strong>${total}</strong> archers processed</li>
+        <li style="padding: 0.5rem 0; color: #27ae60;">✓ <strong>${summary.inserted || 0}</strong> created (new)</li>
         <li style="padding: 0.5rem 0; color: #3498db;">↻ <strong>${summary.updated || 0}</strong> updated (existing)</li>
         <li style="padding: 0.5rem 0; color: #e74c3c;">✗ <strong>0</strong> errors</li>
       </ul>
