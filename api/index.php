@@ -338,6 +338,66 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
     exit;
 }
 
+// Update an event (PATCH)
+if (preg_match('#^/v1/events/([0-9a-f-]+)$#i', $route, $m) && $method === 'PATCH') {
+    require_api_key();
+    $eventId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    try {
+        $pdo = db();
+        
+        // Check if event exists
+        $stmt = $pdo->prepare('SELECT id FROM events WHERE id=? LIMIT 1');
+        $stmt->execute([$eventId]);
+        if (!$stmt->fetch()) {
+            json_response(['error' => 'Event not found'], 404);
+            exit;
+        }
+        
+        // Build UPDATE query dynamically based on provided fields
+        $updates = [];
+        $params = [];
+        
+        if (isset($input['name'])) {
+            $updates[] = 'name = ?';
+            $params[] = trim($input['name']);
+        }
+        
+        if (isset($input['date'])) {
+            $updates[] = 'date = ?';
+            $params[] = $input['date'];
+        }
+        
+        if (isset($input['status'])) {
+            $updates[] = 'status = ?';
+            $params[] = $input['status'];
+        }
+        
+        if (isset($input['entryCode'])) {
+            $updates[] = 'entry_code = ?';
+            $params[] = trim($input['entryCode']);
+        }
+        
+        if (empty($updates)) {
+            json_response(['error' => 'No fields to update'], 400);
+            exit;
+        }
+        
+        $params[] = $eventId; // Add eventId for WHERE clause
+        $sql = 'UPDATE events SET ' . implode(', ', $updates) . ' WHERE id = ?';
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        
+        json_response(['ok' => true, 'message' => 'Event updated successfully'], 200);
+    } catch (Exception $e) {
+        error_log("Event update failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // Add archers to an event (creates/updates division rounds and assigns bales)
 if (preg_match('#^/v1/events/([0-9a-f-]+)/archers$#i', $route, $m) && $method === 'POST') {
     require_api_key();
@@ -914,21 +974,6 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
         json_response(['archers' => $archers], 200);
     } catch (Exception $e) {
         error_log("Load archers failed: " . $e->getMessage());
-        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
-    }
-    exit;
-}
-
-// GET /v1/archers - List all archers from master list
-if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
-    require_api_key();
-    try {
-        $pdo = db();
-        $stmt = $pdo->query('SELECT id, ext_id as extId, first_name as firstName, last_name as lastName, school, gender, level, created_at as createdAt, updated_at as updatedAt FROM archers ORDER BY last_name, first_name');
-        $archers = $stmt->fetchAll();
-        json_response(['archers' => $archers], 200);
-    } catch (Exception $e) {
-        error_log("List archers failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
     exit;

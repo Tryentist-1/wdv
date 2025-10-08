@@ -137,15 +137,18 @@
       `;
 
       events.forEach(ev => {
+        const eventData = encodeURIComponent(JSON.stringify(ev));
         html += `
           <tr>
             <td><strong>${ev.name}</strong></td>
             <td>${ev.date}</td>
             <td><span class="status-badge status-${ev.status.toLowerCase()}">${ev.status}</span></td>
             <td>
-              <button class="btn btn-primary btn-sm" onclick="coach.viewResults('${ev.id}')">Results</button>
-              <button class="btn btn-secondary btn-sm" onclick="coach.addArchersToEvent('${ev.id}', '${ev.name}')">Add Archers</button>
-              <button class="btn btn-danger btn-sm" onclick="coach.deleteEvent('${ev.id}', '${ev.name}')">Delete</button>
+              <button class="btn btn-primary btn-sm" onclick="coach.showQRCode('${eventData}')" title="Show QR Code">📱 QR Code</button>
+              <button class="btn btn-secondary btn-sm" onclick="coach.editEvent('${eventData}')" title="Edit Event">✏️ Edit</button>
+              <button class="btn btn-secondary btn-sm" onclick="coach.addArchersToEvent('${ev.id}', '${ev.name}')" title="Add Archers">➕ Add Archers</button>
+              <button class="btn btn-primary btn-sm" onclick="coach.viewResults('${ev.id}')" title="View Results">📊 Results</button>
+              <button class="btn btn-danger btn-sm" onclick="coach.deleteEvent('${ev.id}', '${ev.name}')" title="Delete Event">🗑️ Delete</button>
             </td>
           </tr>
         `;
@@ -521,12 +524,142 @@
     }
   });
 
+  // ==================== Edit Event ====================
+  
+  let currentEditEventId = null;
+  
+  function editEvent(encodedEventData) {
+    const event = JSON.parse(decodeURIComponent(encodedEventData));
+    currentEditEventId = event.id;
+    
+    const modal = document.getElementById('edit-event-modal');
+    const nameInput = document.getElementById('edit-event-name');
+    const dateInput = document.getElementById('edit-event-date');
+    const statusSelect = document.getElementById('edit-event-status');
+    const codeInput = document.getElementById('edit-event-code');
+    
+    // Populate with current values
+    nameInput.value = event.name || '';
+    dateInput.value = event.date || '';
+    statusSelect.value = event.status || 'Planned';
+    codeInput.value = event.entry_code || '';
+    
+    modal.style.display = 'flex';
+    
+    document.getElementById('cancel-edit-event-btn').onclick = () => {
+      modal.style.display = 'none';
+      currentEditEventId = null;
+    };
+    
+    document.getElementById('submit-edit-event-btn').onclick = async () => {
+      const name = nameInput.value.trim();
+      const date = dateInput.value;
+      const status = statusSelect.value;
+      const entryCode = codeInput.value.trim();
+      
+      if (!name) {
+        alert('Please enter an event name');
+        return;
+      }
+      
+      try {
+        const btn = document.getElementById('submit-edit-event-btn');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+        
+        // Call API to update event
+        await req(`/events/${currentEditEventId}`, 'PATCH', {
+          name,
+          date,
+          status,
+          entryCode
+        });
+        
+        modal.style.display = 'none';
+        alert(`Event "${name}" updated successfully!`);
+        loadEvents();
+      } catch (err) {
+        alert(`Error updating event: ${err.message}`);
+      } finally {
+        const btn = document.getElementById('submit-edit-event-btn');
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+        currentEditEventId = null;
+      }
+    };
+  }
+  
+  // ==================== QR Code Display ====================
+  
+  function showQRCode(encodedEventData) {
+    const event = JSON.parse(decodeURIComponent(encodedEventData));
+    
+    // Check if event has an entry code
+    if (!event.entry_code) {
+      alert('This event does not have an entry code.\n\nPlease edit the event and add an entry code first.');
+      return;
+    }
+    
+    const modal = document.getElementById('qr-code-modal');
+    const qrContainer = document.getElementById('qr-code-container');
+    const urlDisplay = document.getElementById('qr-url-display');
+    const eventNameDisplay = document.getElementById('qr-event-name');
+    
+    // Build the URL
+    const baseUrl = window.location.origin + window.location.pathname.replace('coach.html', '');
+    const fullUrl = `${baseUrl}ranking_round_300.html?event=${event.id}&code=${event.entry_code}`;
+    
+    // Update displays
+    eventNameDisplay.textContent = `${event.name} - QR Code`;
+    urlDisplay.value = fullUrl;
+    
+    // Clear previous QR code
+    qrContainer.innerHTML = '';
+    
+    // Generate QR code
+    try {
+      new QRCode(qrContainer, {
+        text: fullUrl,
+        width: 256,
+        height: 256,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch (err) {
+      console.error('QR Code generation error:', err);
+      qrContainer.innerHTML = '<p style="color: red;">Error generating QR code</p>';
+    }
+    
+    modal.style.display = 'flex';
+    
+    // Copy URL button
+    document.getElementById('copy-url-btn').onclick = () => {
+      urlDisplay.select();
+      document.execCommand('copy');
+      
+      const btn = document.getElementById('copy-url-btn');
+      const originalText = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => {
+        btn.textContent = originalText;
+      }, 2000);
+    };
+    
+    // Close button
+    document.getElementById('close-qr-btn').onclick = () => {
+      modal.style.display = 'none';
+    };
+  }
+  
   // ==================== Global Functions (for inline onclick) ====================
   
   window.coach = {
     viewResults,
     addArchersToEvent,
-    deleteEvent
+    deleteEvent,
+    editEvent,
+    showQRCode
   };
 
 })();
