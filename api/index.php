@@ -550,8 +550,24 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
 if (preg_match('#^/v1/events/recent$#', $route) && $method === 'GET') {
     $pdo = db();
     ensure_events_schema($pdo);
-    // Note: entry_code is NOT returned here for security - must use verify endpoint
-    $rows = $pdo->query('SELECT id,name,date,status,created_at as createdAt FROM events ORDER BY created_at DESC LIMIT 50')->fetchAll();
+    
+    // If authenticated (coach), include entry_code. If public (archer), exclude it for security.
+    $isAuthenticated = false;
+    try {
+        require_api_key(); // Throws exception if not authenticated
+        $isAuthenticated = true;
+    } catch (Exception $e) {
+        // Not authenticated - continue as public
+    }
+    
+    if ($isAuthenticated) {
+        // Coach view - include entry_code
+        $rows = $pdo->query('SELECT id,name,date,status,entry_code,created_at as createdAt FROM events ORDER BY created_at DESC LIMIT 50')->fetchAll();
+    } else {
+        // Public/Archer view - exclude entry_code for security
+        $rows = $pdo->query('SELECT id,name,date,status,created_at as createdAt FROM events ORDER BY created_at DESC LIMIT 50')->fetchAll();
+    }
+    
     json_response(['events' => $rows]);
     exit;
 }
