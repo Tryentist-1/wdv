@@ -127,10 +127,10 @@
         <table class="score-table">
           <thead>
             <tr>
-              <th>Event Name</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th style="width: 35%;">Event</th>
+              <th style="width: 15%;">Date</th>
+              <th style="width: 18%;">Status</th>
+              <th style="width: 32%;">Actions</th>
             </tr>
           </thead>
           <tbody>
