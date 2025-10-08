@@ -302,13 +302,28 @@
       document.getElementById(id).onchange = renderArcherList;
     });
     
-    // Select All button
-    document.getElementById('select-all-btn').onclick = () => {
+    // Select All button - use addEventListener for better mobile compatibility
+    const selectAllBtn = document.getElementById('select-all-btn');
+    
+    // Remove any existing listeners
+    selectAllBtn.replaceWith(selectAllBtn.cloneNode(true));
+    const newSelectAllBtn = document.getElementById('select-all-btn');
+    
+    newSelectAllBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      console.log('Select All clicked');
+      
       const container = document.getElementById('archer-list');
       const checkboxes = container.querySelectorAll('input[type="checkbox"]');
       
+      console.log('Found checkboxes:', checkboxes.length);
+      
       // Check if all are currently selected
       const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+      
+      console.log('All selected?', allSelected);
       
       if (allSelected) {
         // Deselect all
@@ -317,7 +332,7 @@
           const archerId = cb.id.replace('archer-', '');
           selectedArchers = selectedArchers.filter(id => id !== archerId);
         });
-        document.getElementById('select-all-btn').textContent = 'Select All Filtered';
+        newSelectAllBtn.textContent = 'Select All Filtered';
       } else {
         // Select all
         checkboxes.forEach(cb => {
@@ -327,11 +342,11 @@
             selectedArchers.push(archerId);
           }
         });
-        document.getElementById('select-all-btn').textContent = 'Deselect All';
+        newSelectAllBtn.textContent = 'Deselect All';
       }
       
       updateSelectionCount();
-    };
+    });
   }
 
   function populateFilters() {

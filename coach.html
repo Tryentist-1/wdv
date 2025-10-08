@@ -156,11 +156,12 @@
     }
     
     .archer-list {
-      max-height: 400px;
+      max-height: 300px;
       overflow-y: auto;
       border: 2px solid #ddd;
       border-radius: 6px;
       padding: 0.5rem;
+      -webkit-overflow-scrolling: touch;
     }
     
     .archer-item {
@@ -286,6 +287,22 @@
         min-width: 26px;
       }
       
+      /* Add Archers Modal on mobile */
+      #add-archers-modal .modal-content {
+        width: 95%;
+        max-height: 85vh;
+        padding: 1rem;
+      }
+      
+      .archer-list {
+        max-height: 200px !important;
+      }
+      
+      .styled-select {
+        padding: 0.5rem;
+        font-size: 0.9rem;
+      }
+      
       /* QR Modal on mobile */
       .qr-modal-content {
         width: 95%;
@@ -354,9 +371,9 @@
   </div>
 
   <!-- Add Archers Modal -->
-  <div id="add-archers-modal" class="modal">
-    <div class="modal-content">
-      <h2>Add Archers to Event</h2>
+  <div id="add-archers-modal" class="modal" style="overflow-y: auto;">
+    <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+      <h2 style="margin-top: 0; font-size: 1.3rem;">Add Archers to Event</h2>
       <div class="archer-filters">
         <select id="filter-school" class="styled-select">
           <option value="">All Schools</option>
