@@ -132,9 +132,27 @@
       flex-wrap: wrap;
     }
     
-    .archer-filters select {
+    .styled-select {
       flex: 1;
       min-width: 120px;
+      padding: 0.75rem;
+      border: 2px solid #3498db;
+      border-radius: 6px;
+      font-size: 1rem;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .styled-select:hover {
+      border-color: #2980b9;
+      background: #f8f9fa;
+    }
+    
+    .styled-select:focus {
+      outline: none;
+      border-color: #2980b9;
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
     }
     
     .archer-list {
@@ -217,6 +235,21 @@
       white-space: nowrap;
     }
     
+    /* QR Code Modal */
+    .qr-modal-content {
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .qr-code-container {
+      display: inline-block;
+      padding: 0.5rem;
+      background: white;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+    }
+    
     @media (max-width: 768px) {
       .page-header h1 {
         font-size: 1.5rem;
@@ -251,6 +284,25 @@
         padding: 0.15rem 0.25rem;
         font-size: 1rem;
         min-width: 26px;
+      }
+      
+      /* QR Modal on mobile */
+      .qr-modal-content {
+        width: 95%;
+        max-height: 85vh;
+        padding: 1rem;
+      }
+      
+      .qr-code-container {
+        padding: 0.25rem;
+      }
+      
+      .qr-code-container canvas,
+      .qr-code-container img {
+        max-width: 200px !important;
+        max-height: 200px !important;
+        width: 100% !important;
+        height: auto !important;
       }
     }
   </style>
@@ -306,19 +358,22 @@
     <div class="modal-content">
       <h2>Add Archers to Event</h2>
       <div class="archer-filters">
-        <select id="filter-school">
+        <select id="filter-school" class="styled-select">
           <option value="">All Schools</option>
         </select>
-        <select id="filter-gender">
+        <select id="filter-gender" class="styled-select">
           <option value="">All Genders</option>
           <option value="M">Boys</option>
           <option value="F">Girls</option>
         </select>
-        <select id="filter-level">
+        <select id="filter-level" class="styled-select">
           <option value="">All Levels</option>
           <option value="VAR">Varsity</option>
           <option value="JV">JV</option>
         </select>
+      </div>
+      <div style="margin-bottom: 0.5rem;">
+        <button id="select-all-btn" class="btn btn-secondary" style="width: 100%;">Select All Filtered</button>
       </div>
       <div id="archer-list" class="archer-list">
         <!-- Populated dynamically -->
@@ -406,30 +461,30 @@
   </div>
 
   <!-- QR Code Modal -->
-  <div id="qr-code-modal" class="modal">
-    <div class="modal-content" style="max-width: 500px;">
-      <h2 id="qr-event-name" style="margin-bottom: 0.5rem;">Event QR Code</h2>
-      <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Archers scan this code to access the event</p>
+  <div id="qr-code-modal" class="modal" style="overflow-y: auto;">
+    <div class="modal-content qr-modal-content">
+      <h2 id="qr-event-name" style="margin-bottom: 0.5rem; font-size: 1.3rem;">Event QR Code</h2>
+      <p style="color: #7f8c8d; margin-bottom: 1rem; font-size: 0.9rem;">Archers scan this code to access the event</p>
       
-      <div style="text-align: center; margin-bottom: 1.5rem;">
-        <div id="qr-code-container" style="display: inline-block; padding: 1rem; background: white; border: 2px solid #ddd; border-radius: 8px;">
+      <div style="text-align: center; margin-bottom: 1rem;">
+        <div id="qr-code-container" class="qr-code-container">
           <!-- QR code will be inserted here -->
         </div>
       </div>
       
       <div class="form-group">
-        <label>Event URL:</label>
-        <input type="text" id="qr-url-display" readonly style="font-size: 0.85rem; background: #f8f9fa; cursor: text;" />
+        <label style="font-size: 0.9rem;">Event URL:</label>
+        <input type="text" id="qr-url-display" readonly style="font-size: 0.75rem; background: #f8f9fa; cursor: text; padding: 0.5rem;" />
       </div>
       
-      <div style="margin-top: 1rem; padding: 1rem; background: #e3f2fd; border-radius: 6px; font-size: 0.9rem;">
+      <div style="margin-top: 0.75rem; padding: 0.75rem; background: #e3f2fd; border-radius: 6px; font-size: 0.8rem;">
         <strong>📱 Instructions:</strong><br>
-        • Archers scan this QR code with their phone camera<br>
-        • They'll be taken directly to the Ranking Round with pre-loaded bale assignments<br>
-        • Or copy the URL above to share via text/email
+        • Scan with phone camera<br>
+        • Goes to Ranking Round<br>
+        • Or copy URL to share
       </div>
       
-      <div class="modal-buttons">
+      <div class="modal-buttons" style="margin-top: 1rem;">
         <button id="copy-url-btn" class="btn btn-secondary" style="flex:1;">📋 Copy URL</button>
         <button id="close-qr-btn" class="btn btn-primary" style="flex:1;">Close</button>
       </div>

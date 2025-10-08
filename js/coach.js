@@ -142,16 +142,20 @@
         const dateObj = new Date(ev.date + 'T00:00:00');
         const shortDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         
+        // Truncate event name on mobile
+        const maxNameLength = 20;
+        const displayName = ev.name.length > maxNameLength ? ev.name.substring(0, maxNameLength) + '...' : ev.name;
+        
         html += `
           <tr>
-            <td><strong>${ev.name}</strong></td>
+            <td><strong>${displayName}</strong></td>
             <td style="white-space: nowrap;">${shortDate}</td>
             <td><span class="status-badge status-${ev.status.toLowerCase()}">${ev.status}</span></td>
             <td style="white-space: nowrap;">
-              <button class="btn btn-primary btn-sm" onclick="coach.showQRCode('${eventData}')" title="Show QR Code">📱</button>
-              <button class="btn btn-secondary btn-sm" onclick="coach.editEvent('${eventData}')" title="Edit Event">✏️</button>
+              <button class="btn btn-primary btn-sm" onclick="coach.showQRCode('${eventData}')" title="QR Code">📱</button>
+              <button class="btn btn-secondary btn-sm" onclick="coach.editEvent('${eventData}')" title="Edit">✏️</button>
               <button class="btn btn-secondary btn-sm" onclick="coach.addArchersToEvent('${ev.id}', '${ev.name}')" title="Add Archers">➕</button>
-              <button class="btn btn-primary btn-sm" onclick="coach.viewResults('${ev.id}')" title="View Results">📊</button>
+              <button class="btn btn-primary btn-sm" onclick="coach.viewResults('${ev.id}')" title="Results">📊</button>
               <button class="btn btn-danger btn-sm" onclick="coach.deleteEvent('${ev.id}', '${ev.name}')" title="Delete">🗑️</button>
             </td>
           </tr>
@@ -297,6 +301,37 @@
     ['filter-school', 'filter-gender', 'filter-level'].forEach(id => {
       document.getElementById(id).onchange = renderArcherList;
     });
+    
+    // Select All button
+    document.getElementById('select-all-btn').onclick = () => {
+      const container = document.getElementById('archer-list');
+      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+      
+      // Check if all are currently selected
+      const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+      
+      if (allSelected) {
+        // Deselect all
+        checkboxes.forEach(cb => {
+          cb.checked = false;
+          const archerId = cb.id.replace('archer-', '');
+          selectedArchers = selectedArchers.filter(id => id !== archerId);
+        });
+        document.getElementById('select-all-btn').textContent = 'Select All Filtered';
+      } else {
+        // Select all
+        checkboxes.forEach(cb => {
+          cb.checked = true;
+          const archerId = cb.id.replace('archer-', '');
+          if (!selectedArchers.includes(archerId)) {
+            selectedArchers.push(archerId);
+          }
+        });
+        document.getElementById('select-all-btn').textContent = 'Deselect All';
+      }
+      
+      updateSelectionCount();
+    };
   }
 
   function populateFilters() {
@@ -620,12 +655,15 @@
     // Clear previous QR code
     qrContainer.innerHTML = '';
     
-    // Generate QR code
+    // Generate QR code (responsive size)
     try {
+      const isMobile = window.innerWidth < 768;
+      const qrSize = isMobile ? 200 : 256;
+      
       new QRCode(qrContainer, {
         text: fullUrl,
-        width: 256,
-        height: 256,
+        width: qrSize,
+        height: qrSize,
         colorDark: '#000000',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M
