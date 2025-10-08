@@ -763,13 +763,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Verify entry code and auto-load event
     async function verifyAndLoadEventByCode(eventId, entryCode) {
         try {
+            console.log('Verifying entry code for event:', eventId);
             const res = await fetch(`${API_BASE}/events/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ eventId, entryCode })
             });
             
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error('Verify failed:', res.status, errorText);
+                alert(`Failed to verify entry code: ${res.status} ${errorText}`);
+                return false;
+            }
+            
             const data = await res.json();
+            console.log('Verify response:', data);
             
             if (!data.verified) {
                 alert(`Entry code invalid: ${data.error || 'Unknown error'}`);
@@ -787,17 +796,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!eventRes.ok) throw new Error(`HTTP ${eventRes.status}`);
                 
                 const eventData = await eventRes.json();
-                const snapshot = eventData.snapshot;
+                console.log('Event snapshot:', eventData);
                 
-                if (snapshot && snapshot.divisions) {
+                if (eventData && eventData.divisions) {
                     // Extract all archers
                     const allArchers = [];
-                    Object.keys(snapshot.divisions).forEach(divKey => {
-                        const div = snapshot.divisions[divKey];
+                    Object.keys(eventData.divisions).forEach(divKey => {
+                        const div = eventData.divisions[divKey];
                         (div.archers || []).forEach(archer => {
                             allArchers.push({
-                                first: archer.first_name,
-                                last: archer.last_name,
+                                first: archer.archerName ? archer.archerName.split(' ')[0] : '',
+                                last: archer.archerName ? archer.archerName.split(' ').slice(1).join(' ') : '',
                                 school: archer.school,
                                 level: archer.level,
                                 gender: archer.gender,

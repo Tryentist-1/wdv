@@ -138,17 +138,21 @@
 
       events.forEach(ev => {
         const eventData = encodeURIComponent(JSON.stringify(ev));
+        // Format date without year: "Oct 15" instead of "2024-10-15"
+        const dateObj = new Date(ev.date + 'T00:00:00');
+        const shortDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        
         html += `
           <tr>
             <td><strong>${ev.name}</strong></td>
-            <td>${ev.date}</td>
+            <td style="white-space: nowrap;">${shortDate}</td>
             <td><span class="status-badge status-${ev.status.toLowerCase()}">${ev.status}</span></td>
-            <td>
-              <button class="btn btn-primary btn-sm" onclick="coach.showQRCode('${eventData}')" title="Show QR Code">📱 QR Code</button>
-              <button class="btn btn-secondary btn-sm" onclick="coach.editEvent('${eventData}')" title="Edit Event">✏️ Edit</button>
-              <button class="btn btn-secondary btn-sm" onclick="coach.addArchersToEvent('${ev.id}', '${ev.name}')" title="Add Archers">➕ Add Archers</button>
-              <button class="btn btn-primary btn-sm" onclick="coach.viewResults('${ev.id}')" title="View Results">📊 Results</button>
-              <button class="btn btn-danger btn-sm" onclick="coach.deleteEvent('${ev.id}', '${ev.name}')" title="Delete Event">🗑️ Delete</button>
+            <td style="white-space: nowrap;">
+              <button class="btn btn-primary btn-sm" onclick="coach.showQRCode('${eventData}')" title="Show QR Code">📱</button>
+              <button class="btn btn-secondary btn-sm" onclick="coach.editEvent('${eventData}')" title="Edit Event">✏️</button>
+              <button class="btn btn-secondary btn-sm" onclick="coach.addArchersToEvent('${ev.id}', '${ev.name}')" title="Add Archers">➕</button>
+              <button class="btn btn-primary btn-sm" onclick="coach.viewResults('${ev.id}')" title="View Results">📊</button>
+              <button class="btn btn-danger btn-sm" onclick="coach.deleteEvent('${ev.id}', '${ev.name}')" title="Delete">🗑️</button>
             </td>
           </tr>
         `;
