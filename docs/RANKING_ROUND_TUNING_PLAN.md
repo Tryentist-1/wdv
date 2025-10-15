@@ -257,12 +257,15 @@ Before implementing fixes, clarify:
 **Q1**: When an archer opens Ranking Round (without QR code), should they see:
 - A) Only "Active" events in dropdown?
 - B) All events (Planned/Active/Completed)?
+USER: A, only "Active Events"
 
 **Q2**: If there's only ONE active event, should it auto-select?
+USER: Yes
 
 **Q3**: When using QR code, should it:
 - A) Bypass event selector entirely?
 - B) Show event selector but pre-populate it?
+Bypass event selector entirely and go straight to the event
 
 **Q4**: For bale/archer list, should it look like:
 - **Option A - Flat List**:
@@ -277,21 +280,24 @@ Before implementing fixes, clarify:
     Target A: John Smith
     Target B: Mike Jones
   ```
+  Option A with a button to sort by first name or bale number
 
 **Q5**: Manual assignment mode - should archers:
 - A) See full list and check boxes to select bale partners?
 - B) Only see their own name and enter bale number?
+USER A, full list that selects bale partners and assigns their target a, b, c, d (this is how it is implemented)
 
 **Q6**: In-progress scorecard detection:
 - A) Check localStorage for `state.archers` with scores?
 - B) Check if any ends synced to server?
 - C) Both?
+USER C, BOTH
 
 **Q7**: If archer has in-progress scorecard for Event A, but scans QR for Event B:
 - A) Warn and ask to abandon Event A?
 - B) Auto-save Event A and switch to Event B?
 - C) Prevent switching until Event A complete?
-
+USER B AUTOSAVE and SWITCH TO EVENT B
 ---
 
 ## 🎯 Success Criteria
@@ -311,3 +317,4 @@ Before implementing fixes, clarify:
 *Created: October 8, 2025*  
 *Status: Ready for implementation*
 
+USER UPDATED QUESTIONS Octover 15
