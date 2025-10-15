@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeEventId: null, // Event ID if pre-assigned mode
         assignmentMode: 'manual', // 'manual' or 'pre-assigned'
         syncStatus: {}, // Track sync status per archer per end: { archerId: { endNumber: 'synced'|'pending'|'failed' } }
+        sortMode: 'bale' // 'bale' or 'name'
     };
 
     const sessionKey = `rankingRound300_${new Date().toISOString().split('T')[0]}`;
@@ -114,6 +115,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- LOGIC ---
+    // Highlight a specific bale in the list
+    function highlightBale(baleNum) {
+        document.querySelectorAll('.list-header').forEach(el => {
+            el.classList.remove('highlighted');
+            el.style.background = '#e3f2fd';
+        });
+        const target = document.querySelector(`[data-bale="${baleNum}"]`);
+        if (target) {
+            target.classList.add('highlighted');
+            target.style.background = '#f39c12';
+            target.style.boxShadow = '0 0 0 3px rgba(243, 156, 18, 0.3)';
+        }
+    }
+    
+    // Scroll to a specific bale section
+    function scrollToBale(baleNum) {
+        const target = document.querySelector(`[data-bale="${baleNum}"]`);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+    
+    // Load entire bale group for scoring
+    function loadEntireBale(baleNum, archers) {
+        console.log(`Loading entire bale ${baleNum} with ${archers.length} archers`);
+        
+        state.archers = archers.map(archer => ({
+            id: `${archer.first}-${archer.last}-${archer.school || ''}`.replace(/\s+/g, '-'),
+            firstName: archer.first,
+            lastName: archer.last,
+            school: archer.school || '',
+            level: archer.level || 'VAR',
+            gender: archer.gender || 'M',
+            targetAssignment: archer.target || 'A',
+            targetSize: (archer.level === 'VAR') ? 122 : 80,
+            scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
+        }));
+        
+        state.baleNumber = parseInt(baleNum);
+        state.assignmentMode = 'pre-assigned';
+        saveData();
+        
+        // Transition to scoring view
+        state.currentView = 'scoring';
+        renderView();
+    }
+    
     function renderSetupForm() {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
@@ -199,15 +247,47 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderArcherSelectList(masterList, filter = '') {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
+        
+        // Add sort button
+        const sortBtn = document.createElement('button');
+        sortBtn.id = 'sort-toggle-btn';
+        sortBtn.className = 'btn btn-secondary';
+        sortBtn.textContent = state.sortMode === 'bale' ? 'Sort by: Bale Number' : 'Sort by: Name';
+        sortBtn.style.marginBottom = '0.5rem';
+        sortBtn.onclick = () => {
+            state.sortMode = state.sortMode === 'bale' ? 'name' : 'bale';
+            saveData();
+            renderArcherSelectList(masterList, filter);
+        };
+        setupControls.container.appendChild(sortBtn);
+        
         const listDiv = document.createElement('div');
         listDiv.className = 'archer-select-list';
         setupControls.container.appendChild(listDiv);
+        
+        // Sort archers based on mode
+        const sortedList = [...masterList].sort((a, b) => {
+            if (state.sortMode === 'bale') {
+                // Sort by: Division → Bale → Target → First Name
+                if (a.division !== b.division) {
+                    const divOrder = {'BVAR': 1, 'GVAR': 2, 'BJV': 3, 'GJV': 4};
+                    return (divOrder[a.division] || 99) - (divOrder[b.division] || 99);
+                }
+                if (a.bale !== b.bale) return (a.bale || 999) - (b.bale || 999);
+                if (a.target !== b.target) return (a.target || 'Z').localeCompare(b.target || 'Z');
+                return a.first.localeCompare(b.first);
+            } else {
+                // Sort by: First Name → Last Name
+                if (a.first !== b.first) return a.first.localeCompare(b.first);
+                return a.last.localeCompare(b.last);
+            }
+        });
         
         // Group archers by bale if they have bale assignments
         const baleGroups = {};
         const unassigned = [];
         
-        masterList.forEach(archer => {
+        sortedList.forEach(archer => {
             if (archer.bale) {
                 if (!baleGroups[archer.bale]) baleGroups[archer.bale] = [];
                 baleGroups[archer.bale].push(archer);
@@ -239,9 +319,16 @@ document.addEventListener('DOMContentLoaded', () => {
         sortedBales.forEach(bale => {
             const baleHeader = document.createElement('div');
             baleHeader.className = 'list-header';
+            baleHeader.setAttribute('data-bale', bale);
             baleHeader.textContent = `Bale ${bale}`;
             baleHeader.style.cssText = 'background: #e3f2fd; color: #1976d2; font-weight: bold; cursor: pointer;';
             baleHeader.title = 'Click to load this entire bale';
+            
+            // Highlight current bale
+            if (parseInt(bale) === state.baleNumber) {
+                baleHeader.style.background = '#f39c12';
+                baleHeader.style.boxShadow = '0 0 0 3px rgba(243, 156, 18, 0.3)';
+            }
             
             baleHeader.onclick = () => {
                 loadEntireBale(bale, filteredBaleGroups[bale]);
@@ -1131,10 +1218,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Check if there's an in-progress scorecard
+    function hasInProgressScorecard() {
+        if (!state.archers || state.archers.length === 0) return false;
+        return state.archers.some(a => 
+            a.scores && a.scores.some(s => s && s.some(val => val !== ''))
+        );
+    }
+    
+    // Check if event has server-synced ends
+    async function hasServerSyncedEnds() {
+        if (!state.activeEventId && !state.selectedEventId) return false;
+        const eventId = state.activeEventId || state.selectedEventId;
+        try {
+            const res = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
+            if (!res.ok) return false;
+            const data = await res.json();
+            // Check if any archers have endsCompleted > 0
+            return Object.values(data.divisions || {}).some(div =>
+                div.archers && div.archers.some(a => a.endsCompleted > 0)
+            );
+        } catch (e) {
+            return false;
+        }
+    }
+    
     async function init() {
         console.log("Initializing Ranking Round 300 App...");
         loadData();
         renderKeypad();
+        
+        // Check for in-progress work FIRST
+        const localProgress = hasInProgressScorecard();
+        if (localProgress) {
+            console.log('Found in-progress scorecard - resuming scoring');
+            state.currentView = 'scoring';
+            renderView();
+            return;
+        }
+        
+        // Check server progress if we have an active event
+        if (state.activeEventId || state.selectedEventId) {
+            const serverProgress = await hasServerSyncedEnds();
+            if (serverProgress) {
+                console.log('Found server-synced progress - resuming scoring');
+                state.currentView = 'scoring';
+                renderView();
+                return;
+            }
+        }
+        
+        // No in-progress work - show setup
         renderView();
         
         // Check for URL parameters (QR code access)
@@ -1142,8 +1276,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('QR code detected - verifying entry code...');
             const verified = await verifyAndLoadEventByCode(urlEventId, urlEntryCode);
             if (verified) {
-                // Event loaded successfully - skip normal event loading
-                console.log('Event loaded from QR code');
+                // Event loaded successfully - skip event selector, go straight to bale selection
+                console.log('Event loaded from QR code - bypassing event selector');
+                renderSetupForm();
+                return; // Don't call loadEventInfo() - QR code users skip the selector
             } else {
                 // Verification failed - load normal event list
                 await loadEventInfo();
@@ -1160,6 +1296,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newBale = parseInt(baleNumberInput.value, 10) || 1;
                 state.baleNumber = newBale;
                 saveData();
+                
+                // Highlight and scroll to this bale
+                highlightBale(newBale);
+                scrollToBale(newBale);
                 
                 // If event is selected, try to load archers for this bale
                 if (state.selectedEventId) {
