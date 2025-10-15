@@ -851,27 +851,65 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Events data:', data);
             
             if (data.events && data.events.length > 0) {
+                // Filter to ONLY Active events
+                const activeEvents = data.events.filter(ev => ev.status === 'Active');
+                console.log(`Found ${activeEvents.length} active events out of ${data.events.length} total`);
+                
                 // Populate event selector
                 const eventSelector = document.getElementById('event-selector');
                 if (eventSelector) {
-                    console.log('Populating event selector with', data.events.length, 'events');
                     eventSelector.innerHTML = '<option value="">Select Event...</option>';
-                    data.events.forEach(ev => {
+                    
+                    if (activeEvents.length === 0) {
+                        eventSelector.innerHTML = '<option value="">No Active Events</option>';
+                        return;
+                    }
+                    
+                    activeEvents.forEach(ev => {
                         const option = document.createElement('option');
                         option.value = ev.id;
                         option.textContent = `${ev.name} (${ev.date})`;
                         eventSelector.appendChild(option);
                     });
                     
-                    // Auto-select today's event if available
-                    const todayEvent = data.events.find(ev => ev.date === today);
-                    if (todayEvent) {
-                        eventSelector.value = todayEvent.id;
-                        state.selectedEventId = todayEvent.id;
-                        console.log('Auto-selected today\'s event:', todayEvent.name);
+                    // Auto-select if only ONE active event
+                    if (activeEvents.length === 1) {
+                        console.log('Only one active event - auto-selecting:', activeEvents[0].name);
+                        eventSelector.value = activeEvents[0].id;
+                        state.selectedEventId = activeEvents[0].id;
+                        saveData();
                         
-                        // Try to load pre-assigned bale
-                        await loadPreAssignedBale(todayEvent.id);
+                        // Trigger load of archers for this event
+                        try {
+                            const res = await fetch(`${API_BASE}/events/${activeEvents[0].id}/snapshot`);
+                            if (res.ok) {
+                                const eventData = await res.json();
+                                if (eventData && eventData.divisions) {
+                                    const allArchers = [];
+                                    Object.keys(eventData.divisions).forEach(divKey => {
+                                        const div = eventData.divisions[divKey];
+                                        (div.archers || []).forEach(archer => {
+                                            const nameParts = (archer.archerName || '').split(' ');
+                                            allArchers.push({
+                                                first: nameParts[0] || '',
+                                                last: nameParts.slice(1).join(' ') || '',
+                                                school: archer.school,
+                                                level: archer.level,
+                                                gender: archer.gender,
+                                                bale: archer.bale,
+                                                target: archer.target,
+                                                division: divKey,
+                                                fave: false
+                                            });
+                                        });
+                                    });
+                                    localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
+                                    renderSetupForm();
+                                }
+                            }
+                        } catch (err) {
+                            console.log('Could not auto-load event:', err.message);
+                        }
                     }
                 } else {
                     console.log('Event selector element not found');
@@ -904,9 +942,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`HTTP ${res.status}: ${res.statusText}`);
             }
             const data = await res.json();
-            const snapshot = data.snapshot;
+            console.log('Loaded event snapshot for bale:', data);
             
-            if (!snapshot || !snapshot.divisions) {
+            if (!data || !data.divisions) {
                 console.log('No divisions found in event snapshot');
                 return;
             }
@@ -918,7 +956,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let foundArchers = [];
             let divisionName = '';
             
-            for (const [divCode, divData] of Object.entries(snapshot.divisions)) {
+            for (const [divCode, divData] of Object.entries(data.divisions)) {
                 if (divData.archers && divData.archers.length > 0) {
                     const baleArchers = divData.archers.filter(a => a.bale === targetBale);
                     if (baleArchers.length > 0) {
@@ -1149,26 +1187,32 @@ document.addEventListener('DOMContentLoaded', () => {
                             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
                         }
                         const data = await res.json();
-                        const snapshot = data.snapshot;
+                        console.log('Event snapshot loaded:', data);
                         
-                        if (!snapshot || !snapshot.divisions) {
+                        if (!data || !data.divisions) {
                             console.log('No divisions found in event snapshot');
                             return;
                         }
                         
                         // Extract archers from all divisions
                         const allArchers = [];
-                        Object.keys(snapshot.divisions || {}).forEach(divKey => {
-                            const div = snapshot.divisions[divKey];
+                        Object.keys(data.divisions || {}).forEach(divKey => {
+                            const div = data.divisions[divKey];
                             (div.archers || []).forEach(archer => {
+                                // Parse archerName: "John Smith" -> first: "John", last: "Smith"
+                                const nameParts = (archer.archerName || '').split(' ');
+                                const first = nameParts[0] || '';
+                                const last = nameParts.slice(1).join(' ') || '';
+                                
                                 allArchers.push({
-                                    first: archer.first_name,
-                                    last: archer.last_name,
+                                    first: first,
+                                    last: last,
                                     school: archer.school,
                                     level: archer.level,
                                     gender: archer.gender,
                                     bale: archer.bale,
                                     target: archer.target,
+                                    division: divKey,
                                     fave: false
                                 });
                             });
