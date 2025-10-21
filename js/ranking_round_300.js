@@ -6,6 +6,9 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    // API Configuration
+    const API_BASE = 'https://tryentist.com/wdv/api/v1';
+
     // Check for URL parameters (event and code for QR code access)
     const urlParams = new URLSearchParams(window.location.search);
     const urlEventId = urlParams.get('event');
@@ -173,7 +176,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Manual mode: show checkbox list
-        const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
+        // First try to load from event (archery_master_list), then fall back to local master list (archerList)
+        let masterList = [];
+        const eventArchers = localStorage.getItem('archery_master_list');
+        if (eventArchers) {
+            try {
+                masterList = JSON.parse(eventArchers);
+                console.log(`Loaded ${masterList.length} archers from event`);
+            } catch (e) {
+                console.error('Failed to parse event archers:', e);
+            }
+        }
+        
+        // If no event archers and ArcherModule exists, fall back to local master list
+        if (masterList.length === 0 && typeof ArcherModule !== 'undefined') {
+            masterList = ArcherModule.loadList();
+            console.log(`Loaded ${masterList.length} archers from local master list`);
+        }
+        
+        // If still no archers, show empty state
+        if (masterList.length === 0) {
+            setupControls.container.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #666;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+                    <h3>No Event Connected</h3>
+                    <p>Click the "No Event" button above to connect to an event.</p>
+                </div>
+            `;
+            return;
+        }
+        
         masterList.sort((a, b) => {
             if (a.fave && !b.fave) return -1;
             if (!a.fave && b.fave) return 1;
