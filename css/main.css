@@ -1108,6 +1108,17 @@ body.practice-target-page .main-container {
   border-bottom: 1px solid var(--border-gray);
 }
 
+/* Zero padding for cells containing score inputs */
+.score-table td:has(.score-input) {
+  padding: 0 !important;
+}
+
+.score-table td .score-input {
+  padding: 0 !important;
+  margin: 0;
+  box-sizing: border-box;
+}
+
 .score-table tbody tr:hover {
   background: var(--light-gray);
 }

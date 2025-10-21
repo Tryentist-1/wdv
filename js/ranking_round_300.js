@@ -2199,10 +2199,10 @@ function parseScoreValue(score) {
 function getScoreColor(score) {
     const s = String(score).toUpperCase();
     if (s === 'X' || s === '10') return 'score-gold';
-    if (s === '9' || s === '8') return 'score-red';
-    if (s === '7' || s === '6') return 'score-blue';
-    if (s === '5' || s === '4') return 'score-black';
-    if (s === '3' || s === '2' || s === '1') return 'score-white';
+    if (s === '9' || s === '8' || s === '7') return 'score-red';
+    if (s === '6' || s === '5') return 'score-blue';
+    if (s === '4' || s === '3') return 'score-black';
+    if (s === '2' || s === '1' || s === 'M' || s === '0') return 'score-white';
     return '';
 }
 

@@ -72,15 +72,10 @@
         });
         
         if (res.status === 401 && !_retried) {
-            // Prompt once and retry
-            try {
-                const retryKey = prompt('Passcode required for Live Updates:', '') || '';
-                if (retryKey) {
-                    saveConfig({ apiKey: retryKey, enabled: true });
-                    localStorage.setItem('coach_api_key', retryKey);
-                    return request(path, method, body, true);
-                }
-            } catch (_) {}
+            // Don't prompt on mobile - just disable Live Updates silently
+            console.warn('Live Updates unauthorized - disabling for this session');
+            saveConfig({ enabled: false });
+            throw new Error('Unauthorized - Live Updates disabled');
         }
         
         if (!res.ok) {
