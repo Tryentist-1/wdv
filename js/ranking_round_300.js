@@ -851,6 +851,13 @@ document.addEventListener('DOMContentLoaded', () => {
     async function verifyAndLoadEventByCode(eventId, entryCode) {
         try {
             console.log('Verifying entry code for event:', eventId);
+            
+            // Validate inputs
+            if (!eventId || !entryCode) {
+                console.error('Missing eventId or entryCode');
+                return false;
+            }
+            
             const res = await fetch(`${API_BASE}/events/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
