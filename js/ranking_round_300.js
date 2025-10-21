@@ -860,7 +860,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) {
                 const errorText = await res.text();
                 console.error('Verify failed:', res.status, errorText);
-                alert(`Failed to verify entry code: ${res.status} ${errorText}`);
                 return false;
             }
             
@@ -868,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Verify response:', data);
             
             if (!data.verified) {
-                alert(`Entry code invalid: ${data.error || 'Unknown error'}`);
+                console.error('Entry code invalid:', data.error || 'Unknown error');
                 return false;
             }
             
@@ -913,12 +912,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return true;
             } catch (err) {
                 console.error('Failed to load event data:', err);
-                alert('Entry code verified, but failed to load event data');
                 return false;
             }
         } catch (err) {
             console.error('Failed to verify entry code:', err);
-            alert('Failed to verify entry code. Please check your connection.');
             return false;
         }
     }
@@ -1304,6 +1301,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load event by ID (without entry code)
     async function loadEventById(eventId, eventName) {
         try {
+            if (!eventId) {
+                console.error('No event ID provided');
+                return false;
+            }
+            
             state.selectedEventId = eventId;
             state.activeEventId = eventId;
             
@@ -1338,10 +1340,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 saveData();
                 renderSetupForm();
+                return true;
             }
+            return false;
         } catch (err) {
             console.error('Failed to load event:', err);
-            alert('Failed to load event: ' + err.message);
+            return false;
         }
     }
     
@@ -1374,9 +1378,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderView();
         
         // Check for URL parameters (QR code access)
-        if (urlEventId && urlEntryCode) {
+        if (urlEventId && urlEntryCode && urlEventId.trim() && urlEntryCode.trim()) {
             console.log('QR code detected - verifying entry code...');
-            const verified = await verifyAndLoadEventByCode(urlEventId, urlEntryCode);
+            const verified = await verifyAndLoadEventByCode(urlEventId.trim(), urlEntryCode.trim());
             if (verified) {
                 // Event loaded successfully - skip event modal, go straight to bale selection
                 console.log('Event loaded from QR code - bypassing event modal');
@@ -1388,8 +1392,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderSetupForm();
                 return;
             } else {
-                // Verification failed - show modal
+                // Verification failed - show modal with error message
+                console.log('QR code verification failed - showing modal');
                 showEventModal();
+                // Show error in modal
+                const codeError = document.getElementById('code-error');
+                if (codeError) {
+                    codeError.textContent = 'QR code verification failed. Please try entering the code manually or select an event.';
+                    codeError.style.display = 'block';
+                }
             }
         } else if (!state.selectedEventId && !state.activeEventId) {
             // No QR code, no saved event - show modal
@@ -1399,7 +1410,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Has saved event - try to load it
             console.log('Found saved event ID:', state.selectedEventId || state.activeEventId);
             const eventId = state.selectedEventId || state.activeEventId;
-            await loadEventById(eventId, 'Saved Event');
+            const success = await loadEventById(eventId, 'Saved Event');
+            if (!success) {
+                // Failed to load saved event - show modal
+                console.log('Failed to load saved event - showing modal');
+                showEventModal();
+            }
         }
 
         const baleNumberInput = document.getElementById('bale-number-input');
