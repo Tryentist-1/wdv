@@ -1,19 +1,12 @@
 {
-  "name": "wdv",
+  "name": "wdv-tests",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs",
-    "test": "tests"
-  },
   "scripts": {
-    "test": "qunit tests/"
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
-    "qunit": "^2.24.1"
+    "@playwright/test": "^1.40.0"
   }
 }
