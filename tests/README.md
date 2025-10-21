@@ -1,5 +1,21 @@
 # Automated Browser Tests
 
+## Two Testing Modes
+
+### 🌐 **Remote Testing** (Default)
+Tests your LIVE website at `https://tryentist.com/wdv`
+- Tests what users actually see
+- Run AFTER deploying
+- Catches caching/deployment issues
+
+### 💻 **Local Testing** 
+Tests your local files BEFORE deploying
+- Run BEFORE deploying
+- Catches bugs early
+- Faster iteration
+
+---
+
 ## Quick Start
 
 ### 1. Install Playwright (one-time setup)
@@ -10,15 +26,18 @@ npx playwright install
 ```
 
 ### 2. Run Tests
+
+#### Test REMOTE (after deploying)
 ```bash
-# Run all tests (headless)
-npm test
+npm test                 # Headless
+npm run test:headed      # Watch tests run
+npm run test:ui          # Interactive UI
+```
 
-# Run with UI (watch tests run)
-npm run test:headed
-
-# Run with Playwright UI (best for debugging)
-npm run test:ui
+#### Test LOCAL (before deploying)
+```bash
+npm run test:local       # Test local files
+npm run test:local:ui    # Interactive UI (local)
 ```
 
 ---

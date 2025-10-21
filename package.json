@@ -4,7 +4,11 @@
   "scripts": {
     "test": "playwright test",
     "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed"
+    "test:headed": "playwright test --headed",
+    "test:local": "playwright test --config=playwright.config.local.js",
+    "test:local:ui": "playwright test --config=playwright.config.local.js --ui",
+    "test:remote": "playwright test",
+    "serve": "php -S localhost:8000"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0"
