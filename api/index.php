@@ -551,14 +551,8 @@ if (preg_match('#^/v1/events/recent$#', $route) && $method === 'GET') {
     $pdo = db();
     ensure_events_schema($pdo);
     
-    // If authenticated (coach), include entry_code. If public (archer), exclude it for security.
-    $isAuthenticated = false;
-    try {
-        require_api_key(); // Throws exception if not authenticated
-        $isAuthenticated = true;
-    } catch (Exception $e) {
-        // Not authenticated - continue as public
-    }
+    // Check if authenticated (coach gets entry_code, archer doesn't)
+    $isAuthenticated = check_api_key();
     
     if ($isAuthenticated) {
         // Coach view - include entry_code

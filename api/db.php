@@ -23,9 +23,15 @@ function require_api_key(): void {
     $pass = $_SERVER['HTTP_X_PASSCODE'] ?? '';
     $passOk = (strlen($pass) > 0) && (strtolower($pass) === strtolower(PASSCODE));
     if ($key !== API_KEY && !$passOk) {
-        json_response(['error' => 'Unauthorized'], 401);
-        exit;
+        throw new Exception('Unauthorized');
     }
+}
+
+function check_api_key(): bool {
+    $key = $_SERVER['HTTP_X_API_KEY'] ?? '';
+    $pass = $_SERVER['HTTP_X_PASSCODE'] ?? '';
+    $passOk = (strlen($pass) > 0) && (strtolower($pass) === strtolower(PASSCODE));
+    return ($key === API_KEY || $passOk);
 }
 
 function cors(): void {
