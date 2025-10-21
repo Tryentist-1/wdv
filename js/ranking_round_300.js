@@ -2105,14 +2105,38 @@ document.addEventListener('DOMContentLoaded', () => {
             verifyCodeBtn.textContent = 'Connecting...';
             
             try {
-                // Search for event with this entry code
-                const res = await fetch(`${API_BASE}/events/recent`);
-                if (!res.ok) throw new Error('Failed to fetch events');
+                // First, get list of events to find event ID by code
+                // We need to check each event by verifying the code
+                const eventsRes = await fetch(`${API_BASE}/events/recent`);
+                if (!eventsRes.ok) throw new Error('Failed to fetch events');
                 
-                const data = await res.json();
-                const matchingEvent = (data.events || []).find(ev => ev.entry_code === code);
+                const eventsData = await eventsRes.json();
+                const activeEvents = (eventsData.events || []).filter(ev => ev.status === 'Active');
                 
-                if (!matchingEvent) {
+                // Try to verify the code against each active event
+                let matchedEvent = null;
+                for (const event of activeEvents) {
+                    try {
+                        const verifyRes = await fetch(`${API_BASE}/events/verify`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ eventId: event.id, entryCode: code })
+                        });
+                        
+                        if (verifyRes.ok) {
+                            const verifyData = await verifyRes.json();
+                            if (verifyData.verified) {
+                                matchedEvent = event;
+                                break;
+                            }
+                        }
+                    } catch (e) {
+                        // Continue to next event
+                        continue;
+                    }
+                }
+                
+                if (!matchedEvent) {
                     codeError.textContent = 'Invalid event code. Please check and try again.';
                     codeError.style.display = 'block';
                     verifyCodeBtn.disabled = false;
@@ -2121,7 +2145,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 // Load this event
-                await loadEventById(matchingEvent.id, matchingEvent.name);
+                await loadEventById(matchedEvent.id, matchedEvent.name);
                 hideEventModal();
                 eventCodeInput.value = '';
                 

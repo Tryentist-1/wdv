@@ -2,12 +2,13 @@
   "name": "wdv-tests",
   "version": "1.0.0",
   "scripts": {
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed",
+    "test": "playwright test --grep-invert 'LOCAL'",
+    "test:all": "playwright test",
+    "test:ui": "playwright test --ui --grep-invert 'LOCAL'",
+    "test:headed": "playwright test --headed --grep-invert 'LOCAL'",
     "test:local": "playwright test --config=playwright.config.local.js",
     "test:local:ui": "playwright test --config=playwright.config.local.js --ui",
-    "test:remote": "playwright test",
+    "test:remote": "playwright test --grep-invert 'LOCAL'",
     "serve": "php -S localhost:8000"
   },
   "devDependencies": {
