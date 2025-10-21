@@ -300,9 +300,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const filteredBaleGroups = {};
         Object.keys(baleGroups).forEach(bale => {
             const filtered = baleGroups[bale].filter(archer => {
-                const name = `${archer.first} ${archer.last}`.toLowerCase();
-                return name.includes(filter.toLowerCase());
-            });
+            const name = `${archer.first} ${archer.last}`.toLowerCase();
+            return name.includes(filter.toLowerCase());
+        });
             if (filtered.length > 0) {
                 filteredBaleGroups[bale] = filtered;
             }
@@ -370,100 +370,100 @@ document.addEventListener('DOMContentLoaded', () => {
             listDiv.appendChild(unassignedHeader);
             
             filteredUnassigned.forEach((archer) => {
-                const row = document.createElement('div');
-                row.className = 'archer-select-row';
+            const row = document.createElement('div');
+            row.className = 'archer-select-row';
 
-                const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
-                const existingArcher = state.archers.find(a => a.id === uniqueId);
+            const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
+            const existingArcher = state.archers.find(a => a.id === uniqueId);
 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = !!existingArcher;
-                
-                const targetSelect = document.createElement('select');
-                targetSelect.className = 'target-assignment-select';
-                ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter => {
-                    const option = document.createElement('option');
-                    option.value = letter;
-                    option.textContent = letter;
-                    targetSelect.appendChild(option);
-                });
-                targetSelect.style.display = checkbox.checked ? 'inline-block' : 'none';
-                if (existingArcher) {
-                    targetSelect.value = existingArcher.targetAssignment;
-                }
-                
-                checkbox.onchange = () => {
-                    if (checkbox.checked) {
-                        // Enforce max 4 archers per bale (A-D)
-                        const selectedCount = state.archers.length;
-                        if (selectedCount >= 4) {
-                            checkbox.checked = false;
-                            alert('Bale is full (4 archers).');
-                            return;
-                        }
-                        if (!state.archers.some(a => a.id === uniqueId)) {
-                            const usedTargets = state.archers.map(a => a.targetAssignment);
-                            const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
-                            const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
-                            state.archers.push({
-                                id: uniqueId,
-                                firstName: archer.first,
-                                lastName: archer.last,
-                                school: archer.school || '',
-                                level: archer.level || '',
-                                gender: archer.gender || '',
-                                targetAssignment: nextTarget,
-                                targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
-                                scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
-                            });
-                        }
-                    } else {
-                        state.archers = state.archers.filter(a => a.id !== uniqueId);
-                    }
-                    saveData();
-                    // Update selected count chip
-                    const chip = document.getElementById('selected-count-chip');
-                    if (chip) chip.textContent = `${state.archers.length}/4`;
-                    renderSetupForm();
-                };
-
-                targetSelect.onchange = () => {
-                    const archerInState = state.archers.find(a => a.id === uniqueId);
-                    if (archerInState) {
-                        archerInState.targetAssignment = targetSelect.value;
-                        saveData();
-                    }
-                };
-                
-                const star = document.createElement('span');
-                star.textContent = archer.fave ? '★' : '☆';
-                star.className = 'favorite-star';
-                star.style.color = archer.fave ? '#ffc107' : '#ccc';
-                star.onclick = (e) => {
-                    e.stopPropagation();
-                    ArcherModule.toggleFavorite(archer.first, archer.last);
-                    renderSetupForm();
-                };
-                const nameLabel = document.createElement('span');
-                nameLabel.textContent = `${archer.first} ${archer.last}`;
-                nameLabel.className = 'archer-name-label';
-                const detailsLabel = document.createElement('span');
-                detailsLabel.className = 'archer-details-label';
-                detailsLabel.textContent = `(${archer.level || 'VAR'})`;
-                row.appendChild(checkbox);
-                row.appendChild(star);
-                row.appendChild(nameLabel);
-                row.appendChild(detailsLabel);
-                row.appendChild(targetSelect);
-                listDiv.appendChild(row);
-                row.onclick = (e) => {
-                    if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
-                        checkbox.checked = !checkbox.checked;
-                        checkbox.dispatchEvent(new Event('change'));
-                    }
-                };
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = !!existingArcher;
+            
+            const targetSelect = document.createElement('select');
+            targetSelect.className = 'target-assignment-select';
+            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter => {
+                const option = document.createElement('option');
+                option.value = letter;
+                option.textContent = letter;
+                targetSelect.appendChild(option);
             });
+            targetSelect.style.display = checkbox.checked ? 'inline-block' : 'none';
+            if (existingArcher) {
+                targetSelect.value = existingArcher.targetAssignment;
+            }
+            
+            checkbox.onchange = () => {
+                if (checkbox.checked) {
+                    // Enforce max 4 archers per bale (A-D)
+                    const selectedCount = state.archers.length;
+                    if (selectedCount >= 4) {
+                        checkbox.checked = false;
+                        alert('Bale is full (4 archers).');
+                        return;
+                    }
+                    if (!state.archers.some(a => a.id === uniqueId)) {
+                        const usedTargets = state.archers.map(a => a.targetAssignment);
+                        const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
+                        const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
+                        state.archers.push({
+                            id: uniqueId,
+                            firstName: archer.first,
+                            lastName: archer.last,
+                            school: archer.school || '',
+                            level: archer.level || '',
+                            gender: archer.gender || '',
+                            targetAssignment: nextTarget,
+                            targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
+                            scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
+                        });
+                    }
+                } else {
+                    state.archers = state.archers.filter(a => a.id !== uniqueId);
+                }
+                saveData();
+                // Update selected count chip
+                const chip = document.getElementById('selected-count-chip');
+                if (chip) chip.textContent = `${state.archers.length}/4`;
+                renderSetupForm();
+            };
+
+            targetSelect.onchange = () => {
+                const archerInState = state.archers.find(a => a.id === uniqueId);
+                if (archerInState) {
+                    archerInState.targetAssignment = targetSelect.value;
+                    saveData();
+                }
+            };
+            
+            const star = document.createElement('span');
+            star.textContent = archer.fave ? '★' : '☆';
+            star.className = 'favorite-star';
+            star.style.color = archer.fave ? '#ffc107' : '#ccc';
+            star.onclick = (e) => {
+                e.stopPropagation();
+                ArcherModule.toggleFavorite(archer.first, archer.last);
+                renderSetupForm();
+            };
+            const nameLabel = document.createElement('span');
+            nameLabel.textContent = `${archer.first} ${archer.last}`;
+            nameLabel.className = 'archer-name-label';
+            const detailsLabel = document.createElement('span');
+            detailsLabel.className = 'archer-details-label';
+            detailsLabel.textContent = `(${archer.level || 'VAR'})`;
+            row.appendChild(checkbox);
+            row.appendChild(star);
+            row.appendChild(nameLabel);
+            row.appendChild(detailsLabel);
+            row.appendChild(targetSelect);
+            listDiv.appendChild(row);
+            row.onclick = (e) => {
+                if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change'));
+                }
+            };
+        });
         }
     }
     
@@ -1243,6 +1243,108 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // Show event selection modal
+    function showEventModal() {
+        const modal = document.getElementById('event-modal');
+        if (modal) {
+            modal.style.display = 'flex';
+            
+            // Load active events into the Events tab
+            loadActiveEventsIntoModal();
+        }
+    }
+    
+    // Hide event selection modal
+    function hideEventModal() {
+        const modal = document.getElementById('event-modal');
+        if (modal) modal.style.display = 'none';
+    }
+    
+    // Load active events into modal list
+    async function loadActiveEventsIntoModal() {
+        try {
+            const res = await fetch(`${API_BASE}/events/recent`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            
+            const data = await res.json();
+            const activeEvents = (data.events || []).filter(ev => ev.status === 'Active');
+            
+            const eventList = document.getElementById('event-list');
+            if (!eventList) return;
+            
+            if (activeEvents.length === 0) {
+                eventList.innerHTML = '<p style="color: #999; text-align: center;">No active events found</p>';
+                return;
+            }
+            
+            eventList.innerHTML = '';
+            activeEvents.forEach(ev => {
+                const eventBtn = document.createElement('button');
+                eventBtn.className = 'btn btn-secondary';
+                eventBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; text-align: left; padding: 1rem;';
+                eventBtn.innerHTML = `
+                    <div style="font-weight: bold;">${ev.name}</div>
+                    <div style="font-size: 0.85em; color: #666;">${ev.date}</div>
+                `;
+                eventBtn.onclick = async () => {
+                    await loadEventById(ev.id, ev.name);
+                    hideEventModal();
+                };
+                eventList.appendChild(eventBtn);
+            });
+        } catch (err) {
+            console.error('Failed to load events:', err);
+            const eventList = document.getElementById('event-list');
+            if (eventList) {
+                eventList.innerHTML = '<p style="color: #f44336;">Failed to load events</p>';
+            }
+        }
+    }
+    
+    // Load event by ID (without entry code)
+    async function loadEventById(eventId, eventName) {
+        try {
+            state.selectedEventId = eventId;
+            state.activeEventId = eventId;
+            
+            const res = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            
+            const eventData = await res.json();
+            if (eventData && eventData.divisions) {
+                const allArchers = [];
+                Object.keys(eventData.divisions).forEach(divKey => {
+                    const div = eventData.divisions[divKey];
+                    (div.archers || []).forEach(archer => {
+                        const nameParts = (archer.archerName || '').split(' ');
+                        allArchers.push({
+                            first: nameParts[0] || '',
+                            last: nameParts.slice(1).join(' ') || '',
+                            school: archer.school,
+                            level: archer.level,
+                            gender: archer.gender,
+                            bale: archer.bale,
+                            target: archer.target,
+                            division: divKey,
+                            fave: false
+                        });
+                    });
+                });
+                localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
+                
+                // Update UI
+                const currentEventName = document.getElementById('current-event-name');
+                if (currentEventName) currentEventName.textContent = eventName;
+                
+                saveData();
+                renderSetupForm();
+            }
+        } catch (err) {
+            console.error('Failed to load event:', err);
+            alert('Failed to load event: ' + err.message);
+        }
+    }
+    
     async function init() {
         console.log("Initializing Ranking Round 300 App...");
         loadData();
@@ -1253,7 +1355,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (localProgress) {
             console.log('Found in-progress scorecard - resuming scoring');
             state.currentView = 'scoring';
-            renderView();
+        renderView();
             return;
         }
         
@@ -1276,17 +1378,28 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('QR code detected - verifying entry code...');
             const verified = await verifyAndLoadEventByCode(urlEventId, urlEntryCode);
             if (verified) {
-                // Event loaded successfully - skip event selector, go straight to bale selection
-                console.log('Event loaded from QR code - bypassing event selector');
+                // Event loaded successfully - skip event modal, go straight to bale selection
+                console.log('Event loaded from QR code - bypassing event modal');
+                
+                // Update current event name button
+                const currentEventName = document.getElementById('current-event-name');
+                if (currentEventName) currentEventName.textContent = 'QR Event';
+                
                 renderSetupForm();
-                return; // Don't call loadEventInfo() - QR code users skip the selector
+                return;
             } else {
-                // Verification failed - load normal event list
-                await loadEventInfo();
+                // Verification failed - show modal
+                showEventModal();
             }
+        } else if (!state.selectedEventId && !state.activeEventId) {
+            // No QR code, no saved event - show modal
+            console.log('No event connected - showing event modal');
+            showEventModal();
         } else {
-            // Normal load
-            await loadEventInfo();
+            // Has saved event - try to load it
+            console.log('Found saved event ID:', state.selectedEventId || state.activeEventId);
+            const eventId = state.selectedEventId || state.activeEventId;
+            await loadEventById(eventId, 'Saved Event');
         }
 
         const baleNumberInput = document.getElementById('bale-number-input');
@@ -1888,6 +2001,105 @@ document.addEventListener('DOMContentLoaded', () => {
         if (exportModal) {
             exportModal.style.display = 'none';
         }
+    }
+
+    // Event Modal Handlers
+    const tabPasscode = document.getElementById('tab-passcode');
+    const tabEvents = document.getElementById('tab-events');
+    const passcodeTabContent = document.getElementById('passcode-tab');
+    const eventsTabContent = document.getElementById('events-tab');
+    const verifyCodeBtn = document.getElementById('verify-code-btn');
+    const eventCodeInput = document.getElementById('event-code-input');
+    const codeError = document.getElementById('code-error');
+    const cancelEventModalBtn = document.getElementById('cancel-event-modal-btn');
+    const changeEventBtn = document.getElementById('change-event-btn');
+    
+    // Tab switching
+    if (tabPasscode && tabEvents) {
+        tabPasscode.onclick = () => {
+            tabPasscode.classList.add('active');
+            tabPasscode.style.borderBottom = '3px solid #2d7dd9';
+            tabEvents.classList.remove('active');
+            tabEvents.style.borderBottom = '3px solid transparent';
+            passcodeTabContent.style.display = 'block';
+            eventsTabContent.style.display = 'none';
+        };
+        
+        tabEvents.onclick = () => {
+            tabEvents.classList.add('active');
+            tabEvents.style.borderBottom = '3px solid #2d7dd9';
+            tabPasscode.classList.remove('active');
+            tabPasscode.style.borderBottom = '3px solid transparent';
+            eventsTabContent.style.display = 'block';
+            passcodeTabContent.style.display = 'none';
+        };
+    }
+    
+    // Verify code button
+    if (verifyCodeBtn && eventCodeInput) {
+        verifyCodeBtn.onclick = async () => {
+            const code = eventCodeInput.value.trim();
+            if (!code) {
+                codeError.textContent = 'Please enter an event code';
+                codeError.style.display = 'block';
+                return;
+            }
+            
+            codeError.style.display = 'none';
+            verifyCodeBtn.disabled = true;
+            verifyCodeBtn.textContent = 'Connecting...';
+            
+            try {
+                // Search for event with this entry code
+                const res = await fetch(`${API_BASE}/events/recent`);
+                if (!res.ok) throw new Error('Failed to fetch events');
+                
+                const data = await res.json();
+                const matchingEvent = (data.events || []).find(ev => ev.entry_code === code);
+                
+                if (!matchingEvent) {
+                    codeError.textContent = 'Invalid event code. Please check and try again.';
+                    codeError.style.display = 'block';
+                    verifyCodeBtn.disabled = false;
+                    verifyCodeBtn.textContent = 'Connect to Event';
+                    return;
+                }
+                
+                // Load this event
+                await loadEventById(matchingEvent.id, matchingEvent.name);
+                hideEventModal();
+                eventCodeInput.value = '';
+                
+            } catch (err) {
+                console.error('Failed to verify code:', err);
+                codeError.textContent = 'Connection failed. Please check your internet.';
+                codeError.style.display = 'block';
+            } finally {
+                verifyCodeBtn.disabled = false;
+                verifyCodeBtn.textContent = 'Connect to Event';
+            }
+        };
+        
+        // Allow Enter key to submit
+        eventCodeInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                verifyCodeBtn.click();
+            }
+        });
+    }
+    
+    // Cancel button
+    if (cancelEventModalBtn) {
+        cancelEventModalBtn.onclick = () => {
+            hideEventModal();
+        };
+    }
+    
+    // Change event button (in header)
+    if (changeEventBtn) {
+        changeEventBtn.onclick = () => {
+            showEventModal();
+        };
     }
 
     // Only initialize the app if we are on the ranking round page
