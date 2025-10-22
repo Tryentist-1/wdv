@@ -276,6 +276,14 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         setupControls.container.appendChild(banner);
         
+        // Add "Edit Assignments" button
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-outline-primary';
+        editBtn.style.cssText = 'margin-bottom: 12px; width: 100%;';
+        editBtn.textContent = '✏️ Edit Assignments';
+        editBtn.onclick = () => showEditAssignmentsModal();
+        setupControls.container.appendChild(editBtn);
+        
         const listDiv = document.createElement('div');
         listDiv.className = 'archer-select-list';
         listDiv.style.cssText = 'background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;';
@@ -1443,6 +1451,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Found in-progress scorecard - resuming scoring');
             state.currentView = 'scoring';
             renderView();
+            return; // Resume scoring, skip further setup
         }
         
         // Check server progress if we have an active event
@@ -1452,6 +1461,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Found server-synced progress - resuming scoring');
                 state.currentView = 'scoring';
                 renderView();
+                return; // Resume scoring, skip further setup
             }
         }
         
@@ -2073,6 +2083,80 @@ document.addEventListener('DOMContentLoaded', () => {
             completedEnds,
             average: completedEnds > 0 ? (totalScore / (completedEnds * 3)).toFixed(1) : 0
         };
+    }
+
+    function showEditAssignmentsModal() {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('edit-assignments-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'edit-assignments-modal';
+            modal.className = 'modal-overlay';
+            modal.style.cssText = 'display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;';
+            document.body.appendChild(modal);
+        }
+        
+        // Get all archers from the event
+        const eventArchers = JSON.parse(localStorage.getItem('archery_master_list') || '[]');
+        const currentArcherIds = state.archers.map(a => `${a.firstName}-${a.lastName}-${a.school}`);
+        
+        modal.innerHTML = `
+            <div style="background: white; padding: 20px; border-radius: 8px; max-width: 90%; max-height: 80%; overflow-y: auto;">
+                <h3 style="margin-top: 0;">Edit Bale Assignments</h3>
+                <p style="color: #666; margin-bottom: 16px;">Check/uncheck archers to include in this bale</p>
+                
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 8px;">
+                    ${eventArchers.map(archer => {
+                        const archerId = `${archer.first}-${archer.last}-${archer.school}`;
+                        const isChecked = currentArcherIds.includes(archerId);
+                        return `
+                            <label style="display: block; padding: 8px; border-bottom: 1px solid #eee; cursor: pointer;">
+                                <input type="checkbox" ${isChecked ? 'checked' : ''} 
+                                       data-archer='${JSON.stringify(archer).replace(/'/g, '&#39;')}'
+                                       style="margin-right: 8px;">
+                                <strong>${archer.first} ${archer.last}</strong> 
+                                <span style="color: #666;">(${archer.school} - ${archer.level}/${archer.gender})</span>
+                                ${archer.bale ? `<span style="color: #2196f3;">- Bale ${archer.bale}</span>` : ''}
+                            </label>
+                        `;
+                    }).join('')}
+                </div>
+                
+                <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end;">
+                    <button id="edit-assignments-cancel" class="btn btn-secondary">Cancel</button>
+                    <button id="edit-assignments-save" class="btn btn-primary">Save Changes</button>
+                </div>
+            </div>
+        `;
+        
+        // Add event listeners
+        document.getElementById('edit-assignments-cancel').onclick = () => {
+            modal.style.display = 'none';
+        };
+        
+        document.getElementById('edit-assignments-save').onclick = () => {
+            const checkboxes = modal.querySelectorAll('input[type="checkbox"]:checked');
+            const selectedArchers = Array.from(checkboxes).map(cb => {
+                const archerData = JSON.parse(cb.dataset.archer.replace(/&#39;/g, "'"));
+                return {
+                    id: `${archerData.first}-${archerData.last}-${archerData.school}`,
+                    firstName: archerData.first,
+                    lastName: archerData.last,
+                    school: archerData.school,
+                    level: archerData.level,
+                    gender: archerData.gender,
+                    targetAssignment: archerData.target || 'A',
+                    scores: []
+                };
+            });
+            
+            state.archers = selectedArchers;
+            saveData();
+            renderSetupForm();
+            modal.style.display = 'none';
+        };
+        
+        modal.style.display = 'flex';
     }
 
     function showExportModal() {
