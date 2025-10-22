@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeArcherId: null, // For card view
         selectedEventId: null, // Selected event for this bale
         activeEventId: null, // Event ID if pre-assigned mode
+        eventName: '',
         assignmentMode: 'manual', // 'manual' or 'pre-assigned'
         syncStatus: {}, // Track sync status per archer per end: { archerId: { endNumber: 'synced'|'pending'|'failed' } }
         sortMode: 'bale' // 'bale' or 'name'
@@ -88,11 +89,51 @@ document.addEventListener('DOMContentLoaded', () => {
         if (views[state.currentView]) {
             views[state.currentView].style.display = 'block';
         }
+        updateEventHeader();
+        if (state.currentView === 'scoring') {
+            showScoringBanner();
+        } else {
+            hideScoringBanner();
+        }
         if (state.currentView === 'setup') {
             renderSetupForm();
         } else if (state.currentView === 'scoring') {
             renderScoringView();
         }
+    }
+
+    function updateEventHeader() {
+        const currentEventName = document.getElementById('current-event-name');
+        if (currentEventName) {
+            currentEventName.textContent = state.eventName || 'No Event';
+        }
+    }
+
+    function getOrCreateScoringBanner() {
+        let banner = document.getElementById('scoring-indicator');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'scoring-indicator';
+            banner.style.cssText = 'position: sticky; top: 0; z-index: 999; width: 100%; background:#198754; color:white; font-weight:700; text-align:center; padding:6px 8px;';
+            const header = document.querySelector('.page-header');
+            if (header && header.parentNode) {
+                header.parentNode.insertBefore(banner, header.nextSibling);
+            } else {
+                document.body.prepend(banner);
+            }
+        }
+        return banner;
+    }
+
+    function showScoringBanner() {
+        const banner = getOrCreateScoringBanner();
+        banner.style.display = 'block';
+        banner.textContent = `SCORING IN PROGRESS • ${state.eventName || 'Event'} • Bale ${state.baleNumber} • End ${state.currentEnd} of ${state.totalEnds}`;
+    }
+
+    function hideScoringBanner() {
+        const banner = document.getElementById('scoring-indicator');
+        if (banner) banner.style.display = 'none';
     }
 
     // Ensure core UI handlers are always attached, even on resume after reload
@@ -158,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.removeItem(sessionKey);
             }
         }
+        updateEventHeader();
     }
 
     // --- LOGIC ---
@@ -1424,9 +1466,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
                 
-                // Update UI
-                const currentEventName = document.getElementById('current-event-name');
-                if (currentEventName) currentEventName.textContent = eventName;
+                // Update UI/state
+                state.eventName = eventName || state.eventName || '';
+                updateEventHeader();
                 
                 saveData();
                 renderSetupForm();
@@ -1477,8 +1519,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Event loaded from QR code - bypassing event modal');
                 
                 // Update current event name button
-                const currentEventName = document.getElementById('current-event-name');
-                if (currentEventName) currentEventName.textContent = 'QR Event';
+                state.eventName = 'QR Event';
+                updateEventHeader();
                 
                 renderSetupForm();
             } else {
@@ -1500,7 +1542,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Has saved event - try to load it
             console.log('Found saved event ID:', state.selectedEventId || state.activeEventId);
             const eventId = state.selectedEventId || state.activeEventId;
-            const success = await loadEventById(eventId, 'Saved Event');
+            const success = await loadEventById(eventId, state.eventName || 'Saved Event');
             if (!success) {
                 // Failed to load saved event - show modal
                 console.log('Failed to load saved event - showing modal');
