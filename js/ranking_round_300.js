@@ -155,7 +155,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (verifyModal.sendBtn) verifyModal.sendBtn.onclick = () => { sendBaleSMS(); verifyModal.element.style.display = 'none'; };
 
         // Card controls
-        if (cardControls.backToScoringBtn) cardControls.backToScoringBtn.onclick = () => { state.currentView = 'scoring'; renderView(); };
+        if (cardControls.backToScoringBtn) {
+            cardControls.backToScoringBtn.textContent = 'Start Scoring';
+            cardControls.backToScoringBtn.onclick = () => { state.currentView = 'scoring'; renderView(); };
+        }
         if (cardControls.exportBtn) cardControls.exportBtn.onclick = showExportModal;
         if (cardControls.prevArcherBtn) cardControls.prevArcherBtn.onclick = () => navigateArchers(-1);
         if (cardControls.nextArcherBtn) cardControls.nextArcherBtn.onclick = () => navigateArchers(1);
@@ -1800,7 +1803,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const scoringBtn = document.createElement('button');
             scoringBtn.id = 'scoring-btn';
             scoringBtn.className = 'btn btn-primary';
-            scoringBtn.textContent = 'Scoring';
+            scoringBtn.textContent = 'Start Scoring';
             scoringBtn.style.marginLeft = 'auto';
             scoringBtn.onclick = showScoringView;
             setupControls.subheader.appendChild(searchInput);
@@ -1821,8 +1824,14 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
         
-        scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
-        scoringControls.nextEndBtn.onclick = () => changeEnd(1);
+        if (scoringControls.prevEndBtn) {
+            scoringControls.prevEndBtn.textContent = 'Last End';
+            scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
+        }
+        if (scoringControls.nextEndBtn) {
+            scoringControls.nextEndBtn.textContent = 'Next End';
+            scoringControls.nextEndBtn.onclick = () => changeEnd(1);
+        }
         
         resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
         resetModal.resetBtn.onclick = () => {
