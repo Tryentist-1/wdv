@@ -47,20 +47,9 @@
         
         const headers = { 'Content-Type': 'application/json' };
         
+        // Do not prompt for keys on archer devices; simply disable live updates when not configured
         if (!key) {
-            try {
-                const newKey = prompt('Enter coach passcode for Live Updates:', '') || '';
-                if (newKey) {
-                    saveConfig({ apiKey: newKey, enabled: true });
-                    localStorage.setItem('coach_api_key', newKey);
-                    // Retry with new key
-                    return request(path, method, body, true);
-                } else {
-                    throw new Error('API key required');
-                }
-            } catch (_) {
-                throw new Error('API key required');
-            }
+            return null;
         }
         
         if (key) { headers['X-API-Key'] = key; headers['X-Passcode'] = key; }

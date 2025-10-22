@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         element: document.getElementById('keypad'),
         currentlyFocusedInput: null,
     };
+    let uiWired = false; // ensure click/input handlers survive reload/resume
     
     // --- VIEW MANAGEMENT ---
     function renderView() {
@@ -92,6 +93,48 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (state.currentView === 'scoring') {
             renderScoringView();
         }
+    }
+
+    // Ensure core UI handlers are always attached, even on resume after reload
+    function wireCoreHandlers() {
+        if (uiWired) return;
+        uiWired = true;
+
+        // End navigation
+        if (scoringControls.prevEndBtn) scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
+        if (scoringControls.nextEndBtn) scoringControls.nextEndBtn.onclick = () => changeEnd(1);
+
+        // Reset modal
+        if (resetModal.cancelBtn) resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
+        if (resetModal.resetBtn) resetModal.resetBtn.onclick = () => { resetState(); resetModal.element.style.display = 'none'; };
+        if (resetModal.sampleBtn) resetModal.sampleBtn.onclick = () => { loadSampleData(); resetModal.element.style.display = 'none'; };
+
+        // Verify modal
+        if (verifyModal.closeBtn) verifyModal.closeBtn.onclick = () => verifyModal.element.style.display = 'none';
+        if (verifyModal.sendBtn) verifyModal.sendBtn.onclick = () => { sendBaleSMS(); verifyModal.element.style.display = 'none'; };
+
+        // Card controls
+        if (cardControls.backToScoringBtn) cardControls.backToScoringBtn.onclick = () => { state.currentView = 'scoring'; renderView(); };
+        if (cardControls.exportBtn) cardControls.exportBtn.onclick = showExportModal;
+        if (cardControls.prevArcherBtn) cardControls.prevArcherBtn.onclick = () => navigateArchers(-1);
+        if (cardControls.nextArcherBtn) cardControls.nextArcherBtn.onclick = () => navigateArchers(1);
+
+        // Delegated handlers (robust across rerenders)
+        document.body.addEventListener('click', (e) => {
+            if (e.target.classList && e.target.classList.contains('view-card-btn')) {
+                state.currentView = 'card';
+                state.activeArcherId = e.target.dataset.archerId;
+                renderCardView(state.activeArcherId);
+                renderView();
+                if (keypad.element) keypad.element.style.display = 'none';
+            }
+        });
+        document.body.addEventListener('input', (e) => {
+            if (e.target.classList && e.target.classList.contains('score-input')) {
+                handleScoreInput(e);
+            }
+        });
+        if (keypad.element) keypad.element.addEventListener('click', handleKeypadClick);
     }
 
     // --- PERSISTENCE ---
@@ -1392,14 +1435,14 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Initializing Ranking Round 300 App...");
         loadData();
         renderKeypad();
+        wireCoreHandlers();
         
         // Check for in-progress work FIRST
         const localProgress = hasInProgressScorecard();
         if (localProgress) {
             console.log('Found in-progress scorecard - resuming scoring');
             state.currentView = 'scoring';
-        renderView();
-            return;
+            renderView();
         }
         
         // Check server progress if we have an active event
@@ -1409,7 +1452,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Found server-synced progress - resuming scoring');
                 state.currentView = 'scoring';
                 renderView();
-                return;
             }
         }
         
@@ -1429,7 +1471,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentEventName) currentEventName.textContent = 'QR Event';
                 
                 renderSetupForm();
-                return;
             } else {
                 // Verification failed - show modal with error message
                 console.log('QR code verification failed - showing modal');
@@ -1693,19 +1734,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch(_) {}
             };
             liveBtn.onclick = () => {
-                if (!getLiveEnabled()) {
-                    let key = (localStorage.getItem('coach_api_key')||'').trim();
-                    if (!key) {
-                        key = prompt('Enter coach passcode to enable Live Updates:','');
-                        if (!key) return;
-                        try { localStorage.setItem('coach_api_key', key); if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ apiKey: key }); } catch(_) {}
-                    } else {
-                        try { if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ apiKey: key }); } catch(_) {}
-                    }
-                }
+                // Archers should not be prompted; toggle only if already configured
                 setLiveEnabled(!getLiveEnabled());
                 renderLiveBtn();
-                // If turned on, initialize immediately
                 if (getLiveEnabled()) initLiveRoundAndArchers();
             };
 
