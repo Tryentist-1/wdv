@@ -102,10 +102,10 @@
     }
 
     function postEnd(localId, endNumber, payload) {
-        if (!state.config.enabled) return;
+        if (!state.config.enabled) return Promise.resolve(); // Return resolved promise instead of undefined
         // The original enqueue and flush logic are removed as per the new_code.
         // The request and event dispatching are kept.
-        request(`/rounds/${state.roundId}/archers/${state.archerIds[localId]}/ends`, 'POST', {
+        return request(`/rounds/${state.roundId}/archers/${state.archerIds[localId]}/ends`, 'POST', {
             endNumber,
             a1: payload.a1, a2: payload.a2, a3: payload.a3,
             endTotal: payload.endTotal,
