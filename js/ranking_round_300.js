@@ -311,13 +311,31 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPreAssignedArchers() {
         if (!setupControls.container) return;
         
+        // Get search term from input
+        const searchInput = setupControls.subheader?.querySelector('.archer-search-bar');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+        
+        // Filter archers by current bale number and search term
+        const baleArchers = state.archers.filter(archer => {
+            const matchesBale = archer.baleNumber === state.baleNumber;
+            if (!matchesBale) return false;
+            
+            if (!searchTerm) return true;
+            
+            const fullName = `${archer.firstName} ${archer.lastName}`.toLowerCase();
+            const school = archer.school.toLowerCase();
+            return fullName.includes(searchTerm) || school.includes(searchTerm);
+        });
+        
         const banner = document.createElement('div');
         banner.className = 'pre-assigned-banner';
         banner.style.cssText = 'background: #e3f2fd; padding: 12px; margin-bottom: 12px; border-radius: 4px; border-left: 4px solid #2196f3;';
         banner.innerHTML = `
             <div style="font-weight: bold; margin-bottom: 4px;">📌 Pre-Assigned Bale</div>
             <div style="font-size: 0.9em;">Bale ${state.baleNumber} - ${state.divisionName || 'Division'}</div>
-            <div style="font-size: 0.85em; color: #666; margin-top: 4px;">These archers are pre-assigned by your coach</div>
+            <div style="font-size: 0.85em; color: #666; margin-top: 4px;">
+                ${searchTerm ? `Showing ${baleArchers.length} archers matching "${searchTerm}"` : 'These archers are pre-assigned by your coach'}
+            </div>
         `;
         setupControls.container.appendChild(banner);
         
@@ -333,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
         listDiv.className = 'archer-select-list';
         listDiv.style.cssText = 'background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;';
         
-        state.archers.forEach(archer => {
+        baleArchers.forEach(archer => {
             const row = document.createElement('div');
             row.className = 'archer-select-row';
             row.style.cssText = 'padding: 12px; border-bottom: 1px solid #ddd; background: white; margin: 4px; border-radius: 4px;';
@@ -372,6 +390,37 @@ document.addEventListener('DOMContentLoaded', () => {
         setupControls.container.appendChild(manualBtn);
     }
 
+    function renderEmptyBaleState(baleNumber) {
+        if (!setupControls.container) return;
+        setupControls.container.innerHTML = '';
+        
+        const banner = document.createElement('div');
+        banner.className = 'empty-bale-banner';
+        banner.style.cssText = 'background: #fff3cd; padding: 12px; margin-bottom: 12px; border-radius: 4px; border-left: 4px solid #ffc107;';
+        banner.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 4px;">⚠️ No Archers Assigned</div>
+            <div style="font-size: 0.9em;">Bale ${baleNumber} has no archers assigned</div>
+            <div style="font-size: 0.85em; color: #666; margin-top: 4px;">Try a different bale number or switch to manual mode</div>
+        `;
+        setupControls.container.appendChild(banner);
+        
+        // Add switch to manual mode button
+        const manualBtn = document.createElement('button');
+        manualBtn.className = 'btn btn-secondary';
+        manualBtn.textContent = 'Switch to Manual Mode';
+        manualBtn.style.cssText = 'margin-top: 12px; width: 100%;';
+        manualBtn.onclick = () => {
+            if (confirm('Switch to manual mode? This will clear pre-assigned archers.')) {
+                state.assignmentMode = 'manual';
+                state.activeEventId = null;
+                state.archers = [];
+                saveData();
+                renderSetupForm();
+            }
+        };
+        setupControls.container.appendChild(manualBtn);
+    }
+
     function renderArcherSelectList(masterList, filter = '') {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
@@ -389,9 +438,11 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         setupControls.container.appendChild(sortBtn);
         
-        const listDiv = document.createElement('div');
-        listDiv.className = 'archer-select-list';
-        setupControls.container.appendChild(listDiv);
+        // Create card-based container
+        const cardContainer = document.createElement('div');
+        cardContainer.className = 'archer-card-container';
+        cardContainer.style.cssText = 'display: grid; gap: 12px; padding: 8px;';
+        setupControls.container.appendChild(cardContainer);
         
         // Sort archers based on mode
         const sortedList = [...masterList].sort((a, b) => {
@@ -445,49 +496,87 @@ document.addEventListener('DOMContentLoaded', () => {
         const sortedBales = Object.keys(filteredBaleGroups).sort((a, b) => parseInt(a) - parseInt(b));
         
         sortedBales.forEach(bale => {
-            const baleHeader = document.createElement('div');
-            baleHeader.className = 'list-header';
-            baleHeader.setAttribute('data-bale', bale);
-            baleHeader.textContent = `Bale ${bale}`;
-            baleHeader.style.cssText = 'background: #e3f2fd; color: #1976d2; font-weight: bold; cursor: pointer;';
-            baleHeader.title = 'Click to load this entire bale';
+            // Create bale section header
+            const baleSection = document.createElement('div');
+            baleSection.className = 'bale-section';
+            baleSection.style.cssText = 'margin-bottom: 16px;';
             
-            // Highlight current bale
-            if (parseInt(bale) === state.baleNumber) {
-                baleHeader.style.background = '#f39c12';
-                baleHeader.style.boxShadow = '0 0 0 3px rgba(243, 156, 18, 0.3)';
-            }
+            const baleHeader = document.createElement('div');
+            baleHeader.className = 'bale-header';
+            baleHeader.setAttribute('data-bale', bale);
+            baleHeader.style.cssText = `
+                background: ${parseInt(bale) === state.baleNumber ? '#f39c12' : '#2d7dd9'}; 
+                color: white; 
+                font-weight: bold; 
+                padding: 12px 16px; 
+                border-radius: 8px 8px 0 0; 
+                cursor: pointer;
+                font-size: 1.1em;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            `;
+            baleHeader.textContent = `🎯 Bale ${bale} • ${filteredBaleGroups[bale].length} archers`;
+            baleHeader.title = 'Click to load this entire bale';
             
             baleHeader.onclick = () => {
                 loadEntireBale(bale, filteredBaleGroups[bale]);
             };
             
-            listDiv.appendChild(baleHeader);
+            baleSection.appendChild(baleHeader);
+            
+            // Create archer cards container
+            const archerCards = document.createElement('div');
+            archerCards.className = 'archer-cards';
+            archerCards.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px; padding: 12px; background: #f8f9fa; border-radius: 0 0 8px 8px;';
             
             filteredBaleGroups[bale].forEach((archer) => {
-                const row = document.createElement('div');
-                row.className = 'archer-select-row';
-                row.style.cssText = 'cursor: pointer; padding-left: 20px;';
+                const card = document.createElement('div');
+                card.className = 'archer-card';
+                card.style.cssText = `
+                    background: white; 
+                    border: 1px solid #dee2e6; 
+                    border-radius: 8px; 
+                    padding: 12px; 
+                    cursor: pointer; 
+                    transition: all 0.2s ease;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                `;
                 
-                row.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                // Add hover effect
+                card.onmouseenter = () => {
+                    card.style.transform = 'translateY(-2px)';
+                    card.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+                };
+                card.onmouseleave = () => {
+                    card.style.transform = 'translateY(0)';
+                    card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                };
+                
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                         <div>
-                            <span style="font-weight: bold;">${archer.first} ${archer.last}</span>
-                            <span style="font-size: 0.85em; color: #666; margin-left: 8px;">(${archer.level || 'VAR'})</span>
+                            <div style="font-weight: bold; font-size: 1.1em; color: #2c3e50;">${archer.first} ${archer.last}</div>
+                            <div style="font-size: 0.9em; color: #6c757d; margin-top: 2px;">${archer.school || 'Unknown School'}</div>
                         </div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <span style="background: #4caf50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;">Bale ${archer.bale}</span>
-                            <span style="background: #2196f3; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;">Target ${archer.target || 'A'}</span>
+                        <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+                            <span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;">${archer.level || 'VAR'}</span>
+                            <span style="background: #17a2b8; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;">Target ${archer.target || 'A'}</span>
                         </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid #e9ecef;">
+                        <span style="font-size: 0.85em; color: #6c757d;">${archer.gender || 'M'} • ${archer.division || 'Unknown'}</span>
+                        <span style="background: #6f42c1; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold;">Bale ${archer.bale}</span>
                     </div>
                 `;
                 
-                row.onclick = () => {
+                card.onclick = () => {
                     loadEntireBale(bale, filteredBaleGroups[bale]);
                 };
                 
-                listDiv.appendChild(row);
+                archerCards.appendChild(card);
             });
+            
+            baleSection.appendChild(archerCards);
+            cardContainer.appendChild(baleSection);
         });
         
         // Render unassigned archers (old manual selection mode)
@@ -495,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const unassignedHeader = document.createElement('div');
             unassignedHeader.className = 'list-header';
             unassignedHeader.textContent = '☆ Unassigned Archers (Manual Selection)';
-            listDiv.appendChild(unassignedHeader);
+            cardContainer.appendChild(unassignedHeader);
             
             filteredUnassigned.forEach((archer) => {
             const row = document.createElement('div');
@@ -584,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.appendChild(nameLabel);
             row.appendChild(detailsLabel);
             row.appendChild(targetSelect);
-            listDiv.appendChild(row);
+            cardContainer.appendChild(row);
             row.onclick = (e) => {
                 if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
                     checkbox.checked = !checkbox.checked;
@@ -941,6 +1030,9 @@ document.addEventListener('DOMContentLoaded', () => {
         renderView();
         saveData();
         updateCompleteButton();
+        
+        // Show scoring in progress banner
+        updateScoringBanner();
     }
 
     function completeRound() {
@@ -1561,17 +1653,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.baleNumber = newBale;
                 saveData();
                 
-                // Highlight and scroll to this bale
-                highlightBale(newBale);
-                scrollToBale(newBale);
-                
-                // If event is selected, try to load archers for this bale
-                if (state.selectedEventId) {
-                    try {
-                        await loadPreAssignedBale(state.selectedEventId, newBale);
-                    } catch (err) {
-                        console.log('Could not load bale:', err.message);
+                // If event is selected, filter archers by this bale
+                if (state.activeEventId && state.assignmentMode === 'pre-assigned') {
+                    // Filter current archers by bale number
+                    const filteredArchers = state.archers.filter(archer => 
+                        archer.baleNumber === newBale
+                    );
+                    
+                    if (filteredArchers.length > 0) {
+                        // Update the display with filtered archers
+                        renderPreAssignedArchers();
+                    } else {
+                        // No archers for this bale - show empty state
+                        renderEmptyBaleState(newBale);
                     }
+                } else if (state.assignmentMode === 'manual') {
+                    // For manual mode, just highlight and scroll
+                    highlightBale(newBale);
+                    scrollToBale(newBale);
                 }
             };
         }
@@ -1649,104 +1748,21 @@ document.addEventListener('DOMContentLoaded', () => {
             searchInput.placeholder = 'Search archers...';
             searchInput.className = 'archer-search-bar';
             searchInput.oninput = () => {
-                const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
-                renderArcherSelectList(masterList, searchInput.value);
-            };
-            const refreshBtn = document.createElement('button');
-            refreshBtn.id = 'refresh-btn';
-            refreshBtn.className = 'btn btn-secondary';
-            refreshBtn.textContent = 'Refresh';
-            refreshBtn.onclick = async () => { await ArcherModule.loadDefaultCSVIfNeeded(true); renderSetupForm(); };
-            const masterUpsertBtn = document.createElement('button');
-            masterUpsertBtn.id = 'master-upsert-btn';
-            masterUpsertBtn.className = 'btn btn-primary';
-            masterUpsertBtn.textContent = 'Master Upsert';
-            masterUpsertBtn.onclick = async () => {
-                if (!state.selectedEventId) {
-                    alert('Please select an event first');
-                    return;
-                }
-                try {
-                    // First sync the master archer list
-                    const result = await ArcherModule.bulkUpsertMasterList();
-                    
-                    // Then create/update the round and assign to event
-                    const roundData = {
-                        roundType: 'R300',
-                        date: new Date().toISOString().slice(0, 10),
-                        baleNumber: state.baleNumber
-                    };
-                    
-                    const roundResponse = await fetch('/wdv/api/v1/rounds', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-API-Key': localStorage.getItem('coach_api_key') || '',
-                            'X-Passcode': localStorage.getItem('coach_api_key') || ''
-                        },
-                        body: JSON.stringify(roundData)
+                if (state.assignmentMode === 'pre-assigned' && state.activeEventId) {
+                    // Filter event archers by search term
+                    const filteredArchers = state.archers.filter(archer => {
+                        const searchTerm = searchInput.value.toLowerCase();
+                        const fullName = `${archer.firstName} ${archer.lastName}`.toLowerCase();
+                        const school = archer.school.toLowerCase();
+                        return fullName.includes(searchTerm) || school.includes(searchTerm);
                     });
-                    
-                    if (!roundResponse.ok) {
-                        throw new Error(`Round creation failed: ${roundResponse.status}`);
-                    }
-                    
-                    const roundResult = await roundResponse.json();
-                    state.roundId = roundResult.roundId;
-                    
-                    // Link round to event
-                    const linkResponse = await fetch(`/wdv/api/v1/rounds/${state.roundId}/link-event`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-API-Key': localStorage.getItem('coach_api_key') || '',
-                            'X-Passcode': localStorage.getItem('coach_api_key') || ''
-                        },
-                        body: JSON.stringify({ eventId: state.selectedEventId })
-                    });
-                    
-                    if (!linkResponse.ok) {
-                        console.warn('Could not link round to event:', linkResponse.status);
-                    }
-                    
-                    // Add archers to the round
-                    for (const archer of state.archers) {
-                        const archerData = {
-                            archerName: `${archer.firstName} ${archer.lastName}`,
-                            school: archer.school,
-                            level: archer.level,
-                            gender: archer.gender,
-                            targetAssignment: archer.targetAssignment,
-                            targetSize: archer.targetSize
-                        };
-                        
-                        const archerResponse = await fetch(`/wdv/api/v1/rounds/${state.roundId}/archers`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-API-Key': localStorage.getItem('coach_api_key') || '',
-                                'X-Passcode': localStorage.getItem('coach_api_key') || ''
-                            },
-                            body: JSON.stringify(archerData)
-                        });
-                        
-                        if (archerResponse.ok) {
-                            const archerResult = await archerResponse.json();
-                            state.roundArcherIds[archer.id] = archerResult.roundArcherId;
-                        }
-                    }
-                    
-                    saveData();
-                    alert(`Master Upsert Complete!\nArchers: ${result.upserted || 0} synced\nRound: ${state.roundId}\nEvent: ${state.selectedEventId}`);
-                } catch (e) {
-                    alert('Master Upsert failed: ' + e.message);
+                    renderPreAssignedArchers();
+                } else {
+                    // Manual mode - use global master list
+                    const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
+                    renderArcherSelectList(masterList, searchInput.value);
                 }
             };
-            const selectedChip = document.createElement('span');
-            selectedChip.id = 'selected-count-chip';
-            selectedChip.className = 'btn';
-            selectedChip.style.cursor = 'default';
-            selectedChip.textContent = `${state.archers.length}/4`;
             // Live toggle
             const liveBtn = document.createElement('button');
             liveBtn.id = 'live-toggle-btn';
@@ -1758,18 +1774,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const renderLiveBtn = () => { const on = getLiveEnabled(); liveBtn.textContent = on ? 'Live: On' : 'Live: Off'; liveBtn.className = on ? 'btn btn-success' : 'btn btn-secondary'; };
             renderLiveBtn();
             
-            const masterSyncBtn = document.createElement('button');
-            masterSyncBtn.id = 'master-sync-btn';
-            masterSyncBtn.className = 'btn btn-warning';
-            masterSyncBtn.textContent = 'Master Sync';
-            masterSyncBtn.style.cssText = 'font-size: 0.9em;';
-            masterSyncBtn.onclick = async () => {
-                if (!getLiveEnabled()) {
-                    alert('Enable Live Updates first to sync scores.');
-                    return;
-                }
-                await performMasterSync();
-            };
+            // Master Sync button removed - not needed for archers
             // Initialize round/archers immediately when enabling live
             const initLiveRoundAndArchers = () => {
                 try {
@@ -1807,13 +1812,19 @@ document.addEventListener('DOMContentLoaded', () => {
             scoringBtn.style.marginLeft = 'auto';
             scoringBtn.onclick = showScoringView;
             setupControls.subheader.appendChild(searchInput);
-            setupControls.subheader.appendChild(refreshBtn);
-            setupControls.subheader.appendChild(masterUpsertBtn);
             setupControls.subheader.appendChild(liveBtn);
-            setupControls.subheader.appendChild(masterSyncBtn);
-            setupControls.subheader.appendChild(selectedChip);
             setupControls.subheader.appendChild(resetBtn);
             setupControls.subheader.appendChild(scoringBtn);
+            
+            // Add selected count chip for manual mode
+            if (state.assignmentMode === 'manual') {
+                const selectedChip = document.createElement('span');
+                selectedChip.id = 'selected-count-chip';
+                selectedChip.className = 'btn';
+                selectedChip.style.cursor = 'default';
+                selectedChip.textContent = `${state.archers.length}/4`;
+                setupControls.subheader.appendChild(selectedChip);
+            }
         }
 
         const setupBaleBtn = document.getElementById('setup-bale-btn');
