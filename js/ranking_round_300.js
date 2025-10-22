@@ -1032,7 +1032,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCompleteButton();
         
         // Show scoring in progress banner
-        updateScoringBanner();
+        showScoringBanner();
     }
 
     function completeRound() {
@@ -1347,8 +1347,8 @@ document.addEventListener('DOMContentLoaded', () => {
     async function performMasterSync() {
         if (!window.LiveUpdates || !LiveUpdates._state) {
             alert('Live Updates not initialized');
-            return;
-        }
+                    return;
+                }
         
         const btn = document.getElementById('master-sync-btn');
         if (btn) {
@@ -1364,9 +1364,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             if (!LiveUpdates._state.roundId) {
                 await LiveUpdates.ensureRound({ 
-                    roundType: 'R300', 
-                    date: new Date().toISOString().slice(0, 10), 
-                    baleNumber: state.baleNumber 
+                        roundType: 'R300',
+                        date: new Date().toISOString().slice(0, 10),
+                        baleNumber: state.baleNumber
                 });
             }
             
@@ -1837,11 +1837,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (scoringControls.prevEndBtn) {
             scoringControls.prevEndBtn.textContent = 'Last End';
-            scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
+        scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
         }
         if (scoringControls.nextEndBtn) {
             scoringControls.nextEndBtn.textContent = 'Next End';
-            scoringControls.nextEndBtn.onclick = () => changeEnd(1);
+        scoringControls.nextEndBtn.onclick = () => changeEnd(1);
         }
         
         resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
