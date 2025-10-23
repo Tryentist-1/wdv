@@ -1,4 +1,4 @@
-// Playwright test for Ranking Round - LOCAL VERSION
+// Playwright test for Ranking Round - LOCAL VERSION (Updated for new UI/UX design)
 // Tests against local files before deployment
 // Run with: npx playwright test tests/ranking_round.local.spec.js --config=playwright.config.local.js
 
@@ -38,6 +38,35 @@ test.describe('Ranking Round - Local Testing', () => {
     // Check for latest cache buster
     expect(content).toContain('ranking_round_300.js?v=20251021');
     expect(content).not.toContain('ranking_round_300.js?v=20250922');
+  });
+  
+  test('should show manual setup section when canceling modal (LOCAL)', async ({ page }) => {
+    await page.goto('http://localhost:8000/ranking_round_300.html');
+    
+    // Cancel modal to enter manual mode
+    await page.click('#cancel-event-modal-btn');
+    
+    // Should show manual setup section
+    await expect(page.locator('#manual-setup-section')).toBeVisible();
+    await expect(page.locator('#preassigned-setup-section')).not.toBeVisible();
+    
+    // Should have manual setup controls
+    await expect(page.locator('#bale-number-input-manual')).toBeVisible();
+    await expect(page.locator('#archer-search-manual')).toBeVisible();
+    await expect(page.locator('#selected-count-chip')).toBeVisible();
+  });
+  
+  test('should have new setup section elements (LOCAL)', async ({ page }) => {
+    await page.goto('http://localhost:8000/ranking_round_300.html');
+    
+    // Check that new HTML elements exist
+    await expect(page.locator('#manual-setup-section')).toBeAttached();
+    await expect(page.locator('#preassigned-setup-section')).toBeAttached();
+    await expect(page.locator('#bale-number-input-manual')).toBeAttached();
+    await expect(page.locator('#archer-search-manual')).toBeAttached();
+    await expect(page.locator('#selected-count-chip')).toBeAttached();
+    await expect(page.locator('#manual-start-scoring-btn')).toBeAttached();
+    await expect(page.locator('#bale-list-container')).toBeAttached();
   });
   
 });

@@ -9,6 +9,8 @@
     "test:local": "playwright test --config=playwright.config.local.js",
     "test:local:ui": "playwright test --config=playwright.config.local.js --ui",
     "test:remote": "playwright test --grep-invert 'LOCAL'",
+    "test:setup-sections": "playwright test tests/ranking_round_setup_sections.spec.js",
+    "test:ranking-round": "playwright test tests/ranking_round.spec.js",
     "serve": "php -S localhost:8000"
   },
   "devDependencies": {
