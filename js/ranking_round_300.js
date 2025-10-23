@@ -218,6 +218,13 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const loadedState = JSON.parse(storedState);
                 Object.assign(state, loadedState);
+                console.log('Loaded state from localStorage:', {
+                    eventName: state.eventName,
+                    activeEventId: state.activeEventId,
+                    selectedEventId: state.selectedEventId,
+                    assignmentMode: state.assignmentMode,
+                    archersCount: state.archers ? state.archers.length : 0
+                });
             } catch (e) {
                 console.error("Error parsing stored data. Starting fresh.", e);
                 localStorage.removeItem(sessionKey);
@@ -2345,6 +2352,15 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (!state.selectedEventId && !state.activeEventId) {
             // No QR code, no saved event - show modal
             console.log('No event connected - showing event modal');
+            
+            // If we have archers loaded but no event, clear them to avoid inconsistent state
+            if (state.archers && state.archers.length > 0) {
+                console.log('Clearing archers due to missing event connection');
+                state.archers = [];
+                state.assignmentMode = 'manual';
+                saveData();
+            }
+            
             showEventModal();
         } else {
             // Has saved event - try to load it
