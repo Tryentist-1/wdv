@@ -1111,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Function to load entire bale when clicking on any archer
-    function loadEntireBale(baleNumber, archersInBale) {
+    window.loadEntireBale = function(baleNumber, archersInBale) {
         // Clear existing archers
         state.archers = [];
         state.baleNumber = parseInt(baleNumber);
