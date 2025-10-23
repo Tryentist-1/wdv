@@ -2260,6 +2260,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Update UI/state
                 state.eventName = eventName || state.eventName || '';
+                state.assignmentMode = 'pre-assigned'; // Set to pre-assigned when loading event
                 updateEventHeader();
                 
                 saveData();
