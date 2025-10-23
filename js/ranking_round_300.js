@@ -1074,18 +1074,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderKeypad() {
-        if (!keypad.element) return;
-        keypad.element.innerHTML = `<div class="keypad"><button class="keypad-btn" data-value="X">X</button><button class="keypad-btn" data-value="10">10</button><button class="keypad-btn" data-value="9">9</button><button class="keypad-btn nav-btn" data-action="prev">&larr;</button><button class="keypad-btn" data-value="8">8</button><button class="keypad-btn" data-value="7">7</button><button class="keypad-btn" data-value="6">6</button><button class="keypad-btn nav-btn" data-action="next">&rarr;</button><button class="keypad-btn" data-value="5">5</button><button class="keypad-btn" data-value="4">4</button><button class="keypad-btn" data-value="3">3</button><button class="keypad-btn" data-action="clear">CLR</button><button class="keypad-btn" data-value="2">2</button><button class="keypad-btn" data-value="1">1</button><button class="keypad-btn" data-value="M">M</button><button class="keypad-btn" data-action="close">Close</button></div>`;
+        if (!keypad.element) {
+            console.error('Keypad element not found!');
+            return;
+        }
+        
+        // Ensure keypad has proper styling and is initially hidden
+        keypad.element.style.display = 'none';
+        keypad.element.className = 'keypad-container';
+        
+        keypad.element.innerHTML = `
+            <div class="keypad">
+                <button class="keypad-btn" data-value="X">X</button>
+                <button class="keypad-btn" data-value="10">10</button>
+                <button class="keypad-btn" data-value="9">9</button>
+                <button class="keypad-btn nav-btn" data-action="prev">&larr;</button>
+                <button class="keypad-btn" data-value="8">8</button>
+                <button class="keypad-btn" data-value="7">7</button>
+                <button class="keypad-btn" data-value="6">6</button>
+                <button class="keypad-btn nav-btn" data-action="next">&rarr;</button>
+                <button class="keypad-btn" data-value="5">5</button>
+                <button class="keypad-btn" data-value="4">4</button>
+                <button class="keypad-btn" data-value="3">3</button>
+                <button class="keypad-btn" data-action="clear">CLR</button>
+                <button class="keypad-btn" data-value="2">2</button>
+                <button class="keypad-btn" data-value="1">1</button>
+                <button class="keypad-btn" data-value="M">M</button>
+                <button class="keypad-btn" data-action="close">Close</button>
+            </div>
+        `;
+        
+        console.log('Keypad rendered successfully');
     }
 
     function handleKeypadClick(e) {
         const button = e.target.closest('.keypad-btn');
-        if (!button || !keypad.currentlyFocusedInput) return;
+        if (!button) return;
+        
+        console.log('Keypad button clicked:', button.dataset.value || button.dataset.action);
+        
+        if (!keypad.currentlyFocusedInput) {
+            console.log('No focused input, ignoring keypad click');
+            return;
+        }
+        
         const action = button.dataset.action;
         const value = button.dataset.value;
         const input = keypad.currentlyFocusedInput;
         const allInputs = Array.from(document.querySelectorAll('#scoring-view .score-input'));
         const currentIndex = allInputs.indexOf(input);
+        
+        // Navigation
         if (action === 'prev') {
             if (currentIndex > 0) allInputs[currentIndex - 1].focus();
             return;
@@ -1097,21 +1136,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (action === 'close') {
             keypad.element.style.display = 'none';
             document.body.classList.remove('keypad-visible');
+            input.blur();
             return;
         }
-        if (action === 'clear') input.value = '';
-        else if (value) input.value = value;
+        
+        // Score entry
+        if (action === 'clear') {
+            input.value = '';
+        } else if (value) {
+            input.value = value;
+        }
+        
+        // Trigger input event to update scores
         input.dispatchEvent(new Event('input', { bubbles: true }));
+        
+        // Auto-advance to next input after score entry
         if (value && currentIndex < allInputs.length - 1) {
             const nextInputInOldList = allInputs[currentIndex + 1];
             const nextInputInNewDom = document.querySelector(`[data-archer-id="${nextInputInOldList.dataset.archerId}"][data-arrow-idx="${nextInputInOldList.dataset.arrowIdx}"]`);
-            if (nextInputInNewDom) nextInputInNewDom.focus();
+            if (nextInputInNewDom) {
+                setTimeout(() => nextInputInNewDom.focus(), 50);
+            }
         } else if (action === 'clear') {
-             const currentInputInNewDom = document.querySelector(`[data-archer-id="${input.dataset.archerId}"][data-arrow-idx="${input.dataset.arrowIdx}"]`);
-            if (currentInputInNewDom) currentInputInNewDom.focus();
-        } else {
-            keypad.element.style.display = 'none';
-            document.body.classList.remove('keypad-visible');
+            const currentInputInNewDom = document.querySelector(`[data-archer-id="${input.dataset.archerId}"][data-arrow-idx="${input.dataset.arrowIdx}"]`);
+            if (currentInputInNewDom) {
+                setTimeout(() => {
+                    currentInputInNewDom.focus();
+                    currentInputInNewDom.select();
+                }, 50);
+            }
         }
     }
 
@@ -2096,6 +2149,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.body.addEventListener('focusin', (e) => {
             if (e.target.classList.contains('score-input')) {
+                console.log('Score input focused:', e.target);
                 keypad.currentlyFocusedInput = e.target;
                 keypad.element.style.display = 'grid';
                 document.body.classList.add('keypad-visible');
