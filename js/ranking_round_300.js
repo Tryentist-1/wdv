@@ -353,11 +353,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="bale-archers">${archers.length} archers</div>
                 </div>
                 <div class="bale-actions">
-                    <button class="btn btn-primary" onclick="loadEntireBale(${baleNumber}, ${JSON.stringify(archers).replace(/"/g, '&quot;')})">
+                    <button class="btn btn-primary" onclick="loadEntireBale(${baleNumber}, ${JSON.stringify(archers).replace(/\"/g, '&quot;')})">
                         Start Scoring
                     </button>
                 </div>
             `;
+            
+            // Render detailed archer list to match SetupNEW (Archer Name, School, Division, Bale, Target)
+            const table = document.createElement('table');
+            table.className = 'archer-table';
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>Archer Name</th>
+                    <th>School</th>
+                    <th>Division</th>
+                    <th>Bale</th>
+                    <th>Target</th>
+                </tr>`;
+            const tbody = document.createElement('tbody');
+            archers.forEach(a => {
+                const tr = document.createElement('tr');
+                const name = `${(a.firstName||'').trim()} ${(a.lastName||'').trim()}`.trim();
+                const school = (a.school||'').toString();
+                const division = (a.level||'').toString();
+                const bale = a.baleNumber != null ? a.baleNumber : '';
+                const target = (a.target||'').toString();
+                tr.innerHTML = `
+                    <td>${name}</td>
+                    <td>${school}</td>
+                    <td>${division}</td>
+                    <td>${bale}</td>
+                    <td>${target}</td>`;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            baleItem.appendChild(table);
             preassignedSetupControls.baleListContainer.appendChild(baleItem);
         });
     }
