@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function determineSetupMode() {
         // If we have an active event with pre-assigned archers, use pre-assigned mode
-        if (state.activeEventId && state.archers.length > 0 && state.assignmentMode === 'pre-assigned') {
+        if (state.activeEventId && state.assignmentMode === 'pre-assigned' && state.archers.length > 0) {
             return 'pre-assigned';
         }
         // Otherwise, use manual mode
@@ -2257,6 +2257,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 });
                 localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
+                
+                // Load archers into state for pre-assigned mode
+                state.archers = allArchers.map(archer => ({
+                    id: `${archer.first}-${archer.last}`,
+                    firstName: archer.first,
+                    lastName: archer.last,
+                    school: archer.school,
+                    level: archer.level,
+                    gender: archer.gender,
+                    baleNumber: archer.bale, // Map bale to baleNumber
+                    target: archer.target,
+                    division: archer.division,
+                    scores: [[], [], [], [], [], []], // Initialize empty scores
+                    fave: archer.fave
+                }));
                 
                 // Update UI/state
                 state.eventName = eventName || state.eventName || '';
