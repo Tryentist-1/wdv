@@ -1210,18 +1210,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Set sync status to pending
                     updateSyncStatus(archer.id, state.currentEnd, 'pending');
                     
-                    if (LiveUpdates._state && LiveUpdates._state.roundId) {
+                    // Check if Live Updates is properly initialized
+                    if (!isLiveUpdatesReady()) {
+                        console.log('Live Updates not ready - skipping sync');
+                        return;
+                    }
+                    
+                    if (LiveUpdates._state.roundId) {
+                        // Round is initialized, sync directly
                         LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs })
                           .then(() => updateSyncStatus(archer.id, state.currentEnd, 'synced'))
-                          .catch(() => updateSyncStatus(archer.id, state.currentEnd, 'failed'));
+                          .catch(err => {
+                            console.error('Sync failed:', err);
+                            updateSyncStatus(archer.id, state.currentEnd, 'failed');
+                          });
                     } else {
-                        // Fallback: initialize round and archer, then post
-                        const badge = document.getElementById('live-status-badge');
-                        if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
+                        // Round not initialized, initialize first
+                        console.log('Initializing Live Updates round...');
                         LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
-                          .then(() => LiveUpdates.ensureArcher(archer.id, archer))
-                          .then(() => LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
-                          .then(() => updateSyncStatus(archer.id, state.currentEnd, 'synced'))
+                          .then(() => {
+                            console.log('Round initialized, ensuring archer...');
+                            return LiveUpdates.ensureArcher(archer.id, archer);
+                          })
+                          .then(() => {
+                            console.log('Archer ensured, posting end...');
+                                return LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs });
+                            })
+                          .then(() => {
+                            console.log('End posted successfully');
+                            updateSyncStatus(archer.id, state.currentEnd, 'synced');
+                        })
                           .catch(err => {
                             console.error('Live init/post failed:', err);
                             updateSyncStatus(archer.id, state.currentEnd, 'failed');
@@ -1311,17 +1329,37 @@ document.addEventListener('DOMContentLoaded', () => {
             updateSyncStatus(archer.id, currentEnd, 'pending');
             
             // Sync to server
-            if (LiveUpdates._state && LiveUpdates._state.roundId) {
+            if (!isLiveUpdatesReady()) {
+                console.log('Live Updates not ready for archer:', archer.id);
+                updateSyncStatus(archer.id, currentEnd, 'failed');
+                return;
+            }
+            
+            if (LiveUpdates._state.roundId) {
+                // Round is initialized, sync directly
                 const promise = LiveUpdates.postEnd(archer.id, currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs })
                     .then(() => updateSyncStatus(archer.id, currentEnd, 'synced'))
-                    .catch(() => updateSyncStatus(archer.id, currentEnd, 'failed'));
+                    .catch(err => {
+                        console.error('Sync failed for archer:', archer.id, 'end:', currentEnd, err);
+                        updateSyncStatus(archer.id, currentEnd, 'failed');
+                    });
                 promises.push(promise);
             } else {
                 // Initialize round and archer first
+                console.log('Initializing Live Updates round for sync...');
                 const promise = LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
-                    .then(() => LiveUpdates.ensureArcher(archer.id, archer))
-                    .then(() => LiveUpdates.postEnd(archer.id, currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
-                    .then(() => updateSyncStatus(archer.id, currentEnd, 'synced'))
+                    .then(() => {
+                        console.log('Round initialized, ensuring archer:', archer.id);
+                        return LiveUpdates.ensureArcher(archer.id, archer);
+                    })
+                    .then(() => {
+                        console.log('Archer ensured, posting end for:', archer.id);
+                        return LiveUpdates.postEnd(archer.id, currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs });
+                    })
+                    .then(() => {
+                        console.log('End posted successfully for:', archer.id);
+                        updateSyncStatus(archer.id, currentEnd, 'synced');
+                    })
                     .catch(err => {
                         console.error('Sync failed for archer:', archer.id, 'end:', currentEnd, err);
                         updateSyncStatus(archer.id, currentEnd, 'failed');
@@ -1700,6 +1738,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); 
             }
         } catch(_) {} 
+    }
+
+    function isLiveUpdatesReady() {
+        return !!(window.LiveUpdates && 
+                 LiveUpdates._state && 
+                 LiveUpdates._state.roundId && 
+                 getLiveEnabled());
     }
 
     function updateSyncStatus(archerId, endNumber, status) {
@@ -2178,19 +2223,43 @@ document.addEventListener('DOMContentLoaded', () => {
             const initLiveRoundAndArchers = () => {
                 try {
                     let isEnabled = getLiveEnabled();
-                    if (!isEnabled || !window.LiveUpdates || !LiveUpdates.setConfig) return;
+                    if (!isEnabled || !window.LiveUpdates || !LiveUpdates.setConfig) {
+                        console.log('Live Updates not available or disabled');
+                        return;
+                    }
+                    
                     const cfg = window.LIVE_UPDATES || {};
                     LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1' });
+                    
                     if (!LiveUpdates._state.roundId) {
+                        console.log('Initializing Live Updates round...');
                         LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
-                          .then(() => { state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a)); })
-                          .catch(() => {});
+                          .then(() => { 
+                            console.log('Round initialized, ensuring archers...');
+                            state.archers.forEach(a => {
+                                console.log('Ensuring archer:', a.id);
+                                LiveUpdates.ensureArcher(a.id, a);
+                            });
+                          })
+                          .catch(err => {
+                            console.error('Failed to initialize Live Updates:', err);
+                          });
                     } else {
-                        state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
+                        console.log('Round already initialized, ensuring archers...');
+                        state.archers.forEach(a => {
+                            console.log('Ensuring archer:', a.id);
+                            LiveUpdates.ensureArcher(a.id, a);
+                        });
                     }
+                    
                     const badge = document.getElementById('live-status-badge');
-                    if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
-                } catch(_) {}
+                    if (badge) { 
+                        badge.textContent = 'Not Synced'; 
+                        badge.className = 'status-badge status-pending'; 
+                    }
+                } catch(err) {
+                    console.error('Error in initLiveRoundAndArchers:', err);
+                }
             };
             liveBtn.onclick = () => {
                 const newState = !getLiveEnabled();
