@@ -347,31 +347,58 @@ document.addEventListener('DOMContentLoaded', () => {
         editBtn.onclick = () => showEditAssignmentsModal();
         setupControls.container.appendChild(editBtn);
         
-        const listDiv = document.createElement('div');
-        listDiv.className = 'archer-select-list';
-        listDiv.style.cssText = 'background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;';
+        // Create clean table interface
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'bale-assignment-table';
+        tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;';
         
-        baleArchers.forEach(archer => {
-            const row = document.createElement('div');
-            row.className = 'archer-select-row';
-            row.style.cssText = 'padding: 12px; border-bottom: 1px solid #ddd; background: white; margin: 4px; border-radius: 4px;';
-            
-            row.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: bold;">${archer.targetAssignment}: ${archer.firstName} ${archer.lastName}</div>
-                        <div style="font-size: 0.85em; color: #666;">${archer.school} • ${archer.level} / ${archer.gender}</div>
-                    </div>
-                    <div style="padding: 4px 8px; background: #4caf50; color: white; border-radius: 12px; font-size: 0.75em; font-weight: bold;">
-                        ASSIGNED
-                    </div>
-                </div>
-            `;
-            
-            listDiv.appendChild(row);
+        // Create table
+        const table = document.createElement('table');
+        table.style.cssText = 'width: 100%; border-collapse: collapse;';
+        
+        // Create header row
+        const headerRow = document.createElement('tr');
+        headerRow.style.cssText = 'background: #2d7dd9; color: white; font-weight: bold;';
+        
+        const headers = ['Archer Name', 'School', 'Division', 'Bale', 'Target'];
+        headers.forEach(headerText => {
+            const th = document.createElement('th');
+            th.textContent = headerText;
+            th.style.cssText = 'padding: 12px 8px; text-align: left; border-right: 1px solid rgba(255,255,255,0.2);';
+            headerRow.appendChild(th);
+        });
+        table.appendChild(headerRow);
+        
+        // Sort archers by first name for clean display
+        const sortedArchers = [...baleArchers].sort((a, b) => {
+            return a.firstName.localeCompare(b.firstName);
         });
         
-        setupControls.container.appendChild(listDiv);
+        // Create data rows
+        sortedArchers.forEach((archer, index) => {
+            const row = document.createElement('tr');
+            row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'}; border-bottom: 1px solid #e9ecef;`;
+            
+            const cells = [
+                `${archer.firstName} ${archer.lastName}`,
+                archer.school || 'Unknown',
+                archer.level || 'VAR',
+                archer.baleNumber || '1',
+                archer.targetAssignment || 'A'
+            ];
+            
+            cells.forEach(cellText => {
+                const td = document.createElement('td');
+                td.textContent = cellText;
+                td.style.cssText = 'padding: 12px 8px; border-right: 1px solid #e9ecef;';
+                row.appendChild(td);
+            });
+            
+            table.appendChild(row);
+        });
+        
+        tableContainer.appendChild(table);
+        setupControls.container.appendChild(tableContainer);
         
         // Add switch to manual mode button
         const manualBtn = document.createElement('button');
@@ -425,48 +452,55 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
         
-        // Add sort button
-        const sortBtn = document.createElement('button');
-        sortBtn.id = 'sort-toggle-btn';
-        sortBtn.className = 'btn btn-secondary';
-        sortBtn.textContent = state.sortMode === 'bale' ? 'Sort by: Bale Number' : 'Sort by: Name';
-        sortBtn.style.marginBottom = '0.5rem';
-        sortBtn.onclick = () => {
-            state.sortMode = state.sortMode === 'bale' ? 'name' : 'bale';
+        // Add sort toggle buttons
+        const sortContainer = document.createElement('div');
+        sortContainer.style.cssText = 'display: flex; gap: 8px; margin-bottom: 12px;';
+        
+        const sortByBaleBtn = document.createElement('button');
+        sortByBaleBtn.id = 'sort-by-bale-btn';
+        sortByBaleBtn.className = state.sortMode === 'bale' ? 'btn btn-primary' : 'btn btn-outline-primary';
+        sortByBaleBtn.textContent = 'Sort by Bale';
+        sortByBaleBtn.onclick = () => {
+            state.sortMode = 'bale';
             saveData();
             renderArcherSelectList(masterList, filter);
         };
-        setupControls.container.appendChild(sortBtn);
         
-        // Create card-based container
-        const cardContainer = document.createElement('div');
-        cardContainer.className = 'archer-card-container';
-        cardContainer.style.cssText = 'display: grid; gap: 12px; padding: 8px;';
-        setupControls.container.appendChild(cardContainer);
+        const sortByNameBtn = document.createElement('button');
+        sortByNameBtn.id = 'sort-by-name-btn';
+        sortByNameBtn.className = state.sortMode === 'name' ? 'btn btn-primary' : 'btn btn-outline-primary';
+        sortByNameBtn.textContent = 'Sort by Name';
+        sortByNameBtn.onclick = () => {
+            state.sortMode = 'name';
+            saveData();
+            renderArcherSelectList(masterList, filter);
+        };
         
-        // Sort archers based on mode
-        const sortedList = [...masterList].sort((a, b) => {
-            if (state.sortMode === 'bale') {
-                // Sort by: Division → Bale → Target → First Name
-                if (a.division !== b.division) {
-                    const divOrder = {'BVAR': 1, 'GVAR': 2, 'BJV': 3, 'GJV': 4};
-                    return (divOrder[a.division] || 99) - (divOrder[b.division] || 99);
-                }
-                if (a.bale !== b.bale) return (a.bale || 999) - (b.bale || 999);
-                if (a.target !== b.target) return (a.target || 'Z').localeCompare(b.target || 'Z');
-                return a.first.localeCompare(b.first);
-            } else {
-                // Sort by: First Name → Last Name
-                if (a.first !== b.first) return a.first.localeCompare(b.first);
-                return a.last.localeCompare(b.last);
-            }
+        sortContainer.appendChild(sortByBaleBtn);
+        sortContainer.appendChild(sortByNameBtn);
+        setupControls.container.appendChild(sortContainer);
+        
+        // Filter archers based on search term
+        const filteredList = masterList.filter(archer => {
+            if (!filter) return true;
+            const name = `${archer.first} ${archer.last}`.toLowerCase();
+            const school = (archer.school || '').toLowerCase();
+            return name.includes(filter.toLowerCase()) || school.includes(filter.toLowerCase());
         });
         
-        // Group archers by bale if they have bale assignments
+        if (state.sortMode === 'bale') {
+            renderBaleView(filteredList);
+        } else {
+            renderNameView(filteredList);
+        }
+    }
+    
+    function renderBaleView(archerList) {
+        // Group archers by bale
         const baleGroups = {};
         const unassigned = [];
         
-        sortedList.forEach(archer => {
+        archerList.forEach(archer => {
             if (archer.bale) {
                 if (!baleGroups[archer.bale]) baleGroups[archer.bale] = [];
                 baleGroups[archer.bale].push(archer);
@@ -475,213 +509,214 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Filter logic
-        const filteredBaleGroups = {};
-        Object.keys(baleGroups).forEach(bale => {
-            const filtered = baleGroups[bale].filter(archer => {
-            const name = `${archer.first} ${archer.last}`.toLowerCase();
-            return name.includes(filter.toLowerCase());
-        });
-            if (filtered.length > 0) {
-                filteredBaleGroups[bale] = filtered;
-            }
-        });
-        
-        const filteredUnassigned = unassigned.filter(archer => {
-            const name = `${archer.first} ${archer.last}`.toLowerCase();
-            return name.includes(filter.toLowerCase());
-        });
-        
-        // Render bale groups first
-        const sortedBales = Object.keys(filteredBaleGroups).sort((a, b) => parseInt(a) - parseInt(b));
+        // Sort bales numerically
+        const sortedBales = Object.keys(baleGroups).sort((a, b) => parseInt(a) - parseInt(b));
         
         sortedBales.forEach(bale => {
-            // Create bale section header
+            // Create bale section
             const baleSection = document.createElement('div');
             baleSection.className = 'bale-section';
-            baleSection.style.cssText = 'margin-bottom: 16px;';
+            baleSection.style.cssText = 'margin-bottom: 20px;';
             
+            // Create bale header with Start Scoring button
             const baleHeader = document.createElement('div');
-            baleHeader.className = 'bale-header';
-            baleHeader.setAttribute('data-bale', bale);
             baleHeader.style.cssText = `
-                background: ${parseInt(bale) === state.baleNumber ? '#f39c12' : '#2d7dd9'}; 
+                background: #2d7dd9; 
                 color: white; 
-                font-weight: bold; 
                 padding: 12px 16px; 
-                border-radius: 8px 8px 0 0; 
-                cursor: pointer;
-                font-size: 1.1em;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                border-radius: 4px 4px 0 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             `;
-            baleHeader.textContent = `🎯 Bale ${bale} • ${filteredBaleGroups[bale].length} archers`;
-            baleHeader.title = 'Click to load this entire bale';
             
-            baleHeader.onclick = () => {
-                loadEntireBale(bale, filteredBaleGroups[bale]);
+            const baleTitle = document.createElement('div');
+            baleTitle.style.cssText = 'font-weight: bold; font-size: 1.1em;';
+            baleTitle.textContent = `🎯 Bale ${bale} • ${baleGroups[bale].length} archers`;
+            
+            const startScoringBtn = document.createElement('button');
+            startScoringBtn.className = 'btn btn-success';
+            startScoringBtn.textContent = 'Start Scoring';
+            startScoringBtn.style.cssText = 'font-size: 0.9em; padding: 6px 12px;';
+            startScoringBtn.onclick = () => {
+                loadEntireBale(bale, baleGroups[bale]);
             };
             
+            baleHeader.appendChild(baleTitle);
+            baleHeader.appendChild(startScoringBtn);
             baleSection.appendChild(baleHeader);
             
-            // Create archer cards container
-            const archerCards = document.createElement('div');
-            archerCards.className = 'archer-cards';
-            archerCards.style.cssText = 'display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px; padding: 12px; background: #f8f9fa; border-radius: 0 0 8px 8px;';
+            // Create table for this bale
+            const tableContainer = document.createElement('div');
+            tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px;';
             
-            filteredBaleGroups[bale].forEach((archer) => {
-                const card = document.createElement('div');
-                card.className = 'archer-card';
-                card.style.cssText = `
-                    background: white; 
-                    border: 1px solid #dee2e6; 
-                    border-radius: 8px; 
-                    padding: 12px; 
-                    cursor: pointer; 
-                    transition: all 0.2s ease;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                `;
+            const table = document.createElement('table');
+            table.style.cssText = 'width: 100%; border-collapse: collapse;';
+            
+            // Create header row
+            const headerRow = document.createElement('tr');
+            headerRow.style.cssText = 'background: #f8f9fa; font-weight: bold;';
+            
+            const headers = ['Archer Name', 'School', 'Division', 'Bale', 'Target'];
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                th.style.cssText = 'padding: 10px 8px; text-align: left; border-bottom: 1px solid #dee2e6;';
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+            
+            // Sort archers within bale by first name
+            const sortedArchers = [...baleGroups[bale]].sort((a, b) => a.first.localeCompare(b.first));
+            
+            // Create data rows
+            sortedArchers.forEach((archer, index) => {
+                const row = document.createElement('tr');
+                row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};`;
                 
-                // Add hover effect
-                card.onmouseenter = () => {
-                    card.style.transform = 'translateY(-2px)';
-                    card.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
-                };
-                card.onmouseleave = () => {
-                    card.style.transform = 'translateY(0)';
-                    card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-                };
+                const cells = [
+                    `${archer.first} ${archer.last}`,
+                    archer.school || 'Unknown',
+                    archer.level || 'VAR',
+                    archer.bale || '1',
+                    archer.target || 'A'
+                ];
                 
-                card.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                        <div>
-                            <div style="font-weight: bold; font-size: 1.1em; color: #2c3e50;">${archer.first} ${archer.last}</div>
-                            <div style="font-size: 0.9em; color: #6c757d; margin-top: 2px;">${archer.school || 'Unknown School'}</div>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
-                            <span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;">${archer.level || 'VAR'}</span>
-                            <span style="background: #17a2b8; color: white; padding: 4px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;">Target ${archer.target || 'A'}</span>
-                        </div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid #e9ecef;">
-                        <span style="font-size: 0.85em; color: #6c757d;">${archer.gender || 'M'} • ${archer.division || 'Unknown'}</span>
-                        <span style="background: #6f42c1; color: white; padding: 2px 6px; border-radius: 8px; font-size: 0.7em; font-weight: bold;">Bale ${archer.bale}</span>
-                    </div>
-                `;
+                cells.forEach(cellText => {
+                    const td = document.createElement('td');
+                    td.textContent = cellText;
+                    td.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+                    row.appendChild(td);
+                });
                 
-                card.onclick = () => {
-                    loadEntireBale(bale, filteredBaleGroups[bale]);
-                };
-                
-                archerCards.appendChild(card);
+                table.appendChild(row);
             });
             
-            baleSection.appendChild(archerCards);
-            cardContainer.appendChild(baleSection);
+            tableContainer.appendChild(table);
+            baleSection.appendChild(tableContainer);
+            setupControls.container.appendChild(baleSection);
         });
         
-        // Render unassigned archers (old manual selection mode)
-        if (filteredUnassigned.length > 0) {
+        // Render unassigned archers if any
+        if (unassigned.length > 0) {
+            const unassignedSection = document.createElement('div');
+            unassignedSection.style.cssText = 'margin-top: 20px;';
+            
             const unassignedHeader = document.createElement('div');
-            unassignedHeader.className = 'list-header';
-            unassignedHeader.textContent = '☆ Unassigned Archers (Manual Selection)';
-            cardContainer.appendChild(unassignedHeader);
+            unassignedHeader.style.cssText = `
+                background: #6c757d; 
+                color: white; 
+                padding: 12px 16px; 
+                border-radius: 4px 4px 0 0;
+                font-weight: bold;
+            `;
+            unassignedHeader.textContent = `☆ Unassigned Archers (${unassigned.length})`;
+            unassignedSection.appendChild(unassignedHeader);
             
-            filteredUnassigned.forEach((archer) => {
-            const row = document.createElement('div');
-            row.className = 'archer-select-row';
-
-            const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
-            const existingArcher = state.archers.find(a => a.id === uniqueId);
-
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = !!existingArcher;
+            // Create table for unassigned archers
+            const tableContainer = document.createElement('div');
+            tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px;';
             
-            const targetSelect = document.createElement('select');
-            targetSelect.className = 'target-assignment-select';
-            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter => {
-                const option = document.createElement('option');
-                option.value = letter;
-                option.textContent = letter;
-                targetSelect.appendChild(option);
+            const table = document.createElement('table');
+            table.style.cssText = 'width: 100%; border-collapse: collapse;';
+            
+            // Create header row
+            const headerRow = document.createElement('tr');
+            headerRow.style.cssText = 'background: #f8f9fa; font-weight: bold;';
+            
+            const headers = ['Archer Name', 'School', 'Division', 'Bale', 'Target'];
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                th.style.cssText = 'padding: 10px 8px; text-align: left; border-bottom: 1px solid #dee2e6;';
+                headerRow.appendChild(th);
             });
-            targetSelect.style.display = checkbox.checked ? 'inline-block' : 'none';
-            if (existingArcher) {
-                targetSelect.value = existingArcher.targetAssignment;
-            }
+            table.appendChild(headerRow);
             
-            checkbox.onchange = () => {
-                if (checkbox.checked) {
-                    // Enforce max 4 archers per bale (A-D)
-                    const selectedCount = state.archers.length;
-                    if (selectedCount >= 4) {
-                        checkbox.checked = false;
-                        alert('Bale is full (4 archers).');
-                        return;
-                    }
-                    if (!state.archers.some(a => a.id === uniqueId)) {
-                        const usedTargets = state.archers.map(a => a.targetAssignment);
-                        const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
-                        const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
-                        state.archers.push({
-                            id: uniqueId,
-                            firstName: archer.first,
-                            lastName: archer.last,
-                            school: archer.school || '',
-                            level: archer.level || '',
-                            gender: archer.gender || '',
-                            targetAssignment: nextTarget,
-                            targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
-                            scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
-                        });
-                    }
-                } else {
-                    state.archers = state.archers.filter(a => a.id !== uniqueId);
-                }
-                saveData();
-                // Update selected count chip
-                const chip = document.getElementById('selected-count-chip');
-                if (chip) chip.textContent = `${state.archers.length}/4`;
-                renderSetupForm();
-            };
-
-            targetSelect.onchange = () => {
-                const archerInState = state.archers.find(a => a.id === uniqueId);
-                if (archerInState) {
-                    archerInState.targetAssignment = targetSelect.value;
-                    saveData();
-                }
-            };
+            // Sort unassigned archers by first name
+            const sortedUnassigned = [...unassigned].sort((a, b) => a.first.localeCompare(b.first));
             
-            const star = document.createElement('span');
-            star.textContent = archer.fave ? '★' : '☆';
-            star.className = 'favorite-star';
-            star.style.color = archer.fave ? '#ffc107' : '#ccc';
-            star.onclick = (e) => {
-                e.stopPropagation();
-                ArcherModule.toggleFavorite(archer.first, archer.last);
-                renderSetupForm();
-            };
-            const nameLabel = document.createElement('span');
-            nameLabel.textContent = `${archer.first} ${archer.last}`;
-            nameLabel.className = 'archer-name-label';
-            const detailsLabel = document.createElement('span');
-            detailsLabel.className = 'archer-details-label';
-            detailsLabel.textContent = `(${archer.level || 'VAR'})`;
-            row.appendChild(checkbox);
-            row.appendChild(star);
-            row.appendChild(nameLabel);
-            row.appendChild(detailsLabel);
-            row.appendChild(targetSelect);
-            cardContainer.appendChild(row);
-            row.onclick = (e) => {
-                if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
-                    checkbox.checked = !checkbox.checked;
-                    checkbox.dispatchEvent(new Event('change'));
-                }
-            };
-        });
+            // Create data rows for unassigned archers
+            sortedUnassigned.forEach((archer, index) => {
+                const row = document.createElement('tr');
+                row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};`;
+                
+                const cells = [
+                    `${archer.first} ${archer.last}`,
+                    archer.school || 'Unknown',
+                    archer.level || 'VAR',
+                    'Unassigned',
+                    'Unassigned'
+                ];
+                
+                cells.forEach(cellText => {
+                    const td = document.createElement('td');
+                    td.textContent = cellText;
+                    td.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+                    row.appendChild(td);
+                });
+                
+                table.appendChild(row);
+            });
+            
+            tableContainer.appendChild(table);
+            unassignedSection.appendChild(tableContainer);
+            setupControls.container.appendChild(unassignedSection);
         }
+    }
+    
+    function renderNameView(archerList) {
+        // Sort all archers by first name
+        const sortedArchers = [...archerList].sort((a, b) => {
+            if (a.first !== b.first) return a.first.localeCompare(b.first);
+            return a.last.localeCompare(b.last);
+        });
+        
+        // Create single table for all archers
+        const tableContainer = document.createElement('div');
+        tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;';
+        
+        const table = document.createElement('table');
+        table.style.cssText = 'width: 100%; border-collapse: collapse;';
+        
+        // Create header row
+        const headerRow = document.createElement('tr');
+        headerRow.style.cssText = 'background: #2d7dd9; color: white; font-weight: bold;';
+        
+        const headers = ['Archer Name', 'School', 'Division', 'Bale', 'Target'];
+        headers.forEach(headerText => {
+            const th = document.createElement('th');
+            th.textContent = headerText;
+            th.style.cssText = 'padding: 12px 8px; text-align: left; border-right: 1px solid rgba(255,255,255,0.2);';
+            headerRow.appendChild(th);
+        });
+        table.appendChild(headerRow);
+        
+        // Create data rows
+        sortedArchers.forEach((archer, index) => {
+            const row = document.createElement('tr');
+            row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'}; border-bottom: 1px solid #e9ecef;`;
+            
+            const cells = [
+                `${archer.first} ${archer.last}`,
+                archer.school || 'Unknown',
+                archer.level || 'VAR',
+                archer.bale || 'Unassigned',
+                archer.target || 'Unassigned'
+            ];
+            
+            cells.forEach(cellText => {
+                const td = document.createElement('td');
+                td.textContent = cellText;
+                td.style.cssText = 'padding: 12px 8px; border-right: 1px solid #e9ecef;';
+                row.appendChild(td);
+            });
+            
+            table.appendChild(row);
+        });
+        
+        tableContainer.appendChild(table);
+        setupControls.container.appendChild(tableContainer);
     }
     
     // Function to load entire bale when clicking on any archer
