@@ -1268,6 +1268,12 @@ document.addEventListener('DOMContentLoaded', () => {
         tableHTML += `</tbody></table>`;
         scoringControls.container.innerHTML = tableHTML;
         
+        // Ensure navigation button labels and handlers (avoid regression to arrow-only labels)
+        const prevBtn = document.getElementById('prev-end-btn');
+        const nextBtn = document.getElementById('next-end-btn');
+        if (prevBtn) { prevBtn.textContent = 'Last End'; prevBtn.onclick = () => changeEnd(-1); }
+        if (nextBtn) { nextBtn.textContent = 'Next End'; nextBtn.onclick = () => changeEnd(1); }
+
         // Update live status display and complete button after rendering
         updateLiveStatusDisplay();
         updateCompleteButton();
@@ -1573,6 +1579,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.currentEnd = newEnd;
             renderScoringView();
             saveData();
+            // Reinforce button/state after navigation
             updateCompleteButton();
             updateLiveStatusDisplay();
         }
