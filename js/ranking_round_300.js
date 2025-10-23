@@ -228,31 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Load entire bale group for scoring
-    function loadEntireBale(baleNum, archers) {
-        console.log(`Loading entire bale ${baleNum} with ${archers.length} archers`);
-        
-        state.archers = archers.map(archer => ({
-            id: `${archer.first}-${archer.last}-${archer.school || ''}`.replace(/\s+/g, '-'),
-            firstName: archer.first,
-            lastName: archer.last,
-            school: archer.school || '',
-            level: archer.level || 'VAR',
-            gender: archer.gender || 'M',
-            targetAssignment: archer.target || 'A',
-            targetSize: (archer.level === 'VAR') ? 122 : 80,
-            scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
-        }));
-        
-        state.baleNumber = parseInt(baleNum);
-        state.assignmentMode = 'pre-assigned';
-        saveData();
-        
-        // Transition to scoring view
-        state.currentView = 'scoring';
-        renderView();
-    }
-    
     function renderSetupForm() {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
@@ -672,51 +647,212 @@ document.addEventListener('DOMContentLoaded', () => {
             return a.last.localeCompare(b.last);
         });
         
-        // Create single table for all archers
-        const tableContainer = document.createElement('div');
-        tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;';
+        // Group archers by assignment status
+        const assignedArchers = sortedArchers.filter(archer => archer.bale);
+        const unassignedArchers = sortedArchers.filter(archer => !archer.bale);
         
-        const table = document.createElement('table');
-        table.style.cssText = 'width: 100%; border-collapse: collapse;';
-        
-        // Create header row
-        const headerRow = document.createElement('tr');
-        headerRow.style.cssText = 'background: #2d7dd9; color: white; font-weight: bold;';
-        
-        const headers = ['Archer Name', 'School', 'Division', 'Bale', 'Target'];
-        headers.forEach(headerText => {
-            const th = document.createElement('th');
-            th.textContent = headerText;
-            th.style.cssText = 'padding: 12px 8px; text-align: left; border-right: 1px solid rgba(255,255,255,0.2);';
-            headerRow.appendChild(th);
-        });
-        table.appendChild(headerRow);
-        
-        // Create data rows
-        sortedArchers.forEach((archer, index) => {
-            const row = document.createElement('tr');
-            row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'}; border-bottom: 1px solid #e9ecef;`;
+        // Show assigned archers first
+        if (assignedArchers.length > 0) {
+            const assignedSection = document.createElement('div');
+            assignedSection.style.cssText = 'margin-bottom: 20px;';
             
-            const cells = [
-                `${archer.first} ${archer.last}`,
-                archer.school || 'Unknown',
-                archer.level || 'VAR',
-                archer.bale || 'Unassigned',
-                archer.target || 'Unassigned'
-            ];
+            const assignedHeader = document.createElement('div');
+            assignedHeader.style.cssText = `
+                background: #28a745; 
+                color: white; 
+                padding: 12px 16px; 
+                border-radius: 4px 4px 0 0;
+                font-weight: bold;
+            `;
+            assignedHeader.textContent = `✅ Assigned Archers (${assignedArchers.length})`;
+            assignedSection.appendChild(assignedHeader);
             
-            cells.forEach(cellText => {
-                const td = document.createElement('td');
-                td.textContent = cellText;
-                td.style.cssText = 'padding: 12px 8px; border-right: 1px solid #e9ecef;';
-                row.appendChild(td);
+            const tableContainer = document.createElement('div');
+            tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px;';
+            
+            const table = document.createElement('table');
+            table.style.cssText = 'width: 100%; border-collapse: collapse;';
+            
+            // Create header row
+            const headerRow = document.createElement('tr');
+            headerRow.style.cssText = 'background: #f8f9fa; font-weight: bold;';
+            
+            const headers = ['Archer Name', 'School', 'Division', 'Bale', 'Target'];
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                th.style.cssText = 'padding: 10px 8px; text-align: left; border-bottom: 1px solid #dee2e6;';
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+            
+            // Create data rows for assigned archers
+            assignedArchers.forEach((archer, index) => {
+                const row = document.createElement('tr');
+                row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};`;
+                
+                const cells = [
+                    `${archer.first} ${archer.last}`,
+                    archer.school || 'Unknown',
+                    archer.level || 'VAR',
+                    archer.bale || '1',
+                    archer.target || 'A'
+                ];
+                
+                cells.forEach(cellText => {
+                    const td = document.createElement('td');
+                    td.textContent = cellText;
+                    td.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+                    row.appendChild(td);
+                });
+                
+                table.appendChild(row);
             });
             
-            table.appendChild(row);
-        });
+            tableContainer.appendChild(table);
+            assignedSection.appendChild(tableContainer);
+            setupControls.container.appendChild(assignedSection);
+        }
         
-        tableContainer.appendChild(table);
-        setupControls.container.appendChild(tableContainer);
+        // Show unassigned archers with manual selection capability
+        if (unassignedArchers.length > 0) {
+            const unassignedSection = document.createElement('div');
+            unassignedSection.style.cssText = 'margin-top: 20px;';
+            
+            const unassignedHeader = document.createElement('div');
+            unassignedHeader.style.cssText = `
+                background: #6c757d; 
+                color: white; 
+                padding: 12px 16px; 
+                border-radius: 4px 4px 0 0;
+                font-weight: bold;
+            `;
+            unassignedHeader.textContent = `☆ Unassigned Archers (Manual Selection) - ${unassignedArchers.length}`;
+            unassignedSection.appendChild(unassignedHeader);
+            
+            // Create table for unassigned archers with checkboxes
+            const tableContainer = document.createElement('div');
+            tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px;';
+            
+            const table = document.createElement('table');
+            table.style.cssText = 'width: 100%; border-collapse: collapse;';
+            
+            // Create header row with checkbox column
+            const headerRow = document.createElement('tr');
+            headerRow.style.cssText = 'background: #f8f9fa; font-weight: bold;';
+            
+            const headers = ['Select', 'Archer Name', 'School', 'Division', 'Target'];
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                th.style.cssText = 'padding: 10px 8px; text-align: left; border-bottom: 1px solid #dee2e6;';
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+            
+            // Create data rows for unassigned archers with checkboxes
+            unassignedArchers.forEach((archer, index) => {
+                const row = document.createElement('tr');
+                row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};`;
+                
+                // Checkbox cell
+                const checkboxCell = document.createElement('td');
+                checkboxCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef; text-align: center;';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.style.cssText = 'transform: scale(1.2);';
+                
+                const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
+                const existingArcher = state.archers.find(a => a.id === uniqueId);
+                checkbox.checked = !!existingArcher;
+                
+                // Target select dropdown (hidden initially)
+                const targetSelect = document.createElement('select');
+                targetSelect.className = 'target-assignment-select';
+                targetSelect.style.cssText = 'display: none; margin-left: 8px; padding: 2px 4px; font-size: 0.9em;';
+                ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter => {
+                    const option = document.createElement('option');
+                    option.value = letter;
+                    option.textContent = letter;
+                    targetSelect.appendChild(option);
+                });
+                if (existingArcher) {
+                    targetSelect.value = existingArcher.targetAssignment;
+                    targetSelect.style.display = 'inline-block';
+                }
+                
+                checkbox.onchange = () => {
+                    if (checkbox.checked) {
+                        // Enforce max 4 archers per bale
+                        const selectedCount = state.archers.length;
+                        if (selectedCount >= 4) {
+                            checkbox.checked = false;
+                            alert('Bale is full (4 archers).');
+                            return;
+                        }
+                        if (!state.archers.some(a => a.id === uniqueId)) {
+                            const usedTargets = state.archers.map(a => a.targetAssignment);
+                            const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
+                            const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
+                            state.archers.push({
+                                id: uniqueId,
+                                firstName: archer.first,
+                                lastName: archer.last,
+                                school: archer.school || '',
+                                level: archer.level || '',
+                                gender: archer.gender || '',
+                                targetAssignment: nextTarget,
+                                targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
+                                scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
+                            });
+                            targetSelect.value = nextTarget;
+                        }
+                        targetSelect.style.display = 'inline-block';
+                    } else {
+                        state.archers = state.archers.filter(a => a.id !== uniqueId);
+                        targetSelect.style.display = 'none';
+                    }
+                    saveData();
+                    // Update selected count chip
+                    const chip = document.getElementById('selected-count-chip');
+                    if (chip) chip.textContent = `${state.archers.length}/4`;
+                };
+                
+                targetSelect.onchange = () => {
+                    const archerInState = state.archers.find(a => a.id === uniqueId);
+                    if (archerInState) {
+                        archerInState.targetAssignment = targetSelect.value;
+                        saveData();
+                    }
+                };
+                
+                checkboxCell.appendChild(checkbox);
+                checkboxCell.appendChild(targetSelect);
+                row.appendChild(checkboxCell);
+                
+                // Other data cells
+                const cells = [
+                    `${archer.first} ${archer.last}`,
+                    archer.school || 'Unknown',
+                    archer.level || 'VAR',
+                    'Unassigned'
+                ];
+                
+                cells.forEach(cellText => {
+                    const td = document.createElement('td');
+                    td.textContent = cellText;
+                    td.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+                    row.appendChild(td);
+                });
+                
+                table.appendChild(row);
+            });
+            
+            tableContainer.appendChild(table);
+            unassignedSection.appendChild(tableContainer);
+            setupControls.container.appendChild(unassignedSection);
+        }
     }
     
     // Function to load entire bale when clicking on any archer
@@ -742,10 +878,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         
+        // Set assignment mode to pre-assigned since we're loading a complete bale
+        state.assignmentMode = 'pre-assigned';
         saveData();
-        renderSetupForm();
         
-        // Scroll to the top to show the selected archers
+        // Transition to scoring view
+        state.currentView = 'scoring';
+        renderView();
+        
+        // Scroll to the top to show the scoring interface
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
