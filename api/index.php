@@ -663,6 +663,35 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELET
     exit;
 }
 
+// Coach utility: Reset all scoring data for an event (keeps the event itself)
+if (preg_match('#^/v1/events/([0-9a-f-]+)/reset$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $eventId = $m[1];
+    try {
+        $pdo = db();
+        // Find all rounds for this event
+        $roundsStmt = $pdo->prepare('SELECT id FROM rounds WHERE event_id = ?');
+        $roundsStmt->execute([$eventId]);
+        $roundIds = $roundsStmt->fetchAll(PDO::FETCH_COLUMN);
+        if (empty($roundIds)) {
+            json_response(['message' => 'No rounds found for event. Nothing to reset.']);
+            exit;
+        }
+        // Delete ends, then scorecards, then (optionally) rounds
+        $placeholders = implode(',', array_fill(0, count($roundIds), '?'));
+        // end_events cascade from round_archers, but we hard delete first for safety
+        $pdo->prepare("DELETE FROM end_events WHERE round_id IN ($placeholders)")->execute($roundIds);
+        $pdo->prepare("DELETE FROM round_archers WHERE round_id IN ($placeholders)")->execute($roundIds);
+        // Keep rounds so coaches can reuse the event schedule; set status back to Created
+        $pdo->prepare("UPDATE rounds SET status='Created' WHERE id IN ($placeholders)")->execute($roundIds);
+        json_response(['ok' => true, 'message' => 'All entered scores deleted. Rounds reset to Created.']);
+    } catch (Exception $e) {
+        error_log("Event reset failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // Get an event snapshot: division-based rounds with archer data (PUBLIC - no auth required for archers to see assignments)
 if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method === 'GET') {
     $eventId = $m[1];

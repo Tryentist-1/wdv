@@ -486,6 +486,32 @@
     };
   }
 
+  // ==================== Reset Event Data ====================
+  function setupResetEventData() {
+    const btn = document.getElementById('reset-event-data-btn');
+    const select = document.getElementById('reset-event-select');
+    if (!btn || !select) return;
+    btn.onclick = async () => {
+      const eventId = select.value;
+      if (!eventId) { alert('Please select an event to reset.'); return; }
+      const confirmMsg = 'Reset Event Data\n\nALL ENTERED SCORES WILL BE DELETED.\nScorecards (round_archers) and End data will be removed, rounds set back to Created.\n\nAre you sure?';
+      if (!confirm(confirmMsg)) return;
+      try {
+        if (!window.LiveUpdates || !LiveUpdates.request) { alert('API not available'); return; }
+        await LiveUpdates.request(`/events/${eventId}/reset`, 'POST');
+        alert('Event data reset. All entered scores were deleted.');
+      } catch (e) {
+        alert('Reset failed: ' + (e && e.message ? e.message : e));
+      }
+    };
+  }
+
+  // Hook up on load (coach page)
+  document.addEventListener('DOMContentLoaded', () => {
+    setupCSVImport();
+    setupResetEventData();
+  });
+
   function parseCSV(text) {
     const lines = text.split('\n').filter(line => line.trim());
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
