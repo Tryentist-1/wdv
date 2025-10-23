@@ -487,13 +487,12 @@
   }
 
   // ==================== Reset Event Data ====================
-  function setupResetEventData() {
+  function setupResetEventDataInline() {
     const btn = document.getElementById('reset-event-data-btn');
-    const select = document.getElementById('reset-event-select');
-    if (!btn || !select) return;
+    if (!btn) return;
     btn.onclick = async () => {
-      const eventId = select.value;
-      if (!eventId) { alert('Please select an event to reset.'); return; }
+      if (!currentEditEventId) { alert('Open Edit Event to reset.'); return; }
+      const eventId = currentEditEventId;
       const confirmMsg = 'Reset Event Data\n\nALL ENTERED SCORES WILL BE DELETED.\nScorecards (round_archers) and End data will be removed, rounds set back to Created.\n\nAre you sure?';
       if (!confirm(confirmMsg)) return;
       try {
@@ -509,7 +508,7 @@
   // Hook up on load (coach page)
   document.addEventListener('DOMContentLoaded', () => {
     setupCSVImport();
-    setupResetEventData();
+    setupResetEventDataInline();
   });
 
   function parseCSV(text) {
