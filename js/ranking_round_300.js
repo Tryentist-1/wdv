@@ -957,6 +957,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         tableHTML += `</tbody></table>`;
         scoringControls.container.innerHTML = tableHTML;
+        
+        // Update live status display after rendering
+        updateLiveStatusDisplay();
     }
     
     function renderCardView(archerId) {
@@ -1264,6 +1267,87 @@ document.addEventListener('DOMContentLoaded', () => {
         showScoringBanner();
     }
 
+    function syncCurrentEnd() {
+        const currentEnd = state.currentEnd;
+        const promises = [];
+        
+        // Sync all archers for the current end
+        state.archers.forEach(archer => {
+            const endScores = archer.scores[currentEnd - 1];
+            if (!endScores || !endScores.some(score => score !== '' && score !== null)) {
+                return; // Skip archers with no scores for this end
+            }
+            
+            const [a1, a2, a3] = [endScores[0] || '', endScores[1] || '', endScores[2] || ''];
+            let endTotal = 0, tens = 0, xs = 0, running = 0;
+            
+            // Calculate scores
+            const add = (s) => { 
+                const u = String(s).toUpperCase(); 
+                if (!u) return; 
+                if (u === 'X') { endTotal += 10; running += 10; xs++; tens++; } 
+                else if (u === '10') { endTotal += 10; running += 10; tens++; } 
+                else if (u === 'M') { running += 0; } 
+                else { const n = parseInt(u); if (!isNaN(n)) { endTotal += n; running += n; } }
+            };
+            
+            [a1, a2, a3].forEach(add);
+            
+            // Calculate running total
+            for (let i = 0; i < currentEnd; i++) {
+                const scores = archer.scores[i];
+                if (scores) {
+                    scores.forEach(s => {
+                        const u = String(s).toUpperCase();
+                        if (u === 'X') running += 10;
+                        else if (u === '10') running += 10;
+                        else if (u === 'M') running += 0;
+                        else { const n = parseInt(u); if (!isNaN(n)) running += n; }
+                    });
+                }
+            }
+            
+            // Set sync status to pending
+            updateSyncStatus(archer.id, currentEnd, 'pending');
+            
+            // Sync to server
+            if (LiveUpdates._state && LiveUpdates._state.roundId) {
+                const promise = LiveUpdates.postEnd(archer.id, currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs })
+                    .then(() => updateSyncStatus(archer.id, currentEnd, 'synced'))
+                    .catch(() => updateSyncStatus(archer.id, currentEnd, 'failed'));
+                promises.push(promise);
+            } else {
+                // Initialize round and archer first
+                const promise = LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
+                    .then(() => LiveUpdates.ensureArcher(archer.id, archer))
+                    .then(() => LiveUpdates.postEnd(archer.id, currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
+                    .then(() => updateSyncStatus(archer.id, currentEnd, 'synced'))
+                    .catch(err => {
+                        console.error('Sync failed for archer:', archer.id, 'end:', currentEnd, err);
+                        updateSyncStatus(archer.id, currentEnd, 'failed');
+                    });
+                promises.push(promise);
+            }
+        });
+        
+        // Show progress
+        const completeBtn = document.getElementById('complete-round-btn');
+        if (completeBtn) {
+            completeBtn.disabled = true;
+            completeBtn.textContent = 'Syncing...';
+        }
+        
+        // Wait for all syncs to complete
+        Promise.allSettled(promises).then(() => {
+            if (completeBtn) {
+                completeBtn.disabled = false;
+                completeBtn.textContent = 'Sync End';
+            }
+            updateCompleteButton();
+            updateLiveStatusDisplay();
+        });
+    }
+
     function completeRound() {
         // Mark all archers as completed (10 ends)
         state.archers.forEach(archer => {
@@ -1284,15 +1368,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const completeBtn = document.getElementById('complete-round-btn');
         if (!completeBtn) return;
         
-        // Check if all archers have completed 10 ends
-        const allComplete = state.archers.length > 0 && state.archers.every(archer => 
-            archer.scores && archer.scores.length >= 10
-        );
+        const isLiveEnabled = getLiveEnabled();
         
-        if (allComplete) {
-            completeBtn.style.display = 'inline-block';
+        if (!isLiveEnabled) {
+            // Live sync is off - show "Complete Round" for final verification
+            const allComplete = state.archers.length > 0 && state.archers.every(archer => 
+                archer.scores && archer.scores.length >= 10
+            );
+            
+            if (allComplete) {
+                completeBtn.style.display = 'inline-block';
+                completeBtn.textContent = 'Complete Round';
+                completeBtn.className = 'btn btn-primary';
+            } else {
+                completeBtn.style.display = 'none';
+            }
         } else {
-            completeBtn.style.display = 'none';
+            // Live sync is on - show "Sync End" for current end
+            const currentEndHasScores = state.archers.some(archer => {
+                const endScores = archer.scores[state.currentEnd - 1];
+                return endScores && endScores.some(score => score !== '' && score !== null);
+            });
+            
+            if (currentEndHasScores) {
+                completeBtn.style.display = 'inline-block';
+                completeBtn.textContent = 'Sync End';
+                completeBtn.className = 'btn btn-success';
+            } else {
+                completeBtn.style.display = 'none';
+            }
         }
     }
 
@@ -1544,6 +1648,60 @@ document.addEventListener('DOMContentLoaded', () => {
         return names[code] || code;
     }
 
+    function updateLiveStatusDisplay() {
+        const badge = document.getElementById('live-status-badge');
+        if (!badge) return;
+        
+        const isLiveEnabled = getLiveEnabled();
+        
+        if (!isLiveEnabled) {
+            badge.textContent = 'Live Updates Off';
+            badge.className = 'status-badge status-off';
+            return;
+        }
+        
+        // Check if current end is synced for all archers
+        const currentEnd = state.currentEnd;
+        const allSynced = state.archers.length > 0 && state.archers.every(archer => {
+            const syncStatus = state.syncStatus[archer.id] && state.syncStatus[archer.id][currentEnd];
+            return syncStatus === 'synced';
+        });
+        
+        const anyPending = state.archers.some(archer => {
+            const syncStatus = state.syncStatus[archer.id] && state.syncStatus[archer.id][currentEnd];
+            return syncStatus === 'pending';
+        });
+        
+        if (allSynced) {
+            badge.textContent = 'Synced';
+            badge.className = 'status-badge status-synced';
+        } else if (anyPending) {
+            badge.textContent = 'Syncing...';
+            badge.className = 'status-badge status-pending';
+        } else {
+            badge.textContent = 'Not Synced';
+            badge.className = 'status-badge status-pending';
+        }
+    }
+    
+    function getLiveEnabled() {
+        try { 
+            return !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); 
+        } catch(_) { 
+            return false; 
+        }
+    }
+    
+    function setLiveEnabled(v) { 
+        try { 
+            if (window.LiveUpdates && LiveUpdates.saveConfig) {
+                LiveUpdates.saveConfig({ enabled: !!v }); 
+            } else {
+                localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); 
+            }
+        } catch(_) {} 
+    }
+
     function updateSyncStatus(archerId, endNumber, status) {
         if (!state.syncStatus[archerId]) {
             state.syncStatus[archerId] = {};
@@ -1561,6 +1719,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
+        // Update live status display
+        updateLiveStatusDisplay();
+        
         saveData();
     }
 
@@ -1568,9 +1729,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const icons = {
             'synced': '<span style="color: #4caf50; font-size: 0.9em;" title="Synced">✓</span>',
             'pending': '<span style="color: #ff9800; font-size: 0.9em;" title="Pending">⟳</span>',
-            'failed': '<span style="color: #f44336; font-size: 0.9em;" title="Failed">✗</span>'
+            'failed': '<span style="color: #f44336; font-size: 0.9em;" title="Failed">✗</span>',
+            '': '<span style="color: #9e9e9e; font-size: 0.9em;" title="Not Synced">○</span>'
         };
-        return icons[status] || '';
+        return icons[status] || icons[''];
     }
 
     async function performMasterSync() {
@@ -1960,12 +2122,20 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // Complete round button
+        // Complete round / Sync end button
         const completeBtn = document.getElementById('complete-round-btn');
         if (completeBtn) {
             completeBtn.onclick = () => {
-                if (confirm('Are you sure you want to complete this round? This will mark all archers as finished.')) {
-                    completeRound();
+                const isLiveEnabled = getLiveEnabled();
+                
+                if (!isLiveEnabled) {
+                    // Live sync is off - complete round for final verification
+                    if (confirm('Are you sure you want to complete this round? This will mark all archers as finished.')) {
+                        completeRound();
+                    }
+                } else {
+                    // Live sync is on - sync current end
+                    syncCurrentEnd();
                 }
             };
         }
@@ -2023,10 +2193,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch(_) {}
             };
             liveBtn.onclick = () => {
-                // Archers should not be prompted; toggle only if already configured
-                setLiveEnabled(!getLiveEnabled());
+                const newState = !getLiveEnabled();
+                setLiveEnabled(newState);
                 renderLiveBtn();
-                if (getLiveEnabled()) initLiveRoundAndArchers();
+                
+                if (newState) {
+                    // Enable live sync - initialize round and archers
+                    initLiveRoundAndArchers();
+                    console.log('Live Sync enabled');
+                } else {
+                    // Disable live sync
+                    console.log('Live Sync disabled');
+                }
+                
+                // Update status display
+                updateLiveStatusDisplay();
             };
 
             const resetBtn = document.createElement('button');
