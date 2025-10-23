@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeEventId: null, // Event ID if pre-assigned mode
         eventName: '',
         assignmentMode: 'manual', // 'manual' or 'pre-assigned'
+        setupMode: 'manual', // 'manual' or 'pre-assigned' - determines which setup section to show
         syncStatus: {}, // Track sync status per archer per end: { archerId: { endNumber: 'synced'|'pending'|'failed' } }
         sortMode: 'bale' // 'bale' or 'name'
     };
@@ -52,6 +53,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const setupControls = {
         container: document.getElementById('archer-setup-container'),
         subheader: document.querySelector('#setup-view .page-subheader'),
+    };
+
+    const manualSetupControls = {
+        section: document.getElementById('manual-setup-section'),
+        baleInput: document.getElementById('bale-number-input-manual'),
+        searchInput: document.getElementById('archer-search-manual'),
+        selectedCountChip: document.getElementById('selected-count-chip'),
+        selectedArchersDisplay: document.getElementById('selected-archers-display'),
+        startScoringBtn: document.getElementById('manual-start-scoring-btn'),
+    };
+
+    const preassignedSetupControls = {
+        section: document.getElementById('preassigned-setup-section'),
+        baleListContainer: document.getElementById('bale-list-container'),
     };
 
     const scoringControls = {
@@ -234,59 +249,293 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    function renderSetupForm() {
-        if (!setupControls.container) return;
-        setupControls.container.innerHTML = '';
+    function determineSetupMode() {
+        // If we have an active event with pre-assigned archers, use pre-assigned mode
+        if (state.activeEventId && state.archers.length > 0 && state.assignmentMode === 'pre-assigned') {
+            return 'pre-assigned';
+        }
+        // Otherwise, use manual mode
+        return 'manual';
+    }
+
+    function renderSetupSections() {
+        const setupMode = determineSetupMode();
+        state.setupMode = setupMode;
         
-        // Pre-assigned mode: show read-only archer list
-        if (state.assignmentMode === 'pre-assigned' && state.archers.length > 0) {
-            renderPreAssignedArchers();
+        // Hide both sections first
+        if (manualSetupControls.section) {
+            manualSetupControls.section.style.display = 'none';
+        }
+        if (preassignedSetupControls.section) {
+            preassignedSetupControls.section.style.display = 'none';
+        }
+        
+        // Show the appropriate section
+        if (setupMode === 'manual') {
+            if (manualSetupControls.section) {
+                manualSetupControls.section.style.display = 'block';
+            }
+            renderManualSetup();
+        } else {
+            if (preassignedSetupControls.section) {
+                preassignedSetupControls.section.style.display = 'block';
+            }
+            renderPreassignedSetup();
+        }
+    }
+
+    function renderManualSetup() {
+        // Update bale input
+        if (manualSetupControls.baleInput) {
+            manualSetupControls.baleInput.value = state.baleNumber;
+        }
+        
+        // Update selection count
+        updateSelectionCount();
+        
+        // Render selected archers
+        renderSelectedArchers();
+        
+        // Render archer list for selection
+        renderManualArcherList();
+    }
+
+    function renderPreassignedSetup() {
+        if (!preassignedSetupControls.baleListContainer) return;
+        
+        // Group archers by bale
+        const baleGroups = {};
+        state.archers.forEach(archer => {
+            if (archer.baleNumber) {
+                if (!baleGroups[archer.baleNumber]) {
+                    baleGroups[archer.baleNumber] = [];
+                }
+                baleGroups[archer.baleNumber].push(archer);
+            }
+        });
+        
+        // Render bale list
+        preassignedSetupControls.baleListContainer.innerHTML = '';
+        
+        const sortedBales = Object.keys(baleGroups).sort((a, b) => parseInt(a) - parseInt(b));
+        
+        sortedBales.forEach(baleNumber => {
+            const archers = baleGroups[baleNumber];
+            const baleItem = document.createElement('div');
+            baleItem.className = 'bale-list-item';
+            
+            baleItem.innerHTML = `
+                <div class="bale-info">
+                    <div class="bale-number">Bale ${baleNumber}</div>
+                    <div class="bale-archers">${archers.length} archers</div>
+                </div>
+                <div class="bale-actions">
+                    <button class="btn btn-primary" onclick="loadEntireBale(${baleNumber}, ${JSON.stringify(archers).replace(/"/g, '&quot;')})">
+                        Start Scoring
+                    </button>
+                </div>
+            `;
+            
+            preassignedSetupControls.baleListContainer.appendChild(baleItem);
+        });
+    }
+
+    function updateSelectionCount() {
+        if (manualSetupControls.selectedCountChip) {
+            const count = state.archers.length;
+            manualSetupControls.selectedCountChip.textContent = `${count}/4 archers selected`;
+            
+            // Enable/disable start scoring button
+            if (manualSetupControls.startScoringBtn) {
+                manualSetupControls.startScoringBtn.disabled = count === 0;
+            }
+        }
+    }
+
+    function renderSelectedArchers() {
+        if (!manualSetupControls.selectedArchersDisplay) return;
+        
+        if (state.archers.length === 0) {
+            manualSetupControls.selectedArchersDisplay.innerHTML = '<div style="text-align: center; color: #666; padding: 1rem;">No archers selected</div>';
             return;
         }
         
-        // Manual mode: show checkbox list
-        // First try to load from event (archery_master_list), then fall back to local master list (archerList)
+        manualSetupControls.selectedArchersDisplay.innerHTML = '';
+        
+        state.archers.forEach(archer => {
+            const archerItem = document.createElement('div');
+            archerItem.className = 'selected-archer-item';
+            
+            archerItem.innerHTML = `
+                <span class="selected-archer-name">${archer.firstName} ${archer.lastName}</span>
+                <span class="selected-archer-target">${archer.targetAssignment}</span>
+            `;
+            
+            manualSetupControls.selectedArchersDisplay.appendChild(archerItem);
+        });
+    }
+
+    function renderManualArcherList() {
+        if (!setupControls.container) return;
+        setupControls.container.innerHTML = '';
+        
+        // Load master list
         let masterList = [];
         const eventArchers = localStorage.getItem('archery_master_list');
         if (eventArchers) {
             try {
                 masterList = JSON.parse(eventArchers);
-                console.log(`Loaded ${masterList.length} archers from event`);
             } catch (e) {
                 console.error('Failed to parse event archers:', e);
             }
         }
         
-        // If no event archers and ArcherModule exists, fall back to local master list
         if (masterList.length === 0 && typeof ArcherModule !== 'undefined') {
             masterList = ArcherModule.loadList();
-            console.log(`Loaded ${masterList.length} archers from local master list`);
         }
         
-        // If still no archers, show empty state
         if (masterList.length === 0) {
             setupControls.container.innerHTML = `
                 <div style="text-align: center; padding: 2rem; color: #666;">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
-                    <h3>No Event Connected</h3>
-                    <p>Click the "No Event" button above to connect to an event.</p>
+                    <h3>No Archers Available</h3>
+                    <p>Connect to an event to load archers.</p>
                 </div>
             `;
             return;
         }
         
-        masterList.sort((a, b) => {
-            if (a.fave && !b.fave) return -1;
-            if (!a.fave && b.fave) return 1;
-            const nameA = `${a.first} ${a.last}`.toLowerCase();
-            const nameB = `${b.first} ${b.last}`.toLowerCase();
-            if (nameA < nameB) return -1;
-            if (nameA > nameB) return 1;
-            return 0;
+        // Filter by search term
+        const searchTerm = manualSetupControls.searchInput ? manualSetupControls.searchInput.value.toLowerCase() : '';
+        const filteredList = masterList.filter(archer => {
+            if (!searchTerm) return true;
+            const name = `${archer.first} ${archer.last}`.toLowerCase();
+            const school = (archer.school || '').toLowerCase();
+            return name.includes(searchTerm) || school.includes(searchTerm);
         });
-        const searchInput = setupControls.subheader.querySelector('.archer-search-bar');
-        const filter = searchInput ? searchInput.value : '';
-        renderArcherSelectList(masterList, filter);
+        
+        // Create table for archer selection
+        const table = document.createElement('table');
+        table.style.cssText = 'width: 100%; border-collapse: collapse; margin-top: 1rem;';
+        
+        // Header
+        const headerRow = document.createElement('tr');
+        headerRow.style.cssText = 'background: #f8f9fa; font-weight: bold;';
+        
+        const headers = ['Select', 'Archer Name', 'School', 'Division', 'Target'];
+        headers.forEach(headerText => {
+            const th = document.createElement('th');
+            th.textContent = headerText;
+            th.style.cssText = 'padding: 10px 8px; text-align: left; border-bottom: 1px solid #dee2e6;';
+            headerRow.appendChild(th);
+        });
+        table.appendChild(headerRow);
+        
+        // Data rows
+        filteredList.forEach((archer, index) => {
+            const row = document.createElement('tr');
+            row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};`;
+            
+            // Checkbox cell
+            const checkboxCell = document.createElement('td');
+            checkboxCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef; text-align: center;';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.style.cssText = 'transform: scale(1.2);';
+            
+            const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
+            const existingArcher = state.archers.find(a => a.id === uniqueId);
+            checkbox.checked = !!existingArcher;
+            
+            // Target select dropdown
+            const targetSelect = document.createElement('select');
+            targetSelect.className = 'target-assignment-select';
+            targetSelect.style.cssText = 'display: none; margin-left: 8px; padding: 2px 4px; font-size: 0.9em;';
+            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter => {
+                const option = document.createElement('option');
+                option.value = letter;
+                option.textContent = letter;
+                targetSelect.appendChild(option);
+            });
+            if (existingArcher) {
+                targetSelect.value = existingArcher.targetAssignment;
+                targetSelect.style.display = 'inline-block';
+            }
+            
+            checkbox.onchange = () => {
+                if (checkbox.checked) {
+                    // Enforce max 4 archers per bale
+                    const selectedCount = state.archers.length;
+                    if (selectedCount >= 4) {
+                        checkbox.checked = false;
+                        alert('Bale is full (4 archers).');
+                        return;
+                    }
+                    if (!state.archers.some(a => a.id === uniqueId)) {
+                        const usedTargets = state.archers.map(a => a.targetAssignment);
+                        const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
+                        const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
+                        state.archers.push({
+                            id: uniqueId,
+                            firstName: archer.first,
+                            lastName: archer.last,
+                            school: archer.school || '',
+                            level: archer.level || '',
+                            gender: archer.gender || '',
+                            targetAssignment: nextTarget,
+                            targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
+                            scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
+                        });
+                        targetSelect.value = nextTarget;
+                    }
+                    targetSelect.style.display = 'inline-block';
+                } else {
+                    state.archers = state.archers.filter(a => a.id !== uniqueId);
+                    targetSelect.style.display = 'none';
+                }
+                saveData();
+                updateSelectionCount();
+                renderSelectedArchers();
+            };
+            
+            targetSelect.onchange = () => {
+                const archerInState = state.archers.find(a => a.id === uniqueId);
+                if (archerInState) {
+                    archerInState.targetAssignment = targetSelect.value;
+                    saveData();
+                    renderSelectedArchers();
+                }
+            };
+            
+            checkboxCell.appendChild(checkbox);
+            checkboxCell.appendChild(targetSelect);
+            row.appendChild(checkboxCell);
+            
+            // Other data cells
+            const cells = [
+                `${archer.first} ${archer.last}`,
+                archer.school || 'Unknown',
+                archer.level || 'VAR',
+                existingArcher ? existingArcher.targetAssignment : 'Unassigned'
+            ];
+            
+            cells.forEach(cellText => {
+                const td = document.createElement('td');
+                td.textContent = cellText;
+                td.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+                row.appendChild(td);
+            });
+            
+            table.appendChild(row);
+        });
+        
+        setupControls.container.appendChild(table);
+    }
+
+    function renderSetupForm() {
+        // Use the new setup sections instead of the old logic
+        renderSetupSections();
     }
 
     function renderPreAssignedArchers() {
@@ -2091,6 +2340,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Failed to load saved event - showing modal');
                 showEventModal();
             }
+        }
+
+        // Wire up manual setup controls
+        if (manualSetupControls.baleInput) {
+            manualSetupControls.baleInput.value = state.baleNumber;
+            manualSetupControls.baleInput.onchange = () => {
+                const newBale = parseInt(manualSetupControls.baleInput.value, 10) || 1;
+                state.baleNumber = newBale;
+                saveData();
+                console.log('Bale number updated to:', newBale);
+            };
+        }
+
+        if (manualSetupControls.searchInput) {
+            manualSetupControls.searchInput.oninput = () => {
+                renderManualArcherList();
+            };
+        }
+
+        if (manualSetupControls.startScoringBtn) {
+            manualSetupControls.startScoringBtn.onclick = () => {
+                if (state.archers.length === 0) {
+                    alert('Please select at least one archer to start scoring.');
+                    return;
+                }
+                showScoringView();
+            };
         }
 
         const baleNumberInput = document.getElementById('bale-number-input');

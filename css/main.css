@@ -1265,3 +1265,182 @@ body.practice-target-page .main-container {
     font-size: 1em;
   }
 }
+
+/* ======================
+   Setup Section Styles
+   ====================== */
+
+.setup-section {
+    margin: 1rem 0;
+}
+
+.manual-setup-card, .preassigned-setup-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.manual-setup-card h3, .preassigned-setup-card h3 {
+    margin: 0 0 1rem 0;
+    color: #333;
+    font-size: 1.2rem;
+    border-bottom: 2px solid #2d7dd9;
+    padding-bottom: 0.5rem;
+}
+
+.manual-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.bale-selector-manual {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bale-selector-manual label {
+    font-weight: bold;
+    color: #555;
+}
+
+.bale-selector-manual input {
+    width: 80px;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.archer-search-manual {
+    flex: 1;
+    min-width: 200px;
+}
+
+.archer-search-manual input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.selection-indicator {
+    background: #f8f9fa;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    border: 1px solid #dee2e6;
+    font-weight: bold;
+    color: #495057;
+}
+
+.selected-archers {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    min-height: 60px;
+}
+
+.selected-archer-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.selected-archer-item:last-child {
+    margin-bottom: 0;
+}
+
+.selected-archer-name {
+    font-weight: bold;
+    color: #333;
+}
+
+.selected-archer-target {
+    background: #2d7dd9;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.manual-actions {
+    text-align: center;
+}
+
+.manual-actions .btn {
+    min-width: 150px;
+}
+
+/* Pre-assigned Bale List Styles */
+.bale-list-item {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.bale-list-item:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.bale-info {
+    flex: 1;
+}
+
+.bale-number {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #2d7dd9;
+    margin-bottom: 0.25rem;
+}
+
+.bale-archers {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.bale-actions {
+    margin-left: 1rem;
+}
+
+/* Setup Section Responsive */
+@media (max-width: 768px) {
+    .manual-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .archer-search-manual {
+        min-width: auto;
+    }
+    
+    .bale-list-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .bale-actions {
+        margin-left: 0;
+        text-align: center;
+    }
+}
