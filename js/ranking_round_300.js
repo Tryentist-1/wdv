@@ -1119,11 +1119,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add all archers from this bale
         const targets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
         archersInBale.forEach((archer, index) => {
-            const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
+            const uniqueId = `${archer.firstName.trim()}-${archer.lastName.trim()}`;
             state.archers.push({
                 id: uniqueId,
-                firstName: archer.first,
-                lastName: archer.last,
+                firstName: archer.firstName,
+                lastName: archer.lastName,
                 school: archer.school || '',
                 level: archer.level || '',
                 gender: archer.gender || '',
