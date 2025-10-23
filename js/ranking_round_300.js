@@ -2580,7 +2580,6 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add selected count chip for manual mode
             if (state.assignmentMode === 'manual') {
                 const selectedChip = document.createElement('span');
-                selectedChip.id = 'selected-count-chip';
                 selectedChip.className = 'btn';
                 selectedChip.style.cursor = 'default';
                 selectedChip.textContent = `${state.archers.length}/4`;

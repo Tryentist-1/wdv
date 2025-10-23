@@ -1132,7 +1132,6 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshBtn.textContent = 'Refresh';
             refreshBtn.onclick = async () => { await ArcherModule.loadDefaultCSVIfNeeded(true); renderSetupForm(); };
             const selectedChip = document.createElement('span');
-            selectedChip.id = 'selected-count-chip';
             selectedChip.className = 'btn';
             selectedChip.style.cursor = 'default';
             selectedChip.textContent = `${state.archers.length}/4`;
