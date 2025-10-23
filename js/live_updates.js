@@ -36,22 +36,9 @@
     }
 
     async function request(path, method, body, _retried) {
-        // Auto-enable if we have an API key (for archer management and coach console features)
+        // Prefer working without an API key on archer devices; include key if present
         const key = state.config.apiKey || localStorage.getItem('coach_api_key') || '';
-        
-        // Only check enabled flag if this is a live scoring request (has roundId in state)
-        // For admin/management features (archers, events), always allow if we have a key
-        if (!state.config.enabled && !key && state.roundId) {
-            return null; // Live Updates disabled and no key for live scoring
-        }
-        
         const headers = { 'Content-Type': 'application/json' };
-        
-        // Do not prompt for keys on archer devices; simply disable live updates when not configured
-        if (!key) {
-            return null;
-        }
-        
         if (key) { headers['X-API-Key'] = key; headers['X-Passcode'] = key; }
         
         const res = await fetch(`${state.config.apiBase}${path}`, {
@@ -61,10 +48,9 @@
         });
         
         if (res.status === 401 && !_retried) {
-            // Don't prompt on mobile - just disable Live Updates silently
-            console.warn('Live Updates unauthorized - disabling for this session');
-            saveConfig({ enabled: false });
-            throw new Error('Unauthorized - Live Updates disabled');
+            // If unauthorized and no key, surface error but do not disable entirely
+            console.warn('Live Updates unauthorized');
+            throw new Error('Unauthorized');
         }
         
         if (!res.ok) {
@@ -81,6 +67,9 @@
         if (state.roundId) return Promise.resolve(state.roundId);
         return request('/rounds', 'POST', { roundType, date, baleNumber })
             .then(json => {
+                if (!json || !json.roundId) {
+                    throw new Error('Round creation failed: missing roundId');
+                }
                 state.roundId = json.roundId;
                 return state.roundId;
             });
@@ -96,6 +85,9 @@
             gender: archer.gender || '',
             targetAssignment: archer.targetAssignment || '',
         }).then(json => {
+            if (!json || !json.roundArcherId) {
+                throw new Error('Archer ensure failed: missing roundArcherId');
+            }
             state.archerIds[localId] = json.roundArcherId;
             return json.roundArcherId;
         });

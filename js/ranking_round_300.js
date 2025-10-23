@@ -2574,26 +2574,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const cfg = window.LIVE_UPDATES || {};
                     LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1' });
                     
-                    if (!LiveUpdates._state.roundId) {
-                        console.log('Initializing Live Updates round...');
-                        LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
-                          .then(() => { 
-                            console.log('Round initialized, ensuring archers...');
-                            state.archers.forEach(a => {
-                                console.log('Ensuring archer:', a.id);
-                                LiveUpdates.ensureArcher(a.id, a);
-                            });
-                          })
-                          .catch(err => {
-                            console.error('Failed to initialize Live Updates:', err);
-                          });
-                    } else {
-                        console.log('Round already initialized, ensuring archers...');
-                        state.archers.forEach(a => {
-                            console.log('Ensuring archer:', a.id);
-                            LiveUpdates.ensureArcher(a.id, a);
-                        });
-                    }
+                    // Always ensure round, then ensure current archers
+                    LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
+                      .then(() => { 
+                        if (!LiveUpdates._state.roundId) throw new Error('roundId missing after ensureRound');
+                        const ensures = (state.archers || []).map(a => LiveUpdates.ensureArcher(a.id, a));
+                        return Promise.allSettled(ensures);
+                      })
+                      .then(() => console.log('Live Updates round/archers initialized'))
+                      .catch(err => {
+                        console.error('Failed to initialize Live Updates:', err);
+                      });
                     
                     const badge = document.getElementById('live-status-badge');
                     if (badge) { 
