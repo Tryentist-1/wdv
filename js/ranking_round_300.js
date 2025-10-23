@@ -103,9 +103,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateEventHeader() {
-        const currentEventName = document.getElementById('current-event-name');
-        if (currentEventName) {
-            currentEventName.textContent = state.eventName || 'No Event';
+        const eventNameEl = document.getElementById('event-name');
+        const baleDisplayEl = document.getElementById('current-bale-display');
+        
+        if (eventNameEl) {
+            eventNameEl.textContent = state.eventName || 'No Event';
+        }
+        
+        if (baleDisplayEl) {
+            baleDisplayEl.textContent = state.baleNumber;
         }
     }
 
@@ -958,8 +964,9 @@ document.addEventListener('DOMContentLoaded', () => {
         tableHTML += `</tbody></table>`;
         scoringControls.container.innerHTML = tableHTML;
         
-        // Update live status display after rendering
+        // Update live status display and complete button after rendering
         updateLiveStatusDisplay();
+        updateCompleteButton();
     }
     
     function renderCardView(archerId) {
@@ -1251,6 +1258,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateSyncStatus(archer.id, state.currentEnd, 'failed');
             }
         }
+        
+        // Update complete button after score input
+        updateCompleteButton();
     }
 
     function changeEnd(direction) {
@@ -1260,6 +1270,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderScoringView();
             saveData();
             updateCompleteButton();
+            updateLiveStatusDisplay();
         }
     }
     
@@ -1280,6 +1291,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderView();
         saveData();
         updateCompleteButton();
+        updateEventHeader();
         
         // Show scoring in progress banner
         showScoringBanner();
@@ -2194,12 +2206,6 @@ document.addEventListener('DOMContentLoaded', () => {
             searchInput.oninput = () => {
                 if (state.assignmentMode === 'pre-assigned' && state.activeEventId) {
                     // Filter event archers by search term
-                    const filteredArchers = state.archers.filter(archer => {
-                        const searchTerm = searchInput.value.toLowerCase();
-                        const fullName = `${archer.firstName} ${archer.lastName}`.toLowerCase();
-                        const school = archer.school.toLowerCase();
-                        return fullName.includes(searchTerm) || school.includes(searchTerm);
-                    });
                     renderPreAssignedArchers();
                 } else {
                     // Manual mode - use global master list
