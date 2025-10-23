@@ -257,11 +257,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function determineSetupMode() {
-        // If we have an active event with pre-assigned archers, use pre-assigned mode
-        if (state.activeEventId && state.assignmentMode === 'pre-assigned' && state.archers.length > 0) {
+        // Prefer event-driven detection using the master event list
+        let masterCount = 0;
+        try { masterCount = JSON.parse(localStorage.getItem('archery_master_list') || '[]').length; } catch(_) { masterCount = 0; }
+        if (state.activeEventId && masterCount > 0) {
             return 'pre-assigned';
         }
-        // Otherwise, use manual mode
         return 'manual';
     }
 
@@ -310,22 +311,37 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPreassignedSetup() {
         if (!preassignedSetupControls.baleListContainer) return;
         
+        // Always source list from master list saved at event load time
+        let masterList = [];
+        try { masterList = JSON.parse(localStorage.getItem('archery_master_list') || '[]'); } catch(_) { masterList = []; }
+        
+        // If no event or no archers, show empty state
+        if (!state.activeEventId || masterList.length === 0) {
+            preassignedSetupControls.baleListContainer.innerHTML = '<div style="text-align:center;color:#666;padding:1rem;">No Archers Available<br/>Connect to an event to load archers.</div>';
+            return;
+        }
+        
+        // Normalize to a common shape for rendering and for loadEntireBale
+        const normalized = masterList.map(a => ({
+            firstName: a.firstName || a.first || '',
+            lastName: a.lastName || a.last || '',
+            school: a.school || '',
+            level: a.level || '',
+            gender: a.gender || '',
+            baleNumber: Number(a.baleNumber != null ? a.baleNumber : a.bale),
+            target: a.target || ''
+        })).filter(a => !!a.baleNumber);
+        
         // Group archers by bale
         const baleGroups = {};
-        state.archers.forEach(archer => {
-            if (archer.baleNumber) {
-                if (!baleGroups[archer.baleNumber]) {
-                    baleGroups[archer.baleNumber] = [];
-                }
-                baleGroups[archer.baleNumber].push(archer);
-            }
+        normalized.forEach(archer => {
+            if (!baleGroups[archer.baleNumber]) baleGroups[archer.baleNumber] = [];
+            baleGroups[archer.baleNumber].push(archer);
         });
         
         // Render bale list
         preassignedSetupControls.baleListContainer.innerHTML = '';
-        
         const sortedBales = Object.keys(baleGroups).sort((a, b) => parseInt(a) - parseInt(b));
-        
         sortedBales.forEach(baleNumber => {
             const archers = baleGroups[baleNumber];
             const baleItem = document.createElement('div');
@@ -342,7 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </button>
                 </div>
             `;
-            
             preassignedSetupControls.baleListContainer.appendChild(baleItem);
         });
     }
@@ -1136,7 +1151,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 gender: archer.gender || '',
                 targetAssignment: archer.target || targets[index],
                 targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
-                scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
+                // Start with zero ends; each end is appended as scores are entered
+                scores: []
             });
         });
         
@@ -1677,11 +1693,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const isLiveEnabled = getLiveEnabled();
         
         if (!isLiveEnabled) {
-            // Live sync is off - show "Complete Round" for final verification
-            const allComplete = state.archers.length > 0 && state.archers.every(archer => 
-                archer.scores && archer.scores.length >= 10
-            );
-            
+            // Live sync is off - show "Complete Round" only when every archer has 10 fully scored ends
+            const allComplete = state.archers.length > 0 && state.archers.every(archer => {
+                if (!Array.isArray(archer.scores) || archer.scores.length !== state.totalEnds) return false;
+                return archer.scores.every(end => Array.isArray(end) && end.length === 3 && end.every(v => v !== '' && v !== null && v !== undefined));
+            });
             if (allComplete) {
                 completeBtn.style.display = 'inline-block';
                 completeBtn.textContent = 'Complete Round';
@@ -1690,10 +1706,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 completeBtn.style.display = 'none';
             }
         } else {
-            // Live sync is on - show "Sync End" for current end
+            // Live sync is on - show "Sync End" for current end if any archer has input for this end
             const currentEndHasScores = state.archers.some(archer => {
                 const endScores = archer.scores[state.currentEnd - 1];
-                return endScores && endScores.some(score => score !== '' && score !== null);
+                return Array.isArray(endScores) && endScores.some(score => score !== '' && score !== null && score !== undefined);
             });
             
             if (currentEndHasScores) {
@@ -2263,22 +2279,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     });
                 });
+                // Clear any previous event list and save the new event archer list as master
+                try { localStorage.removeItem('archery_master_list'); } catch(_) {}
                 localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
                 
-                // Load archers into state for pre-assigned mode
-                state.archers = allArchers.map(archer => ({
-                    id: `${archer.first}-${archer.last}`,
-                    firstName: archer.first,
-                    lastName: archer.last,
-                    school: archer.school,
-                    level: archer.level,
-                    gender: archer.gender,
-                    baleNumber: archer.bale, // Map bale to baleNumber
-                    target: archer.target,
-                    division: archer.division,
-                    scores: [[], [], [], [], [], []], // Initialize empty scores
-                    fave: archer.fave
-                }));
+                // Do not pre-populate state.archers here; we only populate when a bale is selected
+                state.archers = [];
                 
                 // Update UI/state
                 state.eventName = eventName || state.eventName || '';
@@ -2350,17 +2356,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         } else if (!state.selectedEventId && !state.activeEventId) {
-            // No QR code, no saved event - show modal
+            // No QR code, no saved event - show modal only (do not mutate state here)
             console.log('No event connected - showing event modal');
-            
-            // If we have archers loaded but no event, clear them to avoid inconsistent state
-            if (state.archers && state.archers.length > 0) {
-                console.log('Clearing archers due to missing event connection');
-                state.archers = [];
-                state.assignmentMode = 'manual';
-                saveData();
-            }
-            
             showEventModal();
         } else {
             // Has saved event - try to load it
