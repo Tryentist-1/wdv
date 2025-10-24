@@ -496,8 +496,8 @@
       const confirmMsg = 'Reset Event Data\n\nALL ENTERED SCORES WILL BE DELETED.\nScorecards (round_archers) and End data will be removed, rounds set back to Created.\n\nAre you sure?';
       if (!confirm(confirmMsg)) return;
       try {
-        if (!window.LiveUpdates || !LiveUpdates.request) { alert('API not available'); return; }
-        await LiveUpdates.request(`/events/${eventId}/reset`, 'POST');
+        // Use the same authenticated coach API helper as the rest of the console
+        await req(`/events/${eventId}/reset`, 'POST');
         alert('Event data reset. All entered scores were deleted.');
       } catch (e) {
         alert('Reset failed: ' + (e && e.message ? e.message : e));
