@@ -257,12 +257,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function determineSetupMode() {
-        // Prefer event-driven detection using the master event list
-        let masterCount = 0;
-        try { masterCount = JSON.parse(localStorage.getItem('archery_master_list') || '[]').length; } catch(_) { masterCount = 0; }
-        if (state.activeEventId && masterCount > 0) {
-            return 'pre-assigned';
+        // Prefer server-driven assignment mode with offline fallback
+        if (state.activeEventId) {
+            if (state.assignmentMode) {
+                return (state.assignmentMode === 'pre-assigned' || state.assignmentMode === 'assigned') ? 'pre-assigned' : 'manual';
+            }
+            try {
+                const metaRaw = localStorage.getItem(`event:${state.activeEventId}:meta`);
+                if (metaRaw) {
+                    const meta = JSON.parse(metaRaw);
+                    if (meta && meta.assignmentMode) {
+                        return (meta.assignmentMode === 'assigned') ? 'pre-assigned' : 'manual';
+                    }
+                }
+            } catch(_) {}
         }
+        // Legacy fallback: if an old master list exists, treat as pre-assigned
+        try {
+            const master = JSON.parse(localStorage.getItem('archery_master_list') || '[]');
+            if (Array.isArray(master) && master.length > 0) return 'pre-assigned';
+        } catch(_) {}
         return 'manual';
     }
 
@@ -311,9 +325,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderPreassignedSetup() {
         if (!preassignedSetupControls.baleListContainer) return;
         
-        // Always source list from master list saved at event load time
+        // Source list from event-scoped cache saved at event load time
         let masterList = [];
-        try { masterList = JSON.parse(localStorage.getItem('archery_master_list') || '[]'); } catch(_) { masterList = []; }
+        if (state.activeEventId) {
+            try { masterList = JSON.parse(localStorage.getItem(`event:${state.activeEventId}:archers_v2`) || '[]'); } catch(_) { masterList = []; }
+        }
         
         // If no event or no archers, show empty state
         if (!state.activeEventId || masterList.length === 0) {
@@ -329,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
             level: a.level || '',
             gender: a.gender || '',
             baleNumber: Number(a.baleNumber != null ? a.baleNumber : a.bale),
-            target: a.target || ''
+            target: a.targetAssignment || a.target || ''
         })).filter(a => !!a.baleNumber);
         
         // Group archers by bale
@@ -2311,23 +2327,32 @@ document.addEventListener('DOMContentLoaded', () => {
                             school: archer.school,
                             level: archer.level,
                             gender: archer.gender,
-                            bale: archer.bale,
-                            target: archer.target,
+                            baleNumber: archer.bale,
+                            targetAssignment: archer.target,
                             division: divKey,
                             fave: false
                         });
                     });
                 });
-                // Clear any previous event list and save the new event archer list as master
-                try { localStorage.removeItem('archery_master_list'); } catch(_) {}
-                localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
+                // Save to event-scoped caches
+                try { localStorage.setItem(`event:${eventId}:archers_v2`, JSON.stringify(allArchers)); } catch(_) {}
+                try {
+                    const meta = {
+                        id: eventData.event?.id || eventId,
+                        name: eventData.event?.name || (eventName || ''),
+                        date: eventData.event?.date || '',
+                        assignmentMode: (eventData.event?.assignmentMode || (eventData.event?.eventType === 'auto_assign' ? 'assigned' : 'manual')),
+                        snapshotVersion: 2
+                    };
+                    localStorage.setItem(`event:${eventId}:meta`, JSON.stringify(meta));
+                } catch(_) {}
                 
                 // Do not pre-populate state.archers here; we only populate when a bale is selected
                 state.archers = [];
                 
                 // Update UI/state
                 state.eventName = eventName || state.eventName || '';
-                state.assignmentMode = 'pre-assigned'; // Set to pre-assigned when loading event
+                state.assignmentMode = (eventData.event && eventData.event.assignmentMode === 'assigned') ? 'pre-assigned' : 'manual';
                 updateEventHeader();
                 
                 saveData();

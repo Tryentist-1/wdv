@@ -137,6 +137,7 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
     $gender = $input['gender'] ?? '';
     $target = $input['targetAssignment'] ?? '';
     $targetSize = $input['targetSize'] ?? null;
+    $baleNumber = isset($input['baleNumber']) ? (int)$input['baleNumber'] : null;
     if ($name === '') { json_response(['error' => 'archerName required'], 400); exit; }
     try {
         $pdo = db();
@@ -151,12 +152,61 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
         } else {
             // Create new archer
             $id = $genUuid();
-            $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_name, school, level, gender, target_assignment, target_size, created_at) VALUES (?,?,?,?,?,?,?,?,NOW())');
-            $stmt->execute([$id,$roundId,$name,$school,$level,$gender,$target,$targetSize]);
+            if ($baleNumber !== null) {
+                $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_name, school, level, gender, target_assignment, target_size, bale_number, created_at) VALUES (?,?,?,?,?,?,?,?,?,NOW())');
+                $stmt->execute([$id,$roundId,$name,$school,$level,$gender,$target,$targetSize,$baleNumber]);
+            } else {
+                $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_name, school, level, gender, target_assignment, target_size, created_at) VALUES (?,?,?,?,?,?,?,?,NOW())');
+                $stmt->execute([$id,$roundId,$name,$school,$level,$gender,$target,$targetSize]);
+            }
             json_response(['roundArcherId' => $id], 201);
         }
     } catch (Exception $e) {
         error_log("Archer creation failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// Update a round archer (bale/target reassignment)
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)$#i', $route, $m) && $method === 'PATCH') {
+    require_api_key();
+    $roundId = $m[1];
+    $roundArcherId = $m[2];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $baleNumber = isset($input['baleNumber']) ? (int)$input['baleNumber'] : null;
+    $target = isset($input['targetAssignment']) ? trim($input['targetAssignment']) : null;
+    if ($baleNumber === null && $target === null) { json_response(['error' => 'No fields to update'], 400); exit; }
+    try {
+        $pdo = db();
+        $updates = [];
+        $params = [];
+        if ($baleNumber !== null) { $updates[] = 'bale_number = ?'; $params[] = $baleNumber; }
+        if ($target !== null) { $updates[] = 'target_assignment = ?'; $params[] = $target; }
+        $params[] = $roundId; $params[] = $roundArcherId;
+        $sql = 'UPDATE round_archers SET ' . implode(', ', $updates) . ' WHERE round_id = ? AND id = ?';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        json_response(['ok' => true]);
+    } catch (Exception $e) {
+        error_log("Round archer update failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// Remove a round archer (from a bale/round)
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
+    require_api_key();
+    $roundId = $m[1];
+    $roundArcherId = $m[2];
+    try {
+        $pdo = db();
+        $stmt = $pdo->prepare('DELETE FROM round_archers WHERE round_id = ? AND id = ?');
+        $stmt->execute([$roundId, $roundArcherId]);
+        json_response(['ok' => true]);
+    } catch (Exception $e) {
+        error_log("Round archer delete failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
     exit;
@@ -377,6 +427,16 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)$#i', $route, $m) && $method === 'PATCH
         if (isset($input['entryCode'])) {
             $updates[] = 'entry_code = ?';
             $params[] = trim($input['entryCode']);
+        }
+        
+        if (isset($input['eventType'])) {
+            $et = trim($input['eventType']);
+            if (!in_array($et, ['auto_assign','self_select','manual'])) {
+                json_response(['error' => 'Invalid eventType'], 400);
+                exit;
+            }
+            $updates[] = 'event_type = ?';
+            $params[] = $et;
         }
         
         if (empty($updates)) {
@@ -698,7 +758,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
     $pdo = db();
     
     // Get event info
-    $event = $pdo->prepare('SELECT id, name, date, status FROM events WHERE id=? LIMIT 1');
+    $event = $pdo->prepare('SELECT id, name, date, status, event_type FROM events WHERE id=? LIMIT 1');
     $event->execute([$eventId]);
     $eventData = $event->fetch();
     
@@ -793,7 +853,9 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
             'id' => $eventData['id'],
             'name' => $eventData['name'],
             'date' => $eventData['date'],
-            'status' => $eventData['status']
+            'status' => $eventData['status'],
+            'eventType' => $eventData['event_type'],
+            'assignmentMode' => ($eventData['event_type'] === 'auto_assign' ? 'assigned' : 'manual')
         ],
         'divisions' => $divisions
     ]);

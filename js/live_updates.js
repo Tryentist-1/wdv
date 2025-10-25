@@ -94,10 +94,8 @@
     }
 
     function postEnd(localId, endNumber, payload) {
-        if (!state.config.enabled) return Promise.resolve(); // Return resolved promise instead of undefined
-        // The original enqueue and flush logic are removed as per the new_code.
-        // The request and event dispatching are kept.
-        return request(`/rounds/${state.roundId}/archers/${state.archerIds[localId]}/ends`, 'POST', {
+        if (!state.config.enabled) return Promise.resolve();
+        const reqBody = {
             endNumber,
             a1: payload.a1, a2: payload.a2, a3: payload.a3,
             endTotal: payload.endTotal,
@@ -105,16 +103,41 @@
             tens: payload.tens,
             xs: payload.xs,
             deviceTs: new Date().toISOString(),
-        })
-        .then(() => {
-            try { window.dispatchEvent(new CustomEvent('liveSyncSuccess', { detail: { archerId: localId, endNumber } })); } catch(_) {}
-        })
-        .catch(e => {
+        };
+        const doRequest = () => request(`/rounds/${state.roundId}/archers/${state.archerIds[localId]}/ends`, 'POST', reqBody)
+          .then(() => { try { window.dispatchEvent(new CustomEvent('liveSyncSuccess', { detail: { archerId: localId, endNumber } })); } catch(_) {} });
+        
+        // Basic offline queue: persist if request fails due to network, flush later
+        return doRequest().catch(e => {
+            const isNetwork = (e && (e.name === 'TypeError' || /NetworkError|Failed to fetch/i.test(String(e))));
+            if (isNetwork) {
+                try {
+                    const key = `luq:${state.roundId}`;
+                    const q = JSON.parse(localStorage.getItem(key) || '[]');
+                    q.push({ archerId: localId, endNumber, body: reqBody });
+                    localStorage.setItem(key, JSON.stringify(q));
+                    try { window.dispatchEvent(new CustomEvent('liveSyncPending', { detail: { archerId: localId, endNumber } })); } catch(_) {}
+                    return; // resolve quietly; will be retried later
+                } catch(_) {}
+            }
             try { window.dispatchEvent(new CustomEvent('liveSyncPending', { detail: { archerId: localId, endNumber } })); } catch(_) {}
-            // The original backoff logic is removed as per the new_code.
-            // The error is re-thrown to be handled by the caller if needed.
             throw e;
         });
+    }
+
+    // Flush queued posts on init or when explicitly called
+    function flushQueue() {
+        try {
+            const key = `luq:${state.roundId}`;
+            const q = JSON.parse(localStorage.getItem(key) || '[]');
+            if (!Array.isArray(q) || q.length === 0) return Promise.resolve();
+            const tasks = q.map(item => request(`/rounds/${state.roundId}/archers/${state.archerIds[item.archerId]}/ends`, 'POST', item.body));
+            return Promise.allSettled(tasks).then(results => {
+                const remaining = [];
+                results.forEach((res, idx) => { if (res.status !== 'fulfilled') remaining.push(q[idx]); });
+                localStorage.setItem(key, JSON.stringify(remaining));
+            });
+        } catch(_) { return Promise.resolve(); }
     }
 
     // --- INITIALIZATION ---
@@ -134,6 +157,7 @@
         ensureRound,
         ensureArcher,
         postEnd,
+        flushQueue,
         request,
         _state: state,
     };

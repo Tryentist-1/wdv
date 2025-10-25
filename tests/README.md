@@ -1,136 +1,191 @@
-# Automated Browser Tests
+# NPM Test Suite - Updated for New UI/UX Design
 
-## Two Testing Modes
+## Overview
+The NPM test suite has been completely updated to work with the new Manual vs Pre-assigned Setup sections design. All tests now properly validate the new UI structure and functionality.
 
-### 🌐 **Remote Testing** (Default)
-Tests your LIVE website at `https://tryentist.com/wdv`
-- Tests what users actually see
-- Run AFTER deploying
-- Catches caching/deployment issues
+## Available Test Commands
 
-### 💻 **Local Testing** 
-Tests your local files BEFORE deploying
-- Run BEFORE deploying
-- Catches bugs early
-- Faster iteration
-
----
-
-## Quick Start
-
-### 1. Install Playwright (one-time setup)
+### Main Test Commands
 ```bash
-cd /Users/terry/web-mirrors/tryentist/wdv
-npm install
-npx playwright install
+# Run all tests (excluding LOCAL tests)
+npm test
+
+# Run all tests including LOCAL tests  
+npm run test:all
+
+# Run tests with UI interface
+npm run test:ui
+
+# Run tests in headed mode (visible browser)
+npm run test:headed
+
+# Run tests against remote production
+npm run test:remote
 ```
 
-### 2. Run Tests
-
-#### Test REMOTE (after deploying)
+### Specialized Test Commands
 ```bash
-npm test                 # Headless
-npm run test:headed      # Watch tests run
-npm run test:ui          # Interactive UI
+# Test new setup sections functionality
+npm run test:setup-sections
+
+# Test main ranking round functionality
+npm run test:ranking-round
+
+# Test local development files
+npm run test:local
+
+# Test local files with UI
+npm run test:local:ui
 ```
 
-#### Test LOCAL (before deploying)
+### Development Server
 ```bash
-npm run test:local       # Test local files
-npm run test:local:ui    # Interactive UI (local)
+# Start local PHP server for testing
+npm run serve
 ```
 
----
+## Test Files
 
-## What Gets Tested
+### 1. `ranking_round.spec.js` - Main Production Tests
+**Updated for new UI/UX design**
 
-### ✅ Event Modal Tests
-- Modal shows on fresh start
-- Select Event tab loads events (no errors)
-- Enter Code tab verifies "tuesday"
-- QR code bypasses modal
-- Empty state shows when no event
+**Test Groups:**
+- **Event Modal** - Modal functionality and event connection
+- **Manual Setup Section** - Manual setup controls and functionality
+- **Pre-assigned Setup Section** - Pre-assigned bale list functionality
+- **Setup Mode Detection** - Automatic mode switching
 
-### ✅ Bale Selection Tests  
-- Sort button toggles (Bale ↔ Name)
-- Bale groups show with archers
-- Bale headers are clickable
+**Key Tests:**
+- ✅ Modal shows on fresh start
+- ✅ Event connection shows pre-assigned setup
+- ✅ Manual setup shows when no event connected
+- ✅ Bale selector works in manual section
+- ✅ Search functionality in manual section
+- ✅ Selection indicator updates correctly
+- ✅ Pre-assigned bale list renders properly
 
----
+### 2. `ranking_round.local.spec.js` - Local Development Tests
+**Updated for new UI/UX design**
+
+**Test Groups:**
+- **Local Testing** - Tests against localhost:8000
+
+**Key Tests:**
+- ✅ Modal shows on fresh start (LOCAL)
+- ✅ JavaScript loads correctly (LOCAL)
+- ✅ Cache busters are correct (LOCAL)
+- ✅ Manual setup section shows when canceling modal (LOCAL)
+- ✅ New setup section elements exist (LOCAL)
+
+### 3. `ranking_round_setup_sections.spec.js` - New Comprehensive Tests
+**Brand new test file for setup sections**
+
+**Test Groups:**
+- **Setup Sections Functionality** - Mode detection and switching
+- **Manual Setup Controls** - All manual setup functionality
+- **Pre-assigned Setup Controls** - Pre-assigned bale list functionality
+- **Setup Mode Switching** - Switching between modes
+- **Mobile Responsiveness** - Mobile and tablet testing
+
+**Key Tests:**
+- ✅ Manual mode detection
+- ✅ Pre-assigned mode detection
+- ✅ All manual setup controls present
+- ✅ Bale number updates and persists
+- ✅ Selection indicator updates
+- ✅ Selected archers display
+- ✅ Functional search input
+- ✅ Bale list container renders
+- ✅ Bale list items with Start Scoring buttons
+- ✅ Proper bale list styling
+- ✅ Mode switching functionality
+- ✅ Mobile viewport compatibility
+- ✅ Tablet viewport compatibility
+
+## Test Coverage
+
+### Manual Setup Section
+- ✅ Bale selector (`#bale-number-input-manual`)
+- ✅ Archer search (`#archer-search-manual`)
+- ✅ Selection indicator (`#selected-count-chip`)
+- ✅ Selected archers display (`#selected-archers-display`)
+- ✅ Start Scoring button (`#manual-start-scoring-btn`)
+- ✅ State persistence
+- ✅ Mobile responsiveness
+
+### Pre-assigned Setup Section
+- ✅ Bale list container (`#bale-list-container`)
+- ✅ Bale list items (`.bale-list-item`)
+- ✅ Bale information (`.bale-number`, `.bale-archers`)
+- ✅ Start Scoring buttons
+- ✅ Proper styling and hover effects
+- ✅ Mobile responsiveness
+
+### Setup Mode Detection
+- ✅ Manual mode when no event connected
+- ✅ Pre-assigned mode when event connected
+- ✅ Proper section visibility switching
+- ✅ Mode switching functionality
+
+### Mobile/Responsive Testing
+- ✅ Mobile viewport (375x667)
+- ✅ Tablet viewport (768x1024)
+- ✅ All controls visible and functional
+- ✅ Proper responsive behavior
+
+## Running Tests
+
+### Quick Test Run
+```bash
+# Test just the new setup sections
+npm run test:setup-sections
+
+# Test main ranking round functionality
+npm run test:ranking-round
+```
+
+### Full Test Suite
+```bash
+# Run all tests
+npm run test:all
+
+# Run with UI for debugging
+npm run test:ui
+```
+
+### Local Development Testing
+```bash
+# Start local server
+npm run serve
+
+# In another terminal, run local tests
+npm run test:local
+```
 
 ## Test Results
 
-After running tests, open the HTML report:
-```bash
-npx playwright show-report
-```
+All tests are designed to work with the new UI/UX design and validate:
+- ✅ Proper setup section visibility
+- ✅ Manual setup controls functionality
+- ✅ Pre-assigned setup controls functionality
+- ✅ Mode detection and switching
+- ✅ State persistence
+- ✅ Mobile responsiveness
+- ✅ Event modal functionality
+- ✅ QR code parameter handling
 
-**Screenshots & Videos**: Saved to `test-results/` folder when tests fail
-
----
-
-## Running on Different Devices
+## Browser Support
 
 Tests run on:
-- Desktop Chrome
-- Desktop Safari  
-- iPhone 13
+- ✅ **Chromium** (Desktop Chrome)
+- ✅ **WebKit** (Desktop Safari)  
+- ✅ **iPhone 13** (Mobile Safari)
 
-To test specific device:
-```bash
-npx playwright test --project="iPhone 13"
-```
+## Notes
 
----
-
-## CI/CD Integration
-
-Add to GitHub Actions:
-```yaml
-- name: Run Playwright tests
-  run: |
-    npm ci
-    npx playwright install --with-deps
-    npm test
-```
-
----
-
-## Manual Testing Checklist
-
-If you prefer manual testing:
-
-### Fresh Start
-1. [ ] Open https://tryentist.com/wdv/ranking_round_300.html (incognito)
-2. [ ] Modal pops up automatically
-3. [ ] Both tabs visible ("Enter Code" and "Select Event")
-
-### Select Event Tab
-1. [ ] Click "Select Event" tab
-2. [ ] Events list loads (no "Failed to load" error)
-3. [ ] Shows "Tuesday RR1" and "Wednesday Test"
-4. [ ] Click an event → modal closes, archers load
-
-### Enter Code Tab
-1. [ ] Type "tuesday" in input field
-2. [ ] Click "Connect to Event"
-3. [ ] Modal closes, archers load
-4. [ ] Sort button appears
-
-### QR Code Flow
-1. [ ] Open: https://tryentist.com/wdv/ranking_round_300.html?event=2e43821b-7b2f-4341-87e2-f85fe0831d76&code=tuesday
-2. [ ] Modal does NOT show (bypassed)
-3. [ ] Archers load immediately
-4. [ ] Bale list shows
-
-### Bale Selection
-1. [ ] Sort button shows "Sort by: Bale Number"
-2. [ ] Click sort button → changes to "Sort by: Name"
-3. [ ] Bale headers show (e.g., "Bale 8")
-4. [ ] Click bale header → loads all archers for that bale
-5. [ ] "Begin Scoring" button works
-
----
-
-**Current Test Coverage**: 10 tests covering modal, event selection, and bale assignment
-
+- Tests use the production URL: `https://tryentist.com/wdv/ranking_round_300.html`
+- Local tests use: `http://localhost:8000/ranking_round_300.html`
+- All tests include proper timeouts and error handling
+- Tests validate both functionality and UI elements
+- Mobile responsiveness is thoroughly tested
+- State persistence is validated across page reloads

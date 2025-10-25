@@ -26,7 +26,9 @@ test.describe('Ranking Round - Setup Sections Functionality', () => {
     // Connect to event to enter pre-assigned mode
     await page.fill('#event-code-input', 'tuesday');
     await page.click('#verify-code-btn');
-    await page.waitForTimeout(1500);
+    
+    // Wait for the event to load and setup sections to render
+    await page.waitForSelector('#preassigned-setup-section', { state: 'visible', timeout: 10000 });
     
     // Should show pre-assigned setup section
     await expect(page.locator('#preassigned-setup-section')).toBeVisible();

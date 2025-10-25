@@ -1,5 +1,41 @@
 # Session Management & Workflow Documentation
 
+## 🔄 Follow‑up Status Update — October 24, 2025
+
+This update records the recovery work and current state after the initial redesign was completed on Oct 22.
+
+### What’s working now
+- Pre‑assigned Setup renders from the event snapshot and shows detailed Bale tables (Archer Name, School, Division, Bale, Target).
+- Manual vs Pre‑assigned sections render based on: activeEventId + presence of `archery_master_list`.
+- Start Scoring loads a full bale and transitions to the Scoring view reliably on mobile and desktop.
+- Keypad focus/inputs, “Last End”/“Next End” labels, and Sync button state are refreshed on every render and end change.
+- Live Sync: enabling Live ensures a round exists and current bale archers are ensured before posting End data.
+- Coach Console: “Reset Event Data” added to Edit Event (with explicit warning: “ALL ENTERED SCORES WILL BE DELETED”). Endpoint deletes end_events and round_archers and resets rounds to Created.
+
+### Known gaps / observations
+- Event mode can still fall back to Manual if an event is connected but bale assignments are not recognized or not persisted; needs an explicit event “assignment mode” field.
+- Need coach tooling to add/remove individual archers to a specific bale (adjust `round_archers` rows) without re‑importing.
+- For event deletion, DB does not cascade rounds by FK; backend must delete rounds explicitly (we added a safe Reset utility; full delete still removes the event only).
+
+### Next Actions (high priority)
+1) Add explicit Event Setup Mode [DONE - API snapshot includes `eventType` and `assignmentMode`]
+   - Field: `event.eventType` → `assignmentMode` mapping: `auto_assign` → `assigned`, others → `manual`.
+   - Ranking Round now reads this and falls back to cached `event:{id}:meta` offline.
+   - On event switch/reset, UI uses event‑scoped caches.
+
+2) Bale membership management [IN PROGRESS - API supports POST/PATCH/DELETE]
+   - Coach Console UI to add/remove an archer in a bale (per division `round_archers`).
+   - Support manual target letter selection (A–H) and bale number changes with validation (max 4 per bale by default).
+   - Reflect changes immediately in the Ranking Round Setup view.
+
+### Helpful operations (for smoke tests)
+- Reset Event Data (Coach → Edit Event → Reset): deletes all entered scores and scorecards; rounds set back to Created.
+- DB inspection cheatsheet:
+  - `events` → `rounds` → `round_archers` → `end_events` (see `api/sql/schema.mysql.sql`).
+  - To purge scores: delete from `end_events` then `round_archers` for the event’s rounds.
+
+---
+
 ## 🎯 **Current Session Status: COMPLETE**
 
 **Date:** October 22, 2025  
