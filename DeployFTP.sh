@@ -27,7 +27,7 @@ mkdir -p "$BACKUP_DIR"
 
 # --- Build lftp exclude list from .gitignore and always-excluded files ---
 # Never deploy local app-imports to prod (coach uploads live CSVs there)
-EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/** --exclude-glob app-imports/**"
+EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/** --exclude-glob app-imports/** --exclude-glob playwright-report/** --exclude-glob test-results/** --exclude-glob .vscode/** --exclude-glob .github/** --exclude-glob '*.md' --exclude-glob '.DS_Store'"
 if [ -f .gitignore ]; then
   GITEXCLUDES=$(grep -v '^#' .gitignore | grep -v '^$' | awk '{print "--exclude-glob "$1}' | xargs)
   EXCLUDES="$EXCLUDES $GITEXCLUDES"
@@ -37,37 +37,54 @@ echo "Debug: Exclude patterns being used:"
 echo "$EXCLUDES"
 echo "---"
 
-# --- Parse command-line arguments for reset mode ---
+# --- Parse command-line arguments ---
 RESET_MODE=0
-if [[ "$1" == "--reset" ]]; then
-  RESET_MODE=1
+DRY_RUN=0
+SKIP_LOCAL_BACKUP=0
+DO_REMOTE_BACKUP=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --reset) RESET_MODE=1 ;;
+    --dry-run) DRY_RUN=1 ;;
+    --no-local-backup) SKIP_LOCAL_BACKUP=1 ;;
+    --remote-backup) DO_REMOTE_BACKUP=1 ;;
+  esac
+done
+
+# --- Step 1: Local backup (optional) ---
+if [[ $SKIP_LOCAL_BACKUP -eq 0 ]]; then
+  echo -e "\n--- Step 1: Local backup ---"
+  mkdir -p "$LOCAL_BACKUP"
+  cp -r "$LOCAL_DIR"/* "$LOCAL_BACKUP"
+  echo "Local backup created at $LOCAL_BACKUP"
+  # Compress local backup
+  tar -czf "$LOCAL_BACKUP.tar.gz" -C "$LOCAL_BACKUP" .
+  rm -rf "$LOCAL_BACKUP"  # Remove uncompressed backup
+  echo "Local backup compressed to $LOCAL_BACKUP.tar.gz"
+else
+  echo -e "\n--- Step 1: Skipping local backup (per flag) ---"
 fi
 
-# --- Step 1: Local backup ---
-echo -e "\n--- Step 1: Local backup ---"
-mkdir -p "$LOCAL_BACKUP"
-cp -r "$LOCAL_DIR"/* "$LOCAL_BACKUP"
-echo "Local backup created at $LOCAL_BACKUP"
-# Compress local backup
-tar -czf "$LOCAL_BACKUP.tar.gz" -C "$LOCAL_BACKUP" .
-rm -rf "$LOCAL_BACKUP"  # Remove uncompressed backup
-echo "Local backup compressed to $LOCAL_BACKUP.tar.gz"
-
-# --- Step 2: Remote backup (download to local) ---
-echo -e "\n--- Step 2: Downloading remote backup to $REMOTE_BACKUP_LOCAL ---"
-mkdir -p "$REMOTE_BACKUP_LOCAL"
-lftp -u "$USER","$FTP_PASSWORD" -e "\
-set ftp:ssl-force true; \
-set ftp:ssl-protect-data true; \
-set ftp:ssl-protect-list true; \
-set ftp:ssl-auth TLS; \
-mirror --verbose $REMOTE_DIR $REMOTE_BACKUP_LOCAL; \
-bye\
-" $HOST
-# Compress remote backup
-tar -czf "$REMOTE_BACKUP_LOCAL.tar.gz" -C "$REMOTE_BACKUP_LOCAL" .
-rm -rf "$REMOTE_BACKUP_LOCAL"  # Remove uncompressed backup
-echo "Remote backup compressed to $REMOTE_BACKUP_LOCAL.tar.gz"
+# --- Step 2: Remote backup (optional) ---
+if [[ $DO_REMOTE_BACKUP -eq 1 ]]; then
+  echo -e "\n--- Step 2: Downloading remote backup to $REMOTE_BACKUP_LOCAL ---"
+  mkdir -p "$REMOTE_BACKUP_LOCAL"
+  lftp -u "$USER","$FTP_PASSWORD" -e "\
+  set ftp:ssl-force true; \
+  set ftp:ssl-protect-data true; \
+  set ftp:ssl-protect-list true; \
+  set ftp:ssl-auth TLS; \
+  mirror --verbose $REMOTE_DIR $REMOTE_BACKUP_LOCAL; \
+  bye\
+  " $HOST
+  # Compress remote backup
+  tar -czf "$REMOTE_BACKUP_LOCAL.tar.gz" -C "$REMOTE_BACKUP_LOCAL" .
+  rm -rf "$REMOTE_BACKUP_LOCAL"  # Remove uncompressed backup
+  echo "Remote backup compressed to $REMOTE_BACKUP_LOCAL.tar.gz"
+else
+  echo -e "\n--- Step 2: Skipping remote backup (use --remote-backup to enable) ---"
+fi
 
 # --- Step 3: Verify files to be uploaded ---
 echo -e "\n--- Step 3: Verifying files to be uploaded ---"
@@ -80,14 +97,19 @@ cd - > /dev/null
 echo -e "\n--- Step 4: Deploying to FTP ---"
 if [[ $RESET_MODE -eq 1 ]]; then
   # Full reset: force upload and delete remote files not present locally
-  LFTP_CMD="mirror --reverse --verbose --delete $EXCLUDES ./ $REMOTE_DIR"
+  LFTP_CMD="mirror --reverse --verbose --parallel=4 --delete --only-newer $EXCLUDES ./ $REMOTE_DIR"
   echo "RESET MODE: Full re-upload and remote cleanup (remote files not present locally will be deleted)."
 else
   # Normal: only changed files, no deletes
-  LFTP_CMD="mirror --reverse --verbose $EXCLUDES ./ $REMOTE_DIR"
+  LFTP_CMD="mirror --reverse --verbose --parallel=4 --only-newer $EXCLUDES ./ $REMOTE_DIR"
 fi
 
-lftp -c "set ssl:verify-certificate no; open -u $USER,$FTP_PASSWORD $HOST; $LFTP_CMD"
+if [[ $DRY_RUN -eq 1 ]]; then
+  LFTP_CMD="$LFTP_CMD --dry-run"
+  echo "DRY RUN: showing planned changes. No files will be uploaded."
+fi
+
+lftp -c "set cmd:fail-exit yes; set ssl:verify-certificate no; set net:timeout 20; set net:max-retries 2; set net:reconnect-interval-base 5; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:prefer-epsv true; open -u $USER,$FTP_PASSWORD $HOST; $LFTP_CMD"
 
 # Clean up
 # rm deploy_files.txt
