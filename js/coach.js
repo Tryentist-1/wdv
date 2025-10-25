@@ -201,6 +201,73 @@
           tbl.className = 'score-table';
           tbl.innerHTML = `<thead><tr><th>Archer</th><th>School</th><th>Bale</th><th>Target</th><th>Actions</th></tr></thead>`;
           const tb = document.createElement('tbody');
+
+          // Add Archer row (from master list)
+          const addRow = document.createElement('tr');
+          addRow.innerHTML = `
+            <td colspan="5">
+              <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+                <select class="styled-select" data-role="add-archer-select" style="min-width:220px;">
+                  <option value="">Select Archer (master list)</option>
+                </select>
+                <input type="number" placeholder="Bale #" data-role="add-bale" style="width:90px;" />
+                <input type="text" placeholder="Target (A-H)" maxlength="1" data-role="add-target" style="width:90px;" />
+                <button class="btn btn-secondary btn-sm" data-role="add-confirm">Add</button>
+              </div>
+            </td>`;
+          tb.appendChild(addRow);
+
+          // Populate master list filtered by division
+          (async () => {
+            try {
+              const list = await req(`/archers?division=${divCode}`);
+              const select = addRow.querySelector('[data-role="add-archer-select"]');
+              (list.archers||[]).forEach(a => {
+                const opt = document.createElement('option');
+                opt.value = JSON.stringify(a);
+                opt.textContent = `${a.lastName}, ${a.firstName} (${a.school})`;
+                select.appendChild(opt);
+              });
+            } catch(_) {}
+          })();
+
+          addRow.querySelector('[data-role="add-confirm"]').onclick = async () => {
+            const select = addRow.querySelector('[data-role="add-archer-select"]');
+            const baleInp = addRow.querySelector('[data-role="add-bale"]');
+            const tgtInp = addRow.querySelector('[data-role="add-target"]');
+            if (!select.value) { alert('Select an archer'); return; }
+            const ar = JSON.parse(select.value);
+            const archerName = `${ar.firstName} ${ar.lastName}`.trim();
+            const baleNumber = parseInt(baleInp.value,10);
+            const targetAssignment = (tgtInp.value||'').toUpperCase().substring(0,1);
+            if (!baleNumber || !targetAssignment) { alert('Enter Bale and Target'); return; }
+            try {
+              const targetSize = (ar.level === 'VAR') ? 122 : 80;
+              await req(`/rounds/${div.roundId}/archers`, 'POST', {
+                archerName,
+                school: ar.school,
+                level: ar.level,
+                gender: ar.gender,
+                targetAssignment,
+                targetSize,
+                baleNumber
+              });
+              div.archers = div.archers || [];
+              div.archers.push({
+                roundArcherId: 'temp_'+Math.random().toString(36).slice(2),
+                archerName,
+                school: ar.school,
+                gender: ar.gender,
+                level: ar.level,
+                target: targetAssignment,
+                bale: baleNumber
+              });
+              baleInp.value = '';
+              tgtInp.value = '';
+              select.value = '';
+              render();
+            } catch(e) { alert('Add failed: '+e.message); }
+          };
           (div.archers||[]).forEach(a => {
             const tr = document.createElement('tr');
             tr.innerHTML = `

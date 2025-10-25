@@ -1622,6 +1622,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Show scoring in progress banner
         showScoringBanner();
+
+        // Ensure offline banner state reflects connectivity
+        try { ensureOfflineBanner(); } catch(_) {}
     }
 
     function syncCurrentEnd() {
