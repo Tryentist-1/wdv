@@ -1,3 +1,25 @@
+## Release Notes – Ranking Round 2.0 (Oct 2025)
+
+### Deployment
+- New streamlined FTP deploy script (`DeployFTP.sh`):
+  - Incremental uploads by default (`--only-newer`, `--parallel=4`).
+  - Safer modes: `--dry-run`, `--reset` (delete extras), `--no-local-backup`, `--remote-backup`.
+  - Broader excludes: docs, tests, node_modules, app-imports, playwright-report, test-results, *.md, .vscode, .github, .DS_Store, backups.
+- NPM scripts wired:
+  - `npm run deploy` → incremental deploy
+  - `npm run deploy:dry` → preview changes
+  - `npm run deploy:reset` → full re-upload + remote cleanup
+  - `npm run deploy:fast` → skip local backup for speed
+
+### Offline-first and Live Sync
+- Server-driven assignmentMode in event snapshot; event-scoped caches for preassigned rosters.
+- Minimal offline queue for end posts; manual Flush button and auto-flush on reconnect.
+
+### Coach Console
+- “Manage Bales” UI to edit bale number/target per archer (uses new PATCH/DELETE APIs).
+
+### Notes
+- See `docs/01-SESSION_MANAGEMENT_AND_WORKFLOW.md` for updated session/assignment mode details.
 # Release Notes: Ranking Round v2.0
 
 **Release Date:** 2025-06-16
