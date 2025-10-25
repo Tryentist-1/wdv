@@ -2060,6 +2060,25 @@ document.addEventListener('DOMContentLoaded', () => {
             badge.className = 'status-badge status-pending';
         }
     }
+
+    // Offline banner + manual flush
+    function ensureOfflineBanner() {
+        let bar = document.getElementById('offline-banner');
+        if (!bar) {
+            bar = document.createElement('div');
+            bar.id = 'offline-banner';
+            bar.style.cssText = 'display:none;position:fixed;bottom:56px;left:0;right:0;background:#fff3cd;color:#856404;padding:8px 12px;font-size:14px;border-top:1px solid #ffeeba;z-index:9998;';
+            bar.innerHTML = '<span>Offline: scoring will queue and sync when online.</span> <button id="flush-queue-btn" class="btn btn-secondary" style="float:right;">Flush Now</button>';
+            document.body.appendChild(bar);
+            const btn = bar.querySelector('#flush-queue-btn');
+            if (btn) btn.onclick = () => { try { LiveUpdates.flushQueue && LiveUpdates.flushQueue(); } catch(_) {} };
+        }
+        const online = navigator.onLine;
+        bar.style.display = online ? 'none' : 'block';
+    }
+
+    window.addEventListener('online', () => { try { LiveUpdates.flushQueue && LiveUpdates.flushQueue(); } catch(_) {}; ensureOfflineBanner(); });
+    window.addEventListener('offline', () => ensureOfflineBanner());
     
     function getLiveEnabled() {
         try { 

@@ -156,6 +156,7 @@
               <button class="btn btn-secondary btn-sm" onclick="coach.editEvent('${eventData}')" title="Edit">✏️</button>
               <button class="btn btn-secondary btn-sm" onclick="coach.addArchersToEvent('${ev.id}', '${ev.name}')" title="Add Archers">➕</button>
               <button class="btn btn-primary btn-sm" onclick="coach.viewResults('${ev.id}')" title="Results">📊</button>
+              <button class="btn btn-secondary btn-sm" onclick="coach.manageBales('${ev.id}', '${ev.name}')" title="Manage Bales">⚙️</button>
               <button class="btn btn-danger btn-sm" onclick="coach.deleteEvent('${ev.id}', '${ev.name}')" title="Delete">🗑️</button>
             </td>
           </tr>
@@ -166,6 +167,85 @@
       container.innerHTML = html;
     } catch (err) {
       container.innerHTML = `<p class="error">Error loading events: ${err.message}</p>`;
+    }
+  }
+
+  // ==================== Bale Management ====================
+
+  async function manageBales(eventId, eventName) {
+    try {
+      // Fetch event snapshot to build UI (divisions and round_archers)
+      const snap = await req(`/events/${eventId}/snapshot`, 'GET');
+      const dlg = document.createElement('div');
+      dlg.className = 'modal';
+      dlg.innerHTML = `
+        <div class="modal-content" style="max-width: 800px;">
+          <h2>Manage Bales — ${eventName}</h2>
+          <div id="bale-mgr-body" style="max-height:60vh;overflow:auto;"></div>
+          <div class="modal-buttons">
+            <button id="bale-mgr-close" class="btn btn-secondary" style="flex:1;">Close</button>
+          </div>
+        </div>`;
+      document.body.appendChild(dlg);
+
+      const body = dlg.querySelector('#bale-mgr-body');
+      const render = () => {
+        body.innerHTML = '';
+        const divisions = snap.divisions || {};
+        Object.keys(divisions).forEach(divCode => {
+          const div = divisions[divCode];
+          const section = document.createElement('div');
+          section.style.marginBottom = '1rem';
+          section.innerHTML = `<h3 style="margin:.25rem 0;">${divCode}</h3>`;
+          const tbl = document.createElement('table');
+          tbl.className = 'score-table';
+          tbl.innerHTML = `<thead><tr><th>Archer</th><th>School</th><th>Bale</th><th>Target</th><th>Actions</th></tr></thead>`;
+          const tb = document.createElement('tbody');
+          (div.archers||[]).forEach(a => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${a.archerName}</td>
+              <td>${a.school||''}</td>
+              <td><input type="number" min="1" value="${a.bale||''}" style="width:70px" /></td>
+              <td><input type="text" value="${a.target||''}" style="width:70px" maxlength="1" /></td>
+              <td>
+                <button class="btn btn-secondary btn-sm" data-act="save">Save</button>
+                <button class="btn btn-danger btn-sm" data-act="remove">Remove</button>
+              </td>`;
+            const [baleInp, tgtInp] = tr.querySelectorAll('input');
+            tr.querySelector('[data-act="save"]').onclick = async () => {
+              try {
+                await req(`/rounds/${div.roundId}/archers/${a.roundArcherId}`, 'PATCH', {
+                  baleNumber: parseInt(baleInp.value,10)||null,
+                  targetAssignment: (tgtInp.value||'').toUpperCase().substring(0,1)
+                });
+                a.bale = parseInt(baleInp.value,10)||a.bale;
+                a.target = (tgtInp.value||'').toUpperCase().substring(0,1);
+                alert('Saved');
+              } catch(e) { alert('Save failed: '+e.message); }
+            };
+            tr.querySelector('[data-act="remove"]').onclick = async () => {
+              if (!confirm('Remove this archer from the round?')) return;
+              try {
+                await req(`/rounds/${div.roundId}/archers/${a.roundArcherId}`, 'DELETE');
+                // remove from local snapshot and re-render
+                div.archers = (div.archers||[]).filter(x => x.roundArcherId !== a.roundArcherId);
+                render();
+              } catch(e) { alert('Remove failed: '+e.message); }
+            };
+            tb.appendChild(tr);
+          });
+          tbl.appendChild(tb);
+          section.appendChild(tbl);
+          body.appendChild(section);
+        });
+      };
+      render();
+
+      dlg.style.display = 'flex';
+      dlg.querySelector('#bale-mgr-close').onclick = () => { dlg.remove(); };
+    } catch (e) {
+      alert('Error loading event snapshot: ' + e.message);
     }
   }
 
@@ -741,6 +821,7 @@
     addArchersToEvent,
     deleteEvent,
     editEvent,
+    manageBales,
     showQRCode
   };
 
