@@ -599,6 +599,52 @@
     currentEventId = eventId;
     selectedArchers = [];
 
+    // Ensure rounds exist; if none, create OPEN by default
+    let roundsResp;
+    try {
+      roundsResp = await req(`/events/${eventId}/rounds`, 'GET');
+    } catch (e) {
+      alert('Failed to load event rounds: ' + e.message);
+      return;
+    }
+    let rounds = (roundsResp && roundsResp.rounds) || [];
+    if (!rounds.length) {
+      try {
+        const created = await req(`/events/${eventId}/rounds`, 'POST', { divisions: ['OPEN'], roundType: 'R300' });
+        rounds = created.created || [];
+      } catch (e) {
+        alert('Could not create default OPEN division: ' + e.message);
+        return;
+      }
+    }
+
+    // Map division -> roundId
+    divisionRounds = {};
+    rounds.forEach(r => { divisionRounds[r.division] = r.roundId || r.roundId; });
+
+    // Choose division
+    let divisionCode = null;
+    if (rounds.length === 1) {
+      divisionCode = rounds[0].division;
+    } else {
+      const choices = rounds.map(r => r.division).join(', ');
+      const input = prompt(`Which division do you want to add archers to?\nOptions: ${choices}`, rounds.find(r => r.division === 'OPEN') ? 'OPEN' : rounds[0].division);
+      if (!input) return;
+      divisionCode = input.toUpperCase().trim();
+      if (!divisionRounds[divisionCode]) {
+        alert('Invalid division selected.');
+        return;
+      }
+    }
+
+    const divisionName = {
+      'OPEN': 'OPEN (Mixed)',
+      'BVAR': 'Boys Varsity',
+      'GVAR': 'Girls Varsity',
+      'BJV': 'Boys JV',
+      'GJV': 'Girls JV'
+    }[divisionCode] || divisionCode;
+
     // Load master archer list
     try {
       await loadMasterArcherList();
@@ -607,80 +653,8 @@
       return;
     }
 
-    // Show modal
-    const modal = document.getElementById('add-archers-modal');
-    modal.style.display = 'flex';
-
-    // Populate filters
-    populateFilters();
-    
-    // Render archer list
-    renderArcherList();
-
-    // Setup event handlers
-    document.getElementById('cancel-add-archers-btn').onclick = () => {
-      modal.style.display = 'none';
-    };
-
-    document.getElementById('submit-add-archers-btn').onclick = () => {
-      if (selectedArchers.length === 0) {
-        alert('Please select at least one archer');
-        return;
-      }
-      modal.style.display = 'none';
-      showAssignmentModeModal(eventName);
-    };
-
-    // Filter change handlers
-    ['filter-school', 'filter-gender', 'filter-level'].forEach(id => {
-      document.getElementById(id).onchange = renderArcherList;
-    });
-    
-    // Select All button - use addEventListener for better mobile compatibility
-    const selectAllBtn = document.getElementById('select-all-btn');
-    
-    // Remove any existing listeners
-    selectAllBtn.replaceWith(selectAllBtn.cloneNode(true));
-    const newSelectAllBtn = document.getElementById('select-all-btn');
-    
-    newSelectAllBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      console.log('Select All clicked');
-      
-      const container = document.getElementById('archer-list');
-      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-      
-      console.log('Found checkboxes:', checkboxes.length);
-      
-      // Check if all are currently selected
-      const allSelected = Array.from(checkboxes).every(cb => cb.checked);
-      
-      console.log('All selected?', allSelected);
-      
-      if (allSelected) {
-        // Deselect all
-        checkboxes.forEach(cb => {
-          cb.checked = false;
-          const archerId = cb.id.replace('archer-', '');
-          selectedArchers = selectedArchers.filter(id => id !== archerId);
-        });
-        newSelectAllBtn.textContent = 'Select All Filtered';
-      } else {
-        // Select all
-        checkboxes.forEach(cb => {
-          cb.checked = true;
-          const archerId = cb.id.replace('archer-', '');
-          if (!selectedArchers.includes(archerId)) {
-            selectedArchers.push(archerId);
-          }
-        });
-        newSelectAllBtn.textContent = 'Deselect All';
-      }
-      
-      updateSelectionCount();
-    });
+    // Open division-aware modal
+    showAddArchersModalForDivision(divisionCode, divisionName, eventName);
   }
 
   function populateFilters() {
