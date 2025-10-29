@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test Harness - WDV Live Scoring</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .auth-section {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        .auth-section h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #495057;
+        }
+        .auth-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .auth-toggle button {
+            padding: 10px 20px;
+            border: 2px solid #6c757d;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .auth-toggle button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .auth-toggle button:hover:not(.active) {
+            background: #e9ecef;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ced4da;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .test-header {
+            background: #495057;
+            color: white;
+            padding: 15px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .test-body {
+            padding: 20px;
+        }
+        .test-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        button.test-btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        button.test-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button.test-btn:active {
+            transform: translateY(0);
+        }
+        .output-area {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .output-area .success { color: #98c379; }
+        .output-area .error { color: #e06c75; }
+        .output-area .info { color: #61afef; }
+        .output-area .warning { color: #e5c07b; }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-badge.success { background: #d4edda; color: #155724; }
+        .status-badge.error { background: #f8d7da; color: #721c24; }
+        .status-badge.pending { background: #fff3cd; color: #856404; }
+        .quick-fill {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e7f3ff;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        .quick-fill button {
+            padding: 4px 8px;
+            font-size: 11px;
+            margin: 2px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .clear-btn {
+            padding: 6px 12px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .results-grid {
+            display: grid;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .result-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        .result-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+        .result-value {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #212529;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 API Test Harness</h1>
+        <p class="subtitle">WDV Live Scoring - End-to-End API Testing</p>
+
+        <!-- Auth Configuration -->
+        <div class="auth-section">
+            <h2>🔐 Authentication Configuration</h2>
+            <div class="auth-toggle">
+                <button id="auth-event-code" class="active">Use Event Code (Archer)</button>
+                <button id="auth-coach-key">Use Coach Key (Admin)</button>
+            </div>
+            <div class="input-group">
+                <label id="auth-value-label">Event Entry Code (X-Passcode)</label>
+                <input type="text" id="auth-value" placeholder="Enter event code..." value="wdva26">
+            </div>
+            <div class="input-group">
+                <label>API Base URL</label>
+                <input type="text" id="api-base" value="https://tryentist.com/wdv/api/v1" readonly>
+            </div>
+        </div>
+
+        <!-- Test 1: Health Check -->
+        <div class="test-section">
+            <div class="test-header">
+                <span>Test 1: Health Check (No Auth Required)</span>
+                <span class="status-badge pending" id="status-health">Not Run</span>
+            </div>
+            <div class="test-body">
+                <button class="test-btn" onclick="testHealth()">▶ Run Health Check</button>
+                <button class="clear-btn" onclick="clearOutput('output-health')">Clear</button>
+                <div class="output-area" id="output-health">Waiting to run...</div>
+            </div>
+        </div>
+
+        <!-- Test 2: Verify Event -->
+        <div class="test-section">
+            <div class="test-header">
+                <span>Test 2: Verify Event Entry Code</span>
+                <span class="status-badge pending" id="status-verify">Not Run</span>
+            </div>
+            <div class="test-body">
+                <div class="test-controls">
+                    <div class="input-group">
+                        <label>Event ID</label>
+                        <input type="text" id="verify-event-id" placeholder="Event UUID">
+                    </div>
+                    <div class="input-group">
+                        <label>Entry Code</label>
+                        <input type="text" id="verify-entry-code" value="wdva26">
+                    </div>
+                </div>
+                <button class="test-btn" onclick="testVerify()">▶ Verify Event Code</button>
+                <button class="clear-btn" onclick="clearOutput('output-verify')">Clear</button>
+                <div class="quick-fill">
+                    💡 Quick Fill: Get event ID from coach.html or use the latest created event
+                </div>
+                <div class="output-area" id="output-verify">Waiting to run...</div>
+            </div>
+        </div>
+
+        <!-- Test 3: Create Round -->
+        <div class="test-section">
+            <div class="test-header">
+                <span>Test 3: Create Round (POST /rounds)</span>
+                <span class="status-badge pending" id="status-create-round">Not Run</span>
+            </div>
+            <div class="test-body">
+                <div class="test-controls">
+                    <div class="input-group">
+                        <label>Round Type</label>
+                        <select id="round-type">
+                            <option value="R300">R300</option>
+                            <option value="R360">R360</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Date</label>
+                        <input type="date" id="round-date">
+                    </div>
+                    <div class="input-group">
+                        <label>Bale Number</label>
+                        <input type="number" id="round-bale" value="1" min="1">
+                    </div>
+                    <div class="input-group">
+                        <label>Division (optional)</label>
+                        <select id="round-division">
+                            <option value="">None</option>
+                            <option value="BVAR">Boys Varsity</option>
+                            <option value="BJV">Boys JV</option>
+                            <option value="GVAR">Girls Varsity</option>
+                            <option value="GJV">Girls JV</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="test-btn" onclick="testCreateRound()">▶ Create Round</button>
+                <button class="clear-btn" onclick="clearOutput('output-create-round')">Clear</button>
+                <div class="results-grid" id="round-results"></div>
+                <div class="output-area" id="output-create-round">Waiting to run...</div>
+            </div>
+        </div>
+
+        <!-- Test 4: Create Archer -->
+        <div class="test-section">
+            <div class="test-header">
+                <span>Test 4: Create Archer (POST /rounds/{id}/archers)</span>
+                <span class="status-badge pending" id="status-create-archer">Not Run</span>
+            </div>
+            <div class="test-body">
+                <div class="test-controls">
+                    <div class="input-group">
+                        <label>Round ID</label>
+                        <input type="text" id="archer-round-id" placeholder="From Test 3">
+                    </div>
+                    <div class="input-group">
+                        <label>Archer Name</label>
+                        <input type="text" id="archer-name" value="Test Archer">
+                    </div>
+                    <div class="input-group">
+                        <label>School</label>
+                        <input type="text" id="archer-school" value="WDV" maxlength="3">
+                    </div>
+                    <div class="input-group">
+                        <label>Level</label>
+                        <select id="archer-level">
+                            <option value="VAR">Varsity</option>
+                            <option value="JV">JV</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Gender</label>
+                        <select id="archer-gender">
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Target Assignment</label>
+                        <select id="archer-target">
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Bale Number</label>
+                        <input type="number" id="archer-bale" value="1" min="1">
+                    </div>
+                </div>
+                <button class="test-btn" onclick="testCreateArcher()">▶ Create Archer</button>
+                <button class="clear-btn" onclick="clearOutput('output-create-archer')">Clear</button>
+                <div class="quick-fill">
+                    <button onclick="quickFillArcher()">Auto-fill Round ID from Test 3</button>
+                </div>
+                <div class="results-grid" id="archer-results"></div>
+                <div class="output-area" id="output-create-archer">Waiting to run...</div>
+            </div>
+        </div>
+
+        <!-- Test 5: Post End Score -->
+        <div class="test-section">
+            <div class="test-header">
+                <span>Test 5: Post End Score (POST /rounds/{id}/archers/{id}/ends)</span>
+                <span class="status-badge pending" id="status-post-end">Not Run</span>
+            </div>
+            <div class="test-body">
+                <div class="test-controls">
+                    <div class="input-group">
+                        <label>Round ID</label>
+                        <input type="text" id="end-round-id" placeholder="From Test 3">
+                    </div>
+                    <div class="input-group">
+                        <label>Archer ID</label>
+                        <input type="text" id="end-archer-id" placeholder="From Test 4">
+                    </div>
+                    <div class="input-group">
+                        <label>End Number</label>
+                        <input type="number" id="end-number" value="1" min="1" max="10">
+                    </div>
+                    <div class="input-group">
+                        <label>Arrow 1</label>
+                        <input type="text" id="end-a1" value="10">
+                    </div>
+                    <div class="input-group">
+                        <label>Arrow 2</label>
+                        <input type="text" id="end-a2" value="10">
+                    </div>
+                    <div class="input-group">
+                        <label>Arrow 3</label>
+                        <input type="text" id="end-a3" value="10">
+                    </div>
+                </div>
+                <button class="test-btn" onclick="testPostEnd()">▶ Post End Score</button>
+                <button class="clear-btn" onclick="clearOutput('output-post-end')">Clear</button>
+                <div class="quick-fill">
+                    <button onclick="quickFillEnd()">Auto-fill IDs from Tests 3 & 4</button>
+                    <button onclick="quickScorePerfect()">Perfect 30</button>
+                    <button onclick="quickScoreGood()">Good 27</button>
+                    <button onclick="quickScoreAverage()">Average 24</button>
+                </div>
+                <div class="output-area" id="output-post-end">Waiting to run...</div>
+            </div>
+        </div>
+
+        <!-- Test 6: Workflow Test -->
+        <div class="test-section">
+            <div class="test-header">
+                <span>Test 6: Full Workflow (Create → Add Archer → Score)</span>
+                <span class="status-badge pending" id="status-workflow">Not Run</span>
+            </div>
+            <div class="test-body">
+                <button class="test-btn" onclick="testFullWorkflow()">▶ Run Full Workflow</button>
+                <button class="clear-btn" onclick="clearOutput('output-workflow')">Clear</button>
+                <div class="output-area" id="output-workflow">Waiting to run...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            authMode: 'event-code', // 'event-code' or 'coach-key'
+            authValue: 'wdva26',
+            apiBase: 'https://tryentist.com/wdv/api/v1',
+            lastRoundId: null,
+            lastArcherId: null,
+            lastEventId: null,
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set today's date
+            document.getElementById('round-date').valueAsDate = new Date();
+            
+            // Auth toggle handlers
+            document.getElementById('auth-event-code').addEventListener('click', () => {
+                state.authMode = 'event-code';
+                updateAuthUI();
+            });
+            
+            document.getElementById('auth-coach-key').addEventListener('click', () => {
+                state.authMode = 'coach-key';
+                updateAuthUI();
+            });
+            
+            document.getElementById('auth-value').addEventListener('input', (e) => {
+                state.authValue = e.target.value;
+            });
+        });
+
+        function updateAuthUI() {
+            const eventBtn = document.getElementById('auth-event-code');
+            const coachBtn = document.getElementById('auth-coach-key');
+            const label = document.getElementById('auth-value-label');
+            const input = document.getElementById('auth-value');
+            
+            if (state.authMode === 'event-code') {
+                eventBtn.classList.add('active');
+                coachBtn.classList.remove('active');
+                label.textContent = 'Event Entry Code (X-Passcode)';
+                input.placeholder = 'Enter event code...';
+                input.value = state.authValue || 'E2EUI';
+            } else {
+                coachBtn.classList.add('active');
+                eventBtn.classList.remove('active');
+                label.textContent = 'Coach API Key (X-API-Key)';
+                input.placeholder = 'Enter coach API key...';
+                input.value = state.authValue || 'wdva26';
+            }
+        }
+
+        function getAuthHeaders() {
+            const headers = { 'Content-Type': 'application/json' };
+            if (state.authMode === 'event-code') {
+                headers['X-Passcode'] = state.authValue;
+            } else {
+                headers['X-API-Key'] = state.authValue;
+            }
+            return headers;
+        }
+
+        function log(outputId, message, type = 'info') {
+            const output = document.getElementById(outputId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput(outputId) {
+            document.getElementById(outputId).innerHTML = 'Cleared.\n';
+        }
+
+        function setStatus(testId, status) {
+            const badge = document.getElementById(`status-${testId}`);
+            badge.className = `status-badge ${status}`;
+            badge.textContent = status === 'success' ? 'Pass ✓' : status === 'error' ? 'Fail ✗' : 'Running...';
+        }
+
+        async function apiRequest(path, method = 'GET', body = null, requireAuth = true) {
+            const url = `${state.apiBase}${path}`;
+            const headers = requireAuth ? getAuthHeaders() : { 'Content-Type': 'application/json' };
+            
+            const options = {
+                method,
+                headers,
+            };
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            
+            const response = await fetch(url, options);
+            const statusCode = response.status;
+            let data = null;
+            
+            try {
+                const text = await response.text();
+                data = text ? JSON.parse(text) : null;
+            } catch (e) {
+                data = null;
+            }
+            
+            return { statusCode, data, ok: response.ok };
+        }
+
+        // Test 1: Health Check
+        async function testHealth() {
+            const outputId = 'output-health';
+            clearOutput(outputId);
+            setStatus('health', 'pending');
+            
+            try {
+                log(outputId, 'Testing: GET /health', 'info');
+                log(outputId, 'Auth: None required', 'info');
+                
+                const result = await apiRequest('/health', 'GET', null, false);
+                
+                log(outputId, `Status: ${result.statusCode}`, result.ok ? 'success' : 'error');
+                log(outputId, `Response: ${JSON.stringify(result.data, null, 2)}`, 'info');
+                
+                if (result.ok && result.data.ok) {
+                    log(outputId, '✓ Health check passed!', 'success');
+                    setStatus('health', 'success');
+                } else {
+                    log(outputId, '✗ Health check failed!', 'error');
+                    setStatus('health', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+                setStatus('health', 'error');
+            }
+        }
+
+        // Test 2: Verify Event
+        async function testVerify() {
+            const outputId = 'output-verify';
+            clearOutput(outputId);
+            setStatus('verify', 'pending');
+            
+            const eventId = document.getElementById('verify-event-id').value;
+            const entryCode = document.getElementById('verify-entry-code').value;
+            
+            if (!eventId || !entryCode) {
+                log(outputId, '✗ Please provide both Event ID and Entry Code', 'error');
+                setStatus('verify', 'error');
+                return;
+            }
+            
+            try {
+                log(outputId, 'Testing: POST /events/verify', 'info');
+                log(outputId, 'Auth: None required (public endpoint)', 'info');
+                log(outputId, `Body: { eventId: "${eventId}", entryCode: "${entryCode}" }`, 'info');
+                
+                const result = await apiRequest('/events/verify', 'POST', { eventId, entryCode }, false);
+                
+                log(outputId, `Status: ${result.statusCode}`, result.ok ? 'success' : 'error');
+                log(outputId, `Response: ${JSON.stringify(result.data, null, 2)}`, 'info');
+                
+                if (result.ok && result.data.verified) {
+                    log(outputId, '✓ Event verified successfully!', 'success');
+                    state.lastEventId = eventId;
+                    setStatus('verify', 'success');
+                } else {
+                    log(outputId, '✗ Event verification failed!', 'error');
+                    setStatus('verify', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+                setStatus('verify', 'error');
+            }
+        }
+
+        // Test 3: Create Round
+        async function testCreateRound() {
+            const outputId = 'output-create-round';
+            clearOutput(outputId);
+            setStatus('create-round', 'pending');
+            
+            const roundType = document.getElementById('round-type').value;
+            const date = document.getElementById('round-date').value;
+            const baleNumber = parseInt(document.getElementById('round-bale').value);
+            const division = document.getElementById('round-division').value;
+            
+            const body = { roundType, date, baleNumber };
+            if (division) {
+                body.division = division;
+                // Parse division into gender + level
+                if (division === 'BVAR') { body.gender = 'M'; body.level = 'VAR'; }
+                else if (division === 'BJV') { body.gender = 'M'; body.level = 'JV'; }
+                else if (division === 'GVAR') { body.gender = 'F'; body.level = 'VAR'; }
+                else if (division === 'GJV') { body.gender = 'F'; body.level = 'JV'; }
+            }
+            
+            try {
+                log(outputId, 'Testing: POST /rounds', 'info');
+                log(outputId, `Auth: ${state.authMode === 'event-code' ? 'X-Passcode' : 'X-API-Key'}`, 'info');
+                log(outputId, `Body: ${JSON.stringify(body, null, 2)}`, 'info');
+                
+                const result = await apiRequest('/rounds', 'POST', body, true);
+                
+                log(outputId, `Status: ${result.statusCode}`, result.statusCode === 201 || result.statusCode === 200 ? 'success' : 'error');
+                log(outputId, `Response: ${JSON.stringify(result.data, null, 2)}`, 'info');
+                
+                if ((result.statusCode === 201 || result.statusCode === 200) && result.data.roundId) {
+                    state.lastRoundId = result.data.roundId;
+                    log(outputId, `✓ Round created! ID: ${state.lastRoundId}`, 'success');
+                    
+                    // Display result
+                    const resultsDiv = document.getElementById('round-results');
+                    resultsDiv.innerHTML = `
+                        <div class="result-item">
+                            <div class="result-label">Round ID</div>
+                            <div class="result-value">${state.lastRoundId}</div>
+                        </div>
+                    `;
+                    
+                    setStatus('create-round', 'success');
+                } else {
+                    log(outputId, '✗ Round creation failed!', 'error');
+                    setStatus('create-round', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+                setStatus('create-round', 'error');
+            }
+        }
+
+        // Test 4: Create Archer
+        async function testCreateArcher() {
+            const outputId = 'output-create-archer';
+            clearOutput(outputId);
+            setStatus('create-archer', 'pending');
+            
+            const roundId = document.getElementById('archer-round-id').value;
+            const archerName = document.getElementById('archer-name').value;
+            const school = document.getElementById('archer-school').value;
+            const level = document.getElementById('archer-level').value;
+            const gender = document.getElementById('archer-gender').value;
+            const targetAssignment = document.getElementById('archer-target').value;
+            const baleNumber = parseInt(document.getElementById('archer-bale').value);
+            
+            if (!roundId || !archerName) {
+                log(outputId, '✗ Please provide Round ID and Archer Name', 'error');
+                setStatus('create-archer', 'error');
+                return;
+            }
+            
+            const body = { archerName, school, level, gender, targetAssignment, baleNumber };
+            
+            try {
+                log(outputId, `Testing: POST /rounds/${roundId}/archers`, 'info');
+                log(outputId, `Auth: ${state.authMode === 'event-code' ? 'X-Passcode' : 'X-API-Key'}`, 'info');
+                log(outputId, `Body: ${JSON.stringify(body, null, 2)}`, 'info');
+                
+                const result = await apiRequest(`/rounds/${roundId}/archers`, 'POST', body, true);
+                
+                log(outputId, `Status: ${result.statusCode}`, result.statusCode === 201 || result.statusCode === 200 ? 'success' : 'error');
+                log(outputId, `Response: ${JSON.stringify(result.data, null, 2)}`, 'info');
+                
+                if ((result.statusCode === 201 || result.statusCode === 200) && result.data.roundArcherId) {
+                    state.lastArcherId = result.data.roundArcherId;
+                    log(outputId, `✓ Archer created! ID: ${state.lastArcherId}`, 'success');
+                    
+                    // Display result
+                    const resultsDiv = document.getElementById('archer-results');
+                    resultsDiv.innerHTML = `
+                        <div class="result-item">
+                            <div class="result-label">Archer ID</div>
+                            <div class="result-value">${state.lastArcherId}</div>
+                        </div>
+                    `;
+                    
+                    setStatus('create-archer', 'success');
+                } else {
+                    log(outputId, '✗ Archer creation failed!', 'error');
+                    setStatus('create-archer', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+                setStatus('create-archer', 'error');
+            }
+        }
+
+        // Test 5: Post End Score
+        async function testPostEnd() {
+            const outputId = 'output-post-end';
+            clearOutput(outputId);
+            setStatus('post-end', 'pending');
+            
+            const roundId = document.getElementById('end-round-id').value;
+            const archerId = document.getElementById('end-archer-id').value;
+            const endNumber = parseInt(document.getElementById('end-number').value);
+            const a1 = document.getElementById('end-a1').value;
+            const a2 = document.getElementById('end-a2').value;
+            const a3 = document.getElementById('end-a3').value;
+            
+            if (!roundId || !archerId) {
+                log(outputId, '✗ Please provide Round ID and Archer ID', 'error');
+                setStatus('post-end', 'error');
+                return;
+            }
+            
+            // Calculate totals
+            const scores = [a1, a2, a3].map(v => {
+                if (v === 'X') return 10;
+                const n = parseInt(v);
+                return isNaN(n) ? 0 : n;
+            });
+            const endTotal = scores.reduce((a, b) => a + b, 0);
+            const runningTotal = endTotal * endNumber; // Simplified
+            const tens = scores.filter(v => v === 10).length;
+            const xs = [a1, a2, a3].filter(v => v === 'X').length;
+            
+            const body = {
+                endNumber,
+                a1, a2, a3,
+                endTotal,
+                runningTotal,
+                tens,
+                xs,
+                deviceTs: new Date().toISOString()
+            };
+            
+            try {
+                log(outputId, `Testing: POST /rounds/${roundId}/archers/${archerId}/ends`, 'info');
+                log(outputId, `Auth: ${state.authMode === 'event-code' ? 'X-Passcode' : 'X-API-Key'}`, 'info');
+                log(outputId, `Body: ${JSON.stringify(body, null, 2)}`, 'info');
+                
+                const result = await apiRequest(`/rounds/${roundId}/archers/${archerId}/ends`, 'POST', body, true);
+                
+                log(outputId, `Status: ${result.statusCode}`, result.ok ? 'success' : 'error');
+                log(outputId, `Response: ${JSON.stringify(result.data, null, 2)}`, 'info');
+                
+                if (result.ok) {
+                    log(outputId, '✓ End score posted successfully!', 'success');
+                    setStatus('post-end', 'success');
+                } else {
+                    log(outputId, '✗ End score posting failed!', 'error');
+                    setStatus('post-end', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+                setStatus('post-end', 'error');
+            }
+        }
+
+        // Test 6: Full Workflow
+        async function testFullWorkflow() {
+            const outputId = 'output-workflow';
+            clearOutput(outputId);
+            setStatus('workflow', 'pending');
+            
+            try {
+                log(outputId, '=== Starting Full Workflow Test ===', 'info');
+                log(outputId, '', 'info');
+                
+                // Step 1: Create Round
+                log(outputId, 'Step 1: Creating round...', 'info');
+                const roundBody = {
+                    roundType: 'R300',
+                    date: new Date().toISOString().split('T')[0],
+                    baleNumber: 1,
+                    division: 'BVAR',
+                    gender: 'M',
+                    level: 'VAR'
+                };
+                
+                const roundResult = await apiRequest('/rounds', 'POST', roundBody, true);
+                if (!roundResult.ok || !roundResult.data.roundId) {
+                    throw new Error('Round creation failed');
+                }
+                
+                const roundId = roundResult.data.roundId;
+                log(outputId, `✓ Round created: ${roundId}`, 'success');
+                log(outputId, '', 'info');
+                
+                // Step 2: Create Archer
+                log(outputId, 'Step 2: Creating archer...', 'info');
+                const archerBody = {
+                    archerName: 'Workflow Test Archer',
+                    school: 'TST',
+                    level: 'VAR',
+                    gender: 'M',
+                    targetAssignment: 'A',
+                    baleNumber: 1
+                };
+                
+                const archerResult = await apiRequest(`/rounds/${roundId}/archers`, 'POST', archerBody, true);
+                if (!archerResult.ok || !archerResult.data.roundArcherId) {
+                    throw new Error('Archer creation failed');
+                }
+                
+                const archerId = archerResult.data.roundArcherId;
+                log(outputId, `✓ Archer created: ${archerId}`, 'success');
+                log(outputId, '', 'info');
+                
+                // Step 3: Post 3 Ends
+                log(outputId, 'Step 3: Posting 3 ends of scores...', 'info');
+                const endScores = [
+                    ['10', '10', '9'],
+                    ['10', '9', '9'],
+                    ['9', '9', '8']
+                ];
+                
+                let runningTotal = 0;
+                for (let i = 0; i < endScores.length; i++) {
+                    const [a1, a2, a3] = endScores[i];
+                    const endTotal = [a1, a2, a3].reduce((sum, v) => sum + parseInt(v), 0);
+                    runningTotal += endTotal;
+                    
+                    const endBody = {
+                        endNumber: i + 1,
+                        a1, a2, a3,
+                        endTotal,
+                        runningTotal,
+                        tens: [a1, a2, a3].filter(v => v === '10').length,
+                        xs: 0,
+                        deviceTs: new Date().toISOString()
+                    };
+                    
+                    const endResult = await apiRequest(`/rounds/${roundId}/archers/${archerId}/ends`, 'POST', endBody, true);
+                    if (!endResult.ok) {
+                        throw new Error(`End ${i + 1} posting failed`);
+                    }
+                    
+                    log(outputId, `  ✓ End ${i + 1}: ${a1}, ${a2}, ${a3} (Total: ${endTotal}, Running: ${runningTotal})`, 'success');
+                }
+                
+                log(outputId, '', 'info');
+                log(outputId, '=== Workflow Test Complete ===', 'success');
+                log(outputId, `Final Score: ${runningTotal}`, 'success');
+                log(outputId, '', 'info');
+                log(outputId, '✓ All steps passed!', 'success');
+                
+                setStatus('workflow', 'success');
+                
+            } catch (error) {
+                log(outputId, `✗ Workflow failed: ${error.message}`, 'error');
+                setStatus('workflow', 'error');
+            }
+        }
+
+        // Helper Functions
+        function quickFillArcher() {
+            if (state.lastRoundId) {
+                document.getElementById('archer-round-id').value = state.lastRoundId;
+                log('output-create-archer', `Auto-filled Round ID: ${state.lastRoundId}`, 'info');
+            }
+        }
+
+        function quickFillEnd() {
+            if (state.lastRoundId) {
+                document.getElementById('end-round-id').value = state.lastRoundId;
+            }
+            if (state.lastArcherId) {
+                document.getElementById('end-archer-id').value = state.lastArcherId;
+            }
+            if (state.lastRoundId || state.lastArcherId) {
+                log('output-post-end', 'Auto-filled IDs from previous tests', 'info');
+            }
+        }
+
+        function quickScorePerfect() {
+            document.getElementById('end-a1').value = '10';
+            document.getElementById('end-a2').value = '10';
+            document.getElementById('end-a3').value = '10';
+        }
+
+        function quickScoreGood() {
+            document.getElementById('end-a1').value = '10';
+            document.getElementById('end-a2').value = '9';
+            document.getElementById('end-a3').value = '8';
+        }
+
+        function quickScoreAverage() {
+            document.getElementById('end-a1').value = '8';
+            document.getElementById('end-a2').value = '8';
+            document.getElementById('end-a3').value = '8';
+        }
+    </script>
+</body>
+</html>
+

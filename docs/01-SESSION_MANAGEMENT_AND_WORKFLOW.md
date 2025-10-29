@@ -1,5 +1,42 @@
 # Session Management & Workflow Documentation
 
+## 🔄 Follow‑up Status Update — October 28, 2025
+
+This captures today’s state after deploying Live Sync changes and coach/archer auth updates.
+
+### Current state
+- Archer flow supports Manual and Pre‑assigned setup sections; UI renders correctly across devices after QR or modal connect.
+- Event metadata and roster cached per event: `event:{eventId}:meta`, `event:{eventId}:archers_v2`.
+- Live Sync client initializes round and scorecards when Live is ON and Start Scoring is pressed.
+- Backend authorizes using either:
+  - Coach key (`X-API-Key` or Authorization: Bearer), or
+  - Event entry code via `X-Passcode` (archer-friendly, no coach key required).
+
+### What’s blocking
+- 401 Unauthorized on `POST /v1/rounds` from devices even after event connect; indicates missing passcode header on some clients.
+- Entry code persistence is inconsistent across devices/sessions; some paths don’t populate `event_entry_code` or `event:{id}:meta.entryCode` before Live init.
+- Because round is not created, subsequent `ensureArcher` and `Sync End` are skipped, so coach Results remain empty.
+
+### Actions deployed today
+- Backend: accept `X-Passcode` matching any `events.entry_code` as auth (in addition to coach key). Returns 401 (not 500) when unauthorized.
+- Frontend: after event verification, persist entry code to `event_entry_code` and into `event:{id}:meta.entryCode`; Live Updates client now:
+  - Uses coach key if present; otherwise sends `X-Passcode` from entry code.
+  - Searches latest `rankingRound300_*` session and any `event:*:meta` for a stored entry code.
+  - Prompts once for the event code if not found, then retries init.
+- ensureRound now sends division/gender/level; server inserts only columns present in schema.
+
+### Immediate next steps (to stabilize)
+1) Add a tiny “Live Auth” debug line in the UI when Live is ON: shows which credential is being sent (Coach Key vs Entry Code) and a one‑tap “Re‑enter Code”.
+2) On successful `/v1/events/verify`, always persist `entryCode` into both `event_entry_code` and `event:{id}:meta.entryCode` (already deployed; verify on devices).
+3) If `/v1/rounds` returns 401, auto‑prompt for event code and retry once; if still 401, show non-blocking banner with “Tap to enter code”.
+4) Add `/v1/health` check from client and surface connectivity/auth state in the Live status badge.
+
+### Known risks
+- Multiple tabs/devices may hold different entry codes; we now scope by latest session and meta, but user prompts may still be needed.
+- WAF/CDN may still interfere with POSTs under some conditions (rare; monitor).
+
+---
+
 ## 🔄 Follow‑up Status Update — October 24, 2025
 
 This update records the recovery work and current state after the initial redesign was completed on Oct 22.

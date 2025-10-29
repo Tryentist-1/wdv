@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Scoring Debug</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; margin-bottom: 20px; }
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .section h2 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #495057;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 10px 20px;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .status { padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        label { display: block; margin: 10px 0 5px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Live Scoring Diagnostics</h1>
+        
+        <div class="section">
+            <h2>1. Check localStorage State</h2>
+            <button onclick="checkLocalStorage()">Show localStorage State</button>
+            <pre id="localStorage-output">Click button to load...</pre>
+        </div>
+
+        <div class="section">
+            <h2>2. Check Round Debug Info</h2>
+            <label>Round ID:</label>
+            <input type="text" id="round-id" placeholder="Paste round UUID" style="width: 100%;">
+            <button onclick="checkRound()">Debug Round</button>
+            <pre id="round-output">Enter round ID and click button...</pre>
+        </div>
+
+        <div class="section">
+            <h2>3. Check Event Snapshot</h2>
+            <label>Event ID:</label>
+            <input type="text" id="event-id" placeholder="Paste event UUID" style="width: 100%;">
+            <button onclick="checkEvent()">Check Event</button>
+            <pre id="event-output">Enter event ID and click button...</pre>
+        </div>
+
+        <div class="section">
+            <h2>4. Test API Connection</h2>
+            <button onclick="testAPI()">Test API Health</button>
+            <pre id="api-output">Click to test...</pre>
+        </div>
+
+        <div class="section">
+            <h2>Quick Tips</h2>
+            <ul style="margin-left: 20px; line-height: 1.8;">
+                <li>Open browser DevTools Console (F12) to see live logs</li>
+                <li>Look for 📤 emoji in console when scores sync</li>
+                <li>Check Network tab for failed API requests (red items)</li>
+                <li>Verify event code is stored in localStorage</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://tryentist.com/wdv/api/v1';
+
+        function checkLocalStorage() {
+            const output = document.getElementById('localStorage-output');
+            const relevant = {};
+            
+            // Find relevant keys
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('ranking') || key.includes('event:') || key.includes('live_') || key.includes('luq:')) {
+                    try {
+                        relevant[key] = JSON.parse(localStorage.getItem(key));
+                    } catch (e) {
+                        relevant[key] = localStorage.getItem(key);
+                    }
+                }
+            }
+            
+            output.textContent = JSON.stringify(relevant, null, 2);
+        }
+
+        async function checkRound() {
+            const roundId = document.getElementById('round-id').value.trim();
+            const output = document.getElementById('round-output');
+            
+            if (!roundId) {
+                output.textContent = 'Please enter a round ID';
+                return;
+            }
+            
+            try {
+                output.textContent = 'Loading...';
+                const res = await fetch(`${API_BASE}/debug/round/${roundId}`);
+                const data = await res.json();
+                output.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                output.textContent = `Error: ${err.message}`;
+            }
+        }
+
+        async function checkEvent() {
+            const eventId = document.getElementById('event-id').value.trim();
+            const output = document.getElementById('event-output');
+            
+            if (!eventId) {
+                output.textContent = 'Please enter an event ID';
+                return;
+            }
+            
+            try {
+                output.textContent = 'Loading...';
+                const res = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
+                const data = await res.json();
+                output.textContent = JSON.stringify(data, null, 2);
+            } catch (err) {
+                output.textContent = `Error: ${err.message}`;
+            }
+        }
+
+        async function testAPI() {
+            const output = document.getElementById('api-output');
+            
+            try {
+                output.textContent = 'Testing...';
+                const res = await fetch(`${API_BASE}/health`);
+                const data = await res.json();
+                output.textContent = `✅ API Online\n\n${JSON.stringify(data, null, 2)}`;
+            } catch (err) {
+                output.textContent = `❌ API Error: ${err.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
+

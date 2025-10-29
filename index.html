@@ -794,12 +794,12 @@
       }
     }
 
-    // Show onboarding on page load
+    // Onboarding disabled - outdated tutorial
     document.addEventListener('DOMContentLoaded', function() {
-      showOnboarding();
+      // showOnboarding(); // DISABLED - Tutorial needs updating
       // Note: Active event banner disabled - requires authentication that archers don't have
       
-      // Add help button functionality
+      // Add help button functionality (still works if user clicks manually)
       document.getElementById('help-btn').addEventListener('click', function() {
         localStorage.removeItem('archery_tools_onboarding_complete');
         showOnboarding();

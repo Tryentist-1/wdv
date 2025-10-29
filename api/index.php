@@ -23,6 +23,99 @@ if ($route === '/v1/health') {
     exit;
 }
 
+// Archer history endpoint (PUBLIC - archers can view their own history)
+if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method === 'GET') {
+    $archerId = $m[1];
+    $pdo = db();
+    
+    // Get archer info
+    $archer = $pdo->prepare('SELECT id, ext_id, first_name, last_name, school, level, gender FROM archers WHERE id = ? OR ext_id = ? LIMIT 1');
+    $archer->execute([$archerId, $archerId]);
+    $archerData = $archer->fetch();
+    
+    if (!$archerData) {
+        json_response(['error' => 'Archer not found'], 404);
+        exit;
+    }
+    
+    // Get all rounds this archer participated in
+    $rounds = $pdo->prepare('
+        SELECT 
+            e.id AS event_id,
+            e.name AS event_name,
+            e.date AS event_date,
+            r.id AS round_id,
+            r.division,
+            r.round_type,
+            ra.id AS round_archer_id,
+            ra.bale_number,
+            ra.target_assignment,
+            MAX(ee.running_total) AS final_score,
+            COUNT(DISTINCT ee.end_number) AS ends_completed,
+            SUM(ee.tens) AS total_tens,
+            SUM(ee.xs) AS total_xs
+        FROM round_archers ra
+        JOIN rounds r ON r.id = ra.round_id
+        LEFT JOIN events e ON e.id = r.event_id
+        LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
+        WHERE ra.archer_id = ?
+        GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, ra.bale_number, ra.target_assignment
+        ORDER BY e.date DESC, e.name
+    ');
+    $rounds->execute([$archerData['id']]);
+    $history = $rounds->fetchAll();
+    
+    json_response([
+        'archer' => [
+            'id' => $archerData['id'],
+            'extId' => $archerData['ext_id'],
+            'firstName' => $archerData['first_name'],
+            'lastName' => $archerData['last_name'],
+            'fullName' => trim($archerData['first_name'] . ' ' . $archerData['last_name']),
+            'school' => $archerData['school'],
+            'level' => $archerData['level'],
+            'gender' => $archerData['gender']
+        ],
+        'history' => $history,
+        'totalRounds' => count($history)
+    ]);
+    exit;
+}
+
+// Diagnostic endpoint: Check round/archer state
+if (preg_match('#^/v1/debug/round/([0-9a-f-]+)$#i', $route, $m) && $method === 'GET') {
+    $roundId = $m[1];
+    $pdo = db();
+    
+    $round = $pdo->prepare('SELECT id, round_type, date, bale_number, division, event_id FROM rounds WHERE id=?');
+    $round->execute([$roundId]);
+    $roundData = $round->fetch();
+    
+    if (!$roundData) {
+        json_response(['error' => 'Round not found'], 404);
+        exit;
+    }
+    
+    $archers = $pdo->prepare('SELECT id, archer_name, bale_number, target_assignment FROM round_archers WHERE round_id=?');
+    $archers->execute([$roundId]);
+    $archersData = $archers->fetchAll();
+    
+    $ends = $pdo->prepare('SELECT round_archer_id, end_number, end_total, running_total FROM end_events WHERE round_id=? ORDER BY end_number');
+    $ends->execute([$roundId]);
+    $endsData = $ends->fetchAll();
+    
+    json_response([
+        'round' => $roundData,
+        'archers' => $archersData,
+        'ends' => $endsData,
+        'stats' => [
+            'archerCount' => count($archersData),
+            'endCount' => count($endsData)
+        ]
+    ]);
+    exit;
+}
+
 // Helpers
 $slugify = function(string $s): string {
     $s = strtolower($s);
@@ -88,34 +181,92 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $roundType = $input['roundType'] ?? 'R300';
     $date = $input['date'] ?? date('Y-m-d');
-    $bale = (int)($input['baleNumber'] ?? 1);
+    $bale = isset($input['baleNumber']) ? (int)$input['baleNumber'] : null;
+    $division = $input['division'] ?? null;  // e.g., BJV, GJV
+    $gender = $input['gender'] ?? null;      // M/F
+    $level = $input['level'] ?? null;        // VAR/JV
+    $eventId = $input['eventId'] ?? null;    // Link round to event
     try {
         $pdo = db();
-        // Check if round already exists
-        $existing = $pdo->prepare('SELECT id FROM rounds WHERE round_type=? AND date=? AND bale_number=? LIMIT 1');
-        $existing->execute([$roundType, $date, $bale]);
-        $row = $existing->fetch();
+        // Detect available columns on rounds table
+        $roundCols = [];
+        try {
+            $colsStmt = $pdo->query('SHOW COLUMNS FROM rounds');
+            foreach ($colsStmt->fetchAll(PDO::FETCH_ASSOC) as $c) { $roundCols[$c['Field']] = true; }
+        } catch (Exception $e) { $roundCols = []; }
+        $hasBale = isset($roundCols['bale_number']);
+        $hasDivision = isset($roundCols['division']);
+        $hasGender = isset($roundCols['gender']);
+        $hasLevel = isset($roundCols['level']);
+        $hasEventId = isset($roundCols['event_id']);
+        // Check if round already exists (prioritize by eventId to prevent duplicates)
+        $row = null;
+        
+        // Strategy 1: If eventId provided, find by eventId + bale + division (most specific)
+        if ($eventId && $hasEventId && $hasBale && $hasDivision && $bale !== null && $division !== null) {
+            $existing = $pdo->prepare('SELECT id FROM rounds WHERE event_id=? AND bale_number=? AND division=? LIMIT 1');
+            $existing->execute([$eventId, $bale, $division]);
+            $row = $existing->fetch();
+            error_log("Round lookup: eventId=$eventId, bale=$bale, division=$division -> " . ($row ? "FOUND " . $row['id'] : "NOT FOUND"));
+        }
+        
+        // Strategy 2: If not found and eventId provided, find by eventId + bale
+        if (!$row && $eventId && $hasEventId && $hasBale && $bale !== null) {
+            $existing = $pdo->prepare('SELECT id FROM rounds WHERE event_id=? AND bale_number=? LIMIT 1');
+            $existing->execute([$eventId, $bale]);
+            $row = $existing->fetch();
+            error_log("Round lookup: eventId=$eventId, bale=$bale -> " . ($row ? "FOUND " . $row['id'] : "NOT FOUND"));
+        }
+        
+        // Strategy 3: Fallback to old logic (date + bale)
+        if (!$row && $hasBale && $bale !== null) {
+            $existing = $pdo->prepare('SELECT id FROM rounds WHERE round_type=? AND date=? AND bale_number=? LIMIT 1');
+            $existing->execute([$roundType, $date, $bale]);
+            $row = $existing->fetch();
+        }
+        
+        // Strategy 4: Last resort (date only - least reliable)
+        if (!$row) {
+            $existing = $pdo->prepare('SELECT id FROM rounds WHERE round_type=? AND date=? LIMIT 1');
+            $existing->execute([$roundType, $date]);
+            $row = $existing->fetch();
+        }
         
         if ($row) {
             // Return existing round ID
+            error_log("Round REUSED: " . $row['id']);
             json_response(['roundId' => $row['id']], 200);
         } else {
+            error_log("Round CREATING NEW: eventId=$eventId, bale=$bale, division=$division");
             // Create new round
             $id = $genUuid();
-            $stmt = $pdo->prepare('INSERT INTO rounds (id,round_type,date,bale_number,created_at) VALUES (?,?,?,?,NOW())');
-            $stmt->execute([$id,$roundType,$date,$bale]);
+            // Build dynamic insert based on columns available in schema
+            $columns = ['id','round_type','date','created_at'];
+            $values = [$id,$roundType,$date];
+            $placeholders = ['?','?','?','NOW()'];
+            // Optional columns present in schema
+            if ($hasDivision && $division !== null) { $columns[]='division'; $values[]=$division; $placeholders[]='?'; }
+            if ($hasGender && $gender !== null) { $columns[]='gender'; $values[]=$gender; $placeholders[]='?'; }
+            if ($hasLevel && $level !== null) { $columns[]='level'; $values[]=$level; $placeholders[]='?'; }
+            if ($hasBale && $bale !== null) { $columns[]='bale_number'; $values[]=$bale; $placeholders[]='?'; }
+            if ($hasEventId && $eventId !== null) { $columns[]='event_id'; $values[]=$eventId; $placeholders[]='?'; }
+            $sql = 'INSERT INTO rounds (' . implode(',', $columns) . ') VALUES (' . implode(',', $placeholders) . ')';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($values);
             
-            // Try to link to most recent event for this date
-            try {
-                $event = $pdo->prepare('SELECT id FROM events WHERE date=? ORDER BY created_at DESC LIMIT 1');
-                $event->execute([$date]);
-                $eventRow = $event->fetch();
-                if ($eventRow) {
-                    $link = $pdo->prepare('UPDATE rounds SET event_id=? WHERE id=?');
-                    $link->execute([$eventRow['id'], $id]);
+            // If eventId not provided, try to link to most recent event for this date (fallback)
+            if (!$eventId && $hasEventId) {
+                try {
+                    $event = $pdo->prepare('SELECT id FROM events WHERE date=? ORDER BY created_at DESC LIMIT 1');
+                    $event->execute([$date]);
+                    $eventRow = $event->fetch();
+                    if ($eventRow) {
+                        $link = $pdo->prepare('UPDATE rounds SET event_id=? WHERE id=?');
+                        $link->execute([$eventRow['id'], $id]);
+                    }
+                } catch (Exception $e) {
+                    // Ignore event linking errors
                 }
-            } catch (Exception $e) {
-                // Ignore event linking errors
             }
             
             json_response(['roundId' => $id], 201);
@@ -131,36 +282,122 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
     require_api_key();
     $roundId = $m[1];
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
-    $name = trim($input['archerName'] ?? '');
+    
+    // Support both new format (firstName/lastName) and legacy format (archerName)
+    $firstName = trim($input['firstName'] ?? '');
+    $lastName = trim($input['lastName'] ?? '');
+    $extId = $input['extId'] ?? null; // Local archer ID for sync
+    $legacyName = trim($input['archerName'] ?? '');
+    
+    // Parse legacy name if firstName/lastName not provided
+    if (!$firstName && !$lastName && $legacyName) {
+        $parts = explode(' ', $legacyName, 2);
+        $firstName = $parts[0];
+        $lastName = $parts[1] ?? '';
+    }
+    
     $school = $input['school'] ?? '';
     $level = $input['level'] ?? '';
     $gender = $input['gender'] ?? '';
     $target = $input['targetAssignment'] ?? '';
     $targetSize = $input['targetSize'] ?? null;
     $baleNumber = isset($input['baleNumber']) ? (int)$input['baleNumber'] : null;
-    if ($name === '') { json_response(['error' => 'archerName required'], 400); exit; }
+    
+    if ($firstName === '' && $lastName === '') { 
+        json_response(['error' => 'firstName and lastName (or archerName) required'], 400); 
+        exit; 
+    }
+    
     try {
         $pdo = db();
-        // Check if archer already exists for this round/target
-        $existing = $pdo->prepare('SELECT id FROM round_archers WHERE round_id=? AND target_assignment=? LIMIT 1');
-        $existing->execute([$roundId, $target]);
-        $row = $existing->fetch();
         
-        if ($row) {
-            // Return existing archer ID
-            json_response(['roundArcherId' => $row['id']], 200);
-        } else {
-            // Create new archer
-            $id = $genUuid();
-            if ($baleNumber !== null) {
-                $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_name, school, level, gender, target_assignment, target_size, bale_number, created_at) VALUES (?,?,?,?,?,?,?,?,?,NOW())');
-                $stmt->execute([$id,$roundId,$name,$school,$level,$gender,$target,$targetSize,$baleNumber]);
-            } else {
-                $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_name, school, level, gender, target_assignment, target_size, created_at) VALUES (?,?,?,?,?,?,?,?,NOW())');
-                $stmt->execute([$id,$roundId,$name,$school,$level,$gender,$target,$targetSize]);
-            }
-            json_response(['roundArcherId' => $id], 201);
+        // Ensure round exists
+        $hasRound = $pdo->prepare('SELECT id FROM rounds WHERE id=?');
+        $hasRound->execute([$roundId]);
+        if (!$hasRound->fetch()) {
+            json_response(['error' => 'Round not found'], 404);
+            exit;
         }
+        
+        // --- CREATE OR FIND ARCHER IN MASTER TABLE FIRST ---
+        $archerId = null;
+        
+        // 1. Try to find by ext_id (most reliable)
+        if ($extId) {
+            $stmt = $pdo->prepare('SELECT id FROM archers WHERE ext_id = ? LIMIT 1');
+            $stmt->execute([$extId]);
+            $archerRow = $stmt->fetch();
+            if ($archerRow) {
+                $archerId = $archerRow['id'];
+            }
+        }
+        
+        // 2. If not found, try to find by name + school (fuzzy match)
+        if (!$archerId && $firstName && $lastName && $school) {
+            $stmt = $pdo->prepare('SELECT id FROM archers WHERE first_name = ? AND last_name = ? AND school = ? LIMIT 1');
+            $stmt->execute([$firstName, $lastName, $school]);
+            $archerRow = $stmt->fetch();
+            if ($archerRow) {
+                $archerId = $archerRow['id'];
+            }
+        }
+        
+        // 3. If still not found, create new archer in master table
+        if (!$archerId) {
+            $archerId = $genUuid();
+            $stmt = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+            $stmt->execute([$archerId, $extId, $firstName, $lastName, $school, $level, $gender]);
+        }
+        
+        // --- CHECK IF ROUND_ARCHER ALREADY EXISTS FOR THIS ARCHER IN THIS ROUND ---
+        // DIAGNOSTIC: Log what we're looking for
+        error_log("UPSERT CHECK: roundId=$roundId, archerId=$archerId, firstName=$firstName, lastName=$lastName, extId=$extId");
+        
+        // First, try to find by archer_id (most reliable)
+        $existing = $pdo->prepare('SELECT id FROM round_archers WHERE round_id=? AND archer_id=? LIMIT 1');
+        $existing->execute([$roundId, $archerId]);
+        $existingRow = $existing->fetch();
+        
+        if ($existingRow) {
+            error_log("UPSERT: Found existing by archer_id, UPDATING round_archer_id=" . $existingRow['id']);
+        }
+        
+        // If not found, check for orphaned entry (archer_id IS NULL) by name match
+        if (!$existingRow) {
+            $archerName = trim("$firstName $lastName");
+            $orphanCheck = $pdo->prepare('SELECT id FROM round_archers WHERE round_id=? AND archer_name=? AND archer_id IS NULL LIMIT 1');
+            $orphanCheck->execute([$roundId, $archerName]);
+            $existingRow = $orphanCheck->fetch();
+            if ($existingRow) {
+                error_log("UPSERT: Found orphaned entry by name, UPDATING and LINKING round_archer_id=" . $existingRow['id']);
+            }
+        }
+        
+        if ($existingRow) {
+            // UPDATE existing scorecard with new bale/target info AND link to master archer
+            $updateSql = 'UPDATE round_archers SET archer_id=?, target_assignment=?, bale_number=?, target_size=? WHERE id=?';
+            $updateStmt = $pdo->prepare($updateSql);
+            $updateStmt->execute([$archerId, $target, $baleNumber, $targetSize, $existingRow['id']]);
+            
+            json_response(['roundArcherId' => $existingRow['id'], 'archerId' => $archerId, 'updated' => true], 200);
+            exit;
+        }
+        
+        error_log("UPSERT: No existing entry found, CREATING new round_archers entry");
+        
+        // --- CREATE NEW ROUND_ARCHERS SCORECARD ---
+        $roundArcherId = $genUuid();
+        $archerName = trim("$firstName $lastName");
+        
+        if ($baleNumber !== null) {
+            $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_id, archer_name, school, level, gender, target_assignment, target_size, bale_number, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW())');
+            $stmt->execute([$roundArcherId, $roundId, $archerId, $archerName, $school, $level, $gender, $target, $targetSize, $baleNumber]);
+        } else {
+            $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_id, archer_name, school, level, gender, target_assignment, target_size, created_at) VALUES (?,?,?,?,?,?,?,?,?,NOW())');
+            $stmt->execute([$roundArcherId, $roundId, $archerId, $archerName, $school, $level, $gender, $target, $targetSize]);
+        }
+        
+        json_response(['roundArcherId' => $roundArcherId, 'archerId' => $archerId, 'created' => true], 201);
     } catch (Exception $e) {
         error_log("Archer creation failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
@@ -339,8 +576,8 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
             
             // Auto-assign bales if requested
             if ($autoAssign) {
-                // Get archers for this division
-                $stmt = $pdo->prepare('SELECT id,first_name,last_name,school,level,gender FROM archers WHERE gender=? AND level=? ORDER BY last_name,first_name');
+                // Get archers for this division (sorted by first name)
+                $stmt = $pdo->prepare('SELECT id,first_name,last_name,school,level,gender FROM archers WHERE gender=? AND level=? ORDER BY first_name,last_name');
                 $stmt->execute([$div['gender'], $div['level']]);
                 $archers = $stmt->fetchAll();
                 
@@ -757,8 +994,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
     $eventId = $m[1];
     $pdo = db();
     
-    // Get event info
-    $event = $pdo->prepare('SELECT id, name, date, status, event_type FROM events WHERE id=? LIMIT 1');
+    // Get event info (include entry_code for client-side auth)
+    $event = $pdo->prepare('SELECT id, name, date, status, event_type, entry_code FROM events WHERE id=? LIMIT 1');
     $event->execute([$eventId]);
     $eventData = $event->fetch();
     
@@ -785,17 +1022,62 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
         $divCode = $r['division'];
         
         // Get archers for this division round
-        $archers = $pdo->prepare('SELECT ra.id as roundArcherId, ra.archer_name as archerName, ra.school, ra.gender, ra.level, ra.target_assignment as target, ra.bale_number as bale, ra.completed FROM round_archers ra WHERE ra.round_id=? ORDER BY ra.bale_number, ra.target_assignment');
+        // IMPORTANT: If duplicates exist (same archer_id), prefer the one WITH bale/target
+        $archers = $pdo->prepare('
+            SELECT ra.id as roundArcherId, ra.archer_name as archerName, ra.school, ra.gender, ra.level, 
+                   ra.target_assignment as target, ra.bale_number as bale, ra.completed, ra.archer_id
+            FROM round_archers ra
+            WHERE ra.round_id=? 
+            ORDER BY ra.archer_id, 
+                     (ra.target_assignment IS NOT NULL AND ra.bale_number IS NOT NULL) DESC,
+                     ra.created_at DESC
+        ');
         $archers->execute([$r['id']]);
-        $as = $archers->fetchAll();
+        $allArchers = $archers->fetchAll();
+        
+        // Deduplicate: Keep only one entry per archer_id (prefer the one with bale/target)
+        $seenArcherIds = [];
+        $as = [];
+        foreach ($allArchers as $archer) {
+            $archerId = $archer['archer_id'];
+            if ($archerId && isset($seenArcherIds[$archerId])) {
+                continue; // Skip duplicate
+            }
+            if ($archerId) {
+                $seenArcherIds[$archerId] = true;
+            }
+            $as[] = $archer;
+        }
         
         $divisionArchers = [];
         
         foreach ($as as $a) {
             // Get end events for this archer
+            // CRITICAL: Query by round_archer_id to get the scores
             $ee = $pdo->prepare('SELECT end_number as endNumber, end_total as endTotal, running_total as runningTotal, tens, xs, server_ts as serverTs FROM end_events WHERE round_archer_id=? ORDER BY end_number');
             $ee->execute([$a['roundArcherId']]);
             $ends = $ee->fetchAll();
+            
+            // DEBUG: If this archer has no ends but should have scores, check if there's another round_archer entry
+            if (count($ends) === 0 && $a['archer_id']) {
+                // Check if there are end_events linked to a DIFFERENT round_archer_id for the same archer
+                $alternateCheck = $pdo->prepare('
+                    SELECT ee.round_archer_id, COUNT(*) as end_count
+                    FROM end_events ee
+                    JOIN round_archers ra ON ra.id = ee.round_archer_id
+                    WHERE ra.round_id = ? AND ra.archer_id = ?
+                    GROUP BY ee.round_archer_id
+                ');
+                $alternateCheck->execute([$r['id'], $a['archer_id']]);
+                $alternateEntry = $alternateCheck->fetch();
+                
+                if ($alternateEntry && $alternateEntry['end_count'] > 0) {
+                    // Found scores under a different round_archer_id! Use that instead
+                    $ee->execute([$alternateEntry['round_archer_id']]);
+                    $ends = $ee->fetchAll();
+                    error_log("SCORE MISMATCH: Archer {$a['archerName']} - scores found under different round_archer_id");
+                }
+            }
             
             $endsCompleted = count($ends);
             $lastEnd = 0; $lastEndTotal = 0; $runningTotal = 0; $lastSyncTime = null;

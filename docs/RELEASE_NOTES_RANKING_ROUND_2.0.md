@@ -14,6 +14,7 @@
 ### Offline-first and Live Sync
 - Server-driven assignmentMode in event snapshot; event-scoped caches for preassigned rosters.
 - Minimal offline queue for end posts; manual Flush button and auto-flush on reconnect.
+- Hotfix (Oct 28): Live Sync now authorizes with event entry code via `X-Passcode` (no coach key required on archer devices). Client auto-saves the code after event verification and uses it for sync.
 
 ### Coach Console
 - “Manage Bales” UI to edit bale number/target per archer (uses new PATCH/DELETE APIs).
