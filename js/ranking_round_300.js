@@ -263,6 +263,146 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEventHeader();
     }
 
+    // =====================================================
+    // PHASE 0: Session Persistence for Bale Groups
+    // =====================================================
+    
+    /**
+     * Save current bale session to localStorage for recovery on page reload.
+     * Includes archer cookie, round ID, bale number, and current end.
+     */
+    function saveCurrentBaleSession() {
+        try {
+            const archerId = getArcherCookie(); // From common.js
+            const roundId = (window.LiveUpdates && window.LiveUpdates._state) ? window.LiveUpdates._state.roundId : null;
+            
+            const session = {
+                archerId: archerId,
+                eventId: state.activeEventId || state.selectedEventId,
+                roundId: roundId,
+                baleNumber: state.baleNumber,
+                currentEnd: state.currentEnd,
+                assignmentMode: state.assignmentMode,
+                lastSaved: new Date().toISOString(),
+                archerIds: state.archers.map(a => a.id) // For quick validation
+            };
+            
+            localStorage.setItem('current_bale_session', JSON.stringify(session));
+            console.log('[Phase 0 Session] Saved bale session:', session);
+        } catch (e) {
+            console.warn('[Phase 0 Session] Failed to save session:', e);
+        }
+    }
+    
+    /**
+     * Attempt to restore bale session from localStorage.
+     * Fetches full bale group data from server if session exists.
+     * Returns true if session was restored, false otherwise.
+     */
+    async function restoreCurrentBaleSession() {
+        try {
+            const sessionData = localStorage.getItem('current_bale_session');
+            if (!sessionData) {
+                console.log('[Phase 0 Session] No saved session found');
+                return false;
+            }
+            
+            const session = JSON.parse(sessionData);
+            if (!session.roundId || !session.baleNumber) {
+                console.log('[Phase 0 Session] Invalid session data, skipping restore');
+                return false;
+            }
+            
+            console.log('[Phase 0 Session] Found saved session, attempting restore:', session);
+            
+            // Get event entry code for authentication
+            const entryCode = localStorage.getItem('event_entry_code') || 
+                             (state.activeEventId ? (JSON.parse(localStorage.getItem(`event:${state.activeEventId}:meta`) || '{}').entryCode) : null);
+            
+            if (!entryCode) {
+                console.warn('[Phase 0 Session] No entry code found, cannot restore session');
+                return false;
+            }
+            
+            // Fetch bale group from server
+            const response = await fetch(`${API_BASE}/rounds/${session.roundId}/bales/${session.baleNumber}/archers`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Passcode': entryCode
+                }
+            });
+            
+            if (!response.ok) {
+                console.warn('[Phase 0 Session] Failed to fetch bale group:', response.status);
+                return false;
+            }
+            
+            const baleData = await response.json();
+            
+            if (!baleData.archers || baleData.archers.length === 0) {
+                console.warn('[Phase 0 Session] No archers found in bale group');
+                return false;
+            }
+            
+            console.log('[Phase 0 Session] Successfully retrieved bale group:', baleData);
+            
+            // Restore state from server data
+            state.roundId = session.roundId;
+            state.baleNumber = session.baleNumber;
+            state.activeEventId = session.eventId;
+            state.selectedEventId = session.eventId;
+            state.assignmentMode = session.assignmentMode || 'pre-assigned';
+            state.currentEnd = baleData.archers[0]?.scorecard?.currentEnd || session.currentEnd || 1;
+            
+            // Reconstruct archers array from server scorecards
+            state.archers = baleData.archers.map(archer => {
+                const uniqueId = `${archer.firstName}-${archer.lastName}`;
+                
+                // Reconstruct scores array from ends
+                const scores = [];
+                const endsList = archer.scorecard?.ends || [];
+                endsList.forEach(end => {
+                    scores[end.endNumber - 1] = [end.a1, end.a2, end.a3];
+                });
+                
+                return {
+                    id: uniqueId,
+                    roundArcherId: archer.roundArcherId,
+                    firstName: archer.firstName,
+                    lastName: archer.lastName,
+                    school: archer.school || '',
+                    level: archer.level || '',
+                    gender: archer.gender || '',
+                    targetAssignment: archer.targetAssignment,
+                    targetSize: archer.targetSize || 80,
+                    baleNumber: archer.baleNumber || session.baleNumber,
+                    scores: scores
+                };
+            });
+            
+            // Restore Live Updates state if enabled
+            if (window.LiveUpdates) {
+                window.LiveUpdates._state.roundId = session.roundId;
+                // Restore archer ID mapping
+                baleData.archers.forEach(archer => {
+                    const uniqueId = `${archer.firstName}-${archer.lastName}`;
+                    window.LiveUpdates._state.archerIds[uniqueId] = archer.roundArcherId;
+                });
+            }
+            
+            // Transition to scoring view
+            state.currentView = 'scoring';
+            saveData(); // Save restored state to localStorage
+            
+            console.log('[Phase 0 Session] Session restored successfully, showing scoring view');
+            return true;
+        } catch (e) {
+            console.error('[Phase 0 Session] Error restoring session:', e);
+            return false;
+        }
+    }
+
     // --- LOGIC ---
     // Highlight a specific bale in the list
     function highlightBale(baleNum) {
@@ -1293,6 +1433,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Live Updates init error:', e);
             }
         }
+        
+        // PHASE 0: Save session for recovery on page reload
+        saveCurrentBaleSession();
         
         // Transition to scoring view
         state.currentView = 'scoring';
@@ -2577,7 +2720,15 @@ document.addEventListener('DOMContentLoaded', () => {
         renderKeypad();
         wireCoreHandlers();
         
-        // Check for in-progress work FIRST
+        // PHASE 0: Try to restore bale session from server (takes priority)
+        const sessionRestored = await restoreCurrentBaleSession();
+        if (sessionRestored) {
+            console.log('[Phase 0] Session restored, showing scoring view');
+            renderView();
+            return; // Session restored, skip further setup
+        }
+        
+        // Check for in-progress work FIRST (fallback to local storage)
         const localProgress = hasInProgressScorecard();
         if (localProgress) {
             console.log('Found in-progress scorecard - resuming scoring');
@@ -2679,6 +2830,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (e) {
                     console.warn('Manual assignment sync failed (continuing offline):', e);
                 }
+                
+                // PHASE 0: Save session for recovery on page reload
+                saveCurrentBaleSession();
+                
                 showScoringView();
             };
         }
