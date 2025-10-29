@@ -13,6 +13,11 @@
   let currentEventId = null;
   let selectedArchers = [];
   let allArchers = [];
+  
+  // PHASE 0: Division rounds workflow
+  let pendingDivisions = []; // Divisions to configure after event creation
+  let currentDivision = null; // Current division being configured
+  let divisionRounds = {}; // Map of division -> roundId
 
   // ==================== Cookie Management ====================
   
@@ -347,25 +352,56 @@
         return;
       }
 
+      // PHASE 0: Get selected divisions
+      const divisions = [];
+      ['open', 'bvar', 'gvar', 'bjv', 'gjv'].forEach(div => {
+        const checkbox = document.getElementById(`division-${div}`);
+        if (checkbox && checkbox.checked) {
+          divisions.push(div.toUpperCase());
+        }
+      });
+
+      if (divisions.length === 0) {
+        alert('Please select at least one division round');
+        return;
+      }
+
       try {
         const btn = document.getElementById('submit-event-btn');
         btn.disabled = true;
         btn.textContent = 'Creating...';
 
-        // Create event WITHOUT creating division rounds
-        // Rounds will be created when archers are added
+        // Step 1: Create event
         const result = await req('/events', 'POST', {
           name,
           date,
           status,
           entryCode,
-          eventType: 'manual', // Don't auto-create rounds yet
+          eventType: 'manual',
           autoAssignBales: false
         });
 
+        const eventId = result.eventId;
+        currentEventId = eventId;
+
+        // Step 2: Create division rounds
+        const roundsResult = await req(`/events/${eventId}/rounds`, 'POST', {
+          divisions,
+          roundType: 'R300'
+        });
+
+        // Store round IDs by division
+        divisionRounds = {};
+        roundsResult.created.forEach(r => {
+          divisionRounds[r.division] = r.roundId;
+        });
+
         modal.style.display = 'none';
-        alert(`Event "${name}" created successfully!\n\nNext step: Add archers to this event.`);
-        loadEvents();
+
+        // Step 3: Configure archers for each division
+        pendingDivisions = [...divisions];
+        processNextDivision(name);
+
       } catch (err) {
         alert(`Error creating event: ${err.message}`);
       } finally {
@@ -392,6 +428,157 @@
 
   function viewResults(eventId) {
     window.location.href = `results.html?event=${eventId}`;
+  }
+
+  // ==================== PHASE 0: Division Round Management ====================
+  
+  function processNextDivision(eventName) {
+    if (pendingDivisions.length === 0) {
+      // All divisions configured!
+      alert(`✓ Event "${eventName}" created with all division rounds!\n\nArchers have been assigned to bales.`);
+      loadEvents();
+      return;
+    }
+
+    // Get next division
+    currentDivision = pendingDivisions.shift();
+    const divisionName = {
+      'OPEN': 'OPEN (Mixed)',
+      'BVAR': 'Boys Varsity',
+      'GVAR': 'Girls Varsity',
+      'BJV': 'Boys JV',
+      'GJV': 'Girls JV'
+    }[currentDivision] || currentDivision;
+
+    // Show archer selection modal for this division
+    showAddArchersModalForDivision(currentDivision, divisionName, eventName);
+  }
+
+  function showAddArchersModalForDivision(division, divisionName, eventName) {
+    // Reset selection
+    selectedArchers = [];
+
+    // Update modal title
+    document.getElementById('division-title').textContent = `${divisionName} Round`;
+
+    // Show modal
+    const modal = document.getElementById('add-archers-modal');
+    modal.style.display = 'flex';
+
+    // Populate filters and render list
+    populateFilters();
+    renderArcherList();
+
+    // Setup event handlers
+    document.getElementById('cancel-add-archers-btn').onclick = () => {
+      modal.style.display = 'none';
+      // Skip this division
+      processNextDivision(eventName);
+    };
+
+    document.getElementById('submit-add-archers-btn').onclick = () => {
+      if (selectedArchers.length === 0) {
+        // Skip this division if no archers selected
+        modal.style.display = 'none';
+        processNextDivision(eventName);
+        return;
+      }
+      modal.style.display = 'none';
+      showAssignmentModeModalForDivision(division, divisionName, eventName);
+    };
+
+    // Filter change handlers
+    ['filter-school', 'filter-gender', 'filter-level'].forEach(id => {
+      document.getElementById(id).onchange = renderArcherList;
+    });
+
+    // PHASE 0: Search handler
+    const searchInput = document.getElementById('archer-search');
+    if (searchInput) {
+      searchInput.value = ''; // Clear search
+      searchInput.oninput = renderArcherList;
+    }
+
+    // Select All button
+    const selectAllBtn = document.getElementById('select-all-btn');
+    selectAllBtn.replaceWith(selectAllBtn.cloneNode(true));
+    const newSelectAllBtn = document.getElementById('select-all-btn');
+
+    newSelectAllBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const container = document.getElementById('archer-list');
+      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+      const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+
+      if (allSelected) {
+        // Deselect all
+        checkboxes.forEach(cb => {
+          cb.checked = false;
+          const archerId = cb.id.replace('archer-', '');
+          selectedArchers = selectedArchers.filter(id => id !== archerId);
+        });
+      } else {
+        // Select all
+        checkboxes.forEach(cb => {
+          cb.checked = true;
+          const archerId = cb.id.replace('archer-', '');
+          if (!selectedArchers.includes(archerId)) {
+            selectedArchers.push(archerId);
+          }
+        });
+      }
+
+      updateSelectedCount();
+    });
+  }
+
+  function showAssignmentModeModalForDivision(division, divisionName, eventName) {
+    const modal = document.getElementById('assignment-mode-modal');
+    modal.querySelector('h2').textContent = `${divisionName} - Bale Assignment`;
+    modal.style.display = 'flex';
+
+    document.getElementById('cancel-assignment-btn').onclick = () => {
+      modal.style.display = 'none';
+      // Re-open archer modal
+      showAddArchersModalForDivision(division, divisionName, eventName);
+    };
+
+    document.getElementById('submit-assignment-btn').onclick = async () => {
+      const mode = document.querySelector('input[name="assignment-mode"]:checked').value;
+      const roundId = divisionRounds[division];
+
+      try {
+        const btn = document.getElementById('submit-assignment-btn');
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+
+        // PHASE 0: Call new endpoint
+        const result = await req(`/events/${currentEventId}/rounds/${roundId}/archers`, 'POST', {
+          archerIds: selectedArchers,
+          assignmentMode: mode
+        });
+
+        const summary = result.baleAssignments ? 
+          `\n\nBale Assignments:\n${result.baleAssignments.map(b => `Bale ${b.baleNumber}: ${b.archers.join(', ')}`).join('\n')}` :
+          '';
+
+        alert(`✓ ${result.roundArchersCreated} archers added to ${divisionName}!${summary}`);
+
+        modal.style.display = 'none';
+
+        // Process next division
+        processNextDivision(eventName);
+
+      } catch (err) {
+        alert('Error adding archers: ' + err.message);
+      } finally {
+        const btn = document.getElementById('submit-assignment-btn');
+        btn.disabled = false;
+        btn.textContent = 'Confirm';
+      }
+    };
   }
 
   // ==================== Archer Management ====================
@@ -514,18 +701,41 @@
     const schoolFilter = document.getElementById('filter-school').value;
     const genderFilter = document.getElementById('filter-gender').value;
     const levelFilter = document.getElementById('filter-level').value;
+    
+    // PHASE 0: Get search term
+    const searchInput = document.getElementById('archer-search');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-    // Filter archers
+    // Filter archers (AND logic - must match all)
     const filtered = allArchers.filter(archer => {
+      // School filter
       if (schoolFilter && archer.school !== schoolFilter) return false;
+      
+      // Gender filter
       if (genderFilter && archer.gender !== genderFilter) return false;
+      
+      // Level filter
       if (levelFilter && archer.level !== levelFilter) return false;
+      
+      // PHASE 0: Search filter (matches first name or last name)
+      if (searchTerm) {
+        const fullName = `${archer.first_name || ''} ${archer.last_name || ''}`.toLowerCase();
+        if (!fullName.includes(searchTerm)) return false;
+      }
+      
       return true;
+    });
+
+    // PHASE 0: Sort by firstName (alphabetically)
+    const sorted = filtered.sort((a, b) => {
+      const nameA = (a.first_name || '').toLowerCase();
+      const nameB = (b.first_name || '').toLowerCase();
+      return nameA.localeCompare(nameB);
     });
 
     // Render list
     container.innerHTML = '';
-    filtered.forEach(archer => {
+    sorted.forEach(archer => {
       const item = document.createElement('div');
       item.className = 'archer-item';
       
