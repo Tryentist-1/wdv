@@ -406,6 +406,507 @@ OAS Ranking Online 3.0 represents a fundamental shift to an **online-first, data
 
 ---
 
+## Critical UX Pain Points (Must Fix in v3.0)
+
+### 🔴 Priority 1: Session Persistence & Recovery
+
+**Problem:** Archers reload the page or lose their status and become disconnected from their bale group and scorecards.
+
+**User Impact:**
+- Archer opens app, selects event via QR code ✅
+- Goes to "Select Archers" for manual bale assignment ✅
+- As they open/close the app, their link to scorecards becomes broken ❌
+- Must re-select archers, losing any progress ❌
+- Frustration leads to paper scorecards ❌
+
+**Root Causes (v2.0):**
+- Session state stored in memory and localStorage only
+- No persistent server-side "session" linking archer → bale → scorecards
+- Round/archer IDs not properly restored after reload
+- No visual confirmation of "connected" status
+
+**Proposed Solutions for v3.0:**
+
+#### Solution 1A: Persistent Bale Session
+```
+When archer selects their bale group:
+1. Server creates a "BaleSession" record
+   - Links: Archer (scorer) → Event → Bale Number → Scorecard IDs
+   - Stores: Device ID, last active timestamp
+   
+2. Client stores in localStorage:
+   - Session ID (UUID)
+   - Bale number
+   - Scorecard IDs
+   
+3. On app open/reload:
+   - Client checks for session ID in localStorage
+   - Calls GET /sessions/{sessionId} to restore
+   - Server returns: event, bale, scorecards, current end
+   - UI shows "Reconnected to Bale 3, End 5" confirmation
+```
+
+#### Solution 1B: Visual Connection Status
+```
+Persistent connection indicator at top of screen:
+┌─────────────────────────────────────┐
+│ 🟢 Bale 3 | End 5 | Synced 12:34 PM │
+└─────────────────────────────────────┘
+
+States:
+🟢 Green: Connected and synced
+🟡 Yellow: Connected but pending sync (offline queue)
+🔴 Red: Disconnected (click to reconnect)
+⚪ Gray: Not in a session
+```
+
+#### Solution 1C: Automatic Recovery
+```
+On page load:
+1. Check for localStorage session
+2. If found, show loading screen: "Restoring session..."
+3. Call API to validate session is still active
+4. If valid: Load scorecards, skip setup, go to scoring view
+5. If invalid: Show clear message: "Session expired. Please select your bale again."
+6. Provide "Resume" button vs. "Start New" button
+```
+
+**Success Criteria:**
+- ✅ 95% of page reloads successfully restore session
+- ✅ Clear visual feedback on connection status
+- ✅ Zero data loss when reloading
+- ✅ < 2 seconds to restore session
+
+---
+
+### 🔴 Priority 2: Bale Selection UX
+
+**Problem:** The bale selection UI (small number input) is not user-friendly. Hard to identify which bale you're on.
+
+**Current Implementation:**
+```
+Setup view has:
+Bale Number: [3] ← Small input field, easy to miss
+```
+
+**User Impact:**
+- Archers enter wrong bale number by accident
+- Scores go to wrong bale group
+- Hard to see which bale you're on once scoring starts
+- No visual confirmation of bale selection
+
+**Proposed Solutions for v3.0:**
+
+#### Solution 2A: Large Bale Selector (Mobile-First)
+```
+After QR code scan, show full-screen bale selector:
+
+┌────────────────────────────────────┐
+│     Which bale are you on?         │
+├────────────────────────────────────┤
+│  ┌──────┐  ┌──────┐  ┌──────┐     │
+│  │  1   │  │  2   │  │  3   │     │
+│  └──────┘  └──────┘  └──────┘     │
+│  ┌──────┐  ┌──────┐  ┌──────┐     │
+│  │  4   │  │  5   │  │  6   │     │
+│  └──────┘  └──────┘  └──────┘     │
+│  ┌──────┐  ┌──────┐               │
+│  │  7   │  │  8   │               │
+│  └──────┘  └──────┘               │
+└────────────────────────────────────┘
+
+Each button:
+- 100px × 100px (large touch target)
+- Shows bale number in 48pt font
+- Highlights on tap
+- Shows number of archers on that bale (if known)
+```
+
+#### Solution 2B: Persistent Bale Indicator
+```
+Always visible at top of every screen:
+
+┌─────────────────────────────────────┐
+│  🎯 BALE 3  |  End 5 of 10          │
+└─────────────────────────────────────┘
+
+Styling:
+- Large, bold text (24pt)
+- High contrast colors
+- Sticky header (always visible)
+- Tap to see bale details
+```
+
+#### Solution 2C: Confirmation Screen
+```
+After bale selection, show confirmation:
+
+┌────────────────────────────────────┐
+│   You selected: BALE 3             │
+│                                    │
+│   Archers on this bale:            │
+│   • Leo H. (Target A)              │
+│   • Ryder S. (Target B)            │
+│   • Eric S. (Target C)             │
+│   • Amelia B. (Target D)           │
+│                                    │
+│   [✓ Correct]    [← Change Bale]   │
+└────────────────────────────────────┘
+```
+
+**Success Criteria:**
+- ✅ Zero wrong bale selections
+- ✅ Bale number always visible during scoring
+- ✅ < 3 seconds to select bale
+
+---
+
+### 🔴 Priority 3: Bale Group Setup Process
+
+**Problem:** Process to identify who you're shooting with is clunky. Manual archer selection is tedious.
+
+**Current Implementation:**
+- Search box with text input
+- Small checkboxes for selection
+- No visual grouping
+- Hard to see who's already selected
+
+**Proposed Solutions for v3.0:**
+
+#### Solution 3A: Smart Archer Assignment
+```
+Two modes:
+
+MODE 1: Pre-Assigned (Coach sets up)
+- Archer scans QR code
+- App shows: "You are on Bale 3, Target A"
+- Shows other archers on your bale automatically
+- No selection needed
+- One tap to "Start Scoring"
+
+MODE 2: Self-Select (Manual)
+- Large bale selector (per Solution 2A)
+- After bale selected, show: "Who's on Bale 3 with you?"
+- Large archer cards (not small list):
+  
+  ┌─────────────────────┐
+  │ Leo Hernandez       │
+  │ T School | JV | M   │  ← Tap to add
+  └─────────────────────┘
+  
+  ┌─────────────────────┐
+  │ ✓ Ryder Singer      │  ← Already selected
+  │ T School | JV | M   │
+  └─────────────────────┘
+
+- Auto-assign targets (A, B, C, D) as archers are added
+- Show live preview of bale group
+```
+
+#### Solution 3B: Recent Archers Quick Add
+```
+Show "Frequently shoot with:" section:
+
+┌────────────────────────────────────┐
+│  Quick Add (from recent events):   │
+│  [+ Leo H.]  [+ Ryder S.]          │
+│  [+ Eric S.] [+ Amelia B.]         │
+└────────────────────────────────────┘
+
+- One tap to add archer to bale
+- Pre-filled with archers from same division
+- Learns from past events
+```
+
+#### Solution 3C: Bale Group Overview
+```
+After archers selected, show:
+
+┌────────────────────────────────────┐
+│       BALE 3 - Ready to Score      │
+├────────────────────────────────────┤
+│  Target A: Leo Hernandez           │
+│  Target B: Ryder Singer            │
+│  Target C: Eric Salas              │
+│  Target D: Amelia Beall            │
+├────────────────────────────────────┤
+│  [✓ Start Scoring]                 │
+│  [+ Add Archer]  [← Change Bale]   │
+└────────────────────────────────────┘
+```
+
+**Success Criteria:**
+- ✅ < 30 seconds to set up 4-archer bale group
+- ✅ Clear visual confirmation of bale group
+- ✅ Easy to add/remove archers
+
+---
+
+### 🔴 Priority 4: End Tracking Clarity
+
+**Problem:** Confusing to know which end you're on.
+
+**Current Implementation:**
+- Small text: "End 2 of 10" in header
+- Easy to lose track during round
+- No visual progress indicator
+
+**Proposed Solutions for v3.0:**
+
+#### Solution 4A: Prominent End Indicator
+```
+Large, always-visible end indicator:
+
+┌─────────────────────────────────────┐
+│  🎯 BALE 3  |  📍 END 5 of 10       │
+│  ▓▓▓▓▓░░░░░                         │ ← Progress bar
+└─────────────────────────────────────┘
+
+Styling:
+- Large font (24pt)
+- Progress bar shows completion
+- Different color per end (cycle colors)
+```
+
+#### Solution 4B: End Navigation Preview
+```
+Show previous/current/next ends:
+
+┌────────────────────────────────────┐
+│  [End 4]    END 5    [End 6]       │
+│   ✓Done   ⬤ NOW     ○ Next        │
+└────────────────────────────────────┘
+
+Visual cues:
+✓ = Completed and synced
+⬤ = Current end
+○ = Not started
+```
+
+#### Solution 4C: End Completion Confirmation
+```
+After last archer scores, show:
+
+┌────────────────────────────────────┐
+│   End 5 Complete! 🎯               │
+│                                    │
+│   Bale 3 Scores:                   │
+│   • Leo H.: 27 (X, 7, X)           │
+│   • Ryder S.: 21 (7, X, 4)         │
+│   • Eric S.: 16 (8, 4, 4)          │
+│   • Amelia B.: 20 (8, 4, 8)        │
+│                                    │
+│   [Sync End ⬆️]  [Next End →]      │
+└────────────────────────────────────┘
+```
+
+**Success Criteria:**
+- ✅ Always know which end you're on
+- ✅ Clear visual progress through round
+- ✅ Confirmation when end is complete
+
+---
+
+### 🔴 Priority 5: Sync Status Clarity
+
+**Problem:** Confusing to know if scores are synced. "NOT SYNCED" warning is alarming but unclear.
+
+**Current Implementation:**
+- Red "NOT SYNCED" badge in header
+- Small sync icons (⟳) next to each archer
+- No explanation of what's not synced or why
+
+**Proposed Solutions for v3.0:**
+
+#### Solution 5A: Clear Sync Indicators
+```
+Per-end sync status (not just per-archer):
+
+┌────────────────────────────────────┐
+│  END 5  |  ✅ Synced at 12:34 PM   │
+└────────────────────────────────────┘
+
+Or:
+
+┌────────────────────────────────────┐
+│  END 5  |  ⏳ Syncing... (2 of 4)  │
+└────────────────────────────────────┘
+
+Or:
+
+┌────────────────────────────────────┐
+│  END 5  |  📤 Not synced (Tap to sync) │
+└────────────────────────────────────┘
+```
+
+#### Solution 5B: Automatic Sync with Visual Feedback
+```
+Auto-sync when end is complete:
+
+1. All archers have scores entered
+2. Show: "Syncing end 5..." with spinner
+3. API call to sync all 4 scorecards
+4. Show: "✅ End 5 synced!" for 2 seconds
+5. Auto-advance to next end
+
+No manual "Sync End" button needed!
+```
+
+#### Solution 5C: Offline Queue Indicator
+```
+When offline, show:
+
+┌────────────────────────────────────┐
+│  📡 Offline Mode                   │
+│  3 ends queued to sync             │
+│  Will sync when connected          │
+└────────────────────────────────────┘
+
+When online, auto-sync and show:
+
+┌────────────────────────────────────┐
+│  ✅ Synced 3 ends successfully!    │
+└────────────────────────────────────┘
+```
+
+#### Solution 5D: Sync History
+```
+Tap sync indicator to see:
+
+┌────────────────────────────────────┐
+│  Sync History                      │
+├────────────────────────────────────┤
+│  ✅ End 5: Synced at 12:34 PM      │
+│  ✅ End 4: Synced at 12:28 PM      │
+│  ✅ End 3: Synced at 12:22 PM      │
+│  ✅ End 2: Synced at 12:16 PM      │
+│  ✅ End 1: Synced at 12:10 PM      │
+└────────────────────────────────────┘
+```
+
+**Success Criteria:**
+- ✅ Clear understanding of sync status
+- ✅ Automatic sync when possible
+- ✅ No confusion about "NOT SYNCED" state
+- ✅ Offline mode clearly indicated
+
+---
+
+### 🔴 Priority 6: Results Page Enhancements
+
+**Problem:** Results/leaderboard in coach app lacks bale number, has no scorecard view, and no "last end completed" field to monitor status.
+
+**Current Implementation:**
+- Shows: Archer name, school, score, 10s, Xs
+- Missing: Bale number, current status, scorecard link
+
+**Proposed Solutions for v3.0:**
+
+#### Solution 6A: Enhanced Leaderboard Columns
+```
+Results Page - New Columns:
+
+| Rank | Archer | School | Bale | Status | Score | 10s | Xs | Avg | View |
+|------|--------|--------|------|--------|-------|-----|----|----- |------|
+| 1    | Leo H. | T      | 3    | End 10 | 229   | 8   | 8  | 7.6  | 👁️  |
+| 2    | Test A | WDV    | 1    | End 8  | 215   | 6   | 5  | 7.2  | 👁️  |
+| 3    | Ryder  | T      | 3    | End 5  | 142   | 3   | 2  | 7.1  | 👁️  |
+
+New columns:
+- Bale: Which bale they're on
+- Status: "End X of 10", "Complete", "Not Started"
+- View: Link to full scorecard (👁️)
+```
+
+#### Solution 6B: Live Status Indicators
+```
+Status column shows:
+
+🟢 End 10 of 10 (Complete)
+🟡 End 5 of 10 (In Progress)
+⚪ Not Started
+🔴 End 3 of 10 (Stalled - no update in 15 min)
+
+Color codes help coach identify:
+- Who's finished
+- Who's actively scoring
+- Who needs help
+```
+
+#### Solution 6C: Bale View Grouping
+```
+Add "Group by Bale" toggle:
+
+┌────────────────────────────────────┐
+│  BALE 1 (4 archers, End 8-10)      │
+├────────────────────────────────────┤
+│  Test Archer A: 215 (End 10) 👁️   │
+│  Test Archer B: 198 (End 9) 👁️    │
+│  Test Archer C: 187 (End 8) 👁️    │
+│  Test Archer D: 201 (End 10) 👁️   │
+└────────────────────────────────────┘
+
+┌────────────────────────────────────┐
+│  BALE 3 (4 archers, End 5-6)       │
+├────────────────────────────────────┤
+│  Leo H.: 142 (End 5) 👁️            │
+│  Ryder S.: 121 (End 6) 👁️          │
+│  Eric S.: 98 (End 5) 👁️            │
+│  Amelia B.: 110 (End 5) 👁️         │
+└────────────────────────────────────┘
+
+Helps coach see:
+- Which bales are moving quickly
+- Which bales need assistance
+- Overall event pace
+```
+
+#### Solution 6D: Quick Scorecard Preview
+```
+Click 👁️ icon to open modal with full scorecard:
+
+┌────────────────────────────────────┐
+│  Leo Hernandez - Bale 3, Target A  │
+│  [Close ✕]                         │
+├────────────────────────────────────┤
+│  End | A1 | A2 | A3 | Total | Run  │
+│   1  | X  | 7  | X  |  27   | 27   │
+│   2  | X  | X  | X  |  30   | 57   │
+│   3  | X  | X  | X  |  30   | 87   │
+│   4  | 7  | 7  | 6  |  20   | 107  │
+│   5  | 8  | 8  | 8  |  24   | 131  │
+│  ...                               │
+│                                    │
+│  Totals: 229 | 8 Xs | 8 10s        │
+│  [Print] [Export] [Verify]         │
+└────────────────────────────────────┘
+
+No need to open separate page!
+```
+
+#### Solution 6E: Last Update Timestamp
+```
+Show when each archer last synced:
+
+| Archer | Score | Status | Last Update |
+|--------|-------|--------|-------------|
+| Leo H. | 229   | End 10 | 12:45 PM    |
+| Ryder  | 142   | End 5  | 12:38 PM    |
+| Eric   | 98    | End 5  | 9 min ago ⚠️ |
+
+Warnings:
+⚠️ Yellow: > 10 min since last sync
+🔴 Red: > 20 min since last sync
+```
+
+**Success Criteria:**
+- ✅ Coach can see bale assignments at a glance
+- ✅ Coach can see which archers/bales are progressing
+- ✅ Coach can quickly view any scorecard
+- ✅ Coach can identify archers who need help
+
+---
+
 ## Open Questions for Discussion
 
 1. **Archer Photos:** Should we support archer photos in the roster? (For identification during verification)
