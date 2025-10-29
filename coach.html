@@ -363,6 +363,37 @@
         <label for="event-code">Entry Code (for archer QR access)</label>
         <input type="text" id="event-code" placeholder="FALL2024" />
       </div>
+      
+      <!-- PHASE 0: Division Rounds Selection -->
+      <div class="form-group" style="border-top: 2px solid #eee; padding-top: 1rem; margin-top: 1.5rem;">
+        <label style="font-weight: 600; margin-bottom: 0.75rem; display: block;">Division Rounds</label>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="division-open" value="OPEN" checked style="width: auto; margin: 0;">
+            <span>OPEN (Mixed - All Levels)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="division-bvar" value="BVAR" style="width: auto; margin: 0;">
+            <span>BVAR (Boys Varsity)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="division-gvar" value="GVAR" style="width: auto; margin: 0;">
+            <span>GVAR (Girls Varsity)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="division-bjv" value="BJV" style="width: auto; margin: 0;">
+            <span>BJV (Boys JV)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" id="division-gjv" value="GJV" style="width: auto; margin: 0;">
+            <span>GJV (Girls JV)</span>
+          </label>
+        </div>
+        <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
+          Select divisions to create for this event. You'll add archers to each division next.
+        </div>
+      </div>
+      
       <div class="modal-buttons">
         <button id="cancel-event-btn" class="btn btn-secondary" style="flex:1;">Cancel</button>
         <button id="submit-event-btn" class="btn btn-primary" style="flex:1;">Create Event</button>
@@ -373,7 +404,13 @@
   <!-- Add Archers Modal -->
   <div id="add-archers-modal" class="modal" style="overflow-y: auto;">
     <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
-      <h2 style="margin-top: 0; font-size: 1.3rem;">Add Archers to Event</h2>
+      <h2 style="margin-top: 0; font-size: 1.3rem;">Add Archers to <span id="division-title">Event</span></h2>
+      
+      <!-- PHASE 0: Search Box -->
+      <div class="form-group" style="margin-bottom: 1rem;">
+        <input type="text" id="archer-search" placeholder="🔍 Search by name..." style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem;" />
+      </div>
+      
       <div class="archer-filters">
         <select id="filter-school" class="styled-select">
           <option value="">All Schools</option>
