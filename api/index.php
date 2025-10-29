@@ -951,8 +951,23 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)$#i', $route, $m) && $method === 'PATCH
     exit;
 }
 
-// Add archers to an event (creates/updates division rounds and assigns bales)
+// =====================================================
+// DEPRECATED: Old POST /v1/events/{eventId}/archers endpoint
+// PHASE 0: This endpoint auto-created division rounds, which conflicts with new workflow
+// Use POST /v1/events/{eventId}/rounds/{roundId}/archers instead
+// =====================================================
 if (preg_match('#^/v1/events/([0-9a-f-]+)/archers$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    json_response([
+        'error' => 'This endpoint is deprecated. Use POST /v1/events/{eventId}/rounds to create division rounds, then POST /v1/events/{eventId}/rounds/{roundId}/archers to add archers.',
+        'migration' => 'Phase 0: Division Rounds workflow'
+    ], 410); // 410 Gone
+    exit;
+}
+
+// OLD CODE DISABLED - keeping for reference
+/*
+if (preg_match('#^/v1/events/([0-9a-f-]+)/archers_OLD_DISABLED$#i', $route, $m) && $method === 'POST') {
     require_api_key();
     $eventId = $m[1];
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -960,7 +975,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
     $assignmentMode = $input['assignmentMode'] ?? 'auto_assign'; // 'auto_assign' or 'manual'
     
     if (empty($archerIds) || !is_array($archerIds)) {
-        json_response(['error' => 'archerIds array required'], 400);
+        json_response(['error'] => 'archerIds array required'], 400);
         exit;
     }
     
@@ -1098,6 +1113,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
     }
     exit;
 }
+*/
+// END OF DEPRECATED CODE
 
 // List recent events (PUBLIC - no auth required for archers to see events)
 if (preg_match('#^/v1/events/recent$#', $route) && $method === 'GET') {
