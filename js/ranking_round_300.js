@@ -2643,8 +2643,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="font-size: 0.85em; color: #666;">${ev.date}</div>
                 `;
                 eventBtn.onclick = async () => {
-                    await loadEventById(ev.id, ev.name);
-                    hideEventModal();
+                    console.log('Event selected from list:', ev.id, ev.name);
+                    const success = await loadEventById(ev.id, ev.name);
+                    if (success) {
+                        hideEventModal();
+                        // Refresh UI to show loaded event
+                        renderSetupSections();
+                        updateEventHeader();
+                        console.log('Event loaded successfully, UI refreshed');
+                    } else {
+                        alert('Failed to load event. Please try again.');
+                    }
                 };
                 eventList.appendChild(eventBtn);
             });
@@ -2660,6 +2669,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load event by ID
     async function loadEventById(eventId, eventName, entryCode) {
         try {
+            console.log('[loadEventById] Starting:', {eventId, eventName, entryCode});
             if (!eventId) {
                 console.error('No event ID provided');
                 return false;
@@ -2672,6 +2682,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             
             const eventData = await res.json();
+            console.log('[loadEventById] Received event data:', eventData);
             if (eventData && eventData.divisions) {
                 const allArchers = [];
                 Object.keys(eventData.divisions).forEach(divKey => {
@@ -2709,7 +2720,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Also save to global event_entry_code if we have one
                     if (finalEntryCode) {
                         try { localStorage.setItem('event_entry_code', finalEntryCode); } catch(_) {}
-                        console.log('Saved event metadata with entry code:', finalEntryCode);
+                        console.log('✅ Saved event metadata with entry code:', finalEntryCode);
+                    } else {
+                        console.warn('⚠️ No entry code found for event. Live scoring may not work.');
+                        // Prompt user for entry code if missing
+                        const userCode = prompt('This event needs an entry code for live scoring.\nPlease enter the event code (or Cancel to continue without live scoring):');
+                        if (userCode && userCode.trim()) {
+                            meta.entryCode = userCode.trim();
+                            localStorage.setItem(`event:${eventId}:meta`, JSON.stringify(meta));
+                            localStorage.setItem('event_entry_code', userCode.trim());
+                            console.log('✅ Entry code saved:', userCode.trim());
+                        }
                     }
                 } catch(_) {}
                 
