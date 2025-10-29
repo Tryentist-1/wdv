@@ -843,29 +843,10 @@
     };
   }
 
-  // ==================== Reset Event Data ====================
-  function setupResetEventDataInline() {
-    const btn = document.getElementById('reset-event-data-btn');
-    if (!btn) return;
-    btn.onclick = async () => {
-      if (!currentEditEventId) { alert('Open Edit Event to reset.'); return; }
-      const eventId = currentEditEventId;
-      const confirmMsg = 'Reset Event Data\n\nALL ENTERED SCORES WILL BE DELETED.\nScorecards (round_archers) and End data will be removed, rounds set back to Created.\n\nAre you sure?';
-      if (!confirm(confirmMsg)) return;
-      try {
-        // Use the same authenticated coach API helper as the rest of the console
-        await req(`/events/${eventId}/reset`, 'POST');
-        alert('Event data reset. All entered scores were deleted.');
-      } catch (e) {
-        alert('Reset failed: ' + (e && e.message ? e.message : e));
-      }
-    };
-  }
-
   // Hook up on load (coach page)
   document.addEventListener('DOMContentLoaded', () => {
     setupCSVImport();
-    setupResetEventDataInline();
+    // Note: Reset button handler now set up in editEvent() function
   });
 
   function parseCSV(text) {
@@ -985,6 +966,22 @@
     document.getElementById('cancel-edit-event-btn').onclick = () => {
       modal.style.display = 'none';
       currentEditEventId = null;
+    };
+    
+    // PHASE 0 FIX: Setup reset button handler here (not on page load)
+    document.getElementById('reset-event-data-btn').onclick = async () => {
+      const confirmMsg = 'Reset Event Data\n\nALL ENTERED SCORES WILL BE DELETED.\nScorecards (round_archers) and End data will be removed, rounds set back to Created.\n\nAre you sure?';
+      if (!confirm(confirmMsg)) return;
+      
+      try {
+        await req(`/events/${currentEditEventId}/reset`, 'POST');
+        alert('✓ Event data reset successfully!\n\nAll entered scores deleted.');
+        modal.style.display = 'none';
+        currentEditEventId = null;
+        loadEvents(); // Refresh the events list
+      } catch (e) {
+        alert('Reset failed: ' + (e && e.message ? e.message : e));
+      }
     };
     
     document.getElementById('submit-edit-event-btn').onclick = async () => {
