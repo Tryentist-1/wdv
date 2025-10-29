@@ -181,51 +181,32 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $roundType = $input['roundType'] ?? 'R300';
     $date = $input['date'] ?? date('Y-m-d');
-    $bale = isset($input['baleNumber']) ? (int)$input['baleNumber'] : null;
-    $division = $input['division'] ?? null;  // e.g., BJV, GJV
+    // NOTE: baleNumber removed from rounds table in Phase 0 migration
+    $division = $input['division'] ?? null;  // e.g., BJV, GJV, OPEN
     $gender = $input['gender'] ?? null;      // M/F
     $level = $input['level'] ?? null;        // VAR/JV
     $eventId = $input['eventId'] ?? null;    // Link round to event
     try {
         $pdo = db();
-        // Detect available columns on rounds table
-        $roundCols = [];
-        try {
-            $colsStmt = $pdo->query('SHOW COLUMNS FROM rounds');
-            foreach ($colsStmt->fetchAll(PDO::FETCH_ASSOC) as $c) { $roundCols[$c['Field']] = true; }
-        } catch (Exception $e) { $roundCols = []; }
-        $hasBale = isset($roundCols['bale_number']);
-        $hasDivision = isset($roundCols['division']);
-        $hasGender = isset($roundCols['gender']);
-        $hasLevel = isset($roundCols['level']);
-        $hasEventId = isset($roundCols['event_id']);
-        // Check if round already exists (prioritize by eventId to prevent duplicates)
+        // Check if round already exists (by eventId + division)
         $row = null;
         
-        // Strategy 1: If eventId provided, find by eventId + bale + division (most specific)
-        if ($eventId && $hasEventId && $hasBale && $hasDivision && $bale !== null && $division !== null) {
-            $existing = $pdo->prepare('SELECT id FROM rounds WHERE event_id=? AND bale_number=? AND division=? LIMIT 1');
-            $existing->execute([$eventId, $bale, $division]);
+        // Strategy 1: If eventId and division provided, find by eventId + division
+        if ($eventId && $division) {
+            $existing = $pdo->prepare('SELECT id FROM rounds WHERE event_id=? AND division=? LIMIT 1');
+            $existing->execute([$eventId, $division]);
             $row = $existing->fetch();
-            error_log("Round lookup: eventId=$eventId, bale=$bale, division=$division -> " . ($row ? "FOUND " . $row['id'] : "NOT FOUND"));
+            error_log("Round lookup: eventId=$eventId, division=$division -> " . ($row ? "FOUND " . $row['id'] : "NOT FOUND"));
         }
         
-        // Strategy 2: If not found and eventId provided, find by eventId + bale
-        if (!$row && $eventId && $hasEventId && $hasBale && $bale !== null) {
-            $existing = $pdo->prepare('SELECT id FROM rounds WHERE event_id=? AND bale_number=? LIMIT 1');
-            $existing->execute([$eventId, $bale]);
-            $row = $existing->fetch();
-            error_log("Round lookup: eventId=$eventId, bale=$bale -> " . ($row ? "FOUND " . $row['id'] : "NOT FOUND"));
-        }
-        
-        // Strategy 3: Fallback to old logic (date + bale)
-        if (!$row && $hasBale && $bale !== null) {
-            $existing = $pdo->prepare('SELECT id FROM rounds WHERE round_type=? AND date=? AND bale_number=? LIMIT 1');
-            $existing->execute([$roundType, $date, $bale]);
+        // Strategy 2: Fallback to date + division (legacy support)
+        if (!$row && $division) {
+            $existing = $pdo->prepare('SELECT id FROM rounds WHERE round_type=? AND date=? AND division=? LIMIT 1');
+            $existing->execute([$roundType, $date, $division]);
             $row = $existing->fetch();
         }
         
-        // Strategy 4: Last resort (date only - least reliable)
+        // Strategy 3: Last resort (date only - least reliable)
         if (!$row) {
             $existing = $pdo->prepare('SELECT id FROM rounds WHERE round_type=? AND date=? LIMIT 1');
             $existing->execute([$roundType, $date]);
@@ -237,25 +218,23 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
             error_log("Round REUSED: " . $row['id']);
             json_response(['roundId' => $row['id']], 200);
         } else {
-            error_log("Round CREATING NEW: eventId=$eventId, bale=$bale, division=$division");
-            // Create new round
+            error_log("Round CREATING NEW: eventId=$eventId, division=$division");
+            // Create new round (Phase 0: bale_number removed from schema)
             $id = $genUuid();
-            // Build dynamic insert based on columns available in schema
             $columns = ['id','round_type','date','created_at'];
             $values = [$id,$roundType,$date];
             $placeholders = ['?','?','?','NOW()'];
-            // Optional columns present in schema
-            if ($hasDivision && $division !== null) { $columns[]='division'; $values[]=$division; $placeholders[]='?'; }
-            if ($hasGender && $gender !== null) { $columns[]='gender'; $values[]=$gender; $placeholders[]='?'; }
-            if ($hasLevel && $level !== null) { $columns[]='level'; $values[]=$level; $placeholders[]='?'; }
-            if ($hasBale && $bale !== null) { $columns[]='bale_number'; $values[]=$bale; $placeholders[]='?'; }
-            if ($hasEventId && $eventId !== null) { $columns[]='event_id'; $values[]=$eventId; $placeholders[]='?'; }
+            // Optional columns
+            if ($division !== null) { $columns[]='division'; $values[]=$division; $placeholders[]='?'; }
+            if ($gender !== null) { $columns[]='gender'; $values[]=$gender; $placeholders[]='?'; }
+            if ($level !== null) { $columns[]='level'; $values[]=$level; $placeholders[]='?'; }
+            if ($eventId !== null) { $columns[]='event_id'; $values[]=$eventId; $placeholders[]='?'; }
             $sql = 'INSERT INTO rounds (' . implode(',', $columns) . ') VALUES (' . implode(',', $placeholders) . ')';
             $stmt = $pdo->prepare($sql);
             $stmt->execute($values);
             
             // If eventId not provided, try to link to most recent event for this date (fallback)
-            if (!$eventId && $hasEventId) {
+            if (!$eventId) {
                 try {
                     $event = $pdo->prepare('SELECT id FROM events WHERE date=? ORDER BY created_at DESC LIMIT 1');
                     $event->execute([$date]);
@@ -263,9 +242,11 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
                     if ($eventRow) {
                         $link = $pdo->prepare('UPDATE rounds SET event_id=? WHERE id=?');
                         $link->execute([$eventRow['id'], $id]);
+                        error_log("Round $id auto-linked to event " . $eventRow['id']);
                     }
                 } catch (Exception $e) {
                     // Ignore event linking errors
+                    error_log("Event auto-link failed: " . $e->getMessage());
                 }
             }
             
@@ -1259,6 +1240,309 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/reset$#i', $route, $m) && $method === 
         json_response(['ok' => true, 'message' => 'All entered scores deleted. Rounds reset to Created.']);
     } catch (Exception $e) {
         error_log("Event reset failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// =====================================================
+// PHASE 0: Create division rounds for an event
+// =====================================================
+if (preg_match('#^/v1/events/([0-9a-f-]+)/rounds$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $eventId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $divisions = $input['divisions'] ?? [];
+    $roundType = $input['roundType'] ?? 'R300';
+    
+    if (!is_array($divisions) || empty($divisions)) {
+        json_response(['error' => 'divisions array required (e.g., ["OPEN", "BJV"])'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Verify event exists
+        $eventStmt = $pdo->prepare('SELECT id, date FROM events WHERE id=? LIMIT 1');
+        $eventStmt->execute([$eventId]);
+        $event = $eventStmt->fetch();
+        
+        if (!$event) {
+            json_response(['error' => 'Event not found'], 404);
+            exit;
+        }
+        
+        $created = [];
+        $errors = [];
+        
+        foreach ($divisions as $division) {
+            $division = strtoupper(trim($division));
+            if (!in_array($division, ['OPEN', 'BVAR', 'GVAR', 'BJV', 'GJV'])) {
+                $errors[] = "Invalid division: $division";
+                continue;
+            }
+            
+            // Check if round already exists for this division
+            $existing = $pdo->prepare('SELECT id FROM rounds WHERE event_id=? AND division=? LIMIT 1');
+            $existing->execute([$eventId, $division]);
+            $existingRound = $existing->fetch();
+            
+            if ($existingRound) {
+                $errors[] = "Division $division already exists";
+                continue;
+            }
+            
+            // Create round
+            $roundId = $genUuid();
+            $pdo->prepare('INSERT INTO rounds (id, event_id, round_type, division, date, status, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())')
+                ->execute([$roundId, $eventId, $roundType, $division, $event['date'], 'Created']);
+            
+            $created[] = [
+                'roundId' => $roundId,
+                'division' => $division,
+                'roundType' => $roundType
+            ];
+        }
+        
+        json_response([
+            'created' => $created,
+            'errors' => $errors
+        ], 201);
+        
+    } catch (Exception $e) {
+        error_log("Division rounds creation failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// =====================================================
+// PHASE 0: List division rounds for an event
+// =====================================================
+if (preg_match('#^/v1/events/([0-9a-f-]+)/rounds$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $eventId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Get all rounds for this event
+        $roundsStmt = $pdo->prepare('
+            SELECT r.id as roundId, r.division, r.round_type as roundType, r.status,
+                   COUNT(DISTINCT ra.id) as archerCount,
+                   COUNT(DISTINCT ra.bale_number) as baleCount,
+                   MIN(ra.bale_number) as minBale,
+                   MAX(ra.bale_number) as maxBale
+            FROM rounds r
+            LEFT JOIN round_archers ra ON ra.round_id = r.id
+            WHERE r.event_id = ?
+            GROUP BY r.id, r.division, r.round_type, r.status
+            ORDER BY 
+                CASE r.division
+                    WHEN "OPEN" THEN 1
+                    WHEN "BVAR" THEN 2
+                    WHEN "GVAR" THEN 3
+                    WHEN "BJV" THEN 4
+                    WHEN "GJV" THEN 5
+                    ELSE 6
+                END
+        ');
+        $roundsStmt->execute([$eventId]);
+        $rounds = $roundsStmt->fetchAll();
+        
+        // Get next available bale number for this event
+        $maxBaleStmt = $pdo->prepare('
+            SELECT MAX(ra.bale_number) as maxBale
+            FROM round_archers ra
+            JOIN rounds r ON r.id = ra.round_id
+            WHERE r.event_id = ?
+        ');
+        $maxBaleStmt->execute([$eventId]);
+        $maxBaleRow = $maxBaleStmt->fetch();
+        $nextAvailableBale = ($maxBaleRow && $maxBaleRow['maxBale']) ? (int)$maxBaleRow['maxBale'] + 1 : 1;
+        
+        // Format response
+        $formattedRounds = [];
+        foreach ($rounds as $round) {
+            $baleNumbers = [];
+            if ($round['archerCount'] > 0 && $round['minBale']) {
+                for ($i = (int)$round['minBale']; $i <= (int)$round['maxBale']; $i++) {
+                    $baleNumbers[] = $i;
+                }
+            }
+            
+            $formattedRounds[] = [
+                'roundId' => $round['roundId'],
+                'division' => $round['division'],
+                'roundType' => $round['roundType'],
+                'status' => $round['status'],
+                'archerCount' => (int)$round['archerCount'],
+                'baleCount' => (int)$round['baleCount'],
+                'baleNumbers' => $baleNumbers
+            ];
+        }
+        
+        json_response([
+            'rounds' => $formattedRounds,
+            'nextAvailableBale' => $nextAvailableBale
+        ]);
+        
+    } catch (Exception $e) {
+        error_log("List rounds failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// =====================================================
+// PHASE 0: Add archers to a division round with auto-assign
+// =====================================================
+if (preg_match('#^/v1/events/([0-9a-f-]+)/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $eventId = $m[1];
+    $roundId = $m[2];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $archerIds = $input['archerIds'] ?? [];
+    $assignmentMode = $input['assignmentMode'] ?? 'auto_assign'; // 'auto_assign' or 'manual'
+    
+    if (!is_array($archerIds) || empty($archerIds)) {
+        json_response(['error' => 'archerIds array required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Verify round exists and belongs to event
+        $roundStmt = $pdo->prepare('SELECT id, division FROM rounds WHERE id=? AND event_id=? LIMIT 1');
+        $roundStmt->execute([$roundId, $eventId]);
+        $round = $roundStmt->fetch();
+        
+        if (!$round) {
+            json_response(['error' => 'Round not found'], 404);
+            exit;
+        }
+        
+        // Get archers details
+        $placeholders = implode(',', array_fill(0, count($archerIds), '?'));
+        $archersStmt = $pdo->prepare("SELECT id, first_name, last_name, school, level, gender FROM archers WHERE id IN ($placeholders)");
+        $archersStmt->execute($archerIds);
+        $archers = $archersStmt->fetchAll();
+        
+        if (count($archers) !== count($archerIds)) {
+            json_response(['error' => 'Some archers not found'], 404);
+            exit;
+        }
+        
+        if ($assignmentMode === 'manual') {
+            // Manual mode: Create round_archers with NULL bale/target
+            $created = 0;
+            foreach ($archers as $archer) {
+                $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_id, archer_name, school, level, gender, bale_number, target_assignment, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NOW())')
+                    ->execute([
+                        $genUuid(),
+                        $roundId,
+                        $archer['id'],
+                        trim($archer['first_name'] . ' ' . $archer['last_name']),
+                        $archer['school'] ?? '',
+                        $archer['level'] ?? '',
+                        $archer['gender'] ?? ''
+                    ]);
+                $created++;
+            }
+            
+            json_response([
+                'roundArchersCreated' => $created,
+                'assignmentMode' => 'manual',
+                'message' => 'Archers added. They will select bales when they start scoring.'
+            ], 201);
+            exit;
+        }
+        
+        // AUTO-ASSIGN MODE
+        
+        // Get next available bale number for this event
+        $maxBaleStmt = $pdo->prepare('
+            SELECT MAX(ra.bale_number) as maxBale
+            FROM round_archers ra
+            JOIN rounds r ON r.id = ra.round_id
+            WHERE r.event_id = ?
+        ');
+        $maxBaleStmt->execute([$eventId]);
+        $maxBaleRow = $maxBaleStmt->fetch();
+        $startBale = ($maxBaleRow && $maxBaleRow['maxBale']) ? (int)$maxBaleRow['maxBale'] + 1 : 1;
+        
+        // Auto-assign algorithm
+        $numArchers = count($archers);
+        $archersPerBale = 4; // Default: A, B, C, D
+        $targetLetters = ['A', 'B', 'C', 'D'];
+        
+        // Calculate number of bales needed
+        $numBales = (int)ceil($numArchers / $archersPerBale);
+        
+        // Check if last bale would have < 2 archers (minimum)
+        if ($numBales > 1) {
+            $lastBaleCount = $numArchers - (($numBales - 1) * $archersPerBale);
+            if ($lastBaleCount < 2) {
+                // Redistribute to avoid having only 1 archer on last bale
+                $numBales--;
+            }
+        }
+        
+        // Distribute archers across bales evenly
+        $basePerBale = (int)floor($numArchers / $numBales);
+        $extraArchers = $numArchers % $numBales;
+        
+        // Create round_archers entries
+        $currentBale = $startBale;
+        $archerIndex = 0;
+        $baleAssignments = [];
+        
+        for ($i = 0; $i < $numBales; $i++) {
+            $archersInThisBale = $basePerBale + ($i < $extraArchers ? 1 : 0);
+            $baleArchers = [];
+            
+            for ($j = 0; $j < $archersInThisBale && $archerIndex < $numArchers; $j++) {
+                $archer = $archers[$archerIndex];
+                $targetLetter = $targetLetters[$j % 4]; // A, B, C, D (cycle if > 4)
+                
+                $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_id, archer_name, school, level, gender, bale_number, target_assignment, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())')
+                    ->execute([
+                        $genUuid(),
+                        $roundId,
+                        $archer['id'],
+                        trim($archer['first_name'] . ' ' . $archer['last_name']),
+                        $archer['school'] ?? '',
+                        $archer['level'] ?? '',
+                        $archer['gender'] ?? '',
+                        $currentBale,
+                        $targetLetter
+                    ]);
+                
+                $baleArchers[] = trim($archer['first_name'] . ' ' . $archer['last_name'][0] . '.');
+                $archerIndex++;
+            }
+            
+            $baleAssignments[] = [
+                'baleNumber' => $currentBale,
+                'archers' => $baleArchers,
+                'count' => count($baleArchers)
+            ];
+            
+            $currentBale++;
+        }
+        
+        json_response([
+            'roundArchersCreated' => $numArchers,
+            'division' => $round['division'],
+            'baleAssignments' => $baleAssignments,
+            'nextAvailableBale' => $currentBale,
+            'summary' => "$numArchers archers assigned to " . count($baleAssignments) . " bale(s)"
+        ], 201);
+        
+    } catch (Exception $e) {
+        error_log("Add archers to round failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
     exit;
