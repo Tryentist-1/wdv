@@ -313,7 +313,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 return false;
             }
             
+            // Check if session is recent (within 24 hours)
+            const sessionAge = Date.now() - new Date(session.lastSaved || 0).getTime();
+            const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+            if (sessionAge > maxAge) {
+                console.log('[Phase 0 Session] Session too old, clearing:', Math.round(sessionAge / 1000 / 60 / 60), 'hours');
+                localStorage.removeItem('current_bale_session');
+                return false;
+            }
+            
             console.log('[Phase 0 Session] Found saved session, attempting restore:', session);
+            
+            // ASK USER if they want to resume (prevents unwanted restoration)
+            const resumeMsg = `Resume in-progress scoring?\n\nEvent: ${session.eventId?.substring(0, 8)}...\nBale: ${session.baleNumber}\nCurrent End: ${session.currentEnd || 1}\n\nClick OK to resume, or Cancel to start fresh.`;
+            const shouldResume = confirm(resumeMsg);
+            
+            if (!shouldResume) {
+                console.log('[Phase 0 Session] User declined to resume, clearing session');
+                localStorage.removeItem('current_bale_session');
+                return false;
+            }
             
             // Get event entry code for authentication
             const entryCode = localStorage.getItem('event_entry_code') || 
@@ -321,6 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!entryCode) {
                 console.warn('[Phase 0 Session] No entry code found, cannot restore session');
+                localStorage.removeItem('current_bale_session');
                 return false;
             }
             
