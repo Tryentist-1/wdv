@@ -188,10 +188,11 @@
         return res.json();
     }
 
-    function ensureRound({ roundType, date, baleNumber, division, gender, level, eventId }) {
+    function ensureRound({ roundType, date, division, gender, level, eventId }) {
         if (!state.config.enabled) return Promise.resolve(null);
         if (state.roundId) return Promise.resolve(state.roundId);
-        return request('/rounds', 'POST', { roundType, date, baleNumber, division, gender, level, eventId })
+        // PHASE 0: baleNumber removed from rounds table, now lives in round_archers
+        return request('/rounds', 'POST', { roundType, date, division, gender, level, eventId })
             .then(json => {
                 if (!json || !json.roundId) {
                     throw new Error('Round creation failed: missing roundId');

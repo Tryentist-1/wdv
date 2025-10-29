@@ -1483,7 +1483,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     LiveUpdates.ensureRound({ 
                         roundType: 'R300',
                         date: today,
-                        baleNumber: state.baleNumber,
                         division,
                         gender,
                         level,
@@ -1886,7 +1885,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         // Round not initialized, initialize first
                         console.log('Initializing Live Updates round...');
-                        LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber, eventId: state.activeEventId || state.selectedEventId })
+                        LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), eventId: state.activeEventId || state.selectedEventId })
                           .then(() => {
                             console.log('Round initialized, ensuring archer...');
                             return LiveUpdates.ensureArcher(archer.id, archer);
@@ -2035,7 +2034,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // Initialize round and archer first
                 console.log('Initializing Live Updates round for sync...');
-                const promise = LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber, eventId: state.activeEventId || state.selectedEventId })
+                const promise = LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), eventId: state.activeEventId || state.selectedEventId })
                     .then(() => {
                         console.log('Round initialized, ensuring archer:', archer.id);
                         return LiveUpdates.ensureArcher(archer.id, archer);
@@ -2547,9 +2546,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 await LiveUpdates.ensureRound({ 
                         roundType: 'R300',
                         date: new Date().toISOString().slice(0, 10),
-                        baleNumber: state.baleNumber,
                         eventId: state.activeEventId || state.selectedEventId
-                });
+                    });
             }
             
             // Ensure all archers exist
@@ -2911,7 +2909,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const div = (state.archers[0] && state.archers[0].division) || meta.defaultDivision || null;
                         const gender = (state.archers[0] && state.archers[0].gender) || null;
                         const level = (state.archers[0] && state.archers[0].level) || null;
-                        await LiveUpdates.ensureRound({ roundType: 'R300', date: today, baleNumber: state.baleNumber, division: div, gender, level, eventId: state.activeEventId || state.selectedEventId });
+                        await LiveUpdates.ensureRound({ roundType: 'R300', date: today, division: div, gender, level, eventId: state.activeEventId || state.selectedEventId });
                         for (const archer of state.archers) {
                             // ensureArcher will create a round_archers entry; we include targetAssignment
                             await LiveUpdates.ensureArcher(archer.id, archer);
@@ -3104,7 +3102,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const div = (state.archers[0] && state.archers[0].division) || meta.defaultDivision || null;
                     const gender = (state.archers[0] && state.archers[0].gender) || null;
                     const level = (state.archers[0] && state.archers[0].level) || null;
-                    LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber, division: div, gender, level, eventId: state.activeEventId || state.selectedEventId })
+                    LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), division: div, gender, level, eventId: state.activeEventId || state.selectedEventId })
                       .then(() => { 
                         if (!LiveUpdates._state.roundId) throw new Error('roundId missing after ensureRound');
                         const ensures = (state.archers || []).map(a => LiveUpdates.ensureArcher(a.id, a));
@@ -3299,7 +3297,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     LiveUpdates.ensureRound({
                         roundType: 'R300',
                         date: new Date().toISOString().slice(0, 10),
-                        baleNumber: state.baleNumber,
                         eventId: state.activeEventId || state.selectedEventId
                     }).then(() => {
                         state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
