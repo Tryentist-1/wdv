@@ -476,19 +476,22 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/bulk$#i', $route, $m) && $meth
                 $stmt->execute([$masterArcherId, $archerId, $firstName, $lastName, $school, $level, $gender]);
             }
             
-            // Check if round_archer already exists
-            $existing = $pdo->prepare('SELECT id FROM round_archers WHERE round_id=? AND archer_id=? AND bale_number=? LIMIT 1');
-            $existing->execute([$roundId, $masterArcherId, $baleNumber]);
+            // Check if round_archer already exists (created by coach with NULL bale/target)
+            // KEY FIX: Don't check bale_number in WHERE - coach creates with NULL, we UPDATE with actual value
+            $existing = $pdo->prepare('SELECT id, bale_number, target_assignment FROM round_archers WHERE round_id=? AND archer_id=? LIMIT 1');
+            $existing->execute([$roundId, $masterArcherId]);
             $existingRow = $existing->fetch();
             
             if ($existingRow) {
-                // Update existing
-                $updateSql = 'UPDATE round_archers SET target_assignment=?, target_size=?, archer_name=? WHERE id=?';
+                // Update existing (this is the coach → archer handoff!)
+                // Coach created with NULL bale/target, archer fills in actual values
+                $updateSql = 'UPDATE round_archers SET target_assignment=?, target_size=?, archer_name=?, bale_number=? WHERE id=?';
                 $archerName = trim("$firstName $lastName");
                 $updateStmt = $pdo->prepare($updateSql);
-                $updateStmt->execute([$targetAssignment, $targetSize, $archerName, $existingRow['id']]);
+                $updateStmt->execute([$targetAssignment, $targetSize, $archerName, $baleNumber, $existingRow['id']]);
                 $createdIds[] = $existingRow['id'];
                 $updated++;
+                error_log("Updated round_archer {$existingRow['id']}: bale {$existingRow['bale_number']}→{$baleNumber}, target {$existingRow['target_assignment']}→{$targetAssignment}");
             } else {
                 // Create new
                 $roundArcherId = $genUuid();
