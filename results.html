@@ -167,6 +167,7 @@
     const eventId = urlParams.get('event');
 
     const DIVISION_NAMES = {
+      'OPEN': 'Open (Mixed)',
       'BVAR': 'Boys Varsity',
       'GVAR': 'Girls Varsity',
       'BJV': 'Boys JV',
@@ -205,10 +206,22 @@
       const container = document.getElementById('divisions-container');
       container.innerHTML = '';
 
-      // Define division order
-      const divisionOrder = ['BVAR', 'GVAR', 'BJV', 'GJV'];
+      // Define preferred order then filter to existing divisions
+      const preferred = ['BVAR', 'GVAR', 'BJV', 'GJV', 'OPEN'];
+      const existingKeys = Object.keys(divisions || {});
+      const orderedKeys = preferred.filter(k => existingKeys.includes(k)).concat(
+        existingKeys.filter(k => !preferred.includes(k))
+      );
 
-      divisionOrder.forEach(divCode => {
+      if (orderedKeys.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'no-scores';
+        empty.textContent = 'No divisions configured for this event yet.';
+        container.appendChild(empty);
+        return;
+      }
+
+      orderedKeys.forEach(divCode => {
         const division = divisions[divCode];
         const section = document.createElement('div');
         section.className = 'division-section';
@@ -237,9 +250,17 @@
       });
     }
 
+    function normTotal(a) {
+      // Support different shapes from API (scorecard wrapper vs flat)
+      if (a.runningTotal != null) return a.runningTotal;
+      if (a.scorecard && a.scorecard.runningTotal != null) return a.scorecard.runningTotal;
+      if (a.total != null) return a.total;
+      return 0;
+    }
+
     function createLeaderboardTable(archers) {
-      // Sort by running total (descending)
-      const sorted = [...archers].sort((a, b) => (b.runningTotal || 0) - (a.runningTotal || 0));
+      // Sort by total (descending)
+      const sorted = [...archers].sort((a, b) => normTotal(b) - normTotal(a));
 
       const table = document.createElement('table');
       table.className = 'leaderboard-table';
@@ -269,19 +290,24 @@
         const row = document.createElement('tr');
         
         const rankClass = rank <= 3 ? `rank-${rank}` : '';
-        const total = archer.runningTotal || 0;
-        const avg = archer.avgPerArrow ? archer.avgPerArrow.toFixed(1) : '0.0';
+        const total = normTotal(archer);
+        const arrowsShot = (archer.scorecard && archer.scorecard.ends) ? archer.scorecard.ends.length * 3 : undefined;
+        const avgVal = (arrowsShot && arrowsShot > 0) ? (total / arrowsShot) : (archer.avgPerArrow || 0);
+        const avg = (typeof avgVal === 'number') ? avgVal.toFixed(1) : '0.0';
+        const bale = archer.bale || archer.baleNumber || archer.bale_number || '-';
+        const target = archer.target || archer.targetAssignment || archer.target_assignment || '-';
+        const name = archer.archerName || archer.name || [archer.firstName, archer.lastName].filter(Boolean).join(' ');
 
         row.innerHTML = `
           <td class="rank-cell ${rankClass}">${rank}</td>
-          <td class="archer-name">${archer.archerName}</td>
+          <td class="archer-name">${name}</td>
           <td>${archer.school || '-'}</td>
-          <td>${archer.bale || '-'}</td>
-          <td>${archer.target || '-'}</td>
+          <td>${bale}</td>
+          <td>${target}</td>
           <td class="score-total">${total}</td>
           <td>${avg}</td>
-          <td>${archer.xs || 0}</td>
-          <td>${archer.tens || 0}</td>
+          <td>${archer.xs || (archer.scorecard && archer.scorecard.xs) || 0}</td>
+          <td>${archer.tens || (archer.scorecard && archer.scorecard.tens) || 0}</td>
         `;
 
         tbody.appendChild(row);
