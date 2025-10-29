@@ -382,12 +382,31 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             // Restore Live Updates state if enabled
-            if (window.LiveUpdates) {
+            if (window.LiveUpdates && window.LiveUpdates._state) {
                 window.LiveUpdates._state.roundId = session.roundId;
                 // Restore archer ID mapping
                 baleData.archers.forEach(archer => {
                     const uniqueId = `${archer.firstName}-${archer.lastName}`;
                     window.LiveUpdates._state.archerIds[uniqueId] = archer.roundArcherId;
+                });
+                
+                // CRITICAL: Manually persist Live Updates state to localStorage
+                // (LiveUpdates.persistState is private, so we replicate its logic)
+                try {
+                    const liveSessionKey = `live_updates_session:${session.roundId}`;
+                    const liveSessionData = {
+                        roundId: session.roundId,
+                        archerIds: window.LiveUpdates._state.archerIds
+                    };
+                    localStorage.setItem(liveSessionKey, JSON.stringify(liveSessionData));
+                    console.log('[Phase 0 Session] Persisted LiveUpdates to localStorage:', liveSessionKey, liveSessionData);
+                } catch (e) {
+                    console.warn('[Phase 0 Session] Failed to persist LiveUpdates state:', e);
+                }
+                
+                console.log('[Phase 0 Session] Restored LiveUpdates state:', {
+                    roundId: window.LiveUpdates._state.roundId,
+                    archerIds: window.LiveUpdates._state.archerIds
                 });
             }
             
