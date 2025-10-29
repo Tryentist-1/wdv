@@ -324,13 +324,43 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('[Phase 0 Session] Found saved session, attempting restore:', session);
             
-            // ASK USER if they want to resume (prevents unwanted restoration)
-            const resumeMsg = `Resume in-progress scoring?\n\nEvent: ${session.eventId?.substring(0, 8)}...\nBale: ${session.baleNumber}\nCurrent End: ${session.currentEnd || 1}\n\nClick OK to resume, or Cancel to start fresh.`;
+            // First, fetch what's actually on the server to show accurate info
+            const entryCodePreview = localStorage.getItem('event_entry_code') || 
+                                     (session.eventId ? (JSON.parse(localStorage.getItem(`event:${session.eventId}:meta`) || '{}').entryCode) : null);
+            
+            let archerCount = session.archerIds?.length || 0;
+            let hasScores = false;
+            
+            // Try to peek at server data (non-blocking)
+            if (entryCodePreview && session.roundId && session.baleNumber) {
+                try {
+                    const peekResponse = await fetch(`${API_BASE}/rounds/${session.roundId}/bales/${session.baleNumber}/archers`, {
+                        method: 'GET',
+                        headers: { 'X-Passcode': entryCodePreview }
+                    });
+                    if (peekResponse.ok) {
+                        const peekData = await peekResponse.json();
+                        archerCount = peekData.archers?.length || 0;
+                        hasScores = peekData.archers?.some(a => a.scorecard?.ends?.length > 0) || false;
+                    }
+                } catch (e) {
+                    console.warn('[Phase 0 Session] Could not peek at server data:', e);
+                }
+            }
+            
+            // ASK USER with detailed info
+            const resumeMsg = `Resume in-progress scoring?\n\nBale: ${session.baleNumber}\nArchers: ${archerCount}\nCurrent End: ${session.currentEnd || 1}\n${hasScores ? '⚠️ Has existing scores' : '✓ No scores yet'}\n\nOK = Resume\nCancel = Start fresh (clears session only, use Coach Reset to clear server data)`;
             const shouldResume = confirm(resumeMsg);
             
             if (!shouldResume) {
-                console.log('[Phase 0 Session] User declined to resume, clearing session');
+                console.log('[Phase 0 Session] User declined to resume, clearing LOCAL session only');
                 localStorage.removeItem('current_bale_session');
+                // Clear Live Updates session too
+                if (session.roundId) {
+                    try {
+                        localStorage.removeItem(`live_updates_session:${session.roundId}`);
+                    } catch (e) {}
+                }
                 return false;
             }
             
