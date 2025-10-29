@@ -51,10 +51,73 @@ function getScoreColor(score) {
     return 'score-empty';
 }
 
+/**
+ * Generates a UUID v4 (random).
+ * @returns {string} A UUID string in the format 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.
+ */
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+/**
+ * Gets a cookie value by name.
+ * @param {string} name The name of the cookie.
+ * @returns {string|null} The cookie value, or null if not found.
+ */
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
+
+/**
+ * Sets a cookie with a given name, value, and expiration days.
+ * @param {string} name The name of the cookie.
+ * @param {string} value The value of the cookie.
+ * @param {number} days The number of days until the cookie expires.
+ */
+function setCookie(name, value, days) {
+    let expires = "";
+    if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "") + expires + "; path=/";
+}
+
+/**
+ * Gets or creates the archer cookie (oas_archer_id).
+ * This is used to identify the archer across sessions.
+ * @returns {string} The archer ID (UUID).
+ */
+function getArcherCookie() {
+    let archerId = getCookie('oas_archer_id');
+    if (!archerId) {
+        archerId = generateUUID();
+        setCookie('oas_archer_id', archerId, 365); // 1 year expiry
+        console.log('[OAS Cookie] Created new archer ID:', archerId);
+    }
+    return archerId;
+}
+
 // Export for Node.js environment (for testing)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         parseScoreValue,
-        getScoreColor
+        getScoreColor,
+        generateUUID,
+        getCookie,
+        setCookie,
+        getArcherCookie
     };
 } 
