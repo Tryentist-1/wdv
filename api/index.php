@@ -405,6 +405,278 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
     exit;
 }
 
+// =====================================================
+// PHASE 0: Bulk create archers for a bale group
+// =====================================================
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/bulk$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $roundId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $baleNumber = isset($input['baleNumber']) ? (int)$input['baleNumber'] : null;
+    $archers = $input['archers'] ?? [];
+    
+    if ($baleNumber === null || $baleNumber < 1) {
+        json_response(['error' => 'baleNumber required (1-N)'], 400);
+        exit;
+    }
+    
+    if (!is_array($archers) || count($archers) === 0) {
+        json_response(['error' => 'archers array required (1-8 archers)'], 400);
+        exit;
+    }
+    
+    if (count($archers) > 8) {
+        json_response(['error' => 'Maximum 8 archers per bale group'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Verify round exists
+        $hasRound = $pdo->prepare('SELECT id FROM rounds WHERE id=? LIMIT 1');
+        $hasRound->execute([$roundId]);
+        if (!$hasRound->fetch()) {
+            json_response(['error' => 'Round not found'], 404);
+            exit;
+        }
+        
+        $createdIds = [];
+        $updated = 0;
+        $created = 0;
+        
+        foreach ($archers as $archer) {
+            $archerId = $archer['archerId'] ?? null;
+            $firstName = trim($archer['firstName'] ?? '');
+            $lastName = trim($archer['lastName'] ?? '');
+            $targetAssignment = $archer['targetAssignment'] ?? null;
+            $school = $archer['school'] ?? '';
+            $level = $archer['level'] ?? '';
+            $gender = $archer['gender'] ?? '';
+            $targetSize = isset($archer['targetSize']) ? (int)$archer['targetSize'] : null;
+            
+            if (!$archerId || ($firstName === '' && $lastName === '')) {
+                continue; // Skip invalid archers
+            }
+            
+            // Find or create archer in master table
+            $masterArcherId = null;
+            
+            // Try to find by archerId (cookie ID)
+            $stmt = $pdo->prepare('SELECT id FROM archers WHERE id = ? OR ext_id = ? LIMIT 1');
+            $stmt->execute([$archerId, $archerId]);
+            $archerRow = $stmt->fetch();
+            
+            if ($archerRow) {
+                $masterArcherId = $archerRow['id'];
+            } else {
+                // Create new master archer
+                $masterArcherId = $genUuid();
+                $stmt = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+                $stmt->execute([$masterArcherId, $archerId, $firstName, $lastName, $school, $level, $gender]);
+            }
+            
+            // Check if round_archer already exists
+            $existing = $pdo->prepare('SELECT id FROM round_archers WHERE round_id=? AND archer_id=? AND bale_number=? LIMIT 1');
+            $existing->execute([$roundId, $masterArcherId, $baleNumber]);
+            $existingRow = $existing->fetch();
+            
+            if ($existingRow) {
+                // Update existing
+                $updateSql = 'UPDATE round_archers SET target_assignment=?, target_size=?, archer_name=? WHERE id=?';
+                $archerName = trim("$firstName $lastName");
+                $updateStmt = $pdo->prepare($updateSql);
+                $updateStmt->execute([$targetAssignment, $targetSize, $archerName, $existingRow['id']]);
+                $createdIds[] = $existingRow['id'];
+                $updated++;
+            } else {
+                // Create new
+                $roundArcherId = $genUuid();
+                $archerName = trim("$firstName $lastName");
+                $stmt = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_id, archer_name, school, level, gender, target_assignment, target_size, bale_number, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW())');
+                $stmt->execute([$roundArcherId, $roundId, $masterArcherId, $archerName, $school, $level, $gender, $targetAssignment, $targetSize, $baleNumber]);
+                $createdIds[] = $roundArcherId;
+                $created++;
+            }
+        }
+        
+        json_response([
+            'roundId' => $roundId,
+            'baleNumber' => $baleNumber,
+            'roundArcherIds' => $createdIds,
+            'created' => $created,
+            'updated' => $updated,
+            'total' => count($createdIds)
+        ], 201);
+    } catch (Exception $e) {
+        error_log("Bulk archer creation failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// =====================================================
+// PHASE 0: Get all archers on a bale with their scorecards
+// =====================================================
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)/bales/([0-9]+)/archers$#i', $route, $m) && $method === 'GET') {
+    $roundId = $m[1];
+    $baleNumber = (int)$m[2];
+    
+    try {
+        $pdo = db();
+        
+        // Get round info
+        $round = $pdo->prepare('SELECT id, division, round_type FROM rounds WHERE id=? LIMIT 1');
+        $round->execute([$roundId]);
+        $roundData = $round->fetch();
+        
+        if (!$roundData) {
+            json_response(['error' => 'Round not found'], 404);
+            exit;
+        }
+        
+        // Get all archers on this bale
+        $archers = $pdo->prepare('
+            SELECT 
+                ra.id as roundArcherId,
+                ra.archer_id as archerId,
+                a.first_name as firstName,
+                a.last_name as lastName,
+                a.school,
+                a.level,
+                a.gender,
+                ra.target_assignment as targetAssignment,
+                ra.target_size as targetSize,
+                ra.bale_number as baleNumber
+            FROM round_archers ra
+            LEFT JOIN archers a ON a.id = ra.archer_id
+            WHERE ra.round_id = ? AND ra.bale_number = ?
+            ORDER BY ra.target_assignment
+        ');
+        $archers->execute([$roundId, $baleNumber]);
+        $archerList = $archers->fetchAll();
+        
+        // Get scorecards for each archer
+        $result = [];
+        foreach ($archerList as $archer) {
+            // Get all ends for this archer
+            $ends = $pdo->prepare('
+                SELECT 
+                    end_number as endNumber,
+                    a1, a2, a3,
+                    end_total as endTotal,
+                    running_total as runningTotal,
+                    tens, xs,
+                    server_ts as serverTs
+                FROM end_events
+                WHERE round_archer_id = ?
+                ORDER BY end_number
+            ');
+            $ends->execute([$archer['roundArcherId']]);
+            $endsList = $ends->fetchAll();
+            
+            // Calculate current end and totals
+            $currentEnd = 1;
+            $runningTotal = 0;
+            $totalTens = 0;
+            $totalXs = 0;
+            
+            foreach ($endsList as $end) {
+                $currentEnd = max($currentEnd, $end['endNumber'] + 1);
+                $runningTotal = max($runningTotal, $end['runningTotal']);
+                $totalTens += $end['tens'];
+                $totalXs += $end['xs'];
+            }
+            
+            $result[] = [
+                'roundArcherId' => $archer['roundArcherId'],
+                'archerId' => $archer['archerId'],
+                'firstName' => $archer['firstName'],
+                'lastName' => $archer['lastName'],
+                'school' => $archer['school'],
+                'level' => $archer['level'],
+                'gender' => $archer['gender'],
+                'targetAssignment' => $archer['targetAssignment'],
+                'targetSize' => $archer['targetSize'],
+                'scorecard' => [
+                    'ends' => $endsList,
+                    'currentEnd' => $currentEnd,
+                    'runningTotal' => $runningTotal,
+                    'tens' => $totalTens,
+                    'xs' => $totalXs
+                ]
+            ];
+        }
+        
+        json_response([
+            'roundId' => $roundId,
+            'division' => $roundData['division'],
+            'roundType' => $roundData['round_type'],
+            'baleNumber' => $baleNumber,
+            'archers' => $result
+        ]);
+    } catch (Exception $e) {
+        error_log("Bale archers retrieval failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// =====================================================
+// PHASE 0: Get current session for an archer (by cookie)
+// =====================================================
+if (preg_match('#^/v1/archers/([0-9a-f-]+)/current-session$#i', $route, $m) && $method === 'GET') {
+    $cookieArcherId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Find the most recent active round_archer for this archer
+        $session = $pdo->prepare('
+            SELECT 
+                ra.id as roundArcherId,
+                ra.round_id as roundId,
+                ra.bale_number as baleNumber,
+                ra.target_assignment as targetAssignment,
+                r.event_id as eventId,
+                r.division,
+                r.round_type as roundType,
+                (SELECT MAX(end_number) FROM end_events WHERE round_archer_id = ra.id) as lastEndNumber
+            FROM round_archers ra
+            JOIN rounds r ON r.id = ra.round_id
+            JOIN archers a ON a.id = ra.archer_id
+            WHERE a.id = ? OR a.ext_id = ?
+            ORDER BY ra.created_at DESC
+            LIMIT 1
+        ');
+        $session->execute([$cookieArcherId, $cookieArcherId]);
+        $sessionData = $session->fetch();
+        
+        if (!$sessionData) {
+            json_response(['error' => 'No active session found'], 404);
+            exit;
+        }
+        
+        $currentEnd = ($sessionData['lastEndNumber'] ?? 0) + 1;
+        
+        json_response([
+            'roundArcherId' => $sessionData['roundArcherId'],
+            'roundId' => $sessionData['roundId'],
+            'eventId' => $sessionData['eventId'],
+            'baleNumber' => $sessionData['baleNumber'],
+            'targetAssignment' => $sessionData['targetAssignment'],
+            'division' => $sessionData['division'],
+            'roundType' => $sessionData['roundType'],
+            'currentEnd' => $currentEnd,
+            'lastEndNumber' => $sessionData['lastEndNumber']
+        ]);
+    } catch (Exception $e) {
+        error_log("Archer session retrieval failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // Update a round archer (bale/target reassignment)
 if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)$#i', $route, $m) && $method === 'PATCH') {
     require_api_key();
