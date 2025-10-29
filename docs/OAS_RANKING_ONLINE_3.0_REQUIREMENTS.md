@@ -350,6 +350,518 @@ OAS Ranking Online 3.0 represents a fundamental shift to an **online-first, data
 
 ## Technical Implementation Plan
 
+### ⚠️ UI Preservation Notice
+
+**Critical:** The current keypad and scorecard UI has been extensively optimized for low-end iPhones and Android devices, especially Safari on iPhone. Phase 0 and early phases **MUST NOT** modify:
+- Keypad layout, sizing, or touch targets
+- Scorecard table layout
+- Score input focus/blur behavior
+- Color-coding system
+- Mobile viewport handling
+
+All Phase 0 work is **backend/API only** - no UI changes.
+
+---
+
+### Phase 0: Backend Foundation (v3.0 Foundation) 🏗️
+
+**Goal:** Clean up the data model and API without touching the UI. Make the current app work better with a proper backend structure.
+
+**Duration:** 2-3 weeks  
+**Status:** Planning
+
+#### 0.1: Event & Round Structure
+
+**Problem:** Events exist, but division rounds (Boys JV, Boys V, Girls JV, Girls V) are not formally defined.
+
+**Current State (v2.0):**
+```
+events table:
+- id, name, date, status, event_type, entry_code
+
+rounds table:
+- id, round_type, date, bale_number, division, gender, level, event_id
+
+Issue: Rounds are created ad-hoc per bale. No formal "division rounds" for the event.
+```
+
+**Desired State (v3.0):**
+```
+Clear hierarchy:
+Event "Tryout One" (2025-10-28)
+├── Division Round: Boys Varsity (BVAR)
+│   ├── Bale 1 Group (4 archers on targets A,B,C,D)
+│   ├── Bale 2 Group (4 archers on targets A,B,C,D)
+│   └── Bale 3 Group (4 archers on targets A,B,C,D)
+├── Division Round: Girls Varsity (GVAR)
+│   ├── Bale 4 Group (4 archers)
+│   └── Bale 5 Group (4 archers)
+├── Division Round: Boys JV (BJV)
+│   ├── Bale 6 Group (4 archers)
+│   ├── Bale 7 Group (4 archers)
+│   └── Bale 8 Group (4 archers)
+└── Division Round: Girls JV (GJV)
+    ├── Bale 9 Group (4 archers)
+    └── Bale 10 Group (4 archers)
+```
+
+**Implementation:**
+
+**Step 1: Define "Division Rounds"**
+```sql
+-- Add to rounds table (already has event_id)
+ALTER TABLE rounds 
+  ADD COLUMN is_division_round BOOLEAN DEFAULT FALSE,
+  ADD COLUMN archer_count INT DEFAULT 0,
+  ADD COLUMN bales_allocated INT DEFAULT 0;
+
+-- A "Division Round" is the container for all archers in that division
+-- Example: "Boys JV Ranking Round" for event "Tryout One"
+```
+
+**Step 2: Link Bale Groups to Division Round**
+```sql
+-- rounds table now has two types:
+-- Type 1: Division Round (is_division_round=TRUE, bale_number=NULL)
+--   - Contains all archers for that division
+--   - e.g., "Boys JV Ranking" with 12 archers
+--
+-- Type 2: Bale Round (is_division_round=FALSE, bale_number=1-N)
+--   - Contains 4 archers on a specific bale
+--   - Links to parent division round via parent_round_id
+
+ALTER TABLE rounds ADD COLUMN parent_round_id CHAR(36) NULL;
+ALTER TABLE rounds ADD FOREIGN KEY (parent_round_id) REFERENCES rounds(id);
+```
+
+**Step 3: API Endpoints (Backend Only)**
+
+```
+POST /v1/events/{eventId}/rounds/divisions
+Body: {
+  "divisions": ["BVAR", "GVAR", "BJV", "GJV"],
+  "roundType": "R300",
+  "autoAssign": true  // Auto-create bale groups
+}
+Response: {
+  "divisionRounds": [
+    { "division": "BJV", "roundId": "uuid-1", "archerCount": 12, "balesCreated": 3 },
+    { "division": "GJV", "roundId": "uuid-2", "archerCount": 8, "balesCreated": 2 },
+    ...
+  ]
+}
+
+GET /v1/events/{eventId}/rounds/divisions
+Response: {
+  "divisions": [
+    {
+      "division": "BJV",
+      "roundId": "uuid-1",
+      "archerCount": 12,
+      "baleGroups": [
+        { "baleNumber": 1, "archers": 4, "status": "In Progress - End 5" },
+        { "baleNumber": 2, "archers": 4, "status": "Complete" },
+        { "baleNumber": 3, "archers": 4, "status": "Not Started" }
+      ]
+    },
+    ...
+  ]
+}
+```
+
+**Success Criteria:**
+- ✅ Coach can create division rounds for an event
+- ✅ Division rounds visible in coach console
+- ✅ Bale groups automatically allocated per division
+- ✅ Current UI continues to work (backwards compatible)
+
+---
+
+#### 0.2: Bale Group & Scorecard Retrieval
+
+**Problem:** Hard to create and retrieve "Bale Group" and "Archer Score Cards" from `round_archers` table.
+
+**Current Issues:**
+- `round_archers` has duplicates (same archer, multiple entries)
+- No formal "bale group" concept - just individual round_archer records
+- Hard to query "all archers on Bale 3"
+- Session persistence issues (archer loses connection to their scorecards)
+
+**Implementation:**
+
+**Step 1: BaleSession Table (New)**
+```sql
+CREATE TABLE bale_sessions (
+  id CHAR(36) PRIMARY KEY,
+  event_id CHAR(36) NOT NULL,
+  division_round_id CHAR(36) NOT NULL,  -- Links to division round
+  bale_number INT NOT NULL,
+  scorer_device_id VARCHAR(255),  -- Device fingerprint
+  scorer_name VARCHAR(255),       -- Who's entering scores (optional)
+  status ENUM('active', 'paused', 'complete') DEFAULT 'active',
+  current_end INT DEFAULT 1,
+  last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+  FOREIGN KEY (event_id) REFERENCES events(id),
+  FOREIGN KEY (division_round_id) REFERENCES rounds(id),
+  
+  UNIQUE KEY unique_bale_session (event_id, division_round_id, bale_number),
+  INDEX idx_device (scorer_device_id),
+  INDEX idx_last_activity (last_activity)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- A BaleSession represents one phone/device scoring for one bale group
+-- Persists across page reloads
+-- Links to 4 round_archers entries (targets A, B, C, D)
+```
+
+**Step 2: BaleSession Archers Link Table (New)**
+```sql
+CREATE TABLE bale_session_archers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  bale_session_id CHAR(36) NOT NULL,
+  round_archer_id CHAR(36) NOT NULL,
+  target_assignment CHAR(1) NOT NULL,  -- A, B, C, or D
+  position INT NOT NULL,  -- 1, 2, 3, or 4 (display order)
+  
+  FOREIGN KEY (bale_session_id) REFERENCES bale_sessions(id) ON DELETE CASCADE,
+  FOREIGN KEY (round_archer_id) REFERENCES round_archers(id),
+  
+  UNIQUE KEY unique_session_archer (bale_session_id, round_archer_id),
+  UNIQUE KEY unique_session_target (bale_session_id, target_assignment)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Links a bale session to its 4 archers
+-- Ensures no duplicates, clear target assignments
+```
+
+**Step 3: API Endpoints for Bale Groups**
+
+```
+POST /v1/events/{eventId}/bale-sessions
+Body: {
+  "divisionRoundId": "uuid",
+  "baleNumber": 3,
+  "archers": [
+    { "archerId": "uuid-1", "target": "A" },
+    { "archerId": "uuid-2", "target": "B" },
+    { "archerId": "uuid-3", "target": "C" },
+    { "archerId": "uuid-4", "target": "D" }
+  ],
+  "deviceId": "fingerprint-xyz"  // Generated by client
+}
+Response: {
+  "baleSessionId": "uuid",
+  "baleNumber": 3,
+  "currentEnd": 1,
+  "archers": [
+    {
+      "target": "A",
+      "archerId": "uuid-1",
+      "roundArcherId": "uuid-ra-1",
+      "firstName": "Leo",
+      "lastName": "Hernandez",
+      "scorecard": {
+        "ends": [...],  // All end_events for this archer
+        "runningTotal": 0,
+        "currentEnd": 1
+      }
+    },
+    // ... B, C, D
+  ]
+}
+
+GET /v1/bale-sessions/{sessionId}
+Response: {
+  "baleSessionId": "uuid",
+  "eventId": "uuid",
+  "baleNumber": 3,
+  "currentEnd": 5,
+  "status": "active",
+  "lastActivity": "2025-10-28T12:34:56Z",
+  "archers": [
+    // Same as POST response, but with all current scores
+  ]
+}
+
+PATCH /v1/bale-sessions/{sessionId}
+Body: {
+  "currentEnd": 6,
+  "status": "paused"
+}
+Response: { "success": true }
+
+POST /v1/bale-sessions/{sessionId}/restore
+Body: {
+  "deviceId": "fingerprint-xyz"
+}
+Response: {
+  // Full session data (same as GET)
+  // OR error if session belongs to different device
+}
+```
+
+**Step 4: Client-Side Changes (Minimal)**
+
+```javascript
+// In ranking_round_300.js - ONLY these changes:
+
+// After archer selection, create/join bale session:
+async function startScoring() {
+  const deviceId = getDeviceFingerprint(); // Use existing or create
+  
+  // Try to restore existing session first
+  const sessionId = localStorage.getItem('bale_session_id');
+  if (sessionId) {
+    try {
+      const restored = await fetch(`/v1/bale-sessions/${sessionId}/restore`, {
+        method: 'POST',
+        body: JSON.stringify({ deviceId })
+      }).then(r => r.json());
+      
+      if (restored.success) {
+        // Load archers, currentEnd, scores from restored session
+        loadSessionData(restored);
+        showScoringView();
+        return;
+      }
+    } catch (e) {
+      // Session expired or invalid, create new one
+    }
+  }
+  
+  // Create new session
+  const session = await fetch(`/v1/events/${eventId}/bale-sessions`, {
+    method: 'POST',
+    body: JSON.stringify({
+      divisionRoundId: state.divisionRoundId,
+      baleNumber: state.baleNumber,
+      archers: state.archers.map(a => ({ archerId: a.id, target: a.targetAssignment })),
+      deviceId
+    })
+  }).then(r => r.json());
+  
+  localStorage.setItem('bale_session_id', session.baleSessionId);
+  loadSessionData(session);
+  showScoringView();
+}
+
+// On page load, attempt restore:
+async function init() {
+  // ... existing init code ...
+  
+  const sessionId = localStorage.getItem('bale_session_id');
+  if (sessionId) {
+    // Try to restore
+    const deviceId = getDeviceFingerprint();
+    try {
+      const restored = await fetch(`/v1/bale-sessions/${sessionId}/restore`, {
+        method: 'POST',
+        body: JSON.stringify({ deviceId })
+      }).then(r => r.json());
+      
+      if (restored.success) {
+        // Show: "Resuming Bale 3, End 5..."
+        loadSessionData(restored);
+        state.currentView = 'scoring';
+        renderView();
+        return; // Skip normal setup
+      }
+    } catch (e) {
+      // Continue with normal setup
+    }
+  }
+  
+  // ... existing setup flow ...
+}
+```
+
+**Success Criteria:**
+- ✅ Bale sessions persist across page reloads
+- ✅ Clear "Bale Group" concept in database
+- ✅ Easy to query all archers on a bale
+- ✅ No duplicate round_archers
+- ✅ Session automatically restores with all scores
+- ✅ **NO changes to keypad or scorecard UI**
+
+---
+
+#### 0.3: Clean Data Hierarchy
+
+**Problem:** Unclear relationship between Events → Rounds → BaleGroups → Archers → Ends
+
+**Implementation:**
+
+**Database Schema Documentation:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         EVENTS                              │
+│  (Tryout One, League Match, etc.)                           │
+└────────────────┬────────────────────────────────────────────┘
+                 │
+                 │ Has many division rounds
+                 ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    DIVISION ROUNDS                          │
+│  (Boys JV Ranking, Girls Varsity Ranking, etc.)             │
+│  - is_division_round = TRUE                                 │
+│  - bale_number = NULL                                       │
+└────────────────┬────────────────────────────────────────────┘
+                 │
+                 │ Contains many bale groups
+                 ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      BALE SESSIONS                          │
+│  (Device scoring for Bale 3, etc.)                          │
+│  - Links to division round                                  │
+│  - Has bale_number                                          │
+└────────────────┬────────────────────────────────────────────┘
+                 │
+                 │ Contains 4 archers
+                 ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     ROUND_ARCHERS                           │
+│  (Individual archer scorecards)                             │
+│  - Linked via bale_session_archers                          │
+│  - Unique per archer per round                              │
+└────────────────┬────────────────────────────────────────────┘
+                 │
+                 │ Has many end scores
+                 ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      END_EVENTS                             │
+│  (End 1: X,7,X = 27, etc.)                                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**SQL Migration Script:**
+```sql
+-- File: api/sql/migration_v3.0_phase0.sql
+
+-- Step 1: Add new columns to rounds table
+ALTER TABLE rounds 
+  ADD COLUMN IF NOT EXISTS is_division_round BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS parent_round_id CHAR(36) NULL,
+  ADD COLUMN IF NOT EXISTS archer_count INT DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS bales_allocated INT DEFAULT 0;
+
+ALTER TABLE rounds 
+  ADD FOREIGN KEY IF NOT EXISTS (parent_round_id) REFERENCES rounds(id);
+
+-- Step 2: Create bale_sessions table
+CREATE TABLE IF NOT EXISTS bale_sessions (
+  id CHAR(36) PRIMARY KEY,
+  event_id CHAR(36) NOT NULL,
+  division_round_id CHAR(36) NOT NULL,
+  bale_number INT NOT NULL,
+  scorer_device_id VARCHAR(255),
+  scorer_name VARCHAR(255),
+  status ENUM('active', 'paused', 'complete') DEFAULT 'active',
+  current_end INT DEFAULT 1,
+  last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  
+  FOREIGN KEY (event_id) REFERENCES events(id),
+  FOREIGN KEY (division_round_id) REFERENCES rounds(id),
+  
+  UNIQUE KEY unique_bale_session (event_id, division_round_id, bale_number),
+  INDEX idx_device (scorer_device_id),
+  INDEX idx_last_activity (last_activity)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Step 3: Create bale_session_archers link table
+CREATE TABLE IF NOT EXISTS bale_session_archers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  bale_session_id CHAR(36) NOT NULL,
+  round_archer_id CHAR(36) NOT NULL,
+  target_assignment CHAR(1) NOT NULL,
+  position INT NOT NULL,
+  
+  FOREIGN KEY (bale_session_id) REFERENCES bale_sessions(id) ON DELETE CASCADE,
+  FOREIGN KEY (round_archer_id) REFERENCES round_archers(id),
+  
+  UNIQUE KEY unique_session_archer (bale_session_id, round_archer_id),
+  UNIQUE KEY unique_session_target (bale_session_id, target_assignment)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Step 4: Clean up existing data (remove duplicates)
+-- Keep the round_archer with most recent end_events
+DELETE ra1 FROM round_archers ra1
+LEFT JOIN (
+  SELECT ra.archer_id, ra.round_id, ra.id, COUNT(ee.id) as score_count
+  FROM round_archers ra
+  LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
+  GROUP BY ra.id
+) ra2 ON ra1.archer_id = ra2.archer_id 
+     AND ra1.round_id = ra2.round_id
+WHERE ra1.id != ra2.id 
+  AND (ra1.bale_number IS NULL OR ra1.target_assignment IS NULL)
+  AND ra2.score_count > 0;
+```
+
+**Success Criteria:**
+- ✅ Clear database schema with no ambiguity
+- ✅ Foreign keys enforce referential integrity
+- ✅ No duplicate round_archers entries
+- ✅ Easy to trace: Event → Division → Bale → Archers → Ends
+
+---
+
+#### 0.4: API Endpoint Summary (Phase 0)
+
+**New Endpoints (Backend Only):**
+
+```
+Division Rounds:
+  POST   /v1/events/{eventId}/rounds/divisions
+  GET    /v1/events/{eventId}/rounds/divisions
+  GET    /v1/rounds/{divisionRoundId}/bales
+
+Bale Sessions:
+  POST   /v1/events/{eventId}/bale-sessions
+  GET    /v1/bale-sessions/{sessionId}
+  PATCH  /v1/bale-sessions/{sessionId}
+  POST   /v1/bale-sessions/{sessionId}/restore
+  DELETE /v1/bale-sessions/{sessionId}
+
+Scorecard Retrieval:
+  GET    /v1/bale-sessions/{sessionId}/scorecards
+  GET    /v1/round-archers/{roundArcherId}/scorecard
+```
+
+**Modified Endpoints:**
+```
+POST /v1/rounds/{roundId}/archers
+  - Now links to bale_session if provided
+  - Creates/updates round_archer with no duplicates
+  
+POST /v1/rounds/{roundId}/archers/{roundArcherId}/ends
+  - No changes, continues to work as-is
+```
+
+---
+
+#### 0.5: Testing Strategy (Phase 0)
+
+**Unit Tests:**
+- [ ] Division round creation
+- [ ] Bale session creation/restoration
+- [ ] Round_archer deduplication
+- [ ] Scorecard retrieval with all ends
+
+**Integration Tests:**
+- [ ] Full flow: Create event → Create divisions → Create bale session → Add archers → Enter scores
+- [ ] Session restore after "page reload" (clear session, restore by ID)
+- [ ] Multiple devices scoring different bales (no conflicts)
+
+**Backwards Compatibility:**
+- [ ] v2.0 client can still create rounds (fallback to old behavior)
+- [ ] Existing round_archers data migrates cleanly
+- [ ] Results page shows v3.0 data correctly
+
+---
+
 ### Phase 1: Foundation (v3.0 Alpha)
 - [ ] Master Roster UI (coach console)
   - List all archers with search/filter
