@@ -1849,10 +1849,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isEnabled && typeof LiveUpdates !== 'undefined') {
                     const endScores = archer.scores[state.currentEnd - 1];
                     const [a1,a2,a3] = [endScores[0]||'', endScores[1]||'', endScores[2]||''];
-                    let endTotal = 0, tens = 0, xs = 0, running = 0;
-                    const add = (s) => { const u = String(s).toUpperCase(); if (!u) return; if (u==='X') { endTotal+=10; running+=10; xs++; tens++; } else if (u==='10') { endTotal+=10; running+=10; tens++; } else if (/^[0-9]$|^10$/.test(u)) { const n=parseInt(u,10); endTotal+=n; running+=n; } };
-                    [a1,a2,a3].forEach(add);
-                    archer.scores.forEach(end => { if (Array.isArray(end)) end.forEach(add); });
+                    // Compute per-end totals (only this end)
+                    let endTotal = 0, tens = 0, xs = 0;
+                    [a1, a2, a3].forEach(s => {
+                        const u = String(s).toUpperCase();
+                        if (!u) return;
+                        if (u === 'X') { endTotal += 10; xs++; tens++; }
+                        else if (u === '10') { endTotal += 10; tens++; }
+                        else if (u === 'M') { /* zero */ }
+                        else if (/^[0-9]$|^10$/.test(u)) { endTotal += parseInt(u, 10); }
+                    });
+                    // Compute running total (sum of all arrows up to current end)
+                    let running = 0;
+                    for (let i = 0; i < state.currentEnd; i++) {
+                        const scores = archer.scores[i];
+                        if (!Array.isArray(scores)) continue;
+                        scores.forEach(s => {
+                            const u = String(s).toUpperCase();
+                            if (!u) return;
+                            if (u === 'X' || u === '10') { running += 10; }
+                            else if (u === 'M') { /* zero */ }
+                            else if (/^[0-9]$|^10$/.test(u)) { running += parseInt(u, 10); }
+                        });
+                    }
                     
                     // Debug logging
                     console.log('Live update attempt:', { 
@@ -1892,7 +1911,7 @@ document.addEventListener('DOMContentLoaded', () => {
                           })
                           .then(() => {
                             console.log('Archer ensured, posting end...');
-                                return LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs });
+                            return LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs });
                             })
                           .then(() => {
                             console.log('End posted successfully');
@@ -1964,32 +1983,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const [a1, a2, a3] = [endScores[0] || '', endScores[1] || '', endScores[2] || ''];
-            let endTotal = 0, tens = 0, xs = 0, running = 0;
-            
-            // Calculate scores
-            const add = (s) => { 
-                const u = String(s).toUpperCase(); 
-                if (!u) return; 
-                if (u === 'X') { endTotal += 10; running += 10; xs++; tens++; } 
-                else if (u === '10') { endTotal += 10; running += 10; tens++; } 
-                else if (u === 'M') { running += 0; } 
-                else { const n = parseInt(u); if (!isNaN(n)) { endTotal += n; running += n; } }
-            };
-            
-            [a1, a2, a3].forEach(add);
-            
-            // Calculate running total
+            // Per-end numbers
+            let endTotal = 0, tens = 0, xs = 0;
+            [a1, a2, a3].forEach(s => {
+                const u = String(s).toUpperCase();
+                if (!u) return;
+                if (u === 'X') { endTotal += 10; xs++; tens++; }
+                else if (u === '10') { endTotal += 10; tens++; }
+                else if (u === 'M') { /* zero */ }
+                else { const n = parseInt(u, 10); if (!isNaN(n)) endTotal += n; }
+            });
+            // Running total across all ends up to currentEnd
+            let running = 0;
             for (let i = 0; i < currentEnd; i++) {
                 const scores = archer.scores[i];
-                if (scores) {
-                    scores.forEach(s => {
-                        const u = String(s).toUpperCase();
-                        if (u === 'X') running += 10;
-                        else if (u === '10') running += 10;
-                        else if (u === 'M') running += 0;
-                        else { const n = parseInt(u); if (!isNaN(n)) running += n; }
-                    });
-                }
+                if (!Array.isArray(scores)) continue;
+                scores.forEach(s => {
+                    const u = String(s).toUpperCase();
+                    if (!u) return;
+                    if (u === 'X' || u === '10') running += 10;
+                    else if (u === 'M') { /* zero */ }
+                    else { const n = parseInt(u, 10); if (!isNaN(n)) running += n; }
+                });
             }
             
             // Set sync status to pending
@@ -2576,20 +2591,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     totalAttempts++;
                     const [a1, a2, a3] = [endScores[0] || '', endScores[1] || '', endScores[2] || ''];
-                    let endTotal = 0, tens = 0, xs = 0, running = 0;
-                    const add = (s) => { 
-                        const u = String(s).toUpperCase(); 
-                        if (!u) return; 
-                        if (u === 'X') { endTotal += 10; running += 10; xs++; tens++; } 
-                        else if (u === '10') { endTotal += 10; running += 10; tens++; } 
-                        else if (/^[0-9]$|^10$/.test(u)) { const n = parseInt(u, 10); endTotal += n; running += n; }
-                    };
-                    [a1, a2, a3].forEach(add);
-                    
-                    // Calculate running total up to this end
+                    // Per-end values only
+                    let endTotal = 0, tens = 0, xs = 0;
+                    [a1, a2, a3].forEach(s => {
+                        const u = String(s).toUpperCase();
+                        if (!u) return;
+                        if (u === 'X') { endTotal += 10; xs++; tens++; }
+                        else if (u === '10') { endTotal += 10; tens++; }
+                        else if (u === 'M') { /* zero */ }
+                        else if (/^[0-9]$|^10$/.test(u)) { endTotal += parseInt(u, 10); }
+                    });
+                    // Running total up to this end (sum all ends including current exactly once)
+                    let running = 0;
                     for (let i = 0; i < endNum; i++) {
                         if (archer.scores[i] && Array.isArray(archer.scores[i])) {
-                            archer.scores[i].forEach(add);
+                            archer.scores[i].forEach(s => {
+                                const u = String(s).toUpperCase();
+                                if (!u) return;
+                                if (u === 'X' || u === '10') running += 10;
+                                else if (u === 'M') { /* zero */ }
+                                else if (/^[0-9]$|^10$/.test(u)) { running += parseInt(u, 10); }
+                            });
                         }
                     }
                     
