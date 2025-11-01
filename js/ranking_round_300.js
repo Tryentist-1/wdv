@@ -31,7 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
         assignmentMode: 'manual', // 'manual' or 'pre-assigned'
         setupMode: 'manual', // 'manual' or 'pre-assigned' - determines which setup section to show
         syncStatus: {}, // Track sync status per archer per end: { archerId: { endNumber: 'synced'|'pending'|'failed' } }
-        sortMode: 'bale' // 'bale' or 'name'
+        sortMode: 'bale', // 'bale' or 'name'
+        availableDivisions: ['OPEN']
     };
 
     const sessionKey = `rankingRound300_${new Date().toISOString().split('T')[0]}`;
@@ -58,9 +59,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const manualSetupControls = {
         section: document.getElementById('manual-setup-section'),
         baleInput: document.getElementById('bale-number-input-manual'),
+        baleGrid: document.getElementById('manual-bale-grid'),
         searchInput: document.getElementById('archer-search-manual'),
         selectedCountChip: document.getElementById('selected-count-chip'),
-        selectedArchersDisplay: document.getElementById('selected-archers-display'),
+        liveToggleBtn: document.getElementById('manual-live-toggle-btn'),
+        liveStatusBadge: document.getElementById('manual-live-status'),
         startScoringBtn: document.getElementById('manual-start-scoring-btn'),
     };
 
@@ -97,6 +100,148 @@ document.addEventListener('DOMContentLoaded', () => {
         currentlyFocusedInput: null,
     };
     let uiWired = false; // ensure click/input handlers survive reload/resume
+
+    const TARGET_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+    function inferTargetSize(level = '') {
+        const normalized = String(level || '').trim().toUpperCase();
+        return (normalized === 'VAR' || normalized === 'V' || normalized === 'VARSITY') ? 122 : 80;
+    }
+
+    function createEmptyScoreSheet(totalEnds) {
+        return Array.from({ length: totalEnds }, () => ['', '', '']);
+    }
+
+    function ensureScoreSheet(scores, totalEnds) {
+        const sheet = Array.isArray(scores) ? scores.slice(0, totalEnds) : [];
+        const normalized = [];
+        for (let i = 0; i < totalEnds; i++) {
+            const end = Array.isArray(sheet[i]) ? sheet[i] : [];
+            normalized.push([
+                end[0] !== undefined ? end[0] : '',
+                end[1] !== undefined ? end[1] : '',
+                end[2] !== undefined ? end[2] : ''
+            ]);
+        }
+        return normalized;
+    }
+
+    function safeString(value) {
+        if (value === null || value === undefined) return '';
+        return String(value).trim();
+    }
+
+    function getExtIdFromArcher(archer = {}) {
+        if (!archer) return '';
+        if (archer.extId) return String(archer.extId).trim();
+        if (archer.id && /^[0-9a-f-]{32,}$/i.test(String(archer.id))) return String(archer.id).trim();
+        const first = safeString(archer.first || archer.firstName).toLowerCase();
+        const last = safeString(archer.last || archer.lastName).toLowerCase();
+        const school = safeString(archer.school).toLowerCase();
+        return [first, last, school].filter(Boolean).join('-');
+    }
+
+    function buildStateArcherFromRoster(rosterArcher = {}, overrides = {}) {
+        const firstName = safeString(rosterArcher.firstName || rosterArcher.first);
+        const lastName = safeString(rosterArcher.lastName || rosterArcher.last);
+        const nickname = safeString(rosterArcher.nickname || rosterArcher.nick);
+        const school = safeString(rosterArcher.school);
+        const grade = safeString(rosterArcher.grade);
+        const status = safeString(rosterArcher.status || 'active').toLowerCase() || 'active';
+        const normalizedLevel = normalizeLevel(overrides.level || rosterArcher.level);
+        const normalizedGender = normalizeGender(overrides.gender || rosterArcher.gender);
+        const divisionCode = overrides.division || rosterArcher.division || deriveDivisionCode(normalizedGender, normalizedLevel);
+        const baleNumber = Number(overrides.baleNumber ?? rosterArcher.baleNumber ?? rosterArcher.bale ?? state.baleNumber) || 1;
+        const targetAssignment = safeString(overrides.targetAssignment || rosterArcher.targetAssignment || rosterArcher.target);
+        const extId = safeString(overrides.extId || getExtIdFromArcher(rosterArcher));
+        const fallbackId = extId || `${firstName.toLowerCase()}-${lastName.toLowerCase()}-${school.toLowerCase()}` || `archer-${Date.now()}`;
+
+        return {
+            id: fallbackId,
+            extId,
+            firstName,
+            lastName,
+            nickname,
+            school,
+            grade,
+            gender: normalizedGender,
+            level: normalizedLevel,
+            division: divisionCode,
+            status,
+            baleNumber,
+            targetAssignment: targetAssignment || 'A',
+            targetSize: inferTargetSize(normalizedLevel),
+            scores: ensureScoreSheet(overrides.scores || rosterArcher.scores, state.totalEnds),
+            // preserve optional fields if present
+            photoUrl: rosterArcher.photoUrl || rosterArcher.photo || '',
+            notesCurrent: rosterArcher.notesCurrent || '',
+            notesGear: rosterArcher.notesGear || ''
+        };
+    }
+
+    function getRosterState() {
+        if (typeof ArcherModule === 'undefined') {
+            return { list: [], selfExtId: '', selfArcher: null, friendSet: new Set() };
+        }
+        const list = ArcherModule.loadList() || [];
+        let selfExtId = '';
+        let selfArcher = null;
+        if (typeof ArcherModule.getSelfExtId === 'function') {
+            selfExtId = ArcherModule.getSelfExtId() || '';
+        }
+        if (selfExtId) {
+            selfArcher = list.find(a => getExtIdFromArcher(a) === selfExtId) || null;
+            if (!selfArcher) {
+                selfExtId = '';
+            }
+        }
+        const friendSet = new Set((selfArcher && Array.isArray(selfArcher.faves)) ? selfArcher.faves.filter(Boolean) : []);
+        return { list, selfExtId, selfArcher, friendSet };
+    }
+
+    function normalizeLevel(level = '') {
+        const value = String(level || '').trim().toUpperCase();
+        if (value.startsWith('JV') || value === 'J' || value.includes('JUNIOR')) return 'JV';
+        if (value.startsWith('BEG') || value === 'B') return 'BEG';
+        return 'VAR';
+    }
+
+    function normalizeGender(gender = '') {
+        const value = String(gender || '').trim().toUpperCase();
+        if (value === 'F' || value === 'FEMALE' || value === 'G') return 'F';
+        return 'M';
+    }
+
+    function deriveDivisionCode(gender, level) {
+        const divisions = Array.isArray(state.availableDivisions) && state.availableDivisions.length ? state.availableDivisions : ['OPEN'];
+        const normalizedLevel = normalizeLevel(level);
+        const normalizedGender = normalizeGender(gender);
+
+        if (divisions.includes('OPEN') && divisions.length === 1) {
+            return 'OPEN';
+        }
+
+        const candidate = `${normalizedGender === 'F' ? 'G' : 'B'}${normalizedLevel}`;
+        if (divisions.includes(candidate)) return candidate;
+
+        if (divisions.includes('OPEN')) return 'OPEN';
+        return divisions[0];
+    }
+
+    function deriveGenderFromDivision(code = '') {
+        const value = String(code || '').trim().toUpperCase();
+        if (value.startsWith('G')) return 'F';
+        if (value.startsWith('B')) return 'M';
+        return null;
+    }
+
+    function deriveLevelFromDivision(code = '') {
+        const value = String(code || '').trim().toUpperCase();
+        if (value.endsWith('JV')) return 'JV';
+        if (value.endsWith('VAR')) return 'VAR';
+        if (value.endsWith('BEG')) return 'BEG';
+        return null;
+    }
     
     // --- VIEW MANAGEMENT ---
     function renderView() {
@@ -114,19 +259,27 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSetupForm();
         } else if (state.currentView === 'scoring') {
             renderScoringView();
+        } else {
+            if (keypad.element) {
+                keypad.element.style.display = 'none';
+            }
+            document.body.classList.remove('keypad-visible');
         }
     }
 
     function updateEventHeader() {
         const eventNameEl = document.getElementById('event-name');
+        const currentEventNameEl = document.getElementById('current-event-name');
         const baleDisplayEl = document.getElementById('current-bale-display');
-        
+
+        const eventLabel = state.eventName || (state.activeEventId ? 'Loading...' : 'No Event');
         if (eventNameEl) {
-            // Show "Loading..." if we're loading an event but name not set yet
-            const eventName = state.eventName || (state.activeEventId ? 'Loading...' : 'No Event');
-            eventNameEl.textContent = eventName;
+            eventNameEl.textContent = eventLabel;
         }
-        
+        if (currentEventNameEl) {
+            currentEventNameEl.textContent = eventLabel;
+        }
+
         if (baleDisplayEl) {
             baleDisplayEl.textContent = state.baleNumber;
         }
@@ -167,6 +320,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // End navigation
         if (scoringControls.prevEndBtn) scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
         if (scoringControls.nextEndBtn) scoringControls.nextEndBtn.onclick = () => changeEnd(1);
+
+        // Primary navigation
+        const setupBaleBtn = document.getElementById('setup-bale-btn');
+        if (setupBaleBtn) {
+            setupBaleBtn.onclick = () => {
+                state.currentView = 'setup';
+                renderView();
+            };
+        }
 
         // Reset modal
         if (resetModal.cancelBtn) resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
@@ -255,12 +417,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     assignmentMode: state.assignmentMode,
                     archersCount: state.archers ? state.archers.length : 0
                 });
+                if (!Array.isArray(state.availableDivisions) || state.availableDivisions.length === 0) {
+                    state.availableDivisions = ['OPEN'];
+                }
+                sanitizeStateArchers();
             } catch (e) {
                 console.error("Error parsing stored data. Starting fresh.", e);
                 localStorage.removeItem(sessionKey);
             }
         }
         updateEventHeader();
+    }
+
+    function sanitizeStateArchers() {
+        if (!Array.isArray(state.archers)) {
+            state.archers = [];
+            return;
+        }
+        state.archers = state.archers
+            .filter(Boolean)
+            .map(raw => {
+                const extId = getExtIdFromArcher(raw);
+                const overrides = {
+                    extId,
+                    targetAssignment: raw.targetAssignment || raw.target,
+                    baleNumber: raw.baleNumber || raw.bale || state.baleNumber,
+                    scores: raw.scores
+                };
+                return buildStateArcherFromRoster(raw, overrides);
+            });
     }
 
     // =====================================================
@@ -407,37 +592,46 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Reconstruct archers array from server scorecards
             state.archers = baleData.archers.map(archer => {
-                const uniqueId = `${archer.firstName}-${archer.lastName}`;
-                
-                // Reconstruct scores array from ends
-                const scores = [];
-                const endsList = archer.scorecard?.ends || [];
+                const scoreSheet = createEmptyScoreSheet(state.totalEnds);
+                const endsList = Array.isArray(archer.scorecard?.ends) ? archer.scorecard.ends : [];
                 endsList.forEach(end => {
-                    scores[end.endNumber - 1] = [end.a1, end.a2, end.a3];
+                    const idx = Math.max(0, Math.min(state.totalEnds - 1, (end.endNumber || 1) - 1));
+                    scoreSheet[idx] = [end.a1 || '', end.a2 || '', end.a3 || ''];
                 });
-                
-                return {
-                    id: uniqueId,
-                    roundArcherId: archer.roundArcherId,
+                const provisional = {
+                    extId: archer.extId,
                     firstName: archer.firstName,
                     lastName: archer.lastName,
-                    school: archer.school || '',
-                    level: archer.level || '',
-                    gender: archer.gender || '',
-                    targetAssignment: archer.targetAssignment,
-                    targetSize: archer.targetSize || 80,
-                    baleNumber: archer.baleNumber || session.baleNumber,
-                    scores: scores
+                    school: archer.school
                 };
+                const extId = getExtIdFromArcher(provisional);
+                const overrides = {
+                    extId,
+                    targetAssignment: archer.targetAssignment || archer.target,
+                    baleNumber: archer.baleNumber || session.baleNumber,
+                    level: archer.level,
+                    gender: archer.gender,
+                    division: archer.division,
+                    scores: scoreSheet
+                };
+                const rosterPayload = Object.assign({}, provisional, {
+                    level: archer.level,
+                    gender: archer.gender,
+                    division: archer.division
+                });
+                const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
+                stateArcher.roundArcherId = archer.roundArcherId;
+                return stateArcher;
             });
             
             // Restore Live Updates state if enabled
             if (window.LiveUpdates && window.LiveUpdates._state) {
                 window.LiveUpdates._state.roundId = session.roundId;
                 // Restore archer ID mapping
-                baleData.archers.forEach(archer => {
-                    const uniqueId = `${archer.firstName}-${archer.lastName}`;
-                    window.LiveUpdates._state.archerIds[uniqueId] = archer.roundArcherId;
+                state.archers.forEach(archer => {
+                    if (archer.roundArcherId) {
+                        window.LiveUpdates._state.archerIds[archer.id] = archer.roundArcherId;
+                    }
                 });
                 
                 // CRITICAL: Manually persist Live Updates state to localStorage
@@ -548,19 +742,87 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderManualSetup() {
-        // Update bale input
+        // Update bale input and grid
         if (manualSetupControls.baleInput) {
             manualSetupControls.baleInput.value = state.baleNumber;
         }
-        
+        renderManualBaleGrid();
+
         // Update selection count
         updateSelectionCount();
-        
-        // Render selected archers
-        renderSelectedArchers();
-        
+
         // Render archer list for selection
         renderManualArcherList();
+
+        if (manualSetupControls.liveToggleBtn) {
+            manualSetupControls.liveToggleBtn.onclick = async () => {
+                manualSetupControls.liveToggleBtn.disabled = true;
+                await handleLiveToggle();
+                manualSetupControls.liveToggleBtn.disabled = false;
+            };
+        }
+
+        updateManualLiveControls();
+    }
+
+    function getManualBaleNumbers() {
+        if (state.activeEventId) {
+            try {
+                const cached = JSON.parse(localStorage.getItem(`event:${state.activeEventId}:archers_v2`) || '[]');
+                if (Array.isArray(cached) && cached.length) {
+                    let maxBale = 0;
+                    cached.forEach(archer => {
+                        const bale = Number(archer?.baleNumber ?? archer?.bale);
+                        if (!Number.isNaN(bale) && bale > 0) {
+                            if (bale > maxBale) maxBale = bale;
+                        }
+                    });
+                    if (maxBale > 0) {
+                        return Array.from({ length: maxBale }, (_, idx) => idx + 1);
+                    }
+                }
+            } catch (_) {
+                // ignore parse errors and fall back
+            }
+        }
+        return Array.from({ length: 24 }, (_, idx) => idx + 1);
+    }
+
+    function renderManualBaleGrid() {
+        if (!manualSetupControls.baleGrid) return;
+        const baleNumbers = getManualBaleNumbers();
+        let currentBale = Number(state.baleNumber) || baleNumbers[0] || 1;
+        if (baleNumbers.length && !baleNumbers.includes(currentBale)) {
+            currentBale = baleNumbers[0];
+            state.baleNumber = currentBale;
+            if (manualSetupControls.baleInput) {
+                manualSetupControls.baleInput.value = currentBale;
+            }
+            saveData();
+        }
+
+        manualSetupControls.baleGrid.innerHTML = '';
+
+        baleNumbers.forEach(bale => {
+            const tile = document.createElement('button');
+            tile.type = 'button';
+            tile.className = 'manual-bale-tile';
+            if (bale === currentBale) {
+                tile.classList.add('active');
+            }
+            tile.textContent = bale;
+            tile.onclick = () => {
+                if (state.baleNumber === bale) return;
+                state.baleNumber = bale;
+                if (manualSetupControls.baleInput) {
+                    manualSetupControls.baleInput.value = bale;
+                }
+                saveData();
+                renderManualBaleGrid();
+                renderManualArcherList();
+            };
+            manualSetupControls.baleGrid.appendChild(tile);
+        });
     }
 
     function renderPreassignedSetup() {
@@ -579,15 +841,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Normalize to a common shape for rendering and for loadEntireBale
-        const normalized = masterList.map(a => ({
-            firstName: a.firstName || a.first || '',
-            lastName: a.lastName || a.last || '',
-            school: a.school || '',
-            level: a.level || '',
-            gender: a.gender || '',
-            baleNumber: Number(a.baleNumber != null ? a.baleNumber : a.bale),
-            target: a.targetAssignment || a.target || ''
-        })).filter(a => !!a.baleNumber);
+        const normalized = masterList.map(a => {
+            const normalizedLevel = normalizeLevel(a.level);
+            const normalizedGender = normalizeGender(a.gender);
+            const extId = a.extId || getExtIdFromArcher(a);
+            return {
+                extId,
+                firstName: safeString(a.firstName || a.first),
+                lastName: safeString(a.lastName || a.last),
+                school: safeString(a.school),
+                level: normalizedLevel,
+                gender: normalizedGender,
+                division: a.division || deriveDivisionCode(normalizedGender, normalizedLevel),
+                baleNumber: Number(a.baleNumber != null ? a.baleNumber : a.bale),
+                target: safeString(a.targetAssignment || a.target),
+                status: safeString(a.status || 'active')
+            };
+        }).filter(a => !!a.baleNumber);
         
         // Group archers by bale
         const baleGroups = {};
@@ -663,29 +933,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderSelectedArchers() {
-        if (!manualSetupControls.selectedArchersDisplay) return;
-        
-        if (state.archers.length === 0) {
-            manualSetupControls.selectedArchersDisplay.innerHTML = '<div style="text-align: center; color: #666; padding: 1rem;">No archers selected</div>';
-            return;
-        }
-        
-        manualSetupControls.selectedArchersDisplay.innerHTML = '';
-        
-        state.archers.forEach(archer => {
-            const archerItem = document.createElement('div');
-            archerItem.className = 'selected-archer-item';
-            
-            archerItem.innerHTML = `
-                <span class="selected-archer-name">${archer.firstName} ${archer.lastName}</span>
-                <span class="selected-archer-target">${archer.targetAssignment}</span>
-            `;
-            
-            manualSetupControls.selectedArchersDisplay.appendChild(archerItem);
-        });
-    }
-
     function renderManualArcherList() {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
@@ -712,25 +959,90 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Filter by search term
-        const searchTerm = manualSetupControls.searchInput ? manualSetupControls.searchInput.value.toLowerCase() : '';
-        const filteredList = masterList.filter(archer => {
-            if (!searchTerm) return true;
-            const first = (archer.firstName || archer.first || '').toString();
-            const last = (archer.lastName || archer.last || '').toString();
-            const name = `${first} ${last}`.toLowerCase();
-            const school = (archer.school || '').toLowerCase();
-            return name.includes(searchTerm) || school.includes(searchTerm);
+        const rosterState = getRosterState();
+        const rosterMap = new Map(
+            rosterState.list.map(item => [getExtIdFromArcher(item), item])
+        );
+
+        const enrichedList = masterList.map(archer => {
+            const extId = getExtIdFromArcher(archer);
+            const rosterMatch = extId ? rosterMap.get(extId) : null;
+            return Object.assign({}, rosterMatch || {}, archer, { extId });
         });
-        
-        // Sort by first name
-        filteredList.sort((a, b) => {
-            const aFirst = (a.firstName || a.first || '').toString().toLowerCase();
-            const bFirst = (b.firstName || b.first || '').toString().toLowerCase();
+
+        const searchTerm = manualSetupControls.searchInput ? manualSetupControls.searchInput.value.trim().toLowerCase() : '';
+        const filteredList = enrichedList.filter(archer => {
+            if (!searchTerm) return true;
+            const first = safeString(archer.firstName || archer.first).toLowerCase();
+            const last = safeString(archer.lastName || archer.last).toLowerCase();
+            const school = safeString(archer.school).toLowerCase();
+            return `${first} ${last}`.includes(searchTerm) || school.includes(searchTerm);
+        }).sort((a, b) => {
+            const aFirst = safeString(a.firstName || a.first).toLowerCase();
+            const bFirst = safeString(b.firstName || b.first).toLowerCase();
             return aFirst.localeCompare(bFirst);
         });
-        
-        // Create table for archer selection
+
+        const targetPriority = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+        const selectedRows = [];
+        const unselectedRows = [];
+
+        filteredList.forEach(archer => {
+            const first = safeString(archer.firstName || archer.first);
+            const last = safeString(archer.lastName || archer.last);
+            const school = safeString(archer.school);
+            const extId = archer.extId || getExtIdFromArcher(archer);
+            const fallbackId = extId || `${first.toLowerCase()}-${last.toLowerCase()}-${school.toLowerCase()}`;
+            const uniqueId = fallbackId || `${first}-${last}`;
+            const existingArcher = state.archers.find(a => (a.extId || a.id) === uniqueId);
+            const rosterBale = Number(archer.baleNumber != null ? archer.baleNumber : archer.bale);
+            let rosterTarget = (archer.targetAssignment || archer.target || '').toString().trim().toUpperCase();
+            if (rosterTarget === '0') rosterTarget = '';
+            let rosterAssignment = '—';
+            if (!Number.isNaN(rosterBale) && rosterBale > 0) {
+                rosterAssignment = rosterTarget ? `${rosterBale}${rosterTarget}` : `${rosterBale}`;
+            } else if (rosterTarget) {
+                rosterAssignment = rosterTarget;
+            }
+            const normalizedLevel = normalizeLevel(archer.level);
+            const normalizedGender = normalizeGender(archer.gender);
+            const rosterDivision = (archer.division || '').toString().trim().toUpperCase();
+            const divisionCode = rosterDivision || deriveDivisionCode(normalizedGender, normalizedLevel);
+
+            const rowData = {
+                archer,
+                first,
+                last,
+                school,
+                extId,
+                uniqueId,
+                rosterAssignment,
+                existingArcher,
+                normalizedLevel,
+                normalizedGender,
+                divisionCode
+            };
+
+            if (existingArcher) {
+                selectedRows.push(rowData);
+            } else {
+                unselectedRows.push(rowData);
+            }
+        });
+
+        selectedRows.sort((a, b) => {
+            const aOrder = targetPriority.indexOf(a.existingArcher?.targetAssignment || '');
+            const bOrder = targetPriority.indexOf(b.existingArcher?.targetAssignment || '');
+            const safeA = aOrder === -1 ? Number.MAX_SAFE_INTEGER : aOrder;
+            const safeB = bOrder === -1 ? Number.MAX_SAFE_INTEGER : bOrder;
+            if (safeA === safeB) {
+                return a.first.toLowerCase().localeCompare(b.first.toLowerCase());
+            }
+            return safeA - safeB;
+        });
+
+        const orderedRows = [...selectedRows, ...unselectedRows];
+
         const table = document.createElement('table');
         table.style.cssText = 'width: 100%; border-collapse: collapse; margin-top: 1rem;';
         
@@ -747,10 +1059,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         table.appendChild(headerRow);
         
-        // Data rows
-        filteredList.forEach((archer, index) => {
+        orderedRows.forEach((rowData, index) => {
+            const { archer, first, last, school, extId, uniqueId, rosterAssignment, existingArcher, divisionCode, normalizedLevel, normalizedGender } = rowData;
             const row = document.createElement('tr');
+            row.className = 'manual-archer-row';
             row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};`;
+            if (existingArcher) {
+                row.classList.add('is-selected');
+            }
             
             // Checkbox cell
             const checkboxCell = document.createElement('td');
@@ -759,17 +1075,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.style.cssText = 'transform: scale(1.2);';
-            
-            const first = (archer.firstName || archer.first || '').trim();
-            const last = (archer.lastName || archer.last || '').trim();
-            const uniqueId = `${first}-${last}`;
-            const existingArcher = state.archers.find(a => a.id === uniqueId);
             checkbox.checked = !!existingArcher;
+            checkbox.dataset.extId = extId;
             
             // Target select dropdown
             const targetSelect = document.createElement('select');
             targetSelect.className = 'target-assignment-select';
-            targetSelect.style.cssText = 'display: none; margin-left: 8px; padding: 2px 4px; font-size: 0.9em;';
+            targetSelect.style.cssText = 'display: none; margin-left: 8px; padding: 2px 6px; font-size: 0.9em;';
             ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter => {
                 const option = document.createElement('option');
                 option.value = letter;
@@ -790,43 +1102,39 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert('Bale is full (4 archers).');
                         return;
                     }
-                    if (!state.archers.some(a => a.id === uniqueId)) {
-                        const usedTargets = state.archers.map(a => a.targetAssignment);
-                        const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
-                        const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
-                        // Derive division from gender + level
-                        const division = `${archer.gender || 'M'}${archer.level || 'JV'}`.toUpperCase().replace('MALE', '').replace('FEMALE', '').replace('VARSITY', 'VAR').replace('JUNIOR', 'JV');
-                        state.archers.push({
-                            id: uniqueId,
-                            firstName: first,
-                            lastName: last,
-                            school: archer.school || '',
-                            level: archer.level || '',
-                            gender: archer.gender || '',
+                        if (!state.archers.some(a => (a.extId || a.id) === uniqueId)) {
+                            const usedTargets = state.archers.map(a => a.targetAssignment);
+                            const availableTargets = TARGET_LETTERS.filter(t => !usedTargets.includes(t));
+                            const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
+                        const overrides = {
+                            extId,
                             targetAssignment: nextTarget,
-                            targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
-                            baleNumber: state.baleNumber,  // ✅ Add baleNumber
-                            division: division,  // ✅ Add division
-                            scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
-                        });
+                            baleNumber: state.baleNumber,
+                            division: divisionCode,
+                            level: normalizedLevel,
+                            gender: normalizedGender,
+                            scores: createEmptyScoreSheet(state.totalEnds)
+                        };
+                        const stateArcher = buildStateArcherFromRoster(archer, overrides);
+                        state.archers.push(stateArcher);
                         targetSelect.value = nextTarget;
                     }
                     targetSelect.style.display = 'inline-block';
                 } else {
-                    state.archers = state.archers.filter(a => a.id !== uniqueId);
+                    state.archers = state.archers.filter(a => (a.extId || a.id) !== uniqueId);
                     targetSelect.style.display = 'none';
                 }
                 saveData();
                 updateSelectionCount();
-                renderSelectedArchers();
+                renderManualArcherList();
             };
             
             targetSelect.onchange = () => {
-                const archerInState = state.archers.find(a => a.id === uniqueId);
+                const archerInState = state.archers.find(a => (a.extId || a.id) === uniqueId);
                 if (archerInState) {
                     archerInState.targetAssignment = targetSelect.value;
                     saveData();
-                    renderSelectedArchers();
+                    renderManualArcherList();
                 }
             };
             
@@ -834,25 +1142,38 @@ document.addEventListener('DOMContentLoaded', () => {
             checkboxCell.appendChild(targetSelect);
             row.appendChild(checkboxCell);
             
-            // Other data cells
-            const cells = [
-                `${first} ${last}`,
-                archer.school || 'Unknown',
-                archer.level || 'VAR',
-                existingArcher ? existingArcher.targetAssignment : 'Unassigned'
-            ];
-            
-            cells.forEach(cellText => {
-                const td = document.createElement('td');
-                td.textContent = cellText;
-                td.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
-                row.appendChild(td);
-            });
+            const nameCell = document.createElement('td');
+            nameCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+            nameCell.innerHTML = `<div class="manual-archer-name">${first} ${last}</div>`;
+            if (existingArcher) {
+                const badge = document.createElement('span');
+                badge.className = 'manual-target-badge';
+                badge.textContent = existingArcher.targetAssignment || '';
+                nameCell.appendChild(badge);
+            }
+            row.appendChild(nameCell);
+
+            const schoolCell = document.createElement('td');
+            schoolCell.textContent = school || 'Unknown';
+            schoolCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+            row.appendChild(schoolCell);
+
+            const divisionCell = document.createElement('td');
+            divisionCell.textContent = divisionCode || '—';
+            divisionCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+            row.appendChild(divisionCell);
+
+            const targetCell = document.createElement('td');
+            targetCell.textContent = rosterAssignment;
+            targetCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+            row.appendChild(targetCell);
             
             table.appendChild(row);
         });
         
         setupControls.container.appendChild(table);
+        updateSelectionCount();
+        updateManualLiveControls();
     }
 
     function renderSetupForm() {
@@ -1347,8 +1668,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 checkbox.type = 'checkbox';
                 checkbox.style.cssText = 'transform: scale(1.2);';
                 
-                const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
-                const existingArcher = state.archers.find(a => a.id === uniqueId);
+                const first = safeString(archer.first);
+                const last = safeString(archer.last);
+                const school = safeString(archer.school);
+                const extId = getExtIdFromArcher({ firstName: first, lastName: last, school, extId: archer.extId });
+                const uniqueId = extId || `${first.toLowerCase()}-${last.toLowerCase()}-${school.toLowerCase()}`;
+                const existingArcher = state.archers.find(a => (a.extId || a.id) === uniqueId);
                 checkbox.checked = !!existingArcher;
                 
                 // Target select dropdown (hidden initially)
@@ -1375,26 +1700,34 @@ document.addEventListener('DOMContentLoaded', () => {
                             alert('Bale is full (4 archers).');
                             return;
                         }
-                        if (!state.archers.some(a => a.id === uniqueId)) {
+                        if (!state.archers.some(a => (a.extId || a.id) === uniqueId)) {
                             const usedTargets = state.archers.map(a => a.targetAssignment);
-                            const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
+                            const availableTargets = TARGET_LETTERS.filter(t => !usedTargets.includes(t));
                             const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
-                            state.archers.push({
-                                id: uniqueId,
-                                firstName: archer.first,
-                                lastName: archer.last,
-                                school: archer.school || '',
-                                level: archer.level || '',
-                                gender: archer.gender || '',
+                            const overrides = {
+                                extId: uniqueId,
                                 targetAssignment: nextTarget,
-                                targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
-                                scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
-                            });
+                                baleNumber: state.baleNumber,
+                                level: archer.level,
+                                gender: archer.gender,
+                                division: archer.division,
+                                scores: createEmptyScoreSheet(state.totalEnds)
+                            };
+                            const rosterPayload = {
+                                firstName: first,
+                                lastName: last,
+                                school,
+                                level: archer.level,
+                                gender: archer.gender,
+                                division: archer.division
+                            };
+                            const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
+                            state.archers.push(stateArcher);
                             targetSelect.value = nextTarget;
                         }
                         targetSelect.style.display = 'inline-block';
                     } else {
-                        state.archers = state.archers.filter(a => a.id !== uniqueId);
+                        state.archers = state.archers.filter(a => (a.extId || a.id) !== uniqueId);
                         targetSelect.style.display = 'none';
                     }
                     saveData();
@@ -1404,7 +1737,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
                 
                 targetSelect.onchange = () => {
-                    const archerInState = state.archers.find(a => a.id === uniqueId);
+                    const archerInState = state.archers.find(a => (a.extId || a.id) === uniqueId);
                     if (archerInState) {
                         archerInState.targetAssignment = targetSelect.value;
                         saveData();
@@ -1446,22 +1779,24 @@ document.addEventListener('DOMContentLoaded', () => {
         state.baleNumber = parseInt(baleNumber);
         
         // Add all archers from this bale
-        const targets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+        const targets = TARGET_LETTERS;
         archersInBale.forEach((archer, index) => {
-            const uniqueId = `${archer.firstName.trim()}-${archer.lastName.trim()}`;
-            state.archers.push({
-                id: uniqueId,
-                firstName: archer.firstName,
-                lastName: archer.lastName,
-                school: archer.school || '',
-                level: archer.level || '',
-                gender: archer.gender || '',
-                targetAssignment: archer.target || targets[index],
-                targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
+            const targetAssignment = safeString(archer.target) || targets[index] || 'A';
+            const overrides = {
+                extId: archer.extId || getExtIdFromArcher(archer),
+                targetAssignment,
                 baleNumber: parseInt(baleNumber),
-                // Start with zero ends; each end is appended as scores are entered
-                scores: []
+                division: archer.division,
+                level: archer.level,
+                gender: archer.gender,
+                scores: createEmptyScoreSheet(state.totalEnds)
+            };
+            const rosterPayload = Object.assign({}, archer, {
+                targetAssignment,
+                baleNumber: parseInt(baleNumber)
             });
+            const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
+            state.archers.push(stateArcher);
         });
         
         // Set assignment mode to pre-assigned since we're loading a complete bale
@@ -1742,7 +2077,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         console.log('Keypad rendered successfully');
     }
-    
+
+    function showKeypadForInput(input) {
+        if (!input) return;
+        keypad.currentlyFocusedInput = input;
+        if (keypad.element) {
+            keypad.element.style.display = 'grid';
+        }
+        document.body.classList.add('keypad-visible');
+    }
+
     function attachKeypadHandlers() {
         // Ensure keypad is properly initialized
         if (!keypad.element) {
@@ -1753,6 +2097,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Make score inputs focusable by removing readonly temporarily on touch
         const scoreInputs = document.querySelectorAll('.score-input');
         scoreInputs.forEach(input => {
+            input.setAttribute('readonly', 'readonly');
+            input.setAttribute('inputmode', 'none');
+            input.setAttribute('autocomplete', 'off');
             // On mobile, tapping the input will focus it
             input.addEventListener('touchstart', (e) => {
                 e.preventDefault();
@@ -1762,6 +2109,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Ensure inputs can be focused with click as well
             input.addEventListener('click', () => {
                 input.focus();
+            });
+
+            input.addEventListener('focus', () => {
+                showKeypadForInput(input);
             });
         });
         
@@ -1951,6 +2302,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.currentView = 'setup';
         renderView();
         saveData();
+        updateLiveStatusDisplay();
     }
     
     function showScoringView() {
@@ -2289,6 +2641,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     activeEvents.forEach(ev => {
                         const option = document.createElement('option');
                         option.value = ev.id;
+                        option.dataset.name = ev.name || '';
                         option.textContent = `${ev.name} (${ev.date})`;
                         eventSelector.appendChild(option);
                     });
@@ -2298,7 +2651,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.log('Only one active event - auto-selecting:', activeEvents[0].name);
                         eventSelector.value = activeEvents[0].id;
                         state.selectedEventId = activeEvents[0].id;
+                        state.eventName = activeEvents[0].name || state.eventName;
                         saveData();
+                        updateEventHeader();
                         
                         // Trigger load of archers for this event
                         try {
@@ -2426,39 +2781,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateLiveStatusDisplay() {
+        const summary = computeSyncSummary();
         const badge = document.getElementById('live-status-badge');
-        if (!badge) return;
-        
-        const isLiveEnabled = getLiveEnabled();
-        
-        if (!isLiveEnabled) {
-            badge.textContent = 'Live Updates Off';
-            badge.className = 'status-badge status-off';
-            return;
+        if (badge) {
+            if (!summary.enabled) {
+                badge.textContent = 'Live Updates Off';
+                badge.className = 'status-badge status-off';
+            } else if (summary.failed > 0) {
+                badge.textContent = 'Retry Needed';
+                badge.className = 'status-badge status-off';
+            } else {
+                const pendingTotal = summary.pending + summary.queueSize;
+                if (pendingTotal > 0) {
+                    badge.textContent = 'Syncing...';
+                    badge.className = 'status-badge status-pending';
+                } else if (summary.currentEndSynced) {
+                    badge.textContent = 'Synced';
+                    badge.className = 'status-badge status-synced';
+                } else {
+                    badge.textContent = 'Not Synced';
+                    badge.className = 'status-badge status-pending';
+                }
+            }
         }
-        
-        // Check if current end is synced for all archers
-        const currentEnd = state.currentEnd;
-        const allSynced = state.archers.length > 0 && state.archers.every(archer => {
-            const syncStatus = state.syncStatus[archer.id] && state.syncStatus[archer.id][currentEnd];
-            return syncStatus === 'synced';
-        });
-        
-        const anyPending = state.archers.some(archer => {
-            const syncStatus = state.syncStatus[archer.id] && state.syncStatus[archer.id][currentEnd];
-            return syncStatus === 'pending';
-        });
-        
-        if (allSynced) {
-            badge.textContent = 'Synced';
-            badge.className = 'status-badge status-synced';
-        } else if (anyPending) {
-            badge.textContent = 'Syncing...';
-            badge.className = 'status-badge status-pending';
-        } else {
-            badge.textContent = 'Not Synced';
-            badge.className = 'status-badge status-pending';
-        }
+
+        updateManualLiveControls(summary);
     }
 
     // Offline banner + manual flush
@@ -2480,24 +2827,224 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('online', () => { try { LiveUpdates.flushQueue && LiveUpdates.flushQueue(); } catch(_) {}; ensureOfflineBanner(); });
     window.addEventListener('offline', () => ensureOfflineBanner());
     
-    function getLiveEnabled() {
-        try { 
-            const cfg = JSON.parse(localStorage.getItem('live_updates_config')||'{}');
-            return cfg.enabled !== undefined ? !!cfg.enabled : true;  // Default ON
-        } catch(_) { 
-            return true;  // Default ON if error
+function getLiveEnabled() {
+    try { 
+        const cfg = JSON.parse(localStorage.getItem('live_updates_config')||'{}');
+        return cfg.enabled !== undefined ? !!cfg.enabled : true;  // Default ON
+    } catch(_) { 
+        return true;  // Default ON if error
+    }
+}
+
+function setLiveEnabled(v) { 
+    try { 
+        if (window.LiveUpdates && LiveUpdates.saveConfig) {
+            LiveUpdates.saveConfig({ enabled: !!v }); 
+        } else {
+            localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); 
+        }
+    } catch(_) {} 
+}
+
+function getLiveQueueSize() {
+    try {
+        if (window.LiveUpdates && LiveUpdates._state && Array.isArray(LiveUpdates._state.retryQueue)) {
+            return LiveUpdates._state.retryQueue.length;
+        }
+    } catch (_) {}
+    return 0;
+}
+
+async function ensureLiveRoundReady(options = {}) {
+    if (!getLiveEnabled()) return false;
+    if (!window.LiveUpdates || typeof LiveUpdates.setConfig !== 'function') {
+        console.warn('Live Updates not available in this context.');
+        return false;
+    }
+
+    try {
+        const cfg = window.LIVE_UPDATES || {};
+        LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1' });
+
+        let metaConfig = {};
+        try { metaConfig = JSON.parse(localStorage.getItem('live_updates_config') || '{}'); } catch (_) {}
+        const hasCoachKey = !!(metaConfig && metaConfig.apiKey);
+        let entryCode = getEventEntryCode();
+
+        if (!hasCoachKey && !entryCode && options.promptForCode !== false) {
+            const userCode = (typeof prompt === 'function') ? prompt('Enter Event Code to enable Live Sync:') : '';
+            if (userCode && userCode.trim()) {
+                entryCode = userCode.trim();
+                try {
+                    localStorage.setItem('event_entry_code', entryCode);
+                    const eid = state.activeEventId || state.selectedEventId;
+                    if (eid) {
+                        const metaRaw = localStorage.getItem(`event:${eid}:meta`) || '{}';
+                        const meta = JSON.parse(metaRaw);
+                        meta.entryCode = entryCode;
+                        localStorage.setItem(`event:${eid}:meta`, JSON.stringify(meta));
+                    }
+                } catch (_) {}
+            } else {
+                console.warn('Live Sync requires an event code when a coach key is unavailable.');
+                return false;
+            }
+        }
+
+        const eventId = state.activeEventId || state.selectedEventId || null;
+        const today = new Date().toISOString().slice(0, 10);
+        let division = null;
+        let gender = null;
+        let level = null;
+
+        if (state.archers && state.archers.length) {
+            const sample = state.archers[0];
+            division = sample.division || division;
+            gender = sample.gender || gender;
+            level = sample.level || level;
+        }
+
+        if (eventId) {
+            try {
+                const metaRaw = localStorage.getItem(`event:${eventId}:meta`);
+                if (metaRaw) {
+                    const meta = JSON.parse(metaRaw);
+                    if (Array.isArray(meta.availableDivisions) && meta.availableDivisions.length) {
+                        state.availableDivisions = meta.availableDivisions;
+                    }
+                    division = division || meta.defaultDivision || null;
+                    gender = gender || meta.defaultGender || null;
+                    level = level || meta.defaultLevel || null;
+                }
+            } catch (_) {}
+        }
+
+        if (!division && gender && level) {
+            division = deriveDivisionCode(gender, level);
+        }
+
+        await LiveUpdates.ensureRound({
+            roundType: 'R300',
+            date: today,
+            division,
+            gender,
+            level,
+            eventId
+        });
+
+        if (!LiveUpdates._state || !LiveUpdates._state.roundId) {
+            throw new Error('roundId missing after ensureRound');
+        }
+
+        if (state.archers && state.archers.length) {
+            await Promise.all(
+                state.archers.map(archer => LiveUpdates.ensureArcher(archer.id, archer))
+            );
+        }
+
+        return true;
+    } catch (err) {
+        console.error('Error initializing Live Updates:', err);
+        return false;
+    }
+}
+
+async function handleLiveToggle() {
+    const currentlyEnabled = getLiveEnabled();
+    if (currentlyEnabled) {
+        setLiveEnabled(false);
+        updateManualLiveControls();
+        updateLiveStatusDisplay();
+        console.log('Live Sync disabled');
+        return false;
+    }
+
+    setLiveEnabled(true);
+    const success = await ensureLiveRoundReady({ promptForCode: true });
+    if (!success) {
+        alert('Live Sync could not be enabled. Continuing offline.');
+        setLiveEnabled(false);
+    }
+    updateManualLiveControls();
+    updateLiveStatusDisplay();
+    return success;
+}
+
+function computeSyncSummary() {
+    const enabled = getLiveEnabled();
+    let pending = 0;
+    let failed = 0;
+    const currentEnd = state.currentEnd;
+    let currentEndSynced = true;
+
+    if (enabled && state.archers && state.archers.length) {
+        state.archers.forEach(archer => {
+            const statusMap = state.syncStatus[archer.id] || {};
+            Object.values(statusMap).forEach(status => {
+                if (status === 'pending') pending++;
+                else if (status === 'failed') failed++;
+            });
+            const currentStatus = statusMap[currentEnd];
+            if (currentStatus !== 'synced') currentEndSynced = false;
+        });
+    } else {
+        currentEndSynced = false;
+    }
+
+    return {
+        enabled,
+        pending,
+        failed,
+        queueSize: getLiveQueueSize(),
+        currentEndSynced: enabled && state.archers.length > 0 && currentEndSynced,
+    };
+}
+
+function updateManualLiveControls(summaryOverride) {
+    const summary = summaryOverride || computeSyncSummary();
+    const liveBtn = manualSetupControls.liveToggleBtn;
+    if (liveBtn) {
+        if (summary.enabled) {
+            liveBtn.textContent = 'Live: On';
+            liveBtn.classList.remove('btn-secondary');
+            liveBtn.classList.add('btn-success');
+        } else {
+            liveBtn.textContent = 'Live: Off';
+            liveBtn.classList.remove('btn-success');
+            liveBtn.classList.add('btn-secondary');
         }
     }
-    
-    function setLiveEnabled(v) { 
-        try { 
-            if (window.LiveUpdates && LiveUpdates.saveConfig) {
-                LiveUpdates.saveConfig({ enabled: !!v }); 
+
+    const badge = manualSetupControls.liveStatusBadge;
+    if (badge) {
+        let text = '';
+        let className = 'status-badge ';
+        if (!summary.enabled) {
+            text = 'Offline';
+            className += 'status-off';
+        } else if (summary.failed > 0) {
+            text = `Retry (${summary.failed})`;
+            className += 'status-off';
+        } else {
+            const totalPending = summary.pending + summary.queueSize;
+            if (totalPending > 0) {
+                text = `Pending ${totalPending}`;
+                className += 'status-pending';
+            } else if (summary.currentEndSynced) {
+                text = 'Synced';
+                className += 'status-synced';
+            } else if (state.archers.length === 0) {
+                text = 'Ready';
+                className += 'status-pending';
             } else {
-                localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); 
+                text = 'Not Synced';
+                className += 'status-pending';
             }
-        } catch(_) {} 
+        }
+        badge.textContent = text;
+        badge.className = className;
     }
+}
 
     function isLiveUpdatesReady() {
         return !!(window.LiveUpdates && 
@@ -2754,22 +3301,38 @@ document.addEventListener('DOMContentLoaded', () => {
             const eventData = await res.json();
             console.log('[loadEventById] Received event data:', eventData);
             if (eventData && eventData.divisions) {
+                const divisionKeys = Object.keys(eventData.divisions || {});
+                state.availableDivisions = divisionKeys.length ? divisionKeys : ['OPEN'];
+                const rosterState = getRosterState();
+                const rosterMap = new Map(
+                    rosterState.list.map(item => [getExtIdFromArcher(item), item])
+                );
                 const allArchers = [];
                 Object.keys(eventData.divisions).forEach(divKey => {
                     const div = eventData.divisions[divKey];
                     (div.archers || []).forEach(archer => {
                         const nameParts = (archer.archerName || '').split(' ');
-                        allArchers.push({
-                            first: nameParts[0] || '',
-                            last: nameParts.slice(1).join(' ') || '',
-                            school: archer.school,
-                            level: archer.level,
-                            gender: archer.gender,
+                        const first = safeString(nameParts[0]);
+                        const last = safeString(nameParts.slice(1).join(' '));
+                        const school = safeString(archer.school);
+                        const provisional = { first, last, school };
+                        const extId = getExtIdFromArcher(provisional);
+                        const rosterMatch = rosterMap.get(extId);
+                        const normalizedLevel = normalizeLevel(rosterMatch?.level || archer.level);
+                        const normalizedGender = normalizeGender(rosterMatch?.gender || archer.gender);
+                        allArchers.push(Object.assign({}, rosterMatch || {}, {
+                            extId,
+                            first,
+                            last,
+                            school,
+                            level: normalizedLevel,
+                            gender: normalizedGender,
                             baleNumber: archer.bale,
                             targetAssignment: archer.target,
                             division: divKey,
-                            fave: false
-                        });
+                            fave: false,
+                            status: rosterMatch?.status || 'active'
+                        }));
                     });
                 });
                 // Save to event-scoped caches
@@ -2783,7 +3346,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         date: eventData.event?.date || '',
                         assignmentMode: (eventData.event?.assignmentMode || (eventData.event?.eventType === 'auto_assign' ? 'assigned' : 'manual')),
                         snapshotVersion: 2,
-                        entryCode: finalEntryCode  // Save entry code for Live Updates
+                        entryCode: finalEntryCode,  // Save entry code for Live Updates
+                        availableDivisions: state.availableDivisions
                     };
                     localStorage.setItem(`event:${eventId}:meta`, JSON.stringify(meta));
                     
@@ -2808,7 +3372,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.archers = [];
                 
                 // Update UI/state
-                state.eventName = eventName || state.eventName || '';
+                state.eventName = (eventData.event && eventData.event.name) || eventName || state.eventName || '';
                 state.assignmentMode = (eventData.event && eventData.event.assignmentMode === 'assigned') ? 'pre-assigned' : 'manual';
                 updateEventHeader();
                 
@@ -2923,28 +3487,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('Please select at least one archer to start scoring.');
                     return;
                 }
-                // Sync manual assignments to server (round + scorecards) so coach can see live immediately
+                manualSetupControls.startScoringBtn.disabled = true;
                 try {
-                    if (getLiveEnabled() && window.LiveUpdates) {
-                        const today = new Date().toISOString().slice(0,10);
-                        const meta = JSON.parse(localStorage.getItem(`event:${state.activeEventId}:meta`)||'{}');
-                        const div = (state.archers[0] && state.archers[0].division) || meta.defaultDivision || null;
-                        const gender = (state.archers[0] && state.archers[0].gender) || null;
-                        const level = (state.archers[0] && state.archers[0].level) || null;
-                        await LiveUpdates.ensureRound({ roundType: 'R300', date: today, division: div, gender, level, eventId: state.activeEventId || state.selectedEventId });
-                        for (const archer of state.archers) {
-                            // ensureArcher will create a round_archers entry; we include targetAssignment
-                            await LiveUpdates.ensureArcher(archer.id, archer);
+                    if (getLiveEnabled()) {
+                        const success = await ensureLiveRoundReady({ promptForCode: true });
+                        if (!success) {
+                            alert('Live Sync could not be initialized. Scores will sync when connectivity returns.');
                         }
                     }
-                } catch (e) {
-                    console.warn('Manual assignment sync failed (continuing offline):', e);
+
+                    // PHASE 0: Save session for recovery on page reload
+                    saveCurrentBaleSession();
+
+                    showScoringView();
+                } finally {
+                    manualSetupControls.startScoringBtn.disabled = false;
                 }
-                
-                // PHASE 0: Save session for recovery on page reload
-                saveCurrentBaleSession();
-                
-                showScoringView();
             };
         }
 
@@ -2982,7 +3540,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (eventSelector) {
             eventSelector.onchange = async () => {
                 state.selectedEventId = eventSelector.value || null;
+                const selectedOption = eventSelector.selectedOptions && eventSelector.selectedOptions[0];
+                if (selectedOption) {
+                    state.eventName = selectedOption.dataset.name || selectedOption.textContent || state.eventName;
+                }
                 saveData();
+                updateEventHeader();
                 
                 // Load archers from this event
                 if (state.selectedEventId) {
@@ -3054,148 +3617,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (setupControls.subheader) {
             setupControls.subheader.innerHTML = '';
-            const searchInput = document.createElement('input');
-            searchInput.type = 'text';
-            searchInput.placeholder = 'Search archers...';
-            searchInput.className = 'archer-search-bar';
-            searchInput.oninput = () => {
-                if (state.assignmentMode === 'pre-assigned' && state.activeEventId) {
-                    // Filter event archers by search term
-                    renderPreAssignedArchers();
-                } else {
-                    // Manual mode - use global master list
-                    const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
-                    renderArcherSelectList(masterList, searchInput.value);
-                }
-            };
-            // Live toggle
+            setupControls.subheader.style.display = 'flex';
+            setupControls.subheader.style.gap = '0.5rem';
+            setupControls.subheader.style.flexWrap = 'wrap';
+
+            const isManualMode = state.assignmentMode === 'manual';
+
+            if (!isManualMode) {
+                const searchInput = document.createElement('input');
+                searchInput.type = 'text';
+                searchInput.placeholder = 'Search archers...';
+                searchInput.className = 'archer-search-bar';
+                searchInput.oninput = () => {
+                    if (state.assignmentMode === 'pre-assigned' && state.activeEventId) {
+                        renderPreAssignedArchers();
+                    } else {
+                        const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
+                        renderArcherSelectList(masterList, searchInput.value);
+                    }
+                };
+                setupControls.subheader.appendChild(searchInput);
+            }
+
             const liveBtn = document.createElement('button');
             liveBtn.id = 'live-toggle-btn';
-            liveBtn.className = 'btn btn-secondary';
-            const getLiveEnabled = () => {
-                try { const cfg = JSON.parse(localStorage.getItem('live_updates_config')||'{}'); return cfg.enabled !== undefined ? !!cfg.enabled : true; } catch(_) { return true; }
+            const refreshLiveBtn = () => {
+                const on = getLiveEnabled();
+                liveBtn.textContent = on ? 'Live: On' : 'Live: Off';
+                liveBtn.className = on ? 'btn btn-success' : 'btn btn-secondary';
             };
-            const setLiveEnabled = (v) => { try { if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ enabled: !!v }); else localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); } catch(_) {} };
-            const renderLiveBtn = () => { const on = getLiveEnabled(); liveBtn.textContent = on ? 'Live: On' : 'Live: Off'; liveBtn.className = on ? 'btn btn-success' : 'btn btn-secondary'; };
-            renderLiveBtn();
-            
-            // Master Sync button removed - not needed for archers
-            // Initialize round/archers immediately when enabling live
-            const initLiveRoundAndArchers = () => {
-                try {
-                    let isEnabled = getLiveEnabled();
-                    if (!isEnabled || !window.LiveUpdates || !LiveUpdates.setConfig) {
-                        console.log('Live Updates not available or disabled');
-                        return;
-                    }
-                    
-                    const cfg = window.LIVE_UPDATES || {};
-                    LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1' });
-
-                    // Ensure we have credentials (coach key or event code)
-                    const luCfg = JSON.parse(localStorage.getItem('live_updates_config') || '{}');
-                    const hasCoachKey = !!(luCfg && luCfg.apiKey);
-                    let passcode = getEventEntryCode();
-                    if (!hasCoachKey && !passcode) {
-                        passcode = (window.prompt && window.prompt('Enter Event Code to enable Live Sync:')) || '';
-                        if (passcode) {
-                            try { 
-                                localStorage.setItem('event_entry_code', passcode); 
-                                // Also save to event metadata if event is loaded
-                                if (state.activeEventId || state.selectedEventId) {
-                                    const eid = state.activeEventId || state.selectedEventId;
-                                    const metaRaw = localStorage.getItem(`event:${eid}:meta`) || '{}';
-                                    const meta = JSON.parse(metaRaw);
-                                    meta.entryCode = passcode;
-                                    localStorage.setItem(`event:${eid}:meta`, JSON.stringify(meta));
-                                    console.log('Event code saved to metadata:', passcode);
-                                }
-                            } catch(_) {}
-                        } else {
-                            console.log('Live Sync requires Event Code when coach key is not present');
-                            setLiveEnabled(false);  // Turn Live back off if no code provided
-                            renderLiveBtn();
-                            return;
-                        }
-                    }
-                    
-                    // Always ensure round, then ensure current archers
-                    const meta = JSON.parse(localStorage.getItem(`event:${state.activeEventId}:meta`)||'{}');
-                    const div = (state.archers[0] && state.archers[0].division) || meta.defaultDivision || null;
-                    const gender = (state.archers[0] && state.archers[0].gender) || null;
-                    const level = (state.archers[0] && state.archers[0].level) || null;
-                    LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), division: div, gender, level, eventId: state.activeEventId || state.selectedEventId })
-                      .then(() => { 
-                        if (!LiveUpdates._state.roundId) throw new Error('roundId missing after ensureRound');
-                        const ensures = (state.archers || []).map(a => LiveUpdates.ensureArcher(a.id, a));
-                        return Promise.allSettled(ensures);
-                      })
-                      .then(() => console.log('Live Updates round/archers initialized'))
-                      .catch(err => {
-                        console.error('Failed to initialize Live Updates:', err);
-                      });
-                    
-                    const badge = document.getElementById('live-status-badge');
-                    if (badge) { 
-                        badge.textContent = 'Not Synced'; 
-                        badge.className = 'status-badge status-pending'; 
-                    }
-                } catch(err) {
-                    console.error('Error in initLiveRoundAndArchers:', err);
-                }
+            refreshLiveBtn();
+            liveBtn.onclick = async () => {
+                liveBtn.disabled = true;
+                await handleLiveToggle();
+                liveBtn.disabled = false;
+                refreshLiveBtn();
             };
-            liveBtn.onclick = () => {
-                const newState = !getLiveEnabled();
-                setLiveEnabled(newState);
-                renderLiveBtn();
-                
-                if (newState) {
-                    // Enable live sync - initialize round and archers
-                    initLiveRoundAndArchers();
-                    console.log('Live Sync enabled');
-                } else {
-                    // Disable live sync
-                    console.log('Live Sync disabled');
-                }
-                
-                // Update status display
-                updateLiveStatusDisplay();
-            };
+            if (!isManualMode) {
+                setupControls.subheader.appendChild(liveBtn);
+            }
 
             const resetBtn = document.createElement('button');
             resetBtn.id = 'reset-btn';
             resetBtn.className = 'btn btn-danger';
             resetBtn.textContent = 'Reset';
             resetBtn.onclick = () => resetModal.element.style.display = 'flex';
-            const scoringBtn = document.createElement('button');
-            scoringBtn.id = 'scoring-btn';
-            scoringBtn.className = 'btn btn-primary';
-            scoringBtn.textContent = 'Start Scoring';
-            scoringBtn.style.marginLeft = 'auto';
-            scoringBtn.onclick = showScoringView;
-            setupControls.subheader.appendChild(searchInput);
-            setupControls.subheader.appendChild(liveBtn);
             setupControls.subheader.appendChild(resetBtn);
-            setupControls.subheader.appendChild(scoringBtn);
-            
-            // Add selected count chip for manual mode
-            if (state.assignmentMode === 'manual') {
-                const selectedChip = document.createElement('span');
-                selectedChip.className = 'btn';
-                selectedChip.style.cursor = 'default';
-                selectedChip.textContent = `${state.archers.length}/4`;
-                setupControls.subheader.appendChild(selectedChip);
+
+            if (!isManualMode) {
+                const scoringBtn = document.createElement('button');
+                scoringBtn.id = 'scoring-btn';
+                scoringBtn.className = 'btn btn-primary';
+                scoringBtn.textContent = 'Start Scoring';
+                scoringBtn.onclick = showScoringView;
+                setupControls.subheader.appendChild(scoringBtn);
             }
         }
 
-        const setupBaleBtn = document.getElementById('setup-bale-btn');
-        if (setupBaleBtn) {
-            setupBaleBtn.onclick = () => {
-                state.currentView = 'setup';
-                renderView();
-            };
-        }
-        
         if (scoringControls.prevEndBtn) {
             scoringControls.prevEndBtn.textContent = 'Last End';
         scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
@@ -3280,11 +3758,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.body.addEventListener('focusin', (e) => {
-            if (e.target.classList.contains('score-input')) {
+            if (e.target.classList && e.target.classList.contains('score-input')) {
                 console.log('Score input focused:', e.target);
-                keypad.currentlyFocusedInput = e.target;
-                keypad.element.style.display = 'grid';
-                document.body.classList.add('keypad-visible');
+                showKeypadForInput(e.target);
             }
         });
 
@@ -3294,7 +3770,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.activeArcherId = e.target.dataset.archerId;
                 renderCardView(state.activeArcherId);
                 renderView();
-                keypad.element.style.display = 'none';
+                if (keypad.element) {
+                    keypad.element.style.display = 'none';
+                }
             }
         });
         
@@ -3780,6 +4258,3 @@ function getScoreColor(score) {
     if (s === '2' || s === '1' || s === 'M' || s === '0') return 'score-white';
     return '';
 }
-
-
-

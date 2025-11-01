@@ -6,6 +6,70 @@
     <title>Archer List</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .archer-modal-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 0.85rem;
+            margin-bottom: 0.9rem;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
+        }
+        .archer-modal-section h3 {
+            margin-bottom: 0.65rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .modal-grid {
+            display: grid;
+            gap: 0.6rem;
+        }
+        .modal-grid.two-col {
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        }
+        .modal-grid.three-col {
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        }
+        .modal-grid .span-2 {
+            grid-column: 1 / -1;
+        }
+        .modal-grid .span-3 {
+            grid-column: 1 / -1;
+        }
+        .input-with-button {
+            display: flex;
+            gap: 0.4rem;
+        }
+        .input-with-button input {
+            flex: 1;
+        }
+        .input-with-button button {
+            padding: 0 0.75rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            background: #e9ecef;
+            color: #374151;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .input-with-button button:hover {
+            background: #dee2e6;
+        }
+        .form-help-text {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+        @media (max-width: 520px) {
+            .modal-grid.two-col,
+            .modal-grid.three-col {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
     <div id="app-container" class="main-container">
@@ -19,12 +83,24 @@
             <button id="add-archer-btn" class="btn btn-primary"><i class="fas fa-plus"></i> Add</button>
         </div>
         
-        <div class="page-controls">
-            <button id="sort-by-name-btn" class="btn btn-secondary active">Sort by Name</button>
-            <button id="sort-by-bale-btn" class="btn btn-secondary">Sort by Bale</button>
+        <div id="self-summary-container" style="display:flex; align-items:center; gap:0.5rem; padding:0 0.4rem 0.4rem; font-size:0.9rem; color:#555;">
+            <span id="self-summary">You: Not set</span>
+            <button id="clear-self-btn" class="btn btn-secondary" style="padding:0.25rem 0.6rem; font-size:0.8rem; display:none;">Clear</button>
+        </div>
+        
+        <div class="page-controls" style="gap: 0.5rem; flex-wrap: wrap;">
+            <button id="sort-by-name-btn" class="btn btn-secondary active">Sort A-Z</button>
+            <button id="sort-by-level-btn" class="btn btn-secondary">Sort by Level</button>
+            <select id="status-filter" class="btn btn-secondary" style="min-width: 140px;">
+                <option value="active">Active Only</option>
+                <option value="all">All Statuses</option>
+                <option value="inactive">Inactive Only</option>
+            </select>
         </div>
 
-        <div id="archer-list-container" class="archer-select-list">
+        <div id="sync-status" style="margin: 0.5rem 0; font-size: 0.85rem; color: #555;"></div>
+
+        <div id="archer-list-container" class="archer-select-list" style="padding-bottom: 6rem;">
             <!-- Archer list will be rendered here -->
         </div>
 
@@ -32,7 +108,8 @@
             <a href="index.html" class="btn btn-secondary">Home</a>
             <button id="load-from-mysql-btn" class="btn btn-primary"><i class="fas fa-cloud-download-alt"></i> Load from MySQL</button>
             <button id="sync-to-mysql-btn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Sync to MySQL</button>
-            <button id="import-csv-btn" class="btn btn-secondary"><i class="fas fa-file-csv"></i> Import CSV</button>
+            <button id="import-csv-btn" class="btn btn-secondary"><i class="fas fa-file-import"></i> Import CSV</button>
+            <button id="export-csv-btn" class="btn btn-secondary"><i class="fas fa-file-export"></i> Export CSV</button>
             <button id="new-list-btn" class="btn btn-danger"><i class="fas fa-trash-alt"></i> New List</button>
         </footer>
 
@@ -52,95 +129,249 @@
     <script src="js/archer_module.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const SCHOOL_EMAIL_DOMAIN = '@student.davincischools.org';
             const modal = document.getElementById('archer-modal');
             const addArcherBtn = document.getElementById('add-archer-btn');
             const searchInput = document.getElementById('search-input');
+            const statusFilter = document.getElementById('status-filter');
             const newListBtn = document.getElementById('new-list-btn');
             const loadFromMySQLBtn = document.getElementById('load-from-mysql-btn');
             const syncToMySQLBtn = document.getElementById('sync-to-mysql-btn');
             const importCSVBtn = document.getElementById('import-csv-btn');
+            const exportCSVBtn = document.getElementById('export-csv-btn');
             const sortByNameBtn = document.getElementById('sort-by-name-btn');
-            const sortByBaleBtn = document.getElementById('sort-by-bale-btn');
+            const sortByLevelBtn = document.getElementById('sort-by-level-btn');
+            const selfSummaryEl = document.getElementById('self-summary');
+            const clearSelfBtn = document.getElementById('clear-self-btn');
 
             let editingIndex = null;
-            let sortMode = 'name'; // 'name' or 'bale'
+            let sortMode = 'name'; // 'name' or 'level'
+            let lastSyncMessage = '';
 
-            function renderList() {
+            function formatTimestamp(ts) {
+                if (!ts) return 'Never';
+                try {
+                    const date = new Date(ts);
+                    if (Number.isNaN(date.getTime())) return 'Never';
+                    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                } catch {
+                    return 'Never';
+                }
+            }
+
+            function updateSyncStatus(extraMessage) {
+                const statusEl = document.getElementById('sync-status');
+                if (!statusEl) return;
+                const meta = (typeof ArcherModule.getMeta === 'function') ? ArcherModule.getMeta() : {};
+                const pending = (typeof ArcherModule.getPendingCount === 'function') ? ArcherModule.getPendingCount() : 0;
+                const parts = [];
+                if (meta.lastSyncedAt) parts.push(`Last sync: ${formatTimestamp(meta.lastSyncedAt)}`);
+                if (meta.lastFetchedAt) parts.push(`Last download: ${formatTimestamp(meta.lastFetchedAt)}`);
+                parts.push(pending ? `${pending} change${pending === 1 ? '' : 's'} pending` : 'All changes synced');
+                if (lastSyncMessage) parts.push(lastSyncMessage);
+                if (extraMessage) parts.push(extraMessage);
+                statusEl.textContent = parts.join(' • ');
+            }
+
+            function recordSyncMessage(summary, actionLabel) {
+                if (!summary) {
+                    lastSyncMessage = '';
+                    updateSyncStatus();
+                    return;
+                }
+                if (summary.ok) {
+                    if (summary.processed > 0 && summary.pending === 0) {
+                        lastSyncMessage = `${actionLabel} synced`;
+                    } else if (summary.pending > 0) {
+                        lastSyncMessage = 'Changes queued (offline)';
+                    } else {
+                        lastSyncMessage = '';
+                    }
+                } else {
+                    lastSyncMessage = 'Offline – will retry automatically';
+                }
+                updateSyncStatus();
+            }
+
+            function getRosterState() {
+                const list = ArcherModule.loadList();
+                const extId = (typeof ArcherModule.getSelfExtId === 'function') ? ArcherModule.getSelfExtId() : '';
+                let selfArcher = null;
+                let selfExtId = extId;
+                if (extId) {
+                    selfArcher = list.find(a => a.extId === extId) || null;
+                    if (!selfArcher) {
+                        selfExtId = '';
+                        if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
+                    }
+                }
+                const friendSet = new Set((selfArcher?.faves || []).filter(Boolean));
+                return { list, selfExtId, selfArcher, friendSet };
+            }
+
+            function refreshSelfSummary(stateOverride) {
+                const state = stateOverride || getRosterState();
+                if (!selfSummaryEl) return;
+                if (state.selfArcher) {
+                    const nickname = state.selfArcher.nickname ? ` (${state.selfArcher.nickname})` : '';
+                    selfSummaryEl.textContent = `You: ${state.selfArcher.first} ${state.selfArcher.last}${nickname}`;
+                    clearSelfBtn.style.display = 'inline-block';
+                } else {
+                    selfSummaryEl.textContent = 'You: Not set';
+                    clearSelfBtn.style.display = 'none';
+                }
+            }
+
+            function renderList(stateOverride) {
+                if (stateOverride && stateOverride.target) {
+                    stateOverride = null;
+                }
                 const container = document.getElementById('archer-list-container');
                 const filter = searchInput.value.toLowerCase();
                 container.innerHTML = '';
-                let archerList = ArcherModule.loadList();
 
-                if (sortMode === 'name') {
-                    archerList.sort((a, b) => {
-                        if (a.fave && !b.fave) return -1;
-                        if (!a.fave && b.fave) return 1;
-                        const nameA = `${a.first} ${a.last}`.toLowerCase();
-                        const nameB = `${b.first} ${b.last}`.toLowerCase();
-                        return nameA.localeCompare(nameB);
-                    });
-                } else if (sortMode === 'bale') {
-                    archerList.sort((a, b) => {
-                        const baleA = parseInt(a.bale, 10) || 999;
-                        const baleB = parseInt(b.bale, 10) || 999;
-                        const targetA = a.target || 'Z';
-                        const targetB = b.target || 'Z';
-                        if (baleA !== baleB) {
-                            return baleA - baleB;
-                        }
-                        return targetA.localeCompare(targetB);
-                    });
+                const state = stateOverride || getRosterState();
+                const { list, selfExtId, friendSet } = state;
+
+                let items = list.map((archer, index) => ({ archer, index }));
+
+                const statusValue = statusFilter.value;
+                if (statusValue !== 'all') {
+                    items = items.filter(item => (item.archer.status || 'active').toLowerCase() === statusValue);
                 }
 
-                const filteredList = archerList.filter(a =>
-                    a.first.toLowerCase().includes(filter) ||
-                    a.last.toLowerCase().includes(filter) ||
-                    (a.school || '').toLowerCase().includes(filter)
-                );
+                if (filter) {
+                    items = items.filter(({ archer }) =>
+                        `${archer.first} ${archer.last}`.toLowerCase().includes(filter) ||
+                        (archer.nickname || '').toLowerCase().includes(filter) ||
+                        (archer.school || '').toLowerCase().includes(filter)
+                    );
+                }
 
-                if (filteredList.length === 0) {
+                items.sort((a, b) => {
+                    const priority = (item) => {
+                        if (selfExtId && item.archer.extId === selfExtId) return 0;
+                        if (friendSet.has(item.archer.extId)) return 1;
+                        return 2;
+                    };
+                    const aP = priority(a);
+                    const bP = priority(b);
+                    if (aP !== bP) return aP - bP;
+
+                    if (sortMode === 'level') {
+                        const levelOrder = ['VAR', 'JV', 'BEG'];
+                        const levelA = (a.archer.level || '').toUpperCase();
+                        const levelB = (b.archer.level || '').toUpperCase();
+                        const levelCompare = levelOrder.indexOf(levelA) - levelOrder.indexOf(levelB);
+                        if (levelCompare !== 0) return levelCompare;
+                    }
+
+                    const nameA = `${a.archer.first} ${a.archer.last}`.toLowerCase();
+                    const nameB = `${b.archer.first} ${b.archer.last}`.toLowerCase();
+                    return nameA.localeCompare(nameB);
+                });
+
+                if (items.length === 0) {
                     container.innerHTML = '<p style="text-align:center; padding: 20px; color: #6c757d;">No archers found.</p>';
                     return;
                 }
 
-                filteredList.forEach((archer) => {
-                    const archerIndex = ArcherModule.loadList().findIndex(item => item.first === archer.first && item.last === archer.last);
-
+                items.forEach(({ archer, index }) => {
                     const row = document.createElement('div');
                     row.className = 'archer-select-row';
 
-                    const star = document.createElement('span');
-                    star.className = 'favorite-star';
-                    star.innerHTML = archer.fave ? '<i class="fas fa-star" style="color: #ffc107;"></i>' : '<i class="far fa-star" style="color: #ccc;"></i>';
-                    star.onclick = (e) => {
-                        e.stopPropagation();
-                        toggleFave(archerIndex);
-                    };
+                    const isSelf = !!selfExtId && archer.extId === selfExtId;
+                    const isFriend = friendSet.has(archer.extId);
+
+                    const meToggle = document.createElement('span');
+                    meToggle.className = 'favorite-star';
+                    meToggle.style.marginRight = '0.5rem';
+                    if (isSelf) {
+                        meToggle.innerHTML = '<i class="fas fa-user-check" style="color: #0d6efd;"></i>';
+                        meToggle.title = 'This is you';
+                        meToggle.onclick = (e) => {
+                            e.stopPropagation();
+                            if (confirm('Clear "Who am I"?')) {
+                                if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
+                                renderList();
+                            }
+                        };
+                    } else {
+                        meToggle.innerHTML = '<i class="far fa-user" style="color: #bbb;"></i>';
+                        meToggle.title = 'Set this archer as me';
+                        meToggle.onclick = async (e) => {
+                            e.stopPropagation();
+                            await ArcherModule.setSelf(archer.extId);
+                            renderList();
+                        };
+                    }
+
+                    const friendToggle = document.createElement('span');
+                    friendToggle.className = 'favorite-star';
+                    friendToggle.style.marginRight = '0.5rem';
+                    if (isSelf) {
+                        friendToggle.innerHTML = '<i class="fas fa-heart" style="color: #ced4da;"></i>';
+                        friendToggle.style.cursor = 'default';
+                        friendToggle.onclick = (e) => {
+                            e.stopPropagation();
+                            alert('Tap the heart next to other archers to add them as friends.');
+                        };
+                    } else {
+                        friendToggle.innerHTML = isFriend ? '<i class="fas fa-heart" style="color: #e63946;"></i>' : '<i class="far fa-heart" style="color: #ccc;"></i>';
+                        friendToggle.title = isFriend ? 'Remove from friends' : 'Add as friend';
+                        friendToggle.onclick = async (e) => {
+                            e.stopPropagation();
+                            if (!selfExtId) {
+                                alert('Set "Who am I" first by tapping the person icon next to your name.');
+                                return;
+                            }
+                            try {
+                                const result = await ArcherModule.toggleFriend(archer.extId);
+                                recordSyncMessage(result?.sync, 'Friends updated');
+                                renderList();
+                            } catch (err) {
+                                alert('Unable to update friends: ' + err.message);
+                            }
+                        };
+                    }
 
                     const nameDiv = document.createElement('div');
                     nameDiv.style.flexGrow = '1';
 
                     const nameLabel = document.createElement('div');
-                    nameLabel.textContent = `${archer.first} ${archer.last}`;
+                    const nickname = archer.nickname ? ` (${archer.nickname})` : '';
+                    nameLabel.textContent = `${archer.first} ${archer.last}${nickname}`;
                     nameLabel.className = 'archer-name-label';
 
                     const detailsLabel = document.createElement('div');
-                    const baleInfo = archer.bale ? `Bale ${archer.bale}` : 'N/A';
-                    const targetInfo = archer.target ? `Tgt ${archer.target}` : '';
-                    detailsLabel.textContent = `${baleInfo} ${targetInfo} | ${archer.school || 'N/A'} | Lvl: ${archer.level || 'VAR'}`;
+                    const statusBadge = (archer.status || 'active').toUpperCase() === 'ACTIVE' ? 'Active' : 'Inactive';
+                    detailsLabel.textContent = `${(archer.school || 'N/A').toUpperCase()} • Grade ${archer.grade || '-'} • ${archer.level || 'VAR'} / ${archer.gender || 'M'} • ${statusBadge}`;
                     detailsLabel.className = 'archer-details-label';
                     
                     nameDiv.appendChild(nameLabel);
                     nameDiv.appendChild(detailsLabel);
 
-                    row.appendChild(star);
+                    const relationshipLabel = document.createElement('div');
+                    relationshipLabel.style.fontSize = '0.85em';
+                    relationshipLabel.style.color = isSelf ? '#0d6efd' : '#6c757d';
+                    relationshipLabel.textContent = isSelf ? 'You' : (isFriend ? 'Friend' : '');
+                    if (relationshipLabel.textContent) {
+                        relationshipLabel.style.marginTop = '0.15rem';
+                        nameDiv.appendChild(relationshipLabel);
+                    }
+
+                    row.appendChild(meToggle);
+                    row.appendChild(friendToggle);
                     row.appendChild(nameDiv);
 
-                    row.onclick = () => editArcher(archerIndex);
+                    row.onclick = () => editArcher(index);
 
                     container.appendChild(row);
                 });
+                refreshSelfSummary(state);
+                updateSyncStatus();
             }
+            updateSyncStatus();
 
             function openModal(index = null) {
                 editingIndex = index;
@@ -158,24 +389,77 @@
                 form.querySelector('#cancel-archer-btn-modal').onclick = closeModal;
 
                 const modalTitle = document.getElementById('modal-title');
+                const favesInput = form.querySelector('#faves');
 
                 if (index !== null) {
                     modalTitle.textContent = 'Edit Archer';
                     const archer = ArcherModule.loadList()[index];
-                    Object.keys(archer).forEach(key => {
-                        const input = form.querySelector(`#${key}`);
-                        if (input) {
-                            input.value = archer[key] || '';
-                        }
-                    });
-                    const faveSelect = form.querySelector('#fave');
-                    if (faveSelect) faveSelect.value = archer.fave ? 'true' : 'false';
-
+                    setFormValue(form, 'extId', archer.extId || '');
+                    setFormValue(form, 'first', archer.first || '');
+                    setFormValue(form, 'last', archer.last || '');
+                    setFormValue(form, 'nickname', archer.nickname || '');
+                    setFormValue(form, 'photoUrl', archer.photoUrl || '');
+                    setFormValue(form, 'school', archer.school || '');
+                    setFormValue(form, 'grade', archer.grade || '');
+                    setFormValue(form, 'gender', archer.gender || 'M');
+                    setFormValue(form, 'level', archer.level || 'VAR');
+                    setFormValue(form, 'status', archer.status || 'active');
+                    if (favesInput) favesInput.value = (archer.faves || []).join(', ');
+                    setFormValue(form, 'email', archer.email || '');
+                    setFormValue(form, 'phone', archer.phone || '');
+                    setFormValue(form, 'usArcheryId', archer.usArcheryId || '');
+                    setFormValue(form, 'jvPr', archer.jvPr || '');
+                    setFormValue(form, 'varPr', archer.varPr || '');
+                    setFormValue(form, 'domEye', archer.domEye || '');
+                    setFormValue(form, 'domHand', archer.domHand || '');
+                    setFormValue(form, 'heightIn', archer.heightIn || '');
+                    setFormValue(form, 'wingspanIn', archer.wingspanIn || '');
+                    setFormValue(form, 'drawLengthSugg', archer.drawLengthSugg || '');
+                    setFormValue(form, 'riserHeightIn', archer.riserHeightIn || '');
+                    setFormValue(form, 'limbLength', archer.limbLength || '');
+                    setFormValue(form, 'limbWeightLbs', archer.limbWeightLbs || '');
+                    setFormValue(form, 'notesGear', archer.notesGear || '');
+                    setFormValue(form, 'notesCurrent', archer.notesCurrent || '');
+                    setFormValue(form, 'notesArchive', archer.notesArchive || '');
+                    setFormValue(form, 'legacyBale', archer.bale || '');
+                    setFormValue(form, 'legacyTarget', archer.target || '');
+                    setFormValue(form, 'legacySize', archer.size || '');
                 } else {
                     modalTitle.textContent = 'Add Archer';
-                    form.reset();
-                    const faveSelect = form.querySelector('#fave');
-                    if (faveSelect) faveSelect.value = 'false';
+                    setFormValue(form, 'status', 'active');
+                }
+
+                const emailDomainBtn = form.querySelector('#email-domain-btn');
+                if (emailDomainBtn) {
+                    const emailInput = form.querySelector('#email');
+                    emailDomainBtn.onclick = (e) => {
+                        e.preventDefault();
+                        if (!emailInput) return;
+                        let value = emailInput.value.trim();
+                        const domain = SCHOOL_EMAIL_DOMAIN;
+                        const normalizedDomain = domain.startsWith('@') ? domain : `@${domain}`;
+                        if (!value) {
+                            emailInput.value = normalizedDomain;
+                            requestAnimationFrame(() => {
+                                if (emailInput.setSelectionRange) {
+                                    emailInput.setSelectionRange(0, 0);
+                                }
+                                emailInput.focus();
+                            });
+                            return;
+                        }
+                        if (value.toLowerCase().endsWith(normalizedDomain.toLowerCase())) {
+                            alert('Email already includes the school domain.');
+                            return;
+                        }
+                        if (value.includes('@')) {
+                            if (!confirm('Replace the existing domain with the school domain?')) {
+                                return;
+                            }
+                            value = value.split('@')[0];
+                        }
+                        emailInput.value = `${value}${normalizedDomain}`;
+                    };
                 }
 
                 modal.style.display = 'flex';
@@ -183,49 +467,130 @@
             
             function createFormFieldsHTML() {
                 return `
-                    <input type="hidden" id="archer-index">
-                    <div class="form-row">
-                        <div class="form-group"><label for="first">First Name*</label><input type="text" id="first" required></div>
-                        <div class="form-group"><label for="last">Last Name*</label><input type="text" id="last" required></div>
-                    </div>
-                     <div class="form-row">
-                        <div class="form-group"><label for="bale">Bale</label><input type="number" id="bale" min="1" max="99"></div>
-                        <div class="form-group">
-                            <label for="target">Target</label>
-                            <select id="target"><option value="">-</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option><option value="F">F</option><option value="G">G</option><option value="H">H</option></select>
+                    <input type="hidden" id="extId">
+                    <input type="hidden" id="legacyBale">
+                    <input type="hidden" id="legacyTarget">
+                    <input type="hidden" id="legacySize">
+
+                    <section class="archer-modal-section">
+                        <h3>Identity</h3>
+                        <div class="modal-grid two-col">
+                            <div class="form-group"><label for="first">First Name*</label><input type="text" id="first" required></div>
+                            <div class="form-group"><label for="last">Last Name*</label><input type="text" id="last" required></div>
+                            <div class="form-group"><label for="nickname">Nickname</label><input type="text" id="nickname"></div>
+                            <div class="form-group"><label for="photoUrl">Photo URL</label><input type="url" id="photoUrl" placeholder="https://..."></div>
+                            <div class="form-group"><label for="status">Status</label>
+                                <select id="status">
+                                    <option value="active" selected>Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label for="school">School (1-3 Letters)</label><input type="text" id="school" maxlength="3" placeholder="WDV"></div>
+                            <div class="form-group"><label for="grade">Grade</label>
+                                <select id="grade">
+                                    <option value="">-</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="GRAD">GRAD</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label for="gender">Gender</label>
+                                <select id="gender">
+                                    <option value="M">M</option>
+                                    <option value="F">F</option>
+                                </select>
+                            </div>
+                            <div class="form-group span-2">
+                                <label for="faves">Friends (extIds, comma separated)</label>
+                                <input type="text" id="faves" placeholder="archer-ext-id-1, archer-ext-id-2">
+                                <div class="form-help-text">Use the generated extIds (first-last-school) for quick linking.</div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label for="school">School</label><input type="text" id="school"></div>
-                        <div class="form-group">
-                            <label for="grade">Grade*</label>
-                            <select id="grade" required><option value="9">9</option><option value="10" selected>10</option><option value="11">11</option><option value="12">12</option></select>
+                    </section>
+
+                    <section class="archer-modal-section">
+                        <h3>Contact</h3>
+                        <div class="modal-grid two-col">
+                            <div class="form-group span-2">
+                                <label for="email">Email</label>
+                                <div class="input-with-button">
+                                    <input type="email" id="email" placeholder="name@student.davincischools.org">
+                                    <button type="button" id="email-domain-btn">@student...</button>
+                                </div>
+                                <div class="form-help-text">Click the button to append the school domain automatically (optional).</div>
+                            </div>
+                            <div class="form-group"><label for="phone">Phone</label><input type="tel" id="phone" placeholder="###-###-####"></div>
+                            <div class="form-group"><label for="usArcheryId">USA Archery ID</label><input type="text" id="usArcheryId"></div>
                         </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="gender">Gender*</label>
-                            <select id="gender" required><option value="M">M</option><option value="F">F</option><option value="X">X</option></select>
+                    </section>
+
+                    <section class="archer-modal-section">
+                        <h3>Performance</h3>
+                        <div class="modal-grid three-col">
+                            <div class="form-group"><label for="level">Level</label>
+                                <select id="level">
+                                    <option value="VAR">VAR</option>
+                                    <option value="JV">JV</option>
+                                    <option value="BEG">BEG</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label for="jvPr">JV PR</label><input type="number" id="jvPr" min="0" max="360"></div>
+                            <div class="form-group"><label for="varPr">Varsity PR</label><input type="number" id="varPr" min="0" max="360"></div>
                         </div>
-                        <div class="form-group">
-                            <label for="level">Level</label>
-                            <select id="level"><option value="VAR">VAR</option><option value="JV">JV</option></select>
+                    </section>
+
+                    <section class="archer-modal-section">
+                        <h3>Equipment & Measurements</h3>
+                        <div class="modal-grid three-col">
+                            <div class="form-group"><label for="domEye">Dominant Eye</label>
+                                <select id="domEye">
+                                    <option value="">-</option>
+                                    <option value="RT">Right</option>
+                                    <option value="LT">Left</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label for="domHand">Dominant Hand</label>
+                                <select id="domHand">
+                                    <option value="">-</option>
+                                    <option value="RT">Right</option>
+                                    <option value="LT">Left</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label for="heightIn">Height (in)</label><input type="number" id="heightIn" min="0" step="1"></div>
+                            <div class="form-group"><label for="wingspanIn">Wingspan (in)</label><input type="number" id="wingspanIn" min="0" step="0.1"></div>
+                            <div class="form-group"><label for="riserHeightIn">Riser Height (in)</label><input type="number" id="riserHeightIn" min="0" step="0.1"></div>
+                            <div class="form-group"><label for="limbLength">Limb Length</label>
+                                <select id="limbLength">
+                                    <option value="">-</option>
+                                    <option value="S">S</option>
+                                    <option value="M">M</option>
+                                    <option value="L">L</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label for="limbWeightLbs">Limb Weight (lbs)</label><input type="number" id="limbWeightLbs" min="0" step="0.5"></div>
+                            <div class="form-group"><label for="drawLengthSugg">Draw Length (in)</label><input type="number" id="drawLengthSugg" min="0" step="0.1"></div>
                         </div>
-                         <div class="form-group">
-                            <label for="fave">Favorite</label>
-                            <select id="fave"><option value="false">☆ No</option><option value="true">★ Yes</option></select>
+                    </section>
+
+                    <section class="archer-modal-section">
+                        <h3>Notes</h3>
+                        <div class="modal-grid two-col">
+                            <div class="form-group span-2"><label for="notesGear">Gear Notes</label><textarea id="notesGear" rows="2"></textarea></div>
+                            <div class="form-group span-2"><label for="notesCurrent">Current Notes</label><textarea id="notesCurrent" rows="2"></textarea></div>
+                            <div class="form-group span-2"><label for="notesArchive">Archive Notes</label><textarea id="notesArchive" rows="2"></textarea></div>
                         </div>
-                    </div>
-                    <hr>
-                    <div class="form-row">
-                        <div class="form-group"><label for="varPr">Varsity PR</label><input type="number" id="varPr" min="0" max="360"></div>
-                        <div class="form-group"><label for="jvPr">JV PR</label><input type="number" id="jvPr" min="0" max="360"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label for="email">Email</label><input type="email" id="email"></div>
-                        <div class="form-group"><label for="usarchery">USArchery #</label><input type="text" id="usarchery"></div>
-                    </div>
+                    </section>
                 `;
+            }
+
+            function setFormValue(form, id, value) {
+                const el = form.querySelector(`#${id}`);
+                if (!el) return;
+                if (el.tagName === 'SELECT' || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                    el.value = value != null ? value : '';
+                }
             }
 
             function closeModal() {
@@ -236,55 +601,99 @@
                 openModal(index);
             }
 
-            function toggleFave(index) {
-                const archerList = ArcherModule.loadList();
-                const archer = archerList[index];
-                archer.fave = !archer.fave;
-                ArcherModule.editArcher(index, archer);
-                renderList();
-            }
-
             addArcherBtn.onclick = () => openModal();
+
+            clearSelfBtn.onclick = () => {
+                const current = (typeof ArcherModule.getSelfExtId === 'function') ? ArcherModule.getSelfExtId() : '';
+                if (!current) {
+                    alert('Set "Who am I" by tapping the person icon next to your name.');
+                    return;
+                }
+                if (confirm('Clear "Who am I" for this device?')) {
+                    if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
+                    renderList();
+                }
+            };
             
             window.onclick = (event) => {
-                if (event.target == modal) closeModal();
+                if (event.target === modal) closeModal();
             };
 
-            document.getElementById('archer-form').onsubmit = (e) => {
+            document.getElementById('archer-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const form = e.target;
+                const parseList = (value) => value
+                    .split(/[,;]+/)
+                    .map(s => s.trim())
+                    .filter(Boolean);
+
+                const current = editingIndex !== null ? ArcherModule.loadList()[editingIndex] || {} : {};
                 const archer = {
+                    extId: form.querySelector('#extId').value.trim(),
                     first: form.querySelector('#first').value.trim(),
                     last: form.querySelector('#last').value.trim(),
+                    nickname: form.querySelector('#nickname').value.trim(),
+                    photoUrl: form.querySelector('#photoUrl').value.trim(),
                     school: form.querySelector('#school').value.trim(),
                     grade: form.querySelector('#grade').value,
+                    status: form.querySelector('#status').value,
                     gender: form.querySelector('#gender').value,
                     level: form.querySelector('#level').value,
-                    fave: form.querySelector('#fave').value === 'true',
-                    varPr: form.querySelector('#varPr').value,
-                    jvPr: form.querySelector('#jvPr').value,
+                    faves: parseList(form.querySelector('#faves').value),
                     email: form.querySelector('#email').value.trim(),
-                    usarchery: form.querySelector('#usarchery').value.trim(),
-                    bale: form.querySelector('#bale').value.trim(),
-                    target: form.querySelector('#target').value,
+                    phone: form.querySelector('#phone').value.trim(),
+                    usArcheryId: form.querySelector('#usArcheryId').value.trim(),
+                    jvPr: form.querySelector('#jvPr').value,
+                    varPr: form.querySelector('#varPr').value,
+                    domEye: form.querySelector('#domEye').value,
+                    domHand: form.querySelector('#domHand').value,
+                    heightIn: form.querySelector('#heightIn').value,
+                    wingspanIn: form.querySelector('#wingspanIn').value,
+                    drawLengthSugg: form.querySelector('#drawLengthSugg').value,
+                    riserHeightIn: form.querySelector('#riserHeightIn').value,
+                    limbLength: form.querySelector('#limbLength').value,
+                    limbWeightLbs: form.querySelector('#limbWeightLbs').value,
+                    notesGear: form.querySelector('#notesGear').value,
+                    notesCurrent: form.querySelector('#notesCurrent').value,
+                    notesArchive: form.querySelector('#notesArchive').value,
+                    // Preserve legacy fields until dependent modules migrate
+                    bale: current.bale || form.querySelector('#legacyBale').value || '',
+                    target: current.target || form.querySelector('#legacyTarget').value || '',
+                    size: current.size || form.querySelector('#legacySize').value || ''
                 };
 
-                if (editingIndex !== null) {
-                    ArcherModule.editArcher(editingIndex, archer);
-                } else {
-                    ArcherModule.addArcher(archer);
+                if (!archer.first || !archer.last) {
+                    alert('First and Last name are required.');
+                    return;
+                }
+
+                try {
+                    let result;
+                    if (editingIndex !== null) {
+                        result = await ArcherModule.editArcher(editingIndex, archer);
+                        recordSyncMessage(result?.sync, 'Profile updated');
+                    } else {
+                        result = await ArcherModule.addArcher(archer);
+                        recordSyncMessage(result?.sync, 'Profile added');
+                    }
+                } catch (error) {
+                    console.error('Failed to save archer:', error);
+                    alert('Unable to save archer at this time. Changes are kept locally and will retry when online.');
                 }
                 renderList();
                 closeModal();
             };
 
-            searchInput.oninput = renderList;
+            searchInput.oninput = () => renderList();
+            statusFilter.onchange = () => renderList();
 
             newListBtn.onclick = () => {
                 if (confirm('Are you sure you want to delete the entire archer list? This cannot be undone.')) {
                     ArcherModule.clearList();
                     renderList();
                     alert('Archer list has been cleared.');
+                    lastSyncMessage = 'Local list cleared';
+                    updateSyncStatus();
                 }
             };
             
@@ -293,29 +702,12 @@
                 if (confirm('This will overwrite your current localStorage list with archers from the MySQL database. Continue?')) {
                     try {
                         const archers = await ArcherModule.loadFromMySQL();
-                        
-                        // Convert MySQL format to localStorage format
-                        const convertedList = archers.map(a => ({
-                            first: a.firstName,
-                            last: a.lastName,
-                            school: a.school,
-                            level: a.level,
-                            gender: a.gender,
-                            grade: '',  // Not in MySQL
-                            bale: '',   // Not in MySQL master list
-                            target: '', // Not in MySQL master list
-                            fave: false,
-                            varPr: '',
-                            jvPr: '',
-                            email: '',
-                            usarchery: ''
-                        }));
-                        
-                        ArcherModule.saveList(convertedList);
-                        renderList();
                         alert(`Loaded ${archers.length} archers from MySQL database.`);
+                        lastSyncMessage = 'Roster downloaded from server';
+                        renderList();
+                        updateSyncStatus();
                     } catch (error) {
-                        alert('Failed to load from MySQL: ' + error.message + '\n\nMake sure you have entered your API key in Coach Console first.');
+                        alert('Failed to load from MySQL: ' + error.message + '\n\nEnter your coach API key or event code in Coach Console, then try again.');
                     }
                 }
             };
@@ -325,32 +717,49 @@
                 if (confirm('This will sync your current localStorage list TO the MySQL database. Continue?')) {
                     try {
                         const result = await ArcherModule.syncToMySQL();
-                        alert(`Sync complete!\n\nInserted: ${result.inserted}\nUpdated: ${result.updated}`);
+                        recordSyncMessage(result, 'Manual sync');
+                        if (result?.ok) {
+                            const processed = result?.processed ?? 0;
+                            const pending = result?.pending ?? 0;
+                            alert(`Sync requested.\nProcessed now: ${processed}\nPending changes: ${pending}`);
+                        } else {
+                            alert('Unable to reach the server right now. Changes are stored locally and will retry automatically.');
+                        }
+                        updateSyncStatus();
                     } catch (error) {
-                        alert('Failed to sync to MySQL: ' + error.message + '\n\nMake sure you have entered your API key in Coach Console first.');
+                        alert('Failed to sync to MySQL: ' + error.message + '\n\nEnter your coach API key or event code in Coach Console, then try again.');
                     }
                 }
             };
             
-            // Import CSV (keeps old CSV functionality)
+            // Import CSV (keeps server CSV functionality)
             importCSVBtn.onclick = async () => {
                 if (confirm('This will overwrite your current list with the CSV file from the server. Are you sure?')) {
                     await ArcherModule.loadDefaultCSVIfNeeded(true);
                     renderList();
                     alert('List has been refreshed from CSV file.');
+                    lastSyncMessage = 'Roster refreshed from CSV';
+                    updateSyncStatus();
+                }
+            };
+
+            exportCSVBtn.onclick = () => {
+                const csv = ArcherModule.exportCSV();
+                if (csv) {
+                    alert('CSV export started. Check your downloads.');
                 }
             };
             
             sortByNameBtn.onclick = () => {
                 sortMode = 'name';
                 sortByNameBtn.classList.add('active');
-                sortByBaleBtn.classList.remove('active');
+                sortByLevelBtn.classList.remove('active');
                 renderList();
             };
 
-            sortByBaleBtn.onclick = () => {
-                sortMode = 'bale';
-                sortByBaleBtn.classList.add('active');
+            sortByLevelBtn.onclick = () => {
+                sortMode = 'level';
+                sortByLevelBtn.classList.add('active');
                 sortByNameBtn.classList.remove('active');
                 renderList();
             };
@@ -358,6 +767,12 @@
             (async function init() {
                 await ArcherModule.loadDefaultCSVIfNeeded();
                 renderList();
+                try {
+                    await ArcherModule.flushPending();
+                } catch (err) {
+                    console.warn('Initial sync flush failed:', err);
+                }
+                updateSyncStatus();
             })();
         });
     </script>

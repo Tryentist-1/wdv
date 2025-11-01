@@ -29,23 +29,25 @@
             <div id="manual-setup-section" class="setup-section" style="display: none;">
                 <div class="manual-setup-card">
                     <h3>Manual Setup</h3>
-                    <div class="manual-controls">
-                        <div class="bale-selector-manual">
-                            <label for="bale-number-input-manual">Bale:</label>
-                            <input type="number" id="bale-number-input-manual" min="1" max="99" value="1">
+                    <div class="manual-bale-section">
+                        <div class="manual-bale-header">
+                            <span class="manual-bale-label">Select Bale</span>
+                            <div class="manual-bale-actions">
+                                <button id="manual-live-toggle-btn" class="btn btn-success">Live: On</button>
+                                <span id="manual-live-status" class="status-badge status-off">Live Off</span>
+                                <button id="manual-start-scoring-btn" class="btn btn-primary" disabled>Start Scoring</button>
+                            </div>
                         </div>
+                        <input type="number" id="bale-number-input-manual" min="1" max="99" value="1" class="manual-bale-input-visually-hidden">
+                        <div id="manual-bale-grid" class="manual-bale-grid"></div>
+                    </div>
+                    <div class="manual-search-section">
                         <div class="archer-search-manual">
                             <input type="text" id="archer-search-manual" placeholder="Search archers..." class="archer-search-bar">
                         </div>
                         <div class="selection-indicator">
                             <span id="selected-count-chip">0/4 archers selected</span>
                         </div>
-                    </div>
-                    <div id="selected-archers-display" class="selected-archers">
-                        <!-- Selected archers will be displayed here -->
-                    </div>
-                    <div class="manual-actions">
-                        <button id="manual-start-scoring-btn" class="btn btn-primary" disabled>Start Scoring</button>
                     </div>
                 </div>
             </div>
@@ -229,5 +231,3 @@
     </div>
 </body>
 </html>
-
-

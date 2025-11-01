@@ -17,17 +17,20 @@ USER="terry@tryentist.com"
 REMOTE_DIR="public_html/wdv"
 LOCAL_DIR="/Users/terry/web-mirrors/tryentist/wdv"
 DATESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="$LOCAL_DIR/../backups"
-LOCAL_BACKUP="$BACKUP_DIR/wdv_backup_$DATESTAMP"
+BACKUP_DIR="$LOCAL_DIR/deploy_backups"
+LOCAL_BACKUP_ARCHIVE="$BACKUP_DIR/wdv_backup_$DATESTAMP.tar.gz"
 REMOTE_BACKUP="public_html/wdv_backup_$DATESTAMP"
 REMOTE_BACKUP_LOCAL="$BACKUP_DIR/remote_backup_$DATESTAMP"
+REMOTE_BACKUP_ARCHIVE="$REMOTE_BACKUP_LOCAL.tar.gz"
+LOCAL_BACKUP_SUMMARY="(skipped)"
+REMOTE_BACKUP_SUMMARY="(skipped)"
 
 # Create backup directory if it doesn't exist
 mkdir -p "$BACKUP_DIR"
 
 # --- Build lftp exclude list from .gitignore and always-excluded files ---
 # Never deploy local app-imports to prod (coach uploads live CSVs there)
-EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/** --exclude-glob app-imports/** --exclude-glob playwright-report/** --exclude-glob test-results/** --exclude-glob .vscode/** --exclude-glob .github/** --exclude-glob '*.md' --exclude-glob '.DS_Store'"
+EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob deploy_backups/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/** --exclude-glob app-imports/** --exclude-glob playwright-report/** --exclude-glob test-results/** --exclude-glob .vscode/** --exclude-glob .github/** --exclude-glob '*.md' --exclude-glob '.DS_Store'"
 if [ -f .gitignore ]; then
   GITEXCLUDES=$(grep -v '^#' .gitignore | grep -v '^$' | awk '{print "--exclude-glob "$1}' | xargs)
   EXCLUDES="$EXCLUDES $GITEXCLUDES"
@@ -55,13 +58,17 @@ done
 # --- Step 1: Local backup (optional) ---
 if [[ $SKIP_LOCAL_BACKUP -eq 0 ]]; then
   echo -e "\n--- Step 1: Local backup ---"
-  mkdir -p "$LOCAL_BACKUP"
-  cp -r "$LOCAL_DIR"/* "$LOCAL_BACKUP"
-  echo "Local backup created at $LOCAL_BACKUP"
-  # Compress local backup
-  tar -czf "$LOCAL_BACKUP.tar.gz" -C "$LOCAL_BACKUP" .
-  rm -rf "$LOCAL_BACKUP"  # Remove uncompressed backup
-  echo "Local backup compressed to $LOCAL_BACKUP.tar.gz"
+  mkdir -p "$BACKUP_DIR"
+  tar -czf "$LOCAL_BACKUP_ARCHIVE" \
+    --exclude='./deploy_backups' \
+    --exclude='./node_modules' \
+    --exclude='./.git' \
+    --exclude='./playwright-report' \
+    --exclude='./test-results' \
+    --exclude='./app-imports' \
+    -C "$LOCAL_DIR" . || { echo "Local backup failed."; exit 1; }
+  echo "Local backup written to $LOCAL_BACKUP_ARCHIVE"
+  LOCAL_BACKUP_SUMMARY="$LOCAL_BACKUP_ARCHIVE"
 else
   echo -e "\n--- Step 1: Skipping local backup (per flag) ---"
 fi
@@ -79,9 +86,10 @@ if [[ $DO_REMOTE_BACKUP -eq 1 ]]; then
   bye\
   " $HOST
   # Compress remote backup
-  tar -czf "$REMOTE_BACKUP_LOCAL.tar.gz" -C "$REMOTE_BACKUP_LOCAL" .
+  tar -czf "$REMOTE_BACKUP_ARCHIVE" -C "$REMOTE_BACKUP_LOCAL" .
   rm -rf "$REMOTE_BACKUP_LOCAL"  # Remove uncompressed backup
-  echo "Remote backup compressed to $REMOTE_BACKUP_LOCAL.tar.gz"
+  echo "Remote backup compressed to $REMOTE_BACKUP_ARCHIVE"
+  REMOTE_BACKUP_SUMMARY="$REMOTE_BACKUP_ARCHIVE"
 else
   echo -e "\n--- Step 2: Skipping remote backup (use --remote-backup to enable) ---"
 fi
@@ -90,7 +98,7 @@ fi
 echo -e "\n--- Step 3: Verifying files to be uploaded ---"
 echo "Files that would be uploaded (excluding sensitive files):"
 cd "$LOCAL_DIR"
-find . -type f -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/docs/*" -not -path "*/tests/*" -not -path "*/backups/*" -not -path "*/app-imports/*" | sort
+find . -type f -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/docs/*" -not -path "*/tests/*" -not -path "*/backups/*" -not -path "*/deploy_backups/*" -not -path "*/app-imports/*" | sort
 cd - > /dev/null
 
 # --- Step 4: Deploy to FTP ---
@@ -142,4 +150,4 @@ else
 fi
 
 # --- Done ---
-echo -e "\nAll done! Local backup: $LOCAL_BACKUP.tar.gz | Remote backup: $REMOTE_BACKUP_LOCAL.tar.gz"
+echo -e "\nAll done! Local backup: $LOCAL_BACKUP_SUMMARY | Remote backup: $REMOTE_BACKUP_SUMMARY"

@@ -65,7 +65,7 @@
                 - cell "B" [ref=e66]
     - generic [ref=e67]:
       - textbox "Search archers..." [ref=e68]
-      - 'button "Live: Off" [ref=e69] [cursor=pointer]'
+      - 'button "Live: On" [ref=e69] [cursor=pointer]'
       - button "Reset" [ref=e70] [cursor=pointer]
       - button "Start Scoring" [ref=e71] [cursor=pointer]
     - generic [ref=e73]:

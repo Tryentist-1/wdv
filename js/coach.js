@@ -19,6 +19,18 @@
   let currentDivision = null; // Current division being configured
   let divisionRounds = {}; // Map of division -> roundId
 
+  function persistCoachCredentials() {
+    try {
+      localStorage.setItem('coach_api_key', COACH_PASSCODE);
+      localStorage.setItem('coach_passcode', COACH_PASSCODE);
+      if (window.LiveUpdates && typeof window.LiveUpdates.saveConfig === 'function') {
+        window.LiveUpdates.saveConfig({ apiKey: COACH_PASSCODE, enabled: true });
+      }
+    } catch (err) {
+      console.warn('Failed to persist coach credentials to localStorage', err);
+    }
+  }
+
   // ==================== Cookie Management ====================
   
   function setCookie(name, value, days) {
@@ -47,6 +59,7 @@
   function checkAuthentication() {
     const auth = getCookie(COACH_COOKIE_NAME);
     if (auth === 'true') {
+      persistCoachCredentials();
       return true;
     }
     showAuthModal();
@@ -70,6 +83,7 @@
       if (passcode === COACH_PASSCODE) {
         // Correct passcode
         setCookie(COACH_COOKIE_NAME, 'true', COOKIE_DAYS);
+        persistCoachCredentials();
         modal.style.display = 'none';
         init(); // Initialize the coach console
       } else {
@@ -1074,4 +1088,3 @@
   };
 
 })();
-

@@ -122,7 +122,11 @@
         // Prefer working without an API key on archer devices; include key if present
         const key = state.config.apiKey || localStorage.getItem('coach_api_key') || '';
         const headers = { 'Content-Type': 'application/json' };
-        if (key) { headers['X-API-Key'] = key; headers['X-Passcode'] = key; }
+        if (key) { 
+            headers['X-API-Key'] = key; 
+            headers['X-Passcode'] = key; 
+            console.log('[LiveUpdates] Using coach API key for request.');
+        }
         else {
             // Fall back to event entry code so archers can sync without coach key
             let entryCode = localStorage.getItem('event_entry_code') || '';
@@ -164,7 +168,12 @@
                     }
                 } catch(_) {}
             }
-            if (entryCode) headers['X-Passcode'] = entryCode;
+            if (entryCode) {
+                headers['X-Passcode'] = entryCode;
+                console.log('[LiveUpdates] Using event entry code for request.');
+            } else {
+                console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
+            }
         }
         
         const res = await fetch(`${state.config.apiBase}${path}`, {
@@ -322,5 +331,3 @@
     window.LiveUpdates = publicApi;
 
 })(window);
-
-

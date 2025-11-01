@@ -6,14 +6,37 @@ CREATE TABLE IF NOT EXISTS archers (
   ext_id VARCHAR(128) NULL COMMENT 'External ID for sync with localStorage',
   first_name VARCHAR(100) NOT NULL,
   last_name VARCHAR(100) NOT NULL,
-  school VARCHAR(3) NOT NULL COMMENT '3-letter school code (e.g., WIS, DVN)',
-  level VARCHAR(3) NOT NULL COMMENT 'VAR or JV',
+  nickname VARCHAR(100) NULL,
+  photo_url VARCHAR(255) NULL,
+  school VARCHAR(3) NOT NULL COMMENT '1-3 letter school code (e.g., WIS, DVN)',
+  grade VARCHAR(4) NULL COMMENT '9,10,11,12,GRAD',
   gender VARCHAR(1) NOT NULL COMMENT 'M or F',
+  level VARCHAR(3) NOT NULL COMMENT 'VAR, JV, or BEG',
+  faves TEXT NULL COMMENT 'JSON / CSV list of friend UUIDs',
+  dom_eye VARCHAR(2) NULL COMMENT 'RT or LT',
+  dom_hand VARCHAR(2) NULL COMMENT 'RT or LT',
+  height_in TINYINT UNSIGNED NULL COMMENT 'Height in inches',
+  wingspan_in TINYINT UNSIGNED NULL COMMENT 'Wingspan in inches',
+  draw_length_sugg DECIMAL(5,2) NULL COMMENT 'Suggested draw length',
+  riser_height_in DECIMAL(5,2) NULL COMMENT 'Riser height in inches',
+  limb_length VARCHAR(2) NULL COMMENT 'S, M, or L',
+  limb_weight_lbs DECIMAL(5,2) NULL COMMENT 'Limb weight in pounds',
+  notes_gear TEXT NULL,
+  notes_current TEXT NULL,
+  notes_archive TEXT NULL,
+  email VARCHAR(200) NULL,
+  phone VARCHAR(20) NULL,
+  us_archery_id VARCHAR(20) NULL,
+  jv_pr INT NULL COMMENT 'Junior Varsity personal record',
+  var_pr INT NULL COMMENT 'Varsity personal record',
+  status VARCHAR(16) NOT NULL DEFAULT 'active' COMMENT 'active or inactive',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY uq_archers_ext (ext_id),
   KEY idx_archers_name (last_name, first_name),
-  KEY idx_archers_division (gender, level)
+  KEY idx_archers_division (gender, level),
+  KEY idx_archers_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS rounds (
@@ -91,6 +114,3 @@ CREATE TABLE IF NOT EXISTS end_events (
   CONSTRAINT fk_ev_round FOREIGN KEY (round_id) REFERENCES rounds(id) ON DELETE CASCADE,
   CONSTRAINT fk_ev_ra FOREIGN KEY (round_archer_id) REFERENCES round_archers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-
-

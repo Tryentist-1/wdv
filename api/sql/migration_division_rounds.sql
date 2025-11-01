@@ -80,3 +80,4 @@ SHOW COLUMNS FROM round_archers;
 -- CREATE TABLE rounds AS SELECT * FROM rounds_backup_20251029;
 -- ALTER TABLE rounds DROP INDEX uq_event_division;
 
+

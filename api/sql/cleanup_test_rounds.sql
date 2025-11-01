@@ -44,3 +44,4 @@ FROM round_archers
 WHERE round_id = 'acac6dd1-147b-40e7-87a2-d366a5caa4da'
 ORDER BY bale_number, target_assignment;
 
+

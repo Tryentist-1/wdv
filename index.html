@@ -673,6 +673,7 @@
   <div class="home-container">
     <header class="home-header">
       <h1>Archery Tools</h1>
+      <p id="welcome-self" style="margin-top:0.5rem; color:#6c757d; font-size:0.95rem;"></p>
     </header>
 
     <div class="button-menu">
@@ -701,12 +702,16 @@
       <button id="help-btn" class="btn btn-secondary" style="margin-top: 1rem;" title="Show the tutorial again">
         <i class="fas fa-question-circle btn-icon"></i>Show Tutorial
       </button>
+      <button id="clear-cache-btn" class="btn btn-danger" style="margin-top: 0.75rem;" title="Clear cached archers, events, and scoring data on this device">
+        <i class="fas fa-broom btn-icon"></i>Reset App Data
+      </button>
     </div>
     <footer>
       <p>© 2024 OAS Score Sheets & Tools. All rights reserved.</p>
     </footer>
   </div>
 
+  <script src="js/archer_module.js"></script>
   <script>
     // Onboarding functionality
     let currentStep = 1;
@@ -794,16 +799,133 @@
       }
     }
 
+    function updateWelcomeMessage() {
+      const welcomeEl = document.getElementById('welcome-self');
+      if (!welcomeEl) return;
+      try {
+        if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
+          const selfArcher = window.ArcherModule.getSelfArcher();
+          if (selfArcher) {
+            const nickname = selfArcher.nickname ? ` (${selfArcher.nickname})` : '';
+            welcomeEl.textContent = `Welcome back, ${selfArcher.first} ${selfArcher.last}${nickname}!`;
+            return;
+          }
+        }
+        // Fallback using raw localStorage
+        const extId = localStorage.getItem('archerSelfExtId') || '';
+        if (!extId) {
+          welcomeEl.textContent = 'Tap Archer Setup to choose yourself and add friends.';
+          return;
+        }
+        const listRaw = localStorage.getItem('archerList');
+        if (listRaw) {
+          try {
+            const list = JSON.parse(listRaw) || [];
+            const found = list.find(a => (a.extId || '') === extId || `${(a.first || '').trim()}-${(a.last || '').trim()}` === extId);
+            if (found) {
+              const nickname = found.nickname ? ` (${found.nickname})` : '';
+              welcomeEl.textContent = `Welcome back, ${found.first} ${found.last}${nickname}!`;
+              return;
+            }
+          } catch (_) {}
+        }
+        welcomeEl.textContent = 'Tap Archer Setup to choose yourself and add friends.';
+      } catch (e) {
+        console.warn('Unable to render welcome message:', e);
+      }
+    }
+
+    async function clearAppData() {
+      const confirmed = confirm('Reset local app data? This clears cached archers, events, and scoring sessions stored on this device.');
+      if (!confirmed) return;
+
+      const exactKeys = [
+        'archerList',
+        'archerListMeta',
+        'archerListPendingUpserts',
+        'archerSelfExtId',
+        'live_updates_config',
+        'coach_api_key',
+        'event_entry_code',
+        'archery_master_list',
+        'archery_tools_onboarding_complete'
+      ];
+      const keyPrefixes = [
+        'rankingRound_',
+        'rankingRound300_',
+        'event:',
+        'LiveUpdates:',
+        'cachedRound:',
+        'coachSession:',
+        'manualBale:'
+      ];
+
+      try {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (!key) continue;
+          keys.push(key);
+        }
+        keys.forEach(key => {
+          if (exactKeys.includes(key) || keyPrefixes.some(prefix => key.startsWith(prefix))) {
+            localStorage.removeItem(key);
+          }
+        });
+      } catch (err) {
+        console.warn('Local storage clear failed:', err);
+      }
+
+      try { sessionStorage.clear(); } catch (err) { console.warn('Session storage clear failed:', err); }
+
+      if (window.caches && typeof window.caches.keys === 'function') {
+        try {
+          const cacheNames = await window.caches.keys();
+          await Promise.all(cacheNames.map(name => window.caches.delete(name)));
+        } catch (err) {
+          console.warn('Cache API clear failed:', err);
+        }
+      }
+
+      try {
+        document.cookie.split(';').forEach(cookieStr => {
+          const cookie = cookieStr.trim();
+          if (!cookie) return;
+          const eqPos = cookie.indexOf('=');
+          const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
+          if (!name) return;
+          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+        });
+      } catch (err) {
+        console.warn('Cookie clear failed:', err);
+      }
+
+      alert('Local app data cleared. The page will reload now.');
+      window.location.reload();
+    }
+
     // Onboarding disabled - outdated tutorial
     document.addEventListener('DOMContentLoaded', function() {
       // showOnboarding(); // DISABLED - Tutorial needs updating
       // Note: Active event banner disabled - requires authentication that archers don't have
       
       // Add help button functionality (still works if user clicks manually)
-      document.getElementById('help-btn').addEventListener('click', function() {
-        localStorage.removeItem('archery_tools_onboarding_complete');
-        showOnboarding();
-      });
+      const helpButton = document.getElementById('help-btn');
+      if (helpButton) {
+        helpButton.addEventListener('click', function() {
+          localStorage.removeItem('archery_tools_onboarding_complete');
+          showOnboarding();
+        });
+      }
+
+      const clearBtn = document.getElementById('clear-cache-btn');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          clearAppData();
+        });
+      }
+
+      updateWelcomeMessage();
     });
   </script>
 </body>

@@ -21,12 +21,13 @@ document.addEventListener('DOMContentLoaded', () => {
         totalEnds: 12, // Default for a 360 round
         baleNumber: 1,
         date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
-        archers: [], // { id, firstName, lastName, school, level, gender, targetAssignment, scores, targetSize? }
+        archers: [], // { id, extId, firstName, lastName, school, level, gender, targetAssignment, scores, targetSize? }
         activeArcherId: null, // For card view
         selectedEventId: null, // Selected event for this bale
         activeEventId: null, // Event ID if pre-assigned mode
         assignmentMode: 'manual', // 'manual' or 'pre-assigned'
         syncStatus: {}, // Track sync status per archer per end: { archerId: { endNumber: 'synced'|'pending'|'failed' } }
+        rosterFilter: '',
     };
 
     const sessionKey = `rankingRound_${new Date().toISOString().split('T')[0]}`;
@@ -92,6 +93,14 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (state.currentView === 'scoring') {
             renderScoringView();
         }
+
+        const setupBaleBtn = document.getElementById('setup-bale-btn');
+        if (setupBaleBtn && setupBaleBtn.onclick === null) {
+            setupBaleBtn.onclick = () => {
+                state.currentView = 'setup';
+                renderView();
+            };
+        }
     }
 
     // --- PERSISTENCE ---
@@ -110,6 +119,9 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const loadedState = JSON.parse(storedState);
                 Object.assign(state, loadedState);
+                if (typeof state.rosterFilter !== 'string') {
+                    state.rosterFilter = '';
+                }
             } catch (e) {
                 console.error("Error parsing stored data. Starting fresh.", e);
                 localStorage.removeItem(sessionKey);
@@ -117,7 +129,104 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const TARGET_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
     // --- LOGIC ---
+
+    function inferTargetSize(level = '') {
+        const normalized = String(level || '').trim().toUpperCase();
+        return (normalized === 'VAR' || normalized === 'V' || normalized === 'VARSITY') ? 122 : 80;
+    }
+
+    function getExtIdFromArcher(archer = {}) {
+        if (!archer) return '';
+        if (archer.extId) return archer.extId;
+        if (archer.id) return String(archer.id);
+        const first = (archer.first || archer.firstName || '').trim().toLowerCase();
+        const last = (archer.last || archer.lastName || '').trim().toLowerCase();
+        const school = (archer.school || '').trim().toLowerCase();
+        return [first, last, school].filter(Boolean).join('-');
+    }
+
+    function getRosterState() {
+        if (typeof ArcherModule === 'undefined') {
+            return { list: [], selfExtId: '', selfArcher: null, friendSet: new Set() };
+        }
+        const list = ArcherModule.loadList() || [];
+        let selfExtId = '';
+        let selfArcher = null;
+        if (typeof ArcherModule.getSelfExtId === 'function') {
+            selfExtId = ArcherModule.getSelfExtId() || '';
+        }
+        if (selfExtId) {
+            selfArcher = list.find(a => getExtIdFromArcher(a) === selfExtId) || null;
+            if (!selfArcher) {
+                selfExtId = '';
+            }
+        }
+        const friendSet = new Set((selfArcher && Array.isArray(selfArcher.faves)) ? selfArcher.faves.filter(Boolean) : []);
+        return { list, selfExtId, selfArcher, friendSet };
+    }
+
+    function getStateArcherByExtId(extId) {
+        if (!extId) return null;
+        return state.archers.find(a => {
+            const candidate = a.extId || a.id;
+            return candidate === extId;
+        }) || null;
+    }
+
+    function buildStateArcherFromRoster(rosterArcher = {}, targetAssignment = 'A') {
+        const extId = getExtIdFromArcher(rosterArcher);
+        const firstName = (rosterArcher.first || rosterArcher.firstName || '').trim();
+        const lastName = (rosterArcher.last || rosterArcher.lastName || '').trim();
+        const nickname = (rosterArcher.nickname || rosterArcher.nick || '').trim();
+        const school = (rosterArcher.school || '').trim();
+        const grade = (rosterArcher.grade || '').trim();
+        const gender = (rosterArcher.gender || '').trim();
+        const level = (rosterArcher.level || '').trim();
+        const status = (rosterArcher.status || 'active').trim().toLowerCase();
+        const fallbackId = [firstName, lastName].filter(Boolean).join('-').toLowerCase() || `archer-${Date.now()}`;
+
+        return {
+            id: extId || fallbackId,
+            extId: extId || '',
+            firstName,
+            lastName,
+            nickname,
+            school,
+            grade,
+            gender,
+            level,
+            status,
+            targetAssignment: targetAssignment,
+            targetSize: inferTargetSize(level),
+            scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
+        };
+    }
+
+    function getArcherKey(archer) {
+        if (!archer) return '';
+        if (archer.id) return String(archer.id);
+        if (archer.extId) return String(archer.extId);
+        return getExtIdFromArcher(archer);
+    }
+
+    function findArcherByKey(key) {
+        if (!key) return null;
+        return state.archers.find(archer => getArcherKey(archer) === key) || null;
+    }
+
+    function updateSelectedChip() {
+        const chip = document.getElementById('selected-count-chip');
+        if (chip) chip.textContent = `${state.archers.length}/4`;
+    }
+
+    function pickNextTargetLetter() {
+        const usedTargets = new Set(state.archers.map(a => (a.targetAssignment || '').toUpperCase()));
+        const next = TARGET_LETTERS.find(letter => !usedTargets.has(letter));
+        return next || TARGET_LETTERS[0];
+    }
 
     function renderSetupForm() {
         if (!setupControls.container) return;
@@ -126,23 +235,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Pre-assigned mode: show read-only archer list
         if (state.assignmentMode === 'pre-assigned' && state.archers.length > 0) {
             renderPreAssignedArchers();
+            updateSelectedChip();
             return;
         }
         
         // Manual mode: show checkbox list
-        const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
-        masterList.sort((a, b) => {
-            if (a.fave && !b.fave) return -1;
-            if (!a.fave && b.fave) return 1;
-            const nameA = `${a.first} ${a.last}`.toLowerCase();
-            const nameB = `${b.first} ${b.last}`.toLowerCase();
-            if (nameA < nameB) return -1;
-            if (nameA > nameB) return 1;
-            return 0;
-        });
-        const searchInput = setupControls.subheader.querySelector('.archer-search-bar');
-        const filter = searchInput ? searchInput.value : '';
-        renderArcherSelectList(masterList, filter);
+        const rosterState = getRosterState();
+        const filter = state.rosterFilter || '';
+        renderArcherSelectList(rosterState, filter);
+        updateSelectedChip();
     }
 
     function renderPreAssignedArchers() {
@@ -201,186 +302,295 @@ document.addEventListener('DOMContentLoaded', () => {
         setupControls.container.appendChild(manualBtn);
     }
 
-    function renderArcherSelectList(masterList, filter = '') {
+    function renderArcherSelectList(rosterState = {}, filter = '') {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
         const listDiv = document.createElement('div');
         listDiv.className = 'archer-select-list';
         setupControls.container.appendChild(listDiv);
-        
-        // Group archers by bale if they have bale assignments
-        const baleGroups = {};
-        const unassigned = [];
-        
-        masterList.forEach(archer => {
-            if (archer.bale) {
-                if (!baleGroups[archer.bale]) baleGroups[archer.bale] = [];
-                baleGroups[archer.bale].push(archer);
-            } else {
-                unassigned.push(archer);
-            }
-        });
-        
-        // Filter logic
-        const filteredBaleGroups = {};
-        Object.keys(baleGroups).forEach(bale => {
-            const filtered = baleGroups[bale].filter(archer => {
-                const name = `${archer.first} ${archer.last}`.toLowerCase();
-                return name.includes(filter.toLowerCase());
+
+        const { list = [], selfExtId = '', friendSet = new Set() } = rosterState || {};
+        if (!Array.isArray(list) || list.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.style.cssText = 'padding: 16px; text-align: center; color: #666;';
+            emptyState.textContent = 'No archers found. Sync your roster from the Archer Management module to get started.';
+            listDiv.appendChild(emptyState);
+            return;
+        }
+
+        const normalizedFilter = String(filter || '').trim().toLowerCase();
+        const friendLookup = friendSet instanceof Set ? friendSet : new Set(Array.isArray(friendSet) ? friendSet : []);
+        const selectedExtIds = new Set();
+        state.archers.forEach(a => {
+            if (!a) return;
+            const direct = a.extId || a.id;
+            if (direct) selectedExtIds.add(direct);
+            const derived = getExtIdFromArcher({
+                extId: a.extId,
+                id: a.id,
+                first: a.first || a.firstName,
+                last: a.last || a.lastName,
+                school: a.school
             });
-            if (filtered.length > 0) {
-                filteredBaleGroups[bale] = filtered;
-            }
+            if (derived) selectedExtIds.add(derived);
         });
-        
-        const filteredUnassigned = unassigned.filter(archer => {
-            const name = `${archer.first} ${archer.last}`.toLowerCase();
-            return name.includes(filter.toLowerCase());
-        });
-        
-        // Render bale groups first
-        const sortedBales = Object.keys(filteredBaleGroups).sort((a, b) => parseInt(a) - parseInt(b));
-        
-        sortedBales.forEach(bale => {
-            const baleHeader = document.createElement('div');
-            baleHeader.className = 'list-header';
-            baleHeader.textContent = `Bale ${bale}`;
-            baleHeader.style.cssText = 'background: #e3f2fd; color: #1976d2; font-weight: bold; cursor: pointer;';
-            baleHeader.title = 'Click to load this entire bale';
-            
-            baleHeader.onclick = () => {
-                loadEntireBale(bale, filteredBaleGroups[bale]);
+
+        const prepared = list.map(original => {
+            const extId = getExtIdFromArcher(original);
+            const firstName = (original.first || original.firstName || '').trim();
+            const lastName = (original.last || original.lastName || '').trim();
+            const nickname = (original.nickname || original.nick || '').trim();
+            const school = (original.school || '').trim();
+            const grade = (original.grade || '').trim();
+            const level = (original.level || '').trim();
+            const status = (original.status || 'active').trim();
+            const displayName = [firstName, lastName].filter(Boolean).join(' ').trim() || nickname || extId || 'Unknown Archer';
+            const searchText = [
+                displayName,
+                nickname,
+                school,
+                grade,
+                level,
+                extId
+            ].join(' ').toLowerCase();
+            const matchesFilter = normalizedFilter ? searchText.includes(normalizedFilter) : true;
+            const isSelf = !!selfExtId && extId === selfExtId;
+            const isFriend = !!extId && friendLookup.has(extId);
+            const isSelected = !!extId && selectedExtIds.has(extId);
+            return {
+                original,
+                extId,
+                firstName,
+                lastName,
+                nickname,
+                school,
+                grade,
+                level,
+                status,
+                displayName,
+                matchesFilter,
+                isSelf,
+                isFriend,
+                isSelected
             };
-            
-            listDiv.appendChild(baleHeader);
-            
-            filteredBaleGroups[bale].forEach((archer) => {
-                const row = document.createElement('div');
-                row.className = 'archer-select-row';
-                row.style.cssText = 'cursor: pointer; padding-left: 20px;';
-                
-                row.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <span style="font-weight: bold;">${archer.first} ${archer.last}</span>
-                            <span style="font-size: 0.85em; color: #666; margin-left: 8px;">(${archer.level || 'VAR'})</span>
-                        </div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
-                            <span style="background: #4caf50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;">Bale ${archer.bale}</span>
-                            <span style="background: #2196f3; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold;">Target ${archer.target || 'A'}</span>
-                        </div>
-                    </div>
-                `;
-                
-                row.onclick = () => {
-                    loadEntireBale(bale, filteredBaleGroups[bale]);
-                };
-                
-                listDiv.appendChild(row);
-            });
+        }).filter(item => item.matchesFilter);
+
+        prepared.sort((a, b) => {
+            const firstCmp = a.firstName.toLowerCase().localeCompare(b.firstName.toLowerCase(), undefined, { sensitivity: 'base' });
+            if (firstCmp !== 0) return firstCmp;
+            return a.lastName.toLowerCase().localeCompare(b.lastName.toLowerCase(), undefined, { sensitivity: 'base' });
         });
-        
-        // Render unassigned archers (old manual selection mode)
-        if (filteredUnassigned.length > 0) {
-            const unassignedHeader = document.createElement('div');
-            unassignedHeader.className = 'list-header';
-            unassignedHeader.textContent = '☆ Unassigned Archers (Manual Selection)';
-            listDiv.appendChild(unassignedHeader);
-            
-            filteredUnassigned.forEach((archer) => {
-                const row = document.createElement('div');
-                row.className = 'archer-select-row';
 
-                const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
-                const existingArcher = state.archers.find(a => a.id === uniqueId);
+        const sections = [];
+        const selfEntries = prepared.filter(item => item.isSelf);
+        if (selfEntries.length) sections.push({ title: 'Who Am I', items: selfEntries });
 
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = !!existingArcher;
-                
-                const targetSelect = document.createElement('select');
-                targetSelect.className = 'target-assignment-select';
-                ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(letter => {
-                    const option = document.createElement('option');
-                    option.value = letter;
-                    option.textContent = letter;
-                    targetSelect.appendChild(option);
-                });
-                targetSelect.style.display = checkbox.checked ? 'inline-block' : 'none';
-                if (existingArcher) {
-                    targetSelect.value = existingArcher.targetAssignment;
-                }
-                
-                checkbox.onchange = () => {
-                    if (checkbox.checked) {
-                        const selectedCount = state.archers.length;
-                        if (selectedCount >= 4) {
-                            checkbox.checked = false;
-                            alert('Bale is full (4 archers).');
-                            return;
-                        }
-                        if (!state.archers.some(a => a.id === uniqueId)) {
-                            const usedTargets = state.archers.map(a => a.targetAssignment);
-                            const availableTargets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].filter(t => !usedTargets.includes(t));
-                            const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
-                            state.archers.push({
-                                id: uniqueId,
-                                firstName: archer.first,
-                                lastName: archer.last,
-                                school: archer.school || '',
-                                level: archer.level || '',
-                                gender: archer.gender || '',
-                                targetAssignment: nextTarget,
-                                targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
-                                scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
-                            });
-                        }
-                    } else {
-                        state.archers = state.archers.filter(a => a.id !== uniqueId);
-                    }
-                    saveData();
-                    const chip = document.getElementById('selected-count-chip');
-                    if (chip) chip.textContent = `${state.archers.length}/4`;
-                    renderSetupForm(); // Re-render to show/hide select and update state
-                };
+        const friendEntries = prepared.filter(item => item.isFriend && !item.isSelf);
+        if (friendEntries.length) sections.push({ title: 'Friends', items: friendEntries });
 
-                targetSelect.onchange = () => {
-                    const archerInState = state.archers.find(a => a.id === uniqueId);
-                    if (archerInState) {
-                        archerInState.targetAssignment = targetSelect.value;
-                        saveData();
-                    }
-                };
-                
-                const star = document.createElement('span');
-                star.textContent = archer.fave ? '★' : '☆';
-                star.className = 'favorite-star';
-                star.style.color = archer.fave ? '#ffc107' : '#ccc';
-                star.onclick = (e) => {
-                    e.stopPropagation();
-                    ArcherModule.toggleFavorite(archer.first, archer.last);
-                    renderSetupForm();
-                };
-                const nameLabel = document.createElement('span');
-                nameLabel.textContent = `${archer.first} ${archer.last}`;
-                nameLabel.className = 'archer-name-label';
-                const detailsLabel = document.createElement('span');
-                detailsLabel.className = 'archer-details-label';
-                detailsLabel.textContent = `(${archer.level || 'VAR'})`;
-                row.appendChild(checkbox);
-                row.appendChild(star);
-                row.appendChild(nameLabel);
-                row.appendChild(detailsLabel);
-                row.appendChild(targetSelect);
-                listDiv.appendChild(row);
-                row.onclick = (e) => {
-                    if(e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT') {
-                        checkbox.checked = !checkbox.checked;
-                        checkbox.dispatchEvent(new Event('change'));
-                    }
-                };
+        const selectedEntries = prepared.filter(item => item.isSelected && !item.isSelf && !item.isFriend);
+        if (selectedEntries.length) sections.push({ title: 'Selected', items: selectedEntries });
+
+        const remainingEntries = prepared.filter(item => !item.isSelf && !item.isFriend && !item.isSelected);
+        if (remainingEntries.length) {
+            sections.push({
+                title: normalizedFilter ? 'Search Results' : 'Roster',
+                items: remainingEntries
             });
         }
+
+        if (!sections.length) {
+            const noResults = document.createElement('div');
+            noResults.style.cssText = 'padding: 16px; text-align: center; color: #666;';
+            noResults.textContent = 'No archers match your search.';
+            listDiv.appendChild(noResults);
+            return;
+        }
+
+        const createBadge = (label, background) => {
+            const badge = document.createElement('span');
+            badge.textContent = label;
+            badge.style.cssText = `display:inline-block;margin-right:6px;padding:2px 8px;border-radius:999px;font-size:0.75em;color:#ffffff;background:${background};`;
+            return badge;
+        };
+
+        const createRow = (item) => {
+            const { original, extId, displayName, nickname, school, grade, level, status, isSelf, isFriend, isSelected } = item;
+            const row = document.createElement('div');
+            row.className = 'archer-select-row';
+            if (status && status.toLowerCase() !== 'active') {
+                row.style.opacity = '0.75';
+            }
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = isSelected;
+            checkbox.disabled = !extId || (status && status.toLowerCase() === 'inactive');
+            checkbox.setAttribute('aria-label', `Select ${displayName}`);
+
+            const star = document.createElement('span');
+            star.textContent = isFriend ? '★' : '☆';
+            star.className = 'favorite-star';
+            star.style.color = isFriend ? '#ffc107' : '#ccc';
+            star.setAttribute('role', 'button');
+            star.setAttribute('tabindex', '0');
+            if (isFriend) {
+                star.setAttribute('aria-label', `Remove ${displayName} from friends`);
+            } else {
+                star.setAttribute('aria-label', `Add ${displayName} to friends`);
+            }
+
+            const infoWrapper = document.createElement('div');
+            infoWrapper.style.flex = '1';
+            infoWrapper.style.display = 'flex';
+            infoWrapper.style.flexDirection = 'column';
+
+            const nameLine = document.createElement('div');
+            const nameLabel = document.createElement('span');
+            nameLabel.className = 'archer-name-label';
+            nameLabel.textContent = displayName;
+            nameLine.appendChild(nameLabel);
+            if (nickname) {
+                const nicknameSpan = document.createElement('span');
+                nicknameSpan.style.cssText = 'margin-left:6px;font-size:0.9em;color:#888;';
+                nicknameSpan.textContent = `"${nickname}"`;
+                nameLine.appendChild(nicknameSpan);
+            }
+            infoWrapper.appendChild(nameLine);
+
+            const metaLine = document.createElement('div');
+            metaLine.className = 'archer-details-label';
+            const metaParts = [school, level, grade].filter(Boolean);
+            metaLine.textContent = metaParts.join(' • ');
+            infoWrapper.appendChild(metaLine);
+
+            const badgeRow = document.createElement('div');
+            badgeRow.style.cssText = 'margin-top:4px;display:flex;flex-wrap:wrap;';
+            if (isSelf) badgeRow.appendChild(createBadge('Me', '#1976d2'));
+            if (isFriend) badgeRow.appendChild(createBadge('Friend', '#ff9800'));
+            if (isSelected) badgeRow.appendChild(createBadge('Selected', '#4caf50'));
+            if (status && status.toLowerCase() === 'inactive') {
+                badgeRow.appendChild(createBadge('Inactive', '#9e9e9e'));
+            }
+            if (badgeRow.childElementCount > 0) {
+                infoWrapper.appendChild(badgeRow);
+            }
+
+            const targetSelect = document.createElement('select');
+            targetSelect.className = 'target-assignment-select';
+            TARGET_LETTERS.forEach(letter => {
+                const option = document.createElement('option');
+                option.value = letter;
+                option.textContent = letter;
+                targetSelect.appendChild(option);
+            });
+            const selectedArcher = extId ? getStateArcherByExtId(extId) : null;
+            if (selectedArcher) {
+                targetSelect.value = selectedArcher.targetAssignment || pickNextTargetLetter();
+            }
+            targetSelect.style.display = isSelected ? 'inline-block' : 'none';
+
+            const handleSelectionChange = () => {
+                const alreadySelected = extId ? getStateArcherByExtId(extId) : null;
+                if (checkbox.checked) {
+                    if (!extId) {
+                        alert('This record is missing an external ID and cannot be selected yet.');
+                        checkbox.checked = false;
+                        return;
+                    }
+                    if (state.archers.length >= 4 && !alreadySelected) {
+                        checkbox.checked = false;
+                        alert('Bale is full (4 archers).');
+                        return;
+                    }
+                    if (!alreadySelected) {
+                        const nextTarget = pickNextTargetLetter();
+                        const normalized = buildStateArcherFromRoster(original, nextTarget);
+                        state.archers.push(normalized);
+                    }
+                } else if (alreadySelected) {
+                    const removeId = getArcherKey(alreadySelected);
+                    state.archers = state.archers.filter(a => getArcherKey(a) !== removeId);
+                    if (removeId && state.syncStatus[removeId]) {
+                        delete state.syncStatus[removeId];
+                    }
+                }
+                saveData();
+                updateSelectedChip();
+                renderSetupForm();
+            };
+
+            checkbox.addEventListener('change', handleSelectionChange);
+
+            row.addEventListener('click', (evt) => {
+                const tag = evt.target && evt.target.tagName;
+                if (tag === 'SELECT' || tag === 'INPUT' || evt.target === star) return;
+                checkbox.checked = !checkbox.checked;
+                checkbox.dispatchEvent(new Event('change'));
+            });
+
+            if (typeof ArcherModule !== 'undefined' && typeof ArcherModule.toggleFriend === 'function') {
+                const toggleFriendHandler = async (event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    if (!extId) {
+                        alert('Cannot update friends without an archer ID.');
+                        return;
+                    }
+                    const selfId = ArcherModule.getSelfExtId ? ArcherModule.getSelfExtId() : '';
+                    if (!selfId) {
+                        alert('Set "Who Am I" in the Archer module to manage friends.');
+                        return;
+                    }
+                    star.style.pointerEvents = 'none';
+                    try {
+                        await ArcherModule.toggleFriend(extId);
+                        renderSetupForm();
+                    } catch (err) {
+                        console.error('Friend toggle failed', err);
+                        alert(err && err.message ? err.message : 'Could not update friends. Try again.');
+                    } finally {
+                        star.style.pointerEvents = '';
+                    }
+                };
+                star.addEventListener('click', toggleFriendHandler);
+                star.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        toggleFriendHandler(event);
+                    }
+                });
+            } else {
+                star.style.opacity = '0.4';
+                star.title = 'Update available soon';
+            }
+
+            targetSelect.addEventListener('change', (event) => {
+                event.stopPropagation();
+                const selected = extId ? getStateArcherByExtId(extId) : null;
+                if (selected) {
+                    selected.targetAssignment = targetSelect.value;
+                    saveData();
+                }
+            });
+            targetSelect.addEventListener('click', (event) => event.stopPropagation());
+
+            row.appendChild(checkbox);
+            row.appendChild(star);
+            row.appendChild(infoWrapper);
+            row.appendChild(targetSelect);
+            return row;
+        };
+
+        sections.forEach(section => {
+            const header = document.createElement('div');
+            header.className = 'list-header';
+            header.textContent = section.title;
+            listDiv.appendChild(header);
+            section.items.forEach(item => {
+                const row = createRow(item);
+                listDiv.appendChild(row);
+            });
+        });
     }
     
     // Function to load entire bale when clicking on any archer
@@ -390,24 +600,24 @@ document.addEventListener('DOMContentLoaded', () => {
         state.baleNumber = parseInt(baleNumber);
         
         // Add all archers from this bale
-        const targets = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+        const targets = TARGET_LETTERS.slice();
         archersInBale.forEach((archer, index) => {
-            const uniqueId = `${archer.first.trim()}-${archer.last.trim()}`;
-            state.archers.push({
-                id: uniqueId,
-                firstName: archer.first,
-                lastName: archer.last,
-                school: archer.school || '',
-                level: archer.level || '',
-                gender: archer.gender || '',
-                targetAssignment: archer.target || targets[index],
-                targetSize: (archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80,
-                scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
-            });
+            const targetAssignment = archer.target || targets[index] || pickNextTargetLetter();
+            const normalized = buildStateArcherFromRoster({
+                first: archer.first || archer.first_name,
+                last: archer.last || archer.last_name,
+                nickname: archer.nickname,
+                school: archer.school,
+                level: archer.level,
+                gender: archer.gender,
+                status: archer.status
+            }, targetAssignment);
+            state.archers.push(normalized);
         });
         
         saveData();
         renderSetupForm();
+        updateSelectedChip();
         
         // Scroll to the top to show the selected archers
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -432,6 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </thead>
                 <tbody>`;
         state.archers.forEach(archer => {
+            const archerKey = getArcherKey(archer);
             const endScores = archer.scores[state.currentEnd - 1] || ['', '', ''];
             const safeEndScores = Array.isArray(endScores) ? endScores : ['', '', ''];
             let endTotal = 0, endTens = 0, endXs = 0;
@@ -462,20 +673,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Get sync status for this archer/end
-            const syncStatus = (state.syncStatus[archer.id] && state.syncStatus[archer.id][state.currentEnd]) || '';
+            const archerSync = archerKey ? state.syncStatus[archerKey] : null;
+            const syncStatus = (archerSync && archerSync[state.currentEnd]) || '';
             const syncIcon = getSyncStatusIcon(syncStatus);
             
+            const lastInitial = archer.lastName ? `${archer.lastName.charAt(0)}.` : '';
+            const nameDisplay = [archer.firstName, lastInitial].filter(Boolean).join(' ');
             tableHTML += `
-                <tr data-archer-id="${archer.id}">
-                    <td>${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[0])}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" readonly></td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[1])}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" readonly></td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[2])}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" readonly></td>
+                <tr data-archer-id="${archerKey}">
+                    <td>${nameDisplay} (${archer.targetAssignment})</td>
+                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[0])}" data-archer-id="${archerKey}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" readonly></td>
+                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[1])}" data-archer-id="${archerKey}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" readonly></td>
+                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[2])}" data-archer-id="${archerKey}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" readonly></td>
                     <td class="calculated-cell">${endTens + endXs}</td>
                     <td class="calculated-cell">${endXs}</td>
                     <td class="calculated-cell">${endTotal}</td>
                     <td class="calculated-cell">${runningTotal}</td>
-                    <td class="calculated-cell ${avgClass}">${endAvg}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus}" style="text-align: center;">${syncIcon}</td>` : ''}<td><button class="btn view-card-btn" data-archer-id="${archer.id}">»</button></td>
+                    <td class="calculated-cell ${avgClass}">${endAvg}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus}" style="text-align: center;">${syncIcon}</td>` : ''}<td><button class="btn view-card-btn" data-archer-id="${archerKey}">»</button></td>
                 </tr>`;
         });
         tableHTML += `</tbody></table>`;
@@ -483,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function renderCardView(archerId) {
-        const archer = state.archers.find(a => a.id == archerId);
+        const archer = findArcherByKey(archerId);
         if (!archer) return;
         const displayName = `${archer.firstName} ${archer.lastName}`;
         cardControls.archerNameDisplay.textContent = displayName;
@@ -642,7 +856,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = e.target;
         const archerId = input.dataset.archerId;
         const arrowIndex = parseInt(input.dataset.arrowIdx, 10);
-        const archer = state.archers.find(a => a.id === archerId);
+        const archer = findArcherByKey(archerId);
         if (archer) {
             if (!Array.isArray(archer.scores[state.currentEnd - 1])) {
                 archer.scores[state.currentEnd - 1] = ['', '', ''];
@@ -682,45 +896,53 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     }
                     
+                    const archerKey = getArcherKey(archer);
+                    if (!archerKey) {
+                        console.warn('Cannot sync archer without identifier', archer);
+                        return;
+                    }
+
                     // Debug logging
                     console.log('Live update attempt:', { 
                         enabled: isEnabled, 
                         hasLiveUpdates: !!LiveUpdates, 
                         hasState: !!LiveUpdates._state, 
                         roundId: LiveUpdates._state?.roundId,
-                        archerId: archer.id,
+                        archerId: archerKey,
                         endNumber: state.currentEnd,
                         scores: { a1, a2, a3, endTotal, runningTotal: running, tens, xs }
                     });
                     
                     // Set sync status to pending
-                    updateSyncStatus(archer.id, state.currentEnd, 'pending');
+                    updateSyncStatus(archerKey, state.currentEnd, 'pending');
                     
                     if (LiveUpdates._state && LiveUpdates._state.roundId) {
-                        LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs })
-                          .then(() => updateSyncStatus(archer.id, state.currentEnd, 'synced'))
-                          .catch(() => updateSyncStatus(archer.id, state.currentEnd, 'failed'));
+                        LiveUpdates.postEnd(archerKey, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs })
+                          .then(() => updateSyncStatus(archerKey, state.currentEnd, 'synced'))
+                          .catch(() => updateSyncStatus(archerKey, state.currentEnd, 'failed'));
                     } else {
                         const badge = document.getElementById('live-status-badge');
                         if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
                         LiveUpdates.ensureRound({ roundType: 'R360', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
-                          .then(() => LiveUpdates.ensureArcher(archer.id, { ...archer, targetSize: archer.targetSize || ((archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80) }))
-                          .then(() => LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
-                          .then(() => updateSyncStatus(archer.id, state.currentEnd, 'synced'))
+                          .then(() => LiveUpdates.ensureArcher(archerKey, { ...archer, targetSize: archer.targetSize || ((archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80) }))
+                          .then(() => LiveUpdates.postEnd(archerKey, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
+                          .then(() => updateSyncStatus(archerKey, state.currentEnd, 'synced'))
                           .catch(err => {
                             console.error('Live init/post failed:', err);
-                            updateSyncStatus(archer.id, state.currentEnd, 'failed');
+                            updateSyncStatus(archerKey, state.currentEnd, 'failed');
                           });
                     }
                 }
             } catch (e) { 
                 console.error('Live update error:', e);
-                updateSyncStatus(archer.id, state.currentEnd, 'failed');
+                const fallbackKey = getArcherKey(archer);
+                if (fallbackKey) updateSyncStatus(fallbackKey, state.currentEnd, 'failed');
             }
         }
     }
 
     function updateSyncStatus(archerId, endNumber, status) {
+        if (!archerId) return;
         if (!state.syncStatus[archerId]) {
             state.syncStatus[archerId] = {};
         }
@@ -762,6 +984,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.archers = [];
         state.currentEnd = 1;
         state.currentView = 'setup';
+        updateSelectedChip();
         renderView();
         saveData();
     }
@@ -911,17 +1134,31 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (foundArchers.length > 0) {
                 // Convert to our state format
-                state.archers = foundArchers.map(a => ({
-                    id: a.roundArcherId,
-                    firstName: a.archerName.split(' ')[0] || '',
-                    lastName: a.archerName.split(' ').slice(1).join(' ') || '',
-                    school: a.school || '',
-                    level: a.level || 'VAR',
-                    gender: a.gender || 'M',
-                    targetAssignment: a.target || 'A',
-                    targetSize: (a.level === 'VAR' || a.level === 'V' || a.level === 'Varsity') ? 122 : 80,
-                    scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
-                }));
+                state.archers = foundArchers.map(a => {
+                    const nameParts = String(a.archerName || '').trim().split(/\s+/);
+                    const firstName = nameParts.shift() || '';
+                    const lastName = nameParts.join(' ');
+                    const extId = getExtIdFromArcher({
+                        extId: a.extId || a.archerExtId,
+                        id: a.roundArcherId,
+                        first: firstName,
+                        last: lastName,
+                        school: a.school
+                    });
+                    return {
+                        id: a.roundArcherId || extId || `${firstName}-${lastName}`.toLowerCase(),
+                        extId: extId || '',
+                        firstName,
+                        lastName,
+                        school: a.school || '',
+                        level: a.level || 'VAR',
+                        gender: a.gender || 'M',
+                        status: (a.status || 'active').toLowerCase(),
+                        targetAssignment: a.target || 'A',
+                        targetSize: inferTargetSize(a.level),
+                        scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
+                    };
+                });
                 
                 state.activeEventId = eventId;
                 state.assignmentMode = 'pre-assigned';
@@ -930,6 +1167,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log(`Pre-assigned mode: ${foundArchers.length} archers on bale ${state.baleNumber} (${divisionName})`);
                 saveData();
                 renderSetupForm();
+                updateSelectedChip();
             }
         } catch (e) {
             console.log('Could not load pre-assigned bale:', e.message);
@@ -974,8 +1212,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Ensure all archers exist
             for (const archer of state.archers) {
-                if (!LiveUpdates._state.archerIds[archer.id]) {
-                    await LiveUpdates.ensureArcher(archer.id, {
+                const archerKey = getArcherKey(archer);
+                if (!archerKey) continue;
+                if (!LiveUpdates._state.archerIds[archerKey]) {
+                    await LiveUpdates.ensureArcher(archerKey, {
                         ...archer,
                         targetSize: archer.targetSize || ((archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80)
                     });
@@ -984,6 +1224,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Sync all ends for all archers
             for (const archer of state.archers) {
+                const archerKey = getArcherKey(archer);
+                if (!archerKey) continue;
                 for (let endNum = 1; endNum <= state.totalEnds; endNum++) {
                     const endScores = archer.scores[endNum - 1];
                     if (!endScores || !Array.isArray(endScores)) continue;
@@ -993,7 +1235,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!hasScores) continue;
                     
                     // Check sync status - sync if pending, failed, or never synced
-                    const currentStatus = (state.syncStatus[archer.id] && state.syncStatus[archer.id][endNum]) || '';
+                    const currentSync = state.syncStatus[archerKey];
+                    const currentStatus = (currentSync && currentSync[endNum]) || '';
                     if (currentStatus === 'synced') continue; // Skip already synced
                     
                     totalAttempts++;
@@ -1023,15 +1266,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     
                     try {
-                        updateSyncStatus(archer.id, endNum, 'pending');
-                        await LiveUpdates.postEnd(archer.id, endNum, { 
+                        updateSyncStatus(archerKey, endNum, 'pending');
+                        await LiveUpdates.postEnd(archerKey, endNum, { 
                             a1, a2, a3, endTotal, runningTotal: running, tens, xs 
                         });
-                        updateSyncStatus(archer.id, endNum, 'synced');
+                        updateSyncStatus(archerKey, endNum, 'synced');
                         successCount++;
                     } catch (e) {
-                        console.error(`Failed to sync archer ${archer.id} end ${endNum}:`, e);
-                        updateSyncStatus(archer.id, endNum, 'failed');
+                        console.error(`Failed to sync archer ${archerKey} end ${endNum}:`, e);
+                        updateSyncStatus(archerKey, endNum, 'failed');
                         failCount++;
                     }
                 }
@@ -1148,9 +1391,10 @@ document.addEventListener('DOMContentLoaded', () => {
             searchInput.type = 'text';
             searchInput.placeholder = 'Search archers...';
             searchInput.className = 'archer-search-bar';
+            searchInput.value = state.rosterFilter || '';
             searchInput.oninput = () => {
-                const masterList = (typeof ArcherModule !== 'undefined') ? ArcherModule.loadList() : [];
-                renderArcherSelectList(masterList, searchInput.value);
+                state.rosterFilter = searchInput.value;
+                renderSetupForm();
             };
             const refreshBtn = document.createElement('button');
             refreshBtn.id = 'refresh-btn';
@@ -1199,12 +1443,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!isEnabled || !window.LiveUpdates || !LiveUpdates.setConfig) return;
                     const cfg = window.LIVE_UPDATES || {};
                     LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1' });
+                    const ensureArcher = (archer) => {
+                        const key = getArcherKey(archer);
+                        if (!key) return;
+                        LiveUpdates.ensureArcher(key, {
+                            ...archer,
+                            targetSize: archer.targetSize || inferTargetSize(archer.level)
+                        });
+                    };
                     if (!LiveUpdates._state.roundId) {
                         LiveUpdates.ensureRound({ roundType: 'R360', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
-                          .then(() => { state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a)); })
+                          .then(() => { state.archers.forEach(ensureArcher); })
                           .catch(() => {});
                     } else {
-                        state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
+                        state.archers.forEach(ensureArcher);
                     }
                     const badge = document.getElementById('live-status-badge');
                     if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
@@ -1372,16 +1624,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const onStartScoring = () => {
                 if (!LiveUpdates || !LiveUpdates._state || !LiveUpdates.setConfig) return;
+                const ensureArcher = (archer) => {
+                    const key = getArcherKey(archer);
+                    if (!key) return;
+                    LiveUpdates.ensureArcher(key, {
+                        ...archer,
+                        targetSize: archer.targetSize || inferTargetSize(archer.level)
+                    });
+                };
                 if (!LiveUpdates._state.roundId && isEnabled) {
                     LiveUpdates.ensureRound({
                         roundType: 'R360',
                         date: new Date().toISOString().slice(0, 10),
                         baleNumber: state.baleNumber,
                     }).then(() => {
-                        state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
+                        state.archers.forEach(ensureArcher);
                     }).catch(() => {});
                 } else if (isEnabled) {
-                    state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
+                    state.archers.forEach(ensureArcher);
                 }
             };
 
@@ -1417,16 +1677,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadSampleData() {
         state.archers = [
-            { id: '1', firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', targetAssignment: 'A', targetSize: 122, scores: [['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9'], ['10','10','10'], ['8','8','7']] },
-            { id: '2', firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', targetAssignment: 'B', targetSize: 122, scores: [['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M'], ['7','7','8'], ['9','9','10']] },
-            { id: '3', firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', targetAssignment: 'C', targetSize: 80, scores: [['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M'], ['7','6','X'], ['10','9','8']] },
-            { id: '4', firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', targetAssignment: 'D', targetSize: 122, scores: [['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6'], ['X','X','X'], ['9','9','8']] },
+            buildStateArcherFromRoster({ extId: 'mike-a-wdv', first: 'Mike', last: 'A.', school: 'WDV', level: 'VAR', gender: 'M' }, 'A'),
+            buildStateArcherFromRoster({ extId: 'robert-b-wdv', first: 'Robert', last: 'B.', school: 'WDV', level: 'VAR', gender: 'M' }, 'B'),
+            buildStateArcherFromRoster({ extId: 'terry-c-opp', first: 'Terry', last: 'C.', school: 'OPP', level: 'JV', gender: 'M' }, 'C'),
+            buildStateArcherFromRoster({ extId: 'susan-d-opp', first: 'Susan', last: 'D.', school: 'OPP', level: 'VAR', gender: 'F' }, 'D'),
         ];
+        const sampleScores = [
+            [['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9'], ['10','10','10'], ['8','8','7']],
+            [['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M'], ['7','7','8'], ['9','9','10']],
+            [['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M'], ['7','6','X'], ['10','9','8']],
+            [['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6'], ['X','X','X'], ['9','9','8']]
+        ];
+        state.archers.forEach((archer, idx) => {
+            archer.scores = sampleScores[idx];
+        });
+        updateSelectedChip();
+        saveData();
     }
 
     function navigateArchers(direction) {
         const currentArcherId = state.activeArcherId;
-        const currentIndex = state.archers.findIndex(a => a.id == currentArcherId);
+        const currentIndex = state.archers.findIndex(a => getArcherKey(a) === currentArcherId);
         if (currentIndex === -1) {
             console.error("Could not find active archer in state.");
             return;
@@ -1434,7 +1705,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let nextIndex = currentIndex + direction;
         if (nextIndex >= state.archers.length) nextIndex = 0;
         if (nextIndex < 0) nextIndex = state.archers.length - 1;
-        const nextArcherId = state.archers[nextIndex].id;
+        const nextArcherId = getArcherKey(state.archers[nextIndex]);
         state.activeArcherId = nextArcherId;
         renderCardView(nextArcherId);
     }
@@ -1459,7 +1730,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Create download link
             const link = document.createElement('a');
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-            const archer = state.archers.find(a => a.id === state.activeArcherId);
+            const archer = findArcherByKey(state.activeArcherId);
             const filename = `scorecard_${archer?.firstName}_${archer?.lastName}_${timestamp}.png`;
             
             link.download = filename;
@@ -1472,7 +1743,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function exportJSON() {
-        const archer = state.archers.find(a => a.id === state.activeArcherId);
+        const archer = findArcherByKey(state.activeArcherId);
         if (!archer) {
             alert('No archer data to export');
             return;
@@ -1488,7 +1759,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 date: state.date
             },
             archer: {
-                id: archer.id,
+                id: getArcherKey(archer),
+                extId: archer.extId || '',
                 firstName: archer.firstName,
                 lastName: archer.lastName,
                 school: archer.school,
@@ -1510,7 +1782,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         
-        const archer = state.archers.find(a => a.id === state.activeArcherId);
+        const archer = findArcherByKey(state.activeArcherId);
         const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
         const filename = `scorecard_${archer?.firstName}_${archer?.lastName}_${timestamp}.json`;
         
@@ -1531,7 +1803,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function emailCoach() {
-        const archer = state.archers.find(a => a.id === state.activeArcherId);
+        const archer = findArcherByKey(state.activeArcherId);
         const jsonData = exportJSON();
         const subject = `Scorecard - ${archer?.firstName} ${archer?.lastName} - Bale ${state.baleNumber}`;
         const body = `Please find attached the scorecard data for ${archer?.firstName} ${archer?.lastName}.\n\nBale: ${state.baleNumber}\nDate: ${state.date}\n\nJSON Data:\n${jsonData}`;

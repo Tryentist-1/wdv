@@ -1,5 +1,50 @@
 # Session Management & Workflow Documentation
 
+## 🔄 Follow‑up Status Update — October 29, 2025
+
+This captures the critical scoring calculation fix deployed today and the successful merge to main with Release Mobile 3.1.
+
+### Current state
+- **Scoring calculation fixed**: `end_total`, `running_total`, `tens`, and `xs` now calculate correctly without double-counting
+- **Results page accurate**: All three scoring paths (handleScoreInput, syncCurrentEnd, performMasterSync) fixed
+- **Release Mobile 3.1**: Successfully merged to main, tagged, and pushed to remote repository
+- **Production deployed**: Fixed JavaScript files live via FTP with Cloudflare cache purged
+
+### What was broken
+- Scoring UI was reusing the same accumulator for per-end totals and running totals
+- `end_total` included arrows from all ends instead of just the current end
+- `running_total` double-counted the current end (included it in the running loop after already adding to endTotal)
+- `tens` and `xs` were cumulative instead of per-end values
+- Results page showed inflated totals (e.g., 262 instead of correct value)
+
+### Actions deployed today
+- **JavaScript fixes**: Updated `js/ranking_round_300.js` and `js/ranking_round.js`
+  - Separated per-end calculation (endTotal, tens, xs) to only sum current end's 3 arrows
+  - Running total now sums all ends up to current end in separate loop without reusing accumulators
+  - Applied fix to all three code paths: handleScoreInput, syncCurrentEnd, performMasterSync
+- **Database schema**: `end_events` table now receives correct values:
+  - `end_total` = sum of 3 arrows for that end only
+  - `running_total` = cumulative sum up to that end
+  - `tens`, `xs` = per-end counts (not cumulative)
+- **Deployment**: FTP upload completed, Cloudflare cache purged, changes live
+- **Release**: Merged OAS-Ranking-Online-3.0 → main, tagged v3.1-mobile, pushed to GitHub
+
+### Git operations completed
+1. Committed scoring fixes to OAS-Ranking-Online-3.0 branch
+2. Merged OAS-Ranking-Online-3.0 → main (87 files, 23,849 insertions)
+3. Tagged release: `v3.1-mobile` with comprehensive release notes
+4. Pushed main branch, tag, and dev branch to remote repository
+5. Repository: https://github.com/Tryentist-1/wdv.git
+
+### Testing verification needed
+1. Hard refresh scorer page (Cmd+Shift+R) to clear browser cache
+2. Clear Brandon Garcia's test scores (optional): use `api/sql/clear_brandon_garcia_scores.sql`
+3. Enter scores and verify console log shows correct payload values
+4. Refresh results page and confirm totals match scorecard
+5. Verify end_events table in database has correct values per row
+
+---
+
 ## 🔄 Follow‑up Status Update — October 28, 2025
 
 This captures today’s state after deploying Live Sync changes and coach/archer auth updates.

@@ -1291,31 +1291,89 @@ body.practice-target-page .main-container {
     padding-bottom: 0.5rem;
 }
 
-.manual-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    align-items: center;
+.manual-bale-section {
     margin-bottom: 1rem;
 }
 
-.bale-selector-manual {
+.manual-bale-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.manual-bale-label {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #2c3e50;
+}
+
+.manual-bale-actions {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
-.bale-selector-manual label {
-    font-weight: bold;
-    color: #555;
+.manual-bale-actions .btn {
+    white-space: nowrap;
 }
 
-.bale-selector-manual input {
-    width: 80px;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+.manual-bale-actions .status-badge {
+    margin: 0;
+    font-size: 0.75rem;
+    text-transform: initial;
+}
+
+.manual-bale-input-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.manual-bale-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+    gap: 0.5rem;
+}
+
+.manual-bale-tile {
+    background: #f4f8ff;
+    border: 1px solid #bdd4ff;
+    border-radius: 10px;
+    padding: 0.7rem 0;
+    font-weight: 600;
+    color: #2d7dd9;
     text-align: center;
+    font-size: 1rem;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+}
+
+.manual-bale-tile:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(45, 125, 217, 0.25);
+}
+
+.manual-bale-tile.active {
+    background: #2d7dd9;
+    color: #fff;
+    border-color: #1b5bbf;
+    box-shadow: 0 2px 6px rgba(45, 125, 217, 0.3);
+}
+
+.manual-search-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
 }
 
 .archer-search-manual {
@@ -1325,18 +1383,66 @@ body.practice-target-page .main-container {
 
 .archer-search-manual input {
     width: 100%;
-    padding: 0.5rem;
+    padding: 0.55rem 0.75rem;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 6px;
+    font-size: 1rem;
 }
 
 .selection-indicator {
     background: #f8f9fa;
-    padding: 0.5rem 1rem;
+    padding: 0.55rem 1rem;
     border-radius: 20px;
     border: 1px solid #dee2e6;
-    font-weight: bold;
+    font-weight: 600;
     color: #495057;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.manual-archer-row.is-selected {
+    background: linear-gradient(90deg, rgba(45, 125, 217, 0.12) 0%, rgba(45, 125, 217, 0.02) 100%) !important;
+}
+
+.manual-archer-name {
+    font-weight: 600;
+    color: #2c3e50;
+    display: inline-block;
+}
+
+.manual-target-badge {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #2d7dd9;
+    color: #ffffff;
+    vertical-align: middle;
+}
+
+@media (max-width: 600px) {
+  .manual-bale-grid {
+    grid-template-columns: repeat(4, minmax(48px, 1fr));
+  }
+
+  .manual-search-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .manual-search-section .selection-indicator {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .manual-bale-actions {
+    justify-content: flex-start;
+  }
 }
 
 .selected-archers {
