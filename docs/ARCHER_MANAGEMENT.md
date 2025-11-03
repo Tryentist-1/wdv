@@ -6,17 +6,30 @@
 - Support import/export for easy data syncing with Google Sheets and other tools
 
 ## Data Model
-- Fields: First, Last, School, Grade, Gender, Level, Bale, Target, Size, FAVE, JV PR, VAR PR
-- Local storage key: `archerList`
-- CSV format matches Google Sheets for round-tripping
+- **Canonical fields (persisted in MySQL + Live Updates)**  
+  `extId`, `firstName`, `lastName`, `nickname`, `photoUrl`,  
+  `school` (1–3 letter code), `grade` (`9/10/11/12/GRAD`),  
+  `gender` (`M/F`), `level` (`VAR/JV/BEG`),  
+  `status` (`active/inactive`), `faves` (array of extIds),  
+  `domEye`, `domHand`, `heightIn`, `wingspanIn`, `drawLengthSugg`,  
+  `riserHeightIn`, `limbLength`, `limbWeightLbs`,  
+  `notesGear`, `notesCurrent`, `notesArchive`,  
+  `email`, `phone`, `usArcheryId`, `jvPr`, `varPr`.
+- **Local-only helpers**  
+  Cached assignment hints (`bale`, `target`, `size`) are still stored for backward compatibility but are no longer considered authoritative.
+- **Storage/versioning**  
+  Local cache key is `archerList` with schema version `2`. Each save stamps `archerListMeta` with `version`, `lastFetchedAt`, and `lastSyncedAt` for sync messaging.
+- **Round-tripping**  
+  CSV import/export mirrors the schema above so Google Sheets or offline backups can be kept in sync with the database.
 
 ## Supported Features
-- Load/save archer list from/to local storage
-- Import from CSV (manual upload)
-- Export to CSV (download)
-- Add, edit, delete archers in the UI
-- Mark favorites (FAVE)
-- Store PRs (JV PR, VAR PR)
+- Load/save the roster from local storage with automatic schema upgrades
+- Download the canonical roster from MySQL (`Load from MySQL`) using coach API key or event entry code
+- Queue local edits for background upsert and show sync status (pending/synced/offline)
+- Import/export CSV files that respect the canonical field list
+- Add, edit, delete archers with access to the full profile (contact, equipment, notes)
+- Track friend links (`faves`), nickname, photo, and PR values
+- Toggle status (active/inactive) while keeping historical data intact
 
 ## UI/UX Summary
 - Compressed, mobile-first Archer Details form

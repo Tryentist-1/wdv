@@ -203,6 +203,11 @@
             font-size: 13px;
             color: #212529;
         }
+        .form-help-text {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 6px;
+        }
     </style>
 </head>
 <body>
@@ -220,10 +225,33 @@
             <div class="input-group">
                 <label id="auth-value-label">Event Entry Code (X-Passcode)</label>
                 <input type="text" id="auth-value" placeholder="Enter event code..." value="wdva26">
+                <div class="form-help-text">Tip: use the Coach Key mode with the server API key when creating rounds; event passcodes work for read-only tests.</div>
             </div>
             <div class="input-group">
                 <label>API Base URL</label>
                 <input type="text" id="api-base" value="https://tryentist.com/wdv/api/v1" readonly>
+            </div>
+        </div>
+
+        <!-- Helper: Event & Round Lookup -->
+        <div class="test-section">
+            <div class="test-header">
+                <span>Helper: Event & Round Lookup</span>
+                <span class="status-badge pending" id="status-event-helper">Idle</span>
+            </div>
+            <div class="test-body">
+                <div class="test-controls">
+                    <button class="test-btn" onclick="fetchRecentEvents()">📋 List Recent Events</button>
+                    <button class="test-btn" onclick="loadEventSnapshot()">🛰 Load Snapshot</button>
+                    <button class="clear-btn" onclick="clearEventHelper()">Clear</button>
+                </div>
+                <div class="input-group">
+                    <label>Selected Event ID</label>
+                    <input type="text" id="helper-event-id" placeholder="Select or paste event UUID">
+                </div>
+                <div class="results-grid" id="event-results"></div>
+                <div class="results-grid" id="round-helper-results"></div>
+                <div class="output-area" id="output-event-helper">Use the helper buttons to populate event and round IDs automatically.</div>
             </div>
         </div>
 
@@ -286,10 +314,6 @@
                         <input type="date" id="round-date">
                     </div>
                     <div class="input-group">
-                        <label>Bale Number</label>
-                        <input type="number" id="round-bale" value="1" min="1">
-                    </div>
-                    <div class="input-group">
                         <label>Division (optional)</label>
                         <select id="round-division">
                             <option value="">None</option>
@@ -297,6 +321,7 @@
                             <option value="BJV">Boys JV</option>
                             <option value="GVAR">Girls Varsity</option>
                             <option value="GJV">Girls JV</option>
+                            <option value="OPEN">Open (Mixed)</option>
                         </select>
                     </div>
                 </div>
@@ -433,6 +458,8 @@
             lastRoundId: null,
             lastArcherId: null,
             lastEventId: null,
+            events: [],
+            snapshotRounds: []
         };
 
         // Initialize
@@ -607,10 +634,9 @@
             
             const roundType = document.getElementById('round-type').value;
             const date = document.getElementById('round-date').value;
-            const baleNumber = parseInt(document.getElementById('round-bale').value);
             const division = document.getElementById('round-division').value;
             
-            const body = { roundType, date, baleNumber };
+            const body = { roundType, date };
             if (division) {
                 body.division = division;
                 // Parse division into gender + level
@@ -628,6 +654,9 @@
                 const result = await apiRequest('/rounds', 'POST', body, true);
                 
                 log(outputId, `Status: ${result.statusCode}`, result.statusCode === 201 || result.statusCode === 200 ? 'success' : 'error');
+                if (result.statusCode === 401) {
+                    log(outputId, 'Hint: /v1/rounds requires the coach API key in X-API-Key. Switch to Coach Key mode or enter the server API key.', 'warning');
+                }
                 log(outputId, `Response: ${JSON.stringify(result.data, null, 2)}`, 'info');
                 
                 if ((result.statusCode === 201 || result.statusCode === 200) && result.data.roundId) {
@@ -688,16 +717,24 @@
                 
                 if ((result.statusCode === 201 || result.statusCode === 200) && result.data.roundArcherId) {
                     state.lastArcherId = result.data.roundArcherId;
-                    log(outputId, `✓ Archer created! ID: ${state.lastArcherId}`, 'success');
+                    log(outputId, `✓ Archer scorecard created! roundArcherId=${state.lastArcherId}${masterId ? ` (masterId=${masterId})` : ''}`, 'success');
                     
                     // Display result
                     const resultsDiv = document.getElementById('archer-results');
-                    resultsDiv.innerHTML = `
+                    const masterId = result.data.archerId || null;
+                    const scorecardHtml = `
                         <div class="result-item">
-                            <div class="result-label">Archer ID</div>
+                            <div class="result-label">Round Archer ID (scorecard)</div>
                             <div class="result-value">${state.lastArcherId}</div>
                         </div>
                     `;
+                    const masterHtml = masterId ? `
+                        <div class="result-item">
+                            <div class="result-label">Master Archer ID (archers table)</div>
+                            <div class="result-value">${masterId}</div>
+                        </div>
+                    ` : '';
+                    resultsDiv.innerHTML = scorecardHtml + masterHtml;
                     
                     setStatus('create-archer', 'success');
                 } else {
@@ -870,10 +907,238 @@
         }
 
         // Helper Functions
+        async function fetchRecentEvents() {
+            const outputId = 'output-event-helper';
+            clearOutput(outputId);
+            setStatus('event-helper', 'pending');
+            try {
+                const requireAuth = state.authMode === 'coach-key';
+                log(outputId, `GET /events/recent ${requireAuth ? '(with auth)' : '(public)'}`, 'info');
+                const { ok, statusCode, data } = await apiRequest('/events/recent', 'GET', null, requireAuth);
+                if (!ok) {
+                    throw new Error(`Request failed (status ${statusCode})`);
+                }
+                const events = Array.isArray(data?.events) ? data.events : [];
+                state.events = events;
+                renderEventList(events);
+                log(outputId, `✓ Found ${events.length} event(s)`, 'success');
+                if (!events.length) {
+                    log(outputId, 'Tip: create an event via coach.html or seed test data.', 'warning');
+                }
+                setStatus('event-helper', 'success');
+            } catch (error) {
+                log(outputId, `✗ ${error.message}`, 'error');
+                setStatus('event-helper', 'error');
+            }
+        }
+
+        function renderEventList(events) {
+            const container = document.getElementById('event-results');
+            if (!container) return;
+            if (!events.length) {
+                container.innerHTML = '<div class="result-item"><div class="result-label">No recent events found.</div></div>';
+                return;
+            }
+            container.innerHTML = events.map((event, index) => {
+                const createdAt = event.createdAt ? new Date(event.createdAt).toLocaleString() : '—';
+                const entryCode = event.entry_code || '';
+                const buttons = [
+                    `<button class="clear-btn helper-btn" data-helper="use-event" data-index="${index}">Use Event</button>`
+                ];
+                if (entryCode) {
+                    buttons.push(`<button class="clear-btn helper-btn" data-helper="copy-code" data-index="${index}">Copy Code</button>`);
+                }
+                return `
+                    <div class="result-item">
+                        <div class="result-label">${event.name || 'Untitled Event'} · ${event.status || 'Unknown'}</div>
+                        <div class="result-value">${event.id}</div>
+                        <div class="result-value">Date: ${event.date || '—'} · Created: ${createdAt}</div>
+                        <div class="quick-fill">
+                            ${buttons.join(' ')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            container.querySelectorAll('[data-helper="use-event"]').forEach(btn => {
+                btn.addEventListener('click', () => selectEventByIndex(parseInt(btn.dataset.index, 10)));
+            });
+            container.querySelectorAll('[data-helper="copy-code"]').forEach(btn => {
+                btn.addEventListener('click', () => copyEventCode(parseInt(btn.dataset.index, 10)));
+            });
+        }
+
+        function selectEventByIndex(index, options = {}) {
+            const event = state.events[index];
+            if (!event) return;
+            state.lastEventId = event.id;
+            const helperInput = document.getElementById('helper-event-id');
+            if (helperInput) helperInput.value = event.id;
+            const verifyEventInput = document.getElementById('verify-event-id');
+            if (verifyEventInput) verifyEventInput.value = event.id;
+            if (event.entry_code) {
+                const verifyCodeInput = document.getElementById('verify-entry-code');
+                if (verifyCodeInput) verifyCodeInput.value = event.entry_code;
+                if (state.authMode === 'event-code') {
+                    state.authValue = event.entry_code;
+                    const authInput = document.getElementById('auth-value');
+                    if (authInput) authInput.value = event.entry_code;
+                }
+            }
+            if (!options.silent) {
+                log('output-event-helper', `✓ Selected event "${event.name || 'Untitled'}" (${event.id})`, 'success');
+            }
+        }
+
+        async function loadEventSnapshot() {
+            const outputId = 'output-event-helper';
+            const helperInput = document.getElementById('helper-event-id');
+            const eventId = (helperInput?.value || state.lastEventId || '').trim();
+            if (!eventId) {
+                log(outputId, '✗ Please select an event first (use "List Recent Events").', 'error');
+                setStatus('event-helper', 'error');
+                return;
+            }
+            clearOutput(outputId);
+            setStatus('event-helper', 'pending');
+            try {
+                log(outputId, `GET /events/${eventId}/snapshot`, 'info');
+                const { ok, statusCode, data } = await apiRequest(`/events/${eventId}/snapshot`, 'GET', null, false);
+                if (!ok) {
+                    throw new Error(`Snapshot request failed (status ${statusCode})`);
+                }
+                state.lastEventId = eventId;
+                selectEventByIndex(state.events.findIndex(ev => ev.id === eventId), { silent: true });
+                const divisions = data?.divisions || {};
+                state.snapshotRounds = Object.keys(divisions).map(key => {
+                    const payload = divisions[key] || {};
+                    return {
+                        division: key,
+                        roundId: payload.roundId,
+                        roundType: payload.roundType,
+                        archers: payload.archers || []
+                    };
+                }).filter(entry => entry.roundId);
+                renderRoundList(state.snapshotRounds);
+                log(outputId, `✓ Loaded snapshot. Found ${state.snapshotRounds.length} round(s).`, 'success');
+                if (state.snapshotRounds.length) {
+                    useRoundFromSnapshot(0, { silent: true });
+                    log(outputId, 'Auto-selected first round for convenience (use buttons to switch).', 'info');
+                } else {
+                    log(outputId, 'Reminder: create division rounds for this event before scoring.', 'warning');
+                }
+                setStatus('event-helper', 'success');
+            } catch (error) {
+                log(outputId, `✗ ${error.message}`, 'error');
+                setStatus('event-helper', 'error');
+            }
+        }
+
+        function renderRoundList(rounds) {
+            const container = document.getElementById('round-helper-results');
+            if (!container) return;
+            if (!rounds.length) {
+                container.innerHTML = '<div class="result-item"><div class="result-label">No rounds found for this event.</div></div>';
+                return;
+            }
+            container.innerHTML = rounds.map((round, index) => {
+                const archerCount = round.archers.length;
+                const sampleTargets = round.archers.slice(0, 4).map(a => {
+                    const target = a.target || a.targetAssignment || '—';
+                    const bale = a.bale || a.baleNumber || '—';
+                    return `${bale}${target}`;
+                }).join(', ');
+                const useArcherButton = archerCount
+                    ? `<button class="clear-btn helper-btn" data-helper="use-archer" data-round-index="${index}" data-archer-index="0">Use First Archer</button>`
+                    : '';
+                return `
+                    <div class="result-item">
+                        <div class="result-label">${round.division || 'Division'} · ${round.roundType || 'R300'}</div>
+                        <div class="result-value">${round.roundId}</div>
+                        <div class="result-value">Archers: ${archerCount}${sampleTargets ? ` · Sample: ${sampleTargets}` : ''}</div>
+                        <div class="quick-fill">
+                            <button class="clear-btn helper-btn" data-helper="use-round" data-index="${index}">Use Round</button>
+                            ${useArcherButton}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            container.querySelectorAll('[data-helper="use-round"]').forEach(btn => {
+                btn.addEventListener('click', () => useRoundFromSnapshot(parseInt(btn.dataset.index, 10)));
+            });
+            container.querySelectorAll('[data-helper="use-archer"]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    useArcherFromSnapshot(parseInt(btn.dataset.roundIndex, 10), parseInt(btn.dataset.archerIndex, 10));
+                });
+            });
+        }
+
+        function useRoundFromSnapshot(index, options = {}) {
+            const round = state.snapshotRounds[index];
+            if (!round) return;
+            state.lastRoundId = round.roundId;
+            const archerRoundInput = document.getElementById('archer-round-id');
+            if (archerRoundInput) archerRoundInput.value = round.roundId;
+            const endRoundInput = document.getElementById('end-round-id');
+            if (endRoundInput) endRoundInput.value = round.roundId;
+            if (!options.silent) {
+                log('output-event-helper', `✓ Selected round ${round.roundId} (${round.division})`, 'success');
+            }
+            if (round.archers && round.archers.length) {
+                useArcherFromSnapshot(index, 0, { silent: true });
+            }
+        }
+
+        function useArcherFromSnapshot(roundIndex, archerIndex, options = {}) {
+            const round = state.snapshotRounds[roundIndex];
+            if (!round) return;
+            const archer = round.archers[archerIndex];
+            if (!archer || !archer.roundArcherId) return;
+            state.lastArcherId = archer.roundArcherId;
+            const endArcherInput = document.getElementById('end-archer-id');
+            if (endArcherInput) endArcherInput.value = archer.roundArcherId;
+            if (!options.silent) {
+                log('output-event-helper', `✓ Selected archer ${archer.archerName || archer.roundArcherId}`, 'info');
+            }
+        }
+
+        function copyEventCode(index) {
+            const event = state.events[index];
+            if (!event || !event.entry_code) return;
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(event.entry_code).then(() => {
+                    log('output-event-helper', `Copied entry code "${event.entry_code}" to clipboard.`, 'success');
+                }).catch(() => {
+                    log('output-event-helper', `Entry code: ${event.entry_code}`, 'warning');
+                });
+            } else {
+                log('output-event-helper', `Entry code: ${event.entry_code}`, 'warning');
+            }
+        }
+
+        function clearEventHelper() {
+            state.events = [];
+            state.snapshotRounds = [];
+            const helperInput = document.getElementById('helper-event-id');
+            if (helperInput) helperInput.value = '';
+            const eventContainer = document.getElementById('event-results');
+            if (eventContainer) eventContainer.innerHTML = '';
+            const roundContainer = document.getElementById('round-helper-results');
+            if (roundContainer) roundContainer.innerHTML = '';
+            const output = document.getElementById('output-event-helper');
+            if (output) output.innerHTML = 'Cleared.\n';
+            const badge = document.getElementById('status-event-helper');
+            if (badge) {
+                badge.className = 'status-badge pending';
+                badge.textContent = 'Idle';
+            }
+        }
+
         function quickFillArcher() {
             if (state.lastRoundId) {
                 document.getElementById('archer-round-id').value = state.lastRoundId;
                 log('output-create-archer', `Auto-filled Round ID: ${state.lastRoundId}`, 'info');
+            } else {
+                log('output-create-archer', 'No round ID cached yet. Create a round (Test 3) or load an event snapshot.', 'warning');
             }
         }
 
@@ -886,6 +1151,8 @@
             }
             if (state.lastRoundId || state.lastArcherId) {
                 log('output-post-end', 'Auto-filled IDs from previous tests', 'info');
+            } else {
+                log('output-post-end', 'No cached round/archer IDs. Run Tests 3 & 4 or use the helper above.', 'warning');
             }
         }
 
@@ -909,4 +1176,3 @@
     </script>
 </body>
 </html>
-

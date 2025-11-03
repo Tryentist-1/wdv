@@ -193,7 +193,7 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
         
         // Strategy 1: If eventId and division provided, find by eventId + division
         if ($eventId && $division) {
-            $existing = $pdo->prepare('SELECT id FROM rounds WHERE event_id=? AND division=? LIMIT 1');
+            $existing = $pdo->prepare('SELECT id, event_id FROM rounds WHERE event_id=? AND division=? LIMIT 1');
             $existing->execute([$eventId, $division]);
             $row = $existing->fetch();
             error_log("Round lookup: eventId=$eventId, division=$division -> " . ($row ? "FOUND " . $row['id'] : "NOT FOUND"));
@@ -201,21 +201,32 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
         
         // Strategy 2: Fallback to date + division (legacy support)
         if (!$row && $division) {
-            $existing = $pdo->prepare('SELECT id FROM rounds WHERE round_type=? AND date=? AND division=? LIMIT 1');
+            $existing = $pdo->prepare('SELECT id, event_id FROM rounds WHERE round_type=? AND date=? AND division=? LIMIT 1');
             $existing->execute([$roundType, $date, $division]);
             $row = $existing->fetch();
         }
         
         // Strategy 3: Last resort (date only - least reliable)
         if (!$row) {
-            $existing = $pdo->prepare('SELECT id FROM rounds WHERE round_type=? AND date=? LIMIT 1');
+            $existing = $pdo->prepare('SELECT id, event_id FROM rounds WHERE round_type=? AND date=? LIMIT 1');
             $existing->execute([$roundType, $date]);
             $row = $existing->fetch();
         }
         
         if ($row) {
-            // Return existing round ID
-            error_log("Round REUSED: " . $row['id']);
+            // Ensure round is linked to event if provided (Phase 0 uses event_id for snapshots)
+            if ($eventId && $row['event_id'] !== $eventId) {
+                try {
+                    $linkExisting = $pdo->prepare('UPDATE rounds SET event_id=? WHERE id=?');
+                    $linkExisting->execute([$eventId, $row['id']]);
+                    error_log("Round REUSED (linked to event): " . $row['id'] . " -> " . $eventId);
+                    $row['event_id'] = $eventId;
+                } catch (Exception $e) {
+                    error_log("Round reuse link failed: " . $e->getMessage());
+                }
+            } else {
+                error_log("Round REUSED: " . $row['id']);
+            }
             json_response(['roundId' => $row['id']], 200);
         } else {
             error_log("Round CREATING NEW: eventId=$eventId, division=$division");
@@ -1989,5 +2000,3 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'POST') {
 }
 
 json_response(['error' => 'Not Found', 'route' => $route], 404);
-
-

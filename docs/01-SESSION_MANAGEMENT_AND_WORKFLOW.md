@@ -1,5 +1,30 @@
 # Session Management & Workflow Documentation
 
+> **Working doc:** Capture in-flight tasks and observations here during a session. When wrapping up, distil the highlights into `docs/archive/SESSION_SUMMARY.md` for the historical log.
+
+## 🔄 Follow‑up Status Update — October 31, 2025
+
+Aligning the roster revamp with manual setup UX fixes and highlighting the remaining gaps in the event → round workflow.
+
+### Current state
+- **Roster sync pipeline:** Archer Management now pulls `/v1/archers` via coach API key *or* event entry code, normalises to schema v2, and surfaces pending/synced/offline badges.
+- **Ranking Round 300 UX:** Manual setup grid, roster badges, and Live toggle share the same master list state as Archer Management; Live defaults to ON with clearer status text.
+- **Live Updates client:** Automatically seeds rounds/archers once scoring begins and flushes queued end posts when connectivity returns.
+- **API test harness:** Event + round lookup helpers added to walk the Event → Round → Round Archer → End chain without manual UUID hunting.
+
+### Needs attention
+- Event creation still intermittently misses the follow-up round creation, especially during manual bale loads — keep digging.
+- Results page lacks an inline scorecard modal and coach verification workflow.
+- Archer detail modal does not yet display historical scorecards pulled from snapshots.
+
+### Action items queued next
+1. Instrument `/v1/events/{id}/rounds` handshake (client + server logging) and add Playwright coverage for manual round selection.
+2. Add scorecard pop-up and verification controls to `results.html`, keeping offline safety in mind.
+3. Extend Archer Details with score history (snapshots + links to PDF/CSV exports).
+4. Update manual + automated testing docs (below) with roster sync, offline recovery, and Live badge checks.
+
+---
+
 ## 🔄 Follow‑up Status Update — October 29, 2025
 
 This captures the critical scoring calculation fix deployed today and the successful merge to main with Release Mobile 3.1.

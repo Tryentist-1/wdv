@@ -3,6 +3,13 @@
 ## 1. Objective
 Align the master archer roster across local storage, Live Updates API, and database so the server becomes the source of truth while retaining offline usability for tournaments with unreliable connectivity.
 
+### Status at a Glance
+- ✅ Database + API schema expanded (`migration_archer_profile_fields.sql`, `/v1/archers`)
+- ✅ Archer Management UI upgraded with full profile + sync messaging
+- ✅ Ranking Round (classic + 300) consuming schema v2 with extId alignment
+- 🔄 Event → Round linkage still flaky (see §5) — requires follow-up investigation
+- 🔄 CSV parity tests and harness helpers in progress (see §7 and §8)
+
 -## 2. Canonical Data Model
 - Persist the master roster fields identified in `ARCHER_MANAGEMENT.md`, excluding event-specific assignments:
   - Identity: `firstName`, `lastName`, `nickname`, `extId`, `status`
@@ -23,6 +30,7 @@ Align the master archer roster across local storage, Live Updates API, and datab
   - Validate and normalise incoming data (gender, level, school code) server-side to match the client helper logic.
   - Ensure `/archers/bulk_upsert` returns read-after-write data for accurate local refresh.
   - Harden 401/403 responses for sync endpoints so offline retries know when to fall back.
+- **Status:** ✅ Schema + endpoints live. Continue monitoring `/v1/events → /v1/rounds` flow for intermittent 401s and missing links.
 
 ## 4. Frontend Module Changes
 - **`js/archer_module.js`**
@@ -36,6 +44,7 @@ Align the master archer roster across local storage, Live Updates API, and datab
   - Provide conflict resolution prompts when local edits diverge from the latest server payload.
 - **CSS (`css/main.css`)**
   - Add styles for new form controls and status indicators.
+- **Status:** ✅ UI merge complete; follow-on polish includes CSV round-trip QA and friend badge styling.
 
 ## 5. Scoring App Integration
 Each scoring module reads from the master list; ensure they tolerate the new schema and persist only necessary subsets.
@@ -47,6 +56,7 @@ Each scoring module reads from the master list; ensure they tolerate the new sch
   - Audit exports or summaries that list archer info and ensure they pull from the canonical fields.
 - Shared utilities (`js/common.js`)
   - Introduce helper(s) for canonical name formatting and badge labels to keep UI consistent.
+- **Status:** ✅ Ranking Round variants migrated. 🔄 Event → round creation still flaky; add automated coverage + API logging to isolate.
 
 ## 6. Offline Sync Strategy
 - Treat the server as authoritative; the client caches a snapshot plus a mutation queue.
@@ -61,10 +71,11 @@ Each scoring module reads from the master list; ensure they tolerate the new sch
 
 ## 7. Testing & QA
 - Expand automated coverage in `tests/`:
-  - Unit tests for migration helpers, normalisation, and CSV import/export.
+  - Unit tests for `buildStateArcherFromRoster`, `sanitizeStateArchers`, CSV import/export, and Live Updates division inference.
   - Mocked integration tests around Live Updates requests (e.g., `tests/ranking_round_live_sync.spec.js`).
+  - Playwright smoke for manual bale selection + Live sync banner on `ranking_round_300.html`.
 - Manual checklist (`docs/MANUAL_TESTING_CHECKLIST.md`)
-  - Add cases for: offline launch, sync after reconnect, conflict resolution, CSV round-trip, scoring modules consuming new roster.
+  - Add cases for: offline launch, sync after reconnect, conflict resolution, CSV round-trip, and verifying scores appear in Results.
 - Include a lightweight mock server or fixture JSON for development runs where the real API is inaccessible.
 
 ## 8. Deployment Considerations
@@ -79,3 +90,9 @@ Each scoring module reads from the master list; ensure they tolerate the new sch
 4. Patch scoring modules to consume schema v2 and re-test offline flows.
 5. Add automated/mocked tests and update manual checklist.
 6. Validate deploy pipeline (FTP) and run production smoke tests.
+
+## 10. Upcoming Enhancements
+- Scorecard modal on `results.html` so coaches can inspect a bale without leaving the leaderboard.
+- Coach verification workflow (sign-off + timestamp) surfaced on Results and posted back to the API.
+- Archer detail drawer showing historical scorecards pulled from round snapshots.
+- Automated harness helpers (events → rounds → end records) to exercise the full Event → Round → Round Archer → End chain reliably.
