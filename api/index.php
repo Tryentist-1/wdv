@@ -1701,10 +1701,14 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
         
         // Get archers for this division round
         // IMPORTANT: If duplicates exist (same archer_id), prefer the one WITH bale/target
+        // JOIN with archers table to get separate firstName/lastName for consistent data
         $archers = $pdo->prepare('
-            SELECT ra.id as roundArcherId, ra.archer_name as archerName, ra.school, ra.gender, ra.level, 
+            SELECT ra.id as roundArcherId, ra.archer_name as archerName, 
+                   a.first_name as firstName, a.last_name as lastName,
+                   ra.school, ra.gender, ra.level, 
                    ra.target_assignment as target, ra.bale_number as bale, ra.completed, ra.archer_id
             FROM round_archers ra
+            LEFT JOIN archers a ON a.id = ra.archer_id
             WHERE ra.round_id=? 
             ORDER BY ra.archer_id, 
                      (ra.target_assignment IS NOT NULL AND ra.bale_number IS NOT NULL) DESC,
@@ -1731,8 +1735,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
         
         foreach ($as as $a) {
             // Get end events for this archer
-            // CRITICAL: Query by round_archer_id to get the scores
-            $ee = $pdo->prepare('SELECT end_number as endNumber, end_total as endTotal, running_total as runningTotal, tens, xs, server_ts as serverTs FROM end_events WHERE round_archer_id=? ORDER BY end_number');
+            // CRITICAL: Query by round_archer_id to get the scores (include individual arrows)
+            $ee = $pdo->prepare('SELECT end_number as endNumber, a1, a2, a3, end_total as endTotal, running_total as runningTotal, tens, xs, server_ts as serverTs FROM end_events WHERE round_archer_id=? ORDER BY end_number');
             $ee->execute([$a['roundArcherId']]);
             $ends = $ee->fetchAll();
             
@@ -1782,6 +1786,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
                 'roundArcherId' => $a['roundArcherId'],
                 'archerId' => $a['archer_id'],
                 'archerName' => $a['archerName'],
+                'firstName' => $a['firstName'] ?? '',
+                'lastName' => $a['lastName'] ?? '',
                 'school' => $a['school'],
                 'gender' => $a['gender'],
                 'level' => $a['level'],

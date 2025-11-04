@@ -342,16 +342,15 @@
         
         const total = normTotal(archer);
         
-        // Parse archer name from archerName field (format: "FirstName LastName")
-        const nameParts = (archer.archerName || '').split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
+        // Use firstName/lastName from API (with fallback to parsing archerName if needed)
+        const firstName = archer.firstName || archer.first_name || '';
+        const lastName = archer.lastName || archer.last_name || '';
         
         // Handle multiple possible field names for archer properties
         const archerData = {
           id: archer.archerId || archer.id || archer.archer_id,
-          firstName: firstName || archer.firstName || archer.first_name || '',
-          lastName: lastName || archer.lastName || archer.last_name || '',
+          firstName: firstName,
+          lastName: lastName,
           school: archer.school || '',
           level: archer.level || '',
           gender: archer.gender || '',

@@ -980,9 +980,14 @@
     const roundsList = document.getElementById('edit-event-rounds-list');
     
     try {
-      // Fetch event data with rounds
-      const eventData = await req(`/events/${eventId}`);
-      const rounds = eventData.rounds || [];
+      // Fetch event data (for event_type) and rounds separately
+      const [eventData, roundsData] = await Promise.all([
+        req(`/events/${eventId}/snapshot`).catch(() => ({ event: {} })),
+        req(`/events/${eventId}/rounds`).catch(() => ({ rounds: [] }))
+      ]);
+      
+      const event = eventData.event || {};
+      const rounds = roundsData.rounds || [];
       
       if (rounds.length === 0) {
         roundsList.innerHTML = '<div style="color: #7f8c8d; text-align: center;">No rounds configured for this event.</div>';
@@ -992,19 +997,20 @@
       // Display rounds
       let roundsHTML = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
       rounds.forEach(round => {
-        const assignmentType = round.event_type === 'auto_assign' ? 'Auto-Assigned' : 'Manual';
-        const assignmentBadge = round.event_type === 'auto_assign' 
+        const eventType = event.event_type || event.eventType || 'manual';
+        const assignmentType = eventType === 'auto_assign' ? 'Auto-Assigned' : 'Manual';
+        const assignmentBadge = eventType === 'auto_assign' 
           ? '<span style="background: #3498db; color: white; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-left: 0.5rem;">Auto</span>'
           : '<span style="background: #95a5a6; color: white; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-left: 0.5rem;">Manual</span>';
         
         roundsHTML += `
           <div style="padding: 0.5rem; background: white; border: 1px solid #ddd; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <strong>${round.division || 'N/A'}</strong> - ${round.round_type || 'R300'}
+              <strong>${round.division || 'N/A'}</strong> - ${round.roundType || 'R300'}
               ${assignmentBadge}
             </div>
             <div style="font-size: 0.85rem; color: #7f8c8d;">
-              ${round.archer_count || 0} archers
+              ${round.archerCount || 0} archers
             </div>
           </div>
         `;

@@ -361,8 +361,8 @@
                     }
 
                     const historyBtn = document.createElement('a');
-                    // Use extId for localStorage-based archers (will be converted to UUID in history page)
-                    const archerHistoryId = archer.id || archer.extId || 'unknown';
+                    // Use UUID (id) only for history link
+                    const archerHistoryId = archer.id;
                     historyBtn.href = `archer_history.html?archer=${encodeURIComponent(archerHistoryId)}`;
                     historyBtn.className = 'favorite-star';
                     historyBtn.style.marginLeft = '0.5rem';
@@ -778,8 +778,19 @@
             };
 
             (async function init() {
-                await ArcherModule.loadDefaultCSVIfNeeded();
+                // Try to load from MySQL first to ensure we have UUIDs
+                try {
+                    console.log('Auto-loading archer list from MySQL...');
+                    const archers = await ArcherModule.loadFromMySQL();
+                    console.log(`Loaded ${archers.length} archers from MySQL with UUIDs`);
+                    lastSyncMessage = 'Auto-loaded from server';
+                } catch (err) {
+                    console.warn('Failed to auto-load from MySQL, falling back to local/CSV:', err);
+                    await ArcherModule.loadDefaultCSVIfNeeded();
+                }
+                
                 renderList();
+                
                 try {
                     await ArcherModule.flushPending();
                 } catch (err) {

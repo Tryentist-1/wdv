@@ -593,6 +593,7 @@ const ArcherModule = {
 
   _fromApiArcher(apiArcher = {}) {
     const converted = Object.assign({}, DEFAULT_ARCHER_TEMPLATE, {
+      id: apiArcher.id || null, // Preserve UUID from MySQL
       extId: apiArcher.extId || apiArcher.id || this._buildExtId(apiArcher),
       first: this._safeString(apiArcher.firstName || apiArcher.first),
       last: this._safeString(apiArcher.lastName || apiArcher.last),
