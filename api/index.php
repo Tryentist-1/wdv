@@ -1780,6 +1780,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
             
             $divisionArchers[] = [
                 'roundArcherId' => $a['roundArcherId'],
+                'archerId' => $a['archer_id'],
                 'archerName' => $a['archerName'],
                 'school' => $a['school'],
                 'gender' => $a['gender'],
@@ -1795,6 +1796,10 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
                 'xs' => $totalXs,
                 'completed' => (bool)$a['completed'],
                 'lastSyncTime' => $lastSyncTime,
+                'scorecard' => [
+                    'ends' => $ends
+                ],
+                'roundId' => $r['id']
             ];
         }
         

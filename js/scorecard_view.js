@@ -209,16 +209,18 @@ const ScorecardView = (() => {
       modal = document.createElement('div');
       modal.id = 'scorecard-view-modal';
       modal.className = 'modal';
-      modal.style.display = 'none';
+      modal.style.cssText = 'display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); align-items: flex-start; padding-top: 60px;';
       document.body.appendChild(modal);
     }
     
     const scorecardHTML = renderScorecard(archerData, roundData, scorecardOptions);
     
     modal.innerHTML = `
-      <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto; position: relative;">
-        <button class="modal-close-btn" style="position: sticky; top: 0; right: 0; float: right; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1.25rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1000; margin-bottom: 1rem;">&times;</button>
-        ${scorecardHTML}
+      <div class="modal-content" style="background: white; margin: auto; padding: 20px; border-radius: 8px; max-width: 900px; max-height: 85vh; overflow-y: auto; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <button class="modal-close-btn" style="position: absolute; top: 10px; right: 10px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1000; line-height: 1;">&times;</button>
+        <div style="margin-top: 40px;">
+          ${scorecardHTML}
+        </div>
       </div>
     `;
     
@@ -237,6 +239,16 @@ const ScorecardView = (() => {
     };
     
     modal.style.display = 'flex';
+    modal.style.alignItems = 'flex-start';
+    
+    // Scroll to top when modal opens
+    setTimeout(() => {
+      if (modal.querySelector('.modal-content')) {
+        modal.querySelector('.modal-content').scrollTop = 0;
+      }
+      window.scrollTo(0, 0);
+    }, 10);
+    
     return modal;
   }
 
