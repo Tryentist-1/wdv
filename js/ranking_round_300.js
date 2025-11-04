@@ -3168,51 +3168,66 @@ async function ensureLiveRoundReady(options = {}) {
             division = deriveDivisionCode(gender, level);
         }
 
-        try {
-            await LiveUpdates.ensureRound({
-                roundType: 'R300',
-                date: today,
-                division,
-                gender,
-                level,
-                eventId
-            });
-        } catch (err) {
-            // If unauthorized, prompt for coach passcode
-            if (err && (err.message || '').includes('Unauthorized')) {
-                console.warn('Entry code does not have write permissions. Coach passcode required.');
-                const coachCode = (typeof prompt === 'function') ? prompt('Enter Coach Passcode to enable score syncing:') : '';
-                if (coachCode && coachCode.trim()) {
-                    try {
-                        localStorage.setItem('coach_api_key', coachCode.trim());
-                        localStorage.setItem('coach_passcode', coachCode.trim());
-                        // Update Live Updates config
-                        if (window.LiveUpdates && typeof LiveUpdates.setConfig === 'function') {
-                            LiveUpdates.setConfig({ apiKey: coachCode.trim() });
+        // Instead of creating a new round (requires coach key), use the existing round from the event
+        let existingRoundId = null;
+        if (eventId && division) {
+            try {
+                console.log('[ensureLiveRoundReady] Looking for existing round in event snapshot...');
+                const snapshotRes = await fetch(`${LiveUpdates._state.config.apiBase}/events/${eventId}/snapshot`, {
+                    headers: { 'X-Passcode': getEventEntryCode() || '' }
+                });
+                if (snapshotRes.ok) {
+                    const snapshotData = await snapshotRes.json();
+                    if (snapshotData.divisions) {
+                        // Check if divisions is an object (keyed by division code) or array
+                        const divisionsArray = Array.isArray(snapshotData.divisions) 
+                            ? snapshotData.divisions 
+                            : Object.values(snapshotData.divisions);
+                        
+                        const matchingDivision = divisionsArray.find(d => d.division === division);
+                        if (matchingDivision && matchingDivision.roundId) {
+                            existingRoundId = matchingDivision.roundId;
+                            console.log('[ensureLiveRoundReady] Found existing roundId:', existingRoundId, 'for division:', division);
                         }
-                        // Retry round creation with coach key
-                        await LiveUpdates.ensureRound({
-                            roundType: 'R300',
-                            date: today,
-                            division,
-                            gender,
-                            level,
-                            eventId
-                        });
-                    } catch (retryErr) {
-                        console.error('Failed to create round even with coach passcode:', retryErr);
-                        throw retryErr;
                     }
-                } else {
-                    throw new Error('Coach passcode required for score syncing');
                 }
-            } else {
-                throw err;
+            } catch (err) {
+                console.warn('[ensureLiveRoundReady] Could not load existing round from snapshot:', err);
+            }
+        }
+
+        if (existingRoundId) {
+            // Use the existing round - no need to create!
+            console.log('[ensureLiveRoundReady] Using existing round from event');
+            LiveUpdates._state.roundId = existingRoundId;
+            LiveUpdates._state.eventId = eventId;
+            try {
+                localStorage.setItem('live_updates_state', JSON.stringify({
+                    roundId: existingRoundId,
+                    eventId: eventId,
+                    archerIds: LiveUpdates._state.archerIds || {}
+                }));
+            } catch (_) {}
+        } else {
+            // Fallback: try to create a new round (requires coach key)
+            console.log('[ensureLiveRoundReady] No existing round found, attempting to create...');
+            try {
+                await LiveUpdates.ensureRound({
+                    roundType: 'R300',
+                    date: today,
+                    division,
+                    gender,
+                    level,
+                    eventId
+                });
+            } catch (err) {
+                console.error('[ensureLiveRoundReady] Could not create round:', err);
+                throw new Error('Cannot sync scores: round does not exist and cannot be created without coach permissions');
             }
         }
 
         if (!LiveUpdates._state || !LiveUpdates._state.roundId) {
-            throw new Error('roundId missing after ensureRound');
+            throw new Error('roundId missing - cannot initialize Live Updates');
         }
 
         if (state.archers && state.archers.length) {
