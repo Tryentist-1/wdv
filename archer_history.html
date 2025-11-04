@@ -166,6 +166,9 @@
     const API_BASE = 'https://tryentist.com/wdv/api/v1';
     const urlParams = new URLSearchParams(window.location.search);
     const archerId = urlParams.get('archer') || urlParams.get('id') || urlParams.get('extId');
+    
+    // Store archer data globally so it can be accessed when viewing scorecards
+    let currentArcherData = null;
 
     async function loadHistory() {
       if (!archerId) {
@@ -206,6 +209,9 @@
         
         const data = await res.json();
         console.log('Archer history:', data);
+        
+        // Store archer data globally for scorecard viewing
+        currentArcherData = data.archer;
 
         // Update archer info
         document.getElementById('archer-name').textContent = data.archer.fullName;
@@ -313,13 +319,14 @@
           end.a3 || ''
         ]);
         
+        // Use globally stored archer data for name and details
         const archerData = {
           id: round.archer_id,
-          firstName: round.first_name || '',
-          lastName: round.last_name || '',
-          school: round.school || '',
-          level: round.level || '',
-          gender: round.gender || '',
+          firstName: currentArcherData ? currentArcherData.firstName : '',
+          lastName: currentArcherData ? currentArcherData.lastName : '',
+          school: currentArcherData ? currentArcherData.school : '',
+          level: currentArcherData ? currentArcherData.level : '',
+          gender: currentArcherData ? currentArcherData.gender : '',
           scores: scores,
           verified: scorecardData.verified || false,
           completed: (scorecardData.ends_completed >= 10)
