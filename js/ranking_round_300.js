@@ -3168,14 +3168,48 @@ async function ensureLiveRoundReady(options = {}) {
             division = deriveDivisionCode(gender, level);
         }
 
-        await LiveUpdates.ensureRound({
-            roundType: 'R300',
-            date: today,
-            division,
-            gender,
-            level,
-            eventId
-        });
+        try {
+            await LiveUpdates.ensureRound({
+                roundType: 'R300',
+                date: today,
+                division,
+                gender,
+                level,
+                eventId
+            });
+        } catch (err) {
+            // If unauthorized, prompt for coach passcode
+            if (err && (err.message || '').includes('Unauthorized')) {
+                console.warn('Entry code does not have write permissions. Coach passcode required.');
+                const coachCode = (typeof prompt === 'function') ? prompt('Enter Coach Passcode to enable score syncing:') : '';
+                if (coachCode && coachCode.trim()) {
+                    try {
+                        localStorage.setItem('coach_api_key', coachCode.trim());
+                        localStorage.setItem('coach_passcode', coachCode.trim());
+                        // Update Live Updates config
+                        if (window.LiveUpdates && typeof LiveUpdates.setConfig === 'function') {
+                            LiveUpdates.setConfig({ apiKey: coachCode.trim() });
+                        }
+                        // Retry round creation with coach key
+                        await LiveUpdates.ensureRound({
+                            roundType: 'R300',
+                            date: today,
+                            division,
+                            gender,
+                            level,
+                            eventId
+                        });
+                    } catch (retryErr) {
+                        console.error('Failed to create round even with coach passcode:', retryErr);
+                        throw retryErr;
+                    }
+                } else {
+                    throw new Error('Coach passcode required for score syncing');
+                }
+            } else {
+                throw err;
+            }
+        }
 
         if (!LiveUpdates._state || !LiveUpdates._state.roundId) {
             throw new Error('roundId missing after ensureRound');
