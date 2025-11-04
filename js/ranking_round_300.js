@@ -1992,7 +1992,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalTensOverall += endTens;
                 totalXsOverall += endXs;
             }
-            const avg = isComplete ? (runningTotal / (endNum * 3)).toFixed(1) : '';
+            // Calculate average for THIS END only (not running average)
+            const avg = isComplete ? (endTotal / 3).toFixed(1) : '';
             let avgClass = '';
             if (isComplete) {
                 const avgNum = parseFloat(avg);

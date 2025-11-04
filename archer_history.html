@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Archer History</title>
   <link rel="stylesheet" href="css/main.css">
+  <script src="js/scorecard_view.js"></script>
   <style>
     .history-header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -63,6 +64,7 @@
     
     .history-table tbody tr:hover {
       background: #f8f9fa;
+      cursor: pointer;
     }
     
     .score-cell {
@@ -225,7 +227,7 @@
 
         row.innerHTML = `
           <td>${round.event_date || 'N/A'}</td>
-          <td>${round.event_name || 'Unknown Event'}</td>
+          <td>${round.event_name || 'Unknown Event'} <span style="color: #3498db; font-size: 0.85rem;">📄</span></td>
           <td>${round.round_type || 'R300'}</td>
           <td>${divisionNames[round.division] || round.division || 'N/A'}</td>
           <td>${round.bale_number || '-'}</td>
@@ -235,6 +237,10 @@
           <td>${round.total_tens || 0}</td>
           <td>${round.total_xs || 0}</td>
         `;
+        
+        // Make row clickable to view scorecard
+        row.style.cursor = 'pointer';
+        row.onclick = () => showRoundScorecard(round);
 
         tbody.appendChild(row);
       });
@@ -244,6 +250,50 @@
       document.getElementById('loading').style.display = 'none';
       document.getElementById('error').textContent = message;
       document.getElementById('error').style.display = 'block';
+    }
+    
+    async function showRoundScorecard(round) {
+      // Fetch detailed scorecard data from API
+      try {
+        const res = await fetch(`${API_BASE}/rounds/${round.round_id}/archers/${round.archer_id}/scorecard`);
+        if (!res.ok) {
+          alert('Unable to load scorecard details');
+          return;
+        }
+        
+        const scorecardData = await res.json();
+        
+        // Extract scores from ends
+        const scores = (scorecardData.ends || []).map(end => [
+          end.a1 || '',
+          end.a2 || '',
+          end.a3 || ''
+        ]);
+        
+        const archerData = {
+          id: round.archer_id,
+          firstName: round.first_name || '',
+          lastName: round.last_name || '',
+          school: round.school || '',
+          level: round.level || '',
+          gender: round.gender || '',
+          scores: scores,
+          verified: scorecardData.verified || false,
+          completed: (scorecardData.ends_completed >= 10)
+        };
+        
+        const roundData = {
+          totalEnds: 10,
+          eventName: round.event_name || '',
+          division: round.division || '',
+          roundType: round.round_type || 'R300'
+        };
+        
+        ScorecardView.showScorecardModal(archerData, roundData);
+      } catch (err) {
+        console.error('Error loading scorecard:', err);
+        alert('Error loading scorecard: ' + err.message);
+      }
     }
 
     // Load history on page load

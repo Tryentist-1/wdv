@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Event Results</title>
   <link rel="stylesheet" href="css/main.css">
+  <script src="js/scorecard_view.js"></script>
   <style>
     .results-header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -79,6 +80,7 @@
     
     .leaderboard-table tbody tr:hover {
       background: #f8f9fa;
+      cursor: pointer;
     }
     
     .rank-cell {
@@ -300,7 +302,7 @@
 
         row.innerHTML = `
           <td class="rank-cell ${rankClass}">${rank}</td>
-          <td class="archer-name">${name}</td>
+          <td class="archer-name">${name} <span style="color: #3498db; font-size: 0.85rem;">📄</span></td>
           <td>${archer.school || '-'}</td>
           <td>${bale}</td>
           <td>${target}</td>
@@ -309,11 +311,43 @@
           <td>${archer.xs || (archer.scorecard && archer.scorecard.xs) || 0}</td>
           <td>${archer.tens || (archer.scorecard && archer.scorecard.tens) || 0}</td>
         `;
+        
+        // Make row clickable to view scorecard
+        row.style.cursor = 'pointer';
+        row.onclick = () => showArcherScorecard(archer);
 
         tbody.appendChild(row);
       });
 
       return table;
+    }
+    
+    function showArcherScorecard(archer) {
+      // Extract scores from the archer data
+      const scores = (archer.scorecard && archer.scorecard.ends) 
+        ? archer.scorecard.ends.map(end => [end.a1 || '', end.a2 || '', end.a3 || ''])
+        : [];
+      
+      const archerData = {
+        id: archer.id || archer.archerId,
+        firstName: archer.firstName || archer.first_name || '',
+        lastName: archer.lastName || archer.last_name || '',
+        school: archer.school || '',
+        level: archer.level || '',
+        gender: archer.gender || '',
+        scores: scores,
+        verified: archer.verified || false,
+        completed: (archer.status === 'Completed' || total >= 300)
+      };
+      
+      const roundData = {
+        totalEnds: 10,
+        eventName: document.getElementById('event-name').textContent,
+        division: archer.division || '',
+        roundType: 'R300'
+      };
+      
+      ScorecardView.showScorecardModal(archerData, roundData);
     }
 
     // Load results on page load

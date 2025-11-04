@@ -456,7 +456,7 @@
 
   // ==================== PHASE 0: Division Round Management ====================
   
-  function processNextDivision(eventName) {
+  async function processNextDivision(eventName) {
     if (pendingDivisions.length === 0) {
       // All divisions configured!
       alert(`✓ Event "${eventName}" created with all division rounds!\n\nArchers have been assigned to bales.`);
@@ -475,12 +475,22 @@
     }[currentDivision] || currentDivision;
 
     // Show archer selection modal for this division
-    showAddArchersModalForDivision(currentDivision, divisionName, eventName);
+    await showAddArchersModalForDivision(currentDivision, divisionName, eventName);
   }
 
-  function showAddArchersModalForDivision(division, divisionName, eventName) {
+  async function showAddArchersModalForDivision(division, divisionName, eventName) {
     // Reset selection
     selectedArchers = [];
+
+    // Load master archer list if not already loaded
+    if (allArchers.length === 0) {
+      try {
+        await loadMasterArcherList();
+      } catch (err) {
+        alert('Error loading archer list: ' + err.message);
+        return;
+      }
+    }
 
     // Update modal title
     document.getElementById('division-title').textContent = `${divisionName} Round`;
@@ -964,7 +974,49 @@
   
   let currentEditEventId = null;
   
-  function editEvent(encodedEventData) {
+  async function loadEventRounds(eventId) {
+    const roundsList = document.getElementById('edit-event-rounds-list');
+    
+    try {
+      // Fetch event data with rounds
+      const eventData = await req(`/events/${eventId}`);
+      const rounds = eventData.rounds || [];
+      
+      if (rounds.length === 0) {
+        roundsList.innerHTML = '<div style="color: #7f8c8d; text-align: center;">No rounds configured for this event.</div>';
+        return;
+      }
+      
+      // Display rounds
+      let roundsHTML = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+      rounds.forEach(round => {
+        const assignmentType = round.event_type === 'auto_assign' ? 'Auto-Assigned' : 'Manual';
+        const assignmentBadge = round.event_type === 'auto_assign' 
+          ? '<span style="background: #3498db; color: white; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-left: 0.5rem;">Auto</span>'
+          : '<span style="background: #95a5a6; color: white; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-left: 0.5rem;">Manual</span>';
+        
+        roundsHTML += `
+          <div style="padding: 0.5rem; background: white; border: 1px solid #ddd; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong>${round.division || 'N/A'}</strong> - ${round.round_type || 'R300'}
+              ${assignmentBadge}
+            </div>
+            <div style="font-size: 0.85rem; color: #7f8c8d;">
+              ${round.archer_count || 0} archers
+            </div>
+          </div>
+        `;
+      });
+      roundsHTML += '</div>';
+      
+      roundsList.innerHTML = roundsHTML;
+    } catch (err) {
+      console.error('Error loading rounds:', err);
+      roundsList.innerHTML = '<div style="color: #e74c3c; text-align: center;">Error loading rounds</div>';
+    }
+  }
+  
+  async function editEvent(encodedEventData) {
     const event = JSON.parse(decodeURIComponent(encodedEventData));
     currentEditEventId = event.id;
     
@@ -981,6 +1033,9 @@
     codeInput.value = event.entry_code || '';
     
     modal.style.display = 'flex';
+    
+    // Load and display rounds
+    await loadEventRounds(event.id);
     
     document.getElementById('cancel-edit-event-btn').onclick = () => {
       modal.style.display = 'none';
