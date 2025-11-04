@@ -1079,7 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const headerRow = document.createElement('tr');
         headerRow.style.cssText = 'background: #f8f9fa; font-weight: bold;';
         
-        const headers = ['Select', 'Archer Name', 'School', 'Division', 'Target'];
+        const headers = ['Select', 'Archer Name', 'School', 'Division', 'Target', 'Score'];
         headers.forEach(headerText => {
             const th = document.createElement('th');
             th.textContent = headerText;
@@ -1197,12 +1197,154 @@ document.addEventListener('DOMContentLoaded', () => {
             targetCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
             row.appendChild(targetCell);
             
+            // Score cell - will be populated by fetchArcherScores()
+            const scoreCell = document.createElement('td');
+            scoreCell.className = 'archer-score-cell';
+            scoreCell.dataset.archerId = archer.id || archer.archerId || '';  // Store archer UUID for lookup
+            scoreCell.textContent = '—';
+            scoreCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef; color: #666; font-weight: 500;';
+            row.appendChild(scoreCell);
+            
             table.appendChild(row);
         });
         
         setupControls.container.appendChild(table);
         updateSelectionCount();
         updateManualLiveControls();
+        
+        // Fetch and display existing scores for this event
+        if (state.activeEventId) {
+            fetchAndDisplayArcherScores();
+        }
+    }
+
+    /**
+     * Fetch existing scores for archers in the current event and display in the list
+     */
+    async function fetchAndDisplayArcherScores() {
+        if (!state.activeEventId) return;
+        
+        try {
+            // Fetch event snapshot which includes all archers and their scores
+            const res = await fetch(`${API_BASE}/events/${state.activeEventId}/snapshot`, {
+                headers: {
+                    'X-Passcode': localStorage.getItem('coach_passcode') || ''
+                }
+            });
+            
+            if (!res.ok) return;  // Silently fail if no access
+            
+            const data = await res.json();
+            
+            // For each division, update score cells
+            if (data.divisions && Array.isArray(data.divisions)) {
+                data.divisions.forEach(division => {
+                    if (division.archers && Array.isArray(division.archers)) {
+                        division.archers.forEach(archer => {
+                            const archerId = archer.archerId || archer.id;
+                            if (!archerId) return;
+                            
+                            // Find the score cell for this archer
+                            const scoreCells = document.querySelectorAll('.archer-score-cell');
+                            scoreCells.forEach(cell => {
+                                if (cell.dataset.archerId === archerId) {
+                                    const score = archer.runningTotal || 0;
+                                    if (score > 0) {
+                                        cell.textContent = score;
+                                        cell.style.color = '#2ecc71';  // Green for completed scores
+                                        cell.style.fontWeight = '600';
+                                    }
+                                }
+                            });
+                        });
+                    }
+                });
+            }
+        } catch (err) {
+            console.warn('Could not fetch archer scores:', err);
+        }
+    }
+    
+    /**
+     * Load existing scores for selected archers before starting scoring
+     * This allows editing existing scorecards
+     */
+    async function loadExistingScoresForArchers() {
+        if (!state.activeEventId || state.archers.length === 0) return;
+        
+        console.log('[loadExistingScores] Checking for existing scores for', state.archers.length, 'archers');
+        
+        try {
+            // Fetch event snapshot
+            const res = await fetch(`${API_BASE}/events/${state.activeEventId}/snapshot`, {
+                headers: {
+                    'X-Passcode': localStorage.getItem('coach_passcode') || ''
+                }
+            });
+            
+            if (!res.ok) {
+                console.warn('[loadExistingScores] Could not fetch event data');
+                return;
+            }
+            
+            const data = await res.json();
+            let foundScores = false;
+            
+            // For each archer in state, check if they have existing scores
+            state.archers.forEach(stateArcher => {
+                const archerId = stateArcher.id || stateArcher.archerId;
+                
+                // Search all divisions for this archer
+                if (data.divisions && Array.isArray(data.divisions)) {
+                    data.divisions.forEach(division => {
+                        if (division.archers && Array.isArray(division.archers)) {
+                            const apiArcher = division.archers.find(a => 
+                                (a.archerId === archerId) || (a.id === archerId)
+                            );
+                            
+                            if (apiArcher && apiArcher.scorecard && apiArcher.scorecard.ends) {
+                                const ends = apiArcher.scorecard.ends;
+                                if (ends.length > 0) {
+                                    console.log(`[loadExistingScores] Found ${ends.length} ends for ${stateArcher.firstName} ${stateArcher.lastName}`);
+                                    foundScores = true;
+                                    
+                                    // Populate the scores array
+                                    ends.forEach(end => {
+                                        const endIndex = (end.endNumber || 1) - 1;
+                                        if (endIndex >= 0 && endIndex < state.totalEnds) {
+                                            stateArcher.scores[endIndex] = [
+                                                end.a1 || '',
+                                                end.a2 || '',
+                                                end.a3 || ''
+                                            ];
+                                        }
+                                    });
+                                    
+                                    // Store the round_archer_id if available
+                                    if (apiArcher.roundArcherId) {
+                                        stateArcher.roundArcherId = apiArcher.roundArcherId;
+                                    }
+                                    
+                                    // Update current end to first incomplete end or last end
+                                    const lastEndNumber = apiArcher.scorecard.currentEnd || apiArcher.lastEnd || ends.length;
+                                    state.currentEnd = Math.min(lastEndNumber + 1, state.totalEnds);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+            
+            if (foundScores) {
+                console.log('[loadExistingScores] Loaded existing scores, current end:', state.currentEnd);
+                saveData();  // Save the loaded scores to localStorage
+            } else {
+                console.log('[loadExistingScores] No existing scores found');
+            }
+            
+        } catch (err) {
+            console.error('[loadExistingScores] Error loading existing scores:', err);
+        }
     }
 
     function renderSetupForm() {
@@ -1802,7 +1944,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Function to load entire bale when clicking on any archer
-    window.loadEntireBale = function(baleNumber, archersInBale) {
+    window.loadEntireBale = async function(baleNumber, archersInBale) {
         // Clear existing archers
         state.archers = [];
         state.baleNumber = parseInt(baleNumber);
@@ -1831,6 +1973,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Set assignment mode to pre-assigned since we're loading a complete bale
         state.assignmentMode = 'pre-assigned';
         saveData();
+        
+        // Load existing scores for these archers (if any)
+        await loadExistingScoresForArchers();
         
         // Initialize Live Updates if enabled
         if (typeof LiveUpdates !== 'undefined') {
@@ -3534,6 +3679,10 @@ function updateManualLiveControls(summaryOverride) {
                 }
                 manualSetupControls.startScoringBtn.disabled = true;
                 try {
+                    // Load existing scores BEFORE initializing Live sync
+                    // This allows editing existing scorecards
+                    await loadExistingScoresForArchers();
+                    
                     if (getLiveEnabled()) {
                         const success = await ensureLiveRoundReady({ promptForCode: true });
                         if (!success) {
