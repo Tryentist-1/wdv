@@ -14,6 +14,11 @@ $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
 $route = '/' . ltrim(substr($path, strlen($base)), '/');
+// Remove script name from route if present (for local dev with PHP built-in server)
+$scriptName = basename($_SERVER['SCRIPT_NAME']);
+if (strpos($route, $scriptName) === 1) {
+    $route = '/' . ltrim(substr($route, strlen('/' . $scriptName)), '/');
+}
 
 // Basic router
 if ($route === '/v1/health') {
@@ -572,14 +577,36 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/bales/([0-9]+)/archers$#i', $route, $m
             $endsList = $ends->fetchAll();
             
             // Calculate current end and totals
+            // CRITICAL: Recalculate running total from actual arrow scores to ensure accuracy
             $currentEnd = 1;
             $runningTotal = 0;
             $totalTens = 0;
             $totalXs = 0;
             
-            foreach ($endsList as $end) {
+            foreach ($endsList as $idx => $end) {
                 $currentEnd = max($currentEnd, $end['endNumber'] + 1);
-                $runningTotal = max($runningTotal, $end['runningTotal']);
+                
+                // Recalculate end score from arrow values for accuracy
+                $a1 = strtoupper(trim($end['a1'] ?? ''));
+                $a2 = strtoupper(trim($end['a2'] ?? ''));
+                $a3 = strtoupper(trim($end['a3'] ?? ''));
+                
+                $endScore = 0;
+                foreach ([$a1, $a2, $a3] as $arrow) {
+                    if ($arrow === 'X' || $arrow === '10') {
+                        $endScore += 10;
+                    } elseif ($arrow === 'M' || $arrow === '') {
+                        $endScore += 0;
+                    } else {
+                        $endScore += (int)$arrow;
+                    }
+                }
+                
+                $runningTotal += $endScore;
+                // Update the ends array with recalculated values
+                $endsList[$idx]['runningTotal'] = $runningTotal;
+                $endsList[$idx]['endTotal'] = $endScore;
+                
                 $totalTens += $end['tens'];
                 $totalXs += $end['xs'];
             }
@@ -1769,10 +1796,33 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
                 $last = end($ends);
                 $lastEnd = (int)$last['endNumber'];
                 $lastEndTotal = (int)$last['endTotal'];
-                $runningTotal = (int)$last['runningTotal'];
                 $lastSyncTime = $last['serverTs'];
                 
-                foreach ($ends as $end) {
+                // CRITICAL: Recalculate running total from actual arrow scores to ensure accuracy
+                // This fixes discrepancies where stored running_total may be incorrect
+                $runningTotal = 0;
+                foreach ($ends as $idx => $end) {
+                    // Parse arrow scores (handle X, M, and numeric values)
+                    $a1 = strtoupper(trim($end['a1'] ?? ''));
+                    $a2 = strtoupper(trim($end['a2'] ?? ''));
+                    $a3 = strtoupper(trim($end['a3'] ?? ''));
+                    
+                    $endScore = 0;
+                    foreach ([$a1, $a2, $a3] as $arrow) {
+                        if ($arrow === 'X' || $arrow === '10') {
+                            $endScore += 10;
+                        } elseif ($arrow === 'M' || $arrow === '') {
+                            $endScore += 0;
+                        } else {
+                            $endScore += (int)$arrow;
+                        }
+                    }
+                    
+                    $runningTotal += $endScore;
+                    // Update the running total in the ends array for accurate scorecard display
+                    $ends[$idx]['runningTotal'] = $runningTotal;
+                    $ends[$idx]['endTotal'] = $endScore; // Also recalculate endTotal for accuracy
+                    
                     $totalTens += (int)$end['tens'];
                     $totalXs += (int)$end['xs'];
                 }
