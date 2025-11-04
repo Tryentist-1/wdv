@@ -887,21 +887,62 @@
         }
       }
 
+      // Clear cookies - explicitly delete known cookies with multiple paths/domains
+      const knownCookies = ['oas_archer_id', 'coach_auth'];
+      const paths = ['/', '/wdv', '/wdv/'];
+      const domains = [window.location.hostname, '.' + window.location.hostname, ''];
+      
       try {
+        // First, explicitly clear known cookies with all path/domain combinations
+        knownCookies.forEach(cookieName => {
+          paths.forEach(path => {
+            domains.forEach(domain => {
+              if (domain) {
+                document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path};domain=${domain}`;
+              } else {
+                document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path}`;
+              }
+            });
+          });
+        });
+        
+        // Then, clear all other cookies visible in document.cookie
         document.cookie.split(';').forEach(cookieStr => {
           const cookie = cookieStr.trim();
           if (!cookie) return;
           const eqPos = cookie.indexOf('=');
           const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
           if (!name) return;
-          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          // Try multiple paths to ensure deletion
+          paths.forEach(path => {
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path}`;
+          });
         });
       } catch (err) {
         console.warn('Cookie clear failed:', err);
       }
 
+      // Clear IndexedDB if it exists
+      if (window.indexedDB && window.indexedDB.databases) {
+        try {
+          const databases = await window.indexedDB.databases();
+          await Promise.all(databases.map(db => {
+            return new Promise((resolve, reject) => {
+              const deleteReq = window.indexedDB.deleteDatabase(db.name);
+              deleteReq.onsuccess = () => resolve();
+              deleteReq.onerror = () => reject(deleteReq.error);
+              deleteReq.onblocked = () => resolve(); // Resolve anyway if blocked
+            });
+          }));
+        } catch (err) {
+          console.warn('IndexedDB clear failed:', err);
+        }
+      }
+
       alert('Local app data cleared. The page will reload now.');
-      window.location.reload();
+      // Force hard reload to clear page cache (bypass cache)
+      // Using href assignment with timestamp to force cache bypass
+      window.location.href = window.location.pathname + '?nocache=' + Date.now();
     }
 
     // Onboarding disabled - outdated tutorial
