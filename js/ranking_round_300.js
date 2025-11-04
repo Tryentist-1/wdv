@@ -693,18 +693,23 @@ document.addEventListener('DOMContentLoaded', () => {
         // Prefer server-driven assignment mode with offline fallback. Do NOT rely on legacy keys.
         if (state.activeEventId) {
             if (state.assignmentMode) {
+                console.log('[determineSetupMode] Using state.assignmentMode:', state.assignmentMode);
                 return (state.assignmentMode === 'pre-assigned' || state.assignmentMode === 'assigned') ? 'pre-assigned' : 'manual';
             }
             try {
                 const metaRaw = localStorage.getItem(`event:${state.activeEventId}:meta`);
                 if (metaRaw) {
                     const meta = JSON.parse(metaRaw);
+                    console.log('[determineSetupMode] Event meta:', meta);
                     if (meta && meta.assignmentMode) {
-                        return (meta.assignmentMode === 'assigned') ? 'pre-assigned' : 'manual';
+                        const mode = (meta.assignmentMode === 'assigned' || meta.assignmentMode === 'pre-assigned') ? 'pre-assigned' : 'manual';
+                        console.log('[determineSetupMode] Using meta.assignmentMode:', meta.assignmentMode, '-> mode:', mode);
+                        return mode;
                     }
                 }
             } catch(_) {}
         }
+        console.log('[determineSetupMode] No event or assignment mode found, defaulting to manual');
         return 'manual';
     }
 
@@ -827,6 +832,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPreassignedSetup() {
         if (!preassignedSetupControls.baleListContainer) return;
+        
+        // Add RESET button to pre-assigned setup header
+        const setupCard = preassignedSetupControls.section.querySelector('.preassigned-setup-card');
+        if (setupCard) {
+            // Check if reset button already exists
+            let existingResetBtn = setupCard.querySelector('#preassigned-reset-btn');
+            if (!existingResetBtn) {
+                const header = setupCard.querySelector('h3');
+                if (header) {
+                    const resetBtn = document.createElement('button');
+                    resetBtn.id = 'preassigned-reset-btn';
+                    resetBtn.className = 'btn btn-danger';
+                    resetBtn.textContent = 'Reset';
+                    resetBtn.style.cssText = 'float: right; margin-top: -5px;';
+                    resetBtn.onclick = () => {
+                        if (confirm('Reset all scoring data and start over?\n\nThis will clear your current session.')) {
+                            resetState();
+                            renderView();
+                        }
+                    };
+                    header.appendChild(resetBtn);
+                }
+            }
+        }
         
         // Source list from event-scoped cache saved at event load time
         let masterList = [];
@@ -3373,7 +3402,17 @@ function updateManualLiveControls(summaryOverride) {
                 
                 // Update UI/state
                 state.eventName = (eventData.event && eventData.event.name) || eventName || state.eventName || '';
-                state.assignmentMode = (eventData.event && eventData.event.assignmentMode === 'assigned') ? 'pre-assigned' : 'manual';
+                
+                // DEBUG: Log what we received from API
+                console.log('[loadEventById] Event data assignmentMode:', eventData.event?.assignmentMode);
+                console.log('[loadEventById] Event data eventType:', eventData.event?.eventType);
+                
+                // Set assignment mode - check both assignmentMode and eventType
+                const apiAssignmentMode = eventData.event?.assignmentMode || 
+                                         (eventData.event?.eventType === 'auto_assign' ? 'assigned' : 'manual');
+                state.assignmentMode = (apiAssignmentMode === 'assigned' || apiAssignmentMode === 'pre-assigned') ? 'pre-assigned' : 'manual';
+                
+                console.log('[loadEventById] Final state.assignmentMode:', state.assignmentMode);
                 updateEventHeader();
                 
                 saveData();
@@ -3389,6 +3428,11 @@ function updateManualLiveControls(summaryOverride) {
     
     async function init() {
         console.log("Initializing Ranking Round 300 App...");
+        
+        // PHASE 0: Create or retrieve archer cookie (must happen first)
+        const archerId = getArcherCookie(); // From common.js
+        console.log('[Phase 0] Archer cookie initialized:', archerId);
+        
         cleanupLegacyStorage();
         loadData();
         renderKeypad();

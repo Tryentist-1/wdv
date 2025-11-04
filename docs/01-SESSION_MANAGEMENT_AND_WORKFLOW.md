@@ -1,5 +1,69 @@
 # Session Management & Workflow Documentation
 
+> **Working doc:** Capture in-flight tasks and observations here during a session. When wrapping up, distil the highlights into `docs/archive/SESSION_SUMMARY.md` for the historical log.
+
+## 🔄 Follow‑up Status Update — November 3, 2025
+
+Phase 0 testing completed successfully! Cookie-based session persistence and pre-assigned bale workflow now production-ready.
+
+### Current state
+- **Phase 0 Complete**: Cookie-based archer identification (`oas_archer_id`) implemented and tested
+- **Session Persistence**: Full scorecard recovery working - sessions survive page reloads and browser restarts
+- **Pre-assigned Bale Groups**: Coach-assigned bale lists now display correctly with individual "Start Scoring" buttons per bale
+- **Event Auto-Assignment**: Events created with "Auto-Assign to Bales" now properly set `eventType: 'auto_assign'` via PATCH endpoint
+- **Reset Functionality**: RED reset button added to pre-assigned setup for clearing sessions
+
+### What was fixed today
+- **Cookie generation**: Added `getArcherCookie()` to init() - now creates cookie immediately on page load
+- **Assignment mode detection**: Fixed `determineSetupMode()` to check both `assignmentMode` and `eventType` fields
+- **Event metadata updates**: Coach console now PATCHes event when auto-assign is selected to update `eventType`
+- **Missing UI controls**: Restored RESET button to pre-assigned setup section
+
+### Testing results
+- ✅ Test 1: Cookie Generation - PASS
+- ✅ Test 2: Session Save (Manual Mode) - PASS  
+- ✅ Test 3: Session Restore - PASS
+- ✅ Test 4: Pre-Assigned Mode - PASS
+- **Pass Rate**: 100% (4/4 core tests)
+- **Status**: Ready for production deployment
+
+### Known limitations
+- Empty archer list on first modal during event creation (workaround: cancel and use + button)
+- No session takeover/recovery UI yet (for device failures or coach assistance)
+- Tests 5-12 from Phase 0 testing plan pending (multi-device, edge cases, performance)
+
+### Action items for Phase 1
+1. Build session takeover UI - allow coach to view/manage active scoring sessions
+2. Fix archer modal initialization timing issue  
+3. Add session recovery workflow for device failures
+4. Complete remaining Phase 0 tests (multi-device isolation, performance benchmarks)
+5. Add bale verification workflow to results page
+
+---
+
+## 🔄 Follow‑up Status Update — October 31, 2025
+
+Aligning the roster revamp with manual setup UX fixes and highlighting the remaining gaps in the event → round workflow.
+
+### Current state
+- **Roster sync pipeline:** Archer Management now pulls `/v1/archers` via coach API key *or* event entry code, normalises to schema v2, and surfaces pending/synced/offline badges.
+- **Ranking Round 300 UX:** Manual setup grid, roster badges, and Live toggle share the same master list state as Archer Management; Live defaults to ON with clearer status text.
+- **Live Updates client:** Automatically seeds rounds/archers once scoring begins and flushes queued end posts when connectivity returns.
+- **API test harness:** Event + round lookup helpers added to walk the Event → Round → Round Archer → End chain without manual UUID hunting.
+
+### Needs attention
+- Event creation still intermittently misses the follow-up round creation, especially during manual bale loads — keep digging.
+- Results page lacks an inline scorecard modal and coach verification workflow.
+- Archer detail modal does not yet display historical scorecards pulled from snapshots.
+
+### Action items queued next
+1. Instrument `/v1/events/{id}/rounds` handshake (client + server logging) and add Playwright coverage for manual round selection.
+2. Add scorecard pop-up and verification controls to `results.html`, keeping offline safety in mind.
+3. Extend Archer Details with score history (snapshots + links to PDF/CSV exports).
+4. Update manual + automated testing docs (below) with roster sync, offline recovery, and Live badge checks.
+
+---
+
 ## 🔄 Follow‑up Status Update — October 29, 2025
 
 This captures the critical scoring calculation fix deployed today and the successful merge to main with Release Mobile 3.1.

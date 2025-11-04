@@ -2,6 +2,39 @@
 
 This document provides a checklist for manually testing the core features of the Archery Score Management Suite. It should be run before every deployment to ensure no regressions have been introduced.
 
+Manual run notes and screenshots are stored in `docs/testing/manual-runs/`.
+
+---
+
+## End-to-End Bale Verification Dry Run
+
+**Status:** In progress — bale verification UI is not yet available in `results.html`; treat the coach review steps as future-state planning.
+
+1. **Environment Prep**
+   - Clear browser local storage and cookies for `https://tryentist.com/wdv`.
+   - Ensure network is online; disable any throttling or offline extensions.
+   - Open `api/test_harness.html` and run the “Full Workflow” section to confirm credentials and schema (currently blocked on `/v1/rounds` 401 unless the coach API key is supplied).
+2. **Coach Console Setup (`coach.html`)**
+   - Authenticate with the coach passcode.
+   - Create a new event with today’s date and unique entry code.
+   - Use “Add Archers” › “Select All” to populate the event, confirm assignment mode modal completes (existing modal shows an empty state before the division loads; follow-up required).
+   - Open the QR modal, copy the event URL for later, then close the modal.
+3. **Scoring Team Workflow (`ranking_round_300.html`)**
+   - Visit the copied QR URL on a second tab or device.
+   - Verify pre-assigned setup appears with bale list populated; start scoring the first bale.
+   - Confirm Live Updates toggle is on; enter at least one full end of scores for every archer on the bale using the keypad.
+   - Trigger “Sync End” and wait for confirmation badge to show “Synced”.
+4. **Leaderboard & Bale Review (`results.html`)**
+   - Open `results.html?event={eventId}`.
+   - Verify the leaderboard reflects the latest end totals and that the tested archers appear (if blank, confirm the relevant round rows in MySQL have `event_id` populated; `/v1/rounds` now updates this automatically).
+   - From the leaderboard, open one archer’s detailed card; capture a screenshot or use any export control available (UI not implemented yet).
+5. **Coach Bale Verification Pass**
+   - Pending feature work: bale filters, verification controls, and card locking are not yet implemented in `results.html`.
+6. **Post-Run Integrity Checks**
+   - Refresh `results.html` and `ranking_round_300.html` to confirm state persists across reloads.
+   - Toggle offline mode, add a dummy end, then reconnect; ensure pending sync queue flushes without duplication.
+   - Optional: Repeat the bale verification on a different browser/device to confirm cross-device consistency.
+
 ---
 
 ## 1. Global & Home Page (`index.html`)
@@ -32,7 +65,9 @@ This document provides a checklist for manually testing the core features of the
     - [ ] Does "Sort by Bale" work correctly?
 - [ ] **Search:** Does the search bar filter the list correctly as you type?
 - [ ] **List Management:**
-    - [ ] Does "Refresh from Master" correctly reload the `listimport-01.csv`? (Confirm with user)
+    - [ ] Does "Load from MySQL" succeed with a coach API key? With only an event entry code?
+    - [ ] After pulling from MySQL, does the sync badge show the correct "Last download" timestamp?
+    - [ ] If you disconnect (Airplane Mode) and edit an archer, does the status change to "Pending" and automatically recover once back online?
     - [ ] Does "New List" correctly clear all archers after confirmation?
 
 ---
@@ -51,6 +86,7 @@ This document provides a checklist for manually testing the core features of the
     - [ ] Do the arrow value color backgrounds appear correctly?
     - [ ] Do the end average and its color background calculate correctly?
     - [ ] Can you navigate between ends using "Prev End" and "Next End"?
+    - [ ] Does the Live badge reflect "Synced" after an end posts? Does it show "Pending" when offline and recover on reconnect?
 - [ ] **Card View:**
     - [ ] Can you click the "»" button to open an individual archer's card?
     - [ ] Does the card view show all 12 ends correctly?

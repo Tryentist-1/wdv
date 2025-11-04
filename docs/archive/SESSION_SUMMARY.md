@@ -1,4 +1,6 @@
-# Live Scoring Session Summary
+# Live Scoring Session Summary _(Archived)_
+> **Note:** This file keeps historical session recaps. Capture daily progress in `docs/01-SESSION_MANAGEMENT_AND_WORKFLOW.md` during the workday, then summarise key outcomes here at the end of the session if a permanent record is needed.
+
 **Date:** October 28, 2025  
 **Duration:** Single session  
 **Goal:** Methodically enable Live Scoring end-to-end using NPM/Playwright tests as gates
@@ -159,6 +161,14 @@ npm run deploy:fast
 
 ## 🎯 Achievement Summary
 
+## 🚧 In-Progress: Bale Verification & Scorecard Export
+- Design bale-level review workflow in `results.html` so coaches can pull a full bale, step through digital cards, confirm sync badges, and record verification (timestamp + initials).
+- Extend Live Updates payloads (`js/ranking_round.js`, API endpoints) to persist `verified_by` / `verified_at` and lock cards post-verification.
+- Reuse bale review UI for spectator/coach leaderboard modals, making sure live sync status stays fresh on mobile.
+- Provide archers with an explicit “Export / Save card” option from the verified view (download image or prompt for screenshot).
+- Update Playwright coverage to exercise bale verification + export, backfill unit tests for verification state transitions, and document the manual verification flow in `docs/MANUAL_TESTING_CHECKLIST.md`.
+- ✅ API Hotfix: `/v1/rounds` now re-links reused rounds to the provided `eventId` so Live Updates posts appear in `results.html`; update Test Harness guidance to use the coach API key for round creation.
+
 **What Was Built:**
 - Complete end-to-end live scoring system
 - Dual authentication (Coach Key + Event Passcode)
@@ -236,4 +246,3 @@ All 10 milestones achieved. System is tested, documented, and ready for producti
 **Status:** ✅ READY TO DEPLOY
 
 **Recommendation:** Review `DEPLOYMENT_CHECKLIST.md`, run `npm run deploy:fast`, and perform post-deployment smoke test.
-

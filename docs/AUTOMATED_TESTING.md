@@ -32,6 +32,8 @@ Tests the live site: `https://tryentist.com/wdv`
 - ✅ Toggles sort mode correctly
 - ✅ Shows bale groups with archers
 - ✅ Displays bale and target assignments
+- 🔄 (Planned) Manual roster selection, bale grid, and Live badge state on `ranking_round_300.html`
+- 🔄 (Planned) Offline → online recovery for pending Live Updates queue
 
 **Browser Coverage:**
 - Chromium (Desktop)
@@ -119,6 +121,8 @@ tests/
 playwright.config.js              # Remote test configuration
 playwright.config.local.js        # Local test configuration
 ```
+
+> **Coming soon:** Add `tests/ranking_round_300.manual.spec.js` targeting the manual roster workflow and Live badge states once the Playwright fixtures are in place.
 
 ---
 
@@ -343,4 +347,3 @@ npm test
 **Last Updated**: October 21, 2025  
 **Maintained By**: AI Assistant & Terry  
 **Status**: ✅ Active & Working
-

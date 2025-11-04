@@ -32,3 +32,5 @@ api/config.local.php
 
 # Deployment artifacts
 deploy_backups/
+playwright-report/
+test-results/
