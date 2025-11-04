@@ -154,10 +154,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const baleNumber = Number(overrides.baleNumber ?? rosterArcher.baleNumber ?? rosterArcher.bale ?? state.baleNumber) || 1;
         const targetAssignment = safeString(overrides.targetAssignment || rosterArcher.targetAssignment || rosterArcher.target);
         const extId = safeString(overrides.extId || getExtIdFromArcher(rosterArcher));
-        const fallbackId = extId || `${firstName.toLowerCase()}-${lastName.toLowerCase()}-${school.toLowerCase()}` || `archer-${Date.now()}`;
+        
+        // CRITICAL: Preserve UUID from database if it exists, otherwise use extId or generate composite fallback
+        const databaseUuid = rosterArcher.id || rosterArcher.archerId || overrides.id || overrides.archerId;
+        const fallbackId = databaseUuid || extId || `${firstName.toLowerCase()}-${lastName.toLowerCase()}-${school.toLowerCase()}` || `archer-${Date.now()}`;
 
         return {
             id: fallbackId,
+            archerId: databaseUuid || fallbackId,  // Store both for compatibility with Live Updates
             extId,
             firstName,
             lastName,
@@ -1021,9 +1025,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const last = safeString(archer.lastName || archer.last);
             const school = safeString(archer.school);
             const extId = archer.extId || getExtIdFromArcher(archer);
-            const fallbackId = extId || `${first.toLowerCase()}-${last.toLowerCase()}-${school.toLowerCase()}`;
+            // Prefer database UUID if available, otherwise use extId or composite fallback
+            const databaseUuid = archer.id || archer.archerId;
+            const fallbackId = databaseUuid || extId || `${first.toLowerCase()}-${last.toLowerCase()}-${school.toLowerCase()}`;
             const uniqueId = fallbackId || `${first}-${last}`;
-            const existingArcher = state.archers.find(a => (a.extId || a.id) === uniqueId);
+            const existingArcher = state.archers.find(a => (a.id || a.archerId || a.extId) === uniqueId);
             const rosterBale = Number(archer.baleNumber != null ? archer.baleNumber : archer.bale);
             let rosterTarget = (archer.targetAssignment || archer.target || '').toString().trim().toUpperCase();
             if (rosterTarget === '0') rosterTarget = '';
@@ -1910,8 +1916,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const last = safeString(archer.last);
                 const school = safeString(archer.school);
                 const extId = getExtIdFromArcher({ firstName: first, lastName: last, school, extId: archer.extId });
-                const uniqueId = extId || `${first.toLowerCase()}-${last.toLowerCase()}-${school.toLowerCase()}`;
-                const existingArcher = state.archers.find(a => (a.extId || a.id) === uniqueId);
+                // Prefer database UUID if available
+                const databaseUuid = archer.id || archer.archerId;
+                const uniqueId = databaseUuid || extId || `${first.toLowerCase()}-${last.toLowerCase()}-${school.toLowerCase()}`;
+                const existingArcher = state.archers.find(a => (a.id || a.archerId || a.extId) === uniqueId);
                 checkbox.checked = !!existingArcher;
                 
                 // Target select dropdown (hidden initially)
