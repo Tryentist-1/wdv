@@ -216,8 +216,8 @@ const ScorecardView = (() => {
     const scorecardHTML = renderScorecard(archerData, roundData, scorecardOptions);
     
     modal.innerHTML = `
-      <div class="modal-content">
-        <button class="modal-close-btn" style="position: absolute; top: 1rem; right: 1rem; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1.25rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+      <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto; position: relative;">
+        <button class="modal-close-btn" style="position: sticky; top: 0; right: 0; float: right; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1.25rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1000; margin-bottom: 1rem;">&times;</button>
         ${scorecardHTML}
       </div>
     `;

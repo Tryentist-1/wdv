@@ -174,7 +174,26 @@
       }
 
       try {
-        const res = await fetch(`${API_BASE}/archers/${encodeURIComponent(archerId)}/history`);
+        // Try with the provided ID first (could be UUID or external ID)
+        let res = await fetch(`${API_BASE}/archers/${encodeURIComponent(archerId)}/history`);
+        
+        // If 404 and looks like external ID (contains hyphens but not UUID format), try searching by external ID
+        if (!res.ok && res.status === 404 && archerId.includes('-') && !archerId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          console.log('First attempt failed, trying to find archer by external ID...');
+          // Get all archers and find by external ID
+          const archersRes = await fetch(`${API_BASE}/archers`);
+          if (archersRes.ok) {
+            const archersData = await archersRes.json();
+            const archer = (archersData.archers || []).find(a => 
+              (a.extId || '').toLowerCase() === archerId.toLowerCase() ||
+              `${a.first_name}-${a.last_name}`.toLowerCase().replace(/\s+/g, '-') === archerId.toLowerCase()
+            );
+            if (archer && archer.id) {
+              console.log('Found archer by external ID, fetching history with UUID:', archer.id);
+              res = await fetch(`${API_BASE}/archers/${encodeURIComponent(archer.id)}/history`);
+            }
+          }
+        }
         
         if (!res.ok) {
           if (res.status === 404) {

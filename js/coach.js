@@ -530,7 +530,7 @@
     const searchInput = document.getElementById('archer-search');
     if (searchInput) {
       searchInput.value = ''; // Clear search
-      searchInput.oninput = renderArcherList;
+      searchInput.addEventListener('input', renderArcherList);
     }
 
     // Select All button
@@ -746,9 +746,11 @@
       // Level filter
       if (levelFilter && archer.level !== levelFilter) return false;
       
-      // PHASE 0: Search filter (matches first name or last name)
+      // PHASE 0: Search filter (matches first name or last name - support both field naming conventions)
       if (searchTerm) {
-        const fullName = `${archer.first_name || ''} ${archer.last_name || ''}`.toLowerCase();
+        const firstName = (archer.firstName || archer.first_name || '').toLowerCase();
+        const lastName = (archer.lastName || archer.last_name || '').toLowerCase();
+        const fullName = `${firstName} ${lastName}`;
         if (!fullName.includes(searchTerm)) return false;
       }
       
