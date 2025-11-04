@@ -113,6 +113,15 @@
       'X-API-Key': COACH_PASSCODE
     };
 
+    // Debug logging for auth
+    if (method === 'PATCH') {
+      console.log('[Coach Auth Debug] PATCH request to:', path);
+      console.log('[Coach Auth Debug] Headers:', { 
+        'X-Passcode': headers['X-Passcode'],
+        'X-API-Key': headers['X-API-Key']
+      });
+    }
+
     const res = await fetch(`${API_BASE}${path}`, {
       method,
       headers,
@@ -121,6 +130,7 @@
 
     if (!res.ok) {
       const text = await res.text();
+      console.error('[Coach API Error]', method, path, 'Status:', res.status, 'Response:', text);
       throw new Error(`HTTP ${res.status}: ${text}`);
     }
 
@@ -563,6 +573,10 @@
       const mode = document.querySelector('input[name="assignment-mode"]:checked').value;
       const roundId = divisionRounds[division];
 
+      console.log('[Phase 0 Debug] Assignment mode selected:', mode);
+      console.log('[Phase 0 Debug] Current event ID:', currentEventId);
+      console.log('[Phase 0 Debug] Round ID:', roundId);
+
       try {
         const btn = document.getElementById('submit-assignment-btn');
         btn.disabled = true;
@@ -573,6 +587,23 @@
           archerIds: selectedArchers,
           assignmentMode: mode
         });
+        console.log('[Phase 0 Debug] Archers added result:', result);
+
+        // PHASE 0 FIX: If auto-assign was used, update event's eventType
+        if (mode === 'auto_assign') {
+          console.log('[Phase 0] Attempting to update event eventType to auto_assign...');
+          try {
+            const updateResult = await req(`/events/${currentEventId}`, 'PATCH', {
+              eventType: 'auto_assign'
+            });
+            console.log('✅ Event eventType updated to "auto_assign"', updateResult);
+          } catch (err) {
+            console.error('❌ Failed to update event eventType:', err);
+            alert('Warning: Event was created but assignment mode may not be set correctly. You may need to manually select archers from bales.');
+          }
+        } else {
+          console.log('[Phase 0 Debug] Mode is not auto_assign, skipping event update');
+        }
 
         const summary = result.baleAssignments ? 
           `\n\nBale Assignments:\n${result.baleAssignments.map(b => `Bale ${b.baleNumber}: ${b.archers.join(', ')}`).join('\n')}` :
