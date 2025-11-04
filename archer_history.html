@@ -279,13 +279,21 @@
           return;
         }
         
+        console.log('Round data received:', round);
+        
+        // Extract the correct field names (API might return different field names)
+        const roundId = round.round_id || round.roundId || round.id;
+        const archerIdForRequest = round.archer_id || round.archerId;
+        
         // Check if we need to fetch from API or if we have the data already
-        if (!round.round_id || !round.archer_id) {
-          alert('Missing round or archer information');
+        if (!roundId || !archerIdForRequest) {
+          console.error('Missing round or archer information. Round data:', round);
+          alert('Missing round or archer information. Round ID: ' + roundId + ', Archer ID: ' + archerIdForRequest);
           return;
         }
         
-        const res = await fetch(`${API_BASE}/rounds/${round.round_id}/archers/${round.archer_id}/scorecard`);
+        console.log('Fetching scorecard for round:', roundId, 'archer:', archerIdForRequest);
+        const res = await fetch(`${API_BASE}/rounds/${roundId}/archers/${archerIdForRequest}/scorecard`);
         if (!res.ok) {
           if (res.status === 404) {
             alert('Scorecard not found. This round may not have been scored yet.');

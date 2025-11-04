@@ -361,7 +361,9 @@
                     }
 
                     const historyBtn = document.createElement('a');
-                    historyBtn.href = `archer_history.html?archer=${encodeURIComponent(archer.id || archer.extId)}`;
+                    // Always use UUID (id) for history links, not extId
+                    const archerHistoryId = archer.id;
+                    historyBtn.href = `archer_history.html?archer=${encodeURIComponent(archerHistoryId)}`;
                     historyBtn.className = 'favorite-star';
                     historyBtn.style.marginLeft = '0.5rem';
                     historyBtn.innerHTML = '<i class="fas fa-file-alt" style="color: #3498db;"></i>';

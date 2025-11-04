@@ -48,6 +48,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             r.division,
             r.round_type,
             ra.id AS round_archer_id,
+            ra.archer_id,
             ra.bale_number,
             ra.target_assignment,
             MAX(ee.running_total) AS final_score,
@@ -59,7 +60,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         LEFT JOIN events e ON e.id = r.event_id
         LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
         WHERE ra.archer_id = ?
-        GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, ra.bale_number, ra.target_assignment
+        GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, ra.archer_id, ra.bale_number, ra.target_assignment
         ORDER BY e.date DESC, e.name
     ');
     $rounds->execute([$archerData['id']]);
