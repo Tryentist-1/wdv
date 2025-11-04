@@ -1,6 +1,225 @@
 # Live Scoring Session Summary _(Archived)_
 > **Note:** This file keeps historical session recaps. Capture daily progress in `docs/01-SESSION_MANAGEMENT_AND_WORKFLOW.md` during the workday, then summarise key outcomes here at the end of the session if a permanent record is needed.
 
+---
+
+## Session: November 4, 2025 - Recovery & Mobile Optimization
+
+**Date:** November 4, 2025  
+**Duration:** Single session  
+**Goal:** Recover from off-rails session, fix UUID preservation, optimize mobile layout
+
+### 🔥 Starting State - System Broken
+
+Previous session went off-rails attempting to add scorecard editing:
+- ❌ "Start Scoring" button not working
+- ❌ 99 bales displaying in manual setup
+- ❌ Coach passcode prompts showing for archers (wrong!)
+- ❌ UUID preservation broken (composite IDs being used)
+- ⚠️ Basic scoring flow compromised
+
+**Problematic Commits:**
+- `465717c` - "Use existing event rounds instead of creating new ones"
+- `50346f0` - "Auto-prompt for coach passcode when entry code lacks write permissions"
+
+### ✅ Completed Work
+
+#### 1. **Strategic Revert** ✅
+- Reverted two problematic commits that broke Live Updates
+- Kept UUID preservation foundation (commits `5039406`, `e9e432c`)
+- Restored working scoring flow
+- **Commit:** `85cc01c` - "Roll back Live Updates changes that broke scoring flow"
+
+#### 2. **Fixed UUID Preservation Bug** ✅
+**Problem:** `buildStateArcherFromRoster()` always generated composite IDs (e.g., "eric-salas-t") instead of preserving database UUIDs.
+
+**Root Cause:** 
+```javascript
+// BEFORE (line 160)
+id: fallbackId,  // Always used composite ID
+
+// AFTER
+id: databaseUuid || extId || fallbackId,  // Preserve UUID first
+```
+
+**Fixed Locations:**
+1. `buildStateArcherFromRoster()` (lines 144-165)
+2. Manual archer list rendering (lines 1023-1032)
+3. Edit assignments modal (lines 1915-1922)
+
+**UUID Priority Now:**
+1. Database UUID (`archer.id` or `archer.archerId`) - if available ✅
+2. extId (`firstname-lastname-school`) - for local roster
+3. Composite fallback - only if neither exists
+
+**Commit:** `18a8685` - "Preserve database UUIDs throughout archer ID flow"
+
+#### 3. **Fixed 99 Bales Display Bug** ✅
+**Problem:** Manual Setup showing 99 bale buttons (unusable UI)
+
+**Root Cause:** `getManualBaleNumbers()` scanned all archers and used maximum `baleNumber` found. Some archers had `baleNumber: 99` (placeholder data).
+
+**Fix:** Added safety cap at 16 bales with warning:
+```javascript
+const cappedMaxBale = Math.min(maxBale, 16);
+if (maxBale > 16) {
+    console.warn(`[getManualBaleNumbers] Capping maxBale from ${maxBale}...`);
+}
+```
+
+**Commits:** 
+- `4b04271` - "Cap manual setup bales at 30"
+- `3b2016d` - "Optimize manual bale selection for mobile (8 per row)"
+
+#### 4. **Mobile-First Layout Optimization** 📱✅
+**Context:** App used 99% on phones (per user memory)
+
+**Bale Buttons - Exactly 8 Per Row:**
+- Changed grid: `repeat(8, 1fr)` (was `minmax(40px, 1fr)`)
+- Added `min-width: 0` to allow proper shrinking
+- Reduced padding: `0.4rem` (was 0.5rem)
+- Smaller font: `0.85rem` (was 0.9rem)
+- Tighter gaps: `0.35rem` (was 0.4rem)
+
+**Archer Table - Compact Display:**
+```css
+@media (max-width: 600px) {
+  #manual-setup-section table th,
+  #manual-setup-section table td {
+    padding: 6px 4px !important;  /* was 10px 8px */
+    font-size: 0.85rem;
+  }
+}
+```
+
+**CRITICAL:** All CSS scoped to `#manual-setup-section` - scorecard and keypad untouched! ✅
+
+**Commit:** `83b8008` - "Tighten mobile layout - 8 bale buttons per row and compact table"
+
+### 📊 Test Results
+
+**Happy Path Verified:**
+- ✅ Fresh event loading works
+- ✅ Pre-assigned bales display correctly (19 bales, not 99)
+- ✅ Start Scoring navigation works
+- ✅ Live Updates creates rounds with entry codes
+- ✅ Scores sync to database
+- ✅ Manual setup flow functional
+- ✅ Event entry code and coach passcode auth both working
+
+**Mobile Layout Verified:**
+- ✅ iPhone XR: Exactly 8 bale buttons per row
+- ✅ Compact archer table without overflow
+- ✅ Scorecard/keypad unaffected by CSS changes
+
+### 🔧 Files Modified
+
+**JavaScript:**
+- `js/ranking_round_300.js`
+  - Lines 144-165: UUID preservation in `buildStateArcherFromRoster()`
+  - Lines 1023-1032: UUID matching in manual archer list
+  - Lines 1915-1922: UUID preservation in edit modal
+  - Lines 777-804: Bale count cap at 16
+
+**CSS:**
+- `css/main.css`
+  - Lines 1341-1374: Bale grid mobile optimization
+  - Lines 1443-1477: Archer table mobile compacting
+  - Responsive breakpoints maintained
+
+### 📈 Deployment History
+
+**Git Commits (in order):**
+1. `85cc01c` - Revert bad commits
+2. `18a8685` - UUID preservation fix
+3. `4b04271` - Cap bales at 30
+4. `3b2016d` - Mobile optimization (8 per row)
+5. `83b8008` - Tighten layout further
+
+**All deployed to production via:**
+- `git push origin main`
+- `./DeployFTP.sh --no-local-backup`
+- Cloudflare cache purged after each deploy
+
+### 🎯 Key Learnings
+
+1. **Revert Fast When Off-Rails:** Don't try to fix fundamentally flawed approaches - revert and start fresh
+2. **UUID Consistency Critical:** Database UUIDs must be preserved throughout the entire flow for score matching
+3. **Mobile-First Really Matters:** 99% phone usage means every layout decision must prioritize mobile
+4. **Scope CSS Carefully:** Use specific selectors (`#manual-setup-section`) to avoid breaking other views
+5. **Cap Unreasonable Values:** Bad data happens - add safety limits (16 bales vs 99)
+
+### 📝 Documentation
+
+**Development Process Reviewed:**
+- `docs/DEVELOPMENT_WORKFLOW.md` - Git workflow, branching strategy
+- `DEPLOYMENT_CHECKLIST.md` - Deployment verification steps
+- `DeployFTP.sh` - FTP deployment with Cloudflare purge
+
+**Workflow Followed:**
+- Work directly on `main` branch (small team)
+- Commit with descriptive messages
+- Push to GitHub
+- Deploy to FTP
+- Cloudflare cache purge automatic
+
+### 🚀 Current State - STABLE
+
+**Working Features:**
+- ✅ Event loading (both entry code and coach passcode)
+- ✅ Pre-assigned bales display
+- ✅ Manual setup (up to 16 bales)
+- ✅ Start Scoring navigation
+- ✅ Live scoring sync
+- ✅ Database persistence
+- ✅ Mobile-optimized layout (8 buttons/row)
+- ✅ UUID-based score matching (foundation for editing)
+
+**Known Limitations:**
+- ⚠️ Bale count capped at 16 (most events have < 16 anyway)
+- ⚠️ Some events may have bad data (bale=99) in database
+- ⚠️ Browser cache may show old JS (purge helps, naturally clears in 24h)
+
+### 📋 Next Steps (Future Sessions)
+
+**UUID-Based Score Editing** (Original Goal):
+Now that UUID preservation is solid, can retry scorecard editing:
+1. Verify UUIDs are preserved when "Start Scoring" clicked
+2. Test `loadExistingScoresForArchers()` with real UUIDs
+3. Populate `state.archers[].scores` array before scoring
+4. Test edit workflow end-to-end
+
+**Database Cleanup** (Optional):
+- Find and fix archers with `baleNumber = 99` 
+- Update placeholder values to proper bale assignments
+- Would allow removing 16-bale cap if needed
+
+**Cache Invalidation:**
+- Consider version query param in HTML (`?v=YYYYMMDD`)
+- Or fingerprinted filenames for better cache control
+
+### ✨ Session Complete
+
+**Status:** ✅ SYSTEM STABLE AND DEPLOYED
+
+**Achievements:**
+- Reverted broken commits, restored working system
+- Fixed critical UUID preservation bug
+- Eliminated 99-bale display issue
+- Mobile-optimized for 99% phone usage
+- All changes deployed and verified
+
+**Lines Changed:**
+- JavaScript: ~30 lines modified
+- CSS: ~40 lines added/modified
+- Documentation: This summary
+
+**Time to Recovery:** Single session (efficient!)
+
+---
+
+## Session: October 28, 2025 - Live Scoring Implementation
+
 **Date:** October 28, 2025  
 **Duration:** Single session  
 **Goal:** Methodically enable Live Scoring end-to-end using NPM/Playwright tests as gates
@@ -165,7 +384,7 @@ npm run deploy:fast
 - Design bale-level review workflow in `results.html` so coaches can pull a full bale, step through digital cards, confirm sync badges, and record verification (timestamp + initials).
 - Extend Live Updates payloads (`js/ranking_round.js`, API endpoints) to persist `verified_by` / `verified_at` and lock cards post-verification.
 - Reuse bale review UI for spectator/coach leaderboard modals, making sure live sync status stays fresh on mobile.
-- Provide archers with an explicit “Export / Save card” option from the verified view (download image or prompt for screenshot).
+- Provide archers with an explicit "Export / Save card" option from the verified view (download image or prompt for screenshot).
 - Update Playwright coverage to exercise bale verification + export, backfill unit tests for verification state transitions, and document the manual verification flow in `docs/MANUAL_TESTING_CHECKLIST.md`.
 - ✅ API Hotfix: `/v1/rounds` now re-links reused rounds to the provided `eventId` so Live Updates posts appear in `results.html`; update Test Harness guidance to use the coach API key for round creation.
 
