@@ -1340,21 +1340,35 @@ body.practice-target-page .main-container {
 
 .manual-bale-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
-    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 0.4rem;
 }
 
 .manual-bale-tile {
     background: #f4f8ff;
     border: 1px solid #bdd4ff;
-    border-radius: 10px;
-    padding: 0.7rem 0;
+    border-radius: 8px;
+    padding: 0.5rem 0;
     font-weight: 600;
     color: #2d7dd9;
     text-align: center;
-    font-size: 1rem;
+    font-size: 0.9rem;
     transition: all 0.15s ease-in-out;
     cursor: pointer;
+}
+
+/* Larger buttons on desktop */
+@media (min-width: 768px) {
+    .manual-bale-grid {
+        grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .manual-bale-tile {
+        padding: 0.7rem 0;
+        font-size: 1rem;
+        border-radius: 10px;
+    }
 }
 
 .manual-bale-tile:focus {

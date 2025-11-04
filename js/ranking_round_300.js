@@ -787,10 +787,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                     if (maxBale > 0) {
-                        // Cap at 30 bales to prevent unreasonable UI (most events have < 30 bales)
-                        // If maxBale > 30, likely bad data (e.g., bale=99 placeholder)
-                        const cappedMaxBale = Math.min(maxBale, 30);
-                        if (maxBale > 30) {
+                        // Cap at 16 bales for optimal mobile display (8 per row x 2 rows on phone)
+                        // Most events have < 16 bales; values > 16 likely indicate bad data
+                        const cappedMaxBale = Math.min(maxBale, 16);
+                        if (maxBale > 16) {
                             console.warn(`[getManualBaleNumbers] Capping maxBale from ${maxBale} to ${cappedMaxBale} (likely bad data in cache)`);
                         }
                         return Array.from({ length: cappedMaxBale }, (_, idx) => idx + 1);
