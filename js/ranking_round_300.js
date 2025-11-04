@@ -1939,7 +1939,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="calculated-cell">${endXs}</td>
                     <td class="calculated-cell">${endTotal}</td>
                     <td class="calculated-cell">${runningTotal}</td>
-                    <td class="calculated-cell ${avgClass}">${endAvg}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus}" style="text-align: center;">${syncIcon}</td>` : ''}<td><button class="btn view-card-btn" data-archer-id="${archer.id}">»</button></td>
+                    <td class="calculated-cell ${avgClass}">${endAvg}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus}" style="text-align: center;">${syncIcon}</td>` : ''}<td><button class="btn view-card-btn" data-archer-id="${archer.id}">📄</button></td>
                 </tr>`;
         });
         tableHTML += `</tbody></table>`;

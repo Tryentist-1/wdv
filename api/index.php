@@ -618,6 +618,96 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/bales/([0-9]+)/archers$#i', $route, $m
 }
 
 // =====================================================
+// Get a specific archer's scorecard for a round
+// =====================================================
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)/scorecard$#i', $route, $m) && $method === 'GET') {
+    $roundId = $m[1];
+    $archerId = $m[2];
+    
+    try {
+        $pdo = db();
+        
+        // Get round_archer record
+        $ra = $pdo->prepare('
+            SELECT 
+                ra.id,
+                ra.bale_number,
+                ra.target_assignment,
+                ra.target_size,
+                r.division,
+                r.round_type,
+                e.name as event_name,
+                e.date as event_date
+            FROM round_archers ra
+            JOIN rounds r ON ra.round_id = r.id
+            LEFT JOIN events e ON r.event_id = e.id
+            WHERE ra.round_id = ? AND ra.archer_id = ?
+        ');
+        $ra->execute([$roundId, $archerId]);
+        $raData = $ra->fetch();
+        
+        if (!$raData) {
+            json_response(['error' => 'Archer not found in this round'], 404);
+            exit;
+        }
+        
+        // Get all ends for this archer
+        $ends = $pdo->prepare('
+            SELECT
+                end_number,
+                a1, a2, a3,
+                end_total,
+                running_total,
+                tens,
+                xs
+            FROM end_events
+            WHERE round_archer_id = ?
+            ORDER BY end_number
+        ');
+        $ends->execute([$raData['id']]);
+        $endsList = $ends->fetchAll();
+        
+        // Calculate totals
+        $runningTotal = 0;
+        $totalTens = 0;
+        $totalXs = 0;
+        $endsCompleted = 0;
+        
+        foreach ($endsList as $end) {
+            if ($end['end_total'] > 0) {
+                $runningTotal = $end['running_total'];
+                $totalTens += $end['tens'];
+                $totalXs += $end['xs'];
+                $endsCompleted++;
+            }
+        }
+        
+        json_response([
+            'round_id' => $roundId,
+            'archer_id' => $archerId,
+            'round_archer_id' => $raData['id'],
+            'division' => $raData['division'],
+            'round_type' => $raData['round_type'],
+            'event_name' => $raData['event_name'],
+            'event_date' => $raData['event_date'],
+            'bale_number' => $raData['bale_number'],
+            'target_assignment' => $raData['target_assignment'],
+            'target_size' => $raData['target_size'],
+            'ends' => $endsList,
+            'ends_completed' => $endsCompleted,
+            'running_total' => $runningTotal,
+            'total_tens' => $totalTens,
+            'total_xs' => $totalXs,
+            'verified' => false // TODO: Add verification field to schema
+        ]);
+    } catch (Exception $e) {
+        error_log("Scorecard retrieval failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// =====================================================
 // PHASE 0: Get current session for an archer (by cookie)
 // =====================================================
 if (preg_match('#^/v1/archers/([0-9a-f-]+)/current-session$#i', $route, $m) && $method === 'GET') {

@@ -757,8 +757,8 @@
 
     // PHASE 0: Sort by firstName (alphabetically)
     const sorted = filtered.sort((a, b) => {
-      const nameA = (a.first_name || '').toLowerCase();
-      const nameB = (b.first_name || '').toLowerCase();
+      const nameA = (a.firstName || a.first_name || '').toLowerCase();
+      const nameB = (b.firstName || b.first_name || '').toLowerCase();
       return nameA.localeCompare(nameB);
     });
 

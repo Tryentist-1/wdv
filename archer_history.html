@@ -255,13 +255,29 @@
     async function showRoundScorecard(round) {
       // Fetch detailed scorecard data from API
       try {
+        if (typeof ScorecardView === 'undefined') {
+          alert('Scorecard viewer is not loaded. Please refresh the page.');
+          return;
+        }
+        
+        // Check if we need to fetch from API or if we have the data already
+        if (!round.round_id || !round.archer_id) {
+          alert('Missing round or archer information');
+          return;
+        }
+        
         const res = await fetch(`${API_BASE}/rounds/${round.round_id}/archers/${round.archer_id}/scorecard`);
         if (!res.ok) {
-          alert('Unable to load scorecard details');
+          if (res.status === 404) {
+            alert('Scorecard not found. This round may not have been scored yet.');
+          } else {
+            alert(`Unable to load scorecard details (HTTP ${res.status})`);
+          }
           return;
         }
         
         const scorecardData = await res.json();
+        console.log('Scorecard data:', scorecardData);
         
         // Extract scores from ends
         const scores = (scorecardData.ends || []).map(end => [
@@ -292,7 +308,7 @@
         ScorecardView.showScorecardModal(archerData, roundData);
       } catch (err) {
         console.error('Error loading scorecard:', err);
-        alert('Error loading scorecard: ' + err.message);
+        alert('Error loading scorecard: ' + err.message + '\n\nCheck console for details.');
       }
     }
 

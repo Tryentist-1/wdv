@@ -323,31 +323,43 @@
     }
     
     function showArcherScorecard(archer) {
-      // Extract scores from the archer data
-      const scores = (archer.scorecard && archer.scorecard.ends) 
-        ? archer.scorecard.ends.map(end => [end.a1 || '', end.a2 || '', end.a3 || ''])
-        : [];
-      
-      const archerData = {
-        id: archer.id || archer.archerId,
-        firstName: archer.firstName || archer.first_name || '',
-        lastName: archer.lastName || archer.last_name || '',
-        school: archer.school || '',
-        level: archer.level || '',
-        gender: archer.gender || '',
-        scores: scores,
-        verified: archer.verified || false,
-        completed: (archer.status === 'Completed' || total >= 300)
-      };
-      
-      const roundData = {
-        totalEnds: 10,
-        eventName: document.getElementById('event-name').textContent,
-        division: archer.division || '',
-        roundType: 'R300'
-      };
-      
-      ScorecardView.showScorecardModal(archerData, roundData);
+      try {
+        // Extract scores from the archer data
+        const scores = (archer.scorecard && archer.scorecard.ends) 
+          ? archer.scorecard.ends.map(end => [end.a1 || '', end.a2 || '', end.a3 || ''])
+          : [];
+        
+        const total = normTotal(archer);
+        
+        const archerData = {
+          id: archer.id || archer.archerId,
+          firstName: archer.firstName || archer.first_name || '',
+          lastName: archer.lastName || archer.last_name || '',
+          school: archer.school || '',
+          level: archer.level || '',
+          gender: archer.gender || '',
+          scores: scores,
+          verified: archer.verified || false,
+          completed: (archer.status === 'Completed' || total >= 300)
+        };
+        
+        const roundData = {
+          totalEnds: 10,
+          eventName: document.getElementById('event-name').textContent,
+          division: archer.division || '',
+          roundType: 'R300'
+        };
+        
+        if (typeof ScorecardView === 'undefined') {
+          alert('Scorecard viewer is not loaded. Please refresh the page.');
+          return;
+        }
+        
+        ScorecardView.showScorecardModal(archerData, roundData);
+      } catch (err) {
+        console.error('Error displaying scorecard:', err);
+        alert('Unable to display scorecard. Error: ' + err.message);
+      }
     }
 
     // Load results on page load
