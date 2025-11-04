@@ -787,7 +787,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                     if (maxBale > 0) {
-                        return Array.from({ length: maxBale }, (_, idx) => idx + 1);
+                        // Cap at 30 bales to prevent unreasonable UI (most events have < 30 bales)
+                        // If maxBale > 30, likely bad data (e.g., bale=99 placeholder)
+                        const cappedMaxBale = Math.min(maxBale, 30);
+                        if (maxBale > 30) {
+                            console.warn(`[getManualBaleNumbers] Capping maxBale from ${maxBale} to ${cappedMaxBale} (likely bad data in cache)`);
+                        }
+                        return Array.from({ length: cappedMaxBale }, (_, idx) => idx + 1);
                     }
                 }
             } catch (_) {
