@@ -1220,7 +1220,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Fetch existing scores for archers in the current event and display in the list
-     * Also updates archer objects with UUIDs for later use
      */
     async function fetchAndDisplayArcherScores() {
         if (!state.activeEventId) return;
@@ -1241,14 +1240,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             console.log('[fetchArcherScores] Loaded snapshot for event:', state.activeEventId);
             
-            // Build a map of archers by firstName+lastName for matching
+            // Build a map of archers by UUID
             const snapshotArcherMap = new Map();
             if (data.divisions && Array.isArray(data.divisions)) {
                 data.divisions.forEach(division => {
                     if (division.archers && Array.isArray(division.archers)) {
                         division.archers.forEach(archer => {
-                            const key = `${archer.firstName}-${archer.lastName}`.toLowerCase();
-                            snapshotArcherMap.set(key, archer);
+                            const archerId = archer.archerId || archer.id;
+                            if (archerId) {
+                                snapshotArcherMap.set(archerId, archer);
+                            }
                         });
                     }
                 });
@@ -1256,31 +1257,20 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('[fetchArcherScores] Found', snapshotArcherMap.size, 'archers in snapshot');
             
-            // Update score cells by matching firstName/lastName
-            const rows = document.querySelectorAll('.manual-archer-row');
-            rows.forEach(row => {
-                const nameCell = row.querySelector('.manual-archer-name');
-                if (!nameCell) return;
+            // Update score cells by matching UUID
+            const scoreCells = document.querySelectorAll('.archer-score-cell');
+            scoreCells.forEach(cell => {
+                const archerId = cell.dataset.archerId;
+                if (!archerId) return;
                 
-                const fullName = nameCell.textContent.trim();
-                const [firstName, ...lastNameParts] = fullName.split(' ');
-                const lastName = lastNameParts.join(' ');
-                const key = `${firstName}-${lastName}`.toLowerCase();
-                
-                const snapshotArcher = snapshotArcherMap.get(key);
+                const snapshotArcher = snapshotArcherMap.get(archerId);
                 if (snapshotArcher) {
-                    // Update the score cell
-                    const scoreCell = row.querySelector('.archer-score-cell');
-                    if (scoreCell) {
-                        const score = snapshotArcher.runningTotal || 0;
-                        if (score > 0) {
-                            scoreCell.textContent = score;
-                            scoreCell.style.color = '#2ecc71';  // Green for completed scores
-                            scoreCell.style.fontWeight = '600';
-                            console.log('[fetchArcherScores]', fullName, 'has score:', score);
-                        }
-                        // Store the UUID for later use
-                        scoreCell.dataset.archerId = snapshotArcher.archerId || snapshotArcher.id || '';
+                    const score = snapshotArcher.runningTotal || 0;
+                    if (score > 0) {
+                        cell.textContent = score;
+                        cell.style.color = '#2ecc71';  // Green for completed scores
+                        cell.style.fontWeight = '600';
+                        console.log('[fetchArcherScores]', snapshotArcher.firstName, snapshotArcher.lastName, 'has score:', score);
                     }
                 }
             });
@@ -1314,61 +1304,72 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await res.json();
             let foundScores = false;
             
+            // Build a map of archers by UUID for fast lookup
+            const snapshotArcherMap = new Map();
+            if (data.divisions && Array.isArray(data.divisions)) {
+                data.divisions.forEach(division => {
+                    if (division.archers && Array.isArray(division.archers)) {
+                        division.archers.forEach(archer => {
+                            const archerId = archer.archerId || archer.id;
+                            if (archerId) {
+                                snapshotArcherMap.set(archerId, archer);
+                            }
+                        });
+                    }
+                });
+            }
+            
+            console.log('[loadExistingScores] Snapshot has', snapshotArcherMap.size, 'archers');
+            
             // For each archer in state, check if they have existing scores
             state.archers.forEach(stateArcher => {
-                console.log('[loadExistingScores] Looking for:', stateArcher.firstName, stateArcher.lastName);
+                const archerId = stateArcher.archerId || stateArcher.id;
+                console.log('[loadExistingScores] Looking for archer:', stateArcher.firstName, stateArcher.lastName, 'UUID:', archerId);
                 
-                // Search all divisions for this archer by matching firstName+lastName
-                if (data.divisions && Array.isArray(data.divisions)) {
-                    data.divisions.forEach(division => {
-                        if (division.archers && Array.isArray(division.archers)) {
-                            const apiArcher = division.archers.find(a => 
-                                a.firstName === stateArcher.firstName && 
-                                a.lastName === stateArcher.lastName
-                            );
+                if (!archerId) {
+                    console.warn('[loadExistingScores] No UUID for archer:', stateArcher.firstName, stateArcher.lastName);
+                    return;
+                }
+                
+                const apiArcher = snapshotArcherMap.get(archerId);
+                if (apiArcher) {
+                    console.log('[loadExistingScores] Found API match for:', stateArcher.firstName, stateArcher.lastName);
+                    console.log('[loadExistingScores] API archer has', apiArcher.scorecard?.ends?.length || 0, 'ends');
+                    
+                    if (apiArcher.scorecard && apiArcher.scorecard.ends) {
+                        const ends = apiArcher.scorecard.ends;
+                        if (ends.length > 0) {
+                            console.log(`[loadExistingScores] Loading ${ends.length} ends for ${stateArcher.firstName} ${stateArcher.lastName}`);
+                            foundScores = true;
                             
-                            if (apiArcher) {
-                                console.log('[loadExistingScores] Found API match for:', stateArcher.firstName, stateArcher.lastName);
-                                console.log('[loadExistingScores] API archer has', apiArcher.scorecard?.ends?.length || 0, 'ends');
-                                
-                                // Store the UUID for this archer
-                                stateArcher.archerId = apiArcher.archerId || apiArcher.id;
-                                
-                                if (apiArcher.scorecard && apiArcher.scorecard.ends) {
-                                    const ends = apiArcher.scorecard.ends;
-                                    if (ends.length > 0) {
-                                        console.log(`[loadExistingScores] Loading ${ends.length} ends for ${stateArcher.firstName} ${stateArcher.lastName}`);
-                                        foundScores = true;
-                                        
-                                        // Populate the scores array
-                                        ends.forEach(end => {
-                                            const endIndex = (end.endNumber || 1) - 1;
-                                            if (endIndex >= 0 && endIndex < state.totalEnds) {
-                                                stateArcher.scores[endIndex] = [
-                                                    end.a1 || '',
-                                                    end.a2 || '',
-                                                    end.a3 || ''
-                                                ];
-                                                console.log(`[loadExistingScores] End ${end.endNumber}:`, end.a1, end.a2, end.a3);
-                                            }
-                                        });
-                                        
-                                        // Store the round_archer_id if available
-                                        if (apiArcher.roundArcherId) {
-                                            stateArcher.roundArcherId = apiArcher.roundArcherId;
-                                            console.log('[loadExistingScores] Stored roundArcherId:', apiArcher.roundArcherId);
-                                        }
-                                        
-                                        // Update current end to first incomplete end or last end
-                                        const lastEndNumber = ends.length;
-                                        const nextEnd = Math.min(lastEndNumber + 1, state.totalEnds);
-                                        state.currentEnd = nextEnd;
-                                        console.log('[loadExistingScores] Set currentEnd to:', nextEnd);
-                                    }
+                            // Populate the scores array
+                            ends.forEach(end => {
+                                const endIndex = (end.endNumber || 1) - 1;
+                                if (endIndex >= 0 && endIndex < state.totalEnds) {
+                                    stateArcher.scores[endIndex] = [
+                                        end.a1 || '',
+                                        end.a2 || '',
+                                        end.a3 || ''
+                                    ];
+                                    console.log(`[loadExistingScores] End ${end.endNumber}:`, end.a1, end.a2, end.a3);
                                 }
+                            });
+                            
+                            // Store the round_archer_id if available
+                            if (apiArcher.roundArcherId) {
+                                stateArcher.roundArcherId = apiArcher.roundArcherId;
+                                console.log('[loadExistingScores] Stored roundArcherId:', apiArcher.roundArcherId);
                             }
+                            
+                            // Update current end to first incomplete end or last end
+                            const lastEndNumber = ends.length;
+                            const nextEnd = Math.min(lastEndNumber + 1, state.totalEnds);
+                            state.currentEnd = nextEnd;
+                            console.log('[loadExistingScores] Set currentEnd to:', nextEnd);
                         }
-                    });
+                    }
+                } else {
+                    console.log('[loadExistingScores] No API match found for UUID:', archerId);
                 }
             });
             
@@ -2781,6 +2782,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         (div.archers || []).forEach(archer => {
                             const parts = (archer.archerName || '').split(' ');
                             allArchers.push({
+                                id: archer.archerId || archer.id,  // UUID from database
+                                archerId: archer.archerId || archer.id,  // Store both for compatibility
                                 firstName: parts[0] || '',
                                 lastName: parts.slice(1).join(' ') || '',
                                 school: archer.school,
@@ -2788,7 +2791,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 gender: archer.gender,
                                 baleNumber: archer.bale,
                                 targetAssignment: archer.target,
-                                division: divKey
+                                division: divKey,
+                                roundArcherId: archer.roundArcherId  // Also preserve round_archer_id
                             });
                         });
                     });
@@ -3533,6 +3537,8 @@ function updateManualLiveControls(summaryOverride) {
                         const normalizedLevel = normalizeLevel(rosterMatch?.level || archer.level);
                         const normalizedGender = normalizeGender(rosterMatch?.gender || archer.gender);
                         allArchers.push(Object.assign({}, rosterMatch || {}, {
+                            id: archer.archerId || archer.id || rosterMatch?.id,  // UUID from database
+                            archerId: archer.archerId || archer.id || rosterMatch?.archerId,  // Store both for compatibility
                             extId,
                             first,
                             last,
@@ -3543,7 +3549,8 @@ function updateManualLiveControls(summaryOverride) {
                             targetAssignment: archer.target,
                             division: divKey,
                             fave: false,
-                            status: rosterMatch?.status || 'active'
+                            status: rosterMatch?.status || 'active',
+                            roundArcherId: archer.roundArcherId  // Also preserve round_archer_id
                         }));
                     });
                 });
