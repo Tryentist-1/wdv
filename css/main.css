@@ -1340,21 +1340,23 @@ body.practice-target-page .main-container {
 
 .manual-bale-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-    gap: 0.4rem;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0.35rem;
+    max-width: 100%;
 }
 
 .manual-bale-tile {
     background: #f4f8ff;
     border: 1px solid #bdd4ff;
-    border-radius: 8px;
-    padding: 0.5rem 0;
+    border-radius: 6px;
+    padding: 0.4rem 0;
     font-weight: 600;
     color: #2d7dd9;
     text-align: center;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     transition: all 0.15s ease-in-out;
     cursor: pointer;
+    min-width: 0; /* Allow buttons to shrink below content size */
 }
 
 /* Larger buttons on desktop */
@@ -1439,9 +1441,7 @@ body.practice-target-page .main-container {
 }
 
 @media (max-width: 600px) {
-  .manual-bale-grid {
-    grid-template-columns: repeat(4, minmax(48px, 1fr));
-  }
+  /* Bale grid already defined above - 8 per row */
 
   .manual-search-section {
     flex-direction: column;
@@ -1456,6 +1456,23 @@ body.practice-target-page .main-container {
 
   .manual-bale-actions {
     justify-content: flex-start;
+  }
+  
+  /* CRITICAL: Only target manual setup section, not scorecard tables */
+  #manual-setup-section table th,
+  #manual-setup-section table td {
+    padding: 6px 4px !important;
+    font-size: 0.85rem;
+  }
+  
+  #manual-setup-section .manual-archer-name {
+    font-size: 0.9rem;
+  }
+  
+  #manual-setup-section .manual-target-badge {
+    padding: 0.1rem 0.4rem;
+    font-size: 0.7rem;
+    margin-left: 0.3rem;
   }
 }
 
