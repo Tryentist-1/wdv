@@ -1239,21 +1239,43 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const data = await res.json();
             console.log('[fetchArcherScores] Loaded snapshot for event:', state.activeEventId);
+            console.log('[fetchArcherScores] Response structure:', {
+                hasDivisions: !!data.divisions,
+                divisionsType: Array.isArray(data.divisions) ? 'array' : typeof data.divisions,
+                divisionsKeys: data.divisions ? Object.keys(data.divisions) : 'none',
+                sampleDivision: data.divisions && data.divisions[0] ? Object.keys(data.divisions[0]) : 'none'
+            });
             
             // Build a map of archers by UUID
             const snapshotArcherMap = new Map();
-            if (data.divisions && Array.isArray(data.divisions)) {
-                data.divisions.forEach(division => {
-                    if (division.archers && Array.isArray(division.archers)) {
-                        division.archers.forEach(archer => {
-                            const archerId = archer.archerId || archer.id;
-                            if (archerId) {
-                                snapshotArcherMap.set(archerId, archer);
-                            }
-                        });
-                    }
-                });
+            
+            // Handle both array format and object format
+            let divisionsArray = [];
+            if (Array.isArray(data.divisions)) {
+                divisionsArray = data.divisions;
+            } else if (data.divisions && typeof data.divisions === 'object') {
+                // divisions might be an object keyed by division code
+                divisionsArray = Object.values(data.divisions);
             }
+            
+            console.log('[fetchArcherScores] Processing', divisionsArray.length, 'divisions');
+            
+            divisionsArray.forEach((division, idx) => {
+                console.log('[fetchArcherScores] Division', idx, ':', {
+                    division: division.division,
+                    hasArchers: !!division.archers,
+                    archerCount: Array.isArray(division.archers) ? division.archers.length : 0
+                });
+                
+                if (division.archers && Array.isArray(division.archers)) {
+                    division.archers.forEach(archer => {
+                        const archerId = archer.archerId || archer.id;
+                        if (archerId) {
+                            snapshotArcherMap.set(archerId, archer);
+                        }
+                    });
+                }
+            });
             
             console.log('[fetchArcherScores] Found', snapshotArcherMap.size, 'archers in snapshot');
             
@@ -1306,18 +1328,25 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Build a map of archers by UUID for fast lookup
             const snapshotArcherMap = new Map();
-            if (data.divisions && Array.isArray(data.divisions)) {
-                data.divisions.forEach(division => {
-                    if (division.archers && Array.isArray(division.archers)) {
-                        division.archers.forEach(archer => {
-                            const archerId = archer.archerId || archer.id;
-                            if (archerId) {
-                                snapshotArcherMap.set(archerId, archer);
-                            }
-                        });
-                    }
-                });
+            
+            // Handle both array format and object format
+            let divisionsArray = [];
+            if (Array.isArray(data.divisions)) {
+                divisionsArray = data.divisions;
+            } else if (data.divisions && typeof data.divisions === 'object') {
+                divisionsArray = Object.values(data.divisions);
             }
+            
+            divisionsArray.forEach(division => {
+                if (division.archers && Array.isArray(division.archers)) {
+                    division.archers.forEach(archer => {
+                        const archerId = archer.archerId || archer.id;
+                        if (archerId) {
+                            snapshotArcherMap.set(archerId, archer);
+                        }
+                    });
+                }
+            });
             
             console.log('[loadExistingScores] Snapshot has', snapshotArcherMap.size, 'archers');
             
@@ -4236,9 +4265,28 @@ function updateManualLiveControls(summaryOverride) {
             document.body.appendChild(modal);
         }
         
-        // Get all archers from the event
-        const eventArchers = JSON.parse(localStorage.getItem('archery_master_list') || '[]');
-        const currentArcherIds = state.archers.map(a => `${a.firstName}-${a.lastName}-${a.school}`);
+        // Get all archers from the event-specific cache (has UUIDs) or fallback to master list
+        let eventArchers = [];
+        if (state.activeEventId) {
+            eventArchers = JSON.parse(localStorage.getItem(`event:${state.activeEventId}:archers_v2`) || '[]');
+        }
+        if (!eventArchers.length) {
+            // Fallback: load from master list and convert format
+            const masterList = JSON.parse(localStorage.getItem('archery_master_list') || '[]');
+            eventArchers = masterList.map(a => ({
+                id: a.id || a.extId || `${a.first}-${a.last}-${a.school}`,
+                archerId: a.archerId || a.id,
+                extId: a.extId,
+                first: a.first || a.firstName,
+                last: a.last || a.lastName,
+                school: a.school,
+                level: a.level,
+                gender: a.gender,
+                baleNumber: a.bale || a.baleNumber,
+                targetAssignment: a.target || a.targetAssignment
+            }));
+        }
+        const currentArcherIds = state.archers.map(a => a.id || a.extId || `${a.firstName}-${a.lastName}-${a.school}`);
         
         modal.innerHTML = `
             <div style="background: white; padding: 20px; border-radius: 8px; max-width: 90%; max-height: 80%; overflow-y: auto;">
@@ -4247,7 +4295,7 @@ function updateManualLiveControls(summaryOverride) {
                 
                 <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 8px;">
                     ${eventArchers.map(archer => {
-                        const archerId = `${archer.first}-${archer.last}-${archer.school}`;
+                        const archerId = archer.id || archer.extId || `${archer.first}-${archer.last}-${archer.school}`;
                         const isChecked = currentArcherIds.includes(archerId);
                         return `
                             <label style="display: block; padding: 8px; border-bottom: 1px solid #eee; cursor: pointer;">
@@ -4256,7 +4304,7 @@ function updateManualLiveControls(summaryOverride) {
                                        style="margin-right: 8px;">
                                 <strong>${archer.first} ${archer.last}</strong> 
                                 <span style="color: #666;">(${archer.school} - ${archer.level}/${archer.gender})</span>
-                                ${archer.bale ? `<span style="color: #2196f3;">- Bale ${archer.bale}</span>` : ''}
+                                ${archer.baleNumber ? `<span style="color: #2196f3;">- Bale ${archer.baleNumber}</span>` : ''}
                             </label>
                         `;
                     }).join('')}
@@ -4279,13 +4327,16 @@ function updateManualLiveControls(summaryOverride) {
             const selectedArchers = Array.from(checkboxes).map(cb => {
                 const archerData = JSON.parse(cb.dataset.archer.replace(/&#39;/g, "'"));
                 return {
-                    id: `${archerData.first}-${archerData.last}-${archerData.school}`,
+                    id: archerData.id || archerData.extId || `${archerData.first}-${archerData.last}-${archerData.school}`,
+                    archerId: archerData.archerId || archerData.id,
+                    extId: archerData.extId,
                     firstName: archerData.first,
                     lastName: archerData.last,
                     school: archerData.school,
                     level: archerData.level,
                     gender: archerData.gender,
-                    targetAssignment: archerData.target || 'A',
+                    targetAssignment: archerData.targetAssignment || archerData.target || 'A',
+                    roundArcherId: archerData.roundArcherId,
                     scores: []
                 };
             });
