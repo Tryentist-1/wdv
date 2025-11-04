@@ -313,15 +313,73 @@ Notes:
 
 ---
 
+### Issue #2: Round ID Contamination - Manual Assignment Broken 🔥 CRITICAL - FIXED ✅
+
+**Problem:** When switching between events in manual assignment mode, scores were being saved to the wrong event's round. Example: Scoring for "Tryout Round 1" would save to "TEST EVENT" round instead.
+
+**User Impact:** CRITICAL - This broke the primary workflow for manual assignment mode (99% use case):
+1. Create event with "Manual Assignment" 
+2. All archers start UNASSIGNED (bale: 0, target: null) ← This is CORRECT behavior
+3. Archers self-organize at physical bales
+4. Open app, select event, pick bale group
+5. Click "Start Scoring" → Should create/use round for THIS event
+6. ❌ BUG: Was reusing old round from previous event
+
+**Root Cause:** 
+`live_updates.js` `ensureRound()` function (line 202) was checking if `state.roundId` existed and blindly reusing it, without verifying it belonged to the current event.
+
+```javascript
+// OLD CODE (BUGGY):
+if (state.roundId) return Promise.resolve(state.roundId);  // ← No event check!
+```
+
+**Fix Applied:**
+1. Added `eventId` to Live Updates state
+2. Check if cached `roundId` belongs to current `eventId` before reusing
+3. Clear round session (roundId + archerIds) when switching to different event
+4. Persist and restore `eventId` along with `roundId`
+
+```javascript
+// NEW CODE (FIXED):
+if (state.roundId && state.eventId === eventId) {
+    return Promise.resolve(state.roundId);  // Safe to reuse
+}
+if (state.roundId && state.eventId !== eventId) {
+    // Clear old session when switching events
+    state.roundId = null;
+    state.archerIds = {};
+}
+```
+
+**Files Changed:** 
+- `js/live_updates.js` (lines 7-8, 58, 60, 72, 200-228)
+
+**Testing Required:**
+1. ⚠️ **MUST clear browser cache and localStorage** before testing
+2. Score for Event A → verify saves to Event A round
+3. Switch to Event B → verify creates NEW round for Event B
+4. Scores for Event B should NOT appear in Event A
+
+**Deployed:** ✅ Nov 4, 2025 - FTP deployment successful, Cloudflare cache purged  
+**Git Commit:** `c191aab` - "fix: Prevent round ID contamination when switching events"
+
+---
+
 ## Summary
 
-### Tests Completed: 1 / 9 (with 1 fix applied)
+### Tests Completed: 1 / 9 (with 2 critical fixes applied)
 
 **Pass Rate:** 100% (on completed tests)
 
+### Issues Fixed:
+```
+✅ Issue #1: Archer History Scorecard Missing Name
+✅ Issue #2: Round ID Contamination (CRITICAL - Manual Assignment broken)
+```
+
 ### Remaining Issues:
 ```
-None - Issue #1 has been fixed and deployed
+None - All discovered issues have been fixed and deployed
 ```
 
 ### Critical Issues:
