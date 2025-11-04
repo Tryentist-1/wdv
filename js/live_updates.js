@@ -5,6 +5,7 @@
     // --- PRIVATE STATE ---
     const state = {
         roundId: null,
+        eventId: null,  // Track which event this round belongs to
         archerIds: {},
         config: {
             apiBase: 'https://tryentist.com/wdv/api/v1',
@@ -54,8 +55,9 @@
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed.roundId) state.roundId = parsed.roundId;
+                if (parsed.eventId) state.eventId = parsed.eventId;  // Restore eventId
                 if (parsed.archerIds) state.archerIds = parsed.archerIds;
-                console.log('💾 Restored Live Updates session:', { roundId: state.roundId, archerCount: Object.keys(state.archerIds).length });
+                console.log('💾 Restored Live Updates session:', { roundId: state.roundId, eventId: state.eventId, archerCount: Object.keys(state.archerIds).length });
             }
         } catch (e) {
             console.warn('Failed to restore Live Updates session:', e);
@@ -68,6 +70,7 @@
             const key = getSessionKey();
             localStorage.setItem(key, JSON.stringify({
                 roundId: state.roundId,
+                eventId: state.eventId,  // Persist eventId to prevent cross-event contamination
                 archerIds: state.archerIds,
                 lastUpdated: Date.now()
             }));
@@ -199,7 +202,21 @@
 
     function ensureRound({ roundType, date, division, gender, level, eventId }) {
         if (!state.config.enabled) return Promise.resolve(null);
-        if (state.roundId) return Promise.resolve(state.roundId);
+        
+        // Check if we have a cached roundId and if it's for the same event
+        if (state.roundId && state.eventId === eventId) {
+            console.log('✅ Reusing existing round for same event:', state.roundId);
+            return Promise.resolve(state.roundId);
+        }
+        
+        // If switching to a different event, clear the old round session
+        if (state.roundId && state.eventId !== eventId) {
+            console.log('⚠️ Event changed - clearing old round session. Old event:', state.eventId, 'New event:', eventId);
+            state.roundId = null;
+            state.archerIds = {};
+            state.eventId = null;
+        }
+        
         // PHASE 0: baleNumber removed from rounds table, now lives in round_archers
         return request('/rounds', 'POST', { roundType, date, division, gender, level, eventId })
             .then(json => {
@@ -207,8 +224,9 @@
                     throw new Error('Round creation failed: missing roundId');
                 }
                 state.roundId = json.roundId;
-                persistState();  // Save roundId for recovery
-                console.log('Round created and linked to event:', eventId);
+                state.eventId = eventId;  // Store the eventId to track which event this round belongs to
+                persistState();  // Save roundId and eventId for recovery
+                console.log('Round created and linked to event:', eventId, 'roundId:', state.roundId);
                 return state.roundId;
             });
     }
