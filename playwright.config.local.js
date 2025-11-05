@@ -20,7 +20,7 @@ module.exports = defineConfig({
     
     // For local API calls, you might need to mock or use localhost
     // If you run a local PHP server:
-    // baseURL: 'http://localhost:8000',
+    // baseURL: 'http://localhost:8001',
   },
   
   projects: [
@@ -32,8 +32,8 @@ module.exports = defineConfig({
   
   // Start local PHP server before tests (optional)
   webServer: {
-    command: 'cd /Users/terry/web-mirrors/tryentist/wdv && php -S localhost:8000',
-    url: 'http://localhost:8000',
+    command: 'cd /Users/terry/web-mirrors/tryentist/wdv && php -S localhost:8001',
+    url: 'http://localhost:8001',
     reuseExistingServer: !process.env.CI,
     timeout: 10000,
   },

@@ -1,0 +1,16 @@
+Database Backup Summary
+======================
+
+Timestamp: 2025-11-05 19:29:29
+Database: wdv
+Backup file: db_backup_20251105_192929.sql
+File size: 0.01 MB
+
+Tables backed up:
+  - events: 0 rows
+  - rounds: 0 rows
+  - round_archers: 0 rows
+  - end_events: 0 rows
+  - archers: 0 rows
+
+Total rows: 0

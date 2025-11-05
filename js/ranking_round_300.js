@@ -2990,6 +2990,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Search all divisions for archers assigned to our bale number
             let foundArchers = [];
             let divisionName = '';
+            let divisionCode = null;
+            let divisionRoundId = null;
             
             for (const [divCode, divData] of Object.entries(data.divisions)) {
                 if (divData.archers && divData.archers.length > 0) {
@@ -2997,20 +2999,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (baleArchers.length > 0) {
                         foundArchers = baleArchers;
                         divisionName = getDivisionDisplayName(divCode);
+                        divisionCode = divCode; // CRITICAL: Preserve division code
+                        divisionRoundId = divData.roundId || null; // CRITICAL: Preserve existing roundId
                         break;
                     }
                 }
             }
             
             if (foundArchers.length > 0) {
-                // Convert to our state format
+                // Convert to our state format - CRITICAL: Include division and roundId
                 state.archers = foundArchers.map(a => ({
                     id: a.roundArcherId,
-                    firstName: a.archerName.split(' ')[0] || '',
-                    lastName: a.archerName.split(' ').slice(1).join(' ') || '',
+                    archerId: a.archerId || a.roundArcherId, // Preserve archerId for Live Updates
+                    firstName: a.archerName.split(' ')[0] || (a.firstName || ''),
+                    lastName: a.archerName.split(' ').slice(1).join(' ') || (a.lastName || ''),
                     school: a.school || '',
                     level: a.level || 'VAR',
                     gender: a.gender || 'M',
+                    division: divisionCode, // CRITICAL: Preserve division code for round matching
                     targetAssignment: a.target || 'A',
                     targetSize: (a.level === 'VAR' || a.level === 'V' || a.level === 'Varsity') ? 122 : 80,
                     scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
@@ -3019,8 +3025,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.activeEventId = eventId;
                 state.assignmentMode = 'pre-assigned';
                 state.divisionName = divisionName;
+                state.divisionCode = divisionCode; // Store division code in state
+                state.divisionRoundId = divisionRoundId; // CRITICAL: Store existing roundId to prevent creating new rounds
                 
-                console.log(`Pre-assigned mode: ${foundArchers.length} archers on bale ${state.baleNumber} (${divisionName})`);
+                console.log(`Pre-assigned mode: ${foundArchers.length} archers on bale ${state.baleNumber} (${divisionName}, division: ${divisionCode}, roundId: ${divisionRoundId})`);
                 saveData();
                 renderSetupForm();
             }
@@ -3156,9 +3164,33 @@ async function ensureLiveRoundReady(options = {}) {
         let gender = null;
         let level = null;
 
+        // CRITICAL: Check if we already have a roundId from the event snapshot (prevents creating "Undefined" rounds)
+        if (state.divisionRoundId && eventId) {
+            console.log(`✅ Using existing roundId from event: ${state.divisionRoundId} (division: ${state.divisionCode})`);
+            // Set the roundId directly in LiveUpdates state to use existing round
+            if (!LiveUpdates._state) {
+                LiveUpdates._state = {};
+            }
+            LiveUpdates._state.roundId = state.divisionRoundId;
+            LiveUpdates._state.eventId = eventId;
+            
+            // Ensure division is set from state
+            if (state.divisionCode) {
+                division = state.divisionCode;
+            }
+            
+            // Still need to ensure archers are registered
+            if (state.archers && state.archers.length) {
+                await Promise.all(
+                    state.archers.map(archer => LiveUpdates.ensureArcher(archer.id, archer))
+                );
+            }
+            return true;
+        }
+
         if (state.archers && state.archers.length) {
             const sample = state.archers[0];
-            division = sample.division || division;
+            division = sample.division || division || state.divisionCode;
             gender = sample.gender || gender;
             level = sample.level || level;
         }
@@ -3171,15 +3203,21 @@ async function ensureLiveRoundReady(options = {}) {
                     if (Array.isArray(meta.availableDivisions) && meta.availableDivisions.length) {
                         state.availableDivisions = meta.availableDivisions;
                     }
-                    division = division || meta.defaultDivision || null;
+                    division = division || meta.defaultDivision || state.divisionCode || null;
                     gender = gender || meta.defaultGender || null;
                     level = level || meta.defaultLevel || null;
                 }
             } catch (_) {}
         }
 
+        // CRITICAL: Validate division is set - if not, we cannot create a round safely
         if (!division && gender && level) {
             division = deriveDivisionCode(gender, level);
+        }
+        
+        if (!division) {
+            console.error('❌ Cannot determine division for round creation. Division must be set.');
+            throw new Error('Division is required but could not be determined from archers or event metadata');
         }
 
         await LiveUpdates.ensureRound({

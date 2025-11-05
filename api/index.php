@@ -131,6 +131,120 @@ $slugify = function(string $s): string {
     return trim($s, '-');
 };
 
+// Normalize archer field values
+$normalizeArcherField = function($field, $value) {
+    if ($value === null || $value === '') return null;
+    
+    switch ($field) {
+        case 'gender':
+            $v = strtoupper(trim($value));
+            return in_array($v, ['M', 'F']) ? $v : 'M';
+        case 'level':
+            $v = strtoupper(trim($value));
+            return in_array($v, ['VAR', 'JV', 'BEG']) ? $v : 'VAR';
+        case 'status':
+            $v = strtolower(trim($value));
+            return in_array($v, ['active', 'inactive']) ? $v : 'active';
+        case 'school':
+            return strtoupper(substr(trim($value), 0, 3)) ?: 'UNK';
+        case 'grade':
+            $v = strtoupper(trim($value));
+            return in_array($v, ['9', '10', '11', '12', 'GRAD']) ? $v : null;
+        case 'domEye':
+        case 'domHand':
+            $v = strtoupper(trim($value));
+            return in_array($v, ['RT', 'LT']) ? $v : null;
+        case 'limbLength':
+            $v = strtoupper(trim($value));
+            return in_array($v, ['S', 'M', 'L']) ? $v : null;
+        case 'heightIn':
+        case 'wingspanIn':
+            return is_numeric($value) ? (int)$value : null;
+        case 'drawLengthSugg':
+        case 'riserHeightIn':
+        case 'limbWeightLbs':
+            return is_numeric($value) ? (float)$value : null;
+        case 'jvPr':
+        case 'varPr':
+            return is_numeric($value) ? (int)$value : null;
+        case 'email':
+        case 'phone':
+        case 'usArcheryId':
+            return trim($value) ?: null;
+        case 'faves':
+            if (is_array($value)) return json_encode($value);
+            if (is_string($value)) return $value;
+            return null;
+        default:
+            return trim($value) ?: null;
+    }
+};
+
+// Smart matching: Find existing archer by multiple criteria
+$findExistingArcher = function($pdo, $data) use ($slugify) {
+    // Priority 1: UUID (if provided and exists)
+    if (!empty($data['id'])) {
+        $stmt = $pdo->prepare('SELECT id FROM archers WHERE id = ? LIMIT 1');
+        $stmt->execute([$data['id']]);
+        if ($row = $stmt->fetch()) return $row['id'];
+    }
+    
+    // Priority 2: extId
+    if (!empty($data['extId'])) {
+        $stmt = $pdo->prepare('SELECT id FROM archers WHERE ext_id = ? LIMIT 1');
+        $stmt->execute([$data['extId']]);
+        if ($row = $stmt->fetch()) return $row['id'];
+    }
+    
+    // Priority 3: email (if unique)
+    if (!empty($data['email'])) {
+        $email = trim($data['email']);
+        $stmt = $pdo->prepare('SELECT id FROM archers WHERE email = ? LIMIT 1');
+        $stmt->execute([$email]);
+        if ($row = $stmt->fetch()) {
+            // Verify uniqueness
+            $count = $pdo->prepare('SELECT COUNT(*) FROM archers WHERE email = ?');
+            $count->execute([$email]);
+            if ($count->fetchColumn() == 1) return $row['id'];
+        }
+    }
+    
+    // Priority 4: phone (if unique)
+    if (!empty($data['phone'])) {
+        $phone = trim($data['phone']);
+        $stmt = $pdo->prepare('SELECT id FROM archers WHERE phone = ? LIMIT 1');
+        $stmt->execute([$phone]);
+        if ($row = $stmt->fetch()) {
+            $count = $pdo->prepare('SELECT COUNT(*) FROM archers WHERE phone = ?');
+            $count->execute([$phone]);
+            if ($count->fetchColumn() == 1) return $row['id'];
+        }
+    }
+    
+    // Priority 5: first_name + last_name + school
+    $firstName = trim($data['firstName'] ?? $data['first'] ?? '');
+    $lastName = trim($data['lastName'] ?? $data['last'] ?? '');
+    $school = trim($data['school'] ?? '');
+    if ($firstName && $lastName && $school) {
+        $stmt = $pdo->prepare('SELECT id FROM archers WHERE first_name = ? AND last_name = ? AND school = ? LIMIT 1');
+        $stmt->execute([$firstName, $lastName, strtoupper(substr($school, 0, 3))]);
+        if ($row = $stmt->fetch()) return $row['id'];
+    }
+    
+    // Priority 6: first_name + last_name (if unique)
+    if ($firstName && $lastName) {
+        $stmt = $pdo->prepare('SELECT id FROM archers WHERE first_name = ? AND last_name = ? LIMIT 1');
+        $stmt->execute([$firstName, $lastName]);
+        if ($row = $stmt->fetch()) {
+            $count = $pdo->prepare('SELECT COUNT(*) FROM archers WHERE first_name = ? AND last_name = ?');
+            $count->execute([$firstName, $lastName]);
+            if ($count->fetchColumn() == 1) return $row['id'];
+        }
+    }
+    
+    return null; // No match found
+};
+
 // Bale Assignment Algorithm
 // Distributes archers across bales (2-4 per bale, no singles, continuous numbering)
 $assignArchersToBales = function(array $archers, int $startBaleNumber = 1): array {
@@ -1439,10 +1553,33 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/rounds$#i', $route, $m) && $method ===
                 continue;
             }
             
+            // Parse division code to extract gender and level
+            // Database requires gender and level (NOT NULL), so provide defaults for OPEN
+            $gender = 'M'; // Default to M for OPEN division
+            $level = 'VAR'; // Default to VAR for OPEN division
+            
+            if ($division === 'OPEN') {
+                // OPEN division: mixed gender/level, use defaults
+                $gender = 'M'; // Default
+                $level = 'VAR'; // Default
+            } else {
+                // Parse division code: BVAR, GVAR, BJV, GJV
+                if (strpos($division, 'B') === 0) {
+                    $gender = 'M';
+                } elseif (strpos($division, 'G') === 0) {
+                    $gender = 'F';
+                }
+                if (strpos($division, 'VAR') !== false) {
+                    $level = 'VAR';
+                } elseif (strpos($division, 'JV') !== false) {
+                    $level = 'JV';
+                }
+            }
+            
             // Create round
             $roundId = $genUuid();
-            $pdo->prepare('INSERT INTO rounds (id, event_id, round_type, division, date, status, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())')
-                ->execute([$roundId, $eventId, $roundType, $division, $event['date'], 'Created']);
+            $pdo->prepare('INSERT INTO rounds (id, event_id, round_type, division, gender, level, date, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())')
+                ->execute([$roundId, $eventId, $roundType, $division, $gender, $level, $event['date'], 'Created']);
             
             $created[] = [
                 'roundId' => $roundId,
@@ -1921,45 +2058,8 @@ if (preg_match('#^/v1/archers/upsert$#', $route) && $method === 'POST') {
     exit;
 }
 
-// Bulk upsert master archers
-if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
-    require_api_key();
-    $items = json_decode(file_get_contents('php://input'), true) ?? [];
-    if (!is_array($items)) { json_response(['error' => 'array body required'], 400); exit; }
-    try {
-        $pdo = db();
-        $upserted = 0; $created = 0; $updated = 0;
-        $sel = $pdo->prepare('SELECT id FROM archers WHERE ext_id=? LIMIT 1');
-        $ins = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?,?,?,?,?,?,?,NOW())');
-        $upd = $pdo->prepare('UPDATE archers SET first_name=?, last_name=?, school=?, level=?, gender=? WHERE id=?');
-        foreach ($items as $it) {
-            $first = trim($it['firstName'] ?? '');
-            $last = trim($it['lastName'] ?? '');
-            if ($first === '' || $last === '') continue;
-            $school = trim($it['school'] ?? '');
-            $level = trim($it['level'] ?? '');
-            $gender = trim($it['gender'] ?? '');
-            $extId = trim($it['extId'] ?? '');
-            if ($extId === '') { $extId = $slugify($first) . '-' . $slugify($last) . ($school !== '' ? '-' . $slugify($school) : ''); }
-            $sel->execute([$extId]);
-            $row = $sel->fetch();
-            if ($row) {
-                $upd->execute([$first,$last,$school,$level,$gender,$row['id']]);
-                $updated++;
-            } else {
-                $id = $genUuid();
-                $ins->execute([$id,$extId,$first,$last,$school,$level,$gender]);
-                $created++;
-            }
-            $upserted++;
-        }
-        json_response(['upserted' => $upserted, 'created' => $created, 'updated' => $updated]);
-    } catch (Exception $e) {
-        error_log("Bulk archer upsert failed: " . $e->getMessage());
-        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
-    }
-    exit;
-}
+// NOTE: Old bulk_upsert endpoint removed - using full version below with all fields and smart matching
+// See POST /v1/archers/bulk_upsert (line ~2114) for the complete implementation
 
 // Upload CSV to app-imports (coach roster)
 if (preg_match('#^/v1/upload_csv$#', $route) && $method === 'POST') {
@@ -1997,7 +2097,7 @@ if (preg_match('#^/v1/upload_csv$#', $route) && $method === 'POST') {
 // ARCHER MASTER LIST ENDPOINTS
 // ==============================================================================
 
-// POST /v1/archers/bulk_upsert - Sync archer master list from client
+// POST /v1/archers/bulk_upsert - Sync archer master list from client (FULL VERSION with all fields)
 if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
     require_api_key();
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -2011,43 +2111,165 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
         $pdo = db();
         $inserted = 0;
         $updated = 0;
+        $samples = ['firstInserted' => null, 'firstUpdated' => null];
         
         foreach ($input as $archer) {
-            $extId = $archer['extId'] ?? '';
-            $firstName = trim($archer['firstName'] ?? '');
-            $lastName = trim($archer['lastName'] ?? '');
-            $school = strtoupper(substr(trim($archer['school'] ?? ''), 0, 3));
-            $level = strtoupper(trim($archer['level'] ?? 'VAR'));
-            $gender = strtoupper(substr(trim($archer['gender'] ?? 'M'), 0, 1));
+            // Extract and normalize fields (support both firstName/lastName and first/last)
+            $firstName = trim($archer['firstName'] ?? $archer['first'] ?? '');
+            $lastName = trim($archer['lastName'] ?? $archer['last'] ?? '');
             
             // Validate required fields
             if (empty($firstName) || empty($lastName)) continue;
             
-            // Normalize values
-            if (!in_array($level, ['VAR', 'JV'])) $level = 'VAR';
-            if (!in_array($gender, ['M', 'F'])) $gender = 'M';
-            if (empty($school)) $school = 'UNK';
+            // Normalize all fields
+            $normalized = [
+                'id' => $archer['id'] ?? null,
+                'extId' => trim($archer['extId'] ?? ''),
+                'firstName' => $firstName,
+                'lastName' => $lastName,
+                'nickname' => $normalizeArcherField('nickname', $archer['nickname'] ?? null),
+                'photoUrl' => $normalizeArcherField('photoUrl', $archer['photoUrl'] ?? null),
+                'school' => $normalizeArcherField('school', $archer['school'] ?? null),
+                'grade' => $normalizeArcherField('grade', $archer['grade'] ?? null),
+                'gender' => $normalizeArcherField('gender', $archer['gender'] ?? null),
+                'level' => $normalizeArcherField('level', $archer['level'] ?? null),
+                'status' => $normalizeArcherField('status', $archer['status'] ?? null),
+                'faves' => $normalizeArcherField('faves', $archer['faves'] ?? null),
+                'domEye' => $normalizeArcherField('domEye', $archer['domEye'] ?? null),
+                'domHand' => $normalizeArcherField('domHand', $archer['domHand'] ?? null),
+                'heightIn' => $normalizeArcherField('heightIn', $archer['heightIn'] ?? null),
+                'wingspanIn' => $normalizeArcherField('wingspanIn', $archer['wingspanIn'] ?? null),
+                'drawLengthSugg' => $normalizeArcherField('drawLengthSugg', $archer['drawLengthSugg'] ?? null),
+                'riserHeightIn' => $normalizeArcherField('riserHeightIn', $archer['riserHeightIn'] ?? null),
+                'limbLength' => $normalizeArcherField('limbLength', $archer['limbLength'] ?? null),
+                'limbWeightLbs' => $normalizeArcherField('limbWeightLbs', $archer['limbWeightLbs'] ?? null),
+                'notesGear' => $normalizeArcherField('notesGear', $archer['notesGear'] ?? null),
+                'notesCurrent' => $normalizeArcherField('notesCurrent', $archer['notesCurrent'] ?? null),
+                'notesArchive' => $normalizeArcherField('notesArchive', $archer['notesArchive'] ?? null),
+                'email' => $normalizeArcherField('email', $archer['email'] ?? null),
+                'phone' => $normalizeArcherField('phone', $archer['phone'] ?? null),
+                'usArcheryId' => $normalizeArcherField('usArcheryId', $archer['usArcheryId'] ?? null),
+                'jvPr' => $normalizeArcherField('jvPr', $archer['jvPr'] ?? null),
+                'varPr' => $normalizeArcherField('varPr', $archer['varPr'] ?? null),
+            ];
             
-            // Upsert by extId
-            $existing = $pdo->prepare('SELECT id FROM archers WHERE ext_id = ? LIMIT 1');
-            $existing->execute([$extId]);
-            $row = $existing->fetch();
+            // Generate extId if missing
+            if (empty($normalized['extId'])) {
+                $normalized['extId'] = $slugify($firstName) . '-' . $slugify($lastName) . 
+                    ($normalized['school'] && $normalized['school'] !== 'UNK' ? '-' . $slugify($normalized['school']) : '');
+            }
             
-            if ($row) {
-                // Update existing
-                $stmt = $pdo->prepare('UPDATE archers SET first_name=?, last_name=?, school=?, level=?, gender=? WHERE id=?');
-                $stmt->execute([$firstName, $lastName, $school, $level, $gender, $row['id']]);
+            // Smart matching: Find existing archer
+            $existingId = $findExistingArcher($pdo, $normalized);
+            
+            if ($existingId) {
+                // UPDATE: Only update fields that are provided (partial updates)
+                $updateFields = [];
+                $updateValues = [];
+                
+                // Build dynamic UPDATE statement (only include non-null fields)
+                if ($normalized['extId']) { $updateFields[] = 'ext_id = ?'; $updateValues[] = $normalized['extId']; }
+                if ($normalized['firstName']) { $updateFields[] = 'first_name = ?'; $updateValues[] = $normalized['firstName']; }
+                if ($normalized['lastName']) { $updateFields[] = 'last_name = ?'; $updateValues[] = $normalized['lastName']; }
+                if ($normalized['nickname'] !== null) { $updateFields[] = 'nickname = ?'; $updateValues[] = $normalized['nickname']; }
+                if ($normalized['photoUrl'] !== null) { $updateFields[] = 'photo_url = ?'; $updateValues[] = $normalized['photoUrl']; }
+                if ($normalized['school']) { $updateFields[] = 'school = ?'; $updateValues[] = $normalized['school']; }
+                if ($normalized['grade'] !== null) { $updateFields[] = 'grade = ?'; $updateValues[] = $normalized['grade']; }
+                if ($normalized['gender']) { $updateFields[] = 'gender = ?'; $updateValues[] = $normalized['gender']; }
+                if ($normalized['level']) { $updateFields[] = 'level = ?'; $updateValues[] = $normalized['level']; }
+                if ($normalized['status']) { $updateFields[] = 'status = ?'; $updateValues[] = $normalized['status']; }
+                if ($normalized['faves'] !== null) { $updateFields[] = 'faves = ?'; $updateValues[] = $normalized['faves']; }
+                if ($normalized['domEye'] !== null) { $updateFields[] = 'dom_eye = ?'; $updateValues[] = $normalized['domEye']; }
+                if ($normalized['domHand'] !== null) { $updateFields[] = 'dom_hand = ?'; $updateValues[] = $normalized['domHand']; }
+                if ($normalized['heightIn'] !== null) { $updateFields[] = 'height_in = ?'; $updateValues[] = $normalized['heightIn']; }
+                if ($normalized['wingspanIn'] !== null) { $updateFields[] = 'wingspan_in = ?'; $updateValues[] = $normalized['wingspanIn']; }
+                if ($normalized['drawLengthSugg'] !== null) { $updateFields[] = 'draw_length_sugg = ?'; $updateValues[] = $normalized['drawLengthSugg']; }
+                if ($normalized['riserHeightIn'] !== null) { $updateFields[] = 'riser_height_in = ?'; $updateValues[] = $normalized['riserHeightIn']; }
+                if ($normalized['limbLength'] !== null) { $updateFields[] = 'limb_length = ?'; $updateValues[] = $normalized['limbLength']; }
+                if ($normalized['limbWeightLbs'] !== null) { $updateFields[] = 'limb_weight_lbs = ?'; $updateValues[] = $normalized['limbWeightLbs']; }
+                if ($normalized['notesGear'] !== null) { $updateFields[] = 'notes_gear = ?'; $updateValues[] = $normalized['notesGear']; }
+                if ($normalized['notesCurrent'] !== null) { $updateFields[] = 'notes_current = ?'; $updateValues[] = $normalized['notesCurrent']; }
+                if ($normalized['notesArchive'] !== null) { $updateFields[] = 'notes_archive = ?'; $updateValues[] = $normalized['notesArchive']; }
+                if ($normalized['email'] !== null) { $updateFields[] = 'email = ?'; $updateValues[] = $normalized['email']; }
+                if ($normalized['phone'] !== null) { $updateFields[] = 'phone = ?'; $updateValues[] = $normalized['phone']; }
+                if ($normalized['usArcheryId'] !== null) { $updateFields[] = 'us_archery_id = ?'; $updateValues[] = $normalized['usArcheryId']; }
+                if ($normalized['jvPr'] !== null) { $updateFields[] = 'jv_pr = ?'; $updateValues[] = $normalized['jvPr']; }
+                if ($normalized['varPr'] !== null) { $updateFields[] = 'var_pr = ?'; $updateValues[] = $normalized['varPr']; }
+                
+                $updateFields[] = 'updated_at = NOW()';
+                $updateValues[] = $existingId;
+                
+                $sql = 'UPDATE archers SET ' . implode(', ', $updateFields) . ' WHERE id = ?';
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($updateValues);
+                
+                if ($samples['firstUpdated'] === null) {
+                    // Read back the updated record for verification
+                    $verify = $pdo->prepare('SELECT id, ext_id, first_name, last_name, email, phone FROM archers WHERE id = ?');
+                    $verify->execute([$existingId]);
+                    $samples['firstUpdated'] = $verify->fetch(PDO::FETCH_ASSOC);
+                }
                 $updated++;
             } else {
-                // Insert new
-                $id = $genUuid();
-                $stmt = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
-                $stmt->execute([$id, $extId, $firstName, $lastName, $school, $level, $gender]);
+                // INSERT: Create new record with all fields
+                $newId = $genUuid();
+                $stmt = $pdo->prepare('INSERT INTO archers (
+                    id, ext_id, first_name, last_name, nickname, photo_url, school, grade, 
+                    gender, level, status, faves, dom_eye, dom_hand, height_in, wingspan_in, 
+                    draw_length_sugg, riser_height_in, limb_length, limb_weight_lbs, 
+                    notes_gear, notes_current, notes_archive, email, phone, us_archery_id, 
+                    jv_pr, var_pr, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
+                
+                $stmt->execute([
+                    $newId,
+                    $normalized['extId'],
+                    $normalized['firstName'],
+                    $normalized['lastName'],
+                    $normalized['nickname'],
+                    $normalized['photoUrl'],
+                    $normalized['school'],
+                    $normalized['grade'],
+                    $normalized['gender'],
+                    $normalized['level'],
+                    $normalized['status'] ?? 'active',
+                    $normalized['faves'],
+                    $normalized['domEye'],
+                    $normalized['domHand'],
+                    $normalized['heightIn'],
+                    $normalized['wingspanIn'],
+                    $normalized['drawLengthSugg'],
+                    $normalized['riserHeightIn'],
+                    $normalized['limbLength'],
+                    $normalized['limbWeightLbs'],
+                    $normalized['notesGear'],
+                    $normalized['notesCurrent'],
+                    $normalized['notesArchive'],
+                    $normalized['email'],
+                    $normalized['phone'],
+                    $normalized['usArcheryId'],
+                    $normalized['jvPr'],
+                    $normalized['varPr']
+                ]);
+                
+                if ($samples['firstInserted'] === null) {
+                    $samples['firstInserted'] = [
+                        'id' => $newId,
+                        'extId' => $normalized['extId'],
+                        'firstName' => $normalized['firstName'],
+                        'lastName' => $normalized['lastName']
+                    ];
+                }
                 $inserted++;
             }
         }
         
-        json_response(['ok' => true, 'inserted' => $inserted, 'updated' => $updated], 200);
+        json_response([
+            'ok' => true, 
+            'inserted' => $inserted, 
+            'updated' => $updated,
+            'samples' => $samples
+        ], 200);
     } catch (Exception $e) {
         error_log("Bulk upsert failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
@@ -2066,7 +2288,39 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
     
     try {
         $pdo = db();
-        $sql = 'SELECT id, ext_id as extId, first_name as firstName, last_name as lastName, school, level, gender, created_at as createdAt FROM archers WHERE 1=1';
+        // Return ALL fields from archers table
+        $sql = 'SELECT 
+            id, 
+            ext_id as extId, 
+            first_name as firstName, 
+            last_name as lastName, 
+            nickname, 
+            photo_url as photoUrl,
+            school, 
+            grade, 
+            gender, 
+            level, 
+            status,
+            faves, 
+            dom_eye as domEye, 
+            dom_hand as domHand,
+            height_in as heightIn, 
+            wingspan_in as wingspanIn, 
+            draw_length_sugg as drawLengthSugg,
+            riser_height_in as riserHeightIn, 
+            limb_length as limbLength, 
+            limb_weight_lbs as limbWeightLbs,
+            notes_gear as notesGear, 
+            notes_current as notesCurrent, 
+            notes_archive as notesArchive,
+            email, 
+            phone, 
+            us_archery_id as usArcheryId,
+            jv_pr as jvPr, 
+            var_pr as varPr,
+            created_at as createdAt, 
+            updated_at as updatedAt
+        FROM archers WHERE 1=1';
         $params = [];
         
         if ($division) {
@@ -2082,7 +2336,7 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
             $params[] = $gender;
         }
         
-        if ($level && in_array($level, ['VAR', 'JV'])) {
+        if ($level && in_array($level, ['VAR', 'JV', 'BEG'])) {
             $sql .= ' AND level = ?';
             $params[] = $level;
         }
@@ -2091,7 +2345,17 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
-        $archers = $stmt->fetchAll();
+        $archers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Parse JSON fields
+        foreach ($archers as &$archer) {
+            if (!empty($archer['faves'])) {
+                $decoded = json_decode($archer['faves'], true);
+                $archer['faves'] = is_array($decoded) ? $decoded : [];
+            } else {
+                $archer['faves'] = [];
+            }
+        }
         
         json_response(['archers' => $archers], 200);
     } catch (Exception $e) {

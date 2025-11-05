@@ -1,0 +1,123 @@
+# Quick Start: Local Development Setup
+
+This is a quick reference guide. For detailed instructions, see `docs/LOCAL_DEVELOPMENT_SETUP.md`.
+
+---
+
+## 🚀 Quick Setup (5 minutes)
+
+### 1. Start MySQL
+```bash
+# macOS
+brew services start mysql
+
+# Linux
+sudo systemctl start mysql
+```
+
+### 2. Create Database
+```bash
+mysql -u root -p
+```
+
+```sql
+CREATE DATABASE wdv CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+EXIT;
+```
+
+### 3. Import Schema
+```bash
+mysql -u root -p wdv < api/sql/schema.mysql.sql
+```
+
+### 4. Configure Local Database Connection
+
+Edit `api/config.local.php` and **comment out the production config, uncomment the local config**:
+
+```php
+// ========================================================
+// OPTION 1: PRODUCTION DATABASE (tryentist.com) - COMMENT THIS OUT
+// ========================================================
+// define('DB_DSN', 'mysql:host=da100.is.cc;dbname=aelectri_wdv;charset=utf8mb4');
+// define('DB_USER', 'aelectri_wdv_remote');
+// define('DB_PASS', 'Bigdistraction976');
+
+// ========================================================
+// OPTION 2: LOCAL DATABASE - UNCOMMENT THIS
+// ========================================================
+define('DB_DSN', 'mysql:host=localhost;dbname=wdv;charset=utf8mb4');
+define('DB_USER', 'root');
+define('DB_PASS', '');  // Your MySQL root password here
+
+// Also update CORS for local development:
+define('CORS_ORIGIN', '*');  // Or 'http://localhost:8001'
+```
+
+### 5. Test Connection
+```bash
+php api/test_db_connection.php
+```
+
+Should show: ✅ Connection successful!
+
+### 6. Start Server
+```bash
+npm run serve
+```
+
+### 7. Open Browser
+- Main app: http://localhost:8001/index.html
+- Coach console: http://localhost:8001/coach.html
+- API test: http://localhost:8001/api/test_harness.html
+
+---
+
+## 🔄 Switching Between Local and Production
+
+### To Use Local Database:
+1. Comment out production config (OPTION 1)
+2. Uncomment local config (OPTION 2)
+3. Update `DB_PASS` with your MySQL password
+4. Set `CORS_ORIGIN` to `'*'` or `'http://localhost:8001'`
+
+### To Use Production Database:
+1. Comment out local config (OPTION 2)
+2. Uncomment production config (OPTION 1)
+3. Set `CORS_ORIGIN` back to `'https://tryentist.com'`
+
+---
+
+## ⚠️ Important Notes
+
+- **Never commit `config.local.php`** - it's in `.gitignore`
+- **Always use local database for development** to avoid accidentally modifying production
+- **Switch back to local** after testing with production data
+
+---
+
+## 🐛 Troubleshooting
+
+**MySQL not running?**
+```bash
+brew services start mysql  # macOS
+sudo systemctl start mysql  # Linux
+```
+
+**Connection fails?**
+- Check MySQL username/password in `config.local.php`
+- Verify database exists: `mysql -u root -p -e "SHOW DATABASES;"`
+- Check MySQL is running: `mysqladmin ping -h localhost`
+
+**Port 8001 in use?**
+```bash
+# Use different port
+php -S localhost:8002
+# (Then update package.json to match)
+```
+
+---
+
+## 📚 Full Documentation
+
+See `docs/LOCAL_DEVELOPMENT_SETUP.md` for complete setup instructions.
+

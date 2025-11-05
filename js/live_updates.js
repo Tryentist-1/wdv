@@ -3,12 +3,21 @@
 
 (function(window) {
     // --- PRIVATE STATE ---
+    // Detect localhost and use local API, otherwise use production
+    const getApiBase = () => {
+        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            const port = window.location.port || '8001';
+            return `${window.location.protocol}//${window.location.hostname}:${port}/api/index.php/v1`;
+        }
+        return 'https://tryentist.com/wdv/api/v1';
+    };
+    
     const state = {
         roundId: null,
         eventId: null,  // Track which event this round belongs to
         archerIds: {},
         config: {
-            apiBase: 'https://tryentist.com/wdv/api/v1',
+            apiBase: getApiBase(),
             apiKey: '',
             enabled: true,  // Default ON for reliability
         },
@@ -321,13 +330,19 @@
     }
 
     // --- INITIALIZATION ---
-    function init() {
+    function init(overrides) {
         const storedConfig = JSON.parse(localStorage.getItem('live_updates_config') || '{}');
         const coachKey = localStorage.getItem('coach_api_key');
         if (coachKey && !storedConfig.apiKey) {
             storedConfig.apiKey = coachKey;
         }
-        setConfig(storedConfig);
+        // Always use the detected API base (localhost or production), but allow overrides
+        const config = {
+            ...storedConfig,
+            ...overrides,
+            apiBase: overrides?.apiBase || getApiBase() // Use override if provided, otherwise detect
+        };
+        setConfig(config);
         loadPersistedState();  // Restore roundId and archerIds from previous session
     }
 

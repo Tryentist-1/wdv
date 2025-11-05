@@ -592,8 +592,11 @@ const ArcherModule = {
   },
 
   _fromApiArcher(apiArcher = {}) {
+    // CRITICAL: Preserve UUID (id) from database
+    const databaseUuid = apiArcher.id || undefined;
     const converted = Object.assign({}, DEFAULT_ARCHER_TEMPLATE, {
-      id: apiArcher.id || null, // Preserve UUID from MySQL
+      id: databaseUuid,  // Preserve UUID from database
+      archerId: databaseUuid,  // Also store as archerId for compatibility
       extId: apiArcher.extId || apiArcher.id || this._buildExtId(apiArcher),
       first: this._safeString(apiArcher.firstName || apiArcher.first),
       last: this._safeString(apiArcher.lastName || apiArcher.last),
@@ -750,12 +753,38 @@ const ArcherModule = {
     if (!csvText) throw new Error('CSV text is required');
     const rows = csvText.trim().split(/\r?\n/);
     if (rows.length < 2) return [];
-    const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+    
+    // Parse CSV line with proper quote handling
+    const parseCSVLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++; // Skip next quote (escaped quote)
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim()); // Add last field
+      return result;
+    };
+    
+    const headers = parseCSVLine(rows[0]).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
     const list = rows
       .slice(1)
       .map(line => {
         if (!line.trim()) return null;
-        const cols = line.split(',').map(col => col.trim());
+        const cols = parseCSVLine(line).map(col => col.replace(/^"|"$/g, '').trim());
         const row = {};
         headers.forEach((header, idx) => {
           row[header] = cols[idx] || '';
@@ -768,8 +797,15 @@ const ArcherModule = {
   },
 
   _fromCsvRow(row = {}) {
-    const lookup = key => this._safeString(row[key] || row[key.replace(/_/g, '')]);
+    const lookup = key => {
+      const val = row[key] || row[key.replace(/_/g, '')];
+      return val !== undefined && val !== null && val !== '' ? String(val).trim() : '';
+    };
+    // CRITICAL: Preserve UUID (id) from CSV if present (for database matching)
+    const id = lookup('id') || lookup('uuid') || '';
     const parsed = Object.assign({}, DEFAULT_ARCHER_TEMPLATE, {
+      id: id || undefined,  // Only set if UUID exists (don't set empty string)
+      archerId: id || undefined,  // Also set archerId for compatibility
       extId: lookup('extid') || '',
       first: lookup('first'),
       last: lookup('last'),
@@ -819,8 +855,10 @@ const ArcherModule = {
       alert('No archers to export.');
       return '';
     }
+    // CRITICAL: UUID (id) as first column for database matching
     const headers = [
-      'extId',
+      'id',           // Database UUID (first column for visibility and matching)
+      'extId',        // Composite ID: first-last-school (alternate identifier)
       'first',
       'last',
       'nickname',
@@ -852,7 +890,17 @@ const ArcherModule = {
       const normalized = this._applyTemplate(archer);
       const faves = (normalized.faves || []).join(';');
       return headers.map(header => {
-        const value = normalized[header] !== undefined ? normalized[header] : '';
+        // Handle id field (may be stored as id or archerId)
+        let value = normalized[header];
+        if (header === 'id') {
+          // Try multiple sources for UUID
+          value = normalized.id || normalized.archerId || normalized._id || '';
+          // If still no UUID, leave empty (will be generated on next sync)
+          if (!value) {
+            console.warn(`Archer ${normalized.first} ${normalized.last} has no UUID in local storage. Sync from MySQL to get UUID.`);
+          }
+        }
+        if (value === undefined) value = '';
         if (header === 'faves') return `"${faves.replace(/"/g, '""')}"`;
         const str = value === null || value === undefined ? '' : String(value);
         if (str.includes(',') || str.includes('"')) {

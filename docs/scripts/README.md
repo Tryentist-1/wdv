@@ -15,7 +15,15 @@ This folder documents helper scripts that ship with the project. Each script liv
 - `api/test_harness.html` — browser-based UI for invoking REST endpoints (GET/POST/PUT) against the Live Updates API. Supports both coach API key and event passcode auth modes.
 - `api/test_harness.php` — CLI-oriented runner that exercises the API workflow end-to-end using PHP.
 
+## Local Development
+
+For setting up a local development environment, see:
+- **Quick Start:** `QUICK_START_LOCAL.md` (5-minute setup guide)
+- **Full Guide:** `docs/LOCAL_DEVELOPMENT_SETUP.md` (comprehensive setup instructions)
+- **Setup Script:** `setup_local.sh` (automated setup helper)
+
 ## Usage Notes
 1. Always run scripts from the repository root unless the script documentation specifies otherwise.
 2. Review each script before executing it in production—several accept flags that control backups, dry runs, or destructive resets.
 3. Keep `.env` up to date with the credentials required by deployment and cache-purge steps. The file is excluded from git and FTP uploads.
+4. For local development, use `api/config.local.php` to configure your local database connection (this file is gitignored for security).

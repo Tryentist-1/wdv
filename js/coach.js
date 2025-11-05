@@ -4,7 +4,10 @@
  */
 
 (() => {
-  const API_BASE = 'https://tryentist.com/wdv/api/v1';
+  // Use local API when running on localhost, otherwise use production
+  const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || 8001}/api/index.php/v1`
+    : 'https://tryentist.com/wdv/api/v1';
   const COACH_COOKIE_NAME = 'coach_auth';
   const COACH_PASSCODE = 'wdva26'; // The actual passcode
   const COOKIE_DAYS = 90;
@@ -847,6 +850,7 @@
   
   function setupCSVImport() {
     const csvInput = document.getElementById('csv-input');
+    const exportCsvBtn = document.getElementById('export-csv-btn');
     
     csvInput.onchange = async (e) => {
       const file = e.target.files[0];
@@ -872,6 +876,201 @@
         csvInput.value = '';
       }
     };
+
+    // Export CSV from Database
+    if (exportCsvBtn) {
+      exportCsvBtn.onclick = async () => {
+        try {
+          exportCsvBtn.disabled = true;
+          exportCsvBtn.textContent = 'Exporting...';
+          
+          // Get all archers from database
+          let response;
+          try {
+            response = await req('/archers', 'GET');
+          } catch (err) {
+            console.error('Export CSV API error:', err);
+            alert(`Error fetching archers from database: ${err.message}\n\nCheck browser console for details.`);
+            exportCsvBtn.disabled = false;
+            exportCsvBtn.innerHTML = '<i class="fas fa-file-export"></i> Export CSV from Database';
+            return;
+          }
+          
+          const archers = response.archers || [];
+          
+          if (archers.length === 0) {
+            alert('No archers found in database.');
+            exportCsvBtn.disabled = false;
+            exportCsvBtn.innerHTML = '<i class="fas fa-file-export"></i> Export CSV from Database';
+            return;
+          }
+
+          // Convert to CSV format (matching archer_module.js export format)
+          const headers = [
+            'id',           // Database UUID (first column)
+            'extId',
+            'first',
+            'last',
+            'nickname',
+            'photoUrl',
+            'school',
+            'grade',
+            'gender',
+            'level',
+            'status',
+            'email',
+            'phone',
+            'usArcheryId',
+            'jvPr',
+            'varPr',
+            'domEye',
+            'domHand',
+            'heightIn',
+            'wingspanIn',
+            'drawLengthSugg',
+            'riserHeightIn',
+            'limbLength',
+            'limbWeightLbs',
+            'notesGear',
+            'notesCurrent',
+            'notesArchive',
+            'faves'
+          ];
+
+          // Escape CSV values
+          const escapeCSV = (value) => {
+            if (value === null || value === undefined) return '';
+            const str = String(value);
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+              return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+          };
+
+          // Build CSV rows
+          const rows = archers.map(archer => {
+            // Map database field names to CSV format
+            const faves = Array.isArray(archer.faves) ? archer.faves.join(';') : (archer.faves || '');
+            
+            return headers.map(header => {
+              let value = '';
+              switch (header) {
+                case 'id':
+                  value = archer.id || '';
+                  break;
+                case 'extId':
+                  value = archer.extId || '';
+                  break;
+                case 'first':
+                  value = archer.firstName || '';
+                  break;
+                case 'last':
+                  value = archer.lastName || '';
+                  break;
+                case 'nickname':
+                  value = archer.nickname || '';
+                  break;
+                case 'photoUrl':
+                  value = archer.photoUrl || '';
+                  break;
+                case 'school':
+                  value = archer.school || '';
+                  break;
+                case 'grade':
+                  value = archer.grade || '';
+                  break;
+                case 'gender':
+                  value = archer.gender || '';
+                  break;
+                case 'level':
+                  value = archer.level || '';
+                  break;
+                case 'status':
+                  value = archer.status || 'active';
+                  break;
+                case 'email':
+                  value = archer.email || '';
+                  break;
+                case 'phone':
+                  value = archer.phone || '';
+                  break;
+                case 'usArcheryId':
+                  value = archer.usArcheryId || '';
+                  break;
+                case 'jvPr':
+                  value = archer.jvPr || '';
+                  break;
+                case 'varPr':
+                  value = archer.varPr || '';
+                  break;
+                case 'domEye':
+                  value = archer.domEye || '';
+                  break;
+                case 'domHand':
+                  value = archer.domHand || '';
+                  break;
+                case 'heightIn':
+                  value = archer.heightIn || '';
+                  break;
+                case 'wingspanIn':
+                  value = archer.wingspanIn || '';
+                  break;
+                case 'drawLengthSugg':
+                  value = archer.drawLengthSugg || '';
+                  break;
+                case 'riserHeightIn':
+                  value = archer.riserHeightIn || '';
+                  break;
+                case 'limbLength':
+                  value = archer.limbLength || '';
+                  break;
+                case 'limbWeightLbs':
+                  value = archer.limbWeightLbs || '';
+                  break;
+                case 'notesGear':
+                  value = archer.notesGear || '';
+                  break;
+                case 'notesCurrent':
+                  value = archer.notesCurrent || '';
+                  break;
+                case 'notesArchive':
+                  value = archer.notesArchive || '';
+                  break;
+                case 'faves':
+                  value = faves;
+                  break;
+                default:
+                  value = '';
+              }
+              return escapeCSV(value);
+            }).join(',');
+          });
+
+          // Build complete CSV
+          const csv = [headers.join(','), ...rows].join('\n');
+
+          // Download CSV file
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          const timestamp = new Date().toISOString().slice(0, 10);
+          link.download = `archer-list-database-${timestamp}.csv`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+
+          alert(`Exported ${archers.length} archers to CSV.`);
+        } catch (err) {
+          console.error('Export CSV failed:', err);
+          alert('Error exporting CSV: ' + err.message);
+        } finally {
+          exportCsvBtn.disabled = false;
+          exportCsvBtn.innerHTML = '<i class="fas fa-file-export"></i> Export CSV from Database';
+        }
+      };
+    }
   }
 
   // Hook up on load (coach page)
@@ -886,32 +1085,92 @@
     const archers = [];
     const errors = [];
 
+    // Helper to safely parse CSV values (handle quoted fields)
+    const parseCSVLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++; // Skip next quote
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim()); // Add last field
+      return result;
+    };
+
+    const slugify = (s) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').trim();
+
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim());
+      const values = parseCSVLine(lines[i]);
       const archer = {};
 
       headers.forEach((header, idx) => {
-        archer[header] = values[idx] || '';
+        archer[header] = (values[idx] || '').trim();
       });
 
-      // Validate required fields
-      if (!archer.first || !archer.last || !archer.school) {
-        errors.push(`Line ${i + 1}: Missing required fields (first, last, school)`);
+      // Validate required fields (at minimum need first and last)
+      if (!archer.first || !archer.last) {
+        errors.push(`Line ${i + 1}: Missing required fields (first, last)`);
         continue;
       }
 
-      // Build ext_id: first-last-school (slugified)
-      const slugify = (s) => s.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').trim();
-      const extId = `${slugify(archer.first)}-${slugify(archer.last)}-${slugify(archer.school)}`;
+      // Build archer object with all available fields
+      // CRITICAL: Preserve UUID (id) if present in CSV for database matching
+      const archerData = {
+        id: archer.id || archer.uuid || undefined,  // Preserve UUID if present
+        extId: archer.extid || archer.ext_id || '',
+        firstName: archer.first || archer.firstname || '',
+        lastName: archer.last || archer.lastname || '',
+        nickname: archer.nickname || '',
+        photoUrl: archer.photourl || archer.photo_url || archer.photo || '',
+        school: (archer.school || '').substring(0, 3).toUpperCase() || 'UNK',
+        grade: archer.grade || '',
+        gender: (archer.gender || 'M').toUpperCase() === 'F' ? 'F' : 'M',
+        level: (archer.level || 'VAR').toUpperCase() === 'JV' ? 'JV' : (archer.level || 'VAR').toUpperCase() === 'BEG' ? 'BEG' : 'VAR',
+        status: (archer.status || 'active').toLowerCase(),
+        email: archer.email || '',
+        phone: archer.phone || '',
+        usArcheryId: archer.usarcheryid || archer.us_archery_id || archer.usarchery || '',
+        jvPr: archer.jvpr || archer.jv_pr ? parseInt(archer.jvpr || archer.jv_pr) : undefined,
+        varPr: archer.varpr || archer.var_pr ? parseInt(archer.varpr || archer.var_pr) : undefined,
+        domEye: (archer.domeye || archer.dom_eye || '').toUpperCase() || undefined,
+        domHand: (archer.domhand || archer.dom_hand || '').toUpperCase() || undefined,
+        heightIn: archer.heightin || archer.height_in ? parseInt(archer.heightin || archer.height_in) : undefined,
+        wingspanIn: archer.wingspanin || archer.wingspan_in ? parseInt(archer.wingspanin || archer.wingspan_in) : undefined,
+        drawLengthSugg: archer.drawlengthsugg || archer.draw_length_sugg ? parseFloat(archer.drawlengthsugg || archer.draw_length_sugg) : undefined,
+        riserHeightIn: archer.riserheightin || archer.riser_height_in ? parseFloat(archer.riserheightin || archer.riser_height_in) : undefined,
+        limbLength: (archer.limblength || archer.limb_length || '').toUpperCase() || undefined,
+        limbWeightLbs: archer.limbweightlbs || archer.limb_weight_lbs ? parseFloat(archer.limbweightlbs || archer.limb_weight_lbs) : undefined,
+        notesGear: archer.notesgear || archer.notes_gear || '',
+        notesCurrent: archer.notescurrent || archer.notes_current || '',
+        notesArchive: archer.notesarchive || archer.notes_archive || ''
+      };
 
-      archers.push({
-        extId,
-        firstName: archer.first,
-        lastName: archer.last,
-        school: archer.school.substring(0, 3).toUpperCase(),
-        level: (archer.level || 'VAR').toUpperCase() === 'JV' ? 'JV' : 'VAR',
-        gender: (archer.gender || 'M').toUpperCase() === 'F' ? 'F' : 'M'
+      // Generate extId if missing (for smart matching fallback)
+      if (!archerData.extId) {
+        archerData.extId = `${slugify(archerData.firstName)}-${slugify(archerData.lastName)}-${slugify(archerData.school)}`;
+      }
+
+      // Remove undefined fields (only send fields that have values)
+      Object.keys(archerData).forEach(key => {
+        if (archerData[key] === undefined || archerData[key] === '') {
+          delete archerData[key];
+        }
       });
+
+      archers.push(archerData);
     }
 
     return { archers, errors };
