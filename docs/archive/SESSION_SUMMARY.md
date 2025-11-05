@@ -3,6 +3,276 @@
 
 ---
 
+## Session: November 5, 2025 - Data Integrity Fixes & Admin Tools
+
+**Date:** November 5, 2025  
+**Duration:** Single session  
+**Goal:** Fix score calculation discrepancies, resolve "Undefined" division issue, and build admin tools for database management
+
+### 🔥 Starting State - Production Issues
+
+**Reported Problems:**
+1. ❌ Score discrepancies: Tica Facer showing 235 on scorecard but 229 in results
+2. ❌ "Undefined" division issue: 18 archers in "Tryout Round 2" ended up in undefined division instead of OPEN
+3. ❌ "Reset App Data" button not clearing cookies or page cache
+
+**Root Causes Identified:**
+1. API using stored `running_total` from database instead of recalculating from arrow scores
+2. Division code and `roundId` not preserved when loading archers from event snapshot via QR code
+3. Cookie clearing logic incomplete, missing IndexedDB and cache bypass
+
+### ✅ Completed Work
+
+#### 1. **Fixed Score Calculation Discrepancy** ✅
+**Problem:** Tica Facer's scorecard showed 235 but results showed 229 (6-point difference)
+
+**Root Cause:** Database had incorrect `running_total` stored (End 8 had 186 instead of correct 192), and API was using stored values instead of recalculating from arrow scores.
+
+**Fix:** Modified API to recalculate `running_total` from actual arrow scores (`a1`, `a2`, `a3`) in both:
+- Event snapshot endpoint (`/v1/events/{id}/snapshot`)
+- Round snapshot endpoint (`/v1/rounds/{id}/snapshot`)
+
+**Code Changes:**
+- `api/index.php` lines 560-610: Round snapshot endpoint now recalculates totals
+- `api/index.php` lines 1770-1800: Event snapshot endpoint now recalculates totals
+- Both endpoints update `ends` array with correct `runningTotal` and `endTotal` values
+
+**Result:** ✅ All scores now calculated accurately from source data, preventing discrepancies even if database has incorrect stored values.
+
+**Commit:** `f9934ae` - "Recalculate running totals from arrow scores in API"
+
+#### 2. **Fixed "Undefined" Division Issue** ✅
+**Problem:** 18 archers in "Tryout Round 2" ended up in division=NULL round instead of OPEN
+
+**Root Cause:** When archers joined via QR code, `loadPreAssignedBale()` didn't preserve:
+- Division code from event snapshot
+- Existing `roundId` from event snapshot
+- `ensureLiveRoundReady()` then created new rounds with `division=null`
+
+**Fix:** 
+1. **Preserve Division & RoundId** (`js/ranking_round_300.js` lines 2993-3029):
+   - Capture `divisionCode` and `divisionRoundId` from event snapshot
+   - Store in each archer object and in `state`
+   - Include `division` field in archer objects
+
+2. **Use Existing RoundId** (`js/ranking_round_300.js` lines 3167-3188):
+   - Check if `state.divisionRoundId` exists before creating new round
+   - Use existing roundId directly if available
+   - Prevents creating duplicate/undefined rounds
+
+3. **Validation** (lines 3218-3221):
+   - Added validation to prevent creating rounds when division cannot be determined
+
+**Result:** ✅ Future QR code joins will use correct division rounds. Existing issue fixed via migration.
+
+**Commits:**
+- Division preservation fix (included in larger commit)
+- Part of comprehensive fix for undefined division issue
+
+#### 3. **Enhanced "Reset App Data" Functionality** ✅
+**Problem:** Reset button didn't clear cookies or page cache
+
+**Fix:** Enhanced `clearAppData()` function in `index.html`:
+- Explicitly deletes known cookies (`oas_archer_id`, `coach_auth`) with multiple path/domain combinations
+- Clears all IndexedDB databases
+- Forces hard reload with cache bypass (timestamp query parameter)
+- Improved cookie deletion tries multiple paths to ensure removal
+
+**Result:** ✅ Complete data reset including cookies, storage, and cached resources.
+
+**Commit:** `8d8fd06` - "Improve Reset App Data to clear cookies, IndexedDB, and page cache"
+
+#### 4. **Database Backup Admin Interface** ✅
+**Created:** `api/backup_admin.php`
+
+**Features:**
+- Web-based interface for creating backups
+- Select specific tables to backup
+- Options: Include/exclude structure, include/exclude data
+- Output: Save to server or download immediately
+- View existing backups with download links
+- Shows row counts for each table
+- Clean, responsive UI
+
+**Usage:** `https://tryentist.com/wdv/api/backup_admin.php?passcode=wdva26`
+
+**Commit:** `a444ab4` - "Add web-based database backup admin interface with parameters"
+
+#### 5. **Diagnostic Tools** ✅
+**Created:** 
+- `api/diagnostic_undefined_divisions.php` - Check for undefined division issues
+- `api/sql/check_undefined_divisions.sql` - SQL diagnostic queries
+
+**Features:**
+- Identifies rounds with NULL/empty division
+- Lists archers in undefined rounds
+- Summary by event
+- Division comparison view
+
+**Commit:** `cddd78f` - "Add diagnostic endpoint for Undefined division issue"
+
+#### 6. **Migration Admin Interface** ✅
+**Created:** `api/migration_admin.php`
+
+**Features:**
+- Preview mode: Shows exactly what will change before execution
+- Safe execution: Uses database transactions (rollback on error)
+- Verification: Runs checks after migration completes
+- Statistics: Shows archer counts, score counts, before/after states
+- Detailed archer list: Shows all archers that will be moved
+
+**Migration Executed:**
+- Moved 18 archers from undefined round to OPEN division
+- Updated 179 score entries (`end_events`)
+- Deleted empty undefined round
+- **Result:** ✅ All archers now in correct OPEN division
+
+**Commit:** `c24b90b` - "Add web-based migration admin interface with preview and execution"
+
+### 📊 Test Results
+
+**Score Calculation Fix:**
+- ✅ Verified Tica Facer now shows correct 235 in both scorecard and results
+- ✅ API recalculates from arrow scores, ignoring incorrect stored values
+- ✅ All running totals now accurate
+
+**Division Fix:**
+- ✅ Diagnostic shows 0 undefined rounds remaining
+- ✅ Migration successfully moved 18 archers to OPEN
+- ✅ Code fix prevents future occurrences
+
+**Reset App Data:**
+- ✅ Cookies cleared (verified in browser DevTools)
+- ✅ IndexedDB cleared
+- ✅ Page cache bypassed on reload
+
+**Admin Tools:**
+- ✅ Backup interface tested and working
+- ✅ Migration executed successfully
+- ✅ Diagnostic endpoint verified
+
+### 🔧 Files Modified
+
+**PHP/API:**
+- `api/index.php` - Score recalculation logic (2 locations)
+- `api/backup_admin.php` - NEW: Backup admin interface
+- `api/backup_database.php` - NEW: CLI backup script
+- `api/backup_database_web.php` - NEW: Web backup endpoint
+- `api/diagnostic_undefined_divisions.php` - NEW: Diagnostic endpoint
+- `api/migration_admin.php` - NEW: Migration admin interface
+
+**JavaScript:**
+- `js/ranking_round_300.js`
+  - Lines 2993-3029: Division and roundId preservation
+  - Lines 3167-3221: Use existing roundId, validation
+
+**HTML:**
+- `index.html`
+  - Lines 838-925: Enhanced `clearAppData()` function
+
+**SQL:**
+- `api/sql/check_undefined_divisions.sql` - NEW: Diagnostic queries
+- `api/sql/fix_undefined_division_tryout_round2.sql` - NEW: Migration script
+
+### 📈 Deployment History
+
+**Git Commits (in order):**
+1. `8d8fd06` - Reset App Data improvements
+2. `f9934ae` - Score recalculation fix
+3. `b4958cb` - Backup scripts and diagnostic query
+4. `cddd78f` - Diagnostic endpoint
+5. `a444ab4` - Backup admin interface
+6. `c24b90b` - Migration admin interface
+7. Division preservation fix (in main code fix)
+
+**All deployed to production via:**
+- `git push origin main`
+- `./DeployFTP.sh`
+- Cloudflare cache purged after each deploy
+
+### 🎯 Key Learnings
+
+1. **Always Recalculate from Source:** Don't trust stored calculated values - recalculate from source data (arrow scores)
+2. **Preserve Context When Loading:** When loading data from API, preserve all relevant context (division, roundId) to prevent creating incorrect records
+3. **Build Admin Tools Proactively:** Backup and migration tools are essential for production data management
+4. **Transaction Safety:** Always use database transactions for data migrations
+5. **Preview Before Execute:** Always show preview of changes before executing destructive operations
+
+### 📝 Tools Created
+
+**Backup System:**
+- CLI backup script: `api/backup_database.php`
+- Web backup endpoint: `api/backup_database_web.php`
+- Backup admin interface: `api/backup_admin.php`
+
+**Diagnostic System:**
+- Diagnostic endpoint: `api/diagnostic_undefined_divisions.php`
+- SQL diagnostic queries: `api/sql/check_undefined_divisions.sql`
+
+**Migration System:**
+- Migration admin interface: `api/migration_admin.php`
+- Migration SQL script: `api/sql/fix_undefined_division_tryout_round2.sql`
+
+### 🚀 Current State - STABLE
+
+**Working Features:**
+- ✅ Accurate score calculations (recalculated from arrow scores)
+- ✅ Division preservation in QR code flow
+- ✅ Complete data reset functionality
+- ✅ Database backup tools
+- ✅ Migration tools
+- ✅ Diagnostic tools
+- ✅ All 18 archers in correct OPEN division
+
+**Data Integrity:**
+- ✅ Scores recalculated correctly
+- ✅ No undefined divisions
+- ✅ All archers in correct divisions
+- ✅ Production data backed up
+
+**Admin Tools Available:**
+- ✅ Backup admin: `/api/backup_admin.php?passcode=wdva26`
+- ✅ Migration admin: `/api/migration_admin.php?passcode=wdva26`
+- ✅ Diagnostic endpoint: `/api/diagnostic_undefined_divisions.php?passcode=wdva26`
+
+### 📋 Next Steps (Future Sessions)
+
+**Optional Enhancements:**
+- Add more migration templates for common issues
+- Enhance backup scheduling/automation
+- Add rollback functionality to migrations
+- Create admin dashboard combining all tools
+
+**Monitoring:**
+- Set up alerts for undefined divisions
+- Monitor score calculation accuracy
+- Track division assignment success rates
+
+### ✨ Session Complete
+
+**Status:** ✅ ALL ISSUES RESOLVED AND DEPLOYED
+
+**Achievements:**
+- Fixed score calculation discrepancies
+- Resolved undefined division issue (code + data)
+- Enhanced reset functionality
+- Built comprehensive admin toolset
+- Successfully migrated production data
+- All changes deployed and verified
+
+**Lines Changed:**
+- PHP: ~800 lines (new admin tools)
+- JavaScript: ~80 lines (division preservation)
+- HTML: ~50 lines (reset improvements)
+- SQL: ~200 lines (diagnostic/migration scripts)
+
+**Production Impact:**
+- ✅ All scores now accurate
+- ✅ All archers in correct divisions
+- ✅ Tools available for future maintenance
+
+---
+
 ## Session: November 4, 2025 - Recovery & Mobile Optimization
 
 **Date:** November 4, 2025  
