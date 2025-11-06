@@ -29,6 +29,26 @@ module.exports = defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'iPhone 13',
+      use: { ...devices['iPhone 13'] }, // Safari on iPhone
+    },
+    {
+      name: 'iPhone 13 Pro',
+      use: { ...devices['iPhone 13 Pro'] }, // Safari on iPhone Pro
+    },
+    {
+      name: 'Pixel 5',
+      use: { ...devices['Pixel 5'] }, // Chrome on Android
+    },
+    {
+      name: 'Galaxy S21',
+      use: { ...devices['Galaxy S21'] }, // Chrome on Android
+    },
   ],
   
   // Start local PHP server before tests
