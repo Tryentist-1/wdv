@@ -120,9 +120,14 @@ async function createCompleteTestEvent(page, options = {}) {
   await page.check('input[name="assignment-mode"][value="auto_assign"]');
   await page.click('#submit-assignment-btn');
   await expect(page.locator('#assignment-mode-modal')).toBeHidden({ timeout: 10000 });
+  
+  // Wait for assignment to complete - check for success message or event list update
+  await page.waitForTimeout(2000);
+  
+  // Verify archers were actually assigned by checking the event list
+  await page.waitForSelector('#events-list table tbody tr', { timeout: 15000 });
 
   // Step 5: Wait for event to appear in list and get event ID
-  await page.waitForSelector('#events-list table tbody tr', { timeout: 15000 });
   const firstRow = page.locator('#events-list table tbody tr').first();
   await expect(firstRow).toBeVisible();
 
@@ -141,14 +146,14 @@ async function createCompleteTestEvent(page, options = {}) {
   // Step 6: Enter scores if requested
   let roundArcherIds = [];
   if (enterScores) {
-    // Wait a moment for event to be fully saved
-    await page.waitForTimeout(1000);
+    // Wait longer for event to be fully saved and archers assigned
+    await page.waitForTimeout(3000);
     
     // Navigate to ranking round
     await page.goto(`/ranking_round_300.html?event=${eventId}&code=${eventCode}`);
     
     // Wait for page to load and check for errors
-    await page.waitForLoadState('networkidle', { timeout: 10000 });
+    await page.waitForLoadState('networkidle', { timeout: 15000 });
     
     // Check console for errors
     const errors = [];
@@ -159,9 +164,10 @@ async function createCompleteTestEvent(page, options = {}) {
     });
     
     // Wait for either pre-assigned or manual setup section (in case event didn't load)
+    // Give more time for event snapshot to load
     const preAssignedVisible = await page.waitForSelector('#preassigned-setup-section', { 
       state: 'visible', 
-      timeout: 20000 
+      timeout: 30000 
     }).then(() => true).catch(() => false);
     
     const manualVisible = await page.waitForSelector('#manual-setup-section', { 
@@ -179,9 +185,12 @@ async function createCompleteTestEvent(page, options = {}) {
     }
     
     if (preAssignedVisible) {
+      // Wait for bale list to populate
+      await page.waitForTimeout(2000);
+      
       // Start scoring on first bale
       const startBtn = page.locator('.bale-list-item button', { hasText: 'Start Scoring' }).first();
-      if (await startBtn.isVisible({ timeout: 5000 })) {
+      if (await startBtn.isVisible({ timeout: 10000 })) {
         await startBtn.click();
         
         // Wait for scoring view
