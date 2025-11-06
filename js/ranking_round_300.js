@@ -166,6 +166,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const databaseUuid = rosterArcher.id || rosterArcher.archerId || overrides.id || overrides.archerId;
         const fallbackId = databaseUuid || extId || `${firstName.toLowerCase()}-${lastName.toLowerCase()}-${school.toLowerCase()}` || `archer-${Date.now()}`;
 
+        const cardStatusSource = overrides.cardStatus ?? rosterArcher.cardStatus ?? rosterArcher.statusCode ?? '';
+        const normalizedCardStatus = String(cardStatusSource || '').trim().toUpperCase() || 'PENDING';
+        const lockedFlag = overrides.locked !== undefined
+            ? !!overrides.locked
+            : (typeof rosterArcher.locked === 'boolean'
+                ? rosterArcher.locked
+                : (normalizedCardStatus === 'VER' || normalizedCardStatus === 'VOID'));
+        const verifiedBy = safeString(overrides.verifiedBy ?? rosterArcher.verifiedBy);
+        const verifiedAt = overrides.verifiedAt || rosterArcher.verifiedAt || null;
+        const verificationNotes = overrides.notes !== undefined ? overrides.notes : (rosterArcher.notes ?? '');
+
         return {
             id: fallbackId,
             archerId: databaseUuid || fallbackId,  // Store both for compatibility with Live Updates
@@ -186,7 +197,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // preserve optional fields if present
             photoUrl: rosterArcher.photoUrl || rosterArcher.photo || '',
             notesCurrent: rosterArcher.notesCurrent || '',
-            notesGear: rosterArcher.notesGear || ''
+            notesGear: rosterArcher.notesGear || '',
+            locked: lockedFlag,
+            cardStatus: normalizedCardStatus,
+            verifiedBy,
+            verifiedAt,
+            verificationNotes
         };
     }
 
@@ -2161,18 +2177,28 @@ document.addEventListener('DOMContentLoaded', () => {
             // Get sync status for this archer/end
             const syncStatus = (state.syncStatus[archer.id] && state.syncStatus[archer.id][state.currentEnd]) || '';
             const syncIcon = getSyncStatusIcon(syncStatus);
+            const status = (archer.cardStatus || 'PENDING').toUpperCase();
+            const isLocked = !!state.activeEventId && (archer.locked || status === 'VER' || status === 'VOID');
+            let badgeColor = '#f1c40f';
+            if (status === 'VER') badgeColor = '#2ecc71';
+            if (status === 'VOID') badgeColor = '#e74c3c';
+            const statusBadge = (status === 'PENDING' && !isLocked)
+                ? ''
+                : `<span class="status-badge" style="background:${badgeColor};color:#fff;margin-right:0.35rem;">${status}</span>`;
+            const rowLockAttr = isLocked ? 'data-locked="true" class="locked-scorecard-row"' : '';
+            const lockedAttr = isLocked ? 'data-locked="true" tabindex="-1" disabled' : 'data-locked="false"';
             
             tableHTML += `
-                <tr data-archer-id="${archer.id}">
+                <tr data-archer-id="${archer.id}" ${rowLockAttr}>
                     <td>${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[0])}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" readonly></td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[1])}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" readonly></td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[2])}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" readonly></td>
+                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
+                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
+                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
                     <td class="calculated-cell">${endTens + endXs}</td>
                     <td class="calculated-cell">${endXs}</td>
                     <td class="calculated-cell">${endTotal}</td>
                     <td class="calculated-cell">${runningTotal}</td>
-                    <td class="calculated-cell ${avgClass}">${endAvg}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus}" style="text-align: center;">${syncIcon}</td>` : ''}<td><button class="btn view-card-btn" data-archer-id="${archer.id}">📄</button></td>
+                    <td class="calculated-cell ${avgClass}">${endAvg}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus}" style="text-align: center;">${syncIcon}</td>` : ''}<td>${statusBadge}<button class="btn view-card-btn" data-archer-id="${archer.id}">📄</button></td>
                 </tr>`;
         });
         tableHTML += `</tbody></table>`;
@@ -2201,7 +2227,13 @@ document.addEventListener('DOMContentLoaded', () => {
         header.querySelectorAll('.card-details').forEach(el => el.remove());
         const detailsDiv = document.createElement('div');
         detailsDiv.className = 'card-details';
-        detailsDiv.innerHTML = `<span>Bale ${state.baleNumber} - Target ${archer.targetAssignment}</span><span>${archer.school}</span><span>${archer.level} / ${archer.gender}</span>`;
+        const status = (archer.cardStatus || 'PENDING').toUpperCase();
+        let statusColor = '#f1c40f';
+        if (status === 'VER') statusColor = '#2ecc71';
+        if (status === 'VOID') statusColor = '#e74c3c';
+        const statusBadge = `<span class="status-badge" style="background:${statusColor};color:#fff;">${status}</span>`;
+        const notesText = archer.verificationNotes ? `<span>Notes: ${archer.verificationNotes}</span>` : '';
+        detailsDiv.innerHTML = `<span>Bale ${state.baleNumber} - Target ${archer.targetAssignment}</span><span>${archer.school}</span><span>${archer.level} / ${archer.gender}</span>${statusBadge}${notesText}`;
         header.appendChild(detailsDiv);
         const table = document.createElement('table');
         table.className = 'score-table';
@@ -2360,6 +2392,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Make score inputs focusable by removing readonly temporarily on touch
         const scoreInputs = document.querySelectorAll('.score-input');
         scoreInputs.forEach(input => {
+            if (input.dataset.locked === 'true') {
+                input.setAttribute('tabindex', '-1');
+                input.classList.add('locked-score-input');
+                return;
+            }
             input.setAttribute('readonly', 'readonly');
             input.setAttribute('inputmode', 'none');
             input.setAttribute('autocomplete', 'off');
@@ -2448,6 +2485,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const archerId = input.dataset.archerId;
         const arrowIndex = parseInt(input.dataset.arrowIdx, 10);
         const archer = state.archers.find(a => a.id === archerId);
+        if (archer) {
+            const status = (archer.cardStatus || 'PENDING').toUpperCase();
+            if (state.activeEventId && (archer.locked || status === 'VOID')) {
+                const existing = (Array.isArray(archer.scores[state.currentEnd - 1]) && archer.scores[state.currentEnd - 1][arrowIndex]) || '';
+                if (input.value !== existing) {
+                    input.value = existing;
+                }
+                return;
+            }
+        }
         if (archer) {
             if (!Array.isArray(archer.scores[state.currentEnd - 1])) {
                 archer.scores[state.currentEnd - 1] = ['', '', ''];
@@ -3015,19 +3062,35 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (foundArchers.length > 0) {
                 // Convert to our state format - CRITICAL: Include division and roundId
-                state.archers = foundArchers.map(a => ({
-                    id: a.roundArcherId,
-                    archerId: a.archerId || a.roundArcherId, // Preserve archerId for Live Updates
-                    firstName: a.archerName.split(' ')[0] || (a.firstName || ''),
-                    lastName: a.archerName.split(' ').slice(1).join(' ') || (a.lastName || ''),
-                    school: a.school || '',
-                    level: a.level || 'VAR',
-                    gender: a.gender || 'M',
-                    division: divisionCode, // CRITICAL: Preserve division code for round matching
-                    targetAssignment: a.target || 'A',
-                    targetSize: (a.level === 'VAR' || a.level === 'V' || a.level === 'Varsity') ? 122 : 80,
-                    scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
-                }));
+                state.archers = foundArchers.map(a => {
+                    const names = (a.archerName || '').split(' ');
+                    const overrides = {
+                        baleNumber: a.bale || targetBale,
+                        targetAssignment: a.target || 'A',
+                        scores: Array.isArray(a.scorecard?.ends)
+                            ? a.scorecard.ends.map(end => [end.a1 || '', end.a2 || '', end.a3 || ''])
+                            : undefined,
+                        locked: a.locked,
+                        cardStatus: a.cardStatus,
+                        verifiedBy: a.verifiedBy,
+                        verifiedAt: a.verifiedAt,
+                        notes: a.notes
+                    };
+                    const rosterPayload = {
+                        id: a.archerId || a.roundArcherId,
+                        archerId: a.archerId || a.roundArcherId,
+                        firstName: names[0] || a.firstName || '',
+                        lastName: names.slice(1).join(' ') || a.lastName || '',
+                        school: a.school || '',
+                        level: a.level || 'VAR',
+                        gender: a.gender || 'M',
+                        division: divisionCode
+                    };
+                    const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
+                    stateArcher.roundArcherId = a.roundArcherId;
+                    stateArcher.roundId = divisionRoundId;
+                    return stateArcher;
+                });
                 
                 state.activeEventId = eventId;
                 state.assignmentMode = 'pre-assigned';
@@ -4085,6 +4148,10 @@ function updateManualLiveControls(summaryOverride) {
 
         document.body.addEventListener('focusin', (e) => {
             if (e.target.classList && e.target.classList.contains('score-input')) {
+                if (e.target.dataset && e.target.dataset.locked === 'true') {
+                    e.target.blur();
+                    return;
+                }
                 console.log('Score input focused:', e.target);
                 showKeypadForInput(e.target);
             }

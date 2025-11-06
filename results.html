@@ -150,6 +150,9 @@
         <span>📅 <span id="event-date">-</span></span>
         <span>📊 Status: <span id="event-status">-</span></span>
       </div>
+      <div style="margin-top: 1rem;">
+        <button id="toggle-void-btn" class="btn btn-secondary">Show Voided Cards</button>
+      </div>
     </div>
 
     <!-- Division Sections -->
@@ -186,6 +189,9 @@
       'GJV': 'Girls JV'
     };
 
+    let showVoided = false;
+    let latestSnapshot = null;
+
     async function loadResults() {
       if (!eventId) {
         alert('No event ID provided');
@@ -200,6 +206,7 @@
         
         const data = await res.json();
         console.log('API Response:', data);
+        latestSnapshot = data;
 
         // Update header
         document.getElementById('event-name').textContent = data.event.name;
@@ -237,24 +244,31 @@
         const division = divisions[divCode];
         const section = document.createElement('div');
         section.className = 'division-section';
+        const allArchers = division ? (division.archers || []) : [];
+        const visibleArchers = filterArchersForDisplay(allArchers);
+        const hiddenCount = allArchers.length - visibleArchers.length;
 
         // Division Header
         const header = document.createElement('div');
         header.className = 'division-header';
         header.innerHTML = `
           <div class="division-name">${DIVISION_NAMES[divCode]}</div>
-          <div class="division-count">${division ? (division.archers || []).length : 0} archers</div>
+          <div class="division-count">${visibleArchers.length} showing${hiddenCount > 0 ? ` • ${hiddenCount} hidden` : ''}</div>
         `;
         section.appendChild(header);
 
         // Division Table
-        if (!division || !division.archers || division.archers.length === 0) {
+        if (visibleArchers.length === 0) {
           const empty = document.createElement('div');
           empty.className = 'empty-division';
-          empty.textContent = 'No archers assigned to this division';
+          if (hiddenCount > 0) {
+            empty.textContent = 'All scorecards are voided. Use "Show Voided Cards" to reveal them.';
+          } else {
+            empty.textContent = 'No archers assigned to this division';
+          }
           section.appendChild(empty);
         } else {
-          const table = createLeaderboardTable(division.archers);
+          const table = createLeaderboardTable(visibleArchers);
           section.appendChild(table);
         }
 
@@ -268,6 +282,25 @@
       if (a.scorecard && a.scorecard.runningTotal != null) return a.scorecard.runningTotal;
       if (a.total != null) return a.total;
       return 0;
+    }
+
+    function getCardStatus(archer) {
+      return ((archer.cardStatus || archer.status || 'PENDING') + '').toUpperCase();
+    }
+
+    function renderStatusBadge(status) {
+      let color = '#f1c40f';
+      if (status === 'VER') color = '#2ecc71';
+      if (status === 'VOID') color = '#e74c3c';
+      return `<span class="status-badge" style="background:${color};color:#fff;">${status}</span>`;
+    }
+
+    function filterArchersForDisplay(archers = []) {
+      return archers.filter(a => {
+        const status = getCardStatus(a);
+        if (!showVoided && status === 'VOID') return false;
+        return true;
+      });
     }
 
     function createLeaderboardTable(archers) {
@@ -286,6 +319,7 @@
             <th>School</th>
             <th>Bale</th>
             <th>Target</th>
+            <th>Status</th>
             <th>Total</th>
             <th>Avg</th>
             <th>Xs</th>
@@ -309,6 +343,8 @@
         const bale = archer.bale || archer.baleNumber || archer.bale_number || '-';
         const target = archer.target || archer.targetAssignment || archer.target_assignment || '-';
         const name = archer.archerName || archer.name || [archer.firstName, archer.lastName].filter(Boolean).join(' ');
+        const status = getCardStatus(archer);
+        const statusBadge = renderStatusBadge(status);
 
         row.innerHTML = `
           <td class="rank-cell ${rankClass}">${rank}</td>
@@ -316,6 +352,7 @@
           <td>${archer.school || '-'}</td>
           <td>${bale}</td>
           <td>${target}</td>
+          <td>${statusBadge}</td>
           <td class="score-total">${total}</td>
           <td>${avg}</td>
           <td>${archer.xs || (archer.scorecard && archer.scorecard.xs) || 0}</td>
@@ -351,6 +388,7 @@
         ]);
         
         const total = normTotal(archer);
+        const status = getCardStatus(archer);
         
         // Use firstName/lastName from API (with fallback to parsing archerName if needed)
         const firstName = archer.firstName || archer.first_name || '';
@@ -365,8 +403,9 @@
           level: archer.level || '',
           gender: archer.gender || '',
           scores: scores,
-          verified: archer.verified || false,
-          completed: (archer.status === 'Completed' || total >= 300)
+          cardStatus: status,
+          verified: status === 'VER',
+          completed: status !== 'VOID'
         };
         
         const roundData = {
@@ -394,6 +433,14 @@
 
     // Refresh button
     document.getElementById('refresh-btn').onclick = loadResults;
+    document.getElementById('toggle-void-btn').onclick = () => {
+      showVoided = !showVoided;
+      const btn = document.getElementById('toggle-void-btn');
+      btn.textContent = showVoided ? 'Hide Voided Cards' : 'Show Voided Cards';
+      if (latestSnapshot) {
+        renderDivisions(latestSnapshot.divisions || {});
+      }
+    };
 
     // Auto-refresh every 30 seconds for active events
     setInterval(() => {

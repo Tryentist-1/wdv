@@ -331,6 +331,16 @@ tr.sync-ok td { outline: 2px solid #28a745; outline-offset: -2px; }
   font-family: Arial, sans-serif;
 }
 
+.score-table .locked-score-input {
+  background-color: #f1f3f5;
+  color: #7f8c8d;
+  cursor: not-allowed;
+}
+
+.locked-scorecard-row {
+  opacity: 0.85;
+}
+
 /* Column widths */
 .score-table th:first-child,
 .score-table td:first-child {

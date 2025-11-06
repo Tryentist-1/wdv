@@ -16,6 +16,7 @@
   let currentEventId = null;
   let selectedArchers = [];
   let allArchers = [];
+  let verifyState = null;
   
   // PHASE 0: Division rounds workflow
   let pendingDivisions = []; // Divisions to configure after event creation
@@ -159,10 +160,10 @@
         <table class="score-table">
           <thead>
             <tr>
-              <th style="width: 35%;">Event</th>
+              <th style="width: 33%;">Event</th>
               <th style="width: 15%;">Date</th>
               <th style="width: 18%;">Status</th>
-              <th style="width: 32%;">Actions</th>
+              <th style="width: 34%;">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -186,10 +187,11 @@
             <td style="white-space: nowrap;">
               <button class="btn btn-primary btn-sm" onclick="coach.showQRCode('${eventData}')" title="QR Code">📱</button>
               <button class="btn btn-secondary btn-sm" onclick="coach.editEvent('${eventData}')" title="Edit">✏️</button>
-              <button class="btn btn-secondary btn-sm" onclick="coach.addArchersToEvent('${ev.id}', '${ev.name}')" title="Add Archers">➕</button>
+              <button class="btn btn-secondary btn-sm" onclick="coach.addArchersToEvent('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Add Archers">➕</button>
               <button class="btn btn-primary btn-sm" onclick="coach.viewResults('${ev.id}')" title="Results">📊</button>
-              <button class="btn btn-secondary btn-sm" onclick="coach.manageBales('${ev.id}', '${ev.name}')" title="Manage Bales">⚙️</button>
-              <button class="btn btn-danger btn-sm" onclick="coach.deleteEvent('${ev.id}', '${ev.name}')" title="Delete">🗑️</button>
+              <button class="btn btn-primary btn-sm" onclick="coach.verifyEvent('${eventData}')" title="Verify Scorecards">🛡️</button>
+              <button class="btn btn-secondary btn-sm" onclick="coach.manageBales('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Manage Bales">⚙️</button>
+              <button class="btn btn-danger btn-sm" onclick="coach.deleteEvent('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Delete">🗑️</button>
             </td>
           </tr>
         `;
@@ -455,6 +457,359 @@
 
   function viewResults(eventId) {
     window.location.href = `results.html?event=${eventId}`;
+  }
+
+  // ==================== Verification Workflow ====================
+
+  async function loadVerifySnapshot() {
+    const snap = await req(`/events/${verifyState.eventId}/snapshot`, 'GET');
+    verifyState.snapshot = snap;
+  }
+
+  function getDivisionCodes() {
+    const divisions = verifyState.snapshot?.divisions || {};
+    return Object.keys(divisions);
+  }
+
+  function getBalesForDivision(divCode) {
+    const division = verifyState.snapshot?.divisions?.[divCode];
+    if (!division) return [];
+    const bales = new Set();
+    (division.archers || []).forEach(archer => {
+      if (archer.bale && Number(archer.bale) > 0) {
+        bales.add(Number(archer.bale));
+      }
+    });
+    return Array.from(bales).sort((a, b) => a - b);
+  }
+
+  function populateVerifySelectors() {
+    const divisionSelect = document.getElementById('verify-division-select');
+    const baleSelect = document.getElementById('verify-bale-select');
+
+    const divisions = getDivisionCodes();
+    divisionSelect.innerHTML = '';
+    if (divisions.length === 0) {
+      divisionSelect.innerHTML = '<option value="">No divisions</option>';
+      baleSelect.innerHTML = '<option value="">No bales</option>';
+      verifyState.division = null;
+      verifyState.bale = null;
+      return;
+    }
+
+    if (!verifyState.division || !divisions.includes(verifyState.division)) {
+      verifyState.division = divisions[0];
+    }
+
+    divisions.forEach(code => {
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = code;
+      if (code === verifyState.division) opt.selected = true;
+      divisionSelect.appendChild(opt);
+    });
+
+    const bales = getBalesForDivision(verifyState.division);
+    baleSelect.innerHTML = '';
+    if (bales.length === 0) {
+      baleSelect.innerHTML = '<option value="">No bales</option>';
+      verifyState.bale = null;
+    } else {
+      if (!verifyState.bale || !bales.includes(Number(verifyState.bale))) {
+        verifyState.bale = bales[0];
+      }
+      bales.forEach(num => {
+        const opt = document.createElement('option');
+        opt.value = num;
+        opt.textContent = `Bale ${num}`;
+        if (Number(verifyState.bale) === num) opt.selected = true;
+        baleSelect.appendChild(opt);
+      });
+    }
+  }
+
+  function formatStatusBadge(status) {
+    const normalized = (status || 'PENDING').toUpperCase();
+    let color = '#f1c40f';
+    if (normalized === 'VER') color = '#2ecc71';
+    if (normalized === 'VOID') color = '#e74c3c';
+    return `<span class="status-badge" style="background:${color};color:#fff;">${normalized}</span>`;
+  }
+
+  function formatTimestamp(ts) {
+    if (!ts) return '—';
+    try {
+      const d = new Date(ts.replace(' ', 'T'));
+      if (Number.isNaN(d.getTime())) return ts;
+      return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } catch (_) {
+      return ts;
+    }
+  }
+
+  function renderVerifyTable() {
+    const container = document.getElementById('verify-table-container');
+    if (!verifyState || !verifyState.snapshot) {
+      container.innerHTML = '<p style="padding:1rem;color:#7f8c8d;">No data loaded.</p>';
+      return;
+    }
+    if (!verifyState.division) {
+      container.innerHTML = '<p style="padding:1rem;color:#7f8c8d;">Select a division to begin verification.</p>';
+      return;
+    }
+    const division = verifyState.snapshot.divisions?.[verifyState.division];
+    if (!division) {
+      container.innerHTML = '<p style="padding:1rem;color:#e74c3c;">Division not found.</p>';
+      return;
+    }
+    const roundId = division.roundId;
+    if (!roundId) {
+      container.innerHTML = '<p style="padding:1rem;color:#e74c3c;">Round ID missing for this division.</p>';
+      return;
+    }
+
+    const baleNumber = verifyState.bale != null ? Number(verifyState.bale) : null;
+    const archers = (division.archers || []).filter(a => {
+        if (baleNumber === null) return true;
+        return Number(a.bale) === baleNumber;
+    });
+
+    if (archers.length === 0) {
+      container.innerHTML = '<p style="padding:1rem;color:#7f8c8d;">No archers assigned to this bale yet.</p>';
+      return;
+    }
+
+    const statusOrder = { 'PENDING': 0, 'VER': 1, 'VOID': 2 };
+    archers.sort((a, b) => {
+      const statusA = (a.cardStatus || 'PENDING').toUpperCase();
+      const statusB = (b.cardStatus || 'PENDING').toUpperCase();
+      if (statusOrder[statusA] !== statusOrder[statusB]) {
+        return statusOrder[statusA] - statusOrder[statusB];
+      }
+      return (a.target || '').localeCompare(b.target || '');
+    });
+
+    let html = `
+      <table class="score-table">
+        <thead>
+          <tr>
+            <th>Archer</th>
+            <th>Ends</th>
+            <th>Total</th>
+            <th>Last Sync</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    archers.forEach(a => {
+      const status = (a.cardStatus || 'PENDING').toUpperCase();
+      const locked = !!a.locked;
+      let actions = '';
+      if (status === 'VER' && locked) {
+        actions = `<button class="btn btn-secondary btn-sm" data-action="unlock" data-round-archer-id="${a.roundArcherId}">Unlock</button>`;
+      } else if (status === 'VOID') {
+        actions = `<button class="btn btn-secondary btn-sm" data-action="unlock" data-round-archer-id="${a.roundArcherId}">Reopen</button>`;
+      } else {
+        actions = `
+          <button class="btn btn-primary btn-sm" data-action="lock" data-round-archer-id="${a.roundArcherId}">Validate</button>
+          <button class="btn btn-danger btn-sm" data-action="void" data-round-archer-id="${a.roundArcherId}">Void</button>
+        `;
+      }
+
+      html += `
+        <tr>
+          <td>
+            <strong>${a.archerName || `${a.firstName || ''} ${a.lastName || ''}`}</strong><br>
+            <span style="font-size:0.75rem;color:#7f8c8d;">Target ${a.target || '—'} • Bale ${a.bale || '—'}</span>
+          </td>
+          <td>${a.endsCompleted || 0}</td>
+          <td>${a.runningTotal || 0}</td>
+          <td>${formatTimestamp(a.lastSyncTime)}</td>
+          <td>${formatStatusBadge(status)}</td>
+          <td style="white-space:nowrap;display:flex;gap:0.25rem;flex-wrap:wrap;">
+            ${actions}
+          </td>
+        </tr>
+      `;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-action]').forEach(btn => {
+      btn.onclick = async (e) => {
+        const action = e.currentTarget.dataset.action;
+        const roundArcherId = e.currentTarget.dataset.roundArcherId;
+        if (!roundArcherId) return;
+
+        if (action === 'void') {
+          const confirmVoid = confirm('Mark this scorecard as VOID? This hides it from leaderboards until reopened.');
+          if (!confirmVoid) return;
+        }
+        if (action === 'unlock') {
+          const confirmUnlock = confirm('Unlock this scorecard for edits? Verification status will reset.');
+          if (!confirmUnlock) return;
+        }
+
+        try {
+          const { verifiedBy, notes } = getVerifyInputs();
+          if (!verifiedBy && action !== 'unlock') {
+            alert('Enter who is verifying the scorecard before proceeding.');
+            return;
+          }
+          await req(`/round_archers/${roundArcherId}/verification`, 'POST', {
+            action,
+            verifiedBy,
+            notes
+          });
+          await loadVerifySnapshot();
+          populateVerifySelectors();
+          renderVerifyTable();
+        } catch (err) {
+          alert(`Verification error: ${err.message}`);
+        }
+      };
+    });
+  }
+
+  function getVerifyInputs() {
+    const verifiedBy = document.getElementById('verify-actor-input').value.trim();
+    const notes = document.getElementById('verify-notes-input').value.trim();
+    return { verifiedBy, notes };
+  }
+
+  async function handleLockAllForBale() {
+    if (!verifyState?.division || !verifyState?.bale) {
+      alert('Select a division and bale before locking.');
+      return;
+    }
+    const { verifiedBy, notes } = getVerifyInputs();
+    if (!verifiedBy) {
+      alert('Enter who is verifying before locking all.');
+      return;
+    }
+    const division = verifyState.snapshot.divisions?.[verifyState.division];
+    if (!division?.roundId) {
+      alert('Round ID missing for this division.');
+      return;
+    }
+    try {
+      const result = await req(`/rounds/${division.roundId}/verification/bale`, 'POST', {
+        baleNumber: Number(verifyState.bale),
+        verifiedBy,
+        notes
+      });
+      alert(`Locked ${result.lockedCount} scorecards on Bale ${verifyState.bale}.`);
+      await loadVerifySnapshot();
+      populateVerifySelectors();
+      renderVerifyTable();
+    } catch (err) {
+      alert(`Lock All failed: ${err.message}`);
+    }
+  }
+
+  async function handleVerifyAndCloseRound() {
+    if (!verifyState?.division) {
+      alert('Select a division first.');
+      return;
+    }
+    const { verifiedBy, notes } = getVerifyInputs();
+    if (!verifiedBy) {
+      alert('Enter who is verifying before closing the round.');
+      return;
+    }
+    const division = verifyState.snapshot.divisions?.[verifyState.division];
+    if (!division?.roundId) {
+      alert('Round ID missing for this division.');
+      return;
+    }
+    const confirmClose = confirm('Verify and close this round? Incomplete scorecards will be marked VOID.');
+    if (!confirmClose) return;
+    try {
+      const result = await req(`/rounds/${division.roundId}/verification/close`, 'POST', {
+        verifiedBy,
+        notes
+      });
+      alert(`Round status: ${result.status}. Verified: ${result.verifiedCards}, Voided: ${result.voidedCards}.`);
+      await loadVerifySnapshot();
+      populateVerifySelectors();
+      renderVerifyTable();
+    } catch (err) {
+      alert(`Close Round failed: ${err.message}`);
+    }
+  }
+
+  async function verifyEvent(encodedEventData) {
+    const event = JSON.parse(decodeURIComponent(encodedEventData));
+    verifyState = {
+      eventId: event.id,
+      eventName: event.name,
+      division: null,
+      bale: null,
+      snapshot: null
+    };
+    const modal = document.getElementById('verify-modal');
+    document.getElementById('verify-modal-title').textContent = `Verify Scorecards — ${event.name}`;
+    document.getElementById('verify-actor-input').value = '';
+    document.getElementById('verify-notes-input').value = '';
+
+    try {
+      await loadVerifySnapshot();
+      populateVerifySelectors();
+      renderVerifyTable();
+      modal.style.display = 'flex';
+    } catch (err) {
+      alert(`Unable to load verification data: ${err.message}`);
+    }
+
+    const divisionSelect = document.getElementById('verify-division-select');
+    const baleSelect = document.getElementById('verify-bale-select');
+    const refreshBtn = document.getElementById('verify-refresh-btn');
+    const closeBtn = document.getElementById('verify-modal-close-btn');
+    const lockAllBtn = document.getElementById('verify-lock-all-btn');
+    const closeRoundBtn = document.getElementById('verify-close-round-btn');
+
+    divisionSelect.onchange = () => {
+      verifyState.division = divisionSelect.value;
+      const bales = getBalesForDivision(verifyState.division);
+      if (bales.length > 0) {
+        verifyState.bale = bales.includes(Number(verifyState.bale)) ? verifyState.bale : bales[0];
+      } else {
+        verifyState.bale = null;
+      }
+      populateVerifySelectors();
+      renderVerifyTable();
+    };
+
+    baleSelect.onchange = () => {
+      verifyState.bale = baleSelect.value ? Number(baleSelect.value) : null;
+      renderVerifyTable();
+    };
+
+    refreshBtn.onclick = async () => {
+      try {
+        await loadVerifySnapshot();
+        populateVerifySelectors();
+        renderVerifyTable();
+      } catch (err) {
+        alert(`Refresh failed: ${err.message}`);
+      }
+    };
+
+    closeBtn.onclick = () => {
+      modal.style.display = 'none';
+    };
+
+    lockAllBtn.onclick = () => {
+      handleLockAllForBale();
+    };
+
+    closeRoundBtn.onclick = () => {
+      handleVerifyAndCloseRound();
+    };
   }
 
   // ==================== PHASE 0: Division Round Management ====================
@@ -1311,7 +1666,7 @@
     
     // PHASE 0 FIX: Setup reset button handler here (not on page load)
     document.getElementById('reset-event-data-btn').onclick = async () => {
-      const confirmMsg = 'Reset Event Data\n\nALL ENTERED SCORES WILL BE DELETED.\nScorecards (round_archers) and End data will be removed, rounds set back to Created.\n\nAre you sure?';
+      const confirmMsg = 'Reset Event Data\n\nALL ENTERED SCORES WILL BE DELETED.\nScorecards (round_archers) and End data will be removed, rounds set back to Not Started.\n\nAre you sure?';
       if (!confirm(confirmMsg)) return;
       
       try {
@@ -1437,7 +1792,8 @@
     deleteEvent,
     editEvent,
     manageBales,
-    showQRCode
+    showQRCode,
+    verifyEvent
   };
 
 })();

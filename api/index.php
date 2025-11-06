@@ -131,6 +131,69 @@ $slugify = function(string $s): string {
     return trim($s, '-');
 };
 
+function decode_lock_history(?string $raw): array {
+    if (!$raw) return [];
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function process_round_archer_verification(PDO $pdo, string $roundArcherId, string $action, string $verifiedBy = '', string $notes = ''): array {
+    $stmt = $pdo->prepare('SELECT ra.*, r.event_id FROM round_archers ra JOIN rounds r ON r.id = ra.round_id WHERE ra.id = ? LIMIT 1');
+    $stmt->execute([$roundArcherId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$row) {
+        throw new Exception('Scorecard not found', 404);
+    }
+
+    if (empty($row['event_id'])) {
+        throw new Exception('Practice scorecards are not part of verification workflow', 400);
+    }
+
+    $action = strtolower($action);
+    $actor = $verifiedBy !== '' ? $verifiedBy : 'Coach';
+    $timestamp = date('Y-m-d H:i:s');
+    $history = decode_lock_history($row['lock_history'] ?? null);
+
+    if (!in_array($action, ['lock', 'unlock', 'void'], true)) {
+        throw new Exception('Invalid action', 400);
+    }
+
+    if ($action === 'lock') {
+        if ((bool)$row['locked']) {
+            throw new Exception('Scorecard already locked', 409);
+        }
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM end_events WHERE round_archer_id = ?');
+        $countStmt->execute([$roundArcherId]);
+        if ((int)$countStmt->fetchColumn() === 0) {
+            throw new Exception('Cannot verify an empty scorecard', 409);
+        }
+        $history[] = ['action' => 'lock', 'actor' => $actor, 'timestamp' => $timestamp];
+        $update = $pdo->prepare('UPDATE round_archers SET locked = 1, completed = 1, card_status = ?, verified_by = ?, verified_at = ?, notes = ?, lock_history = ? WHERE id = ?');
+        $newNotes = ($notes !== '') ? $notes : ($row['notes'] ?? null);
+        $update->execute(['VER', $actor, $timestamp, $newNotes, json_encode($history), $roundArcherId]);
+    } elseif ($action === 'unlock') {
+        if (!(bool)$row['locked'] && $row['card_status'] !== 'VOID') {
+            throw new Exception('Scorecard is not locked', 409);
+        }
+        $history[] = ['action' => 'unlock', 'actor' => $actor, 'timestamp' => $timestamp];
+        $update = $pdo->prepare('UPDATE round_archers SET locked = 0, completed = 0, card_status = ?, verified_by = NULL, verified_at = NULL, notes = ?, lock_history = ? WHERE id = ?');
+        $newNotes = ($notes !== '') ? $notes : ($row['notes'] ?? null);
+        $update->execute(['PENDING', $newNotes, json_encode($history), $roundArcherId]);
+    } else { // void
+        $history[] = ['action' => 'void', 'actor' => $actor, 'timestamp' => $timestamp];
+        $update = $pdo->prepare('UPDATE round_archers SET locked = 1, completed = 1, card_status = ?, verified_by = ?, verified_at = ?, notes = ?, lock_history = ? WHERE id = ?');
+        $voidNotes = ($notes !== '') ? $notes : 'VOID';
+        $update->execute(['VOID', $actor, $timestamp, $voidNotes, json_encode($history), $roundArcherId]);
+    }
+
+    $refetch = $pdo->prepare('SELECT ra.id, ra.round_id, ra.locked, ra.card_status, ra.verified_by, ra.verified_at, ra.notes, ra.lock_history FROM round_archers ra WHERE ra.id = ? LIMIT 1');
+    $refetch->execute([$roundArcherId]);
+    $updated = $refetch->fetch(PDO::FETCH_ASSOC);
+    $updated['lock_history'] = decode_lock_history($updated['lock_history'] ?? null);
+    return $updated;
+}
+
 // Normalize archer field values
 $normalizeArcherField = function($field, $value) {
     if ($value === null || $value === '') return null;
@@ -962,12 +1025,215 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)/ends$#i', $route,
     $deviceTs = $input['deviceTs'] ?? null;
     if ($end < 1) { json_response(['error' => 'endNumber required'], 400); exit; }
     $pdo = db();
+    $cardCheck = $pdo->prepare('SELECT ra.round_id, ra.locked, r.event_id FROM round_archers ra JOIN rounds r ON r.id = ra.round_id WHERE ra.id = ? LIMIT 1');
+    $cardCheck->execute([$roundArcherId]);
+    $cardData = $cardCheck->fetch();
+    if (!$cardData) {
+        json_response(['error' => 'Scorecard not found'], 404);
+        exit;
+    }
+    if (strcasecmp($cardData['round_id'], $roundId) !== 0) {
+        json_response(['error' => 'Scorecard does not belong to this round'], 400);
+        exit;
+    }
+    if (!empty($cardData['event_id']) && (bool)$cardData['locked']) {
+        json_response(['error' => 'Scorecard is locked'], 423);
+        exit;
+    }
     // Upsert by (round_archer_id, end_number)
     $sql = 'INSERT INTO end_events (round_id,round_archer_id,end_number,a1,a2,a3,end_total,running_total,tens,xs,device_ts,server_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW())
             ON DUPLICATE KEY UPDATE a1=VALUES(a1),a2=VALUES(a2),a3=VALUES(a3),end_total=VALUES(end_total),running_total=VALUES(running_total),tens=VALUES(tens),xs=VALUES(xs),device_ts=VALUES(device_ts),server_ts=NOW()';
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$roundId,$roundArcherId,$end,$a1,$a2,$a3,$endTotal,$running,$tens,$xs,$deviceTs]);
     json_response(['ok' => true]);
+    exit;
+}
+
+if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/verification$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $roundArcherId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $action = $input['action'] ?? 'lock';
+    $verifiedBy = trim($input['verifiedBy'] ?? '');
+    $notes = trim($input['notes'] ?? '');
+
+    try {
+        $pdo = db();
+        $result = process_round_archer_verification($pdo, $roundArcherId, $action, $verifiedBy, $notes);
+        json_response([
+            'roundArcherId' => $result['id'],
+            'roundId' => $result['round_id'],
+            'locked' => (bool)$result['locked'],
+            'cardStatus' => $result['card_status'],
+            'verifiedBy' => $result['verified_by'],
+            'verifiedAt' => $result['verified_at'],
+            'notes' => $result['notes'],
+            'history' => $result['lock_history']
+        ]);
+    } catch (Exception $e) {
+        $status = $e->getCode();
+        if ($status < 100 || $status > 599) $status = 400;
+        json_response(['error' => $e->getMessage()], $status);
+    }
+    exit;
+}
+
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)/verification/bale$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $roundId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $baleNumber = (int)($input['baleNumber'] ?? 0);
+    $verifiedBy = trim($input['verifiedBy'] ?? '');
+    $notes = trim($input['notes'] ?? '');
+
+    if ($baleNumber <= 0) {
+        json_response(['error' => 'baleNumber is required'], 400);
+        exit;
+    }
+
+    try {
+        $pdo = db();
+        $roundStmt = $pdo->prepare('SELECT id, event_id FROM rounds WHERE id = ? LIMIT 1');
+        $roundStmt->execute([$roundId]);
+        $round = $roundStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$round) {
+            throw new Exception('Round not found', 404);
+        }
+        if (empty($round['event_id'])) {
+            throw new Exception('Practice rounds are not part of verification workflow', 400);
+        }
+
+        $archerStmt = $pdo->prepare('SELECT id, archer_name, locked, card_status FROM round_archers WHERE round_id = ? AND bale_number = ?');
+        $archerStmt->execute([$roundId, $baleNumber]);
+        $archers = $archerStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($archers)) {
+            throw new Exception('No scorecards found for this bale', 404);
+        }
+
+        $missing = [];
+        foreach ($archers as $archer) {
+            if ($archer['card_status'] === 'VOID') {
+                continue;
+            }
+            if ((bool)$archer['locked']) {
+                continue;
+            }
+            $countStmt = $pdo->prepare('SELECT COUNT(*) FROM end_events WHERE round_archer_id = ?');
+            $countStmt->execute([$archer['id']]);
+            if ((int)$countStmt->fetchColumn() === 0) {
+                $missing[] = $archer['archer_name'];
+            }
+        }
+
+        if (!empty($missing)) {
+            throw new Exception('Some archers have no synced scores: ' . implode(', ', $missing), 409);
+        }
+
+        $locked = [];
+        foreach ($archers as $archer) {
+            if ($archer['card_status'] === 'VOID') {
+                continue;
+            }
+            if ((bool)$archer['locked']) {
+                $locked[] = [
+                    'roundArcherId' => $archer['id'],
+                    'cardStatus' => $archer['card_status'],
+                    'locked' => true
+                ];
+                continue;
+            }
+            $result = process_round_archer_verification($pdo, $archer['id'], 'lock', $verifiedBy, $notes);
+            $locked[] = [
+                'roundArcherId' => $result['id'],
+                'cardStatus' => $result['card_status'],
+                'locked' => (bool)$result['locked']
+            ];
+        }
+
+        json_response([
+            'roundId' => $roundId,
+            'baleNumber' => $baleNumber,
+            'lockedCount' => count($locked),
+            'details' => $locked
+        ]);
+    } catch (Exception $e) {
+        $status = $e->getCode();
+        if ($status < 100 || $status > 599) $status = 400;
+        json_response(['error' => $e->getMessage()], $status);
+    }
+    exit;
+}
+
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)/verification/close$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $roundId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $verifiedBy = trim($input['verifiedBy'] ?? '');
+    $notes = trim($input['notes'] ?? '');
+
+    try {
+        $pdo = db();
+        $roundStmt = $pdo->prepare('SELECT id, event_id FROM rounds WHERE id = ? LIMIT 1');
+        $roundStmt->execute([$roundId]);
+        $round = $roundStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$round) {
+            throw new Exception('Round not found', 404);
+        }
+        if (empty($round['event_id'])) {
+            throw new Exception('Practice rounds are not part of verification workflow', 400);
+        }
+
+        $archerStmt = $pdo->prepare('SELECT id, card_status FROM round_archers WHERE round_id = ?');
+        $archerStmt->execute([$roundId]);
+        $archers = $archerStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (empty($archers)) {
+            throw new Exception('No scorecards found for this round', 404);
+        }
+
+        $locked = 0;
+        $voided = 0;
+
+        foreach ($archers as $archer) {
+            $cardStatus = $archer['card_status'] ?? 'PENDING';
+            if ($cardStatus === 'VOID') {
+                $voided++;
+                continue;
+            }
+
+            $countStmt = $pdo->prepare('SELECT COUNT(*) FROM end_events WHERE round_archer_id = ?');
+            $countStmt->execute([$archer['id']]);
+            $hasScores = (int)$countStmt->fetchColumn() > 0;
+
+            if ($hasScores) {
+                $result = process_round_archer_verification($pdo, $archer['id'], 'lock', $verifiedBy, $notes);
+                if ($result['card_status'] === 'VER') {
+                    $locked++;
+                }
+            } else {
+                $voidResult = process_round_archer_verification($pdo, $archer['id'], 'void', $verifiedBy, $notes);
+                if ($voidResult['card_status'] === 'VOID') {
+                    $voided++;
+                }
+            }
+        }
+
+        $roundStatus = ($voided > 0) ? 'Voided' : 'Completed';
+        $updateRound = $pdo->prepare('UPDATE rounds SET status = ? WHERE id = ?');
+        $updateRound->execute([$roundStatus, $roundId]);
+
+        json_response([
+            'roundId' => $roundId,
+            'status' => $roundStatus,
+            'verifiedCards' => $locked,
+            'voidedCards' => $voided
+        ]);
+    } catch (Exception $e) {
+        $status = $e->getCode();
+        if ($status < 100 || $status > 599) $status = 400;
+        json_response(['error' => $e->getMessage()], $status);
+    }
     exit;
 }
 
@@ -1062,7 +1328,7 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
             // Create division round
             $roundId = $genUuid();
             $pdo->prepare('INSERT INTO rounds (id,event_id,round_type,division,gender,level,date,status,created_at) VALUES (?,?,?,?,?,?,?,?,NOW())')
-                ->execute([$roundId, $eventId, $roundType, $div['code'], $div['gender'], $div['level'], $date, 'Created']);
+                ->execute([$roundId, $eventId, $roundType, $div['code'], $div['gender'], $div['level'], $date, 'Not Started']);
             
             $roundInfo = [
                 'roundId' => $roundId,
@@ -1285,7 +1551,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/archers_OLD_DISABLED$#i', $route, $m) 
                 // Create round
                 $roundId = $genUuid();
                 $pdo->prepare('INSERT INTO rounds (id,event_id,round_type,division,gender,level,date,status,created_at) VALUES (?,?,?,?,?,?,?,?,NOW())')
-                    ->execute([$roundId, $eventId, 'R300', $divCode, $div['gender'], $div['level'], $event['date'], 'Created']);
+                    ->execute([$roundId, $eventId, 'R300', $divCode, $div['gender'], $div['level'], $event['date'], 'Not Started']);
             }
             
             // Add archers to round
@@ -1496,7 +1762,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/reset$#i', $route, $m) && $method === 
         $pdo->prepare("DELETE FROM end_events WHERE round_id IN ($placeholders)")->execute($roundIds);
         $pdo->prepare("DELETE FROM round_archers WHERE round_id IN ($placeholders)")->execute($roundIds);
         // Keep rounds so coaches can reuse the event schedule; set status back to Created
-        $pdo->prepare("UPDATE rounds SET status='Created' WHERE id IN ($placeholders)")->execute($roundIds);
+        $pdo->prepare("UPDATE rounds SET status='Not Started' WHERE id IN ($placeholders)")->execute($roundIds);
         json_response(['ok' => true, 'message' => 'All entered scores deleted. Rounds reset to Created.']);
     } catch (Exception $e) {
         error_log("Event reset failed: " . $e->getMessage());
@@ -1579,7 +1845,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/rounds$#i', $route, $m) && $method ===
             // Create round
             $roundId = $genUuid();
             $pdo->prepare('INSERT INTO rounds (id, event_id, round_type, division, gender, level, date, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())')
-                ->execute([$roundId, $eventId, $roundType, $division, $gender, $level, $event['date'], 'Created']);
+                ->execute([$roundId, $eventId, $roundType, $division, $gender, $level, $event['date'], 'Not Started']);
             
             $created[] = [
                 'roundId' => $roundId,
@@ -1847,7 +2113,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
     }
     
     // Get division rounds for this event
-    $rounds = $pdo->prepare('SELECT id, round_type as roundType, division, gender, level, status FROM rounds WHERE event_id=? ORDER BY 
+    $rounds = $pdo->prepare('SELECT id, event_id, round_type as roundType, division, gender, level, status FROM rounds WHERE event_id=? ORDER BY 
         CASE division 
             WHEN \'BVAR\' THEN 1 
             WHEN \'GVAR\' THEN 2 
@@ -1870,7 +2136,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
             SELECT ra.id as roundArcherId, ra.archer_name as archerName, 
                    a.first_name as firstName, a.last_name as lastName,
                    ra.school, ra.gender, ra.level, 
-                   ra.target_assignment as target, ra.bale_number as bale, ra.completed, ra.archer_id
+                   ra.target_assignment as target, ra.bale_number as bale, ra.completed, ra.archer_id,
+                   ra.locked, ra.card_status, ra.verified_by, ra.verified_at, ra.notes
             FROM round_archers ra
             LEFT JOIN archers a ON a.id = ra.archer_id
             WHERE ra.round_id=? 
@@ -1988,6 +2255,11 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
                 'tens' => $totalTens,
                 'xs' => $totalXs,
                 'completed' => (bool)$a['completed'],
+                'locked' => (bool)$a['locked'],
+                'cardStatus' => $a['card_status'],
+                'verifiedBy' => $a['verified_by'],
+                'verifiedAt' => $a['verified_at'],
+                'notes' => $a['notes'],
                 'lastSyncTime' => $lastSyncTime,
                 'scorecard' => [
                     'ends' => $ends
@@ -1998,6 +2270,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
         
         $divisions[$divCode] = [
             'roundId' => $r['id'],
+            'eventId' => $r['event_id'],
             'roundType' => $r['roundType'],
             'division' => $divCode,
             'status' => $r['status'],
