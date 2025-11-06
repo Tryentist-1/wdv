@@ -139,18 +139,22 @@ test.describe('Scorecard Verification Features', () => {
       
       // Wait for modal to be visible (with longer timeout for async loading)
       // The modal might take time to load snapshot data
-      await page.waitForSelector('#verify-modal', { state: 'visible', timeout: 10000 }).catch(() => {
-        // If modal doesn't show, check if it exists but is hidden (error case)
+      let modalVisible = false;
+      try {
+        await page.waitForSelector('#verify-modal', { state: 'visible', timeout: 10000 });
+        modalVisible = true;
+      } catch (e) {
+        // Modal didn't show - check if it exists but is hidden (error case)
         const modal = page.locator('#verify-modal');
-        if (await modal.count() > 0) {
+        const count = await modal.count();
+        if (count > 0) {
           console.log('Modal exists but is hidden - likely snapshot load error');
         }
-      });
+        modalVisible = false;
+      }
       
       // Check if modal is visible (might fail if snapshot load errored)
-      const modal = page.locator('#verify-modal');
-      const isVisible = await modal.isVisible();
-      if (isVisible) {
+      if (modalVisible) {
         await expect(page.locator('#verify-modal-title')).toBeVisible();
       } else {
         // Skip test if no events/data available
