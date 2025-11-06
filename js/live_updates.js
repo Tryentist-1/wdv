@@ -111,11 +111,27 @@
     // --- CORE FUNCTIONS ---
     function setConfig(overrides) {
         const stored = JSON.parse(localStorage.getItem('live_updates_config') || '{}');
+        const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        const detectedApiBase = getApiBase();
+        
+        // If on localhost, don't use stored production URL
+        if (isLocalhost && stored.apiBase && stored.apiBase.includes('tryentist.com')) {
+            delete stored.apiBase;
+        }
+        
         Object.assign(state.config, stored || {}, overrides || {});
+        
+        // Always use detected API base when on localhost (unless explicitly overridden)
+        if (isLocalhost && !overrides?.apiBase) {
+            state.config.apiBase = detectedApiBase;
+        }
+        
         // Persist (default enabled=true unless explicitly set)
         try {
             const toStore = Object.assign({}, stored, overrides || {}, { 
-                enabled: (overrides && typeof overrides.enabled !== 'undefined') ? !!overrides.enabled : (stored.enabled !== undefined ? stored.enabled : true) 
+                enabled: (overrides && typeof overrides.enabled !== 'undefined') ? !!overrides.enabled : (stored.enabled !== undefined ? stored.enabled : true),
+                // Always store detected API base when on localhost
+                apiBase: (isLocalhost && !overrides?.apiBase) ? detectedApiBase : (overrides?.apiBase || stored.apiBase || detectedApiBase)
             });
             localStorage.setItem('live_updates_config', JSON.stringify(toStore));
         } catch (_) {}
@@ -339,17 +355,26 @@
         // Always detect API base based on current hostname (prioritize detection over stored config)
         // This ensures localhost detection works even if a production URL was previously stored
         const detectedApiBase = getApiBase();
+        const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        
+        // If on localhost and stored config has production URL, clear it to force detection
+        if (isLocalhost && storedConfig.apiBase && storedConfig.apiBase.includes('tryentist.com')) {
+            console.log('[LiveUpdates] Clearing stale production API URL from localStorage (detected localhost)');
+            delete storedConfig.apiBase;
+        }
+        
         const config = {
             ...storedConfig,
             ...overrides,
             // Priority: 1) override, 2) detected (based on current hostname), 3) stored (if detection matches stored)
             apiBase: overrides?.apiBase || detectedApiBase || storedConfig.apiBase || 'https://tryentist.com/wdv/api/v1'
         };
-        // If stored config has a different apiBase than detected, update it to detected value
-        // This ensures localhost detection always works, even with cached production URL
-        if (storedConfig.apiBase && storedConfig.apiBase !== detectedApiBase && !overrides?.apiBase) {
+        
+        // Always use detected API base when on localhost (even if override provided, unless explicitly different)
+        if (isLocalhost && !overrides?.apiBase) {
             config.apiBase = detectedApiBase;
         }
+        
         setConfig(config);
         loadPersistedState();  // Restore roundId and archerIds from previous session
     }

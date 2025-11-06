@@ -9,6 +9,23 @@
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>OAS Ranking Round (300)</title>
     <link rel="stylesheet" href="css/main.css?v=20250922b" onerror="console.error('Failed to load main.css')">
+    <script>
+        // Clear stale production API URL from localStorage when running on localhost
+        (function() {
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                try {
+                    const config = JSON.parse(localStorage.getItem('live_updates_config') || '{}');
+                    if (config.apiBase && config.apiBase.includes('tryentist.com')) {
+                        console.log('[Localhost Detection] Clearing stale production API URL from localStorage');
+                        delete config.apiBase;
+                        localStorage.setItem('live_updates_config', JSON.stringify(config));
+                    }
+                } catch (e) {
+                    // Ignore errors
+                }
+            }
+        })();
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
