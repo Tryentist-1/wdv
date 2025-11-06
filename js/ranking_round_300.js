@@ -6,8 +6,15 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // API Configuration
-    const API_BASE = 'https://tryentist.com/wdv/api/v1';
+    // API Configuration - Detect localhost for local dev
+    const getApiBase = () => {
+        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            const port = window.location.port || '8001';
+            return `${window.location.protocol}//${window.location.hostname}:${port}/api/index.php/v1`;
+        }
+        return 'https://tryentist.com/wdv/api/v1';
+    };
+    const API_BASE = getApiBase();
 
     // Check for URL parameters (event and code for QR code access)
     const urlParams = new URLSearchParams(window.location.search);
@@ -3131,7 +3138,7 @@ async function ensureLiveRoundReady(options = {}) {
 
     try {
         const cfg = window.LIVE_UPDATES || {};
-        LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1' });
+        LiveUpdates.setConfig({ apiBase: cfg.apiBase || API_BASE });
 
         let metaConfig = {};
         try { metaConfig = JSON.parse(localStorage.getItem('live_updates_config') || '{}'); } catch (_) {}
@@ -4108,7 +4115,7 @@ function updateManualLiveControls(summaryOverride) {
             const cfg = window.LIVE_UPDATES || {};
             let isEnabled = true;  // Default ON
             try { const storedCfg = JSON.parse(localStorage.getItem('live_updates_config')||'{}'); isEnabled = storedCfg.enabled !== undefined ? !!storedCfg.enabled : true; } catch(_) {}
-            LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1', apiKey: cfg.apiKey || '' });
+            LiveUpdates.setConfig({ apiBase: cfg.apiBase || API_BASE, apiKey: cfg.apiKey || '' });
 
             const onStartScoring = () => {
                 if (!LiveUpdates || !LiveUpdates._state || !LiveUpdates.setConfig) return;

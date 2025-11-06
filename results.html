@@ -164,7 +164,17 @@
   </footer>
 
   <script>
-    const API_BASE = 'https://tryentist.com/wdv/api/v1';
+    function getApiBase() {
+      // Detect localhost environments; default to production otherwise
+      const { protocol, hostname, port } = window.location;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        const resolvedPort = port || '8001';
+        return `${protocol}//${hostname}:${resolvedPort}/api/index.php/v1`;
+      }
+      return 'https://tryentist.com/wdv/api/v1';
+    }
+
+    const API_BASE = getApiBase();
     const urlParams = new URLSearchParams(window.location.search);
     const eventId = urlParams.get('event');
 

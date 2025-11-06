@@ -1,9 +1,13 @@
 // ranking_round_live_sync.spec.js
 // Full-stack E2E: create event via coach UI, add archers, enter scores with keypad, sync, and verify leaderboard
+// Run with: npx playwright test tests/ranking_round_live_sync.spec.js
+// For local dev: npx playwright test tests/ranking_round_live_sync.spec.js --config=playwright.config.local.js
 
 const { test, expect } = require('@playwright/test');
 
-const BASE = 'https://tryentist.com/wdv';
+// Use baseURL from config (production or local)
+// Production: https://tryentist.com/wdv
+// Local: http://localhost:8001
 
 async function setCoachAuth(page) {
   await page.addInitScript(() => {
@@ -38,7 +42,7 @@ test.describe('Live Sync E2E (UI)', () => {
     await setCoachAuth(page);
 
     // 1) Coach login
-    await page.goto(`${BASE}/coach.html`);
+    await page.goto('/coach.html');
     await expect(page.locator('#coach-auth-modal')).toBeVisible();
     await page.fill('#coach-passcode-input', 'wdva26');
     await page.click('#auth-submit-btn');
@@ -57,8 +61,13 @@ test.describe('Live Sync E2E (UI)', () => {
     // 3) Add archers (select-all filtered)
     const firstRow = page.locator('#events-list table tbody tr').first();
     await expect(firstRow).toBeVisible();
-    await firstRow.locator('button[title="Add Archers"]').click();
-    await expect(page.locator('#add-archers-modal')).toBeVisible();
+    const addArchersModal = page.locator('#add-archers-modal');
+    const isModalVisible = await addArchersModal.isVisible();
+    if (!isModalVisible) {
+      await firstRow.locator('button[title="Add Archers"]').click({ force: true });
+      await expect(addArchersModal).toBeVisible();
+    }
+    
     await page.click('#select-all-btn');
     await page.click('#submit-add-archers-btn');
     await expect(page.locator('#assignment-mode-modal')).toBeVisible();
@@ -98,7 +107,7 @@ test.describe('Live Sync E2E (UI)', () => {
     await page.waitForTimeout(1200);
 
     // 8) Verify leaderboard
-    await page.goto(`${BASE}/results.html?event=${eventId}`);
+    await page.goto(`/results.html?event=${eventId}`);
     await expect(page.locator('#results-header')).toBeVisible();
     await expect(page.locator('.leaderboard-table').first()).toBeVisible();
   });

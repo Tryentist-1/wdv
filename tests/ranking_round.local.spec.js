@@ -1,14 +1,26 @@
 // Playwright test for Ranking Round - LOCAL VERSION (Updated for new UI/UX design)
-// Tests against local files before deployment
+// Tests against local dev server (localhost:8001) with local database
 // Run with: npx playwright test tests/ranking_round.local.spec.js --config=playwright.config.local.js
+// Or: npm run test:local
 
 const { test, expect } = require('@playwright/test');
 
 test.describe('Ranking Round - Local Testing', () => {
   
+  test.beforeEach(async ({ page }) => {
+    // Ensure no stale configuration from previous runs
+    await page.addInitScript(() => {
+      try {
+        localStorage.removeItem('live_updates_config');
+      } catch (err) {
+        console.warn('Unable to clear live_updates_config', err);
+      }
+    });
+  });
+
   test('should show modal on fresh start (LOCAL)', async ({ page }) => {
-    // Test local file
-    await page.goto('http://localhost:8000/ranking_round_300.html');
+    // Test local dev server (uses baseURL from config)
+    await page.goto('/ranking_round_300.html');
     
     // Modal should be visible
     const modal = page.locator('#event-modal');
@@ -20,28 +32,54 @@ test.describe('Ranking Round - Local Testing', () => {
   });
   
   test('should load JavaScript correctly (LOCAL)', async ({ page }) => {
-    await page.goto('http://localhost:8000/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     
-    // Check that JavaScript loaded (API_BASE should be defined)
-    const apiBaseExists = await page.evaluate(() => {
-      return typeof API_BASE !== 'undefined';
+    // Wait for page to load and LiveUpdates to initialize
+    await page.waitForTimeout(500);
+    
+    // Check that LiveUpdates is available (indicates JavaScript loaded)
+    const liveUpdatesExists = await page.evaluate(() => {
+      return typeof window.LiveUpdates !== 'undefined' && window.LiveUpdates._state !== undefined;
     });
     
-    // This will fail if API_BASE is not defined
-    expect(apiBaseExists).toBeTruthy();
+    // This will fail if JavaScript didn't load or LiveUpdates isn't initialized
+    expect(liveUpdatesExists).toBeTruthy();
   });
   
-  test('should have correct cache busters (LOCAL)', async ({ page }) => {
-    const response = await page.goto('http://localhost:8000/ranking_round_300.html');
-    const content = await response.text();
+  test('should connect to local API (LOCAL)', async ({ page }) => {
+    await page.goto('/ranking_round_300.html');
     
-    // Check for latest cache buster
-    expect(content).toContain('ranking_round_300.js?v=20251021');
-    expect(content).not.toContain('ranking_round_300.js?v=20250922');
+    // Wait for page initialization and LiveUpdates config
+    await page.waitForTimeout(1000);
+    
+    // Inspect resolved API base (supports localhost, staging, production)
+    const apiInfo = await page.evaluate(() => {
+      const config = window.LiveUpdates && window.LiveUpdates._state && window.LiveUpdates._state.config
+        ? window.LiveUpdates._state.config
+        : null;
+      if (!config || !config.apiBase) return null;
+      try {
+        const url = new URL(config.apiBase, window.location.origin);
+        return {
+          apiBase: config.apiBase,
+          hostname: url.hostname,
+          protocol: url.protocol,
+          pathname: url.pathname
+        };
+      } catch (err) {
+        return { apiBase: config.apiBase, error: err.message };
+      }
+    });
+    
+    expect(apiInfo).toBeTruthy();
+    expect(apiInfo.apiBase).toBeTruthy();
+    expect(apiInfo.error || '').toBe('');
+    expect(apiInfo.protocol === 'http:' || apiInfo.protocol === 'https:').toBeTruthy();
+    expect(/\/api\//.test(apiInfo.pathname)).toBeTruthy();
   });
   
   test('should show manual setup section when canceling modal (LOCAL)', async ({ page }) => {
-    await page.goto('http://localhost:8000/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     
     // Cancel modal to enter manual mode
     await page.click('#cancel-event-modal-btn');
@@ -57,7 +95,7 @@ test.describe('Ranking Round - Local Testing', () => {
   });
   
   test('should have new setup section elements (LOCAL)', async ({ page }) => {
-    await page.goto('http://localhost:8000/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     
     // Check that new HTML elements exist
     await expect(page.locator('#manual-setup-section')).toBeAttached();

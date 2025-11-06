@@ -3,8 +3,13 @@ const { defineConfig, devices } = require('@playwright/test');
 
 /**
  * Local testing configuration
- * Tests against local files using file:// protocol
+ * Tests against local dev server (localhost:8001)
  * Run with: npx playwright test --config=playwright.config.local.js
+ * 
+ * This config:
+ * - Starts a local PHP server on localhost:8001
+ * - Uses the local dev database (from config.local.php)
+ * - Tests against local files served via HTTP
  */
 module.exports = defineConfig({
   testDir: './tests',
@@ -13,14 +18,10 @@ module.exports = defineConfig({
   reporter: 'list',
   
   use: {
-    // Use local file system
-    baseURL: 'file:///Users/terry/web-mirrors/tryentist/wdv',
+    // Use local PHP server (matches npm run serve)
+    baseURL: 'http://localhost:8001',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    
-    // For local API calls, you might need to mock or use localhost
-    // If you run a local PHP server:
-    // baseURL: 'http://localhost:8001',
   },
   
   projects: [
@@ -30,12 +31,14 @@ module.exports = defineConfig({
     },
   ],
   
-  // Start local PHP server before tests (optional)
+  // Start local PHP server before tests
   webServer: {
     command: 'cd /Users/terry/web-mirrors/tryentist/wdv && php -S localhost:8001',
     url: 'http://localhost:8001',
     reuseExistingServer: !process.env.CI,
     timeout: 10000,
+    stdout: 'ignore',
+    stderr: 'pipe',
   },
 });
 

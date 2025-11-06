@@ -56,31 +56,76 @@ try {
     die("Database connection failed: " . $e->getMessage());
 }
 
-// Migration configuration
-$migrations = [
-    'fix_undefined_division_tryout_round2' => [
-        'name' => 'Fix Undefined Division - Tryout Round 2',
-        'description' => 'Move 18 archers from undefined round to OPEN division',
-        'undefined_round_id' => '9319e5c5-1afb-4856-bb8c-b613105bfec0',
-        'target_round_id' => 'fa473a27-989d-4f6a-ba6f-92ef36642364',
-        'event_id' => '87b0fdc6-8b0a-484b-9e15-cf58e2533e4d',
-        'event_name' => 'Tryout Round 2'
-    ]
-];
+// Auto-detect undefined rounds and their target rounds
+function detectUndefinedRounds($pdo) {
+    // Find all undefined rounds
+    $stmt = $pdo->query("
+        SELECT 
+            r.id as undefined_round_id,
+            r.event_id,
+            e.name as event_name,
+            e.date as event_date,
+            COUNT(DISTINCT ra.id) as archer_count,
+            COUNT(DISTINCT ee.id) as score_count
+        FROM rounds r
+        LEFT JOIN events e ON e.id = r.event_id
+        LEFT JOIN round_archers ra ON ra.round_id = r.id
+        LEFT JOIN end_events ee ON ee.round_id = r.id
+        WHERE (r.division IS NULL OR r.division = '' OR r.division = 'Undefined')
+        GROUP BY r.id, r.event_id, e.name, e.date
+        ORDER BY e.date DESC, r.created_at DESC
+    ");
+    $undefinedRounds = $stmt->fetchAll();
+    
+    $migrations = [];
+    foreach ($undefinedRounds as $round) {
+        // Find the OPEN round for the same event (target)
+        $targetStmt = $pdo->prepare("
+            SELECT id, division
+            FROM rounds
+            WHERE event_id = ? AND division = 'OPEN'
+            LIMIT 1
+        ");
+        $targetStmt->execute([$round['event_id']]);
+        $targetRound = $targetStmt->fetch();
+        
+        if ($targetRound) {
+            $migrationId = 'fix_undefined_' . str_replace('-', '_', $round['undefined_round_id']);
+            $migrations[$migrationId] = [
+                'name' => "Fix Undefined Division - {$round['event_name']}",
+                'description' => "Move {$round['archer_count']} archers from undefined round to OPEN division",
+                'undefined_round_id' => $round['undefined_round_id'],
+                'target_round_id' => $targetRound['id'],
+                'event_id' => $round['event_id'],
+                'event_name' => $round['event_name'] ?? 'Unknown Event',
+                'event_date' => $round['event_date'] ?? ''
+            ];
+        }
+    }
+    
+    return $migrations;
+}
 
-$action = $_POST['action'] ?? 'preview';
-$migrationId = $_POST['migration_id'] ?? 'fix_undefined_division_tryout_round2';
-$migration = $migrations[$migrationId] ?? null;
+// Get all available migrations (auto-detected)
+$allMigrations = detectUndefinedRounds($pdo);
 
-if (!$migration) {
-    die("Invalid migration ID");
+$action = $_POST['action'] ?? 'list';
+$migrationId = $_POST['migration_id'] ?? '';
+$migration = null;
+
+if ($migrationId && isset($allMigrations[$migrationId])) {
+    $migration = $allMigrations[$migrationId];
+} elseif ($action === 'preview' || $action === 'execute') {
+    // If action is preview/execute but no valid migration, show error
+    $error = "Invalid migration ID. Please select a migration from the list.";
+    $action = 'list';
 }
 
 // Execute action
 $result = null;
 $error = null;
 
-if ($action === 'preview') {
+if ($action === 'preview' && $migration) {
     // Preview what will be changed
     try {
         $preview = [];
@@ -159,7 +204,7 @@ if ($action === 'preview') {
         $error = "Preview failed: " . $e->getMessage();
     }
     
-} elseif ($action === 'execute') {
+} elseif ($action === 'execute' && $migration) {
     // Execute the migration
     try {
         $pdo->beginTransaction();
@@ -213,12 +258,12 @@ if ($action === 'preview') {
             'verification' => $verification
         ];
         
-        error_log("Migration executed: {$migration['name']} - " . json_encode($changes));
+        error_log("Migration executed: " . ($migration['name'] ?? 'Unknown') . " - " . json_encode($changes));
         
     } catch (Exception $e) {
         $pdo->rollBack();
         $error = "Migration failed: " . $e->getMessage();
-        error_log("Migration failed: {$migration['name']} - " . $e->getMessage());
+        error_log("Migration failed: " . ($migration['name'] ?? 'Unknown') . " - " . $e->getMessage());
     }
 }
 
@@ -326,11 +371,13 @@ if ($action === 'preview') {
     <div class="container">
         <h1>🔄 Database Migration Admin</h1>
         
+        <?php if ($migration): ?>
         <div class="info-box">
             <h3><?= htmlspecialchars($migration['name']) ?></h3>
             <p><?= htmlspecialchars($migration['description']) ?></p>
             <p><strong>Event:</strong> <?= htmlspecialchars($migration['event_name']) ?></p>
         </div>
+        <?php endif; ?>
         
         <?php if ($error): ?>
             <div class="error">
@@ -432,6 +479,56 @@ if ($action === 'preview') {
                 <button type="submit" class="danger">🚀 Execute Migration</button>
                 <a href="?passcode=<?= urlencode($passcode) ?>" class="button secondary" style="text-decoration: none; display: inline-block;">Cancel</a>
             </form>
+            
+        <?php elseif ($action === 'list' || empty($migration)): ?>
+            <h2>Available Migrations</h2>
+            
+            <?php if (empty($allMigrations)): ?>
+                <div class="info-box">
+                    <h3>✅ No Undefined Rounds Found</h3>
+                    <p>All rounds have valid divisions. No migrations needed.</p>
+                </div>
+            <?php else: ?>
+                <p>Select a migration to preview and execute:</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($allMigrations as $id => $mig): ?>
+                            <tr>
+                                <td><strong><?= htmlspecialchars($mig['event_name']) ?></strong></td>
+                                <td><?= htmlspecialchars($mig['event_date']) ?></td>
+                                <td><?= htmlspecialchars($mig['description']) ?></td>
+                                <td>
+                                    <form method="POST" action="" style="display: inline;">
+                                        <input type="hidden" name="passcode" value="<?= htmlspecialchars($passcode) ?>">
+                                        <input type="hidden" name="action" value="preview">
+                                        <input type="hidden" name="migration_id" value="<?= htmlspecialchars($id) ?>">
+                                        <button type="submit">📋 Preview</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                
+                <div class="info-box" style="margin-top: 20px;">
+                    <h3>ℹ️ How It Works</h3>
+                    <ol>
+                        <li>Click "Preview" to see what will be changed</li>
+                        <li>Review the archers and scores that will be moved</li>
+                        <li>Click "Execute Migration" to apply the changes</li>
+                        <li>Archers will be moved from undefined round to OPEN division</li>
+                    </ol>
+                </div>
+            <?php endif; ?>
             
         <?php else: ?>
             <form method="POST" action="">

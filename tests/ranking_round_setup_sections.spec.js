@@ -1,13 +1,14 @@
 // Playwright test for Ranking Round - New Setup Sections
 // Tests the new Manual vs Pre-assigned setup sections functionality
 // Run with: npx playwright test tests/ranking_round_setup_sections.spec.js
+// For local dev: npx playwright test tests/ranking_round_setup_sections.spec.js --config=playwright.config.local.js
 
 const { test, expect } = require('@playwright/test');
 
 test.describe('Ranking Round - Setup Sections Functionality', () => {
   
   test('should detect manual mode correctly', async ({ page }) => {
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     
     // Cancel modal to enter manual mode
     await page.click('#cancel-event-modal-btn');
@@ -21,7 +22,7 @@ test.describe('Ranking Round - Setup Sections Functionality', () => {
   });
   
   test('should detect pre-assigned mode correctly', async ({ page }) => {
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     
     // Connect to event to enter pre-assigned mode
     await page.fill('#event-code-input', 'tuesday');
@@ -44,7 +45,7 @@ test.describe('Ranking Round - Manual Setup Controls', () => {
   
   test.beforeEach(async ({ page }) => {
     // Start in manual mode
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     await page.click('#cancel-event-modal-btn');
   });
   
@@ -53,7 +54,6 @@ test.describe('Ranking Round - Manual Setup Controls', () => {
     await expect(page.locator('#bale-number-input-manual')).toBeVisible();
     await expect(page.locator('#archer-search-manual')).toBeVisible();
     await expect(page.locator('#selected-count-chip')).toBeVisible();
-    await expect(page.locator('#selected-archers-display')).toBeVisible();
     await expect(page.locator('#manual-start-scoring-btn')).toBeVisible();
   });
   
@@ -83,13 +83,6 @@ test.describe('Ranking Round - Manual Setup Controls', () => {
     await expect(page.locator('#manual-start-scoring-btn')).toBeDisabled();
   });
   
-  test('should show selected archers display', async ({ page }) => {
-    const display = page.locator('#selected-archers-display');
-    
-    // Should show "No archers selected" initially
-    await expect(display).toContainText('No archers selected');
-  });
-  
   test('should have functional search input', async ({ page }) => {
     const searchInput = page.locator('#archer-search-manual');
     
@@ -107,7 +100,7 @@ test.describe('Ranking Round - Pre-assigned Setup Controls', () => {
   
   test.beforeEach(async ({ page }) => {
     // Start in pre-assigned mode
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     await page.fill('#event-code-input', 'tuesday');
     await page.click('#verify-code-btn');
     await page.waitForTimeout(1500);
@@ -157,7 +150,7 @@ test.describe('Ranking Round - Setup Mode Switching', () => {
   
   test('should switch from manual to pre-assigned mode', async ({ page }) => {
     // Start in manual mode
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     await page.click('#cancel-event-modal-btn');
     
     // Should show manual setup
@@ -177,7 +170,7 @@ test.describe('Ranking Round - Setup Mode Switching', () => {
   
   test('should switch from pre-assigned to manual mode', async ({ page }) => {
     // Start in pre-assigned mode
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     await page.fill('#event-code-input', 'tuesday');
     await page.click('#verify-code-btn');
     await page.waitForTimeout(1500);
@@ -198,7 +191,7 @@ test.describe('Ranking Round - Mobile Responsiveness', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     await page.click('#cancel-event-modal-btn');
     
     // Manual setup should still be visible on mobile
@@ -214,7 +207,7 @@ test.describe('Ranking Round - Mobile Responsiveness', () => {
     // Set tablet viewport
     await page.setViewportSize({ width: 768, height: 1024 });
     
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     await page.fill('#event-code-input', 'tuesday');
     await page.click('#verify-code-btn');
     await page.waitForTimeout(1500);

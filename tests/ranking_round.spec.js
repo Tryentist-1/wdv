@@ -1,12 +1,17 @@
 // Playwright test for Ranking Round - Updated for new UI/UX design
 // Run with: npx playwright test tests/ranking_round.spec.js
+// For local dev: npx playwright test tests/ranking_round.spec.js --config=playwright.config.local.js
+//
+// Tests use relative URLs and baseURL from Playwright config:
+// - Production: baseURL = 'https://tryentist.com/wdv' (from playwright.config.js)
+// - Local: baseURL = 'http://localhost:8001' (from playwright.config.local.js)
 
 const { test, expect } = require('@playwright/test');
 
 test.describe('Ranking Round - Event Modal', () => {
   
   test('should show modal on fresh start', async ({ page }) => {
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     
     // Modal should be visible
     const modal = page.locator('#event-modal');
@@ -18,13 +23,16 @@ test.describe('Ranking Round - Event Modal', () => {
   });
   
   test('should load events in Select Event tab', async ({ page }) => {
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     
     // Click Select Event tab
     await page.click('#tab-events');
     
-    // Wait for events to load
-    await page.waitForTimeout(1000);
+    // Wait for events to load (ensure at least one button appears)
+    await page.waitForFunction(() => {
+      const list = document.querySelector('#event-list');
+      return list && list.querySelectorAll('button').length > 0;
+    }, { timeout: 7000 });
     
     // Should show events (not "Failed to load")
     const eventList = page.locator('#event-list');
@@ -36,7 +44,7 @@ test.describe('Ranking Round - Event Modal', () => {
   });
   
   test('should verify entry code "tuesday" and show pre-assigned setup', async ({ page }) => {
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     
     // Enter code
     await page.fill('#event-code-input', 'tuesday');
@@ -58,7 +66,7 @@ test.describe('Ranking Round - Event Modal', () => {
   });
   
   test('should handle QR code URL parameters', async ({ page }) => {
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html?event=2e43821b-7b2f-4341-87e2-f85fe0831d76&code=tuesday');
+    await page.goto('/ranking_round_300.html?event=2e43821b-7b2f-4341-87e2-f85fe0831d76&code=tuesday');
     
     // Wait for auto-verification
     await page.waitForTimeout(1500);
@@ -73,7 +81,7 @@ test.describe('Ranking Round - Event Modal', () => {
   });
   
   test('should show manual setup when canceling modal with no event', async ({ page }) => {
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     
     // Cancel modal
     await page.click('#cancel-event-modal-btn');
@@ -94,7 +102,7 @@ test.describe('Ranking Round - Manual Setup Section', () => {
   
   test.beforeEach(async ({ page }) => {
     // Start with no event (manual mode)
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     await page.click('#cancel-event-modal-btn');
   });
   
@@ -148,7 +156,7 @@ test.describe('Ranking Round - Pre-assigned Setup Section', () => {
   
   test.beforeEach(async ({ page }) => {
     // Connect to event first (pre-assigned mode)
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     await page.fill('#event-code-input', 'tuesday');
     await page.click('#verify-code-btn');
     await page.waitForTimeout(1500);
@@ -193,7 +201,7 @@ test.describe('Ranking Round - Pre-assigned Setup Section', () => {
 test.describe('Ranking Round - Setup Mode Detection', () => {
   
   test('should show manual setup for no event', async ({ page }) => {
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     await page.click('#cancel-event-modal-btn');
     
     // Should show manual setup
@@ -202,7 +210,7 @@ test.describe('Ranking Round - Setup Mode Detection', () => {
   });
   
   test('should show pre-assigned setup for connected event', async ({ page }) => {
-    await page.goto('https://tryentist.com/wdv/ranking_round_300.html');
+    await page.goto('/ranking_round_300.html');
     await page.fill('#event-code-input', 'tuesday');
     await page.click('#verify-code-btn');
     await page.waitForTimeout(1500);
