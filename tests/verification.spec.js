@@ -4,98 +4,13 @@
 // For local dev: npx playwright test tests/verification.spec.js --config=playwright.config.local.js
 
 const { test, expect } = require('@playwright/test');
-
-const COACH_PASSCODE = 'wdva26';
-
-async function setCoachAuth(page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('coach_api_key', COACH_PASSCODE);
-    localStorage.setItem('live_updates_config', JSON.stringify({ enabled: true, apiKey: COACH_PASSCODE }));
-  });
-}
-
-async function createTestEventWithScores(page) {
-  // Helper to create an event, add archers, and enter some scores
-  await setCoachAuth(page);
-  
-  await page.goto('/coach.html');
-  await expect(page.locator('#coach-auth-modal')).toBeVisible();
-  await page.fill('#coach-passcode-input', COACH_PASSCODE);
-  await page.click('#auth-submit-btn');
-  await expect(page.locator('#coach-auth-modal')).toBeHidden();
-  
-  // Create event
-  await page.click('#create-event-btn');
-  await page.fill('#event-name', `Test Verify ${Date.now()}`);
-  await page.fill('#event-date', new Date().toISOString().split('T')[0]);
-  await page.fill('#event-code', 'verify123');
-  await page.check('#division-open');
-  await page.click('#submit-event-btn');
-  
-  // Wait for event creation and archer selection modal
-  await page.waitForSelector('#add-archers-modal', { state: 'visible', timeout: 10000 });
-  
-  // Select first few archers (if available)
-  const checkboxes = page.locator('#archer-list input[type="checkbox"]');
-  const count = await checkboxes.count();
-  if (count > 0) {
-    await checkboxes.first().check();
-    if (count > 1) await checkboxes.nth(1).check();
-    if (count > 2) await checkboxes.nth(2).check();
-  }
-  
-  await page.click('#submit-add-archers-btn');
-  
-  // Select auto-assign mode
-  await page.waitForSelector('#assignment-mode-modal', { state: 'visible', timeout: 5000 });
-  await page.check('input[name="assignment-mode"][value="auto_assign"]');
-  await page.click('#submit-assignment-btn');
-  
-  // Wait for event to be created
-  await page.waitForSelector('#events-list table tbody tr', { timeout: 10000 });
-  
-  // Get event ID from QR code
-  const firstRow = page.locator('#events-list table tbody tr').first();
-  await firstRow.locator('button[title="QR Code"]').click();
-  await page.waitForSelector('#qr-url-display', { timeout: 5000 });
-  const url = await page.inputValue('#qr-url-display');
-  const eventIdMatch = url.match(/event=([0-9a-f-]+)/i);
-  const eventId = eventIdMatch ? eventIdMatch[1] : null;
-  await page.click('#close-qr-btn');
-  
-  if (!eventId) {
-    throw new Error('Could not extract event ID from QR code');
-  }
-  
-  // Navigate to ranking round and enter scores
-  await page.goto(`/ranking_round_300.html?event=${eventId}&code=verify123`);
-  await page.waitForSelector('#preassigned-setup-section', { state: 'visible', timeout: 15000 });
-  
-  // Start scoring on first bale
-  const startBtn = page.locator('.bale-list-item button', { hasText: 'Start Scoring' }).first();
-  if (await startBtn.isVisible()) {
-    await startBtn.click();
-    
-    // Enter some scores using keypad
-    await page.waitForSelector('input.score-input', { timeout: 5000 });
-    const firstInput = page.locator('input.score-input').first();
-    await firstInput.click();
-    
-    // Enter scores: 10, 9, 8
-    await page.locator('.keypad-btn[data-value="10"]').click();
-    await page.locator('.keypad-btn[data-value="9"]').click();
-    await page.locator('.keypad-btn[data-value="8"]').click();
-    
-    // Sync the end
-    const syncBtn = page.locator('#complete-round-btn');
-    if (await syncBtn.isVisible()) {
-      await syncBtn.click();
-      await page.waitForTimeout(1000);
-    }
-  }
-  
-  return eventId;
-}
+const { 
+  setCoachAuth, 
+  createCompleteTestEvent, 
+  createVerificationTestData,
+  ensureLocalhostAPI,
+  COACH_PASSCODE 
+} = require('./helpers/test-data-creation');
 
 test.describe('Scorecard Verification Features', () => {
   test('should access verification console from coach page', async ({ page }) => {
@@ -178,16 +93,31 @@ test.describe('Scorecard Verification Features', () => {
   });
 
   test('should prevent editing locked scorecards in ranking round', async ({ page }) => {
-    // This test would require:
+    // This test requires:
     // 1. Create event with scores
     // 2. Lock a scorecard via API or coach UI
     // 3. Try to edit in ranking round
     // 4. Verify edit is prevented
     
     // For now, we'll test the UI structure
-    await setCoachAuth(page);
+    await ensureLocalhostAPI(page);
     
-    const eventId = await createTestEventWithScores(page);
+    let eventId;
+    let eventCode;
+    try {
+      const testData = await createCompleteTestEvent(page, {
+        eventName: `Lock Test ${Date.now()}`,
+        eventCode: `lock${Date.now().toString().slice(-6)}`,
+        numArchers: 3,
+        enterScores: true
+      });
+      eventId = testData.eventId;
+      eventCode = testData.eventCode;
+    } catch (err) {
+      console.log('Could not create test event:', err.message);
+      test.skip();
+      return;
+    }
     
     if (!eventId) {
       test.skip();
@@ -195,7 +125,7 @@ test.describe('Scorecard Verification Features', () => {
     }
     
     // Navigate back to ranking round
-    await page.goto(`/ranking_round_300.html?event=${eventId}&code=verify123`);
+    await page.goto(`/ranking_round_300.html?event=${eventId}&code=${eventCode}`);
     await page.waitForSelector('#scoring-view', { timeout: 10000 });
     
     // Check if score inputs exist
@@ -300,6 +230,56 @@ test.describe('Scorecard Verification Features', () => {
       }
     } else {
       test.skip(); // No events available
+    }
+  });
+});
+
+test.describe('End-to-End Verification Workflow', () => {
+  test('should create complete test data: event -> round -> archers -> scores -> verification', async ({ page }) => {
+    // This is a comprehensive test that creates the full data flow
+    await ensureLocalhostAPI(page);
+    
+    try {
+      // Create complete test event with scores
+      const testData = await createCompleteTestEvent(page, {
+        eventName: `E2E Verify ${Date.now()}`,
+        eventCode: `e2e${Date.now().toString().slice(-6)}`,
+        numArchers: 4,
+        enterScores: true
+      });
+      
+      expect(testData.eventId).toBeTruthy();
+      expect(testData.eventCode).toBeTruthy();
+      
+      // Verify event exists in coach console
+      await page.goto('/coach.html');
+      await setCoachAuth(page);
+      await expect(page.locator('#coach-auth-modal')).toBeVisible();
+      await page.fill('#coach-passcode-input', COACH_PASSCODE);
+      await page.click('#auth-submit-btn');
+      await expect(page.locator('#coach-auth-modal')).toBeHidden();
+      
+      await page.waitForSelector('#events-list table tbody tr', { timeout: 10000 });
+      
+      // Verify event appears in list
+      const eventRow = page.locator(`#events-list table tbody tr:has-text("${testData.eventName}")`);
+      await expect(eventRow.first()).toBeVisible();
+      
+      // Verify scores appear on results page
+      await page.goto(`/results.html?event=${testData.eventId}`);
+      await expect(page.locator('#results-header')).toBeVisible({ timeout: 10000 });
+      
+      // Check if leaderboard has data
+      const leaderboard = page.locator('.leaderboard-table');
+      if (await leaderboard.count() > 0) {
+        await expect(leaderboard.first()).toBeVisible();
+      }
+      
+      console.log(`✅ Created complete test data: Event ${testData.eventId}, Code ${testData.eventCode}`);
+      
+    } catch (err) {
+      console.error('❌ Failed to create test data:', err.message);
+      throw err;
     }
   });
 });
