@@ -2609,12 +2609,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function resetState() {
+        // Clear all state to start fresh
         state.archers = [];
         state.currentEnd = 1;
         state.currentView = 'setup';
+        state.baleNumber = 1;
+        state.activeEventId = null;
+        state.selectedEventId = null;
+        state.eventName = '';
+        state.assignmentMode = 'manual';
+        state.setupMode = 'manual';
+        state.divisionCode = null;
+        state.divisionRoundId = null;
+        state.divisionName = '';
+        state.syncStatus = {};
+        
+        // Clear Live Updates state
+        if (window.LiveUpdates && LiveUpdates._state) {
+            LiveUpdates._state.roundId = null;
+            LiveUpdates._state.eventId = null;
+            LiveUpdates._state.archerIds = {};
+        }
+        
+        // Clear session storage
+        try {
+            deleteCurrentBaleSession();
+            localStorage.removeItem('event_entry_code');
+        } catch (e) {
+            console.warn('Error clearing session:', e);
+        }
+        
         renderView();
         saveData();
         updateLiveStatusDisplay();
+        updateEventHeader();
     }
     
     function showScoringView() {
