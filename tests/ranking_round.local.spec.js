@@ -4,24 +4,16 @@
 // Or: npm run test:local
 
 const { test, expect } = require('@playwright/test');
+const {
+  openRankingRound,
+  enterManualMode,
+} = require('./helpers/ranking_round_utils');
 
 test.describe('Ranking Round - Local Testing', () => {
   
-  test.beforeEach(async ({ page }) => {
-    // Ensure no stale configuration from previous runs
-    await page.addInitScript(() => {
-      try {
-        localStorage.removeItem('live_updates_config');
-      } catch (err) {
-        console.warn('Unable to clear live_updates_config', err);
-      }
-    });
-  });
-
   test('should show modal on fresh start (LOCAL)', async ({ page }) => {
-    // Test local dev server (uses baseURL from config)
-    await page.goto('/ranking_round_300.html');
-    
+    await openRankingRound(page);
+
     // Modal should be visible
     const modal = page.locator('#event-modal');
     await expect(modal).toBeVisible({ timeout: 3000 });
@@ -32,10 +24,10 @@ test.describe('Ranking Round - Local Testing', () => {
   });
   
   test('should load JavaScript correctly (LOCAL)', async ({ page }) => {
-    await page.goto('/ranking_round_300.html');
-    
+    await openRankingRound(page);
+
     // Wait for page to load and LiveUpdates to initialize
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(200);
     
     // Check that LiveUpdates is available (indicates JavaScript loaded)
     const liveUpdatesExists = await page.evaluate(() => {
@@ -47,10 +39,10 @@ test.describe('Ranking Round - Local Testing', () => {
   });
   
   test('should connect to local API (LOCAL)', async ({ page }) => {
-    await page.goto('/ranking_round_300.html');
-    
+    await openRankingRound(page);
+
     // Wait for page initialization and LiveUpdates config
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(300);
     
     // Inspect resolved API base (supports localhost, staging, production)
     const apiInfo = await page.evaluate(() => {
@@ -79,8 +71,8 @@ test.describe('Ranking Round - Local Testing', () => {
   });
   
   test('should show manual setup section when canceling modal (LOCAL)', async ({ page }) => {
-    await page.goto('/ranking_round_300.html');
-    
+    await openRankingRound(page);
+
     // Cancel modal to enter manual mode
     await page.click('#cancel-event-modal-btn');
     
@@ -95,8 +87,8 @@ test.describe('Ranking Round - Local Testing', () => {
   });
   
   test('should have new setup section elements (LOCAL)', async ({ page }) => {
-    await page.goto('/ranking_round_300.html');
-    
+    await enterManualMode(page);
+
     // Check that new HTML elements exist
     await expect(page.locator('#manual-setup-section')).toBeAttached();
     await expect(page.locator('#preassigned-setup-section')).toBeAttached();

@@ -3,6 +3,7 @@
 // Event -> Round -> Archers -> Scores -> Verification
 
 const { expect } = require('@playwright/test');
+const { enterPreassignedViaQr } = require('./ranking_round_utils');
 
 const COACH_PASSCODE = 'wdva26';
 const LOCAL_API_BASE = 'http://localhost:8001/api/index.php/v1';
@@ -88,7 +89,7 @@ async function createCompleteTestEvent(page, options = {}) {
   await page.waitForSelector('#archer-list', { timeout: 10000 });
   
   // Wait a moment for archers to populate
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(300);
   
   // Select archers (up to numArchers)
   const checkboxes = page.locator('#archer-list input[type="checkbox"]');
@@ -122,7 +123,7 @@ async function createCompleteTestEvent(page, options = {}) {
   await expect(page.locator('#assignment-mode-modal')).toBeHidden({ timeout: 10000 });
   
   // Wait for assignment to complete - check for success message or event list update
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(500);
   
   // Verify archers were actually assigned by checking the event list
   await page.waitForSelector('#events-list table tbody tr', { timeout: 15000 });
@@ -146,76 +147,42 @@ async function createCompleteTestEvent(page, options = {}) {
   // Step 6: Enter scores if requested
   let roundArcherIds = [];
   if (enterScores) {
-    // Wait longer for event to be fully saved and archers assigned
-    await page.waitForTimeout(3000);
-    
-    // Navigate to ranking round
-    await page.goto(`/ranking_round_300.html?event=${eventId}&code=${eventCode}`);
-    
-    // Wait for page to load and check for errors
-    await page.waitForLoadState('networkidle', { timeout: 15000 });
-    
-    // Check console for errors
+    await page.waitForTimeout(500);
+
+    await enterPreassignedViaQr(page, { eventId, eventCode });
+
     const errors = [];
     page.on('console', msg => {
       if (msg.type() === 'error') {
         errors.push(msg.text());
       }
     });
-    
-    // Wait for either pre-assigned or manual setup section (in case event didn't load)
-    // Give more time for event snapshot to load
-    const preAssignedVisible = await page.waitForSelector('#preassigned-setup-section', { 
-      state: 'visible', 
-      timeout: 30000 
-    }).then(() => true).catch(() => false);
-    
-    const manualVisible = await page.waitForSelector('#manual-setup-section', { 
-      state: 'visible', 
-      timeout: 5000 
-    }).then(() => true).catch(() => false);
-    
-    if (!preAssignedVisible && !manualVisible) {
-      // Check if there's an event modal (event might not have loaded)
-      const eventModal = await page.locator('#event-modal').isVisible();
-      if (eventModal) {
-        throw new Error(`Event ${eventId} did not load properly. Event modal is still showing. Console errors: ${errors.join('; ')}`);
-      }
-      throw new Error(`Neither pre-assigned nor manual setup section appeared. Console errors: ${errors.join('; ')}`);
-    }
-    
-    if (preAssignedVisible) {
-      // Wait for bale list to populate
-      await page.waitForTimeout(2000);
-      
-      // Start scoring on first bale
-      const startBtn = page.locator('.bale-list-item button', { hasText: 'Start Scoring' }).first();
-      if (await startBtn.isVisible({ timeout: 10000 })) {
-        await startBtn.click();
-        
-        // Wait for scoring view
-        await page.waitForSelector('#scoring-view', { timeout: 10000 });
-        await page.waitForSelector('input.score-input', { timeout: 5000 });
-        
-        // Enter scores for first archer: 10, 9, 8
-        const firstInput = page.locator('input.score-input').first();
-        await firstInput.click();
-        
-        await page.locator('.keypad-btn[data-value="10"]').click();
-        await page.locator('.keypad-btn[data-value="9"]').click();
-        await page.locator('.keypad-btn[data-value="8"]').click();
-        
-        // Sync the end
-        const syncBtn = page.locator('#complete-round-btn');
-        if (await syncBtn.isVisible({ timeout: 5000 })) {
-          await syncBtn.click();
-          await page.waitForTimeout(2000); // Wait for sync to complete
-        }
-      } else {
-        console.log('No "Start Scoring" button found - bale list might be empty');
+
+    // Wait for bale list to populate briefly
+    await page.waitForTimeout(300);
+
+    // Start scoring on first bale
+    const startBtn = page.locator('.bale-list-item button', { hasText: 'Start Scoring' }).first();
+    if (await startBtn.isVisible({ timeout: 3000 })) {
+      await startBtn.click();
+
+      await page.waitForSelector('#scoring-view', { timeout: 3000 });
+      await page.waitForSelector('input.score-input', { timeout: 3000 });
+
+      const firstInput = page.locator('input.score-input').first();
+      await firstInput.click();
+
+      await page.locator('.keypad-btn[data-value="10"]').click();
+      await page.locator('.keypad-btn[data-value="9"]').click();
+      await page.locator('.keypad-btn[data-value="8"]').click();
+
+      const syncBtn = page.locator('#complete-round-btn');
+      if (await syncBtn.isVisible({ timeout: 3000 })) {
+        await syncBtn.click();
+        await page.waitForTimeout(500);
       }
     } else {
-      console.log('Pre-assigned section not visible - event may not have archers assigned');
+      throw new Error(`Start Scoring button not visible. Console errors: ${errors.join('; ')}`);
     }
   }
 

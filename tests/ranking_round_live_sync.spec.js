@@ -4,6 +4,7 @@
 // For local dev: npx playwright test tests/ranking_round_live_sync.spec.js --config=playwright.config.local.js
 
 const { test, expect } = require('@playwright/test');
+const { enterPreassignedViaQr } = require('./helpers/ranking_round_utils');
 
 // Use baseURL from config (production or local)
 // Production: https://tryentist.com/wdv
@@ -82,9 +83,10 @@ test.describe('Live Sync E2E (UI)', () => {
     const eventId = eventIdMatch ? eventIdMatch[1] : '';
     await page.click('#close-qr-btn');
 
-    await page.goto(url);
-    // Wait for QR verification + snapshot render
-    await page.waitForSelector('#preassigned-setup-section', { state: 'visible', timeout: 15000 });
+    const codeMatch = url.match(/code=([^&]+)/i);
+    const entryCode = codeMatch ? codeMatch[1] : 'E2EUI';
+    await enterPreassignedViaQr(page, { eventId, eventCode: entryCode });
+    // Wait for QR verification + snapshot render handled in helper
 
     // 5) Start scoring (first bale)
     const startBtn = page.locator('.bale-list-item button', { hasText: 'Start Scoring' }).first();

@@ -11,6 +11,7 @@ const {
   ensureLocalhostAPI,
   COACH_PASSCODE 
 } = require('./helpers/test-data-creation');
+const { enterPreassignedViaQr } = require('./helpers/ranking_round_utils');
 
 test.describe('Scorecard Verification Features', () => {
   test('should access verification console from coach page', async ({ page }) => {
@@ -23,7 +24,7 @@ test.describe('Scorecard Verification Features', () => {
     await expect(page.locator('#coach-auth-modal')).toBeHidden();
     
     // Wait for events list to load
-    await page.waitForSelector('#events-list table tbody tr', { timeout: 10000 });
+    await page.waitForSelector('#events-list table tbody tr', { timeout: 3000 });
     
     // Check if Verify Scorecards button (🛡️ icon) exists in events table
     const verifyBtn = page.locator('button[title="Verify Scorecards"]').first();
@@ -39,7 +40,7 @@ test.describe('Scorecard Verification Features', () => {
     await page.click('#auth-submit-btn');
     await expect(page.locator('#coach-auth-modal')).toBeHidden();
     
-    await page.waitForSelector('#events-list table tbody tr', { timeout: 10000 });
+    await page.waitForSelector('#events-list table tbody tr', { timeout: 3000 });
     
     // Click Verify Scorecards button
     const verifyBtn = page.locator('button[title="Verify Scorecards"]').first();
@@ -56,7 +57,7 @@ test.describe('Scorecard Verification Features', () => {
       // The modal might take time to load snapshot data
       let modalVisible = false;
       try {
-        await page.waitForSelector('#verify-modal', { state: 'visible', timeout: 10000 });
+        await page.waitForSelector('#verify-modal', { state: 'visible', timeout: 3000 });
         modalVisible = true;
       } catch (e) {
         // Modal didn't show - check if it exists but is hidden (error case)
@@ -125,8 +126,8 @@ test.describe('Scorecard Verification Features', () => {
     }
     
     // Navigate back to ranking round
-    await page.goto(`/ranking_round_300.html?event=${eventId}&code=${eventCode}`);
-    await page.waitForSelector('#scoring-view', { timeout: 10000 });
+    await enterPreassignedViaQr(page, { eventId, eventCode });
+    await page.waitForSelector('#scoring-view', { timeout: 5000 });
     
     // Check if score inputs exist
     const scoreInputs = page.locator('input.score-input');
@@ -152,7 +153,7 @@ test.describe('Scorecard Verification Features', () => {
     await page.click('#auth-submit-btn');
     await expect(page.locator('#coach-auth-modal')).toBeHidden();
     
-    await page.waitForSelector('#events-list table tbody tr', { timeout: 10000 });
+    await page.waitForSelector('#events-list table tbody tr', { timeout: 3000 });
     
     // Open verification console
     const verifyBtn = page.locator('button[title="Verify Scorecards"]').first();
@@ -163,7 +164,7 @@ test.describe('Scorecard Verification Features', () => {
       await verifyBtn.click();
       
       // Wait for modal with longer timeout
-      const modalVisible = await page.waitForSelector('#verify-modal', { state: 'visible', timeout: 10000 }).then(() => true).catch(() => false);
+      const modalVisible = await page.waitForSelector('#verify-modal', { state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
       
       if (modalVisible) {
         // Check for division selection dropdown
@@ -206,7 +207,7 @@ test.describe('Scorecard Verification Features', () => {
     await page.click('#auth-submit-btn');
     await expect(page.locator('#coach-auth-modal')).toBeHidden();
     
-    await page.waitForSelector('#events-list table tbody tr', { timeout: 10000 });
+    await page.waitForSelector('#events-list table tbody tr', { timeout: 3000 });
     
     // Open verification console
     const verifyBtn = page.locator('button[title="Verify Scorecards"]').first();
@@ -217,7 +218,7 @@ test.describe('Scorecard Verification Features', () => {
       await verifyBtn.click();
       
       // Wait for modal
-      const modalVisible = await page.waitForSelector('#verify-modal', { state: 'visible', timeout: 10000 }).then(() => true).catch(() => false);
+      const modalVisible = await page.waitForSelector('#verify-modal', { state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
       
       if (modalVisible) {
         // Check if scorecard table container exists
@@ -265,7 +266,7 @@ test.describe('End-to-End Verification Workflow', () => {
         await expect(authModal).toBeHidden({ timeout: 5000 });
       }
       
-      await page.waitForSelector('#events-list table tbody tr', { timeout: 10000 });
+      await page.waitForSelector('#events-list table tbody tr', { timeout: 3000 });
       
       // Verify event appears in list
       const eventRow = page.locator(`#events-list table tbody tr:has-text("${testData.eventName}")`);
@@ -273,7 +274,7 @@ test.describe('End-to-End Verification Workflow', () => {
       
       // Verify scores appear on results page
       await page.goto(`/results.html?event=${testData.eventId}`);
-      await expect(page.locator('#results-header')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('#results-header')).toBeVisible({ timeout: 3000 });
       
       // Check if leaderboard has data
       const leaderboard = page.locator('.leaderboard-table');
