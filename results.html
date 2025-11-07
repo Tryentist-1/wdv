@@ -4,154 +4,45 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Event Results</title>
-  <link rel="stylesheet" href="css/main.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'primary': '#0d6efd',
+            'primary-dark': '#0a58ca',
+            'success': '#198754',
+            'danger': '#dc3545',
+            'rank-gold': '#f39c12',
+            'rank-silver': '#95a5a6',
+            'rank-bronze': '#cd7f32'
+          }
+        }
+      }
+    }
+  </script>
   <script src="js/scorecard_view.js"></script>
-  <style>
-    .results-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 2rem;
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    
-    .results-header h1 {
-      margin: 0 0 0.5rem 0;
-    }
-    
-    .results-meta {
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      flex-wrap: wrap;
-      font-size: 0.95rem;
-      opacity: 0.95;
-    }
-    
-    .division-section {
-      margin-bottom: 3rem;
-    }
-    
-    .division-header {
-      background: #2c3e50;
-      color: white;
-      padding: 1rem;
-      border-radius: 8px 8px 0 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .division-name {
-      font-size: 1.3rem;
-      font-weight: 600;
-    }
-    
-    .division-count {
-      font-size: 0.9rem;
-      opacity: 0.9;
-    }
-    
-    .leaderboard-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      border-radius: 0 0 8px 8px;
-      overflow: hidden;
-    }
-    
-    .leaderboard-table thead {
-      background: #34495e;
-      color: white;
-    }
-    
-    .leaderboard-table th {
-      padding: 0.75rem;
-      text-align: left;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-    
-    .leaderboard-table td {
-      padding: 0.75rem;
-      border-bottom: 1px solid #ecf0f1;
-    }
-    
-    .leaderboard-table tbody tr:hover {
-      background: #f8f9fa;
-      cursor: pointer;
-    }
-    
-    .rank-cell {
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: #2c3e50;
-      width: 50px;
-      text-align: center;
-    }
-    
-    .rank-1 { color: #f39c12; }
-    .rank-2 { color: #95a5a6; }
-    .rank-3 { color: #cd7f32; }
-    
-    .archer-name {
-      font-weight: 600;
-    }
-    
-    .score-total {
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: #27ae60;
-    }
-    
-    .no-scores {
-      text-align: center;
-      padding: 3rem;
-      color: #7f8c8d;
-      font-style: italic;
-    }
-    
-    .empty-division {
-      text-align: center;
-      padding: 2rem;
-      color: #95a5a6;
-      background: #ecf0f1;
-      border-radius: 0 0 8px 8px;
-    }
-    
-    @media (max-width: 768px) {
-      .results-header {
-        padding: 1.5rem 1rem;
-      }
-      
-      .results-meta {
-        font-size: 0.85rem;
-        gap: 1rem;
-      }
-      
-      .leaderboard-table {
-        font-size: 0.85rem;
-      }
-      
-      .leaderboard-table th,
-      .leaderboard-table td {
-        padding: 0.5rem 0.3rem;
-      }
-    }
   </style>
 </head>
-<body>
-  <div class="main-container">
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+  <div class="max-w-7xl mx-auto px-4 py-6 pb-24">
     <!-- Results Header -->
-    <div id="results-header" class="results-header">
-      <h1 id="event-name">Loading...</h1>
-      <div class="results-meta">
+    <div id="results-header" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
+      <div class="flex justify-between items-start mb-4">
+        <h1 id="event-name" class="text-3xl font-bold text-gray-800 dark:text-white">Loading...</h1>
+        <button id="dark-mode-toggle" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Toggle dark mode">
+          <span class="dark:hidden">🌙</span>
+          <span class="hidden dark:inline">☀️</span>
+        </button>
+      </div>
+      <div class="flex justify-center gap-8 flex-wrap text-gray-600 dark:text-gray-400 text-sm mb-4">
         <span>📅 <span id="event-date">-</span></span>
         <span>📊 Status: <span id="event-status">-</span></span>
       </div>
-      <div style="margin-top: 1rem;">
-        <button id="toggle-void-btn" class="btn btn-secondary">Show Voided Cards</button>
+      <div class="text-center">
+        <button id="toggle-void-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Show Voided Cards</button>
       </div>
     </div>
 
@@ -161,12 +52,30 @@
     </div>
   </div>
 
-  <footer class="global-footer">
-    <a href="coach.html" class="btn btn-secondary">← Back to Coach Console</a>
-    <button id="refresh-btn" class="btn btn-primary">🔄 Refresh</button>
+  <footer class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200">
+    <div class="max-w-7xl mx-auto flex gap-2 justify-center flex-wrap">
+      <a href="coach.html" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center">← Back to Coach Console</a>
+      <button id="refresh-btn" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">🔄 Refresh</button>
+    </div>
   </footer>
 
   <script>
+    // Dark mode toggle
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    const htmlElement = document.documentElement;
+    
+    // Check for saved preference or default to light mode
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+      htmlElement.classList.add('dark');
+    }
+    
+    darkModeToggle.addEventListener('click', () => {
+      htmlElement.classList.toggle('dark');
+      const newTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
+      localStorage.setItem('theme', newTheme);
+    });
+    
     function getApiBase() {
       // Detect localhost environments; default to production otherwise
       const { protocol, hostname, port } = window.location;
@@ -243,24 +152,24 @@
       orderedKeys.forEach(divCode => {
         const division = divisions[divCode];
         const section = document.createElement('div');
-        section.className = 'division-section';
+        section.className = 'mb-8';
         const allArchers = division ? (division.archers || []) : [];
         const visibleArchers = filterArchersForDisplay(allArchers);
         const hiddenCount = allArchers.length - visibleArchers.length;
 
         // Division Header
         const header = document.createElement('div');
-        header.className = 'division-header';
+        header.className = 'bg-gray-800 dark:bg-gray-700 text-white px-4 py-3 rounded-t-lg flex justify-between items-center';
         header.innerHTML = `
-          <div class="division-name">${DIVISION_NAMES[divCode]}</div>
-          <div class="division-count">${visibleArchers.length} showing${hiddenCount > 0 ? ` • ${hiddenCount} hidden` : ''}</div>
+          <div class="text-xl font-semibold">${DIVISION_NAMES[divCode]}</div>
+          <div class="text-sm opacity-90">${visibleArchers.length} showing${hiddenCount > 0 ? ` • ${hiddenCount} hidden` : ''}</div>
         `;
         section.appendChild(header);
 
         // Division Table
         if (visibleArchers.length === 0) {
           const empty = document.createElement('div');
-          empty.className = 'empty-division';
+          empty.className = 'text-center py-8 text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-b-lg';
           if (hiddenCount > 0) {
             empty.textContent = 'All scorecards are voided. Use "Show Voided Cards" to reveal them.';
           } else {
@@ -308,25 +217,25 @@
       const sorted = [...archers].sort((a, b) => normTotal(b) - normTotal(a));
 
       const table = document.createElement('table');
-      table.className = 'leaderboard-table';
+      table.className = 'w-full border-collapse bg-white dark:bg-gray-800 shadow-md rounded-b-lg overflow-hidden';
 
       // Table Header
       table.innerHTML = `
-        <thead>
+        <thead class="bg-gray-700 dark:bg-gray-600 text-white">
           <tr>
-            <th>Rank</th>
-            <th>Archer</th>
-            <th>School</th>
-            <th>Bale</th>
-            <th>Target</th>
-            <th>Status</th>
-            <th>Total</th>
-            <th>Avg</th>
-            <th>Xs</th>
-            <th>10s</th>
+            <th class="px-3 py-3 text-left font-semibold text-sm">Rank</th>
+            <th class="px-3 py-3 text-left font-semibold text-sm">Archer</th>
+            <th class="px-3 py-3 text-left font-semibold text-sm">School</th>
+            <th class="px-3 py-3 text-left font-semibold text-sm">Bale</th>
+            <th class="px-3 py-3 text-left font-semibold text-sm">Target</th>
+            <th class="px-3 py-3 text-left font-semibold text-sm">Status</th>
+            <th class="px-3 py-3 text-left font-semibold text-sm">Total</th>
+            <th class="px-3 py-3 text-left font-semibold text-sm">Avg</th>
+            <th class="px-3 py-3 text-left font-semibold text-sm">Xs</th>
+            <th class="px-3 py-3 text-left font-semibold text-sm">10s</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody class="text-gray-700 dark:text-gray-300"></tbody>
       `;
 
       const tbody = table.querySelector('tbody');
@@ -335,7 +244,7 @@
         const rank = index + 1;
         const row = document.createElement('tr');
         
-        const rankClass = rank <= 3 ? `rank-${rank}` : '';
+        const rankColor = rank === 1 ? 'text-rank-gold' : rank === 2 ? 'text-rank-silver' : rank === 3 ? 'text-rank-bronze' : 'text-gray-800 dark:text-white';
         const total = normTotal(archer);
         const arrowsShot = (archer.scorecard && archer.scorecard.ends) ? archer.scorecard.ends.length * 3 : undefined;
         const avgVal = (arrowsShot && arrowsShot > 0) ? (total / arrowsShot) : (archer.avgPerArrow || 0);
@@ -346,21 +255,21 @@
         const status = getCardStatus(archer);
         const statusBadge = renderStatusBadge(status);
 
+        row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors';
         row.innerHTML = `
-          <td class="rank-cell ${rankClass}">${rank}</td>
-          <td class="archer-name">${name} <span style="color: #3498db; font-size: 0.85rem;">📄</span></td>
-          <td>${archer.school || '-'}</td>
-          <td>${bale}</td>
-          <td>${target}</td>
-          <td>${statusBadge}</td>
-          <td class="score-total">${total}</td>
-          <td>${avg}</td>
-          <td>${archer.xs || (archer.scorecard && archer.scorecard.xs) || 0}</td>
-          <td>${archer.tens || (archer.scorecard && archer.scorecard.tens) || 0}</td>
+          <td class="px-3 py-3 font-bold text-lg text-center w-12 ${rankColor}">${rank}</td>
+          <td class="px-3 py-3 font-semibold">${name} <span class="text-primary text-xs">📄</span></td>
+          <td class="px-3 py-3">${archer.school || '-'}</td>
+          <td class="px-3 py-3">${bale}</td>
+          <td class="px-3 py-3">${target}</td>
+          <td class="px-3 py-3">${statusBadge}</td>
+          <td class="px-3 py-3 font-bold text-lg text-success">${total}</td>
+          <td class="px-3 py-3">${avg}</td>
+          <td class="px-3 py-3">${archer.xs || (archer.scorecard && archer.scorecard.xs) || 0}</td>
+          <td class="px-3 py-3">${archer.tens || (archer.scorecard && archer.scorecard.tens) || 0}</td>
         `;
         
         // Make row clickable to view scorecard
-        row.style.cursor = 'pointer';
         row.onclick = () => showArcherScorecard(archer);
 
         tbody.appendChild(row);

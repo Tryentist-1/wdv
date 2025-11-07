@@ -4,122 +4,116 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Archer List</title>
-    <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        .archer-modal-section {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 0.85rem;
-            margin-bottom: 0.9rem;
-            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
-        }
-        .archer-modal-section h3 {
-            margin-bottom: 0.65rem;
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #374151;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .modal-grid {
-            display: grid;
-            gap: 0.6rem;
-        }
-        .modal-grid.two-col {
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        }
-        .modal-grid.three-col {
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        }
-        .modal-grid .span-2 {
-            grid-column: 1 / -1;
-        }
-        .modal-grid .span-3 {
-            grid-column: 1 / -1;
-        }
-        .input-with-button {
-            display: flex;
-            gap: 0.4rem;
-        }
-        .input-with-button input {
-            flex: 1;
-        }
-        .input-with-button button {
-            padding: 0 0.75rem;
-            font-size: 0.8rem;
-            border-radius: 6px;
-            border: 1px solid #ced4da;
-            background: #e9ecef;
-            color: #374151;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .input-with-button button:hover {
-            background: #dee2e6;
-        }
-        .form-help-text {
-            font-size: 0.75rem;
-            color: #6c757d;
-            margin-top: 0.25rem;
-        }
-        @media (max-width: 520px) {
-            .modal-grid.two-col,
-            .modal-grid.three-col {
-                grid-template-columns: 1fr;
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#0d6efd',
+                        'primary-dark': '#0a58ca',
+                        'success': '#198754',
+                        'success-dark': '#157347',
+                        'danger': '#dc3545',
+                        'score-gold': '#FFD700',
+                        'score-red': '#FF0000',
+                        'score-blue': '#0000FF',
+                        'score-black': '#000000',
+                        'score-white': '#FFFFFF',
+                        'score-miss': '#808080'
+                    }
+                }
             }
+        }
+    </script>
+    <style>
+        /* Archer row styling for list items */
+        .archer-select-row {
+            display: flex;
+            align-items: center;
+            padding: 0.8rem 0.4rem;
+            border-bottom: 1px solid #f0f2f5;
+            cursor: pointer;
+            background-color: white;
+            transition: background-color 0.2s;
+        }
+        .archer-select-row:hover {
+            background-color: #f8f9fa;
+        }
+        .archer-name-label {
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+        .archer-details-label {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        .favorite-star {
+            font-size: 1.4em;
+            margin-right: 0.8rem;
+            min-width: 1.2em;
+            text-align: center;
+            cursor: pointer;
         }
     </style>
 </head>
-<body>
-    <div id="app-container" class="main-container">
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+    <div id="app-container" class="flex flex-col min-h-screen">
 
-        <header class="page-header">
-            <h1>Archer List</h1>
+        <header class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Archer List</h1>
+            <button id="dark-mode-toggle" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Toggle dark mode">
+                <span class="dark:hidden">🌙</span>
+                <span class="hidden dark:inline">☀️</span>
+            </button>
         </header>
 
-        <div class="page-subheader">
-            <input class="archer-search-bar" type="text" id="search-input" placeholder="Search archers...">
-            <button id="add-archer-btn" class="btn btn-primary"><i class="fas fa-plus"></i> Add</button>
+        <div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-2 transition-colors duration-200">
+            <input class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary transition-colors" type="text" id="search-input" placeholder="Search archers...">
+            <button id="add-archer-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]"><i class="fas fa-plus"></i> Add</button>
         </div>
         
-        <div id="self-summary-container" style="display:flex; align-items:center; gap:0.5rem; padding:0 0.4rem 0.4rem; font-size:0.9rem; color:#555;">
+        <div id="self-summary-container" class="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 transition-colors duration-200">
             <span id="self-summary">You: Not set</span>
-            <button id="clear-self-btn" class="btn btn-secondary" style="padding:0.25rem 0.6rem; font-size:0.8rem; display:none;">Clear</button>
+            <button id="clear-self-btn" class="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors hidden">Clear</button>
         </div>
         
-        <div class="page-controls" style="gap: 0.5rem; flex-wrap: wrap;">
-            <button id="sort-by-name-btn" class="btn btn-secondary active">Sort A-Z</button>
-            <button id="sort-by-level-btn" class="btn btn-secondary">Sort by Level</button>
-            <select id="status-filter" class="btn btn-secondary" style="min-width: 140px;">
+        <div class="px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-2 flex-wrap transition-colors duration-200">
+            <button id="sort-by-name-btn" class="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px]">Sort A-Z</button>
+            <button id="sort-by-level-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Sort by Level</button>
+            <select id="status-filter" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-w-[140px] min-h-[44px] cursor-pointer">
                 <option value="active">Active Only</option>
                 <option value="all">All Statuses</option>
                 <option value="inactive">Inactive Only</option>
             </select>
         </div>
 
-        <div id="sync-status" style="margin: 0.5rem 0; font-size: 0.85rem; color: #555;"></div>
+        <div id="sync-status" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 transition-colors duration-200"></div>
 
-        <div id="archer-list-container" class="archer-select-list" style="padding-bottom: 6rem;">
+        <div id="archer-list-container" class="flex-1 px-2 pb-24 overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
             <!-- Archer list will be rendered here -->
         </div>
 
-        <footer class="global-footer" style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: space-between;">
-            <a href="index.html" class="btn btn-secondary">Home</a>
-            <button id="load-from-mysql-btn" class="btn btn-primary"><i class="fas fa-cloud-download-alt"></i> Load from MySQL</button>
-            <button id="sync-to-mysql-btn" class="btn btn-success"><i class="fas fa-cloud-upload-alt"></i> Sync to MySQL</button>
-            <button id="import-csv-btn" class="btn btn-secondary"><i class="fas fa-file-import"></i> Import CSV</button>
-            <button id="export-csv-btn" class="btn btn-secondary"><i class="fas fa-file-export"></i> Export CSV</button>
-            <button id="new-list-btn" class="btn btn-danger"><i class="fas fa-trash-alt"></i> New List</button>
+        <footer class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2 flex-wrap justify-between shadow-lg transition-colors duration-200 z-10">
+            <a href="index.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center">Home</a>
+            <button id="load-from-mysql-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]"><i class="fas fa-cloud-download-alt"></i> Load</button>
+            <button id="sync-to-mysql-btn" class="px-4 py-2 bg-success hover:bg-success-dark text-white rounded font-semibold transition-colors min-h-[44px]"><i class="fas fa-cloud-upload-alt"></i> Sync</button>
+            <button id="import-csv-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]"><i class="fas fa-file-import"></i> Import</button>
+            <button id="export-csv-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]"><i class="fas fa-file-export"></i> Export</button>
+            <button id="new-list-btn" class="px-4 py-2 bg-danger hover:bg-red-700 text-white rounded font-semibold transition-colors min-h-[44px]"><i class="fas fa-trash-alt"></i> New</button>
         </footer>
 
     </div>
 
     <!-- Add/Edit Archer Modal -->
-    <div id="archer-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-content">
-            <h2 id="modal-title">Add Archer</h2>
-            <form id="archer-form">
+    <div id="archer-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transition-colors duration-200">
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 z-10">
+                <h2 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-white">Add Archer</h2>
+            </div>
+            <form id="archer-form" class="p-6">
                 <!-- Form content will be injected by JS -->
             </form>
         </div>
@@ -129,6 +123,22 @@
     <script src="js/archer_module.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Dark mode toggle
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const htmlElement = document.documentElement;
+            
+            // Check for saved preference or default to light mode
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                htmlElement.classList.add('dark');
+            }
+            
+            darkModeToggle.addEventListener('click', () => {
+                htmlElement.classList.toggle('dark');
+                const newTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
+                localStorage.setItem('theme', newTheme);
+            });
+            
             const SCHOOL_EMAIL_DOMAIN = '@student.davincischools.org';
             const modal = document.getElementById('archer-modal');
             const addArcherBtn = document.getElementById('add-archer-btn');
@@ -215,10 +225,10 @@
                 if (state.selfArcher) {
                     const nickname = state.selfArcher.nickname ? ` (${state.selfArcher.nickname})` : '';
                     selfSummaryEl.textContent = `You: ${state.selfArcher.first} ${state.selfArcher.last}${nickname}`;
-                    clearSelfBtn.style.display = 'inline-block';
+                    clearSelfBtn.classList.remove('hidden');
                 } else {
                     selfSummaryEl.textContent = 'You: Not set';
-                    clearSelfBtn.style.display = 'none';
+                    clearSelfBtn.classList.add('hidden');
                 }
             }
 
@@ -392,10 +402,10 @@
                 form.innerHTML = createFormFieldsHTML();
                 
                 const buttonContainer = document.createElement('div');
-                buttonContainer.className = 'modal-buttons';
+                buttonContainer.className = 'flex gap-2 mt-6 sticky bottom-0 bg-white dark:bg-gray-800 pt-4 border-t border-gray-200 dark:border-gray-700';
                 buttonContainer.innerHTML = `
-                    <button type="button" id="cancel-archer-btn-modal" class="btn btn-secondary">Cancel</button>
-                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="button" id="cancel-archer-btn-modal" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-success hover:bg-success-dark text-white rounded font-semibold transition-colors min-h-[44px]">Save</button>
                 `;
                 form.appendChild(buttonContainer);
                 
@@ -475,7 +485,7 @@
                     };
                 }
 
-                modal.style.display = 'flex';
+                modal.classList.remove('hidden');
             }
             
             function createFormFieldsHTML() {
@@ -485,22 +495,22 @@
                     <input type="hidden" id="legacyTarget">
                     <input type="hidden" id="legacySize">
 
-                    <section class="archer-modal-section">
-                        <h3>Identity</h3>
-                        <div class="modal-grid two-col">
-                            <div class="form-group"><label for="first">First Name*</label><input type="text" id="first" required></div>
-                            <div class="form-group"><label for="last">Last Name*</label><input type="text" id="last" required></div>
-                            <div class="form-group"><label for="nickname">Nickname</label><input type="text" id="nickname"></div>
-                            <div class="form-group"><label for="photoUrl">Photo URL</label><input type="url" id="photoUrl" placeholder="https://..."></div>
-                            <div class="form-group"><label for="status">Status</label>
-                                <select id="status">
+                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                        <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Identity</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="first">First Name*</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="first" required></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="last">Last Name*</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="last" required></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="nickname">Nickname</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="nickname"></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="photoUrl">Photo URL</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="url" id="photoUrl" placeholder="https://..."></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="status">Status</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="status">
                                     <option value="active" selected>Active</option>
                                     <option value="inactive">Inactive</option>
                                 </select>
                             </div>
-                            <div class="form-group"><label for="school">School (1-3 Letters)</label><input type="text" id="school" maxlength="3" placeholder="WDV"></div>
-                            <div class="form-group"><label for="grade">Grade</label>
-                                <select id="grade">
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="school">School (1-3 Letters)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="school" maxlength="3" placeholder="WDV"></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="grade">Grade</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="grade">
                                     <option value="">-</option>
                                     <option value="9">9</option>
                                     <option value="10">10</option>
@@ -509,90 +519,90 @@
                                     <option value="GRAD">GRAD</option>
                                 </select>
                             </div>
-                            <div class="form-group"><label for="gender">Gender</label>
-                                <select id="gender">
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="gender">Gender</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="gender">
                                     <option value="M">M</option>
                                     <option value="F">F</option>
                                 </select>
                             </div>
-                            <div class="form-group span-2">
-                                <label for="faves">Friends (extIds, comma separated)</label>
-                                <input type="text" id="faves" placeholder="archer-ext-id-1, archer-ext-id-2">
-                                <div class="form-help-text">Use the generated extIds (first-last-school) for quick linking.</div>
+                            <div class="sm:col-span-2">
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="faves">Friends (extIds, comma separated)</label>
+                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="faves" placeholder="archer-ext-id-1, archer-ext-id-2">
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Use the generated extIds (first-last-school) for quick linking.</div>
                             </div>
                         </div>
                     </section>
 
-                    <section class="archer-modal-section">
-                        <h3>Contact</h3>
-                        <div class="modal-grid two-col">
-                            <div class="form-group span-2">
-                                <label for="email">Email</label>
-                                <div class="input-with-button">
-                                    <input type="email" id="email" placeholder="name@student.davincischools.org">
-                                    <button type="button" id="email-domain-btn">@student...</button>
+                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                        <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Contact</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div class="sm:col-span-2">
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="email">Email</label>
+                                <div class="flex gap-2">
+                                    <input class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="email" id="email" placeholder="name@student.davincischools.org">
+                                    <button type="button" id="email-domain-btn" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">@student...</button>
                                 </div>
-                                <div class="form-help-text">Click the button to append the school domain automatically (optional).</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Click the button to append the school domain automatically (optional).</div>
                             </div>
-                            <div class="form-group"><label for="phone">Phone</label><input type="tel" id="phone" placeholder="###-###-####"></div>
-                            <div class="form-group"><label for="usArcheryId">USA Archery ID</label><input type="text" id="usArcheryId"></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="phone">Phone</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="tel" id="phone" placeholder="###-###-####"></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="usArcheryId">USA Archery ID</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="usArcheryId"></div>
                         </div>
                     </section>
 
-                    <section class="archer-modal-section">
-                        <h3>Performance</h3>
-                        <div class="modal-grid three-col">
-                            <div class="form-group"><label for="level">Level</label>
-                                <select id="level">
+                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                        <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Performance</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="level">Level</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="level">
                                     <option value="VAR">VAR</option>
                                     <option value="JV">JV</option>
                                     <option value="BEG">BEG</option>
                                 </select>
                             </div>
-                            <div class="form-group"><label for="jvPr">JV PR</label><input type="number" id="jvPr" min="0" max="360"></div>
-                            <div class="form-group"><label for="varPr">Varsity PR</label><input type="number" id="varPr" min="0" max="360"></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="jvPr">JV PR</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="jvPr" min="0" max="360"></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="varPr">Varsity PR</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="varPr" min="0" max="360"></div>
                         </div>
                     </section>
 
-                    <section class="archer-modal-section">
-                        <h3>Equipment & Measurements</h3>
-                        <div class="modal-grid three-col">
-                            <div class="form-group"><label for="domEye">Dominant Eye</label>
-                                <select id="domEye">
+                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                        <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Equipment & Measurements</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="domEye">Dominant Eye</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="domEye">
                                     <option value="">-</option>
                                     <option value="RT">Right</option>
                                     <option value="LT">Left</option>
                                 </select>
                             </div>
-                            <div class="form-group"><label for="domHand">Dominant Hand</label>
-                                <select id="domHand">
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="domHand">Dominant Hand</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="domHand">
                                     <option value="">-</option>
                                     <option value="RT">Right</option>
                                     <option value="LT">Left</option>
                                 </select>
                             </div>
-                            <div class="form-group"><label for="heightIn">Height (in)</label><input type="number" id="heightIn" min="0" step="1"></div>
-                            <div class="form-group"><label for="wingspanIn">Wingspan (in)</label><input type="number" id="wingspanIn" min="0" step="0.1"></div>
-                            <div class="form-group"><label for="riserHeightIn">Riser Height (in)</label><input type="number" id="riserHeightIn" min="0" step="0.1"></div>
-                            <div class="form-group"><label for="limbLength">Limb Length</label>
-                                <select id="limbLength">
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="heightIn">Height (in)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="heightIn" min="0" step="1"></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="wingspanIn">Wingspan (in)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="wingspanIn" min="0" step="0.1"></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="riserHeightIn">Riser Height (in)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="riserHeightIn" min="0" step="0.1"></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="limbLength">Limb Length</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="limbLength">
                                     <option value="">-</option>
                                     <option value="S">S</option>
                                     <option value="M">M</option>
                                     <option value="L">L</option>
                                 </select>
                             </div>
-                            <div class="form-group"><label for="limbWeightLbs">Limb Weight (lbs)</label><input type="number" id="limbWeightLbs" min="0" step="0.5"></div>
-                            <div class="form-group"><label for="drawLengthSugg">Draw Length (in)</label><input type="number" id="drawLengthSugg" min="0" step="0.1"></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="limbWeightLbs">Limb Weight (lbs)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="limbWeightLbs" min="0" step="0.5"></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="drawLengthSugg">Draw Length (in)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="drawLengthSugg" min="0" step="0.1"></div>
                         </div>
                     </section>
 
-                    <section class="archer-modal-section">
-                        <h3>Notes</h3>
-                        <div class="modal-grid two-col">
-                            <div class="form-group span-2"><label for="notesGear">Gear Notes</label><textarea id="notesGear" rows="2"></textarea></div>
-                            <div class="form-group span-2"><label for="notesCurrent">Current Notes</label><textarea id="notesCurrent" rows="2"></textarea></div>
-                            <div class="form-group span-2"><label for="notesArchive">Archive Notes</label><textarea id="notesArchive" rows="2"></textarea></div>
+                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                        <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Notes</h3>
+                        <div class="grid grid-cols-1 gap-3">
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesGear">Gear Notes</label><textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesGear" rows="2"></textarea></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesCurrent">Current Notes</label><textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesCurrent" rows="2"></textarea></div>
+                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesArchive">Archive Notes</label><textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesArchive" rows="2"></textarea></div>
                         </div>
                     </section>
                 `;
@@ -607,7 +617,7 @@
             }
 
             function closeModal() {
-                modal.style.display = 'none';
+                modal.classList.add('hidden');
             }
 
             function editArcher(index) {
@@ -765,15 +775,15 @@
             
             sortByNameBtn.onclick = () => {
                 sortMode = 'name';
-                sortByNameBtn.classList.add('active');
-                sortByLevelBtn.classList.remove('active');
+                sortByNameBtn.className = 'px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px]';
+                sortByLevelBtn.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]';
                 renderList();
             };
 
             sortByLevelBtn.onclick = () => {
                 sortMode = 'level';
-                sortByLevelBtn.classList.add('active');
-                sortByNameBtn.classList.remove('active');
+                sortByLevelBtn.className = 'px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px]';
+                sortByNameBtn.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]';
                 renderList();
             };
 

@@ -68,22 +68,22 @@ const ScorecardView = (() => {
     // Header with archer info and status
     if (showHeader) {
       const statusBadge = archerData.verified 
-        ? '<span class="status-badge status-verified">✓ Verified</span>'
+        ? '<span class="inline-block px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full text-sm font-semibold">✓ Verified</span>'
         : archerData.completed
-        ? '<span class="status-badge status-completed">Completed</span>'
-        : '<span class="status-badge status-in-progress">In Progress</span>';
+        ? '<span class="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-sm font-semibold">Completed</span>'
+        : '<span class="inline-block px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full text-sm font-semibold">In Progress</span>';
       
       html += `
-        <div class="scorecard-header">
-          <div class="archer-info">
-            <h3>${archerData.firstName} ${archerData.lastName}</h3>
-            <div class="archer-details">
-              ${archerData.school ? `<span>${archerData.school}</span>` : ''}
+        <div class="mb-6 pb-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-start">
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">${archerData.firstName} ${archerData.lastName}</h3>
+            <div class="flex gap-3 text-sm text-gray-600 dark:text-gray-400 mb-2">
+              ${archerData.school ? `<span class="font-medium">${archerData.school}</span>` : ''}
               ${archerData.level ? `<span>${archerData.level}</span>` : ''}
               ${archerData.gender ? `<span>${archerData.gender === 'M' ? 'Boys' : 'Girls'}</span>` : ''}
             </div>
-            ${roundData.eventName ? `<div class="event-name">${roundData.eventName}</div>` : ''}
-            ${roundData.division ? `<div class="division-name">${roundData.division}</div>` : ''}
+            ${roundData.eventName ? `<div class="text-base font-semibold text-gray-700 dark:text-gray-300">${roundData.eventName}</div>` : ''}
+            ${roundData.division ? `<div class="text-sm text-gray-600 dark:text-gray-400">${roundData.division}</div>` : ''}
           </div>
           ${showStatus ? statusBadge : ''}
         </div>
@@ -92,21 +92,21 @@ const ScorecardView = (() => {
     
     // Scorecard table
     html += `
-      <table class="score-table scorecard-table">
-        <thead>
+      <table class="w-full border-collapse text-sm">
+        <thead class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-b-2 border-gray-300 dark:border-gray-600">
           <tr>
-            <th>E</th>
-            <th>A1</th>
-            <th>A2</th>
-            <th>A3</th>
-            <th>10s</th>
-            <th>Xs</th>
-            <th>END</th>
-            <th>RUN</th>
-            <th>AVG</th>
+            <th class="px-2 py-2 text-center font-semibold">E</th>
+            <th class="px-2 py-2 text-center font-semibold">A1</th>
+            <th class="px-2 py-2 text-center font-semibold">A2</th>
+            <th class="px-2 py-2 text-center font-semibold">A3</th>
+            <th class="px-2 py-2 text-center font-semibold">10s</th>
+            <th class="px-2 py-2 text-center font-semibold">Xs</th>
+            <th class="px-2 py-2 text-center font-semibold">END</th>
+            <th class="px-2 py-2 text-center font-semibold">RUN</th>
+            <th class="px-2 py-2 text-center font-semibold">AVG</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="text-gray-800 dark:text-gray-200">
     `;
     
     let runningTotal = 0;
@@ -144,14 +144,14 @@ const ScorecardView = (() => {
       }
       
       html += `
-        <tr>
-          <td>${endNum}</td>
-          ${endScores.map(s => `<td class="score-cell ${getScoreColor(s)}">${s || ''}</td>`).join('')}
-          <td class="calculated-cell">${isComplete ? (endTens + endXs) : ''}</td>
-          <td class="calculated-cell">${isComplete ? endXs : ''}</td>
-          <td class="calculated-cell">${isComplete ? endTotal : ''}</td>
-          <td class="calculated-cell">${isComplete ? runningTotal : ''}</td>
-          <td class="calculated-cell score-cell ${avgClass}">${avg}</td>
+        <tr class="border-b border-gray-200 dark:border-gray-700">
+          <td class="px-2 py-2 text-center">${endNum}</td>
+          ${endScores.map(s => `<td class="px-2 py-2 text-center font-bold ${getScoreColor(s)}">${s || ''}</td>`).join('')}
+          <td class="px-2 py-2 text-center text-gray-600 dark:text-gray-400">${isComplete ? (endTens + endXs) : ''}</td>
+          <td class="px-2 py-2 text-center text-gray-600 dark:text-gray-400">${isComplete ? endXs : ''}</td>
+          <td class="px-2 py-2 text-center font-bold">${isComplete ? endTotal : ''}</td>
+          <td class="px-2 py-2 text-center font-bold">${isComplete ? runningTotal : ''}</td>
+          <td class="px-2 py-2 text-center font-bold ${avgClass}">${avg}</td>
         </tr>
       `;
     }
@@ -173,14 +173,14 @@ const ScorecardView = (() => {
       }
       
       html += `
-        <tfoot>
+        <tfoot class="bg-gray-50 dark:bg-gray-800 border-t-2 border-gray-300 dark:border-gray-600">
           <tr>
-            <td colspan="4" style="text-align: right; font-weight: bold;">Round Totals:</td>
-            <td class="calculated-cell">${totalTensOverall + totalXsOverall}</td>
-            <td class="calculated-cell">${totalXsOverall}</td>
-            <td class="calculated-cell"></td>
-            <td class="calculated-cell">${runningTotal}</td>
-            <td class="calculated-cell score-cell ${finalAvgClass}">${finalAvg > 0 ? finalAvg : ''}</td>
+            <td colspan="4" class="px-2 py-3 text-right font-bold text-gray-800 dark:text-white">Round Totals:</td>
+            <td class="px-2 py-3 text-center font-bold text-gray-800 dark:text-white">${totalTensOverall + totalXsOverall}</td>
+            <td class="px-2 py-3 text-center font-bold text-gray-800 dark:text-white">${totalXsOverall}</td>
+            <td class="px-2 py-3 text-center"></td>
+            <td class="px-2 py-3 text-center font-bold text-lg text-gray-800 dark:text-white">${runningTotal}</td>
+            <td class="px-2 py-3 text-center font-bold ${finalAvgClass}">${finalAvg > 0 ? finalAvg : ''}</td>
           </tr>
         </tfoot>
       `;
@@ -203,28 +203,31 @@ const ScorecardView = (() => {
   function showScorecardModal(archerData, roundData, options = {}) {
     const { onClose, ...scorecardOptions } = options;
     
+    // Detect dark mode
+    const isDark = document.documentElement.classList.contains('dark');
+    
     // Create modal if it doesn't exist
     let modal = document.getElementById('scorecard-view-modal');
     if (!modal) {
       modal = document.createElement('div');
       modal.id = 'scorecard-view-modal';
-      modal.className = 'modal';
-      modal.style.cssText = 'display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); align-items: flex-start; padding-top: 60px;';
+      modal.className = 'fixed inset-0 z-50 flex items-start justify-center pt-16 px-4 bg-black bg-opacity-50';
+      modal.style.display = 'none';
       document.body.appendChild(modal);
     }
     
     const scorecardHTML = renderScorecard(archerData, roundData, scorecardOptions);
     
     modal.innerHTML = `
-      <div class="modal-content" style="background: white; margin: auto; padding: 20px; border-radius: 8px; max-width: 900px; max-height: 85vh; overflow-y: auto; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <button class="modal-close-btn" style="position: absolute; top: 10px; right: 10px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1000; line-height: 1;">&times;</button>
-        <div style="margin-top: 40px;">
+      <div class="bg-white dark:bg-gray-900 rounded-lg shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-y-auto relative p-6">
+        <button class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full text-2xl font-bold transition-colors z-10">&times;</button>
+        <div class="mt-8">
           ${scorecardHTML}
         </div>
       </div>
     `;
     
-    const closeBtn = modal.querySelector('.modal-close-btn');
+    const closeBtn = modal.querySelector('button');
     closeBtn.onclick = () => {
       modal.style.display = 'none';
       if (onClose) onClose();
@@ -239,12 +242,12 @@ const ScorecardView = (() => {
     };
     
     modal.style.display = 'flex';
-    modal.style.alignItems = 'flex-start';
     
     // Scroll to top when modal opens
     setTimeout(() => {
-      if (modal.querySelector('.modal-content')) {
-        modal.querySelector('.modal-content').scrollTop = 0;
+      const content = modal.querySelector('div');
+      if (content) {
+        content.scrollTop = 0;
       }
       window.scrollTo(0, 0);
     }, 10);
