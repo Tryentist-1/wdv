@@ -1023,6 +1023,14 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)/ends$#i', $route,
     $tens = (int)($input['tens'] ?? 0);
     $xs = (int)($input['xs'] ?? 0);
     $deviceTs = $input['deviceTs'] ?? null;
+    if ($deviceTs) {
+        try {
+            $dt = new DateTime($deviceTs);
+            $deviceTs = $dt->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            $deviceTs = null;
+        }
+    }
     if ($end < 1) { json_response(['error' => 'endNumber required'], 400); exit; }
     $pdo = db();
     $cardCheck = $pdo->prepare('SELECT ra.round_id, ra.locked, r.event_id FROM round_archers ra JOIN rounds r ON r.id = ra.round_id WHERE ra.id = ? LIMIT 1');
