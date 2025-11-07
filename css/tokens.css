@@ -1,0 +1,415 @@
+/* ============================================================================
+   DESIGN TOKENS - Archery Score Management Suite
+   Version: 2.0
+   Description: Unified design tokens for theming and consistency
+   ============================================================================ */
+
+/* ======================
+   1. THEME FOUNDATION
+   ====================== */
+
+:root {
+  /* Color Palette - Semantic naming for theming */
+  
+  /* Primary Brand Colors */
+  --color-primary: #2d7dd9;
+  --color-primary-dark: #1e6bb8;
+  --color-primary-light: #4a9de6;
+  
+  --color-secondary: #6c757d;
+  --color-secondary-dark: #5a6268;
+  --color-secondary-light: #868e96;
+  
+  /* Status Colors */
+  --color-success: #28a745;
+  --color-success-dark: #1e7e34;
+  --color-success-light: #48b461;
+  
+  --color-danger: #d92d20;
+  --color-danger-dark: #c9302c;
+  --color-danger-light: #e74c3c;
+  
+  --color-warning: #ffc107;
+  --color-warning-dark: #e0a800;
+  --color-warning-light: #ffcd39;
+  
+  --color-info: #0dcaf0;
+  --color-info-dark: #0aa2c0;
+  --color-info-light: #3dd5f3;
+  
+  /* Archery Score Colors (Target Face) */
+  --color-score-gold: #ffc107;     /* X, 10, 9 */
+  --color-score-red: #dc3545;      /* 8, 7 */
+  --color-score-blue: #0dcaf0;     /* 6, 5 */
+  --color-score-black: #000000;    /* 4, 3 */
+  --color-score-white: #ffffff;    /* 2, 1 */
+  --color-score-miss: #adb5bd;     /* M */
+  
+  /* Neutral Grays */
+  --color-gray-50: #f8f9fa;
+  --color-gray-100: #f0f2f5;
+  --color-gray-200: #e9ecef;
+  --color-gray-300: #dee2e6;
+  --color-gray-400: #ced4da;
+  --color-gray-500: #adb5bd;
+  --color-gray-600: #6c757d;
+  --color-gray-700: #495057;
+  --color-gray-800: #343a40;
+  --color-gray-900: #212529;
+  
+  /* Accent Colors */
+  --color-orange: #fd7e14;
+  --color-orange-dark: #e8690b;
+  --color-purple: #6f42c1;
+  --color-purple-dark: #5a32a3;
+  
+  /* ======================
+     2. SEMANTIC COLORS (Light Theme)
+     ====================== */
+  
+  /* Surface Colors */
+  --color-bg-body: var(--color-gray-100);
+  --color-bg-surface: #ffffff;
+  --color-bg-elevated: #ffffff;
+  --color-bg-overlay: rgba(0, 0, 0, 0.5);
+  
+  /* Text Colors */
+  --color-text-primary: var(--color-gray-900);
+  --color-text-secondary: var(--color-gray-600);
+  --color-text-tertiary: var(--color-gray-500);
+  --color-text-inverse: #ffffff;
+  --color-text-link: var(--color-primary);
+  
+  /* Border Colors */
+  --color-border-default: var(--color-gray-300);
+  --color-border-light: var(--color-gray-200);
+  --color-border-dark: var(--color-gray-400);
+  --color-border-focus: var(--color-primary);
+  
+  /* Interactive States */
+  --color-hover-bg: var(--color-gray-50);
+  --color-active-bg: var(--color-gray-200);
+  --color-selected-bg: #e7f1ff;
+  --color-disabled-bg: var(--color-gray-200);
+  --color-disabled-text: var(--color-gray-500);
+  
+  /* ======================
+     3. SPACING SCALE
+     ====================== */
+  
+  --space-0: 0;
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  
+  /* Component-specific spacing */
+  --space-button-padding-x: var(--space-3);
+  --space-button-padding-y: var(--space-2);
+  --space-input-padding-x: var(--space-3);
+  --space-input-padding-y: var(--space-2);
+  --space-card-padding: var(--space-4);
+  --space-modal-padding: var(--space-6);
+  
+  /* ======================
+     4. TYPOGRAPHY
+     ====================== */
+  
+  /* Font Families */
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-family-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+  
+  /* Font Sizes - Using clamp() for responsive scaling */
+  --font-size-xs: clamp(0.75rem, 2vw, 0.8rem);      /* 12-13px */
+  --font-size-sm: clamp(0.85rem, 2vw, 0.9rem);      /* 14-14.5px */
+  --font-size-base: clamp(0.9rem, 2.5vw, 1rem);     /* 14.5-16px */
+  --font-size-md: clamp(1rem, 3vw, 1.1rem);         /* 16-17.5px */
+  --font-size-lg: clamp(1.1rem, 3.5vw, 1.25rem);    /* 17.5-20px */
+  --font-size-xl: clamp(1.2rem, 4vw, 1.5rem);       /* 19-24px */
+  --font-size-2xl: clamp(1.5rem, 5vw, 2rem);        /* 24-32px */
+  --font-size-3xl: clamp(1.8rem, 6vw, 2.5rem);      /* 29-40px */
+  
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Line Heights */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+  
+  /* ======================
+     5. LAYOUT & SIZING
+     ====================== */
+  
+  /* Border Radius */
+  --radius-sm: 3px;
+  --radius-base: 5px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-full: 9999px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-base: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+  --shadow-inset: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  
+  /* Z-index Scale */
+  --z-base: 1;
+  --z-dropdown: 100;
+  --z-sticky: 500;
+  --z-fixed: 1000;
+  --z-modal-backdrop: 1500;
+  --z-modal: 2000;
+  --z-popover: 2500;
+  --z-tooltip: 3000;
+  
+  /* Component Heights */
+  --height-header: 60px;
+  --height-footer: 50px;
+  --height-button: 36px;
+  --height-button-sm: 32px;
+  --height-button-lg: 44px;
+  --height-input: 40px;
+  --height-keypad: 240px;
+  
+  /* Touch Targets (Mobile) */
+  --touch-target-min: 44px;  /* iOS HIG / Android Material minimum */
+  
+  /* Breakpoints (for reference in JS) */
+  --breakpoint-sm: 480px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  
+  /* ======================
+     6. TRANSITIONS & ANIMATIONS
+     ====================== */
+  
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 200ms ease-in-out;
+  --transition-slow: 300ms ease-in-out;
+  
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* ======================
+     7. KEYPAD-SPECIFIC TOKENS
+     ====================== */
+  
+  --keypad-height: var(--height-keypad);
+  --keypad-z-index: calc(var(--z-fixed) + 1);
+  --keypad-bg: #111111;
+  --keypad-gap: 8px;
+  --keypad-gap-mobile: 5px;
+  --keypad-button-padding: 15px 5px;
+  --keypad-button-padding-mobile: 10px 5px;
+  --keypad-button-font-size: 1.2em;
+  --keypad-button-font-size-mobile: 1em;
+  --keypad-button-min-size: var(--touch-target-min);
+  
+  /* Keypad Button Colors (using score colors) */
+  --keypad-score-gold-bg: var(--color-score-gold);
+  --keypad-score-gold-text: var(--color-text-primary);
+  --keypad-score-red-bg: var(--color-score-red);
+  --keypad-score-red-text: var(--color-text-inverse);
+  --keypad-score-blue-bg: var(--color-score-blue);
+  --keypad-score-blue-text: var(--color-text-primary);
+  --keypad-score-black-bg: var(--color-score-black);
+  --keypad-score-black-text: var(--color-text-inverse);
+  --keypad-score-white-bg: var(--color-score-white);
+  --keypad-score-white-text: var(--color-text-primary);
+  --keypad-score-miss-bg: var(--color-score-white);
+  --keypad-score-miss-text: var(--color-score-miss);
+  
+  /* Keypad Action Buttons */
+  --keypad-nav-bg: var(--color-orange);
+  --keypad-nav-text: var(--color-text-inverse);
+  --keypad-clear-bg: var(--color-danger);
+  --keypad-clear-text: var(--color-text-inverse);
+  --keypad-close-bg: var(--color-primary);
+  --keypad-close-text: var(--color-text-inverse);
+  
+  /* ======================
+     8. SAFE AREA INSETS (iOS/Android)
+     ====================== */
+  
+  --safe-area-inset-top: env(safe-area-inset-top, 0);
+  --safe-area-inset-right: env(safe-area-inset-right, 0);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0);
+  --safe-area-inset-left: env(safe-area-inset-left, 0);
+}
+
+/* ======================
+   9. DARK THEME OVERRIDES
+   ====================== */
+
+:root[data-theme="dark"],
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* Surface Colors */
+    --color-bg-body: #0d1117;
+    --color-bg-surface: #161b22;
+    --color-bg-elevated: #1c2128;
+    --color-bg-overlay: rgba(0, 0, 0, 0.7);
+    
+    /* Text Colors */
+    --color-text-primary: #e6edf3;
+    --color-text-secondary: #8b949e;
+    --color-text-tertiary: #6e7681;
+    --color-text-inverse: #0d1117;
+    --color-text-link: #58a6ff;
+    
+    /* Border Colors */
+    --color-border-default: #30363d;
+    --color-border-light: #21262d;
+    --color-border-dark: #484f58;
+    --color-border-focus: #58a6ff;
+    
+    /* Interactive States */
+    --color-hover-bg: #1c2128;
+    --color-active-bg: #21262d;
+    --color-selected-bg: #1c2d41;
+    --color-disabled-bg: #21262d;
+    --color-disabled-text: #484f58;
+    
+    /* Adjust primary colors for dark mode */
+    --color-primary: #58a6ff;
+    --color-primary-dark: #4493e6;
+    --color-primary-light: #79b8ff;
+    
+    /* Score colors remain the same for recognition */
+    /* Users are trained on these colors - don't change */
+    
+    /* Keypad background darker in dark mode */
+    --keypad-bg: #0d1117;
+    
+    /* Shadows more subtle in dark mode */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-base: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
+    --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* ======================
+   10. HIGH CONTRAST MODE (Accessibility)
+   ====================== */
+
+@media (prefers-contrast: high) {
+  :root {
+    /* Increase contrast ratios */
+    --color-text-primary: #000000;
+    --color-text-secondary: #1a1a1a;
+    --color-border-default: #000000;
+    
+    /* Stronger shadows */
+    --shadow-base: 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  }
+  
+  :root[data-theme="dark"] {
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #e6e6e6;
+    --color-border-default: #ffffff;
+  }
+}
+
+/* ======================
+   11. REDUCED MOTION (Accessibility)
+   ====================== */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0ms;
+    --transition-base: 0ms;
+    --transition-slow: 0ms;
+  }
+}
+
+/* ======================
+   12. PRINT STYLES
+   ====================== */
+
+@media print {
+  :root {
+    /* Use light theme for printing */
+    --color-bg-body: #ffffff;
+    --color-bg-surface: #ffffff;
+    --color-text-primary: #000000;
+    --color-text-secondary: #333333;
+    
+    /* Remove shadows for print */
+    --shadow-sm: none;
+    --shadow-base: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+  }
+}
+
+/* ======================
+   13. UTILITY CLASSES (Token-based)
+   ====================== */
+
+/* These can be used directly in HTML or extended in components.css */
+
+.u-text-primary { color: var(--color-text-primary); }
+.u-text-secondary { color: var(--color-text-secondary); }
+.u-text-inverse { color: var(--color-text-inverse); }
+
+.u-bg-surface { background-color: var(--color-bg-surface); }
+.u-bg-elevated { background-color: var(--color-bg-elevated); }
+
+.u-shadow-sm { box-shadow: var(--shadow-sm); }
+.u-shadow-base { box-shadow: var(--shadow-base); }
+.u-shadow-md { box-shadow: var(--shadow-md); }
+
+.u-radius-base { border-radius: var(--radius-base); }
+.u-radius-lg { border-radius: var(--radius-lg); }
+.u-radius-full { border-radius: var(--radius-full); }
+
+/* ======================
+   14. CUSTOM PROPERTIES DOCUMENTATION
+   ====================== */
+
+/*
+  USAGE EXAMPLES:
+  
+  Button with primary color:
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    
+  Responsive padding:
+    padding: var(--space-4);
+    
+  Smooth transition:
+    transition: all var(--transition-base);
+    
+  Theme-aware text:
+    color: var(--color-text-primary);
+    
+  Safe area padding:
+    padding-bottom: calc(var(--space-4) + var(--safe-area-inset-bottom));
+    
+  Keypad button:
+    background-color: var(--keypad-score-gold-bg);
+    color: var(--keypad-score-gold-text);
+*/
+

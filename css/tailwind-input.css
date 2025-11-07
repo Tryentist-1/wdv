@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ======================
+   CUSTOM COMPONENTS
+   ====================== */
+
+@layer components {
+  /* Score Input Fields */
+  .score-input {
+    @apply w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent;
+    @apply focus:outline-2 focus:outline-primary focus:outline-offset-[-2px];
+  }
+  
+  .score-input.is-locked {
+    @apply bg-gray-200 text-gray-500 cursor-not-allowed;
+  }
+  
+  /* Score Color Backgrounds */
+  .score-input-gold {
+    @apply bg-score-gold text-black;
+  }
+  
+  .score-input-red {
+    @apply bg-score-red text-white;
+  }
+  
+  .score-input-blue {
+    @apply bg-score-blue text-white;
+  }
+  
+  .score-input-black {
+    @apply bg-score-black text-white;
+  }
+  
+  .score-input-white {
+    @apply bg-score-white text-black border border-gray-300;
+  }
+  
+  .score-input-miss {
+    @apply bg-score-miss text-white;
+  }
+  
+  /* Tables */
+  .table-scoring {
+    @apply w-full border-collapse text-sm bg-white;
+  }
+  
+  .table-scoring thead {
+    @apply bg-primary text-white sticky top-0 z-10;
+  }
+  
+  .table-scoring th {
+    @apply px-2 py-3 text-center font-bold border border-white/20;
+  }
+  
+  .table-scoring td {
+    @apply px-2 py-1 text-center border border-gray-300;
+  }
+  
+  .table-scoring tbody tr:nth-child(even) {
+    @apply bg-gray-50;
+  }
+  
+  .table-scoring tbody tr:hover {
+    @apply bg-blue-50;
+  }
+  
+  /* Calculated Cells */
+  .cell-calculated {
+    @apply bg-gray-100 font-normal;
+  }
+  
+  .cell-bold {
+    @apply font-bold;
+  }
+  
+  /* Sticky First Column */
+  .cell-sticky {
+    @apply sticky left-0 bg-white z-[5];
+  }
+  
+  .table-scoring tbody tr:nth-child(even) .cell-sticky {
+    @apply bg-gray-50;
+  }
+  
+  .table-scoring tbody tr:hover .cell-sticky {
+    @apply bg-blue-50;
+  }
+  
+  /* Status Badges */
+  .status-badge {
+    @apply inline-block px-2 py-1 text-xs font-bold rounded;
+  }
+  
+  .status-verified {
+    @apply bg-success-light text-success-dark;
+  }
+  
+  .status-void {
+    @apply bg-danger-light text-danger-dark;
+  }
+  
+  .status-pending {
+    @apply bg-warning-light text-warning-dark;
+  }
+  
+  .status-off {
+    @apply bg-gray-200 text-gray-600;
+  }
+}
+
+/* ======================
+   CUSTOM UTILITIES
+   ====================== */
+
+@layer utilities {
+  .touch-target {
+    @apply min-w-touch min-h-touch;
+  }
+  
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left, 0);
+  }
+  
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right, 0);
+  }
+}
+

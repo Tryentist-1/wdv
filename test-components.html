@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Component Library - Archery Score Management</title>
+    
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Enable class-based dark mode
+            theme: {
+                extend: {
+                    colors: {
+              // Score Colors
+              'score-gold': '#FFD700',
+              'score-red': '#DC143C',
+              'score-blue': '#4169E1',
+              'score-black': '#000000',
+              'score-white': '#FFFFFF',
+              'score-miss': '#FF0000',
+              
+              // Brand Colors
+              'primary': {
+                DEFAULT: '#2d7dd9',
+                dark: '#1b5bbf',
+                light: '#e7f1ff',
+              },
+              'secondary': {
+                DEFAULT: '#6c757d',
+                dark: '#5a6268',
+                light: '#e9ecef',
+              },
+              'success': {
+                DEFAULT: '#28a745',
+                dark: '#1e7e34',
+                light: '#d1e7dd',
+              },
+              'danger': {
+                DEFAULT: '#d92d20',
+                dark: '#b0241a',
+                light: '#f8d7da',
+              },
+              'warning': {
+                DEFAULT: '#ffc107',
+                dark: '#d39e00',
+                light: '#fff3cd',
+              },
+              'info': {
+                DEFAULT: '#0dcaf0',
+                dark: '#0a98b0',
+                light: '#d0f7fa',
+              },
+              'purple': {
+                DEFAULT: '#6f42c1',
+                dark: '#563d7c',
+                light: '#efebf5',
+              },
+              'orange': {
+                DEFAULT: '#f28c18',
+                dark: '#e8690b',
+                light: '#fff4e8',
+              },
+            }
+          }
+        }
+      }
+    </script>
+    
+    <style>
+      /* Custom component styles that work with Tailwind */
+      .score-input {
+        width: 100%;
+        height: 100%;
+        min-height: 44px;
+        text-align: center;
+        font-weight: bold;
+        border: none;
+        background-color: transparent;
+      }
+      
+      .score-input:focus {
+        outline: 2px solid #2d7dd9;
+        outline-offset: -2px;
+      }
+      
+      /* Safe area insets for iOS */
+      .safe-top { padding-top: env(safe-area-inset-top, 0); }
+      .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
+    </style>
+    <script>
+        // Dark mode toggle functionality
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.classList.contains('dark');
+            
+            if (isDark) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+        
+        // Initialize theme from localStorage or system preference
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+            }
+        }
+        
+        // Run on page load
+        initTheme();
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 p-4 md:p-8 transition-colors duration-200">
+    
+    <!-- Navigation -->
+    <div class="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
+        <div class="flex justify-between items-center mb-4">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Component Library</h1>
+            <button onclick="toggleDarkMode()" 
+                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2">
+                <span class="dark:hidden">🌙 Dark</span>
+                <span class="hidden dark:inline">☀️ Light</span>
+            </button>
+        </div>
+        <nav class="flex flex-wrap gap-2">
+            <a href="#buttons" class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Buttons</a>
+            <a href="#tables" class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Tables</a>
+            <a href="#forms" class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Forms</a>
+            <a href="#badges" class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Badges</a>
+            <a href="#headers" class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Headers</a>
+            <a href="#modals" class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Modals</a>
+        </nav>
+    </div>
+
+    <!-- Section: Buttons -->
+    <section id="buttons" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Buttons</h2>
+        
+        <div class="space-y-6">
+            <!-- Primary Buttons -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Primary Actions</h3>
+                <div class="flex flex-wrap gap-2">
+                    <button class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark min-w-[44px] min-h-[44px] font-semibold">
+                        Primary
+                    </button>
+                    <button class="px-4 py-2 bg-secondary text-white rounded hover:bg-secondary-dark min-w-[44px] min-h-[44px] font-semibold">
+                        Secondary
+                    </button>
+                    <button class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark min-w-[44px] min-h-[44px] font-semibold">
+                        Success
+                    </button>
+                    <button class="px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark min-w-[44px] min-h-[44px] font-semibold">
+                        Danger
+                    </button>
+                    <button class="px-4 py-2 bg-warning text-gray-800 rounded hover:bg-warning-dark min-w-[44px] min-h-[44px] font-semibold">
+                        Warning
+                    </button>
+                    <button class="px-4 py-2 bg-purple text-white rounded hover:bg-purple-dark min-w-[44px] min-h-[44px] font-semibold">
+                        Purple
+                    </button>
+                    <button class="px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark min-w-[44px] min-h-[44px] font-semibold">
+                        Orange
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Button Sizes -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Sizes</h3>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button class="px-2 py-1 bg-primary text-white rounded text-xs min-w-[44px] min-h-[44px]">
+                        Small
+                    </button>
+                    <button class="px-4 py-2 bg-primary text-white rounded min-w-[44px] min-h-[44px]">
+                        Default
+                    </button>
+                    <button class="px-6 py-3 bg-primary text-white rounded text-lg min-w-[44px] min-h-[44px]">
+                        Large
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Button States -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">States</h3>
+                <div class="flex flex-wrap gap-2">
+                    <button class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark min-w-[44px] min-h-[44px]">
+                        Normal
+                    </button>
+                    <button class="px-4 py-2 bg-primary-dark text-white rounded min-w-[44px] min-h-[44px] ring-2 ring-primary">
+                        Active
+                    </button>
+                    <button class="px-4 py-2 bg-gray-300 text-gray-500 rounded cursor-not-allowed min-w-[44px] min-h-[44px]" disabled>
+                        Disabled
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Icon Buttons -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Icon Buttons</h3>
+                <div class="flex flex-wrap gap-2">
+                    <button class="px-3 py-2 bg-primary text-white rounded min-w-[44px] min-h-[44px] text-lg">
+                        📄
+                    </button>
+                    <button class="px-3 py-2 bg-success text-white rounded min-w-[44px] min-h-[44px] text-lg">
+                        ✓
+                    </button>
+                    <button class="px-3 py-2 bg-danger text-white rounded min-w-[44px] min-h-[44px] text-lg">
+                        ✗
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Full Width -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Full Width (Mobile)</h3>
+                <button class="w-full px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark min-h-[44px] font-semibold">
+                    Full Width Button
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section: Tables -->
+    <section id="tables" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Tables</h2>
+        
+        <!-- Scoring Table -->
+        <div class="mb-8">
+            <h3 class="text-sm font-semibold text-gray-600 mb-3">Scoring Table (Bale View)</h3>
+            <div class="overflow-x-auto -mx-6 px-6">
+                <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[600px]">
+                    <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-bold sticky left-0 bg-primary z-10">Archer</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">A1</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">A2</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">A3</th>
+                            <th class="px-2 py-2 text-center font-bold w-14">End</th>
+                            <th class="px-2 py-2 text-center font-bold w-14">Run</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">X</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">10</th>
+                            <th class="px-2 py-2 text-center font-bold w-16">Card</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
+                            <td class="px-3 py-1 text-left font-semibold sticky left-0 bg-white dark:bg-gray-700">Adjani D. (A)</td>
+                            <td class="p-0 border-r border-gray-200">
+                                <input type="text" class="score-input bg-score-gold text-black" value="10" readonly>
+                            </td>
+                            <td class="p-0 border-r border-gray-200">
+                                <input type="text" class="score-input bg-score-gold text-black" value="10" readonly>
+                            </td>
+                            <td class="p-0 border-r border-gray-200">
+                                <input type="text" class="score-input bg-score-gold text-black" value="10" readonly>
+                            </td>
+                            <td class="px-2 py-1 text-center bg-gray-100 font-bold border-r border-gray-200">30</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 border-r border-gray-200">30</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 border-r border-gray-200">0</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 border-r border-gray-200">3</td>
+                            <td class="px-2 py-1 text-center">
+                                <button class="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark">📄</button>
+                            </td>
+                        </tr>
+                        <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600 bg-gray-50 dark:bg-gray-800">
+                            <td class="px-3 py-1 text-left font-semibold sticky left-0 bg-gray-50 dark:bg-gray-800">Alina V. (B)</td>
+                            <td class="p-0 border-r border-gray-200">
+                                <input type="text" class="score-input bg-score-gold text-black" value="9" readonly>
+                            </td>
+                            <td class="p-0 border-r border-gray-200">
+                                <input type="text" class="score-input bg-score-red text-white" value="8" readonly>
+                            </td>
+                            <td class="p-0 border-r border-gray-200">
+                                <input type="text" class="score-input bg-score-red text-white" value="7" readonly>
+                            </td>
+                            <td class="px-2 py-1 text-center bg-gray-100 font-bold border-r border-gray-200">24</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 border-r border-gray-200">24</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 border-r border-gray-200">0</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 border-r border-gray-200">0</td>
+                            <td class="px-2 py-1 text-center">
+                                <button class="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark">📄</button>
+                            </td>
+                        </tr>
+                        <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
+                            <td class="px-3 py-1 text-left font-semibold sticky left-0 bg-white dark:bg-gray-700">Alan L. (C)</td>
+                            <td class="p-0 border-r border-gray-200">
+                                <input type="text" class="score-input bg-score-red text-white" value="8" readonly>
+                            </td>
+                            <td class="p-0 border-r border-gray-200">
+                                <input type="text" class="score-input bg-score-black text-white" value="4" readonly>
+                            </td>
+                            <td class="p-0 border-r border-gray-200">
+                                <input type="text" class="score-input bg-score-black text-white" value="3" readonly>
+                            </td>
+                            <td class="px-2 py-1 text-center bg-gray-100 font-bold border-r border-gray-200">15</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 border-r border-gray-200">15</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 border-r border-gray-200">0</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 border-r border-gray-200">0</td>
+                            <td class="px-2 py-1 text-center">
+                                <button class="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark">📄</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">✨ Sticky first column, responsive, hover states</p>
+        </div>
+        
+        <!-- Card View Table -->
+        <div class="mb-8">
+            <h3 class="text-sm font-semibold text-gray-600 mb-3">Card View Table (Individual Scorecard)</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700">
+                    <thead class="bg-primary dark:bg-primary-dark text-white">
+                        <tr>
+                            <th class="px-2 py-2 text-center font-bold w-12">E</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">A1</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">A2</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">A3</th>
+                            <th class="px-2 py-2 text-center font-bold w-14">END</th>
+                            <th class="px-2 py-2 text-center font-bold w-14">RUN</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">AVG</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-gray-200 dark:border-gray-600">
+                            <td class="px-2 py-1 text-center font-semibold">1</td>
+                            <td class="px-2 py-1 text-center bg-score-gold text-black font-bold">10</td>
+                            <td class="px-2 py-1 text-center bg-score-gold text-black font-bold">10</td>
+                            <td class="px-2 py-1 text-center bg-score-gold text-black font-bold">10</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 font-bold">30</td>
+                            <td class="px-2 py-1 text-center bg-gray-100">30</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 bg-score-gold text-black font-bold">10.0</td>
+                        </tr>
+                        <tr class="border-b border-gray-200 bg-gray-50">
+                            <td class="px-2 py-1 text-center font-semibold">2</td>
+                            <td class="px-2 py-1 text-center bg-score-gold text-black font-bold">9</td>
+                            <td class="px-2 py-1 text-center bg-score-red text-white font-bold">8</td>
+                            <td class="px-2 py-1 text-center bg-score-red text-white font-bold">7</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 font-bold">24</td>
+                            <td class="px-2 py-1 text-center bg-gray-100">54</td>
+                            <td class="px-2 py-1 text-center bg-gray-100 bg-score-red text-white font-bold">8.0</td>
+                        </tr>
+                    </tbody>
+                    <tfoot class="bg-gray-200 dark:bg-gray-600">
+                        <tr>
+                            <td colspan="4" class="px-2 py-2 text-right font-bold">Round Totals:</td>
+                            <td class="px-2 py-2 text-center font-bold">54</td>
+                            <td class="px-2 py-2 text-center font-bold">54</td>
+                            <td class="px-2 py-2 text-center font-bold bg-score-gold text-black">9.0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">✨ Compact design, score colors, totals row</p>
+        </div>
+    </section>
+
+    <!-- Section: Forms & Inputs -->
+    <section id="forms" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Forms & Inputs</h2>
+        
+        <div class="space-y-6">
+            <!-- Score Inputs -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Score Inputs (All Colors)</h3>
+                <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-score-gold text-black" value="X" readonly>
+                    </div>
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-score-gold text-black" value="10" readonly>
+                    </div>
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-score-gold text-black" value="9" readonly>
+                    </div>
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-score-red text-white" value="8" readonly>
+                    </div>
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-score-red text-white" value="7" readonly>
+                    </div>
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-score-blue text-white" value="6" readonly>
+                    </div>
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-score-blue text-white" value="5" readonly>
+                    </div>
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-score-black text-white" value="4" readonly>
+                    </div>
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-score-black text-white" value="3" readonly>
+                    </div>
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-score-white text-black border border-gray-300" value="2" readonly>
+                    </div>
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-score-white text-black border border-gray-300" value="1" readonly>
+                    </div>
+                    <div class="h-12 border border-gray-300">
+                        <input type="text" class="score-input bg-white text-gray-500 border border-gray-300" value="M" readonly>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Text Inputs -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Text Inputs</h3>
+                <div class="space-y-3">
+                    <input type="text" 
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors" 
+                           placeholder="Search archers...">
+                    <input type="text" 
+                           class="w-full px-3 py-2 border-2 border-primary bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-primary transition-colors" 
+                           placeholder="Event code...">
+                </div>
+            </div>
+            
+            <!-- Search Bar -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Search Bar</h3>
+                <div class="relative">
+                    <input type="text" 
+                           class="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-colors" 
+                           placeholder="Search...">
+                    <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section: Status Badges -->
+    <section id="badges" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Status Badges</h2>
+        
+        <div class="space-y-4">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Card Status</h3>
+                <div class="flex flex-wrap gap-2">
+                    <span class="inline-block px-2 py-1 text-xs font-bold rounded bg-success-light text-success-dark">VER</span>
+                    <span class="inline-block px-2 py-1 text-xs font-bold rounded bg-danger-light text-danger-dark">VOID</span>
+                    <span class="inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark">PENDING</span>
+                    <span class="inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 text-gray-600">OFF</span>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Sync Status</h3>
+                <div class="flex flex-wrap gap-2">
+                    <span class="inline-block px-2 py-1 text-sm text-success">✓ Synced</span>
+                    <span class="inline-block px-2 py-1 text-sm text-warning">⟳ Syncing...</span>
+                    <span class="inline-block px-2 py-1 text-sm text-danger">✗ Error</span>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Live Status</h3>
+                <div class="flex flex-wrap gap-2">
+                    <span class="inline-block px-3 py-1 text-sm font-semibold rounded bg-success text-white">Live: On</span>
+                    <span class="inline-block px-3 py-1 text-sm font-semibold rounded bg-gray-400 text-white">Live: Off</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section: Headers & Layouts -->
+    <section id="headers" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Headers & Layouts</h2>
+        
+        <div class="space-y-6">
+            <!-- Page Header -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Page Header</h3>
+                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center transition-colors duration-200">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">R300 - E<span class="text-primary">1</span></h1>
+                        <span class="inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 mt-1">Not Live Scoring</span>
+                    </div>
+                    <div class="text-right text-sm text-gray-600 dark:text-gray-300">
+                        <div class="font-semibold">Test Event 3</div>
+                        <div>Bale <span class="font-semibold">2</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card Background -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Card/Section Background</h3>
+                <div class="bg-gray-100 dark:bg-gray-900 p-4 rounded-lg transition-colors duration-200">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
+                        <h3 class="font-bold text-gray-800 dark:text-white mb-2">Setup Card</h3>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm">This is a card on a gray background. Cards have white background with shadow.</p>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">✨ Body: bg-gray-100, Cards: bg-white with shadow</p>
+            </div>
+            
+            <!-- View Header (Card View) -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">View Header (Card View)</h3>
+                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 transition-colors duration-200">
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Adjani De La Riva</h2>
+                    <div class="flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <span>Bale 2 - Target A</span>
+                        <span>DVD VAR</span>
+                        <span>OPEN / F</span>
+                        <span class="inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark">PENDING</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section: Modals -->
+    <section id="modals" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Modals</h2>
+        
+        <div class="space-y-4">
+            <button onclick="document.getElementById('modal-example').classList.remove('hidden')" 
+                    class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark">
+                Open Modal Example
+            </button>
+            
+            <p class="text-sm text-gray-600 dark:text-gray-300">Click button to see modal in action</p>
+        </div>
+    </section>
+
+    <!-- Modal Example (Hidden by default) -->
+    <div id="modal-example" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-colors duration-200">
+            <div class="p-6">
+                <h2 class="text-xl font-bold mb-4 dark:text-white">Modal Title</h2>
+                <p class="text-gray-600 dark:text-gray-300 mb-6">This is an example modal. All your modals will look like this.</p>
+                <div class="flex justify-end gap-2">
+                    <button onclick="document.getElementById('modal-example').classList.add('hidden')" 
+                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="document.getElementById('modal-example').classList.add('hidden')" 
+                            class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition-colors">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-sm text-gray-500">
+        <p>Component Library - Archery Score Management</p>
+        <p class="mt-2">Test on mobile: <code class="bg-gray-200 px-2 py-1 rounded">http://172.16.0.97:8001/test-components.html</code></p>
+    </footer>
+
+</body>
+</html>
+
