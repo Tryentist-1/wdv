@@ -3770,6 +3770,32 @@ function updateManualLiveControls(summaryOverride) {
     async function init() {
         console.log("Initializing Ranking Round 300 App...");
         
+        // TEST MODE: Clear all session data if running in test mode
+        const isTestMode = window.location.search.includes('test=1') || 
+                          (typeof window.playwright !== 'undefined') ||
+                          (typeof navigator !== 'undefined' && navigator.webdriver);
+        if (isTestMode) {
+            console.log('[TEST MODE] Clearing all session data for clean test environment');
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                // Clear IndexedDB if available
+                if (window.indexedDB && window.indexedDB.databases) {
+                    const dbs = await window.indexedDB.databases();
+                    await Promise.all(dbs.map(db => {
+                        return new Promise((resolve) => {
+                            const req = window.indexedDB.deleteDatabase(db.name);
+                            req.onsuccess = () => resolve();
+                            req.onerror = () => resolve();
+                            req.onblocked = () => resolve();
+                        });
+                    }));
+                }
+            } catch (e) {
+                console.warn('[TEST MODE] Error clearing storage:', e);
+            }
+        }
+        
         // PHASE 0: Create or retrieve archer cookie (must happen first)
         const archerId = getArcherCookie(); // From common.js
         console.log('[Phase 0] Archer cookie initialized:', archerId);
