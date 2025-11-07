@@ -4,11 +4,17 @@
 // For local dev: npx playwright test tests/ranking_round_setup_sections.spec.js --config=playwright.config.local.js
 
 const { test, expect } = require('@playwright/test');
+const {
+  openRankingRound,
+  enterManualMode,
+  enterPreassignedMode,
+  DEFAULT_EVENT_CODE,
+} = require('./helpers/ranking_round_utils');
 
 test.describe('Ranking Round - Setup Sections Functionality', () => {
   
   test('should detect manual mode correctly', async ({ page }) => {
-    await page.goto('/ranking_round_300.html');
+    await openRankingRound(page);
     
     // Cancel modal to enter manual mode
     await page.click('#cancel-event-modal-btn');
@@ -22,14 +28,7 @@ test.describe('Ranking Round - Setup Sections Functionality', () => {
   });
   
   test('should detect pre-assigned mode correctly', async ({ page }) => {
-    await page.goto('/ranking_round_300.html');
-    
-    // Connect to event to enter pre-assigned mode
-    await page.fill('#event-code-input', 'tuesday');
-    await page.click('#verify-code-btn');
-    
-    // Wait for the event to load and setup sections to render
-    await page.waitForSelector('#preassigned-setup-section', { state: 'visible', timeout: 10000 });
+    await enterPreassignedMode(page);
     
     // Should show pre-assigned setup section
     await expect(page.locator('#preassigned-setup-section')).toBeVisible();
@@ -45,8 +44,7 @@ test.describe('Ranking Round - Manual Setup Controls', () => {
   
   test.beforeEach(async ({ page }) => {
     // Start in manual mode
-    await page.goto('/ranking_round_300.html');
-    await page.click('#cancel-event-modal-btn');
+    await enterManualMode(page);
   });
   
   test('should have all manual setup controls', async ({ page }) => {
@@ -68,9 +66,10 @@ test.describe('Ranking Round - Manual Setup Controls', () => {
     await expect(baleInput).toHaveValue('3');
     
     // Refresh page and check persistence
-    await page.reload();
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForSelector('#event-modal', { state: 'visible', timeout: 3000 });
     await page.click('#cancel-event-modal-btn');
-    await expect(baleInput).toHaveValue('3');
+    await expect(page.locator('#bale-number-input-manual')).toHaveValue('3');
   });
   
   test('should show selection indicator updates', async ({ page }) => {
@@ -100,10 +99,7 @@ test.describe('Ranking Round - Pre-assigned Setup Controls', () => {
   
   test.beforeEach(async ({ page }) => {
     // Start in pre-assigned mode
-    await page.goto('/ranking_round_300.html');
-    await page.fill('#event-code-input', 'tuesday');
-    await page.click('#verify-code-btn');
-    await page.waitForTimeout(1500);
+    await enterPreassignedMode(page);
   });
   
   test('should show bale list container', async ({ page }) => {
@@ -113,7 +109,7 @@ test.describe('Ranking Round - Pre-assigned Setup Controls', () => {
   
   test('should render bale list items', async ({ page }) => {
     // Wait for bale list to load
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
     
     // Should show bale list items
     const baleItems = page.locator('.bale-list-item');
@@ -130,7 +126,7 @@ test.describe('Ranking Round - Pre-assigned Setup Controls', () => {
   });
   
   test('should have proper bale list styling', async ({ page }) => {
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(500);
     
     const baleItems = page.locator('.bale-list-item');
     
@@ -150,8 +146,7 @@ test.describe('Ranking Round - Setup Mode Switching', () => {
   
   test('should switch from manual to pre-assigned mode', async ({ page }) => {
     // Start in manual mode
-    await page.goto('/ranking_round_300.html');
-    await page.click('#cancel-event-modal-btn');
+    await enterManualMode(page);
     
     // Should show manual setup
     await expect(page.locator('#manual-setup-section')).toBeVisible();
@@ -159,9 +154,9 @@ test.describe('Ranking Round - Setup Mode Switching', () => {
     
     // Connect to event
     await page.click('#change-event-btn');
-    await page.fill('#event-code-input', 'tuesday');
+    await page.fill('#event-code-input', DEFAULT_EVENT_CODE);
     await page.click('#verify-code-btn');
-    await page.waitForTimeout(1500);
+    await page.waitForSelector('#preassigned-setup-section', { state: 'visible', timeout: 3000 });
     
     // Should now show pre-assigned setup
     await expect(page.locator('#preassigned-setup-section')).toBeVisible();
@@ -170,10 +165,7 @@ test.describe('Ranking Round - Setup Mode Switching', () => {
   
   test('should switch from pre-assigned to manual mode', async ({ page }) => {
     // Start in pre-assigned mode
-    await page.goto('/ranking_round_300.html');
-    await page.fill('#event-code-input', 'tuesday');
-    await page.click('#verify-code-btn');
-    await page.waitForTimeout(1500);
+    await enterPreassignedMode(page);
     
     // Should show pre-assigned setup
     await expect(page.locator('#preassigned-setup-section')).toBeVisible();
@@ -191,8 +183,7 @@ test.describe('Ranking Round - Mobile Responsiveness', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     
-    await page.goto('/ranking_round_300.html');
-    await page.click('#cancel-event-modal-btn');
+    await enterManualMode(page);
     
     // Manual setup should still be visible on mobile
     await expect(page.locator('#manual-setup-section')).toBeVisible();
@@ -207,10 +198,7 @@ test.describe('Ranking Round - Mobile Responsiveness', () => {
     // Set tablet viewport
     await page.setViewportSize({ width: 768, height: 1024 });
     
-    await page.goto('/ranking_round_300.html');
-    await page.fill('#event-code-input', 'tuesday');
-    await page.click('#verify-code-btn');
-    await page.waitForTimeout(1500);
+    await enterPreassignedMode(page);
     
     // Pre-assigned setup should work on tablet
     await expect(page.locator('#preassigned-setup-section')).toBeVisible();
