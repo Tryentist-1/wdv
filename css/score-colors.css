@@ -1,0 +1,485 @@
+/* ============================================================================
+   SCORE COLOR SYSTEM - Archery Target Face Colors
+   Version: 2.0
+   Description: Unified score coloring for all scoring modules
+   ============================================================================ */
+
+/* ======================
+   1. SCORE COLOR UTILITIES
+   ====================== */
+
+/*
+  Olympic Target Face Color Coding:
+  - X, 10, 9  → Gold (Yellow)
+  - 8, 7      → Red
+  - 6, 5      → Blue
+  - 4, 3      → Black
+  - 2, 1      → White
+  - M         → White with gray text (Miss)
+*/
+
+/* Base Score Color Classes */
+.score-gold,
+.score-x,
+.score-10,
+.score-9 {
+  background-color: var(--color-score-gold) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.score-red,
+.score-8,
+.score-7 {
+  background-color: var(--color-score-red) !important;
+  color: var(--color-text-inverse) !important;
+}
+
+.score-blue,
+.score-6,
+.score-5 {
+  background-color: var(--color-score-blue) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.score-black,
+.score-4,
+.score-3 {
+  background-color: var(--color-score-black) !important;
+  color: var(--color-text-inverse) !important;
+}
+
+.score-white,
+.score-2,
+.score-1 {
+  background-color: var(--color-score-white) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border-light) !important;
+}
+
+.score-miss,
+.score-m {
+  background-color: var(--color-score-white) !important;
+  color: var(--color-score-miss) !important;
+  border: 1px solid var(--color-border-light) !important;
+}
+
+.score-empty {
+  background-color: transparent !important;
+}
+
+/* ======================
+   2. TABLE CELL VARIANTS
+   ====================== */
+
+/* For table cells (td elements) */
+table td.score-gold,
+table td.score-x,
+table td.score-10,
+table td.score-9 {
+  background-color: var(--color-score-gold) !important;
+  color: var(--color-text-primary) !important;
+}
+
+table td.score-red,
+table td.score-8,
+table td.score-7 {
+  background-color: var(--color-score-red) !important;
+  color: var(--color-text-inverse) !important;
+}
+
+table td.score-blue,
+table td.score-6,
+table td.score-5 {
+  background-color: var(--color-score-blue) !important;
+  color: var(--color-text-primary) !important;
+}
+
+table td.score-black,
+table td.score-4,
+table td.score-3 {
+  background-color: var(--color-score-black) !important;
+  color: var(--color-text-inverse) !important;
+}
+
+table td.score-white,
+table td.score-2,
+table td.score-1 {
+  background-color: var(--color-score-white) !important;
+  color: var(--color-text-primary) !important;
+}
+
+table td.score-miss,
+table td.score-m {
+  background-color: var(--color-score-white) !important;
+  color: var(--color-score-miss) !important;
+}
+
+table td.score-empty {
+  background-color: transparent !important;
+}
+
+/* ======================
+   3. INPUT ELEMENT VARIANTS
+   ====================== */
+
+/* For input elements (used in scoring views) */
+input.score-gold,
+input.score-x,
+input.score-10,
+input.score-9 {
+  background-color: var(--color-score-gold) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-score-gold) !important;
+}
+
+input.score-red,
+input.score-8,
+input.score-7 {
+  background-color: var(--color-score-red) !important;
+  color: var(--color-text-inverse) !important;
+  border-color: var(--color-score-red) !important;
+}
+
+input.score-blue,
+input.score-6,
+input.score-5 {
+  background-color: var(--color-score-blue) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-score-blue) !important;
+}
+
+input.score-black,
+input.score-4,
+input.score-3 {
+  background-color: var(--color-score-black) !important;
+  color: var(--color-text-inverse) !important;
+  border-color: var(--color-score-black) !important;
+}
+
+input.score-white,
+input.score-2,
+input.score-1 {
+  background-color: var(--color-score-white) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-default) !important;
+}
+
+input.score-miss,
+input.score-m {
+  background-color: var(--color-score-white) !important;
+  color: var(--color-score-miss) !important;
+  border-color: var(--color-border-default) !important;
+}
+
+/* ======================
+   4. CALCULATED CELL VARIANTS
+   ====================== */
+
+/* For calculated/display-only cells (end totals, running totals, etc.) */
+.calculated-cell.score-gold,
+.score-cell.score-gold {
+  background-color: var(--color-score-gold);
+  color: var(--color-text-primary);
+}
+
+.calculated-cell.score-red,
+.score-cell.score-red {
+  background-color: var(--color-score-red);
+  color: var(--color-text-inverse);
+}
+
+.calculated-cell.score-blue,
+.score-cell.score-blue {
+  background-color: var(--color-score-blue);
+  color: var(--color-text-primary);
+}
+
+.calculated-cell.score-black,
+.score-cell.score-black {
+  background-color: var(--color-score-black);
+  color: var(--color-text-inverse);
+}
+
+.calculated-cell.score-white,
+.score-cell.score-white {
+  background-color: var(--color-score-white);
+  color: var(--color-text-primary);
+}
+
+/* ======================
+   5. KEYPAD BUTTON VARIANTS
+   ====================== */
+
+/* Keypad buttons using score colors */
+.keypad-btn[data-value="X"],
+.keypad-btn[data-value="10"],
+.keypad-btn[data-value="9"] {
+  background-color: var(--keypad-score-gold-bg);
+  color: var(--keypad-score-gold-text);
+  border-color: #cca300;
+}
+
+.keypad-btn[data-value="8"],
+.keypad-btn[data-value="7"] {
+  background-color: var(--keypad-score-red-bg);
+  color: var(--keypad-score-red-text);
+  border-color: #b00000;
+}
+
+.keypad-btn[data-value="6"],
+.keypad-btn[data-value="5"] {
+  background-color: var(--keypad-score-blue-bg);
+  color: var(--keypad-score-blue-text);
+  border-color: #4aa0cc;
+}
+
+.keypad-btn[data-value="4"],
+.keypad-btn[data-value="3"] {
+  background-color: var(--keypad-score-black-bg);
+  color: var(--keypad-score-black-text);
+  border-color: #1a1a1a;
+}
+
+.keypad-btn[data-value="2"],
+.keypad-btn[data-value="1"] {
+  background-color: var(--keypad-score-white-bg);
+  color: var(--keypad-score-white-text);
+  border-color: #cccccc;
+}
+
+.keypad-btn[data-value="M"] {
+  background-color: var(--keypad-score-miss-bg);
+  color: var(--keypad-score-miss-text);
+  border-color: #cccccc;
+}
+
+/* ======================
+   6. AVERAGE SCORE COLORS (Ranking Rounds)
+   ====================== */
+
+/* Used in ranking round calculated cells for visual feedback */
+.avg-1-2 {
+  background-color: var(--color-score-white);
+  color: var(--color-text-primary);
+}
+
+.avg-3-4 {
+  background-color: var(--color-gray-600);
+  color: var(--color-text-inverse);
+}
+
+.avg-5-6 {
+  background-color: var(--color-score-blue);
+  color: var(--color-text-primary);
+}
+
+.avg-7-8 {
+  background-color: var(--color-score-red);
+  color: var(--color-text-inverse);
+}
+
+.avg-9-up {
+  background-color: var(--color-score-gold);
+  color: var(--color-text-primary);
+}
+
+/* ======================
+   7. LOCKED/VERIFIED SCORE STYLING
+   ====================== */
+
+/* For locked or verified scores (read-only state) */
+.locked-score-input,
+.score-input.locked {
+  background-color: var(--color-gray-200) !important;
+  color: var(--color-gray-600) !important;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+.locked-scorecard-row {
+  opacity: 0.85;
+}
+
+/* ======================
+   8. SYNC STATUS INDICATORS
+   ====================== */
+
+/* Live sync feedback on scoring rows */
+tr.sync-pending td {
+  outline: 2px solid var(--color-warning);
+  outline-offset: -2px;
+}
+
+tr.sync-ok td {
+  outline: 2px solid var(--color-success);
+  outline-offset: -2px;
+}
+
+tr.sync-error td {
+  outline: 2px solid var(--color-danger);
+  outline-offset: -2px;
+}
+
+/* ======================
+   9. DARK THEME ADJUSTMENTS
+   ====================== */
+
+:root[data-theme="dark"] {
+  /* Score colors remain the same for recognition */
+  /* Only adjust borders and text for better contrast */
+  
+  .score-white,
+  .score-2,
+  .score-1,
+  table td.score-white,
+  table td.score-2,
+  table td.score-1 {
+    border-color: var(--color-border-dark) !important;
+  }
+  
+  .score-miss,
+  .score-m,
+  table td.score-miss,
+  table td.score-m {
+    border-color: var(--color-border-dark) !important;
+  }
+  
+  /* Locked scores in dark mode */
+  .locked-score-input,
+  .score-input.locked {
+    background-color: var(--color-gray-800) !important;
+    color: var(--color-gray-500) !important;
+  }
+}
+
+/* ======================
+   10. PRINT STYLES
+   ====================== */
+
+@media print {
+  /* Ensure score colors print correctly */
+  .score-gold,
+  .score-x,
+  .score-10,
+  .score-9,
+  table td.score-gold,
+  table td.score-x,
+  table td.score-10,
+  table td.score-9 {
+    background-color: #ffc107 !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .score-red,
+  .score-8,
+  .score-7,
+  table td.score-red,
+  table td.score-8,
+  table td.score-7 {
+    background-color: #dc3545 !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .score-blue,
+  .score-6,
+  .score-5,
+  table td.score-blue,
+  table td.score-6,
+  table td.score-5 {
+    background-color: #0dcaf0 !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .score-black,
+  .score-4,
+  .score-3,
+  table td.score-black,
+  table td.score-4,
+  table td.score-3 {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .score-white,
+  .score-2,
+  .score-1,
+  table td.score-white,
+  table td.score-2,
+  table td.score-1 {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* ======================
+   11. HIGH CONTRAST MODE
+   ====================== */
+
+@media (prefers-contrast: high) {
+  /* Increase border visibility in high contrast mode */
+  .score-white,
+  .score-2,
+  .score-1,
+  .score-miss,
+  .score-m,
+  table td.score-white,
+  table td.score-2,
+  table td.score-1,
+  table td.score-miss,
+  table td.score-m {
+    border: 2px solid var(--color-text-primary) !important;
+  }
+  
+  /* Ensure text contrast meets WCAG AAA */
+  .score-gold,
+  .score-x,
+  .score-10,
+  .score-9 {
+    color: #000000 !important;
+  }
+  
+  .score-red,
+  .score-8,
+  .score-7,
+  .score-black,
+  .score-4,
+  .score-3 {
+    color: #ffffff !important;
+  }
+}
+
+/* ======================
+   12. JAVASCRIPT HELPER FUNCTION
+   ====================== */
+
+/*
+  JavaScript function to apply score colors:
+  
+  function getScoreColorClass(value) {
+    const v = String(value).toUpperCase();
+    if (v === 'X' || v === '10' || v === '9') return 'score-gold';
+    if (v === '8' || v === '7') return 'score-red';
+    if (v === '6' || v === '5') return 'score-blue';
+    if (v === '4' || v === '3') return 'score-black';
+    if (v === '2' || v === '1') return 'score-white';
+    if (v === 'M') return 'score-miss';
+    return 'score-empty';
+  }
+  
+  Usage:
+    element.className = getScoreColorClass(scoreValue);
+    // or
+    element.classList.add(getScoreColorClass(scoreValue));
+*/
+
