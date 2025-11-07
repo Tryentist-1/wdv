@@ -2154,7 +2154,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderScoringView() {
         if (!scoringControls.container) return;
-        scoringControls.currentEndDisplay.textContent = `Bale ${state.baleNumber} - End ${state.currentEnd}`;
+        
+        // Update header with event name and division
+        const headerTitle = document.getElementById('scoring-header-title');
+        if (headerTitle) {
+            const eventName = state.eventName || 'Event';
+            const division = state.roundName || 'R300';
+            headerTitle.textContent = `${eventName} - ${division}`;
+        }
+        
+        // Update bale and end displays
+        const baleDisplay = document.getElementById('current-bale-display');
+        const endDisplay = document.getElementById('current-end-display');
+        if (baleDisplay) baleDisplay.textContent = state.baleNumber;
+        if (endDisplay) endDisplay.textContent = state.currentEnd;
         
         // Sync column removed per user request
         let isLiveEnabled = false;  // Disabled - sync column removed
@@ -2163,7 +2176,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[600px]">
                 <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
                     <tr>
-                        <th class="px-3 py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10">Archer</th>
+                        <th class="px-2 py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10 max-w-[120px]">Archer</th>
                         <th class="px-2 py-2 text-center font-bold w-12">A1</th>
                         <th class="px-2 py-2 text-center font-bold w-12">A2</th>
                         <th class="px-2 py-2 text-center font-bold w-12">A3</th>
@@ -2221,7 +2234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             tableHTML += `
                 <tr data-archer-id="${archer.id}" ${rowLockAttr} class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
-                    <td class="px-3 py-1 text-left font-semibold sticky left-0 bg-white dark:bg-gray-700">${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
+                    <td class="px-2 py-1 text-left text-xs font-semibold sticky left-0 bg-white dark:bg-gray-700 max-w-[120px] truncate">${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
@@ -2312,7 +2325,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (avgNum >= 3) avgClass = 'score-black';
                 else avgClass = 'score-white';
             }
-            tableHTML += `<tr class="border-b border-gray-200 dark:border-gray-600"><td class="px-2 py-1 text-center font-semibold">${endNum}</td>${endScores.map(s => `<td class="px-2 py-1 text-center ${getScoreColor(s)} font-bold">${s}</td>`).join('')}<td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 font-bold">${isComplete ? endTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? runningTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? endXs : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? (endTens + endXs) : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 ${avgClass} font-bold">${avg}</td></tr>`;
+            tableHTML += `<tr class="border-b border-gray-200 dark:border-gray-600"><td class="px-2 py-1 text-center font-semibold">${endNum}</td>${endScores.map(s => `<td class="px-2 py-1 text-center ${getScoreColor(s)} font-bold">${s}</td>`).join('')}<td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 font-bold">${isComplete ? endTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? runningTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? endXs : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? (endTens + endXs) : ''}</td><td class="px-2 py-1 text-center ${avgClass} font-bold">${avg}</td></tr>`;
         }
         tbody.innerHTML = tableHTML;
         table.appendChild(tbody);
@@ -3228,21 +3241,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (badge) {
             if (!summary.enabled) {
                 badge.textContent = 'Live Updates Off';
-                badge.className = 'status-badge status-off';
+                badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300';
             } else if (summary.failed > 0) {
                 badge.textContent = 'Retry Needed';
-                badge.className = 'status-badge status-off';
+                badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-danger-light text-danger-dark';
             } else {
                 const pendingTotal = summary.pending + summary.queueSize;
                 if (pendingTotal > 0) {
                     badge.textContent = 'Syncing...';
-                    badge.className = 'status-badge status-pending';
+                    badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark';
                 } else if (summary.currentEndSynced) {
                     badge.textContent = 'Synced';
-                    badge.className = 'status-badge status-synced';
+                    badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-success-light text-success-dark';
                 } else {
-                    badge.textContent = 'Not Synced';
-                    badge.className = 'status-badge status-pending';
+                    badge.textContent = 'Pending Sync';
+                    badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark';
                 }
             }
         }

@@ -94,6 +94,14 @@
             outline-offset: -2px;
         }
         
+        /* Score color classes */
+        .score-gold { background-color: #FFD700; color: #000000; }
+        .score-red { background-color: #DC143C; color: #FFFFFF; }
+        .score-blue { background-color: #4169E1; color: #FFFFFF; }
+        .score-black { background-color: #000000; color: #FFFFFF; }
+        .score-white { background-color: #FFFFFF; color: #000000; }
+        .score-m { background-color: #808080; color: #FFFFFF; }
+        
         /* Safe area insets for iOS */
         .safe-top { padding-top: env(safe-area-inset-top, 0); }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
@@ -176,14 +184,14 @@
         </div>
 
         <div id="scoring-view" style="display: none;">
-            <div class="h-16 px-4 py-2 bg-white dark:bg-gray-800 shadow-sm flex justify-between items-center sticky top-0 z-20 safe-top transition-colors duration-200">
-                <div class="flex flex-col">
-                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">R300 - E<span id="current-end-display">1</span></h1>
-                    <span id="live-status-badge" class="inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 mt-1" aria-live="polite">Not Live Scoring</span>
+            <div class="px-4 py-2 bg-white dark:bg-gray-800 shadow-sm flex justify-between items-center sticky top-0 z-20 safe-top transition-colors duration-200">
+                <div class="flex items-center gap-3">
+                    <h1 id="scoring-header-title" class="text-2xl font-bold text-gray-800 dark:text-white">Event - Division</h1>
+                    <span id="live-status-badge" class="inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300" aria-live="polite">Pending Sync</span>
                 </div>
                 <div class="text-right text-sm text-gray-600 dark:text-gray-300">
-                    <div id="event-name" class="font-semibold">No Event</div>
-                    <div id="bale-info">Bale <span id="current-bale-display" class="font-semibold">1</span></div>
+                    <div id="bale-info">Bale: <span id="current-bale-display" class="font-semibold">1</span></div>
+                    <div id="end-info">End: <span id="current-end-display" class="font-semibold">1</span></div>
                 </div>
             </div>
             <div id="bale-scoring-container" class="overflow-x-auto px-2">
