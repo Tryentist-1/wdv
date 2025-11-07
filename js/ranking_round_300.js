@@ -2685,7 +2685,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Clear session storage for this scorecard
         try {
-            deleteCurrentBaleSession();
+            localStorage.removeItem('current_bale_session');
+            console.log('[resetState] Cleared bale session');
         } catch (e) {
             console.warn('Error clearing session:', e);
         }
