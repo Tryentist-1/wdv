@@ -1172,6 +1172,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert('Bale is full (4 archers).');
                         return;
                     }
+                    
+                    // CRITICAL: Prevent mixing divisions in manual mode
+                    // The first archer selected determines the division for the entire round
+                    if (state.archers.length > 0) {
+                        const firstArcher = state.archers[0];
+                        const firstDivision = firstArcher.division;
+                        if (divisionCode && firstDivision && divisionCode !== firstDivision) {
+                            checkbox.checked = false;
+                            const divName = (code) => {
+                                if (code === 'BJV') return 'Boys JV';
+                                if (code === 'GJV') return 'Girls JV';
+                                if (code === 'BVAR') return 'Boys Varsity';
+                                if (code === 'GVAR') return 'Girls Varsity';
+                                return code;
+                            };
+                            alert(`Cannot mix divisions on the same bale.\n\nYou've selected ${divName(firstDivision)} archers.\nThis archer is in ${divName(divisionCode)}.\n\nPlease select archers from the same division, or press Reset to start over.`);
+                            return;
+                        }
+                    }
+                    
                         if (!state.archers.some(a => (a.extId || a.id) === uniqueId)) {
                             const usedTargets = state.archers.map(a => a.targetAssignment);
                             const availableTargets = TARGET_LETTERS.filter(t => !usedTargets.includes(t));
