@@ -3306,9 +3306,14 @@ async function ensureLiveRoundReady(options = {}) {
         }
 
         if (state.archers && state.archers.length) {
+            console.log('[ensureLiveRoundReady] Ensuring archers:', state.archers.map(a => ({ id: a.id, archerId: a.archerId, name: `${a.firstName} ${a.lastName}` })));
             await Promise.all(
-                state.archers.map(archer => LiveUpdates.ensureArcher(archer.id, archer))
+                state.archers.map(archer => {
+                    console.log(`[ensureLiveRoundReady] Calling ensureArcher with id="${archer.id}", archerId="${archer.archerId}"`);
+                    return LiveUpdates.ensureArcher(archer.id, archer);
+                })
             );
+            console.log('[ensureLiveRoundReady] After ensureArcher, archerIds mapping:', LiveUpdates._state.archerIds);
         }
 
         return true;
