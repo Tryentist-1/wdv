@@ -140,13 +140,39 @@
     function saveConfig(partial) {
         try {
             const current = JSON.parse(localStorage.getItem('live_updates_config') || '{}');
+            const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+            const detectedApiBase = getApiBase();
+            
+            // If on localhost, don't save production URL
+            if (isLocalhost && partial?.apiBase && partial.apiBase.includes('tryentist.com')) {
+                console.log('[LiveUpdates] Preventing save of production URL on localhost');
+                delete partial.apiBase;
+            }
+            
             const merged = Object.assign({}, current, partial || {});
+            
+            // Always use detected API base when on localhost
+            if (isLocalhost && !partial?.apiBase) {
+                merged.apiBase = detectedApiBase;
+            }
+            
             localStorage.setItem('live_updates_config', JSON.stringify(merged));
             Object.assign(state.config, merged);
         } catch (_) {}
     }
 
     async function request(path, method, body, _retried) {
+        // Debug: Log API base being used
+        const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        if (isLocalhost && state.config.apiBase && state.config.apiBase.includes('tryentist.com')) {
+            console.error('[LiveUpdates] ERROR: Using production API on localhost! apiBase:', state.config.apiBase);
+            console.error('[LiveUpdates] Detected hostname:', window.location.hostname);
+            console.error('[LiveUpdates] Expected local API:', getApiBase());
+            // Force correct API base
+            state.config.apiBase = getApiBase();
+            console.log('[LiveUpdates] Corrected API base to:', state.config.apiBase);
+        }
+        
         // Prefer working without an API key on archer devices; include key if present
         const key = state.config.apiKey || localStorage.getItem('coach_api_key') || '';
         const headers = { 'Content-Type': 'application/json' };
@@ -347,33 +373,42 @@
 
     // --- INITIALIZATION ---
     function init(overrides) {
-        const storedConfig = JSON.parse(localStorage.getItem('live_updates_config') || '{}');
+        const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+        const detectedApiBase = getApiBase();
+        
+        // On localhost, always start fresh - don't trust localStorage
+        let storedConfig = {};
+        if (!isLocalhost) {
+            // Only read from localStorage if not on localhost
+            storedConfig = JSON.parse(localStorage.getItem('live_updates_config') || '{}');
+        } else {
+            // On localhost, clear any production URLs from localStorage
+            try {
+                const raw = localStorage.getItem('live_updates_config');
+                if (raw) {
+                    storedConfig = JSON.parse(raw);
+                    if (storedConfig.apiBase && storedConfig.apiBase.includes('tryentist.com')) {
+                        console.log('[LiveUpdates] Clearing production API URL from localStorage (localhost detected)');
+                        delete storedConfig.apiBase;
+                        localStorage.setItem('live_updates_config', JSON.stringify(storedConfig));
+                    }
+                }
+            } catch (e) {
+                storedConfig = {};
+            }
+        }
+        
         const coachKey = localStorage.getItem('coach_api_key');
         if (coachKey && !storedConfig.apiKey) {
             storedConfig.apiKey = coachKey;
-        }
-        // Always detect API base based on current hostname (prioritize detection over stored config)
-        // This ensures localhost detection works even if a production URL was previously stored
-        const detectedApiBase = getApiBase();
-        const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-        
-        // If on localhost and stored config has production URL, clear it to force detection
-        if (isLocalhost && storedConfig.apiBase && storedConfig.apiBase.includes('tryentist.com')) {
-            console.log('[LiveUpdates] Clearing stale production API URL from localStorage (detected localhost)');
-            delete storedConfig.apiBase;
         }
         
         const config = {
             ...storedConfig,
             ...overrides,
-            // Priority: 1) override, 2) detected (based on current hostname), 3) stored (if detection matches stored)
-            apiBase: overrides?.apiBase || detectedApiBase || storedConfig.apiBase || 'https://tryentist.com/wdv/api/v1'
+            // Always use detected API base when on localhost
+            apiBase: (isLocalhost && !overrides?.apiBase) ? detectedApiBase : (overrides?.apiBase || storedConfig.apiBase || detectedApiBase || 'https://tryentist.com/wdv/api/v1')
         };
-        
-        // Always use detected API base when on localhost (even if override provided, unless explicitly different)
-        if (isLocalhost && !overrides?.apiBase) {
-            config.apiBase = detectedApiBase;
-        }
         
         setConfig(config);
         loadPersistedState();  // Restore roundId and archerIds from previous session
