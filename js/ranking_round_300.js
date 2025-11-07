@@ -3949,29 +3949,43 @@ function updateManualLiveControls(summaryOverride) {
             };
         }
 
+        console.log('[ATTACH HANDLERS] manualSetupControls.startScoringBtn:', manualSetupControls.startScoringBtn);
         if (manualSetupControls.startScoringBtn) {
+            console.log('[ATTACH HANDLERS] Attaching onclick to Start Scoring button');
             manualSetupControls.startScoringBtn.onclick = async () => {
+                console.log('[START SCORING] Button clicked, archers:', state.archers.length);
+                console.log('[START SCORING] Archers:', state.archers.map(a => ({ id: a.id, name: `${a.firstName} ${a.lastName}` })));
+                
                 if (state.archers.length === 0) {
                     alert('Please select at least one archer to start scoring.');
                     return;
                 }
                 manualSetupControls.startScoringBtn.disabled = true;
                 try {
+                    console.log('[START SCORING] Loading existing scores...');
                     // Load existing scores BEFORE initializing Live sync
                     // This allows editing existing scorecards
                     await loadExistingScoresForArchers();
                     
+                    console.log('[START SCORING] Checking Live Updates enabled:', getLiveEnabled());
                     if (getLiveEnabled()) {
+                        console.log('[START SCORING] Ensuring Live Round ready...');
                         const success = await ensureLiveRoundReady({ promptForCode: true });
+                        console.log('[START SCORING] Live Round ready:', success);
                         if (!success) {
                             alert('Live Sync could not be initialized. Scores will sync when connectivity returns.');
                         }
                     }
 
+                    console.log('[START SCORING] Saving session...');
                     // PHASE 0: Save session for recovery on page reload
                     saveCurrentBaleSession();
 
+                    console.log('[START SCORING] Showing scoring view...');
                     showScoringView();
+                } catch (err) {
+                    console.error('[START SCORING] Error:', err);
+                    alert(`Error starting scoring: ${err.message}`);
                 } finally {
                     manualSetupControls.startScoringBtn.disabled = false;
                 }
@@ -4717,6 +4731,9 @@ function updateManualLiveControls(summaryOverride) {
     if (cancelEventModalBtn) {
         cancelEventModalBtn.onclick = () => {
             hideEventModal();
+            // Render manual setup when canceling modal (no event selected)
+            state.assignmentMode = 'manual';
+            renderSetupSections();
         };
     }
     
