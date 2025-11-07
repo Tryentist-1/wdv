@@ -2161,12 +2161,17 @@ document.addEventListener('DOMContentLoaded', () => {
         try { const cfg = JSON.parse(localStorage.getItem('live_updates_config')||'{}'); isLiveEnabled = cfg.enabled !== undefined ? !!cfg.enabled : true; } catch(_) {}
         
         let tableHTML = `
-            <table class="score-table">
-                <thead>
+            <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[600px]">
+                <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
                     <tr>
-                        <th>Archer</th>
-                        <th>A1</th><th>A2</th><th>A3</th>
-                        <th>10s</th><th>X</th><th>End</th><th>Run</th><th>Avg</th>${isLiveEnabled ? '<th style="width: 30px;">⟳</th>' : ''}<th>Card</th>
+                        <th class="px-3 py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10">Archer</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">A1</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">A2</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">A3</th>
+                        <th class="px-2 py-2 text-center font-bold w-14">End</th>
+                        <th class="px-2 py-2 text-center font-bold w-14">Run</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">X</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">10</th>${isLiveEnabled ? '<th class="px-2 py-2 text-center font-bold w-8">⟳</th>' : ''}<th class="px-2 py-2 text-center font-bold w-16">Card</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -2215,16 +2220,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const lockedAttr = isLocked ? 'data-locked="true" tabindex="-1" disabled' : 'data-locked="false"';
             
             tableHTML += `
-                <tr data-archer-id="${archer.id}" ${rowLockAttr}>
-                    <td>${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
-                    <td class="calculated-cell">${endTens + endXs}</td>
-                    <td class="calculated-cell">${endXs}</td>
-                    <td class="calculated-cell">${endTotal}</td>
-                    <td class="calculated-cell">${runningTotal}</td>
-                    <td class="calculated-cell ${avgClass}">${endAvg}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus}" style="text-align: center;">${syncIcon}</td>` : ''}<td>${statusBadge}<button class="btn view-card-btn" data-archer-id="${archer.id}">📄</button></td>
+                <tr data-archer-id="${archer.id}" ${rowLockAttr} class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
+                    <td class="px-3 py-1 text-left font-semibold sticky left-0 bg-white dark:bg-gray-700">${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 font-bold border-r border-gray-200 dark:border-gray-600">${endTotal}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 border-r border-gray-200 dark:border-gray-600">${runningTotal}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 border-r border-gray-200 dark:border-gray-600">${endXs}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 border-r border-gray-200 dark:border-gray-600">${endTens + endXs}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus} px-2 py-1 text-center">${syncIcon}</td>` : ''}<td class="px-2 py-1 text-center">${statusBadge}<button class="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark" data-archer-id="${archer.id}">📄</button></td>
                 </tr>`;
         });
         tableHTML += `</tbody></table>`;
@@ -2262,9 +2266,9 @@ document.addEventListener('DOMContentLoaded', () => {
         detailsDiv.innerHTML = `<span>Bale ${state.baleNumber} - Target ${archer.targetAssignment}</span><span>${archer.school}</span><span>${archer.level} / ${archer.gender}</span>${statusBadge}${notesText}`;
         header.appendChild(detailsDiv);
         const table = document.createElement('table');
-        table.className = 'score-table';
+        table.className = 'w-full border-collapse text-sm bg-white dark:bg-gray-700';
         table.dataset.archerId = archerId;
-        table.innerHTML = `<thead><tr><th>E</th><th>A1</th><th>A2</th><th>A3</th><th>10s</th><th>Xs</th><th>END</th><th>RUN</th><th>AVG</th></tr></thead>`;
+        table.innerHTML = `<thead class="bg-primary dark:bg-primary-dark text-white"><tr><th class="px-2 py-2 text-center font-bold w-12">E</th><th class="px-2 py-2 text-center font-bold w-12">A1</th><th class="px-2 py-2 text-center font-bold w-12">A2</th><th class="px-2 py-2 text-center font-bold w-12">A3</th><th class="px-2 py-2 text-center font-bold w-14">END</th><th class="px-2 py-2 text-center font-bold w-14">RUN</th><th class="px-2 py-2 text-center font-bold w-12">X</th><th class="px-2 py-2 text-center font-bold w-12">10</th><th class="px-2 py-2 text-center font-bold w-14">AVG</th></tr></thead>`;
         const tbody = document.createElement('tbody');
         let tableHTML = '';
         let runningTotal = 0, totalTensOverall = 0, totalXsOverall = 0;
@@ -2294,7 +2298,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (avgNum >= 3) avgClass = 'score-black';
                 else avgClass = 'score-white';
             }
-            tableHTML += `<tr><td>${endNum}</td>${endScores.map(s => `<td class="score-cell ${getScoreColor(s)}">${s}</td>`).join('')}<td class="calculated-cell">${isComplete ? (endTens + endXs) : ''}</td><td class="calculated-cell">${isComplete ? endXs : ''}</td><td class="calculated-cell">${isComplete ? endTotal : ''}</td><td class="calculated-cell">${isComplete ? runningTotal : ''}</td><td class="calculated-cell score-cell ${avgClass}">${avg}</td></tr>`;
+            tableHTML += `<tr class="border-b border-gray-200 dark:border-gray-600"><td class="px-2 py-1 text-center font-semibold">${endNum}</td>${endScores.map(s => `<td class="px-2 py-1 text-center ${getScoreColor(s)} font-bold">${s}</td>`).join('')}<td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 font-bold">${isComplete ? endTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? runningTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? endXs : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? (endTens + endXs) : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 ${avgClass} font-bold">${avg}</td></tr>`;
         }
         tbody.innerHTML = tableHTML;
         table.appendChild(tbody);
@@ -2373,26 +2377,26 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Ensure keypad has proper styling and is initially hidden
         keypad.element.style.display = 'none';
-        keypad.element.className = 'keypad-container';
         
+        // Tailwind-styled keypad
         keypad.element.innerHTML = `
-            <div class="keypad">
-                <button class="keypad-btn" data-value="X">X</button>
-                <button class="keypad-btn" data-value="10">10</button>
-                <button class="keypad-btn" data-value="9">9</button>
-                <button class="keypad-btn nav-btn" data-action="prev">&larr;</button>
-                <button class="keypad-btn" data-value="8">8</button>
-                <button class="keypad-btn" data-value="7">7</button>
-                <button class="keypad-btn" data-value="6">6</button>
-                <button class="keypad-btn nav-btn" data-action="next">&rarr;</button>
-                <button class="keypad-btn" data-value="5">5</button>
-                <button class="keypad-btn" data-value="4">4</button>
-                <button class="keypad-btn" data-value="3">3</button>
-                <button class="keypad-btn" data-action="clear">CLR</button>
-                <button class="keypad-btn" data-value="2">2</button>
-                <button class="keypad-btn" data-value="1">1</button>
-                <button class="keypad-btn" data-value="M">M</button>
-                <button class="keypad-btn" data-action="close">Close</button>
+            <div class="grid grid-cols-4 gap-2 w-full max-w-xs">
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black border-yellow-600 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="X">X</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black border-yellow-600 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="10">10</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black border-yellow-600 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="9">9</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-orange text-white border-orange-dark min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-action="prev">&larr;</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white border-red-800 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="8">8</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white border-red-800 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="7">7</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white border-blue-900 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="6">6</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-orange text-white border-orange-dark min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-action="next">&rarr;</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white border-blue-900 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="5">5</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white border-gray-700 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="4">4</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white border-gray-700 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="3">3</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger text-white border-danger-dark min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-action="clear">CLR</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black border-gray-300 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="2">2</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black border-gray-300 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="1">1</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-white text-gray-600 border-gray-400 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="M">M</button>
+                <button class="p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-primary text-white border-primary-dark min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-action="close">✓</button>
             </div>
         `;
         
