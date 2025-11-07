@@ -2556,11 +2556,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     if (LiveUpdates._state.roundId) {
                         // Round is initialized, sync directly
-                        LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs })
-                          .then(() => updateSyncStatus(archer.id, state.currentEnd, 'synced'))
+                        // Use the same ID that was used in ensureArcher (archer.id or archer.archerId)
+                        const localId = archer.id || archer.archerId;
+                        LiveUpdates.postEnd(localId, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs })
+                          .then(() => updateSyncStatus(localId, state.currentEnd, 'synced'))
                           .catch(err => {
-                            console.error('Sync failed:', err);
-                            updateSyncStatus(archer.id, state.currentEnd, 'failed');
+                            console.error('Sync failed:', err, 'localId:', localId, 'archerIds:', LiveUpdates._state.archerIds);
+                            updateSyncStatus(localId, state.currentEnd, 'failed');
                           });
                     } else {
                         // Round not initialized, initialize first
