@@ -2584,6 +2584,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Round is initialized, sync directly
                         // Use the same ID that was used in ensureArcher (archer.id or archer.archerId)
                         const localId = archer.id || archer.archerId;
+                        console.log('[SYNC DEBUG] About to post end:');
+                        console.log('  - archer.id:', archer.id);
+                        console.log('  - archer.archerId:', archer.archerId);
+                        console.log('  - localId (used for lookup):', localId);
+                        console.log('  - LiveUpdates._state.archerIds:', LiveUpdates._state.archerIds);
+                        console.log('  - Mapped roundArcherId:', LiveUpdates._state.archerIds[localId]);
+                        
+                        if (!LiveUpdates._state.archerIds[localId]) {
+                            console.error('❌ CRITICAL: No roundArcherId mapping found for localId:', localId);
+                            console.error('Available mappings:', Object.keys(LiveUpdates._state.archerIds));
+                            updateSyncStatus(localId, state.currentEnd, 'failed');
+                            return;
+                        }
+                        
                         LiveUpdates.postEnd(localId, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs })
                           .then(() => updateSyncStatus(localId, state.currentEnd, 'synced'))
                           .catch(err => {
