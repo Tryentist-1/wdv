@@ -236,9 +236,21 @@
             (function(){
                 var stored = {};
                 try { stored = JSON.parse(localStorage.getItem('live_updates_config')||'{}'); } catch(e) {}
+
+                var isLocalhost = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+                var port = window.location.port || '8001';
+                var detectedApiBase = isLocalhost
+                    ? window.location.protocol + '//' + window.location.hostname + ':' + port + '/api/index.php/v1'
+                    : 'https://tryentist.com/wdv/api/v1';
+
+                // If we are on localhost and stored config points to production, clear it
+                if (isLocalhost && stored && stored.apiBase && /tryentist\.com/.test(stored.apiBase)) {
+                    delete stored.apiBase;
+                }
+
                 window.LIVE_UPDATES = Object.assign({
                     enabled: false,
-                    apiBase: 'https://tryentist.com/wdv/api/v1',
+                    apiBase: detectedApiBase,
                     apiKey: ''
                 }, stored || {});
             })();
