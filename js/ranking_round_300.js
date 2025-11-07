@@ -330,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showScoringBanner() {
         const banner = getOrCreateScoringBanner();
-        banner.style.display = 'block';
+        banner.style.display = 'none'; // Hidden per user request
         banner.textContent = `SCORING IN PROGRESS • ${state.eventName || 'Event'} • Bale ${state.baleNumber} • End ${state.currentEnd} of ${state.totalEnds}`;
     }
 
@@ -2156,9 +2156,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!scoringControls.container) return;
         scoringControls.currentEndDisplay.textContent = `Bale ${state.baleNumber} - End ${state.currentEnd}`;
         
-        // Check if Live Updates is enabled to show sync column
-        let isLiveEnabled = true;  // Default ON
-        try { const cfg = JSON.parse(localStorage.getItem('live_updates_config')||'{}'); isLiveEnabled = cfg.enabled !== undefined ? !!cfg.enabled : true; } catch(_) {}
+        // Sync column removed per user request
+        let isLiveEnabled = false;  // Disabled - sync column removed
         
         let tableHTML = `
             <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[600px]">
@@ -2171,7 +2170,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <th class="px-2 py-2 text-center font-bold w-14">End</th>
                         <th class="px-2 py-2 text-center font-bold w-14">Run</th>
                         <th class="px-2 py-2 text-center font-bold w-12">X</th>
-                        <th class="px-2 py-2 text-center font-bold w-12">10</th>${isLiveEnabled ? '<th class="px-2 py-2 text-center font-bold w-8">⟳</th>' : ''}<th class="px-2 py-2 text-center font-bold w-16">Card</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">10</th>
+                        <th class="px-2 py-2 text-center font-bold w-16">Card</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -2228,7 +2228,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 font-bold border-r border-gray-200 dark:border-gray-600">${endTotal}</td>
                     <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 border-r border-gray-200 dark:border-gray-600">${runningTotal}</td>
                     <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 border-r border-gray-200 dark:border-gray-600">${endXs}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 border-r border-gray-200 dark:border-gray-600">${endTens + endXs}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus} px-2 py-1 text-center">${syncIcon}</td>` : ''}<td class="px-2 py-1 text-center">${statusBadge}<button class="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark" data-archer-id="${archer.id}">📄</button></td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 border-r border-gray-200 dark:border-gray-600">${endTens + endXs}</td>
+                    <td class="px-2 py-1 text-center">${statusBadge}<button class="view-card-btn px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark" data-archer-id="${archer.id}">📄</button></td>
                 </tr>`;
         });
         tableHTML += `</tbody></table>`;
@@ -2237,11 +2238,24 @@ document.addEventListener('DOMContentLoaded', () => {
         // Re-attach keypad event handlers to new score inputs
         attachKeypadHandlers();
         
-        // Ensure navigation button labels and handlers (avoid regression to arrow-only labels)
+        // Attach card view button handlers
+        document.querySelectorAll('.view-card-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                const archerId = btn.dataset.archerId;
+                if (archerId) {
+                    state.currentView = 'card';
+                    state.currentArcherId = archerId;
+                    renderView();
+                }
+            };
+        });
+        
+        // Ensure navigation button labels and handlers
         const prevBtn = document.getElementById('prev-end-btn');
         const nextBtn = document.getElementById('next-end-btn');
-        if (prevBtn) { prevBtn.textContent = 'Last End'; prevBtn.onclick = () => changeEnd(-1); }
-        if (nextBtn) { nextBtn.textContent = 'Next End'; nextBtn.onclick = () => changeEnd(1); }
+        if (prevBtn) { prevBtn.textContent = '← Back'; prevBtn.onclick = () => changeEnd(-1); }
+        if (nextBtn) { nextBtn.textContent = 'Next →'; nextBtn.onclick = () => changeEnd(1); }
 
         // Update live status display and complete button after rendering
         updateLiveStatusDisplay();
