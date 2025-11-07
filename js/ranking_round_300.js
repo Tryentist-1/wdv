@@ -2609,35 +2609,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function resetState() {
-        // Clear all state to start fresh
+        // Clear scorecard state but preserve event connection and archer list
+        // This allows starting a new scorecard for a different bale/division
+        
+        // Clear scorecard data
         state.archers = [];
         state.currentEnd = 1;
         state.currentView = 'setup';
+        state.syncStatus = {};
+        
+        // Reset bale to 1 (user can select different bale)
         state.baleNumber = 1;
-        state.activeEventId = null;
-        state.selectedEventId = null;
-        state.eventName = '';
-        state.assignmentMode = 'manual';
-        state.setupMode = 'manual';
+        
+        // Clear division/round context (allows switching divisions)
         state.divisionCode = null;
         state.divisionRoundId = null;
         state.divisionName = '';
-        state.syncStatus = {};
         
-        // Clear Live Updates state
-        if (window.LiveUpdates && LiveUpdates._state) {
-            LiveUpdates._state.roundId = null;
-            LiveUpdates._state.eventId = null;
-            LiveUpdates._state.archerIds = {};
+        // Keep event connection if in pre-assigned mode
+        // This preserves the bale list and event context
+        // Only clear if in manual mode
+        if (state.assignmentMode === 'manual' && !state.activeEventId) {
+            // Already in manual mode with no event - nothing to clear
+        } else if (state.assignmentMode === 'pre-assigned') {
+            // Keep event connection for pre-assigned mode
+            // User can still select different bale/division
         }
         
-        // Clear session storage
+        // Clear Live Updates round context (but keep event if connected)
+        if (window.LiveUpdates && LiveUpdates._state) {
+            LiveUpdates._state.roundId = null;
+            LiveUpdates._state.archerIds = {};
+            // Keep eventId if we're staying connected to the event
+        }
+        
+        // Clear session storage for this scorecard
         try {
             deleteCurrentBaleSession();
-            localStorage.removeItem('event_entry_code');
         } catch (e) {
             console.warn('Error clearing session:', e);
         }
+        
+        // NOTE: We do NOT clear:
+        // - activeEventId/selectedEventId (preserves event connection and bale list)
+        // - event_entry_code (allows continued access to event)
+        // - Archer master list (preserved in ArcherModule)
         
         renderView();
         saveData();
