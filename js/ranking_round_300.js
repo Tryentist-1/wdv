@@ -2176,14 +2176,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[600px]">
                 <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
                     <tr>
-                        <th class="px-2 py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10 max-w-[120px]">Archer</th>
+                        <th class="px-2 py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10 w-36">Archer</th>
                         <th class="px-2 py-2 text-center font-bold w-12">A1</th>
                         <th class="px-2 py-2 text-center font-bold w-12">A2</th>
                         <th class="px-2 py-2 text-center font-bold w-12">A3</th>
                         <th class="px-2 py-2 text-center font-bold w-14">End</th>
                         <th class="px-2 py-2 text-center font-bold w-14">Run</th>
-                        <th class="px-2 py-2 text-center font-bold w-12">X</th>
-                        <th class="px-2 py-2 text-center font-bold w-12">10</th>
+                        <th class="px-2 py-2 text-center font-bold w-6">X</th>
+                        <th class="px-2 py-2 text-center font-bold w-6">10</th>
                         <th class="px-2 py-2 text-center font-bold w-16">Card</th>
                     </tr>
                 </thead>
@@ -2234,7 +2234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             tableHTML += `
                 <tr data-archer-id="${archer.id}" ${rowLockAttr} class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
-                    <td class="px-2 py-1 text-left text-xs font-semibold sticky left-0 bg-white dark:bg-gray-700 max-w-[120px] truncate">${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
+                    <td class="px-2 py-1 text-left text-xs font-semibold sticky left-0 bg-white dark:bg-gray-700 w-36 truncate">${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
@@ -2886,6 +2886,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateCompleteButton() {
         const completeBtn = document.getElementById('complete-round-btn');
+        const syncBtn = document.getElementById('sync-end-btn');
+        const nextBtn = document.getElementById('next-end-btn');
+        
         if (!completeBtn) return;
         
         const isLiveEnabled = getLiveEnabled();
@@ -2898,11 +2901,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (allComplete) {
                 completeBtn.style.display = 'inline-block';
-                completeBtn.textContent = 'Complete Round';
-                completeBtn.className = 'btn btn-primary';
+                if (nextBtn) nextBtn.style.display = 'none';
             } else {
                 completeBtn.style.display = 'none';
             }
+            if (syncBtn) syncBtn.style.display = 'none';
         } else {
             // Live sync is on - show "Sync End" for current end if any archer has input for this end
             const currentEndHasScores = state.archers.some(archer => {
@@ -2910,12 +2913,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return Array.isArray(endScores) && endScores.some(score => score !== '' && score !== null && score !== undefined);
             });
             
-            if (currentEndHasScores) {
-                completeBtn.style.display = 'inline-block';
-                completeBtn.textContent = 'Sync End';
-                completeBtn.className = 'btn btn-success';
-            } else {
-                completeBtn.style.display = 'none';
+            if (syncBtn && currentEndHasScores) {
+                syncBtn.style.display = 'inline-block';
+            } else if (syncBtn) {
+                syncBtn.style.display = 'none';
             }
         }
     }
@@ -4149,21 +4150,22 @@ function updateManualLiveControls(summaryOverride) {
             };
         }
 
-        // Complete round / Sync end button
+        // Complete round button
         const completeBtn = document.getElementById('complete-round-btn');
         if (completeBtn) {
             completeBtn.onclick = () => {
-                const isLiveEnabled = getLiveEnabled();
-                
-                if (!isLiveEnabled) {
-                    // Live sync is off - complete round for final verification
+                // Complete round for final verification
                     if (confirm('Are you sure you want to complete this round? This will mark all archers as finished.')) {
                         completeRound();
                     }
-                } else {
-                    // Live sync is on - sync current end
-                    syncCurrentEnd();
-                }
+            };
+        }
+        
+        // Sync end button (for live mode)
+        const syncBtn = document.getElementById('sync-end-btn');
+        if (syncBtn) {
+            syncBtn.onclick = () => {
+                syncCurrentEnd();
             };
         }
 
