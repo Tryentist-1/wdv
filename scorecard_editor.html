@@ -396,9 +396,14 @@
         async function loadScorecard() {
             try {
                 const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}`);
-                if (!res.ok) throw new Error(`Failed to load scorecard: ${res.status}`);
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+                    console.error('[loadScorecard] API Error:', errorData);
+                    throw new Error(errorData.error || `Failed to load scorecard: ${res.status}`);
+                }
                 
                 currentScorecard = await res.json();
+                console.log('[loadScorecard] Loaded scorecard:', currentScorecard);
                 renderScorecard();
                 
                 document.getElementById('loading').classList.add('hidden');
