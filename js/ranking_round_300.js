@@ -1936,20 +1936,20 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Create table for unassigned archers with checkboxes
             const tableContainer = document.createElement('div');
-            tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px;';
+            tableContainer.className = 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 border-t-0 rounded-b transition-colors duration-200';
             
             const table = document.createElement('table');
-            table.style.cssText = 'width: 100%; border-collapse: collapse;';
+            table.className = 'w-full border-collapse';
             
             // Create header row with checkbox column
             const headerRow = document.createElement('tr');
-            headerRow.style.cssText = 'background: #f8f9fa; font-weight: bold;';
+            headerRow.className = 'bg-gray-100 dark:bg-gray-800 font-bold';
             
             const headers = ['Select', 'Archer Name', 'School', 'Division', 'Target'];
             headers.forEach(headerText => {
                 const th = document.createElement('th');
                 th.textContent = headerText;
-                th.style.cssText = 'padding: 10px 8px; text-align: left; border-bottom: 1px solid #dee2e6;';
+                th.className = 'px-2 py-2 text-left border-b-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300';
                 headerRow.appendChild(th);
             });
             table.appendChild(headerRow);
@@ -1957,11 +1957,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Create data rows for unassigned archers with checkboxes
             unassignedArchers.forEach((archer, index) => {
                 const row = document.createElement('tr');
-                row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};`;
+                row.className = index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800';
                 
                 // Checkbox cell
                 const checkboxCell = document.createElement('td');
-                checkboxCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef; text-align: center;';
+                checkboxCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center';
                 
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -2060,7 +2060,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cells.forEach(cellText => {
                     const td = document.createElement('td');
                     td.textContent = cellText;
-                    td.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+                    td.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
                     row.appendChild(td);
                 });
                 
