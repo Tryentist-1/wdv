@@ -87,6 +87,16 @@
           </select>
         </div>
 
+        <!-- Target Size Filter -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Target Size</label>
+          <select id="filter-target-size" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors">
+            <option value="">All Sizes</option>
+            <option value="80">80cm</option>
+            <option value="122">122cm</option>
+          </select>
+        </div>
+
         <!-- Sort By -->
         <div>
           <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Sort By</label>
@@ -341,6 +351,7 @@
     function applyFilters() {
       const divisionFilter = document.getElementById('filter-division').value;
       const genderFilter = document.getElementById('filter-gender').value;
+      const targetSizeFilter = document.getElementById('filter-target-size').value;
       const searchTerm = document.getElementById('search-name').value.toLowerCase();
       const sortBy = document.getElementById('sort-by').value;
       
@@ -361,6 +372,14 @@
         
         // Gender filter
         if (genderFilter && archer.gender !== genderFilter) return false;
+        
+        // Target size filter
+        if (targetSizeFilter) {
+          const hasMatchingTargetSize = Object.values(archer.rounds).some(round => {
+            return round.faceSize && round.faceSize.toString() === targetSizeFilter;
+          });
+          if (!hasMatchingTargetSize) return false;
+        }
         
         // Search filter
         if (searchTerm) {
@@ -587,9 +606,17 @@
         sortedRounds.forEach(round => {
           const roundData = archer.rounds[round.key];
           if (roundData) {
+            // Color code Avg/Arrow based on score (9.0+ = gold, 8.0+ = red, 7.0+ = blue, etc.)
+            const avgPerArrow = roundData.avgPerArrow;
+            let avgClass = 'text-gray-800 dark:text-gray-200';
+            if (avgPerArrow >= 9.0) avgClass = 'text-rank-gold font-bold'; // Gold (X, 10, 9)
+            else if (avgPerArrow >= 7.0) avgClass = 'text-red-600 dark:text-red-400 font-semibold'; // Red (8, 7)
+            else if (avgPerArrow >= 5.0) avgClass = 'text-blue-600 dark:text-blue-400'; // Blue (6, 5)
+            else if (avgPerArrow >= 3.0) avgClass = 'text-gray-700 dark:text-gray-400'; // Black (4, 3)
+            
             rowHTML += `
               <td class="px-2 py-3 text-center font-bold text-lg text-success cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 border-l-2 border-gray-300 dark:border-gray-600" data-archer-index="${index}" data-round="${round.key}">${roundData.total}</td>
-              <td class="px-2 py-3 text-center text-sm">${roundData.avgPerArrow.toFixed(2)}</td>
+              <td class="px-2 py-3 text-center text-sm ${avgClass}">${roundData.avgPerArrow.toFixed(2)}</td>
             `;
           } else {
             rowHTML += `
@@ -751,6 +778,7 @@
     document.getElementById('reset-filters-btn').addEventListener('click', () => {
       document.getElementById('filter-division').value = '';
       document.getElementById('filter-gender').value = '';
+      document.getElementById('filter-target-size').value = '';
       document.getElementById('search-name').value = '';
       document.getElementById('sort-by').value = 'name';
       applyFilters();
@@ -761,6 +789,7 @@
     // Real-time filtering and sorting
     document.getElementById('filter-division').addEventListener('change', applyFilters);
     document.getElementById('filter-gender').addEventListener('change', applyFilters);
+    document.getElementById('filter-target-size').addEventListener('change', applyFilters);
     document.getElementById('search-name').addEventListener('input', applyFilters);
     document.getElementById('sort-by').addEventListener('change', applyFilters);
     
