@@ -2851,4 +2851,73 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'POST') {
     exit;
 }
 
+// GET /v1/archers/search - Public endpoint to search archers and get their scorecards
+if (preg_match('#^/v1/archers/search$#', $route) && $method === 'GET') {
+    $query = trim($_GET['q'] ?? '');
+    
+    if (strlen($query) < 2) {
+        json_response(['error' => 'Query must be at least 2 characters'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Search archers by name
+        $searchPattern = '%' . $query . '%';
+        $stmt = $pdo->prepare('
+            SELECT 
+                id, 
+                first_name as firstName, 
+                last_name as lastName, 
+                school, 
+                gender, 
+                level
+            FROM archers 
+            WHERE CONCAT(first_name, " ", last_name) LIKE ?
+            ORDER BY last_name, first_name
+            LIMIT 20
+        ');
+        $stmt->execute([$searchPattern]);
+        $archers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // For each archer, get their scorecards
+        $result = [];
+        foreach ($archers as $archer) {
+            $cardsStmt = $pdo->prepare('
+                SELECT 
+                    ra.id as roundArcherId,
+                    ra.card_status as cardStatus,
+                    ra.completed,
+                    ra.locked,
+                    r.round_type as roundType,
+                    r.division,
+                    r.date,
+                    e.name as eventName,
+                    e.date as eventDate,
+                    (SELECT SUM(end_total) FROM end_events WHERE round_archer_id = ra.id) as totalScore
+                FROM round_archers ra
+                LEFT JOIN rounds r ON r.id = ra.round_id
+                LEFT JOIN events e ON e.id = r.event_id
+                WHERE ra.archer_id = ?
+                ORDER BY r.date DESC, e.date DESC
+                LIMIT 50
+            ');
+            $cardsStmt->execute([$archer['id']]);
+            $cards = $cardsStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $result[] = [
+                'archer' => $archer,
+                'scorecards' => $cards
+            ];
+        }
+        
+        json_response(['results' => $result], 200);
+    } catch (Exception $e) {
+        error_log("Archer search failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 json_response(['error' => 'Not Found', 'route' => $route], 404);

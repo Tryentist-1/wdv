@@ -326,134 +326,38 @@
             resultsDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Searching...</p>';
             
             try {
-                // Get recent events first
-                const eventsRes = await fetch(`${API_BASE}/events/recent?limit=20`);
-                if (!eventsRes.ok) throw new Error('Failed to fetch events');
+                // Use the new search endpoint
+                const res = await fetch(`${API_BASE}/archers/search?q=${encodeURIComponent(query)}`);
+                if (!res.ok) throw new Error('Search failed');
                 
-                const eventsData = await eventsRes.json();
-                const events = eventsData.events || [];
+                const data = await res.json();
+                const results = data.results || [];
                 
-                console.log('[searchArchers] Found events:', events.length);
+                console.log('[searchArchers] Found results:', results.length);
                 
-                if (events.length === 0) {
-                    resultsDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">No recent events found</p>';
-                    return;
-                }
-                
-                // Collect all scorecards that match the search query
-                const matchingCards = new Map(); // Group by archer name
-                const queryLower = query.toLowerCase();
-                
-                // Fetch snapshot for each event
-                for (const event of events) {
-                    try {
-                        const snapshotRes = await fetch(`${API_BASE}/events/${event.id}/snapshot`);
-                        if (!snapshotRes.ok) continue;
-                        
-                        const snapshot = await snapshotRes.json();
-                        console.log('[searchArchers] Event snapshot:', event.name, snapshot);
-                        
-                        if (!snapshot.divisions || !Array.isArray(snapshot.divisions)) {
-                            console.log('[searchArchers] No divisions array in snapshot');
-                            continue;
-                        }
-                        
-                        console.log('[searchArchers] Found divisions:', snapshot.divisions.length);
-                        
-                        for (const division of snapshot.divisions) {
-                            if (!division.archers || !Array.isArray(division.archers)) {
-                                console.log('[searchArchers] No archers array in division:', division);
-                                continue;
-                            }
-                            
-                            console.log('[searchArchers] Division has archers:', division.archers.length);
-                            
-                            for (const archer of division.archers) {
-                                // Build archer name - try archerName first, then firstName/lastName
-                                let archerName = archer.archerName || '';
-                                let firstName = archer.firstName || '';
-                                let lastName = archer.lastName || '';
-                                
-                                // If no archerName, build from firstName/lastName
-                                if (!archerName && (firstName || lastName)) {
-                                    archerName = `${firstName} ${lastName}`.trim();
-                                }
-                                
-                                // If we have archerName but not firstName/lastName, try to split
-                                if (archerName && !firstName && !lastName) {
-                                    const parts = archerName.split(' ');
-                                    if (parts.length >= 2) {
-                                        firstName = parts[0];
-                                        lastName = parts.slice(1).join(' ');
-                                    }
-                                }
-                                
-                                if (!archerName) {
-                                    console.log('[searchArchers] Skipping archer with no name:', archer);
-                                    continue;
-                                }
-                                
-                                const archerNameLower = archerName.toLowerCase();
-                                
-                                console.log('[searchArchers] Checking archer:', archerName, 'against query:', query);
-                                
-                                // Check if archer name matches query
-                                if (archerNameLower.includes(queryLower)) {
-                                    console.log('[searchArchers] MATCH FOUND:', archerName);
-                                    if (!matchingCards.has(archerName)) {
-                                        matchingCards.set(archerName, {
-                                            name: archerName,
-                                            firstName: firstName,
-                                            lastName: lastName,
-                                            school: archer.school || '',
-                                            cards: []
-                                        });
-                                    }
-                                    
-                                    matchingCards.get(archerName).cards.push({
-                                        roundArcherId: archer.roundArcherId,
-                                        eventName: event.name,
-                                        eventDate: event.date,
-                                        roundType: division.roundType || division.division,
-                                        division: division.division,
-                                        cardStatus: archer.cardStatus || 'PENDING',
-                                        score: archer.runningTotal || archer.score || 0
-                                    });
-                                }
-                            }
-                        }
-                    } catch (err) {
-                        console.error('[searchArchers] Error fetching snapshot for event:', event.id, err);
-                    }
-                }
-                
-                console.log('[searchArchers] Matching cards:', matchingCards.size);
-                
-                if (matchingCards.size === 0) {
+                if (results.length === 0) {
                     resultsDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">No archers found matching "' + query + '"</p>';
                     return;
                 }
                 
                 // Render results
                 let html = '';
-                let count = 0;
-                for (const [archerName, archerData] of matchingCards) {
-                    if (count >= 10) break; // Limit to 10 archers
-                    count++;
+                
+                results.forEach(result => {
+                    const archer = result.archer;
+                    const cards = result.scorecards || [];
                     
                     html += `
                         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
                             <h4 class="font-bold text-gray-800 dark:text-white mb-2">
-                                ${archerData.firstName} ${archerData.lastName}
-                                ${archerData.school ? `<span class="text-sm font-normal text-gray-600 dark:text-gray-400">(${archerData.school})</span>` : ''}
+                                ${archer.firstName} ${archer.lastName}
+                                ${archer.school ? `<span class="text-sm font-normal text-gray-600 dark:text-gray-400">(${archer.school})</span>` : ''}
                             </h4>
+                            ${cards.length === 0 ? '<p class="text-sm text-gray-500 dark:text-gray-400">No scorecards found</p>' : ''}
                             <div class="space-y-1">
                     `;
                     
-                    // Sort cards by date (newest first)
-                    archerData.cards.sort((a, b) => (b.eventDate || '').localeCompare(a.eventDate || ''));
-                    
-                    archerData.cards.forEach(card => {
+                    cards.forEach(card => {
                         const statusBadge = card.cardStatus === 'VER' ? '✓' : 
                                           card.cardStatus === 'VOID' ? '✗' : '⏳';
                         const statusColor = card.cardStatus === 'VER' ? 'text-success' : 
@@ -466,11 +370,11 @@
                                     <div class="text-sm">
                                         <span class="font-medium">${card.eventName || 'Event'}</span>
                                         <span class="text-gray-600 dark:text-gray-400">• ${card.roundType || card.division || 'Round'}</span>
-                                        ${card.eventDate ? `<span class="text-gray-500 dark:text-gray-500">• ${card.eventDate}</span>` : ''}
+                                        ${card.eventDate || card.date ? `<span class="text-gray-500 dark:text-gray-500">• ${card.eventDate || card.date}</span>` : ''}
                                     </div>
                                     <span class="${statusColor} font-bold">${statusBadge}</span>
                                 </div>
-                                ${card.score > 0 ? `<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Score: ${card.score}</div>` : ''}
+                                ${card.totalScore > 0 ? `<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Score: ${card.totalScore}</div>` : ''}
                             </a>
                         `;
                     });
@@ -479,7 +383,7 @@
                             </div>
                         </div>
                     `;
-                }
+                });
                 
                 resultsDiv.innerHTML = html;
                 
