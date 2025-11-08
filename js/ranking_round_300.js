@@ -437,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function loadData() {
+    async function loadData() {
         const storedState = localStorage.getItem(sessionKey);
         if (storedState) {
             try {
@@ -454,12 +454,99 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.availableDivisions = ['OPEN'];
                 }
                 sanitizeStateArchers();
+                
+                // CRITICAL: Check for existing IN PROGRESS or COMPLETED rounds
+                await checkExistingRounds();
             } catch (e) {
                 console.error("Error parsing stored data. Starting fresh.", e);
                 localStorage.removeItem(sessionKey);
             }
         }
         updateEventHeader();
+    }
+    
+    /**
+     * CRITICAL: Check if archer already has an IN PROGRESS or COMPLETED round
+     * - IN PROGRESS: Prompt to resume or create new
+     * - COMPLETED/VERIFIED: Lock and prevent new scoring
+     */
+    async function checkExistingRounds() {
+        const archerId = getArcherCookie();
+        if (!archerId) return;
+        
+        try {
+            const res = await fetch(`${API_BASE}/archers/${archerId}/rounds?status=IN_PROGRESS,COMPLETED,VERIFIED`);
+            if (!res.ok) return;
+            
+            const rounds = await res.json();
+            if (!Array.isArray(rounds) || rounds.length === 0) return;
+            
+            // Check for COMPLETED or VERIFIED rounds
+            const lockedRounds = rounds.filter(r => r.card_status === 'COMPLETED' || r.verified);
+            if (lockedRounds.length > 0) {
+                const roundNames = lockedRounds.map(r => r.round_type || 'Round').join(', ');
+                alert(`⚠️ LOCKED SCORECARDS\n\nYou have ${lockedRounds.length} completed/verified scorecard(s): ${roundNames}\n\nThese cards are LOCKED and cannot be edited.\n\nTo start a new round, use the setup panel.`);
+                // Don't prevent loading, just warn
+                return;
+            }
+            
+            // Check for IN PROGRESS rounds
+            const inProgressRounds = rounds.filter(r => r.card_status === 'IN_PROGRESS' || r.card_status === 'PENDING');
+            if (inProgressRounds.length > 0) {
+                const round = inProgressRounds[0];
+                const roundName = round.round_type || 'Round';
+                const currentEnd = round.current_end || 1;
+                
+                const resume = confirm(`📋 IN PROGRESS SCORECARD FOUND\n\nYou have an unfinished scorecard:\n• ${roundName}\n• Current End: ${currentEnd}/${round.total_ends || 10}\n• Score: ${round.total_score || 0}\n\nClick OK to RESUME this scorecard\nClick CANCEL to start a NEW scorecard`);
+                
+                if (resume) {
+                    // Load the existing round data
+                    await loadExistingRound(round);
+                } else {
+                    // User wants to start fresh - clear local state
+                    localStorage.removeItem(sessionKey);
+                    state.archers = [];
+                    state.currentEnd = 1;
+                    saveData();
+                }
+            }
+        } catch (error) {
+            console.error('[checkExistingRounds] Error:', error);
+        }
+    }
+    
+    /**
+     * Load an existing IN PROGRESS round
+     */
+    async function loadExistingRound(round) {
+        try {
+            // Fetch full round data including scores
+            const res = await fetch(`${API_BASE}/rounds/${round.id}`);
+            if (!res.ok) {
+                console.error('[loadExistingRound] Failed to load round:', res.status);
+                return;
+            }
+            
+            const roundData = await res.json();
+            
+            // Update state with loaded data
+            state.currentEnd = roundData.current_end || 1;
+            state.totalEnds = roundData.total_ends || 10;
+            state.roundType = roundData.round_type || 'R300';
+            
+            // Load archer scores if available
+            if (roundData.archers && Array.isArray(roundData.archers)) {
+                state.archers = roundData.archers.map(a => ({
+                    ...a,
+                    scores: a.scores || createEmptyScoreSheet(state.totalEnds)
+                }));
+            }
+            
+            saveData();
+            console.log('[loadExistingRound] Loaded round:', roundData);
+        } catch (error) {
+            console.error('[loadExistingRound] Error:', error);
+        }
     }
 
     function sanitizeStateArchers() {
@@ -1108,6 +1195,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Get roster state for sorting
+        const { selfExtId, friendSet } = getRosterState();
+        
+        // Sort selected rows by target assignment
         selectedRows.sort((a, b) => {
             const aOrder = targetPriority.indexOf(a.existingArcher?.targetAssignment || '');
             const bOrder = targetPriority.indexOf(b.existingArcher?.targetAssignment || '');
@@ -1117,6 +1208,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 return a.first.toLowerCase().localeCompare(b.first.toLowerCase());
             }
             return safeA - safeB;
+        });
+        
+        // Sort unselected rows: Me first, then Friends, then rest by first name
+        unselectedRows.sort((a, b) => {
+            const aExtId = getExtIdFromArcher(a.archer) || a.extId;
+            const bExtId = getExtIdFromArcher(b.archer) || b.extId;
+            const aIsMe = selfExtId && aExtId === selfExtId;
+            const bIsMe = selfExtId && bExtId === selfExtId;
+            const aIsFriend = aExtId && friendSet.has(aExtId);
+            const bIsFriend = bExtId && friendSet.has(bExtId);
+            
+            // Me comes first
+            if (aIsMe && !bIsMe) return -1;
+            if (!aIsMe && bIsMe) return 1;
+            
+            // Then friends
+            if (aIsFriend && !bIsFriend) return -1;
+            if (!aIsFriend && bIsFriend) return 1;
+            
+            // Then alphabetically by first name
+            return a.first.toLowerCase().localeCompare(b.first.toLowerCase());
         });
 
         const orderedRows = [...selectedRows, ...unselectedRows];
@@ -1172,6 +1284,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             checkbox.onchange = () => {
                 if (checkbox.checked) {
+                    // CRITICAL: Prevent adding to COMPLETED/VERIFIED cards
+                    if (existingArcher) {
+                        const cardStatus = existingArcher.cardStatus || existingArcher.card_status;
+                        const verified = existingArcher.verified;
+                        if (cardStatus === 'COMPLETED' || verified) {
+                            checkbox.checked = false;
+                            alert('🔒 SCORECARD LOCKED\n\nThis scorecard is completed/verified and cannot be edited.\n\nTo start a new round, reset and create a new scorecard.');
+                            return;
+                        }
+                    }
+                    
                     // Enforce max 4 archers per bale
                     const selectedCount = state.archers.length;
                     if (selectedCount >= 4) {
@@ -1218,12 +1341,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     targetSelect.style.display = 'inline-block';
                 } else {
-                    state.archers = state.archers.filter(a => (a.extId || a.id) !== uniqueId);
+                    // Remove archer from state - check all possible ID fields
+                    state.archers = state.archers.filter(a => {
+                        const aId = a.id || a.archerId || a.extId;
+                        return aId !== uniqueId;
+                    });
                     targetSelect.style.display = 'none';
+                    targetSelect.value = 'A'; // Reset target
                     row.classList.remove('is-selected');
                 }
                 saveData();
                 updateSelectionCount();
+                updateManualLiveControls();
                 // Don't re-render on uncheck to preserve checkbox state
                 if (checkbox.checked) {
                     renderManualArcherList();
@@ -1245,9 +1374,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Get roster state for Me/Friends indicators
             const { selfExtId, friendSet } = getRosterState();
-            const archerExtId = archer.extId || extId;
-            const isMe = archerExtId === selfExtId;
-            const isFriend = friendSet.has(archerExtId);
+            const archerExtId = getExtIdFromArcher(archer) || archer.extId || extId;
+            const isMe = selfExtId && archerExtId === selfExtId;
+            const isFriend = archerExtId && friendSet.has(archerExtId);
             
             // Archer Name cell with Me/Friends badges
             const nameCell = document.createElement('td');
@@ -2058,6 +2187,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 checkbox.onchange = () => {
                     if (checkbox.checked) {
+                        // CRITICAL: Prevent adding to COMPLETED/VERIFIED cards
+                        if (existingArcher) {
+                            const cardStatus = existingArcher.cardStatus || existingArcher.card_status;
+                            const verified = existingArcher.verified;
+                            if (cardStatus === 'COMPLETED' || verified) {
+                                checkbox.checked = false;
+                                alert('🔒 SCORECARD LOCKED\n\nThis scorecard is completed/verified and cannot be edited.\n\nTo start a new round, reset and create a new scorecard.');
+                                return;
+                            }
+                        }
+                        
                         // Enforce max 4 archers per bale
                         const selectedCount = state.archers.length;
                         if (selectedCount >= 4) {
@@ -2092,8 +2232,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         targetSelect.style.display = 'inline-block';
                     } else {
-                        state.archers = state.archers.filter(a => (a.extId || a.id) !== uniqueId);
+                        // Remove archer from state - check all possible ID fields
+                        state.archers = state.archers.filter(a => {
+                            const aId = a.id || a.archerId || a.extId;
+                            return aId !== uniqueId;
+                        });
                         targetSelect.style.display = 'none';
+                        targetSelect.value = 'A'; // Reset target
+                        row.classList.remove('is-selected');
                     }
                     saveData();
                     // Update selected count chip
@@ -2115,9 +2261,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Get roster state for Me/Friends indicators
                 const { selfExtId, friendSet } = getRosterState();
-                const archerExtId = archer.extId || uniqueId;
-                const isMe = archerExtId === selfExtId;
-                const isFriend = friendSet.has(archerExtId);
+                const archerExtId = getExtIdFromArcher({ firstName: first, lastName: last, school, extId: archer.extId }) || archer.extId || uniqueId;
+                const isMe = selfExtId && archerExtId === selfExtId;
+                const isFriend = archerExtId && friendSet.has(archerExtId);
                 
                 // Archer Name cell with Me/Friends badges
                 const nameCell = document.createElement('td');
