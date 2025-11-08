@@ -551,7 +551,7 @@ if (!empty($filters['name_like'])) {
                     SELECT 
                         e.name AS event_name,
                         e.date AS event_date,
-                        r.name AS round_name,
+                        CONCAT(r.round_type, ' - ', r.division) AS round_name,
                         ra.archer_name,
                         ra.school,
                         ra.card_status,
