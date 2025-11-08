@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Archer Results - Pivot View</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'primary': '#0d6efd',
+            'primary-dark': '#0a58ca',
+            'success': '#198754',
+            'danger': '#dc3545',
+            'rank-gold': '#f39c12',
+            'rank-silver': '#95a5a6',
+            'rank-bronze': '#cd7f32'
+          }
+        }
+      }
+    }
+    
+    // Initialize dark mode from localStorage
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+  <script src="js/scorecard_view.js"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+  <div class="max-w-full mx-auto px-4 py-6 pb-24">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Archer Results - Pivot View</h1>
+          <p class="text-gray-600 dark:text-gray-400 text-sm">View all archer scores across multiple rounds</p>
+        </div>
+        <button id="dark-mode-toggle" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Toggle dark mode">
+          <span class="dark:hidden">🌙</span>
+          <span class="hidden dark:inline">☀️</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
+      <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Filters & Sort</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <!-- Division Filter -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Division</label>
+          <select id="filter-division" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors">
+            <option value="">All Divisions</option>
+            <option value="VAR">Varsity</option>
+            <option value="JV">JV</option>
+          </select>
+        </div>
+
+        <!-- Gender Filter -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Gender</label>
+          <select id="filter-gender" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors">
+            <option value="">All Genders</option>
+            <option value="M">Male</option>
+            <option value="F">Female</option>
+          </select>
+        </div>
+
+        <!-- Sort By -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Sort By</label>
+          <select id="sort-by" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors">
+            <option value="name">Name (A-Z)</option>
+            <option value="total-desc">Total Score (High to Low)</option>
+            <option value="total-asc">Total Score (Low to High)</option>
+            <option value="avg-desc">Average (High to Low)</option>
+            <option value="avg-asc">Average (Low to High)</option>
+          </select>
+        </div>
+
+        <!-- Search -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Search Name</label>
+          <input type="text" id="search-name" placeholder="Type to search..." class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors">
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="apply-filters-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Apply Filters</button>
+        <button id="reset-filters-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Reset</button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loading-state" class="text-center py-12">
+      <div class="text-4xl mb-4">⏳</div>
+      <p class="text-gray-600 dark:text-gray-400">Loading archer data...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="hidden bg-danger-light dark:bg-red-900 rounded-lg p-6 text-center">
+      <div class="text-4xl mb-4">⚠️</div>
+      <p class="text-danger dark:text-red-400 font-semibold" id="error-message"></p>
+    </div>
+
+    <!-- Pivot Table Container -->
+    <div id="pivot-container" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-colors duration-200">
+      <div class="overflow-x-auto">
+        <table id="pivot-table" class="w-full border-collapse text-sm">
+          <thead id="pivot-thead" class="bg-primary dark:bg-primary-dark text-white sticky top-0">
+            <!-- Dynamic headers will be inserted here -->
+          </thead>
+          <tbody id="pivot-tbody" class="text-gray-800 dark:text-gray-200">
+            <!-- Dynamic rows will be inserted here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Stats Summary -->
+    <div id="stats-summary" class="hidden mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors duration-200">
+      <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">Summary Statistics</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="text-center">
+          <div class="text-3xl font-bold text-primary dark:text-blue-400" id="stat-total-archers">0</div>
+          <div class="text-sm text-gray-600 dark:text-gray-400">Total Archers</div>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl font-bold text-success dark:text-green-400" id="stat-total-rounds">0</div>
+          <div class="text-sm text-gray-600 dark:text-gray-400">Total Rounds</div>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl font-bold text-rank-gold" id="stat-highest-score">0</div>
+          <div class="text-sm text-gray-600 dark:text-gray-400">Highest Score</div>
+        </div>
+        <div class="text-center">
+          <div class="text-3xl font-bold text-gray-700 dark:text-gray-300" id="stat-avg-score">0</div>
+          <div class="text-sm text-gray-600 dark:text-gray-400">Average Score</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 flex gap-2 justify-center">
+    <a href="coach.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center">← Coach</a>
+    <button id="refresh-btn" class="px-4 py-2 bg-primary text-white rounded font-semibold hover:bg-primary-dark transition-colors min-h-[44px]">🔄 Refresh</button>
+    <button id="export-csv-btn" class="px-4 py-2 bg-success text-white rounded font-semibold hover:bg-green-700 transition-colors min-h-[44px]">📊 Export CSV</button>
+  </footer>
+
+  <script src="js/archer_module.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+    // API Configuration
+    const getApiBase = () => {
+      if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        const port = window.location.port || '8001';
+        return `${window.location.protocol}//${window.location.hostname}:${port}/api/index.php/v1`;
+      }
+      return 'https://tryentist.com/wdv/api/v1';
+    };
+    const API_BASE = getApiBase();
+
+    // State
+    let allArcherData = [];
+    let allEvents = [];
+    let filteredData = [];
+
+    // Dark mode toggle
+    document.getElementById('dark-mode-toggle').addEventListener('click', function() {
+      document.documentElement.classList.toggle('dark');
+      const isDark = document.documentElement.classList.contains('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+
+    // Load all events and their results
+    async function loadAllData() {
+      try {
+        showLoading();
+        
+        // Fetch all events
+        const eventsRes = await fetch(`${API_BASE}/events`);
+        if (!eventsRes.ok) throw new Error(`HTTP ${eventsRes.status}`);
+        const eventsData = await eventsRes.json();
+        allEvents = eventsData.events || [];
+        
+        console.log('Loaded events:', allEvents);
+        
+        // Fetch snapshots for each event
+        const archerMap = new Map(); // Map archer by unique key (name + school)
+        
+        for (const event of allEvents) {
+          try {
+            const snapshotRes = await fetch(`${API_BASE}/events/${event.id}/snapshot`);
+            if (!snapshotRes.ok) continue;
+            
+            const snapshot = await snapshotRes.json();
+            const divisions = snapshot.divisions || {};
+            
+            // Process each division
+            for (const [divKey, divData] of Object.entries(divisions)) {
+              const archers = divData.archers || [];
+              
+              for (const archer of archers) {
+                const key = `${archer.firstName || ''}_${archer.lastName || ''}_${archer.school || ''}`.toLowerCase();
+                
+                if (!archerMap.has(key)) {
+                  archerMap.set(key, {
+                    firstName: archer.firstName || '',
+                    lastName: archer.lastName || '',
+                    school: archer.school || '',
+                    level: archer.level || '',
+                    gender: archer.gender || '',
+                    rounds: {}
+                  });
+                }
+                
+                const archerData = archerMap.get(key);
+                const total = archer.runningTotal || archer.total || 0;
+                const arrowsShot = (archer.scorecard && archer.scorecard.ends) ? archer.scorecard.ends.length * 3 : 0;
+                const avg = arrowsShot > 0 ? (total / arrowsShot) : 0;
+                
+                archerData.rounds[event.name] = {
+                  eventId: event.id,
+                  eventName: event.name,
+                  eventDate: event.date,
+                  division: divKey,
+                  total: total,
+                  avg: avg,
+                  xs: archer.xs || (archer.scorecard && archer.scorecard.xs) || 0,
+                  tens: archer.tens || (archer.scorecard && archer.scorecard.tens) || 0,
+                  status: archer.cardStatus || archer.status || 'PENDING',
+                  scorecard: archer.scorecard
+                };
+              }
+            }
+          } catch (err) {
+            console.warn(`Failed to load snapshot for event ${event.id}:`, err);
+          }
+        }
+        
+        // Convert map to array
+        allArcherData = Array.from(archerMap.values());
+        
+        console.log('Processed archer data:', allArcherData);
+        
+        if (allArcherData.length === 0) {
+          showError('No archer data found. Make sure events have been scored.');
+          return;
+        }
+        
+        // Apply initial filters and render
+        applyFilters();
+        
+      } catch (err) {
+        console.error('Error loading data:', err);
+        showError('Failed to load data: ' + err.message);
+      }
+    }
+
+    function applyFilters() {
+      const divisionFilter = document.getElementById('filter-division').value;
+      const genderFilter = document.getElementById('filter-gender').value;
+      const searchTerm = document.getElementById('search-name').value.toLowerCase();
+      const sortBy = document.getElementById('sort-by').value;
+      
+      // Filter
+      filteredData = allArcherData.filter(archer => {
+        // Division filter
+        if (divisionFilter) {
+          const hasMatchingDivision = Object.values(archer.rounds).some(round => {
+            const level = archer.level || '';
+            if (divisionFilter === 'VAR') return level.includes('VAR') || level.includes('Varsity');
+            if (divisionFilter === 'JV') return level.includes('JV');
+            return false;
+          });
+          if (!hasMatchingDivision) return false;
+        }
+        
+        // Gender filter
+        if (genderFilter && archer.gender !== genderFilter) return false;
+        
+        // Search filter
+        if (searchTerm) {
+          const fullName = `${archer.firstName} ${archer.lastName}`.toLowerCase();
+          if (!fullName.includes(searchTerm)) return false;
+        }
+        
+        return true;
+      });
+      
+      // Calculate totals for sorting
+      filteredData.forEach(archer => {
+        const roundScores = Object.values(archer.rounds).map(r => r.total);
+        archer._totalScore = roundScores.reduce((sum, score) => sum + score, 0);
+        archer._avgScore = roundScores.length > 0 ? archer._totalScore / roundScores.length : 0;
+      });
+      
+      // Sort
+      filteredData.sort((a, b) => {
+        switch (sortBy) {
+          case 'name':
+            return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+          case 'total-desc':
+            return b._totalScore - a._totalScore;
+          case 'total-asc':
+            return a._totalScore - b._totalScore;
+          case 'avg-desc':
+            return b._avgScore - a._avgScore;
+          case 'avg-asc':
+            return a._avgScore - b._avgScore;
+          default:
+            return 0;
+        }
+      });
+      
+      renderPivotTable();
+      updateStats();
+    }
+
+    function renderPivotTable() {
+      if (filteredData.length === 0) {
+        showError('No archers match the current filters.');
+        return;
+      }
+      
+      hideLoading();
+      hideError();
+      document.getElementById('pivot-container').classList.remove('hidden');
+      document.getElementById('stats-summary').classList.remove('hidden');
+      
+      // Get all unique round names
+      const roundNames = new Set();
+      filteredData.forEach(archer => {
+        Object.keys(archer.rounds).forEach(roundName => roundNames.add(roundName));
+      });
+      const sortedRounds = Array.from(roundNames).sort();
+      
+      // Build header
+      const thead = document.getElementById('pivot-thead');
+      thead.innerHTML = `
+        <tr>
+          <th class="px-3 py-3 text-left sticky left-0 bg-primary dark:bg-primary-dark z-10">Archer</th>
+          <th class="px-3 py-3 text-left">School</th>
+          <th class="px-3 py-3 text-center">Level</th>
+          <th class="px-3 py-3 text-center">Gender</th>
+          ${sortedRounds.map(round => `<th class="px-3 py-3 text-center">${round}</th>`).join('')}
+          <th class="px-3 py-3 text-center bg-success text-white font-bold">Total</th>
+          <th class="px-3 py-3 text-center bg-success text-white font-bold">Avg</th>
+        </tr>
+      `;
+      
+      // Build rows
+      const tbody = document.getElementById('pivot-tbody');
+      tbody.innerHTML = '';
+      
+      filteredData.forEach((archer, index) => {
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors';
+        
+        const fullName = `${archer.firstName} ${archer.lastName}`;
+        
+        let rowHTML = `
+          <td class="px-3 py-3 font-semibold sticky left-0 bg-white dark:bg-gray-800 z-10">${fullName}</td>
+          <td class="px-3 py-3 text-gray-600 dark:text-gray-400">${archer.school}</td>
+          <td class="px-3 py-3 text-center text-gray-600 dark:text-gray-400">${archer.level}</td>
+          <td class="px-3 py-3 text-center text-gray-600 dark:text-gray-400">${archer.gender}</td>
+        `;
+        
+        // Add score cells for each round
+        sortedRounds.forEach(roundName => {
+          const round = archer.rounds[roundName];
+          if (round) {
+            const scoreClass = round.total >= 270 ? 'text-rank-gold font-bold' : 
+                              round.total >= 250 ? 'text-rank-silver font-semibold' : 
+                              round.total >= 230 ? 'text-rank-bronze' : 
+                              'text-gray-800 dark:text-gray-200';
+            rowHTML += `<td class="px-3 py-3 text-center ${scoreClass} cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900" data-archer-index="${index}" data-round="${roundName}">${round.total}</td>`;
+          } else {
+            rowHTML += `<td class="px-3 py-3 text-center text-gray-400 dark:text-gray-600">-</td>`;
+          }
+        });
+        
+        // Add total and average
+        rowHTML += `
+          <td class="px-3 py-3 text-center font-bold text-lg text-success">${archer._totalScore}</td>
+          <td class="px-3 py-3 text-center font-semibold">${archer._avgScore.toFixed(1)}</td>
+        `;
+        
+        row.innerHTML = rowHTML;
+        tbody.appendChild(row);
+      });
+      
+      // Add click handlers for score cells
+      tbody.querySelectorAll('td[data-archer-index]').forEach(cell => {
+        cell.addEventListener('click', function() {
+          const archerIndex = parseInt(this.dataset.archerIndex);
+          const roundName = this.dataset.round;
+          showScorecardForRound(archerIndex, roundName);
+        });
+      });
+    }
+
+    function showScorecardForRound(archerIndex, roundName) {
+      const archer = filteredData[archerIndex];
+      const round = archer.rounds[roundName];
+      
+      if (!round || !round.scorecard || !round.scorecard.ends) {
+        alert('No scorecard data available for this round.');
+        return;
+      }
+      
+      // Extract scores
+      const scores = round.scorecard.ends.map(end => [
+        end.a1 || '', 
+        end.a2 || '', 
+        end.a3 || ''
+      ]);
+      
+      const archerData = {
+        id: archer.id,
+        firstName: archer.firstName,
+        lastName: archer.lastName,
+        school: archer.school,
+        level: archer.level,
+        gender: archer.gender,
+        scores: scores,
+        cardStatus: round.status,
+        verified: round.status === 'VER',
+        completed: round.status !== 'VOID'
+      };
+      
+      const roundData = {
+        totalEnds: 10,
+        eventName: roundName,
+        division: round.division,
+        roundType: 'R300'
+      };
+      
+      if (typeof ScorecardView !== 'undefined') {
+        ScorecardView.showScorecardModal(archerData, roundData);
+      }
+    }
+
+    function updateStats() {
+      const totalArchers = filteredData.length;
+      const roundsSet = new Set();
+      let highestScore = 0;
+      let totalScoreSum = 0;
+      let scoreCount = 0;
+      
+      filteredData.forEach(archer => {
+        Object.keys(archer.rounds).forEach(roundName => {
+          roundsSet.add(roundName);
+          const score = archer.rounds[roundName].total;
+          if (score > highestScore) highestScore = score;
+          totalScoreSum += score;
+          scoreCount++;
+        });
+      });
+      
+      const avgScore = scoreCount > 0 ? (totalScoreSum / scoreCount).toFixed(1) : 0;
+      
+      document.getElementById('stat-total-archers').textContent = totalArchers;
+      document.getElementById('stat-total-rounds').textContent = roundsSet.size;
+      document.getElementById('stat-highest-score').textContent = highestScore;
+      document.getElementById('stat-avg-score').textContent = avgScore;
+    }
+
+    function exportToCSV() {
+      if (filteredData.length === 0) {
+        alert('No data to export');
+        return;
+      }
+      
+      // Get all unique round names
+      const roundNames = new Set();
+      filteredData.forEach(archer => {
+        Object.keys(archer.rounds).forEach(roundName => roundNames.add(roundName));
+      });
+      const sortedRounds = Array.from(roundNames).sort();
+      
+      // Build CSV
+      let csv = 'Archer,School,Level,Gender,' + sortedRounds.join(',') + ',Total,Average\n';
+      
+      filteredData.forEach(archer => {
+        const fullName = `"${archer.firstName} ${archer.lastName}"`;
+        const school = `"${archer.school}"`;
+        const level = `"${archer.level}"`;
+        const gender = archer.gender;
+        
+        const scores = sortedRounds.map(roundName => {
+          const round = archer.rounds[roundName];
+          return round ? round.total : '';
+        }).join(',');
+        
+        csv += `${fullName},${school},${level},${gender},${scores},${archer._totalScore},${archer._avgScore.toFixed(1)}\n`;
+      });
+      
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `archer_results_pivot_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    }
+
+    function showLoading() {
+      document.getElementById('loading-state').classList.remove('hidden');
+      document.getElementById('error-state').classList.add('hidden');
+      document.getElementById('pivot-container').classList.add('hidden');
+      document.getElementById('stats-summary').classList.add('hidden');
+    }
+
+    function hideLoading() {
+      document.getElementById('loading-state').classList.add('hidden');
+    }
+
+    function showError(message) {
+      document.getElementById('error-state').classList.remove('hidden');
+      document.getElementById('error-message').textContent = message;
+      document.getElementById('loading-state').classList.add('hidden');
+      document.getElementById('pivot-container').classList.add('hidden');
+      document.getElementById('stats-summary').classList.add('hidden');
+    }
+
+    function hideError() {
+      document.getElementById('error-state').classList.add('hidden');
+    }
+
+    // Event listeners
+    document.getElementById('apply-filters-btn').addEventListener('click', applyFilters);
+    document.getElementById('reset-filters-btn').addEventListener('click', () => {
+      document.getElementById('filter-division').value = '';
+      document.getElementById('filter-gender').value = '';
+      document.getElementById('search-name').value = '';
+      document.getElementById('sort-by').value = 'name';
+      applyFilters();
+    });
+    document.getElementById('refresh-btn').addEventListener('click', loadAllData);
+    document.getElementById('export-csv-btn').addEventListener('click', exportToCSV);
+
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', loadAllData);
+  </script>
+</body>
+</html>
+
