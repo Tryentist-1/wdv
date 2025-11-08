@@ -49,6 +49,18 @@
       </div>
     </div>
 
+    <!-- Round Selector -->
+    <div id="round-selector" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
+      <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">📅 Select Rounds to Include</h2>
+      <div id="round-checkboxes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        <!-- Dynamic checkboxes will be inserted here -->
+      </div>
+      <div class="flex gap-2">
+        <button id="select-all-rounds-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Select All</button>
+        <button id="deselect-all-rounds-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Deselect All</button>
+      </div>
+    </div>
+
     <!-- Filters -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
       <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Filters & Sort</h2>
@@ -94,9 +106,15 @@
         </div>
       </div>
 
-      <div class="flex gap-2">
+      <div class="flex gap-2 flex-wrap">
         <button id="apply-filters-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Apply Filters</button>
         <button id="reset-filters-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Reset</button>
+        
+        <!-- View Mode Toggle -->
+        <div class="ml-auto flex gap-2">
+          <button id="simple-view-btn" class="px-4 py-2 bg-primary text-white rounded font-semibold transition-colors min-h-[44px]">Simple View</button>
+          <button id="advanced-view-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Advanced View</button>
+        </div>
       </div>
     </div>
 
@@ -173,7 +191,10 @@
     // State
     let allArcherData = [];
     let allEvents = [];
+    let allRounds = []; // All unique rounds across events
+    let selectedRounds = new Set(); // Selected round names
     let filteredData = [];
+    let viewMode = 'simple'; // 'simple' or 'advanced'
 
     // Dark mode toggle
     document.getElementById('dark-mode-toggle').addEventListener('click', function() {
@@ -229,18 +250,31 @@
                 const arrowsShot = (archer.scorecard && archer.scorecard.ends) ? archer.scorecard.ends.length * 3 : 0;
                 const avg = arrowsShot > 0 ? (total / arrowsShot) : 0;
                 
-                archerData.rounds[event.name] = {
+                const roundKey = `${event.name}`;
+                archerData.rounds[roundKey] = {
                   eventId: event.id,
                   eventName: event.name,
                   eventDate: event.date,
                   division: divKey,
                   total: total,
                   avg: avg,
+                  avgPerArrow: avg,
                   xs: archer.xs || (archer.scorecard && archer.scorecard.xs) || 0,
                   tens: archer.tens || (archer.scorecard && archer.scorecard.tens) || 0,
                   status: archer.cardStatus || archer.status || 'PENDING',
+                  faceSize: archer.targetSize || archer.target_size || null,
                   scorecard: archer.scorecard
                 };
+                
+                // Track unique rounds
+                if (!allRounds.find(r => r.key === roundKey)) {
+                  allRounds.push({
+                    key: roundKey,
+                    name: event.name,
+                    date: event.date,
+                    eventId: event.id
+                  });
+                }
               }
             }
           } catch (err) {
@@ -258,6 +292,15 @@
           return;
         }
         
+        // Sort rounds by date
+        allRounds.sort((a, b) => new Date(a.date) - new Date(b.date));
+        
+        // Select all rounds by default
+        selectedRounds = new Set(allRounds.map(r => r.key));
+        
+        // Render round selector
+        renderRoundSelector();
+        
         // Apply initial filters and render
         applyFilters();
         
@@ -265,6 +308,34 @@
         console.error('Error loading data:', err);
         showError('Failed to load data: ' + err.message);
       }
+    }
+
+    function renderRoundSelector() {
+      const container = document.getElementById('round-checkboxes');
+      container.innerHTML = '';
+      
+      allRounds.forEach(round => {
+        const checkbox = document.createElement('label');
+        checkbox.className = 'flex items-center gap-2 cursor-pointer p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors';
+        checkbox.innerHTML = `
+          <input type="checkbox" value="${round.key}" ${selectedRounds.has(round.key) ? 'checked' : ''} class="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary">
+          <span class="text-gray-800 dark:text-white font-semibold">${round.name}</span>
+          <span class="text-sm text-gray-600 dark:text-gray-400">(${round.date})</span>
+        `;
+        
+        checkbox.querySelector('input').addEventListener('change', function() {
+          if (this.checked) {
+            selectedRounds.add(round.key);
+          } else {
+            selectedRounds.delete(round.key);
+          }
+          applyFilters();
+        });
+        
+        container.appendChild(checkbox);
+      });
+      
+      document.getElementById('round-selector').classList.remove('hidden');
     }
 
     function applyFilters() {
@@ -300,11 +371,16 @@
         return true;
       });
       
-      // Calculate totals for sorting
+      // Calculate totals for sorting (only for selected rounds)
       filteredData.forEach(archer => {
-        const roundScores = Object.values(archer.rounds).map(r => r.total);
-        archer._totalScore = roundScores.reduce((sum, score) => sum + score, 0);
-        archer._avgScore = roundScores.length > 0 ? archer._totalScore / roundScores.length : 0;
+        const selectedRoundScores = Object.entries(archer.rounds)
+          .filter(([key, _]) => selectedRounds.has(key))
+          .map(([_, round]) => round.total);
+        
+        archer._maxScore = selectedRoundScores.length > 0 ? Math.max(...selectedRoundScores) : 0;
+        archer._avgScore = selectedRoundScores.length > 0 ? 
+          selectedRoundScores.reduce((sum, score) => sum + score, 0) / selectedRoundScores.length : 0;
+        archer._totalScore = selectedRoundScores.reduce((sum, score) => sum + score, 0);
       });
       
       // Sort
@@ -340,12 +416,16 @@
       document.getElementById('pivot-container').classList.remove('hidden');
       document.getElementById('stats-summary').classList.remove('hidden');
       
-      // Get all unique round names
-      const roundNames = new Set();
-      filteredData.forEach(archer => {
-        Object.keys(archer.rounds).forEach(roundName => roundNames.add(roundName));
-      });
-      const sortedRounds = Array.from(roundNames).sort();
+      if (viewMode === 'simple') {
+        renderSimpleView();
+      } else {
+        renderAdvancedView();
+      }
+    }
+
+    function renderSimpleView() {
+      // Get selected rounds only
+      const sortedRounds = allRounds.filter(r => selectedRounds.has(r.key));
       
       // Build header
       const thead = document.getElementById('pivot-thead');
@@ -353,10 +433,9 @@
         <tr>
           <th class="px-3 py-3 text-left sticky left-0 bg-primary dark:bg-primary-dark z-10">Archer</th>
           <th class="px-3 py-3 text-left">School</th>
-          <th class="px-3 py-3 text-center">Level</th>
-          <th class="px-3 py-3 text-center">Gender</th>
-          ${sortedRounds.map(round => `<th class="px-3 py-3 text-center">${round}</th>`).join('')}
-          <th class="px-3 py-3 text-center bg-success text-white font-bold">Total</th>
+          <th class="px-3 py-3 text-center">Face</th>
+          ${sortedRounds.map(round => `<th class="px-3 py-3 text-center">${round.name}</th>`).join('')}
+          <th class="px-3 py-3 text-center bg-rank-gold text-white font-bold">Max</th>
           <th class="px-3 py-3 text-center bg-success text-white font-bold">Avg</th>
         </tr>
       `;
@@ -371,31 +450,126 @@
         
         const fullName = `${archer.firstName} ${archer.lastName}`;
         
+        // Get face size from first available round
+        const faceSize = Object.values(archer.rounds).find(r => r.faceSize)?.faceSize || '-';
+        
         let rowHTML = `
           <td class="px-3 py-3 font-semibold sticky left-0 bg-white dark:bg-gray-800 z-10">${fullName}</td>
           <td class="px-3 py-3 text-gray-600 dark:text-gray-400">${archer.school}</td>
-          <td class="px-3 py-3 text-center text-gray-600 dark:text-gray-400">${archer.level}</td>
-          <td class="px-3 py-3 text-center text-gray-600 dark:text-gray-400">${archer.gender}</td>
+          <td class="px-3 py-3 text-center text-gray-600 dark:text-gray-400">${faceSize}</td>
         `;
         
-        // Add score cells for each round
-        sortedRounds.forEach(roundName => {
-          const round = archer.rounds[roundName];
-          if (round) {
-            const scoreClass = round.total >= 270 ? 'text-rank-gold font-bold' : 
-                              round.total >= 250 ? 'text-rank-silver font-semibold' : 
-                              round.total >= 230 ? 'text-rank-bronze' : 
+        // Add score cells for each selected round
+        sortedRounds.forEach(round => {
+          const roundData = archer.rounds[round.key];
+          if (roundData) {
+            const scoreClass = roundData.total >= 270 ? 'text-rank-gold font-bold' : 
+                              roundData.total >= 250 ? 'text-rank-silver font-semibold' : 
+                              roundData.total >= 230 ? 'text-rank-bronze' : 
                               'text-gray-800 dark:text-gray-200';
-            rowHTML += `<td class="px-3 py-3 text-center ${scoreClass} cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900" data-archer-index="${index}" data-round="${roundName}">${round.total}</td>`;
+            rowHTML += `<td class="px-3 py-3 text-center ${scoreClass} cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900" data-archer-index="${index}" data-round="${round.key}">${roundData.total}</td>`;
           } else {
             rowHTML += `<td class="px-3 py-3 text-center text-gray-400 dark:text-gray-600">-</td>`;
           }
         });
         
-        // Add total and average
+        // Add max and average
         rowHTML += `
-          <td class="px-3 py-3 text-center font-bold text-lg text-success">${archer._totalScore}</td>
-          <td class="px-3 py-3 text-center font-semibold">${archer._avgScore.toFixed(1)}</td>
+          <td class="px-3 py-3 text-center font-bold text-lg text-rank-gold">${archer._maxScore}</td>
+          <td class="px-3 py-3 text-center font-bold text-lg text-success">${archer._avgScore.toFixed(1)}</td>
+        `;
+        
+        row.innerHTML = rowHTML;
+        tbody.appendChild(row);
+      });
+      
+      // Add click handlers for score cells
+      tbody.querySelectorAll('td[data-archer-index]').forEach(cell => {
+        cell.addEventListener('click', function() {
+          const archerIndex = parseInt(this.dataset.archerIndex);
+          const roundName = this.dataset.round;
+          showScorecardForRound(archerIndex, roundName);
+        });
+      });
+    }
+
+    function renderAdvancedView() {
+      // Get selected rounds only
+      const sortedRounds = allRounds.filter(r => selectedRounds.has(r.key));
+      
+      // Build header with Score and Avg columns for each round
+      const thead = document.getElementById('pivot-thead');
+      let headerHTML = `
+        <tr>
+          <th class="px-3 py-3 text-left sticky left-0 bg-primary dark:bg-primary-dark z-10" rowspan="2">Archer</th>
+          <th class="px-3 py-3 text-left" rowspan="2">School</th>
+          <th class="px-3 py-3 text-center" rowspan="2">Gender</th>
+          <th class="px-3 py-3 text-center" rowspan="2">Face</th>
+      `;
+      
+      sortedRounds.forEach(round => {
+        headerHTML += `<th class="px-3 py-3 text-center border-l-2 border-gray-300 dark:border-gray-600" colspan="2">${round.name}</th>`;
+      });
+      
+      headerHTML += `
+          <th class="px-3 py-3 text-center bg-rank-gold text-white font-bold border-l-2 border-gray-300 dark:border-gray-600" rowspan="2">Max</th>
+          <th class="px-3 py-3 text-center bg-success text-white font-bold" rowspan="2">Avg</th>
+        </tr>
+        <tr>
+      `;
+      
+      sortedRounds.forEach(round => {
+        headerHTML += `
+          <th class="px-2 py-2 text-center text-xs border-l-2 border-gray-300 dark:border-gray-600">Score</th>
+          <th class="px-2 py-2 text-center text-xs">Avg/Arrow</th>
+        `;
+      });
+      
+      headerHTML += `</tr>`;
+      thead.innerHTML = headerHTML;
+      
+      // Build rows
+      const tbody = document.getElementById('pivot-tbody');
+      tbody.innerHTML = '';
+      
+      filteredData.forEach((archer, index) => {
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors';
+        
+        const fullName = `${archer.firstName} ${archer.lastName}`;
+        const faceSize = Object.values(archer.rounds).find(r => r.faceSize)?.faceSize || '-';
+        
+        let rowHTML = `
+          <td class="px-3 py-3 font-semibold sticky left-0 bg-white dark:bg-gray-800 z-10">${fullName}</td>
+          <td class="px-3 py-3 text-gray-600 dark:text-gray-400">${archer.school}</td>
+          <td class="px-3 py-3 text-center text-gray-600 dark:text-gray-400">${archer.gender}</td>
+          <td class="px-3 py-3 text-center text-gray-600 dark:text-gray-400">${faceSize}</td>
+        `;
+        
+        // Add score and avg cells for each selected round
+        sortedRounds.forEach(round => {
+          const roundData = archer.rounds[round.key];
+          if (roundData) {
+            const scoreClass = roundData.total >= 270 ? 'text-rank-gold font-bold' : 
+                              roundData.total >= 250 ? 'text-rank-silver font-semibold' : 
+                              roundData.total >= 230 ? 'text-rank-bronze' : 
+                              'text-gray-800 dark:text-gray-200';
+            rowHTML += `
+              <td class="px-2 py-3 text-center ${scoreClass} cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 border-l-2 border-gray-300 dark:border-gray-600" data-archer-index="${index}" data-round="${round.key}">${roundData.total}</td>
+              <td class="px-2 py-3 text-center text-sm text-gray-600 dark:text-gray-400">${roundData.avgPerArrow.toFixed(2)}</td>
+            `;
+          } else {
+            rowHTML += `
+              <td class="px-2 py-3 text-center text-gray-400 dark:text-gray-600 border-l-2 border-gray-300 dark:border-gray-600">-</td>
+              <td class="px-2 py-3 text-center text-gray-400 dark:text-gray-600">-</td>
+            `;
+          }
+        });
+        
+        // Add max and average
+        rowHTML += `
+          <td class="px-3 py-3 text-center font-bold text-lg text-rank-gold border-l-2 border-gray-300 dark:border-gray-600">${archer._maxScore}</td>
+          <td class="px-3 py-3 text-center font-bold text-lg text-success">${archer._avgScore.toFixed(1)}</td>
         `;
         
         row.innerHTML = rowHTML;
@@ -552,6 +726,38 @@
     });
     document.getElementById('refresh-btn').addEventListener('click', loadAllData);
     document.getElementById('export-csv-btn').addEventListener('click', exportToCSV);
+    
+    // View mode toggle
+    document.getElementById('simple-view-btn').addEventListener('click', function() {
+      viewMode = 'simple';
+      this.classList.add('bg-primary', 'text-white');
+      this.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-white');
+      document.getElementById('advanced-view-btn').classList.remove('bg-primary', 'text-white');
+      document.getElementById('advanced-view-btn').classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-white');
+      renderPivotTable();
+    });
+    
+    document.getElementById('advanced-view-btn').addEventListener('click', function() {
+      viewMode = 'advanced';
+      this.classList.add('bg-primary', 'text-white');
+      this.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-white');
+      document.getElementById('simple-view-btn').classList.remove('bg-primary', 'text-white');
+      document.getElementById('simple-view-btn').classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-800', 'dark:text-white');
+      renderPivotTable();
+    });
+    
+    // Round selector buttons
+    document.getElementById('select-all-rounds-btn').addEventListener('click', () => {
+      selectedRounds = new Set(allRounds.map(r => r.key));
+      renderRoundSelector();
+      applyFilters();
+    });
+    
+    document.getElementById('deselect-all-rounds-btn').addEventListener('click', () => {
+      selectedRounds.clear();
+      renderRoundSelector();
+      applyFilters();
+    });
 
     // Load data on page load
     document.addEventListener('DOMContentLoaded', loadAllData);
