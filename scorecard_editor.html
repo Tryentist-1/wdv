@@ -326,72 +326,106 @@
             resultsDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Searching...</p>';
             
             try {
-                // Search for archers
-                const res = await fetch(`${API_BASE}/archers?search=${encodeURIComponent(query)}`);
+                // Search recent events for scorecards matching the query
+                const res = await fetch(`${API_BASE}/events/recent?limit=50`);
                 if (!res.ok) throw new Error('Search failed');
                 
-                const archers = await res.json();
+                const data = await res.json();
+                const events = data.events || [];
                 
-                if (archers.length === 0) {
+                // Collect all scorecards that match the search query
+                const matchingCards = new Map(); // Group by archer name
+                
+                for (const event of events) {
+                    if (!event.divisions) continue;
+                    
+                    for (const division of event.divisions) {
+                        if (!division.archers) continue;
+                        
+                        for (const archer of division.archers) {
+                            const archerName = `${archer.firstName || ''} ${archer.lastName || ''}`.trim();
+                            const archerNameLower = archerName.toLowerCase();
+                            const queryLower = query.toLowerCase();
+                            
+                            // Check if archer name matches query
+                            if (archerNameLower.includes(queryLower)) {
+                                if (!matchingCards.has(archerName)) {
+                                    matchingCards.set(archerName, {
+                                        name: archerName,
+                                        firstName: archer.firstName || '',
+                                        lastName: archer.lastName || '',
+                                        school: archer.school || '',
+                                        cards: []
+                                    });
+                                }
+                                
+                                matchingCards.get(archerName).cards.push({
+                                    roundArcherId: archer.roundArcherId,
+                                    eventName: event.name,
+                                    eventDate: event.date,
+                                    roundType: division.roundType,
+                                    division: division.division,
+                                    cardStatus: archer.cardStatus || 'PENDING',
+                                    score: archer.score || 0
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                if (matchingCards.size === 0) {
                     resultsDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">No archers found</p>';
                     return;
                 }
                 
-                // For each archer, fetch their rounds
+                // Render results
                 let html = '';
-                for (const archer of archers.slice(0, 10)) { // Limit to 10 results
-                    try {
-                        const roundsRes = await fetch(`${API_BASE}/archers/${archer.id}/rounds`);
-                        if (!roundsRes.ok) continue;
-                        
-                        const rounds = await roundsRes.json();
-                        if (rounds.length === 0) continue;
+                let count = 0;
+                for (const [archerName, archerData] of matchingCards) {
+                    if (count >= 10) break; // Limit to 10 archers
+                    count++;
+                    
+                    html += `
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+                            <h4 class="font-bold text-gray-800 dark:text-white mb-2">
+                                ${archerData.firstName} ${archerData.lastName}
+                                ${archerData.school ? `<span class="text-sm font-normal text-gray-600 dark:text-gray-400">(${archerData.school})</span>` : ''}
+                            </h4>
+                            <div class="space-y-1">
+                    `;
+                    
+                    // Sort cards by date (newest first)
+                    archerData.cards.sort((a, b) => (b.eventDate || '').localeCompare(a.eventDate || ''));
+                    
+                    archerData.cards.forEach(card => {
+                        const statusBadge = card.cardStatus === 'VER' ? '✓' : 
+                                          card.cardStatus === 'VOID' ? '✗' : '⏳';
+                        const statusColor = card.cardStatus === 'VER' ? 'text-success' : 
+                                          card.cardStatus === 'VOID' ? 'text-gray-500' : 'text-warning';
                         
                         html += `
-                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                                <h4 class="font-bold text-gray-800 dark:text-white mb-2">
-                                    ${archer.firstName} ${archer.lastName}
-                                    ${archer.school ? `<span class="text-sm font-normal text-gray-600 dark:text-gray-400">(${archer.school})</span>` : ''}
-                                </h4>
-                                <div class="space-y-1">
-                        `;
-                        
-                        rounds.forEach(round => {
-                            const statusBadge = round.cardStatus === 'VER' ? '✓' : 
-                                              round.cardStatus === 'VOID' ? '✗' : '⏳';
-                            const statusColor = round.cardStatus === 'VER' ? 'text-success' : 
-                                              round.cardStatus === 'VOID' ? 'text-gray-500' : 'text-warning';
-                            
-                            html += `
-                                <a href="?id=${round.roundArcherId}&mode=${mode}" 
-                                   class="block px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-600 rounded border border-gray-200 dark:border-gray-600 transition-colors">
-                                    <div class="flex justify-between items-center">
-                                        <div class="text-sm">
-                                            <span class="font-medium">${round.eventName || 'Practice'}</span>
-                                            <span class="text-gray-600 dark:text-gray-400">• ${round.roundType || 'Unknown'}</span>
-                                            ${round.eventDate ? `<span class="text-gray-500 dark:text-gray-500">• ${round.eventDate}</span>` : ''}
-                                        </div>
-                                        <span class="${statusColor} font-bold">${statusBadge}</span>
+                            <a href="?id=${card.roundArcherId}&mode=${mode}" 
+                               class="block px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-600 rounded border border-gray-200 dark:border-gray-600 transition-colors">
+                                <div class="flex justify-between items-center">
+                                    <div class="text-sm">
+                                        <span class="font-medium">${card.eventName || 'Event'}</span>
+                                        <span class="text-gray-600 dark:text-gray-400">• ${card.roundType || card.division || 'Round'}</span>
+                                        ${card.eventDate ? `<span class="text-gray-500 dark:text-gray-500">• ${card.eventDate}</span>` : ''}
                                     </div>
-                                    ${round.score ? `<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Score: ${round.score}</div>` : ''}
-                                </a>
-                            `;
-                        });
-                        
-                        html += `
+                                    <span class="${statusColor} font-bold">${statusBadge}</span>
                                 </div>
-                            </div>
+                                ${card.score > 0 ? `<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Score: ${card.score}</div>` : ''}
+                            </a>
                         `;
-                    } catch (err) {
-                        console.error('Error fetching rounds for archer:', archer.id, err);
-                    }
+                    });
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
                 }
                 
-                if (html === '') {
-                    resultsDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">No scorecards found for these archers</p>';
-                } else {
-                    resultsDiv.innerHTML = html;
-                }
+                resultsDiv.innerHTML = html;
                 
             } catch (error) {
                 console.error('[searchArchers] Error:', error);
