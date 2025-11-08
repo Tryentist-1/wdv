@@ -112,13 +112,13 @@
             <!-- Archer list will be rendered here -->
         </div>
 
-        <footer class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2 flex-wrap justify-between shadow-lg transition-colors duration-200 z-10">
-            <a href="index.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center">Home</a>
-            <button id="load-from-mysql-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]"><i class="fas fa-cloud-download-alt"></i> Load</button>
-            <button id="sync-to-mysql-btn" class="px-4 py-2 bg-success hover:bg-success-dark text-white rounded font-semibold transition-colors min-h-[44px]"><i class="fas fa-cloud-upload-alt"></i> Sync</button>
-            <button id="import-csv-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]"><i class="fas fa-file-import"></i> Import</button>
-            <button id="export-csv-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]"><i class="fas fa-file-export"></i> Export</button>
-            <button id="new-list-btn" class="px-4 py-2 bg-danger hover:bg-red-700 text-white rounded font-semibold transition-colors min-h-[44px]"><i class="fas fa-trash-alt"></i> New</button>
+        <footer class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2 justify-center shadow-lg transition-colors duration-200 z-10">
+            <a href="index.html" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center">
+                <i class="fas fa-home mr-2"></i>Home
+            </a>
+            <button id="load-from-mysql-btn" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+            </button>
         </footer>
 
     </div>
@@ -181,11 +181,7 @@
             const addArcherBtn = document.getElementById('add-archer-btn');
             const searchInput = document.getElementById('search-input');
             const statusFilter = document.getElementById('status-filter');
-            const newListBtn = document.getElementById('new-list-btn');
             const loadFromMySQLBtn = document.getElementById('load-from-mysql-btn');
-            const syncToMySQLBtn = document.getElementById('sync-to-mysql-btn');
-            const importCSVBtn = document.getElementById('import-csv-btn');
-            const exportCSVBtn = document.getElementById('export-csv-btn');
             const sortByNameBtn = document.getElementById('sort-by-name-btn');
             const sortByLevelBtn = document.getElementById('sort-by-level-btn');
             const selfSummaryEl = document.getElementById('self-summary');
@@ -348,7 +344,7 @@
                         avatarOrIcon.title = isSelf ? 'This is you (tap to clear)' : 'Tap to set as me';
                         avatarOrIcon.onclick = async (e) => {
                             e.stopPropagation();
-                            if (isSelf) {
+                    if (isSelf) {
                                 if (confirm('Clear "Who am I"?')) {
                                     if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
                                     renderList();
@@ -365,21 +361,21 @@
                             avatarOrIcon.title = 'This is you (tap to clear)';
                             avatarOrIcon.style.cursor = 'pointer';
                             avatarOrIcon.onclick = (e) => {
-                                e.stopPropagation();
-                                if (confirm('Clear "Who am I"?')) {
-                                    if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
-                                    renderList();
-                                }
-                            };
-                        } else {
+                            e.stopPropagation();
+                            if (confirm('Clear "Who am I"?')) {
+                                if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
+                                renderList();
+                            }
+                        };
+                    } else {
                             avatarOrIcon.innerHTML = '<i class="far fa-user" style="color: #bbb; font-size: 1.5rem;"></i>';
                             avatarOrIcon.title = 'Tap to set as me';
                             avatarOrIcon.style.cursor = 'pointer';
                             avatarOrIcon.onclick = async (e) => {
-                                e.stopPropagation();
-                                await ArcherModule.setSelf(archer.extId);
-                                renderList();
-                            };
+                            e.stopPropagation();
+                            await ArcherModule.setSelf(archer.extId);
+                            renderList();
+                        };
                         }
                     }
 
@@ -431,8 +427,8 @@
                     // Friend toggle button (for non-self archers)
                     const friendToggle = document.createElement('span');
                     if (!isSelf) {
-                        friendToggle.className = 'favorite-star';
-                        friendToggle.style.marginRight = '0.5rem';
+                    friendToggle.className = 'favorite-star';
+                    friendToggle.style.marginRight = '0.5rem';
                         friendToggle.innerHTML = isFriend ? '<i class="fas fa-heart" style="color: #e63946;"></i>' : '<i class="far fa-heart" style="color: #ccc;"></i>';
                         friendToggle.title = isFriend ? 'Remove from friends' : 'Add as friend';
                         friendToggle.onclick = async (e) => {
@@ -887,7 +883,7 @@
                                     <option value="F">F</option>
                                 </select>
                             </div>
-                        </div>
+                            </div>
                         
                         <!-- Friends -->
                         <div>
@@ -971,7 +967,7 @@
                             <div>
                                 <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="limbWeightLbs">Wt (lbs)</label>
                                 <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="limbWeightLbs" min="0" step="0.5" placeholder="20">
-                            </div>
+                        </div>
                         </div>
                         
                         <!-- Hidden Riser Height (kept for data preservation) -->
@@ -1127,66 +1123,16 @@
             searchInput.oninput = () => renderList();
             statusFilter.onchange = () => renderList();
 
-            newListBtn.onclick = () => {
-                if (confirm('Are you sure you want to delete the entire archer list? This cannot be undone.')) {
-                    ArcherModule.clearList();
-                    renderList();
-                    alert('Archer list has been cleared.');
-                    lastSyncMessage = 'Local list cleared';
-                    updateSyncStatus();
-                }
-            };
-            
-            // Load from MySQL (replaces old "Refresh from Master")
+            // Load/Refresh from MySQL
             loadFromMySQLBtn.onclick = async () => {
-                if (confirm('This will overwrite your current localStorage list with archers from the MySQL database. Continue?')) {
-                    try {
-                        const archers = await ArcherModule.loadFromMySQL();
-                        alert(`Loaded ${archers.length} archers from MySQL database.`);
-                        lastSyncMessage = 'Roster downloaded from server';
-                        renderList();
-                        updateSyncStatus();
-                    } catch (error) {
-                        alert('Failed to load from MySQL: ' + error.message + '\n\nEnter your coach API key or event code in Coach Console, then try again.');
-                    }
-                }
-            };
-            
-            // Sync to MySQL (push localStorage to database)
-            syncToMySQLBtn.onclick = async () => {
-                if (confirm('This will sync your current localStorage list TO the MySQL database. Continue?')) {
-                    try {
-                        const result = await ArcherModule.syncToMySQL();
-                        recordSyncMessage(result, 'Manual sync');
-                        if (result?.ok) {
-                            const processed = result?.processed ?? 0;
-                            const pending = result?.pending ?? 0;
-                            alert(`Sync requested.\nProcessed now: ${processed}\nPending changes: ${pending}`);
-                        } else {
-                            alert('Unable to reach the server right now. Changes are stored locally and will retry automatically.');
-                        }
-                        updateSyncStatus();
-                    } catch (error) {
-                        alert('Failed to sync to MySQL: ' + error.message + '\n\nEnter your coach API key or event code in Coach Console, then try again.');
-                    }
-                }
-            };
-            
-            // Import CSV (keeps server CSV functionality)
-            importCSVBtn.onclick = async () => {
-                if (confirm('This will overwrite your current list with the CSV file from the server. Are you sure?')) {
-                    await ArcherModule.loadDefaultCSVIfNeeded(true);
+                try {
+                    const archers = await ArcherModule.loadFromMySQL();
+                    alert(`Refreshed! Loaded ${archers.length} archers from database.`);
+                    lastSyncMessage = 'Roster refreshed';
                     renderList();
-                    alert('List has been refreshed from CSV file.');
-                    lastSyncMessage = 'Roster refreshed from CSV';
                     updateSyncStatus();
-                }
-            };
-
-            exportCSVBtn.onclick = () => {
-                const csv = ArcherModule.exportCSV();
-                if (csv) {
-                    alert('CSV export started. Check your downloads.');
+                } catch (error) {
+                    alert('Failed to refresh from database: ' + error.message + '\n\nEnter your coach API key or event code in Coach Console, then try again.');
                 }
             };
             
