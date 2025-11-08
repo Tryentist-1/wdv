@@ -359,17 +359,29 @@
                             if (!division.archers || !Array.isArray(division.archers)) continue;
                             
                             for (const archer of division.archers) {
-                                // Build archer name from firstName/lastName or archerName
-                                const firstName = archer.firstName || '';
-                                const lastName = archer.lastName || '';
-                                let archerName = `${firstName} ${lastName}`.trim();
+                                // Build archer name - try archerName first, then firstName/lastName
+                                let archerName = archer.archerName || '';
+                                let firstName = archer.firstName || '';
+                                let lastName = archer.lastName || '';
                                 
-                                // Fallback to archerName field if firstName/lastName not available
-                                if (!archerName && archer.archerName) {
-                                    archerName = archer.archerName;
+                                // If no archerName, build from firstName/lastName
+                                if (!archerName && (firstName || lastName)) {
+                                    archerName = `${firstName} ${lastName}`.trim();
                                 }
                                 
-                                if (!archerName) continue;
+                                // If we have archerName but not firstName/lastName, try to split
+                                if (archerName && !firstName && !lastName) {
+                                    const parts = archerName.split(' ');
+                                    if (parts.length >= 2) {
+                                        firstName = parts[0];
+                                        lastName = parts.slice(1).join(' ');
+                                    }
+                                }
+                                
+                                if (!archerName) {
+                                    console.log('[searchArchers] Skipping archer with no name:', archer);
+                                    continue;
+                                }
                                 
                                 const archerNameLower = archerName.toLowerCase();
                                 
@@ -392,7 +404,7 @@
                                         roundType: division.roundType || division.division,
                                         division: division.division,
                                         cardStatus: archer.cardStatus || 'PENDING',
-                                        score: archer.score || 0
+                                        score: archer.runningTotal || archer.score || 0
                                     });
                                 }
                             }
