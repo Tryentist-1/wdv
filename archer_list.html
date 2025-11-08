@@ -330,46 +330,115 @@
                     const isSelf = !!selfExtId && archer.extId === selfExtId;
                     const isFriend = friendSet.has(archer.extId);
 
-                    const meToggle = document.createElement('span');
-                    meToggle.className = 'favorite-star';
-                    meToggle.style.marginRight = '0.5rem';
-                    if (isSelf) {
-                        meToggle.innerHTML = '<i class="fas fa-user-check" style="color: #0d6efd;"></i>';
-                        meToggle.title = 'This is you';
-                        meToggle.onclick = (e) => {
+                    // Avatar OR Icon (show avatar if photo exists, otherwise show icon)
+                    const avatarOrIcon = document.createElement('div');
+                    avatarOrIcon.className = 'w-10 h-10 rounded-full overflow-hidden flex items-center justify-center mr-3 flex-shrink-0';
+                    
+                    if (archer.photoUrl) {
+                        // Show photo avatar
+                        avatarOrIcon.className += ' bg-gray-200 dark:bg-gray-700';
+                        const avatarImg = document.createElement('img');
+                        avatarImg.src = archer.photoUrl;
+                        avatarImg.alt = `${archer.first} ${archer.last}`;
+                        avatarImg.className = 'w-full h-full object-cover';
+                        avatarOrIcon.appendChild(avatarImg);
+                        
+                        // Make it clickable to set as "me"
+                        avatarOrIcon.style.cursor = 'pointer';
+                        avatarOrIcon.title = isSelf ? 'This is you (tap to clear)' : 'Tap to set as me';
+                        avatarOrIcon.onclick = async (e) => {
                             e.stopPropagation();
-                            if (confirm('Clear "Who am I"?')) {
-                                if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
+                            if (isSelf) {
+                                if (confirm('Clear "Who am I"?')) {
+                                    if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
+                                    renderList();
+                                }
+                            } else {
+                                await ArcherModule.setSelf(archer.extId);
                                 renderList();
                             }
                         };
                     } else {
-                        meToggle.innerHTML = '<i class="far fa-user" style="color: #bbb;"></i>';
-                        meToggle.title = 'Set this archer as me';
-                        meToggle.onclick = async (e) => {
-                            e.stopPropagation();
-                            await ArcherModule.setSelf(archer.extId);
-                            renderList();
-                        };
+                        // Show person icon
+                        if (isSelf) {
+                            avatarOrIcon.innerHTML = '<i class="fas fa-user-check" style="color: #0d6efd; font-size: 1.5rem;"></i>';
+                            avatarOrIcon.title = 'This is you (tap to clear)';
+                            avatarOrIcon.style.cursor = 'pointer';
+                            avatarOrIcon.onclick = (e) => {
+                                e.stopPropagation();
+                                if (confirm('Clear "Who am I"?')) {
+                                    if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
+                                    renderList();
+                                }
+                            };
+                        } else {
+                            avatarOrIcon.innerHTML = '<i class="far fa-user" style="color: #bbb; font-size: 1.5rem;"></i>';
+                            avatarOrIcon.title = 'Tap to set as me';
+                            avatarOrIcon.style.cursor = 'pointer';
+                            avatarOrIcon.onclick = async (e) => {
+                                e.stopPropagation();
+                                await ArcherModule.setSelf(archer.extId);
+                                renderList();
+                            };
+                        }
                     }
 
-                    const friendToggle = document.createElement('span');
-                    friendToggle.className = 'favorite-star';
-                    friendToggle.style.marginRight = '0.5rem';
+                    const nameDiv = document.createElement('div');
+                    nameDiv.style.flexGrow = '1';
+
+                    // Name with inline badges
+                    const nameLabel = document.createElement('div');
+                    nameLabel.className = 'archer-name-label';
+                    nameLabel.style.display = 'flex';
+                    nameLabel.style.alignItems = 'center';
+                    nameLabel.style.gap = '0.5rem';
+                    nameLabel.style.flexWrap = 'wrap';
+                    
+                    const nameText = document.createElement('span');
+                    const nickname = archer.nickname ? ` (${archer.nickname})` : '';
+                    nameText.textContent = `${archer.first} ${archer.last}${nickname}`;
+                    nameLabel.appendChild(nameText);
+                    
+                    // Add "You" badge inline
                     if (isSelf) {
-                        friendToggle.innerHTML = '<i class="fas fa-heart" style="color: #ced4da;"></i>';
-                        friendToggle.style.cursor = 'default';
-                        friendToggle.onclick = (e) => {
-                            e.stopPropagation();
-                            alert('Tap the heart next to other archers to add them as friends.');
-                        };
-                    } else {
+                        const youBadge = document.createElement('span');
+                        youBadge.textContent = 'You';
+                        youBadge.style.fontSize = '0.75rem';
+                        youBadge.style.color = '#0d6efd';
+                        youBadge.style.fontWeight = '600';
+                        youBadge.style.padding = '0.1rem 0.4rem';
+                        youBadge.style.backgroundColor = 'rgba(13, 110, 253, 0.1)';
+                        youBadge.style.borderRadius = '0.25rem';
+                        nameLabel.appendChild(youBadge);
+                    }
+                    
+                    // Add Friend heart inline
+                    if (isFriend && !isSelf) {
+                        const friendHeart = document.createElement('span');
+                        friendHeart.innerHTML = '<i class="fas fa-heart" style="color: #e63946; font-size: 0.85rem;"></i>';
+                        friendHeart.title = 'Friend';
+                        nameLabel.appendChild(friendHeart);
+                    }
+
+                    const detailsLabel = document.createElement('div');
+                    const statusBadge = (archer.status || 'active').toUpperCase() === 'ACTIVE' ? 'Active' : 'Inactive';
+                    detailsLabel.textContent = `${(archer.school || 'N/A').toUpperCase()} • Grade ${archer.grade || '-'} • ${archer.level || 'VAR'} / ${archer.gender || 'M'} • ${statusBadge}`;
+                    detailsLabel.className = 'archer-details-label';
+                    
+                    nameDiv.appendChild(nameLabel);
+                    nameDiv.appendChild(detailsLabel);
+
+                    // Friend toggle button (for non-self archers)
+                    const friendToggle = document.createElement('span');
+                    if (!isSelf) {
+                        friendToggle.className = 'favorite-star';
+                        friendToggle.style.marginRight = '0.5rem';
                         friendToggle.innerHTML = isFriend ? '<i class="fas fa-heart" style="color: #e63946;"></i>' : '<i class="far fa-heart" style="color: #ccc;"></i>';
                         friendToggle.title = isFriend ? 'Remove from friends' : 'Add as friend';
                         friendToggle.onclick = async (e) => {
                             e.stopPropagation();
                             if (!selfExtId) {
-                                alert('Set "Who am I" first by tapping the person icon next to your name.');
+                                alert('Set "Who am I" first by tapping your avatar or name.');
                                 return;
                             }
                             try {
@@ -380,48 +449,6 @@
                                 alert('Unable to update friends: ' + err.message);
                             }
                         };
-                    }
-
-                    // Avatar
-                    const avatarDiv = document.createElement('div');
-                    avatarDiv.className = 'w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3 flex-shrink-0';
-                    if (archer.photoUrl) {
-                        const avatarImg = document.createElement('img');
-                        avatarImg.src = archer.photoUrl;
-                        avatarImg.alt = `${archer.first} ${archer.last}`;
-                        avatarImg.className = 'w-full h-full object-cover';
-                        avatarDiv.appendChild(avatarImg);
-                    } else {
-                        const initials = (archer.first.charAt(0) + archer.last.charAt(0)).toUpperCase();
-                        const initialsSpan = document.createElement('span');
-                        initialsSpan.textContent = initials;
-                        initialsSpan.className = 'text-sm font-bold text-gray-500 dark:text-gray-400';
-                        avatarDiv.appendChild(initialsSpan);
-                    }
-
-                    const nameDiv = document.createElement('div');
-                    nameDiv.style.flexGrow = '1';
-
-                    const nameLabel = document.createElement('div');
-                    const nickname = archer.nickname ? ` (${archer.nickname})` : '';
-                    nameLabel.textContent = `${archer.first} ${archer.last}${nickname}`;
-                    nameLabel.className = 'archer-name-label';
-
-                    const detailsLabel = document.createElement('div');
-                    const statusBadge = (archer.status || 'active').toUpperCase() === 'ACTIVE' ? 'Active' : 'Inactive';
-                    detailsLabel.textContent = `${(archer.school || 'N/A').toUpperCase()} • Grade ${archer.grade || '-'} • ${archer.level || 'VAR'} / ${archer.gender || 'M'} • ${statusBadge}`;
-                    detailsLabel.className = 'archer-details-label';
-                    
-                    nameDiv.appendChild(nameLabel);
-                    nameDiv.appendChild(detailsLabel);
-
-                    const relationshipLabel = document.createElement('div');
-                    relationshipLabel.style.fontSize = '0.85em';
-                    relationshipLabel.style.color = isSelf ? '#0d6efd' : '#6c757d';
-                    relationshipLabel.textContent = isSelf ? 'You' : (isFriend ? 'Friend' : '');
-                    if (relationshipLabel.textContent) {
-                        relationshipLabel.style.marginTop = '0.15rem';
-                        nameDiv.appendChild(relationshipLabel);
                     }
 
                     const historyBtn = document.createElement('a');
@@ -436,10 +463,9 @@
                         e.stopPropagation();
                     };
 
-                    row.appendChild(meToggle);
-                    row.appendChild(friendToggle);
-                    row.appendChild(avatarDiv);
+                    row.appendChild(avatarOrIcon);
                     row.appendChild(nameDiv);
+                    if (!isSelf) row.appendChild(friendToggle);
                     row.appendChild(historyBtn);
 
                     row.onclick = () => editArcher(index);
@@ -823,19 +849,16 @@
                                 </div>
                             </div>
                             
-                            <!-- Name Fields Stacked -->
-                            <div class="flex-1 flex flex-col gap-3">
+                            <!-- Name Fields Aligned with Photo -->
+                            <div class="flex-1 flex flex-col justify-between">
                                 <div>
-                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="first">First Name*</label>
-                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="first" required>
+                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="first" placeholder="First Name*" required>
                                 </div>
                                 <div>
-                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="last">Last Name*</label>
-                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="last" required>
+                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="last" placeholder="Last Name*" required>
                                 </div>
                                 <div>
-                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="nickname">Nickname</label>
-                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="nickname">
+                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="nickname" placeholder="Nickname">
                                 </div>
                             </div>
                         </div>
