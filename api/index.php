@@ -1059,6 +1059,159 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)/ends$#i', $route,
     exit;
 }
 
+// GET /v1/round_archers/{id} - Fetch scorecard details with scores
+if (preg_match('#^/v1/round_archers/([0-9a-f-]+)$#i', $route, $m) && $method === 'GET') {
+    $roundArcherId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Fetch round_archer with round and event details
+        $stmt = $pdo->prepare('
+            SELECT 
+                ra.*,
+                r.round_type,
+                r.division,
+                r.total_ends,
+                e.name as event_name,
+                e.date as event_date
+            FROM round_archers ra
+            LEFT JOIN rounds r ON ra.round_id = r.id
+            LEFT JOIN events e ON r.event_id = e.id
+            WHERE ra.id = ?
+            LIMIT 1
+        ');
+        $stmt->execute([$roundArcherId]);
+        $card = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$card) {
+            json_response(['error' => 'Scorecard not found'], 404);
+            exit;
+        }
+        
+        // Fetch scores from end_events
+        $scoresStmt = $pdo->prepare('
+            SELECT end_number, arrow1, arrow2, arrow3
+            FROM end_events
+            WHERE round_archer_id = ?
+            ORDER BY end_number ASC
+        ');
+        $scoresStmt->execute([$roundArcherId]);
+        $endEvents = $scoresStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Convert to scores array format
+        $scores = [];
+        foreach ($endEvents as $end) {
+            $scores[] = [
+                'arrows' => [
+                    $end['arrow1'],
+                    $end['arrow2'],
+                    $end['arrow3']
+                ]
+            ];
+        }
+        
+        $card['scores'] = $scores;
+        $card['lock_history'] = decode_lock_history($card['lock_history'] ?? null);
+        
+        json_response($card);
+    } catch (Exception $e) {
+        json_response(['error' => $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// PUT /v1/round_archers/{id}/scores - Update scorecard scores
+if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/scores$#i', $route, $m) && $method === 'PUT') {
+    $roundArcherId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $scores = $input['scores'] ?? [];
+    
+    try {
+        $pdo = db();
+        
+        // Check if card is locked
+        $checkStmt = $pdo->prepare('SELECT locked, card_status FROM round_archers WHERE id = ? LIMIT 1');
+        $checkStmt->execute([$roundArcherId]);
+        $card = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$card) {
+            json_response(['error' => 'Scorecard not found'], 404);
+            exit;
+        }
+        
+        if ((bool)$card['locked']) {
+            json_response(['error' => 'Cannot update locked scorecard'], 403);
+            exit;
+        }
+        
+        // Delete existing scores
+        $deleteStmt = $pdo->prepare('DELETE FROM end_events WHERE round_archer_id = ?');
+        $deleteStmt->execute([$roundArcherId]);
+        
+        // Insert new scores
+        $insertStmt = $pdo->prepare('
+            INSERT INTO end_events (round_archer_id, end_number, arrow1, arrow2, arrow3)
+            VALUES (?, ?, ?, ?, ?)
+        ');
+        
+        foreach ($scores as $endIndex => $end) {
+            if (!isset($end['arrows']) || !is_array($end['arrows'])) continue;
+            
+            $arrows = $end['arrows'];
+            $a1 = $arrows[0] ?? null;
+            $a2 = $arrows[1] ?? null;
+            $a3 = $arrows[2] ?? null;
+            
+            // Only insert if at least one arrow has a value
+            if ($a1 !== null || $a2 !== null || $a3 !== null) {
+                $insertStmt->execute([
+                    $roundArcherId,
+                    $endIndex + 1,
+                    $a1,
+                    $a2,
+                    $a3
+                ]);
+            }
+        }
+        
+        json_response(['success' => true, 'message' => 'Scores updated']);
+    } catch (Exception $e) {
+        json_response(['error' => $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/round_archers/{id}/verify - Lock/Unlock/Void scorecard
+if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/verify$#i', $route, $m) && $method === 'POST') {
+    $roundArcherId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $action = $input['action'] ?? 'lock';
+    $verifiedBy = trim($input['verifiedBy'] ?? '');
+    $notes = trim($input['notes'] ?? '');
+
+    try {
+        $pdo = db();
+        $result = process_round_archer_verification($pdo, $roundArcherId, $action, $verifiedBy, $notes);
+        json_response([
+            'roundArcherId' => $result['id'],
+            'roundId' => $result['round_id'],
+            'locked' => (bool)$result['locked'],
+            'cardStatus' => $result['card_status'],
+            'verifiedBy' => $result['verified_by'],
+            'verifiedAt' => $result['verified_at'],
+            'notes' => $result['notes'],
+            'history' => $result['lock_history']
+        ]);
+    } catch (Exception $e) {
+        $status = $e->getCode();
+        if ($status < 100 || $status > 599) $status = 400;
+        json_response(['error' => $e->getMessage()], $status);
+    }
+    exit;
+}
+
+// Legacy endpoint for backwards compatibility
 if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/verification$#i', $route, $m) && $method === 'POST') {
     require_api_key();
     $roundArcherId = $m[1];
