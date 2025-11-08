@@ -235,23 +235,24 @@
         <input type="text" id="edit-event-name" placeholder="Fall Tournament" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
       </div>
       
-      <div class="mb-5">
-        <label for="edit-event-date" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Date</label>
-        <input type="date" id="edit-event-date" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
-      </div>
-      
-      <div class="mb-5">
-        <label for="edit-event-status" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Status</label>
-        <select id="edit-event-status" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
-          <option value="Planned">Planned</option>
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-        </select>
-      </div>
-      
-      <div class="mb-5">
-        <label for="edit-event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry Code (for archer QR access)</label>
-        <input type="text" id="edit-event-code" placeholder="FALL2024" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+      <!-- Date, Status, and Entry Code on one line -->
+      <div class="grid grid-cols-3 gap-3 mb-5">
+        <div>
+          <label for="edit-event-date" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Date</label>
+          <input type="date" id="edit-event-date" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        </div>
+        <div>
+          <label for="edit-event-status" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Status</label>
+          <select id="edit-event-status" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+            <option value="Planned">Planned</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <div>
+          <label for="edit-event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry Code</label>
+          <input type="text" id="edit-event-code" placeholder="FALL2024" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        </div>
       </div>
       
       <div class="mb-5">
@@ -261,9 +262,27 @@
         </div>
       </div>
       
-      <div class="flex flex-wrap gap-2 mt-6">
+      <!-- Event Management Actions -->
+      <div class="border-t-2 border-gray-200 dark:border-gray-700 pt-5 mt-6 mb-5">
+        <label class="block mb-3 font-semibold text-gray-700 dark:text-gray-300">Event Management</label>
+        <div class="grid grid-cols-1 gap-3">
+          <button id="edit-add-archers-btn" class="w-full px-4 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+            <span>➕</span>
+            <span>Add Archers to Event</span>
+          </button>
+          <button id="edit-bale-settings-btn" class="w-full px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+            <span>⚙️</span>
+            <span>Manage Bale Assignments</span>
+          </button>
+          <button id="edit-delete-event-btn" class="w-full px-4 py-3 bg-danger hover:bg-red-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+            <span>🗑️</span>
+            <span>Delete Event</span>
+          </button>
+        </div>
+      </div>
+      
+      <div class="flex gap-2 mt-6">
         <button id="cancel-edit-event-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-        <button id="reset-event-data-btn" class="flex-1 px-4 py-2 bg-danger hover:bg-red-700 text-white rounded font-semibold transition-colors min-h-[44px]">Reset Event Data</button>
         <button id="submit-edit-event-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Save Changes</button>
       </div>
     </div>

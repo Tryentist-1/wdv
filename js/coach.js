@@ -192,13 +192,10 @@
             <td class="px-4 py-3 whitespace-nowrap">${shortDate}</td>
             <td class="px-4 py-3"><span class="px-2 py-1 rounded text-xs font-semibold ${statusClass}">${ev.status}</span></td>
             <td class="px-4 py-3 whitespace-nowrap">
-              <button class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.showQRCode('${eventData}')" title="QR Code">📱</button>
-              <button class="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors" onclick="coach.editEvent('${eventData}')" title="Edit">✏️</button>
-              <button class="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors" onclick="coach.addArchersToEvent('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Add Archers">➕</button>
-              <button class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.viewResults('${ev.id}')" title="Results">📊</button>
-              <button class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.verifyEvent('${eventData}')" title="Verify Scorecards">🛡️</button>
-              <button class="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors" onclick="coach.manageBales('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Manage Bales">⚙️</button>
-              <button class="px-2 py-1 bg-danger hover:bg-red-700 text-white rounded text-sm transition-colors" onclick="coach.deleteEvent('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Delete">🗑️</button>
+              <button class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors" onclick="coach.showQRCode('${eventData}')" title="QR Code">QR</button>
+              <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.viewResults('${ev.id}')" title="View Results">📊 Results</button>
+              <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.verifyEvent('${eventData}')" title="Verify Scorecards">🛡️ Validate</button>
+              <button class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors" onclick="coach.editEvent('${eventData}')" title="Edit Event">✏️ Edit</button>
             </td>
           </tr>
         `;
@@ -218,13 +215,13 @@
       // Fetch event snapshot to build UI (divisions and round_archers)
       const snap = await req(`/events/${eventId}/snapshot`, 'GET');
       const dlg = document.createElement('div');
-      dlg.className = 'modal';
+      dlg.className = 'fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center overflow-y-auto';
       dlg.innerHTML = `
-        <div class="modal-content" style="max-width: 800px;">
-          <h2>Manage Bales — ${eventName}</h2>
-          <div id="bale-mgr-body" style="max-height:60vh;overflow:auto;"></div>
-          <div class="modal-buttons">
-            <button id="bale-mgr-close" class="btn btn-secondary" style="flex:1;">Close</button>
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-4xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Manage Bales — ${eventName}</h2>
+          <div id="bale-mgr-body" class="max-h-[60vh] overflow-auto"></div>
+          <div class="flex gap-2 mt-6">
+            <button id="bale-mgr-close" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Close</button>
           </div>
         </div>`;
       document.body.appendChild(dlg);
@@ -236,24 +233,26 @@
         Object.keys(divisions).forEach(divCode => {
           const div = divisions[divCode];
           const section = document.createElement('div');
-          section.style.marginBottom = '1rem';
-          section.innerHTML = `<h3 style="margin:.25rem 0;">${divCode}</h3>`;
+          section.className = 'mb-6';
+          section.innerHTML = `<h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">${divCode}</h3>`;
           const tbl = document.createElement('table');
-          tbl.className = 'score-table';
-          tbl.innerHTML = `<thead><tr><th>Archer</th><th>School</th><th>Bale</th><th>Target</th><th>Actions</th></tr></thead>`;
+          tbl.className = 'w-full border-collapse bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden';
+          tbl.innerHTML = `<thead class="bg-gray-700 dark:bg-gray-600 text-white"><tr><th class="px-3 py-2 text-left text-sm">Archer</th><th class="px-3 py-2 text-left text-sm">School</th><th class="px-3 py-2 text-left text-sm">Bale</th><th class="px-3 py-2 text-left text-sm">Target</th><th class="px-3 py-2 text-left text-sm">Actions</th></tr></thead>`;
           const tb = document.createElement('tbody');
+          tb.className = 'text-gray-700 dark:text-gray-300';
 
           // Add Archer row (from master list)
           const addRow = document.createElement('tr');
+          addRow.className = 'border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700';
           addRow.innerHTML = `
-            <td colspan="5">
-              <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
-                <select class="styled-select" data-role="add-archer-select" style="min-width:220px;">
+            <td colspan="5" class="px-3 py-3">
+              <div class="flex gap-2 items-center flex-wrap">
+                <select class="flex-1 min-w-[220px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white" data-role="add-archer-select">
                   <option value="">Select Archer (master list)</option>
                 </select>
-                <input type="number" placeholder="Bale #" data-role="add-bale" style="width:90px;" />
-                <input type="text" placeholder="Target (A-H)" maxlength="1" data-role="add-target" style="width:90px;" />
-                <button class="btn btn-secondary btn-sm" data-role="add-confirm">Add</button>
+                <input type="number" placeholder="Bale #" data-role="add-bale" class="w-[90px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                <input type="text" placeholder="Target (A-H)" maxlength="1" data-role="add-target" class="w-[90px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white" />
+                <button class="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded transition-colors" data-role="add-confirm">Add</button>
               </div>
             </td>`;
           tb.appendChild(addRow);
@@ -311,14 +310,15 @@
           };
           (div.archers||[]).forEach(a => {
             const tr = document.createElement('tr');
+            tr.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors';
             tr.innerHTML = `
-              <td>${a.archerName}</td>
-              <td>${a.school||''}</td>
-              <td><input type="number" min="1" value="${a.bale||''}" style="width:70px" /></td>
-              <td><input type="text" value="${a.target||''}" style="width:70px" maxlength="1" /></td>
-              <td>
-                <button class="btn btn-secondary btn-sm" data-act="save">Save</button>
-                <button class="btn btn-danger btn-sm" data-act="remove">Remove</button>
+              <td class="px-3 py-2">${a.archerName}</td>
+              <td class="px-3 py-2">${a.school||''}</td>
+              <td class="px-3 py-2"><input type="number" min="1" value="${a.bale||''}" class="w-[70px] px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></td>
+              <td class="px-3 py-2"><input type="text" value="${a.target||''}" class="w-[70px] px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white" maxlength="1" /></td>
+              <td class="px-3 py-2">
+                <button class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors mr-1" data-act="save">Save</button>
+                <button class="px-2 py-1 bg-danger hover:bg-red-700 text-white rounded text-sm transition-colors" data-act="remove">Remove</button>
               </td>`;
             const [baleInp, tgtInp] = tr.querySelectorAll('input');
             tr.querySelector('[data-act="save"]').onclick = async () => {
@@ -1671,20 +1671,19 @@
       currentEditEventId = null;
     };
     
-    // PHASE 0 FIX: Setup reset button handler here (not on page load)
-    document.getElementById('reset-event-data-btn').onclick = async () => {
-      const confirmMsg = 'Reset Event Data\n\nALL ENTERED SCORES WILL BE DELETED.\nScorecards (round_archers) and End data will be removed, rounds set back to Not Started.\n\nAre you sure?';
-      if (!confirm(confirmMsg)) return;
-      
-      try {
-        await req(`/events/${currentEditEventId}/reset`, 'POST');
-        alert('✓ Event data reset successfully!\n\nAll entered scores deleted.');
-        modal.style.display = 'none';
-        currentEditEventId = null;
-        loadEvents(); // Refresh the events list
-      } catch (e) {
-        alert('Reset failed: ' + (e && e.message ? e.message : e));
-      }
+    // Add Archers button - opens Add Archers modal
+    document.getElementById('edit-add-archers-btn').onclick = () => {
+      addArchersToEvent(event.id, event.name);
+    };
+    
+    // Bale Settings button - opens Bale Settings modal
+    document.getElementById('edit-bale-settings-btn').onclick = () => {
+      manageBales(event.id, event.name);
+    };
+    
+    // Delete Event button
+    document.getElementById('edit-delete-event-btn').onclick = () => {
+      deleteEvent(event.id, event.name);
     };
     
     document.getElementById('submit-edit-event-btn').onclick = async () => {
