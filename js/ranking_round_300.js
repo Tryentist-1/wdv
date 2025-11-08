@@ -2333,7 +2333,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (avgNum >= 3) avgClass = 'score-black';
                 else avgClass = 'score-white';
             }
-            tableHTML += `<tr class="border-b border-gray-200 dark:border-gray-600"><td class="px-2 py-1 text-center font-semibold">${endNum}</td>${endScores.map(s => `<td class="px-2 py-1 text-center ${getScoreColor(s)} font-bold">${s}</td>`).join('')}<td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 font-bold">${isComplete ? endTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? runningTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? endXs : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600">${isComplete ? (endTens + endXs) : ''}</td><td class="px-2 py-1 text-center ${avgClass} font-bold">${avg}</td></tr>`;
+            tableHTML += `<tr class="border-b border-gray-200 dark:border-gray-600"><td class="px-2 py-1 text-center font-semibold text-gray-800 dark:text-white">${endNum}</td>${endScores.map(s => `<td class="px-2 py-1 text-center ${getScoreColor(s)} font-bold">${s}</td>`).join('')}<td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold">${isComplete ? endTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white">${isComplete ? runningTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white">${isComplete ? endXs : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white">${isComplete ? (endTens + endXs) : ''}</td><td class="px-2 py-1 text-center ${avgClass} font-bold">${avg}</td></tr>`;
         }
         tbody.innerHTML = tableHTML;
         table.appendChild(tbody);
@@ -2350,7 +2350,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (avgNum >= 3) finalAvgClass = 'score-black';
             else finalAvgClass = 'score-white';
         }
-        footerRow.innerHTML = `<td colspan="4" style="text-align: right; font-weight: bold;">Round Totals:</td><td class="calculated-cell">${totalTensOverall + totalXsOverall}</td><td class="calculated-cell">${totalXsOverall}</td><td class="calculated-cell"></td><td class="calculated-cell">${runningTotal}</td><td class="calculated-cell score-cell ${finalAvgClass}">${finalAvg > 0 ? finalAvg : ''}</td>`;
+        footerRow.innerHTML = `<td colspan="4" class="px-2 py-1 text-right font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">Round Totals:</td><td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">${totalTensOverall + totalXsOverall}</td><td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">${totalXsOverall}</td><td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white"></td><td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">${runningTotal}</td><td class="px-2 py-1 text-center font-bold ${finalAvgClass}">${finalAvg > 0 ? finalAvg : ''}</td>`;
         cardControls.container.innerHTML = '';
         cardControls.container.appendChild(table);
     }
