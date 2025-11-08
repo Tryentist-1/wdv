@@ -356,6 +356,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderView();
             };
         }
+        
+        // Footer reset button
+        const resetEventBtn = document.getElementById('reset-event-btn');
+        if (resetEventBtn) {
+            resetEventBtn.onclick = () => resetModal.element.style.display = 'flex';
+        }
 
         // Reset modal
         if (resetModal.cancelBtn) resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
@@ -791,6 +797,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 manualSetupControls.liveToggleBtn.disabled = true;
                 await handleLiveToggle();
                 manualSetupControls.liveToggleBtn.disabled = false;
+                // Refresh button display
+                updateManualLiveControls();
             };
         }
 
@@ -850,10 +858,10 @@ document.addEventListener('DOMContentLoaded', () => {
         baleNumbers.forEach(bale => {
             const tile = document.createElement('button');
             tile.type = 'button';
-            tile.className = 'manual-bale-tile';
-            if (bale === currentBale) {
-                tile.classList.add('active');
-            }
+            const isActive = bale === currentBale;
+            tile.className = isActive 
+                ? 'px-4 py-3 bg-primary text-white rounded font-semibold transition-colors hover:bg-primary-dark min-h-[44px]'
+                : 'px-4 py-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-white border-2 border-gray-300 dark:border-gray-600 rounded font-semibold transition-colors hover:bg-gray-100 dark:hover:bg-gray-600 min-h-[44px]';
             tile.textContent = bale;
             tile.onclick = () => {
                 if (state.baleNumber === bale) return;
