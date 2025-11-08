@@ -1116,7 +1116,8 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)$#i', $route, $m) && $method ===
         
         json_response($card);
     } catch (Exception $e) {
-        json_response(['error' => $e->getMessage()], 500);
+        error_log("GET /v1/round_archers/{id} error: " . $e->getMessage());
+        json_response(['error' => $e->getMessage(), 'details' => $e->getTraceAsString()], 500);
     }
     exit;
 }
