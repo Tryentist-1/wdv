@@ -500,6 +500,148 @@
                 }
 
                 modal.classList.remove('hidden');
+                
+                // Initialize avatar upload functionality
+                initializeAvatarUpload(form);
+                
+                // Update avatar preview based on current data
+                updateAvatarPreview(form);
+            }
+            
+            function initializeAvatarUpload(form) {
+                const uploadBtn = form.querySelector('#upload-avatar-btn');
+                const fileInput = form.querySelector('#avatar-file');
+                const photoUrlInput = form.querySelector('#photoUrl');
+                const uploadProgress = form.querySelector('#upload-progress');
+                
+                if (!uploadBtn || !fileInput) return;
+                
+                // Click upload button to trigger file picker
+                uploadBtn.onclick = (e) => {
+                    e.preventDefault();
+                    fileInput.click();
+                };
+                
+                // Handle file selection
+                fileInput.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    // Validate file type
+                    if (!file.type.startsWith('image/')) {
+                        alert('Please select an image file');
+                        return;
+                    }
+                    
+                    // Validate file size (10MB max)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('File too large. Maximum size is 10MB');
+                        return;
+                    }
+                    
+                    // Show progress
+                    uploadBtn.classList.add('hidden');
+                    uploadProgress.classList.remove('hidden');
+                    
+                    try {
+                        // Upload file
+                        const formData = new FormData();
+                        formData.append('avatar', file);
+                        
+                        const response = await fetch('api/upload_avatar.php', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Upload failed');
+                        }
+                        
+                        const result = await response.json();
+                        
+                        if (result.success && result.photoUrl) {
+                            // Update photoUrl field
+                            photoUrlInput.value = result.photoUrl;
+                            
+                            // Update preview
+                            updateAvatarPreview(form);
+                            
+                            // Show success feedback
+                            uploadProgress.innerHTML = '<i class="fas fa-check mr-1"></i>Uploaded!';
+                            uploadProgress.classList.remove('text-gray-600', 'dark:text-gray-400');
+                            uploadProgress.classList.add('text-green-600', 'dark:text-green-400');
+                            
+                            setTimeout(() => {
+                                uploadProgress.classList.add('hidden');
+                                uploadProgress.classList.remove('text-green-600', 'dark:text-green-400');
+                                uploadProgress.classList.add('text-gray-600', 'dark:text-gray-400');
+                                uploadProgress.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Uploading...';
+                                uploadBtn.classList.remove('hidden');
+                            }, 2000);
+                        } else {
+                            throw new Error(result.error || 'Upload failed');
+                        }
+                    } catch (error) {
+                        console.error('Upload error:', error);
+                        alert('Failed to upload photo: ' + error.message);
+                        uploadProgress.classList.add('hidden');
+                        uploadBtn.classList.remove('hidden');
+                    }
+                    
+                    // Reset file input
+                    fileInput.value = '';
+                };
+                
+                // Update preview when URL changes
+                photoUrlInput.addEventListener('input', () => {
+                    updateAvatarPreview(form);
+                });
+                
+                // Update preview when name changes (for initials)
+                form.querySelector('#first')?.addEventListener('input', () => updateAvatarPreview(form));
+                form.querySelector('#last')?.addEventListener('input', () => updateAvatarPreview(form));
+            }
+            
+            function updateAvatarPreview(form) {
+                const photoUrlInput = form.querySelector('#photoUrl');
+                const avatarImage = form.querySelector('#avatar-image');
+                const avatarInitials = form.querySelector('#avatar-initials');
+                const firstInput = form.querySelector('#first');
+                const lastInput = form.querySelector('#last');
+                
+                if (!avatarImage || !avatarInitials) return;
+                
+                const photoUrl = photoUrlInput?.value.trim();
+                const first = firstInput?.value.trim() || '';
+                const last = lastInput?.value.trim() || '';
+                
+                if (photoUrl) {
+                    // Show photo
+                    avatarImage.src = photoUrl;
+                    avatarImage.classList.remove('hidden');
+                    avatarInitials.classList.add('hidden');
+                    
+                    // Handle image load error
+                    avatarImage.onerror = () => {
+                        avatarImage.classList.add('hidden');
+                        avatarInitials.classList.remove('hidden');
+                        showInitials(avatarInitials, first, last);
+                    };
+                } else {
+                    // Show initials
+                    avatarImage.classList.add('hidden');
+                    avatarInitials.classList.remove('hidden');
+                    showInitials(avatarInitials, first, last);
+                }
+            }
+            
+            function showInitials(element, first, last) {
+                if (first || last) {
+                    const initials = (first.charAt(0) + last.charAt(0)).toUpperCase();
+                    element.textContent = initials || '?';
+                } else {
+                    element.textContent = '?';
+                }
             }
             
             function createFormFieldsHTML() {
@@ -515,16 +657,37 @@
                         
                         <!-- Photo and Status Row -->
                         <div class="flex gap-4 mb-4">
-                            <div class="flex-1">
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="photoUrl">Avatar/Photo URL</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="url" id="photoUrl" placeholder="https://...">
+                            <!-- Avatar Preview and Upload -->
+                            <div class="w-32 flex-shrink-0">
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Photo</label>
+                                <div class="relative">
+                                    <div id="avatar-preview" class="w-32 h-32 rounded-lg border-2 border-gray-300 dark:border-gray-600 overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                        <span id="avatar-initials" class="text-3xl font-bold text-gray-400 dark:text-gray-500">?</span>
+                                        <img id="avatar-image" class="hidden w-full h-full object-cover" alt="Avatar">
+                                    </div>
+                                    <input type="file" id="avatar-file" accept="image/*" class="hidden">
+                                    <button type="button" id="upload-avatar-btn" class="mt-2 w-full px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors">
+                                        <i class="fas fa-camera mr-1"></i>Upload
+                                    </button>
+                                    <div id="upload-progress" class="hidden mt-1 text-xs text-center text-gray-600 dark:text-gray-400">
+                                        <i class="fas fa-spinner fa-spin mr-1"></i>Uploading...
+                                    </div>
+                                </div>
                             </div>
-                            <div class="w-32">
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="status">Status</label>
-                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="status">
-                                    <option value="active" selected>Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
+                            
+                            <!-- Photo URL and Status -->
+                            <div class="flex-1 flex flex-col gap-3">
+                                <div>
+                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="photoUrl">Photo URL (optional)</label>
+                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-sm" type="url" id="photoUrl" placeholder="https://... or upload above">
+                                </div>
+                                <div>
+                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="status">Status</label>
+                                    <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="status">
+                                        <option value="active" selected>Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         
