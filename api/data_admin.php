@@ -547,7 +547,7 @@ if (!empty($filters['name_like'])) {
                 $pdo->beginTransaction();
                 
                 // First, get preview of what will be deleted
-                $previewStmt = $pdo->query("
+                $previewSql = "
                     SELECT 
                         e.name AS event_name,
                         e.date AS event_date,
@@ -561,18 +561,23 @@ if (!empty($filters['name_like'])) {
                     LEFT JOIN events e ON r.event_id = e.id
                     LEFT JOIN end_events ee ON ra.id = ee.round_archer_id
                     WHERE ee.id IS NULL
-                    " . ($cleanupMode === 'safe' ? "AND ra.completed = FALSE AND ra.card_status = 'PENDING'" : "") . "
-                    " . ($cutoffDate ? "AND e.date < ?" : "") . "
-                    ORDER BY e.date DESC, ra.archer_name
-                    LIMIT 100
-                ");
+                ";
                 
-                if ($cutoffDate) {
-                    $previewStmt->execute([$cutoffDate]);
-                } else {
-                    $previewStmt->execute();
+                $previewParams = [];
+                
+                if ($cleanupMode === 'safe') {
+                    $previewSql .= " AND ra.completed = FALSE AND ra.card_status = 'PENDING'";
                 }
                 
+                if ($cutoffDate) {
+                    $previewSql .= " AND e.date < ?";
+                    $previewParams[] = $cutoffDate;
+                }
+                
+                $previewSql .= " ORDER BY e.date DESC, ra.archer_name LIMIT 100";
+                
+                $previewStmt = $pdo->prepare($previewSql);
+                $previewStmt->execute($previewParams);
                 $affectedCards = $previewStmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 // Execute deletion based on mode
