@@ -42,34 +42,15 @@
     </script>
     
     <style>
-        /* Score cell styling */
-        .score-cell {
-            width: 40px;
-            height: 40px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 2px solid transparent;
-        }
+        /* Score color classes - matching ranking_round_300.js */
+        .score-gold { background-color: #FFD700; color: #000000; }
+        .score-red { background-color: #DC143C; color: #FFFFFF; }
+        .score-blue { background-color: #4169E1; color: #FFFFFF; }
+        .score-black { background-color: #000000; color: #FFFFFF; }
+        .score-white { background-color: #FFFFFF; color: #000000; }
+        .score-m { background-color: #808080; color: #FFFFFF; }
         
-        .score-cell:hover:not(.locked) {
-            border-color: #2d7dd9;
-            transform: scale(1.05);
-        }
-        
-        .score-cell.locked {
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-        
-        .score-cell.editing {
-            border-color: #28a745;
-            background-color: #e7f5e9;
-        }
-        
-        /* Score colors */
+        /* Individual score values */
         .score-X, .score-10 { background-color: #FFD700; color: #000; }
         .score-9 { background-color: #FFD700; color: #000; }
         .score-8 { background-color: #DC143C; color: #FFF; }
@@ -188,7 +169,7 @@
             <!-- Scorecard Table -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                 <div class="overflow-x-auto">
-                    <table id="scorecard-table" class="w-full border-collapse">
+                    <table id="scorecard-table" class="w-full border-collapse text-sm bg-white dark:bg-gray-700">
                         <!-- Table will be dynamically generated -->
                     </table>
                 </div>
@@ -479,20 +460,26 @@
             const scores = card.scores || [];
             
             let html = `
-                <thead class="bg-gray-700 dark:bg-gray-600 text-white">
+                <thead class="bg-primary dark:bg-primary-dark text-white">
                     <tr>
-                        <th class="px-3 py-2 text-center font-bold">End</th>
-                        <th class="px-3 py-2 text-center font-bold">A1</th>
-                        <th class="px-3 py-2 text-center font-bold">A2</th>
-                        <th class="px-3 py-2 text-center font-bold">A3</th>
-                        <th class="px-3 py-2 text-center font-bold">End Total</th>
-                        <th class="px-3 py-2 text-center font-bold">Running</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">E</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">A1</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">A2</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">A3</th>
+                        <th class="px-2 py-2 text-center font-bold w-14">END</th>
+                        <th class="px-2 py-2 text-center font-bold w-14">RUN</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">X</th>
+                        <th class="px-2 py-2 text-center font-bold w-12">10</th>
+                        <th class="px-2 py-2 text-center font-bold w-14">AVG</th>
                     </tr>
                 </thead>
-                <tbody class="text-gray-800 dark:text-gray-200">
+                <tbody>
             `;
             
             let runningTotal = 0;
+            let totalXsOverall = 0;
+            let totalTensOverall = 0;
+            
             for (let i = 0; i < totalEnds; i++) {
                 const end = scores[i] || { arrows: [null, null, null] };
                 const arrows = end.arrows || [null, null, null];
@@ -501,37 +488,101 @@
                 const a2 = arrows[1];
                 const a3 = arrows[2];
                 
+                // Check if end is complete
+                const isComplete = a1 !== null && a1 !== '' && a1 !== undefined &&
+                                   a2 !== null && a2 !== '' && a2 !== undefined &&
+                                   a3 !== null && a3 !== '' && a3 !== undefined;
+                
                 const endTotal = parseScore(a1) + parseScore(a2) + parseScore(a3);
-                runningTotal += endTotal;
+                
+                // Count Xs and 10s for this end
+                let endXs = 0;
+                let endTens = 0;
+                [a1, a2, a3].forEach(arrow => {
+                    if (arrow !== null && arrow !== '' && arrow !== undefined) {
+                        const upper = String(arrow).toUpperCase();
+                        if (upper === 'X') {
+                            endXs++;
+                        } else if (upper === '10') {
+                            endTens++;
+                        }
+                    }
+                });
+                
+                if (isComplete) {
+                    runningTotal += endTotal;
+                    totalXsOverall += endXs;
+                    totalTensOverall += endTens;
+                }
+                
+                // Calculate average for THIS END only
+                const avg = isComplete ? (endTotal / 3).toFixed(1) : '';
+                let avgClass = '';
+                if (isComplete) {
+                    const avgNum = parseFloat(avg);
+                    if (avgNum >= 9) avgClass = 'score-gold';
+                    else if (avgNum >= 7) avgClass = 'score-red';
+                    else if (avgNum >= 5) avgClass = 'score-blue';
+                    else if (avgNum >= 3) avgClass = 'score-black';
+                    else avgClass = 'score-white';
+                }
                 
                 html += `
-                    <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td class="px-3 py-2 text-center font-bold">${i + 1}</td>
-                        <td class="px-3 py-2">
-                            <div class="score-cell ${isLocked ? 'locked' : ''} ${getScoreClass(a1)}" 
-                                 onclick="editScore(${i}, 0)">
-                                ${formatScore(a1)}
-                            </div>
+                    <tr class="border-b border-gray-200 dark:border-gray-600">
+                        <td class="px-2 py-1 text-center font-semibold text-gray-800 dark:text-white">${i + 1}</td>
+                        <td class="px-2 py-1 text-center ${getScoreClass(a1)} font-bold ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" 
+                            onclick="${isLocked ? '' : `editScore(${i}, 0)`}">
+                            ${formatScore(a1)}
                         </td>
-                        <td class="px-3 py-2">
-                            <div class="score-cell ${isLocked ? 'locked' : ''} ${getScoreClass(a2)}" 
-                                 onclick="editScore(${i}, 1)">
-                                ${formatScore(a2)}
-                            </div>
+                        <td class="px-2 py-1 text-center ${getScoreClass(a2)} font-bold ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" 
+                            onclick="${isLocked ? '' : `editScore(${i}, 1)`}">
+                            ${formatScore(a2)}
                         </td>
-                        <td class="px-3 py-2">
-                            <div class="score-cell ${isLocked ? 'locked' : ''} ${getScoreClass(a3)}" 
-                                 onclick="editScore(${i}, 2)">
-                                ${formatScore(a3)}
-                            </div>
+                        <td class="px-2 py-1 text-center ${getScoreClass(a3)} font-bold ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" 
+                            onclick="${isLocked ? '' : `editScore(${i}, 2)`}">
+                            ${formatScore(a3)}
                         </td>
-                        <td class="px-3 py-2 text-center font-bold text-lg">${endTotal}</td>
-                        <td class="px-3 py-2 text-center font-bold text-lg text-primary">${runningTotal}</td>
+                        <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold">${isComplete ? endTotal : ''}</td>
+                        <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white">${isComplete ? runningTotal : ''}</td>
+                        <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white">${isComplete ? endXs : ''}</td>
+                        <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white">${isComplete ? (endTens + endXs) : ''}</td>
+                        <td class="px-2 py-1 text-center ${avgClass} font-bold">${avg}</td>
                     </tr>
                 `;
             }
             
-            html += '</tbody>';
+            // Calculate overall average
+            const completedEnds = scores.filter(end => {
+                if (!end || !end.arrows) return false;
+                return end.arrows.every(a => a !== null && a !== '' && a !== undefined);
+            }).length;
+            
+            let finalAvg = 0;
+            let finalAvgClass = '';
+            if (completedEnds > 0) {
+                finalAvg = (runningTotal / (completedEnds * 3)).toFixed(1);
+                const avgNum = parseFloat(finalAvg);
+                if (avgNum >= 9) finalAvgClass = 'score-gold';
+                else if (avgNum >= 7) finalAvgClass = 'score-red';
+                else if (avgNum >= 5) finalAvgClass = 'score-blue';
+                else if (avgNum >= 3) finalAvgClass = 'score-black';
+                else finalAvgClass = 'score-white';
+            }
+            
+            html += `
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" class="px-2 py-1 text-right font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">Round Totals:</td>
+                        <td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">${totalTensOverall + totalXsOverall}</td>
+                        <td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">${totalXsOverall}</td>
+                        <td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white"></td>
+                        <td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">${runningTotal}</td>
+                        <td class="px-2 py-1 text-center font-bold ${finalAvgClass}">${finalAvg > 0 ? finalAvg : ''}</td>
+                    </tr>
+                </tfoot>
+            `;
+            
             document.getElementById('scorecard-table').innerHTML = html;
         }
         
@@ -551,8 +602,18 @@
         
         function getScoreClass(score) {
             if (score === null || score === '' || score === undefined) return 'score-empty';
-            const upper = String(score).toUpperCase();
-            return `score-${upper}`;
+            const s = String(score).toUpperCase();
+            // Gold: X, 10, 9
+            if (s === 'X' || s === '10' || s === '9') return 'score-gold';
+            // Red: 8, 7
+            if (s === '8' || s === '7') return 'score-red';
+            // Blue: 6, 5
+            if (s === '6' || s === '5') return 'score-blue';
+            // Black: 4, 3
+            if (s === '4' || s === '3') return 'score-black';
+            // White: 2, 1, M, 0
+            if (s === '2' || s === '1' || s === 'M' || s === '0') return 'score-white';
+            return 'score-empty';
         }
         
         function editScore(endIndex, arrowIndex) {
