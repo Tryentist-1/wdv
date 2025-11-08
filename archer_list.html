@@ -382,6 +382,23 @@
                         };
                     }
 
+                    // Avatar
+                    const avatarDiv = document.createElement('div');
+                    avatarDiv.className = 'w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3 flex-shrink-0';
+                    if (archer.photoUrl) {
+                        const avatarImg = document.createElement('img');
+                        avatarImg.src = archer.photoUrl;
+                        avatarImg.alt = `${archer.first} ${archer.last}`;
+                        avatarImg.className = 'w-full h-full object-cover';
+                        avatarDiv.appendChild(avatarImg);
+                    } else {
+                        const initials = (archer.first.charAt(0) + archer.last.charAt(0)).toUpperCase();
+                        const initialsSpan = document.createElement('span');
+                        initialsSpan.textContent = initials;
+                        initialsSpan.className = 'text-sm font-bold text-gray-500 dark:text-gray-400';
+                        avatarDiv.appendChild(initialsSpan);
+                    }
+
                     const nameDiv = document.createElement('div');
                     nameDiv.style.flexGrow = '1';
 
@@ -421,6 +438,7 @@
 
                     row.appendChild(meToggle);
                     row.appendChild(friendToggle);
+                    row.appendChild(avatarDiv);
                     row.appendChild(nameDiv);
                     row.appendChild(historyBtn);
 
@@ -773,19 +791,29 @@
 
                     <!-- Identity Section -->
                     <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Identity</h3>
+                        <!-- Header with Status -->
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Identity</h3>
+                            <div class="w-32">
+                                <label class="block mb-1 text-xs font-medium text-gray-700 dark:text-gray-300" for="status">Status</label>
+                                <select class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-sm" id="status">
+                                    <option value="active" selected>Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                            </div>
+                        </div>
                         
-                        <!-- Photo and Status Row -->
+                        <!-- Photo and Name Fields Row -->
                         <div class="flex gap-4 mb-4">
                             <!-- Avatar Preview and Upload -->
                             <div class="w-32 flex-shrink-0">
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">Photo</label>
                                 <div class="relative">
                                     <div id="avatar-preview" class="w-32 h-32 rounded-lg border-2 border-gray-300 dark:border-gray-600 overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                                         <span id="avatar-initials" class="text-3xl font-bold text-gray-400 dark:text-gray-500">?</span>
                                         <img id="avatar-image" class="hidden w-full h-full object-cover" alt="Avatar">
                                     </div>
                                     <input type="file" id="avatar-file" accept="image/*" class="hidden">
+                                    <input type="hidden" id="photoUrl">
                                     <button type="button" id="upload-avatar-btn" class="mt-2 w-full px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors">
                                         <i class="fas fa-camera mr-1"></i>Upload
                                     </button>
@@ -795,38 +823,21 @@
                                 </div>
                             </div>
                             
-                            <!-- Photo URL and Status -->
+                            <!-- Name Fields Stacked -->
                             <div class="flex-1 flex flex-col gap-3">
                                 <div>
-                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="photoUrl">Photo URL (optional)</label>
-                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-sm" type="text" id="photoUrl" placeholder="https://... or upload above">
+                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="first">First Name*</label>
+                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="first" required>
                                 </div>
                                 <div>
-                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="status">Status</label>
-                                    <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="status">
-                                        <option value="active" selected>Active</option>
-                                        <option value="inactive">Inactive</option>
-                                    </select>
+                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="last">Last Name*</label>
+                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="last" required>
+                                </div>
+                                <div>
+                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="nickname">Nickname</label>
+                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="nickname">
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Name Row -->
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="first">First Name*</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="first" required>
-                            </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="last">Last Name*</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="last" required>
-                            </div>
-                        </div>
-                        
-                        <!-- Nickname -->
-                        <div class="mb-3">
-                            <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="nickname">Nickname</label>
-                            <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="nickname">
                         </div>
                         
                         <!-- School, Grade, Gender Row -->
