@@ -184,25 +184,27 @@
     </div>
   </div>
 
-  <div class="w-full max-w-md mx-auto">
-    <!-- Dark Mode Toggle -->
-    <div class="flex justify-end mb-4">
+  <div class="w-full max-w-md mx-auto flex flex-col min-h-screen">
+    <!-- Header with Dark Mode Toggle -->
+    <header class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Archery Tools</h1>
       <button id="dark-mode-toggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200" title="Toggle dark mode">
         <i class="fas fa-moon dark:hidden"></i>
         <i class="fas fa-sun hidden dark:inline"></i>
       </button>
-    </div>
-
-    <header class="text-center mb-8">
-      <h1 class="text-4xl font-bold text-gray-800 dark:text-white mb-2">Archery Tools</h1>
-      <p id="welcome-self" class="text-gray-600 dark:text-gray-400 text-base"></p>
     </header>
 
-    <div class="space-y-4">
-      <a href="archer_list.html" class="block w-full px-6 py-4 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-lg font-semibold text-lg transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Add archers and sync with master list">
-        <i class="fas fa-users mr-3"></i>Archer Setup
-      </a>
+    <!-- Main Content -->
+    <div class="flex-grow space-y-6">
+      <!-- Archer Details Section -->
+      <div class="space-y-3">
+        <a href="archer_list.html" id="archer-details-btn" class="block w-full px-6 py-4 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-lg font-semibold text-lg transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Update your archer profile and details">
+          <i class="fas fa-user-circle mr-2"></i>Archer Details
+        </a>
+        <div id="welcome-self" class="text-center"></div>
+      </div>
       
+      <!-- Main Modules -->
       <div class="grid grid-cols-2 gap-4">
         <a href="ranking_round_300.html" class="block px-4 py-4 bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Score competitive ranking rounds with multiple archers">
           <i class="fas fa-trophy block mb-2 text-xl"></i>Ranking
@@ -216,20 +218,20 @@
         <a href="gemini-oneshot.html" class="block px-4 py-4 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Practice sessions with arrow grouping analysis">
           <i class="fas fa-bullseye block mb-2 text-xl"></i>Practice
         </a>
-        <a href="coach.html" class="block col-span-2 px-4 py-4 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Coach console: events and live scoring">
-          <i class="fas fa-chalkboard-teacher mr-2"></i>Coaches
-        </a>
       </div>
-      
-      <button id="help-btn" class="block w-full px-4 py-3 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Show the tutorial again">
-        <i class="fas fa-question-circle mr-2"></i>Show Tutorial
-      </button>
-      <button id="clear-cache-btn" class="block w-full px-4 py-3 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Clear cached archers, events, and scoring data on this device">
-        <i class="fas fa-broom mr-2"></i>Reset App Data
-      </button>
     </div>
-    <footer class="text-center mt-8 text-gray-600 dark:text-gray-400 text-sm">
-      <p>© 2024 OAS Score Sheets & Tools. All rights reserved.</p>
+
+    <!-- Footer -->
+    <footer class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <a href="coach.html" class="block px-3 py-2.5 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md text-center" title="Coach console: events and live scoring">
+          <i class="fas fa-chalkboard-teacher block mb-1 text-base"></i>Coaches
+        </a>
+        <button id="clear-cache-btn" class="px-3 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md text-center" title="Clear cached archers, events, and scoring data on this device">
+          <i class="fas fa-broom block mb-1 text-base"></i>Reset Data
+        </button>
+      </div>
+      <p class="text-center text-gray-600 dark:text-gray-400 text-xs">© 2025 OAS Score Sheets & Tools. All rights reserved.</p>
     </footer>
   </div>
 
@@ -328,15 +330,15 @@
         if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
           const selfArcher = window.ArcherModule.getSelfArcher();
           if (selfArcher) {
-            const nickname = selfArcher.nickname ? ` (${selfArcher.nickname})` : '';
-            welcomeEl.textContent = `Welcome back, ${selfArcher.first} ${selfArcher.last}${nickname}!`;
+            const nickname = selfArcher.nickname ? ` "${selfArcher.nickname}"` : '';
+            welcomeEl.innerHTML = `<div class="text-2xl font-bold text-gray-800 dark:text-white">${selfArcher.first} ${selfArcher.last}${nickname}</div>`;
             return;
           }
         }
         // Fallback using raw localStorage
         const extId = localStorage.getItem('archerSelfExtId') || '';
         if (!extId) {
-          welcomeEl.textContent = 'Tap Archer Setup to choose yourself and add friends.';
+          welcomeEl.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 italic animate-pulse">👆 Tap above to update your details</div>`;
           return;
         }
         const listRaw = localStorage.getItem('archerList');
@@ -345,13 +347,13 @@
             const list = JSON.parse(listRaw) || [];
             const found = list.find(a => (a.extId || '') === extId || `${(a.first || '').trim()}-${(a.last || '').trim()}` === extId);
             if (found) {
-              const nickname = found.nickname ? ` (${found.nickname})` : '';
-              welcomeEl.textContent = `Welcome back, ${found.first} ${found.last}${nickname}!`;
+              const nickname = found.nickname ? ` "${found.nickname}"` : '';
+              welcomeEl.innerHTML = `<div class="text-2xl font-bold text-gray-800 dark:text-white">${found.first} ${found.last}${nickname}</div>`;
               return;
             }
           } catch (_) {}
         }
-        welcomeEl.textContent = 'Tap Archer Setup to choose yourself and add friends.';
+        welcomeEl.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 italic animate-pulse">👆 Tap above to update your details</div>`;
       } catch (e) {
         console.warn('Unable to render welcome message:', e);
       }
@@ -471,15 +473,6 @@
     document.addEventListener('DOMContentLoaded', function() {
       // showOnboarding(); // DISABLED - Tutorial needs updating
       // Note: Active event banner disabled - requires authentication that archers don't have
-      
-      // Add help button functionality (still works if user clicks manually)
-      const helpButton = document.getElementById('help-btn');
-      if (helpButton) {
-        helpButton.addEventListener('click', function() {
-          localStorage.removeItem('archery_tools_onboarding_complete');
-          showOnboarding();
-        });
-      }
 
       const clearBtn = document.getElementById('clear-cache-btn');
       if (clearBtn) {
