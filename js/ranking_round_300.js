@@ -1126,13 +1126,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Header
         const headerRow = document.createElement('tr');
-        headerRow.style.cssText = 'background: #f8f9fa; font-weight: bold;';
+        headerRow.className = 'bg-gray-100 dark:bg-gray-800 font-bold';
         
-        const headers = ['Select', 'Archer Name', 'School', 'Division', 'Target', 'Score'];
+        const headers = ['Select', 'Archer Name', 'School', 'Division', 'Status', 'Target', 'Score'];
         headers.forEach(headerText => {
             const th = document.createElement('th');
             th.textContent = headerText;
-            th.style.cssText = 'padding: 10px 8px; text-align: left; border-bottom: 1px solid #dee2e6;';
+            th.className = 'px-2 py-2 text-left border-b-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300';
             headerRow.appendChild(th);
         });
         table.appendChild(headerRow);
@@ -1140,15 +1140,14 @@ document.addEventListener('DOMContentLoaded', () => {
         orderedRows.forEach((rowData, index) => {
             const { archer, first, last, school, extId, uniqueId, rosterAssignment, existingArcher, divisionCode, normalizedLevel, normalizedGender } = rowData;
             const row = document.createElement('tr');
-            row.className = 'manual-archer-row';
-            row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};`;
+            row.className = `manual-archer-row ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'}`;
             if (existingArcher) {
                 row.classList.add('is-selected');
             }
             
             // Checkbox cell
             const checkboxCell = document.createElement('td');
-            checkboxCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef; text-align: center;';
+            checkboxCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center';
             
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -1221,10 +1220,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     state.archers = state.archers.filter(a => (a.extId || a.id) !== uniqueId);
                     targetSelect.style.display = 'none';
+                    row.classList.remove('is-selected');
                 }
                 saveData();
                 updateSelectionCount();
-                renderManualArcherList();
+                // Don't re-render on uncheck to preserve checkbox state
+                if (checkbox.checked) {
+                    renderManualArcherList();
+                }
             };
             
             targetSelect.onchange = () => {
@@ -1240,38 +1243,91 @@ document.addEventListener('DOMContentLoaded', () => {
             checkboxCell.appendChild(targetSelect);
             row.appendChild(checkboxCell);
             
+            // Get roster state for Me/Friends indicators
+            const { selfExtId, friendSet } = getRosterState();
+            const archerExtId = archer.extId || extId;
+            const isMe = archerExtId === selfExtId;
+            const isFriend = friendSet.has(archerExtId);
+            
+            // Archer Name cell with Me/Friends badges
             const nameCell = document.createElement('td');
-            nameCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
-            nameCell.innerHTML = `<div class="manual-archer-name">${first} ${last}</div>`;
-            if (existingArcher) {
-                const badge = document.createElement('span');
-                badge.className = 'manual-target-badge';
-                badge.textContent = existingArcher.targetAssignment || '';
-                nameCell.appendChild(badge);
+            nameCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
+            const nameDiv = document.createElement('div');
+            nameDiv.className = 'flex items-center gap-2';
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = `${first} ${last}`;
+            nameDiv.appendChild(nameSpan);
+            
+            if (isMe) {
+                const meBadge = document.createElement('span');
+                meBadge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-primary text-white';
+                meBadge.textContent = 'Me';
+                nameDiv.appendChild(meBadge);
             }
+            if (isFriend) {
+                const friendBadge = document.createElement('span');
+                friendBadge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-success text-white';
+                friendBadge.textContent = '★';
+                friendBadge.title = 'Friend';
+                nameDiv.appendChild(friendBadge);
+            }
+            if (existingArcher) {
+                const targetBadge = document.createElement('span');
+                targetBadge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-500 text-white';
+                targetBadge.textContent = existingArcher.targetAssignment || '';
+                nameDiv.appendChild(targetBadge);
+            }
+            nameCell.appendChild(nameDiv);
             row.appendChild(nameCell);
 
             const schoolCell = document.createElement('td');
             schoolCell.textContent = school || 'Unknown';
-            schoolCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+            schoolCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
             row.appendChild(schoolCell);
 
             const divisionCell = document.createElement('td');
             divisionCell.textContent = divisionCode || '—';
-            divisionCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+            divisionCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
             row.appendChild(divisionCell);
+
+            // Status cell
+            const statusCell = document.createElement('td');
+            statusCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center';
+            const statusBadge = document.createElement('span');
+            // Determine status based on existingArcher
+            if (existingArcher) {
+                const cardStatus = existingArcher.cardStatus || 'PENDING';
+                const verified = existingArcher.verified || false;
+                let statusText = 'PEND';
+                let statusClass = 'bg-warning text-white';
+                
+                if (verified) {
+                    statusText = 'VER';
+                    statusClass = 'bg-success text-white';
+                } else if (cardStatus === 'COMPLETED' || existingArcher.completed) {
+                    statusText = 'COMP';
+                    statusClass = 'bg-primary text-white';
+                }
+                
+                statusBadge.className = `inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${statusClass}`;
+                statusBadge.textContent = statusText;
+            } else {
+                statusBadge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300';
+                statusBadge.textContent = '-';
+            }
+            statusCell.appendChild(statusBadge);
+            row.appendChild(statusCell);
 
             const targetCell = document.createElement('td');
             targetCell.textContent = rosterAssignment;
-            targetCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
+            targetCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
             row.appendChild(targetCell);
             
             // Score cell - will be populated by fetchArcherScores()
             const scoreCell = document.createElement('td');
-            scoreCell.className = 'archer-score-cell';
+            scoreCell.className = 'archer-score-cell px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 font-medium';
             scoreCell.dataset.archerId = archer.id || archer.archerId || '';  // Store archer UUID for lookup
             scoreCell.textContent = '—';
-            scoreCell.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef; color: #666; font-weight: 500;';
             row.appendChild(scoreCell);
             
             table.appendChild(row);
@@ -1953,7 +2009,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const headerRow = document.createElement('tr');
             headerRow.className = 'bg-gray-100 dark:bg-gray-800 font-bold';
             
-            const headers = ['Select', 'Archer Name', 'School', 'Division', 'Target'];
+            const headers = ['Select', 'Archer Name', 'School', 'Division', 'Status', 'Target'];
             headers.forEach(headerText => {
                 const th = document.createElement('th');
                 th.textContent = headerText;
@@ -2057,20 +2113,82 @@ document.addEventListener('DOMContentLoaded', () => {
                 checkboxCell.appendChild(targetSelect);
                 row.appendChild(checkboxCell);
                 
-                // Other data cells
-                const cells = [
-                    `${archer.first} ${archer.last}`,
-                    archer.school || 'Unknown',
-                    archer.level || 'VAR',
-                    'Unassigned'
-                ];
+                // Get roster state for Me/Friends indicators
+                const { selfExtId, friendSet } = getRosterState();
+                const archerExtId = archer.extId || uniqueId;
+                const isMe = archerExtId === selfExtId;
+                const isFriend = friendSet.has(archerExtId);
                 
-                cells.forEach(cellText => {
-                    const td = document.createElement('td');
-                    td.textContent = cellText;
-                    td.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
-                    row.appendChild(td);
-                });
+                // Archer Name cell with Me/Friends badges
+                const nameCell = document.createElement('td');
+                nameCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'flex items-center gap-2';
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = `${archer.first} ${archer.last}`;
+                nameDiv.appendChild(nameSpan);
+                
+                if (isMe) {
+                    const meBadge = document.createElement('span');
+                    meBadge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-primary text-white';
+                    meBadge.textContent = 'Me';
+                    nameDiv.appendChild(meBadge);
+                }
+                if (isFriend) {
+                    const friendBadge = document.createElement('span');
+                    friendBadge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-success text-white';
+                    friendBadge.textContent = '★';
+                    friendBadge.title = 'Friend';
+                    nameDiv.appendChild(friendBadge);
+                }
+                nameCell.appendChild(nameDiv);
+                row.appendChild(nameCell);
+                
+                // School cell
+                const schoolCell = document.createElement('td');
+                schoolCell.textContent = archer.school || 'Unknown';
+                schoolCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
+                row.appendChild(schoolCell);
+                
+                // Division cell
+                const divisionCell = document.createElement('td');
+                divisionCell.textContent = archer.level || 'VAR';
+                divisionCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
+                row.appendChild(divisionCell);
+                
+                // Status cell
+                const statusCell = document.createElement('td');
+                statusCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center';
+                const statusBadge = document.createElement('span');
+                // Determine status based on existingArcher
+                if (existingArcher) {
+                    const cardStatus = existingArcher.cardStatus || 'PENDING';
+                    const verified = existingArcher.verified || false;
+                    let statusText = 'PEND';
+                    let statusClass = 'bg-warning text-white';
+                    
+                    if (verified) {
+                        statusText = 'VER';
+                        statusClass = 'bg-success text-white';
+                    } else if (cardStatus === 'COMPLETED' || existingArcher.completed) {
+                        statusText = 'COMP';
+                        statusClass = 'bg-primary text-white';
+                    }
+                    
+                    statusBadge.className = `inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${statusClass}`;
+                    statusBadge.textContent = statusText;
+                } else {
+                    statusBadge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300';
+                    statusBadge.textContent = '-';
+                }
+                statusCell.appendChild(statusBadge);
+                row.appendChild(statusCell);
+                
+                // Target cell
+                const targetCell = document.createElement('td');
+                targetCell.textContent = 'Unassigned';
+                targetCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
+                row.appendChild(targetCell);
                 
                 table.appendChild(row);
             });
