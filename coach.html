@@ -62,51 +62,66 @@
         <input type="text" id="event-name" placeholder="Fall Tournament" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
       </div>
       
-      <div class="mb-5">
-        <label for="event-date" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Date</label>
-        <input type="date" id="event-date" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
-      </div>
-      
-      <div class="mb-5">
-        <label for="event-status" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Status</label>
-        <select id="event-status" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
-          <option value="Planned">Planned</option>
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-        </select>
-      </div>
-      
-      <div class="mb-5">
-        <label for="event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry Code (for archer QR access)</label>
-        <input type="text" id="event-code" placeholder="FALL2024" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+      <!-- Date, Status, and Entry Code on one line -->
+      <div class="grid grid-cols-3 gap-3 mb-5">
+        <div>
+          <label for="event-date" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Date</label>
+          <input type="date" id="event-date" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        </div>
+        <div>
+          <label for="event-status" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Status</label>
+          <select id="event-status" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+            <option value="Planned">Planned</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+        <div>
+          <label for="event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry Code</label>
+          <input type="text" id="event-code" placeholder="FALL2024" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        </div>
       </div>
       
       <!-- Division Rounds Selection -->
       <div class="border-t-2 border-gray-200 dark:border-gray-700 pt-4 mt-6 mb-5">
         <label class="block mb-3 font-semibold text-gray-700 dark:text-gray-300">Division Rounds</label>
-        <div class="flex flex-col gap-2">
-          <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+        
+        <!-- OPEN on its own line -->
+        <div class="mb-3">
+          <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
             <input type="checkbox" id="division-open" value="OPEN" checked class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-            <span class="text-gray-800 dark:text-gray-200">OPEN (Mixed - All Levels)</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-            <input type="checkbox" id="division-bvar" value="BVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-            <span class="text-gray-800 dark:text-gray-200">BVAR (Boys Varsity)</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-            <input type="checkbox" id="division-gvar" value="GVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-            <span class="text-gray-800 dark:text-gray-200">GVAR (Girls Varsity)</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-            <input type="checkbox" id="division-bjv" value="BJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-            <span class="text-gray-800 dark:text-gray-200">BJV (Boys JV)</span>
-          </label>
-          <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-            <input type="checkbox" id="division-gjv" value="GJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-            <span class="text-gray-800 dark:text-gray-200">GJV (Girls JV)</span>
+            <span class="text-gray-800 dark:text-gray-200 font-medium">OPEN (Mixed - All Levels)</span>
           </label>
         </div>
-        <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        
+        <!-- VAR on left, JV on right -->
+        <div class="grid grid-cols-2 gap-3">
+          <!-- Varsity Column -->
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+              <input type="checkbox" id="division-bvar" value="BVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+              <span class="text-gray-800 dark:text-gray-200">BVAR (Boys Varsity)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+              <input type="checkbox" id="division-gvar" value="GVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+              <span class="text-gray-800 dark:text-gray-200">GVAR (Girls Varsity)</span>
+            </label>
+          </div>
+          
+          <!-- JV Column -->
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+              <input type="checkbox" id="division-bjv" value="BJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+              <span class="text-gray-800 dark:text-gray-200">BJV (Boys JV)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+              <input type="checkbox" id="division-gjv" value="GJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+              <span class="text-gray-800 dark:text-gray-200">GJV (Girls JV)</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="mt-3 text-sm text-gray-600 dark:text-gray-400">
           Select divisions to create for this event. You'll add archers to each division next.
         </div>
       </div>

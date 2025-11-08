@@ -157,16 +157,16 @@
       }
 
       let html = `
-        <table class="score-table">
-          <thead>
+        <table class="w-full border-collapse bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+          <thead class="bg-gray-700 dark:bg-gray-600 text-white">
             <tr>
-              <th style="width: 33%;">Event</th>
-              <th style="width: 15%;">Date</th>
-              <th style="width: 18%;">Status</th>
-              <th style="width: 34%;">Actions</th>
+              <th class="px-4 py-3 text-left font-semibold">Event</th>
+              <th class="px-4 py-3 text-left font-semibold">Date</th>
+              <th class="px-4 py-3 text-left font-semibold">Status</th>
+              <th class="px-4 py-3 text-left font-semibold">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody class="text-gray-700 dark:text-gray-300">
       `;
 
       events.forEach(ev => {
@@ -179,19 +179,26 @@
         const maxNameLength = 20;
         const displayName = ev.name.length > maxNameLength ? ev.name.substring(0, maxNameLength) + '...' : ev.name;
         
+        const statusColors = {
+          'active': 'bg-success text-white',
+          'planned': 'bg-gray-400 dark:bg-gray-500 text-white',
+          'completed': 'bg-gray-600 dark:bg-gray-700 text-white'
+        };
+        const statusClass = statusColors[ev.status.toLowerCase()] || 'bg-gray-400 text-white';
+        
         html += `
-          <tr>
-            <td><strong>${displayName}</strong></td>
-            <td style="white-space: nowrap;">${shortDate}</td>
-            <td><span class="status-badge status-${ev.status.toLowerCase()}">${ev.status}</span></td>
-            <td style="white-space: nowrap;">
-              <button class="btn btn-primary btn-sm" onclick="coach.showQRCode('${eventData}')" title="QR Code">📱</button>
-              <button class="btn btn-secondary btn-sm" onclick="coach.editEvent('${eventData}')" title="Edit">✏️</button>
-              <button class="btn btn-secondary btn-sm" onclick="coach.addArchersToEvent('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Add Archers">➕</button>
-              <button class="btn btn-primary btn-sm" onclick="coach.viewResults('${ev.id}')" title="Results">📊</button>
-              <button class="btn btn-primary btn-sm" onclick="coach.verifyEvent('${eventData}')" title="Verify Scorecards">🛡️</button>
-              <button class="btn btn-secondary btn-sm" onclick="coach.manageBales('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Manage Bales">⚙️</button>
-              <button class="btn btn-danger btn-sm" onclick="coach.deleteEvent('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Delete">🗑️</button>
+          <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <td class="px-4 py-3 font-semibold">${displayName}</td>
+            <td class="px-4 py-3 whitespace-nowrap">${shortDate}</td>
+            <td class="px-4 py-3"><span class="px-2 py-1 rounded text-xs font-semibold ${statusClass}">${ev.status}</span></td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <button class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.showQRCode('${eventData}')" title="QR Code">📱</button>
+              <button class="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors" onclick="coach.editEvent('${eventData}')" title="Edit">✏️</button>
+              <button class="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors" onclick="coach.addArchersToEvent('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Add Archers">➕</button>
+              <button class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.viewResults('${ev.id}')" title="Results">📊</button>
+              <button class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.verifyEvent('${eventData}')" title="Verify Scorecards">🛡️</button>
+              <button class="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors" onclick="coach.manageBales('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Manage Bales">⚙️</button>
+              <button class="px-2 py-1 bg-danger hover:bg-red-700 text-white rounded text-sm transition-colors" onclick="coach.deleteEvent('${ev.id}', '${ev.name.replace(/'/g, "\\'")}')" title="Delete">🗑️</button>
             </td>
           </tr>
         `;
