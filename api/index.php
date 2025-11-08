@@ -1091,7 +1091,7 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)$#i', $route, $m) && $method ===
         
         // Fetch scores from end_events
         $scoresStmt = $pdo->prepare('
-            SELECT end_number, arrow1, arrow2, arrow3
+            SELECT end_number, a1, a2, a3
             FROM end_events
             WHERE round_archer_id = ?
             ORDER BY end_number ASC
@@ -1104,9 +1104,9 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)$#i', $route, $m) && $method ===
         foreach ($endEvents as $end) {
             $scores[] = [
                 'arrows' => [
-                    $end['arrow1'],
-                    $end['arrow2'],
-                    $end['arrow3']
+                    $end['a1'],
+                    $end['a2'],
+                    $end['a3']
                 ]
             ];
         }
