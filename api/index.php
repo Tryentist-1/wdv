@@ -1072,7 +1072,6 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)$#i', $route, $m) && $method ===
                 ra.*,
                 r.round_type,
                 r.division,
-                r.total_ends,
                 e.name as event_name,
                 e.date as event_date
             FROM round_archers ra
