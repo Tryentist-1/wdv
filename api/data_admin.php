@@ -532,6 +532,189 @@ if (!empty($filters['name_like'])) {
             </div>
         <?php endif; ?>
 
+        <hr style="margin: 40px 0; border: none; border-top: 2px solid #ddd;">
+
+        <h2>🧹 Clean Up Unstarted Scorecards</h2>
+        <p>Remove scorecard entries that were created but never had any scoring data recorded (0 ends). These appear in archer history with "Ends: 0" and "Score: 0".</p>
+        
+        <?php
+        // Handle unstarted cards cleanup
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'cleanup_unstarted') {
+            $cleanupMode = $_POST['cleanup_mode'] ?? 'safe';
+            $cutoffDate = $_POST['cutoff_date'] ?? null;
+            
+            try {
+                $pdo->beginTransaction();
+                
+                // First, get preview of what will be deleted
+                $previewStmt = $pdo->query("
+                    SELECT 
+                        e.name AS event_name,
+                        e.date AS event_date,
+                        r.name AS round_name,
+                        ra.archer_name,
+                        ra.school,
+                        ra.card_status,
+                        ra.created_at
+                    FROM round_archers ra
+                    INNER JOIN rounds r ON ra.round_id = r.id
+                    LEFT JOIN events e ON r.event_id = e.id
+                    LEFT JOIN end_events ee ON ra.id = ee.round_archer_id
+                    WHERE ee.id IS NULL
+                    " . ($cleanupMode === 'safe' ? "AND ra.completed = FALSE AND ra.card_status = 'PENDING'" : "") . "
+                    " . ($cutoffDate ? "AND e.date < ?" : "") . "
+                    ORDER BY e.date DESC, ra.archer_name
+                    LIMIT 100
+                ");
+                
+                if ($cutoffDate) {
+                    $previewStmt->execute([$cutoffDate]);
+                } else {
+                    $previewStmt->execute();
+                }
+                
+                $affectedCards = $previewStmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Execute deletion based on mode
+                if ($cleanupMode === 'aggressive') {
+                    // Delete ALL unstarted cards
+                    $deleteStmt = $pdo->prepare("
+                        DELETE ra FROM round_archers ra
+                        LEFT JOIN end_events ee ON ra.id = ee.round_archer_id
+                        WHERE ee.id IS NULL
+                    ");
+                    $deleteStmt->execute();
+                } elseif ($cleanupMode === 'date') {
+                    // Delete unstarted cards older than cutoff date
+                    if (!$cutoffDate) {
+                        throw new Exception("Cutoff date required for date-based cleanup");
+                    }
+                    $deleteStmt = $pdo->prepare("
+                        DELETE ra FROM round_archers ra
+                        LEFT JOIN end_events ee ON ra.id = ee.round_archer_id
+                        INNER JOIN rounds r ON ra.round_id = r.id
+                        INNER JOIN events e ON r.event_id = e.id
+                        WHERE ee.id IS NULL
+                          AND ra.completed = FALSE
+                          AND ra.card_status = 'PENDING'
+                          AND e.date < ?
+                    ");
+                    $deleteStmt->execute([$cutoffDate]);
+                } else {
+                    // Safe mode: Delete only pending, incomplete cards
+                    $deleteStmt = $pdo->prepare("
+                        DELETE ra FROM round_archers ra
+                        LEFT JOIN end_events ee ON ra.id = ee.round_archer_id
+                        WHERE ee.id IS NULL
+                          AND ra.completed = FALSE
+                          AND ra.card_status = 'PENDING'
+                    ");
+                    $deleteStmt->execute();
+                }
+                
+                $deletedCount = $deleteStmt->rowCount();
+                
+                $pdo->commit();
+                
+                echo '<div class="success">';
+                echo '<h3>✅ Cleanup Complete</h3>';
+                echo '<p><strong>' . $deletedCount . '</strong> unstarted scorecard(s) deleted.</p>';
+                if (!empty($affectedCards)) {
+                    echo '<details><summary>View deleted cards (first 100)</summary>';
+                    echo '<table style="margin-top: 10px;"><thead><tr>';
+                    echo '<th>Event</th><th>Round</th><th>Archer</th><th>School</th><th>Status</th><th>Created</th>';
+                    echo '</tr></thead><tbody>';
+                    foreach ($affectedCards as $card) {
+                        echo '<tr>';
+                        echo '<td>' . h($card['event_name']) . '<br><small>' . h($card['event_date']) . '</small></td>';
+                        echo '<td>' . h($card['round_name']) . '</td>';
+                        echo '<td>' . h($card['archer_name']) . '</td>';
+                        echo '<td>' . h($card['school']) . '</td>';
+                        echo '<td>' . h($card['card_status']) . '</td>';
+                        echo '<td><small>' . h($card['created_at']) . '</small></td>';
+                        echo '</tr>';
+                    }
+                    echo '</tbody></table></details>';
+                }
+                echo '</div>';
+                
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                echo '<div class="error">';
+                echo '<h3>❌ Cleanup Failed</h3>';
+                echo '<p>' . h($e->getMessage()) . '</p>';
+                echo '</div>';
+            }
+        }
+        
+        // Preview unstarted cards
+        $previewStmt = $pdo->query("
+            SELECT 
+                COUNT(*) AS total_unstarted,
+                COUNT(DISTINCT ra.round_id) AS affected_rounds,
+                COUNT(DISTINCT ra.archer_name) AS affected_archers,
+                SUM(CASE WHEN ra.card_status = 'PENDING' AND ra.completed = FALSE THEN 1 ELSE 0 END) AS safe_cleanup_count
+            FROM round_archers ra
+            LEFT JOIN end_events ee ON ra.id = ee.round_archer_id
+            WHERE ee.id IS NULL
+        ");
+        $preview = $previewStmt->fetch(PDO::FETCH_ASSOC);
+        ?>
+        
+        <div class="info" style="background: #e3f2fd; border-color: #2196f3;">
+            <h3>📊 Unstarted Cards Preview</h3>
+            <ul>
+                <li><strong><?= (int)$preview['total_unstarted'] ?></strong> total unstarted scorecard(s)</li>
+                <li><strong><?= (int)$preview['affected_rounds'] ?></strong> round(s) affected</li>
+                <li><strong><?= (int)$preview['affected_archers'] ?></strong> unique archer name(s)</li>
+                <li><strong><?= (int)$preview['safe_cleanup_count'] ?></strong> safe to clean (PENDING + not completed)</li>
+            </ul>
+        </div>
+        
+        <?php if ($preview['total_unstarted'] > 0): ?>
+        <form method="post" style="margin-top: 20px;">
+            <input type="hidden" name="passcode" value="<?= h($passcode) ?>">
+            
+            <div style="margin-bottom: 20px;">
+                <label><strong>Cleanup Mode:</strong></label>
+                <div style="margin-top: 10px;">
+                    <label style="display: block; margin-bottom: 10px;">
+                        <input type="radio" name="cleanup_mode" value="safe" checked>
+                        <strong>Safe Mode (Recommended)</strong> - Only delete PENDING, incomplete cards
+                        <br><small style="margin-left: 24px;">Deletes <?= (int)$preview['safe_cleanup_count'] ?> card(s)</small>
+                    </label>
+                    <label style="display: block; margin-bottom: 10px;">
+                        <input type="radio" name="cleanup_mode" value="date">
+                        <strong>Date-Based</strong> - Delete pending cards older than specified date
+                        <br><small style="margin-left: 24px;">Requires cutoff date below</small>
+                    </label>
+                    <label style="display: block; margin-bottom: 10px;">
+                        <input type="radio" name="cleanup_mode" value="aggressive">
+                        <strong>Aggressive (Caution!)</strong> - Delete ALL unstarted cards regardless of status
+                        <br><small style="margin-left: 24px; color: #d32f2f;">Deletes <?= (int)$preview['total_unstarted'] ?> card(s) - Use with extreme caution!</small>
+                    </label>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label for="cutoff_date"><strong>Cutoff Date (for Date-Based mode):</strong></label>
+                <input type="date" id="cutoff_date" name="cutoff_date" value="<?= date('Y-m-d', strtotime('-7 days')) ?>">
+                <small>Only cards from events before this date will be deleted</small>
+            </div>
+            
+            <div class="table-actions">
+                <button type="submit" name="action" value="cleanup_unstarted" class="btn-danger" 
+                        onclick="return confirm('Are you sure you want to delete unstarted scorecards? This cannot be undone.\n\nRecommendation: Use Safe Mode for first-time cleanup.');">
+                    🧹 Clean Up Unstarted Cards
+                </button>
+            </div>
+        </form>
+        <?php else: ?>
+        <p style="color: #4caf50; font-weight: bold;">✅ No unstarted cards found. Database is clean!</p>
+        <?php endif; ?>
+
+        <hr style="margin: 40px 0; border: none; border-top: 2px solid #ddd;">
+
         <h2>Helpful Tools & References</h2>
         <div class="link-list">
             <div class="link-card">
