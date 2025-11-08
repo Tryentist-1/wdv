@@ -4,399 +4,116 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Coach Console</title>
-  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'primary': '#0d6efd',
+            'primary-dark': '#0a58ca',
+            'success': '#198754',
+            'success-dark': '#157347',
+            'danger': '#dc3545',
+            'score-gold': '#FFD700',
+            'score-red': '#FF0000',
+            'score-blue': '#0000FF',
+            'score-black': '#000000',
+            'score-white': '#FFFFFF',
+            'score-miss': '#808080'
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    /* Coach Authentication Modal */
-    .coach-auth-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 9999;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    .coach-auth-content {
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      max-width: 400px;
-      width: 90%;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    }
-    
-    .coach-auth-content h2 {
-      margin-top: 0;
-      color: #2c3e50;
-    }
-    
-    .coach-auth-content input {
-      width: 100%;
-      padding: 0.75rem;
-      margin: 1rem 0;
-      border: 2px solid #ddd;
-      border-radius: 6px;
-      font-size: 1rem;
-    }
-    
-    .coach-auth-content input:focus {
-      border-color: #3498db;
-      outline: none;
-    }
-    
-    .coach-auth-buttons {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 1rem;
-    }
-    
-    .error-message {
-      color: #e74c3c;
-      font-size: 0.9rem;
-      margin-top: 0.5rem;
-      display: none;
-    }
-    
-    /* Modal Styles */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-      overflow-y: auto;
-    }
-    
-    .modal-content {
-      background: white;
-      padding: 2rem;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 90%;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    }
-    
-    .modal-content h2 {
-      margin-top: 0;
-      color: #2c3e50;
-    }
-    
-    .form-group {
-      margin-bottom: 1.25rem;
-    }
-    
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 500;
-      color: #34495e;
-    }
-    
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 0.75rem;
-      border: 2px solid #ddd;
-      border-radius: 6px;
-      font-size: 1rem;
-    }
-    
-    .form-group input:focus,
-    .form-group select:focus {
-      border-color: #3498db;
-      outline: none;
-    }
-    
-    .modal-buttons {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 1.5rem;
-    }
-    
-    /* Archer Filter/Select UI */
-    .archer-filters {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-    }
-    
-    .styled-select {
-      flex: 1;
-      min-width: 120px;
-      padding: 0.75rem;
-      border: 2px solid #3498db;
-      border-radius: 6px;
-      font-size: 1rem;
-      background: white;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .styled-select:hover {
-      border-color: #2980b9;
-      background: #f8f9fa;
-    }
-    
-    .styled-select:focus {
-      outline: none;
-      border-color: #2980b9;
-      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-    }
-    
-    .archer-list {
-      max-height: 300px;
-      overflow-y: auto;
-      border: 2px solid #ddd;
-      border-radius: 6px;
-      padding: 0.5rem;
-      -webkit-overflow-scrolling: touch;
-    }
-    
-    .archer-item {
-      display: flex;
-      align-items: center;
-      padding: 0.5rem;
-      border-bottom: 1px solid #eee;
-    }
-    
-    .archer-item:last-child {
-      border-bottom: none;
-    }
-    
-    .archer-item input[type="checkbox"] {
-      margin-right: 0.75rem;
-      width: 18px;
-      height: 18px;
-    }
-    
-    .archer-item label {
-      flex: 1;
-      cursor: pointer;
-      margin: 0;
-    }
-    
-    .archer-details {
-      font-size: 0.85rem;
-      color: #7f8c8d;
-      margin-left: 0.5rem;
-    }
-    
-    .selection-summary {
-      margin-top: 1rem;
-      padding: 0.75rem;
-      background: #ecf0f1;
-      border-radius: 6px;
-      font-weight: 500;
-    }
-    
-    /* Mobile-responsive event table */
-    .table-wrapper {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    
-    .score-table {
-      min-width: 100%;
-      font-size: 0.85rem;
-    }
-    
-    .score-table th,
-    .score-table td {
-      padding: 0.4rem 0.2rem;
-      font-size: 0.85rem;
-    }
-    
-    .score-table th {
-      background: #2d7dd9 !important;
-      color: white !important;
-    }
-    
-    .btn-sm {
-      padding: 0.2rem 0.3rem;
-      font-size: 1.1rem;
-      margin: 0 0.05rem;
-      min-width: 28px;
-    }
-    
-    .status-badge {
-      font-size: 0.65rem;
-      padding: 0.15rem 0.4rem;
-      white-space: nowrap;
-    }
-    
-    /* QR Code Modal */
-    .qr-modal-content {
-      max-width: 500px;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-    
-    .qr-code-container {
-      display: inline-block;
-      padding: 0.5rem;
-      background: white;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-    }
-    
-    @media (max-width: 768px) {
-      .page-header h1 {
-        font-size: 1.5rem;
-        padding: 0.5rem;
-      }
-      
-      .page-subheader {
-        flex-direction: column;
-        gap: 0.5rem;
-        padding: 0.5rem;
-      }
-      
-      .page-subheader .btn {
-        width: 100%;
-      }
-      
-      .score-table {
-        font-size: 0.75rem;
-      }
-      
-      .score-table th,
-      .score-table td {
-        padding: 0.3rem 0.15rem;
-        font-size: 0.75rem;
-      }
-      
-      .score-table th {
-        font-size: 0.7rem;
-      }
-      
-      .btn-sm {
-        padding: 0.15rem 0.25rem;
-        font-size: 1rem;
-        min-width: 26px;
-      }
-      
-      /* Add Archers Modal on mobile */
-      #add-archers-modal .modal-content {
-        width: 95%;
-        max-height: 85vh;
-        padding: 1rem;
-      }
-      
-      .archer-list {
-        max-height: 200px !important;
-      }
-      
-      .styled-select {
-        padding: 0.5rem;
-        font-size: 0.9rem;
-      }
-      
-      /* QR Modal on mobile */
-      .qr-modal-content {
-        width: 95%;
-        max-height: 85vh;
-        padding: 1rem;
-      }
-      
-      .qr-code-container {
-        padding: 0.25rem;
-      }
-      
-      .qr-code-container canvas,
-      .qr-code-container img {
-        max-width: 200px !important;
-        max-height: 200px !important;
-        width: 100% !important;
-        height: auto !important;
-      }
-    }
+    /* Score color classes */
+    .score-gold { background-color: #FFD700 !important; color: #000 !important; }
+    .score-red { background-color: #FF0000 !important; color: #fff !important; }
+    .score-blue { background-color: #0000FF !important; color: #fff !important; }
+    .score-black { background-color: #000000 !important; color: #fff !important; }
+    .score-white { background-color: #FFFFFF !important; color: #000 !important; border: 1px solid #ddd !important; }
   </style>
 </head>
-<body>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
   <!-- Coach Authentication Modal -->
-  <div id="coach-auth-modal" class="coach-auth-modal">
-    <div class="coach-auth-content">
-      <h2>🔐 Coach Access</h2>
-      <p>Enter the coach passcode to continue:</p>
-      <input type="password" id="coach-passcode-input" placeholder="Enter passcode" autocomplete="off" />
-      <div id="auth-error" class="error-message">Incorrect passcode. Please try again.</div>
-      <div class="coach-auth-buttons">
-        <button id="auth-cancel-btn" class="btn btn-secondary" style="flex:1;">Cancel</button>
-        <button id="auth-submit-btn" class="btn btn-primary" style="flex:1;">Submit</button>
+  <div id="coach-auth-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-md w-11/12 shadow-2xl">
+      <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">🔐 Coach Access</h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-4">Enter the coach passcode to continue:</p>
+      <input type="password" id="coach-passcode-input" placeholder="Enter passcode" autocomplete="off" class="w-full px-3 py-3 my-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+      <div id="auth-error" class="hidden text-danger text-sm mt-2">Incorrect passcode. Please try again.</div>
+      <div class="flex gap-2 mt-4">
+        <button id="auth-cancel-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+        <button id="auth-submit-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Submit</button>
       </div>
     </div>
   </div>
 
   <!-- Create Event Modal -->
-  <div id="create-event-modal" class="modal">
-    <div class="modal-content">
-      <h2>Create New Event</h2>
-      <div class="form-group">
-        <label for="event-name">Event Name</label>
-        <input type="text" id="event-name" placeholder="Fall Tournament" />
+  <div id="create-event-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+      <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Create New Event</h2>
+      
+      <div class="mb-5">
+        <label for="event-name" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Name</label>
+        <input type="text" id="event-name" placeholder="Fall Tournament" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
       </div>
-      <div class="form-group">
-        <label for="event-date">Event Date</label>
-        <input type="date" id="event-date" />
+      
+      <div class="mb-5">
+        <label for="event-date" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Date</label>
+        <input type="date" id="event-date" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
       </div>
-      <div class="form-group">
-        <label for="event-status">Event Status</label>
-        <select id="event-status">
+      
+      <div class="mb-5">
+        <label for="event-status" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Status</label>
+        <select id="event-status" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
           <option value="Planned">Planned</option>
           <option value="Active">Active</option>
           <option value="Completed">Completed</option>
         </select>
       </div>
-      <div class="form-group">
-        <label for="event-code">Entry Code (for archer QR access)</label>
-        <input type="text" id="event-code" placeholder="FALL2024" />
+      
+      <div class="mb-5">
+        <label for="event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry Code (for archer QR access)</label>
+        <input type="text" id="event-code" placeholder="FALL2024" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
       </div>
       
-      <!-- PHASE 0: Division Rounds Selection -->
-      <div class="form-group" style="border-top: 2px solid #eee; padding-top: 1rem; margin-top: 1.5rem;">
-        <label style="font-weight: 600; margin-bottom: 0.75rem; display: block;">Division Rounds</label>
-        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-            <input type="checkbox" id="division-open" value="OPEN" checked style="width: auto; margin: 0;">
-            <span>OPEN (Mixed - All Levels)</span>
+      <!-- Division Rounds Selection -->
+      <div class="border-t-2 border-gray-200 dark:border-gray-700 pt-4 mt-6 mb-5">
+        <label class="block mb-3 font-semibold text-gray-700 dark:text-gray-300">Division Rounds</label>
+        <div class="flex flex-col gap-2">
+          <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+            <input type="checkbox" id="division-open" value="OPEN" checked class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            <span class="text-gray-800 dark:text-gray-200">OPEN (Mixed - All Levels)</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-            <input type="checkbox" id="division-bvar" value="BVAR" style="width: auto; margin: 0;">
-            <span>BVAR (Boys Varsity)</span>
+          <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+            <input type="checkbox" id="division-bvar" value="BVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            <span class="text-gray-800 dark:text-gray-200">BVAR (Boys Varsity)</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-            <input type="checkbox" id="division-gvar" value="GVAR" style="width: auto; margin: 0;">
-            <span>GVAR (Girls Varsity)</span>
+          <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+            <input type="checkbox" id="division-gvar" value="GVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            <span class="text-gray-800 dark:text-gray-200">GVAR (Girls Varsity)</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-            <input type="checkbox" id="division-bjv" value="BJV" style="width: auto; margin: 0;">
-            <span>BJV (Boys JV)</span>
+          <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+            <input type="checkbox" id="division-bjv" value="BJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            <span class="text-gray-800 dark:text-gray-200">BJV (Boys JV)</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-            <input type="checkbox" id="division-gjv" value="GJV" style="width: auto; margin: 0;">
-            <span>GJV (Girls JV)</span>
+          <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+            <input type="checkbox" id="division-gjv" value="GJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            <span class="text-gray-800 dark:text-gray-200">GJV (Girls JV)</span>
           </label>
         </div>
-        <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #666;">
+        <div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
           Select divisions to create for this event. You'll add archers to each division next.
         </div>
       </div>
       
-      <div class="modal-buttons">
-        <button id="cancel-event-btn" class="btn btn-secondary" style="flex:1;">Cancel</button>
-        <button id="submit-event-btn" class="btn btn-primary" style="flex:1;">Create Event</button>
+      <div class="flex gap-2 mt-6">
+        <button id="cancel-event-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+        <button id="submit-event-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Create Event</button>
       </div>
     </div>
   </div>
