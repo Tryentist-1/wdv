@@ -252,6 +252,12 @@
             // Check if coach mode
             isCoach = mode === 'coach' || localStorage.getItem('coach_passcode');
             
+            // For practice mode, always allow editing (no lock controls)
+            if (mode === 'practice') {
+                isCoach = false;
+                isLocked = false;
+            }
+            
             if (!roundArcherId) {
                 showError('No scorecard ID provided');
                 return;
@@ -291,9 +297,17 @@
             document.getElementById('round-type').textContent = card.round_type || '';
             
             // Status Badge
-            isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VOID';
+            // For practice mode, never lock
+            if (mode === 'practice') {
+                isLocked = false;
+            } else {
+                isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VOID';
+            }
+            
             const statusBadge = document.getElementById('status-badge');
-            if (card.card_status === 'VER') {
+            if (mode === 'practice') {
+                statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-primary text-white rounded-full text-sm font-bold">PRACTICE</span>';
+            } else if (card.card_status === 'VER') {
                 statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-success text-white rounded-full text-sm font-bold">✓ VERIFIED</span>';
             } else if (card.card_status === 'VOID') {
                 statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-gray-500 text-white rounded-full text-sm font-bold">✗ VOID</span>';

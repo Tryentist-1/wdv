@@ -67,15 +67,15 @@
         <div>
           <label for="event-date" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Date</label>
           <input type="date" id="event-date" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
-        </div>
+      </div>
         <div>
           <label for="event-status" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Status</label>
           <select id="event-status" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
-            <option value="Planned">Planned</option>
-            <option value="Active">Active</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
+          <option value="Planned">Planned</option>
+          <option value="Active">Active</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
         <div>
           <label for="event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry Code</label>
           <input type="text" id="event-code" placeholder="FALL2024" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
@@ -101,11 +101,11 @@
             <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
               <input type="checkbox" id="division-bvar" value="BVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
               <span class="text-gray-800 dark:text-gray-200">BVAR (Boys Varsity)</span>
-            </label>
+          </label>
             <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
               <input type="checkbox" id="division-gvar" value="GVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
               <span class="text-gray-800 dark:text-gray-200">GVAR (Girls Varsity)</span>
-            </label>
+          </label>
           </div>
           
           <!-- JV Column -->
@@ -113,11 +113,11 @@
             <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
               <input type="checkbox" id="division-bjv" value="BJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
               <span class="text-gray-800 dark:text-gray-200">BJV (Boys JV)</span>
-            </label>
+          </label>
             <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
               <input type="checkbox" id="division-gjv" value="GJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
               <span class="text-gray-800 dark:text-gray-200">GJV (Girls JV)</span>
-            </label>
+          </label>
           </div>
         </div>
         
@@ -240,15 +240,15 @@
         <div>
           <label for="edit-event-date" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Date</label>
           <input type="date" id="edit-event-date" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
-        </div>
+      </div>
         <div>
           <label for="edit-event-status" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Status</label>
           <select id="edit-event-status" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
-            <option value="Planned">Planned</option>
-            <option value="Active">Active</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
+          <option value="Planned">Planned</option>
+          <option value="Active">Active</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
         <div>
           <label for="edit-event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry Code</label>
           <input type="text" id="edit-event-code" placeholder="FALL2024" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
@@ -319,7 +319,7 @@
     </div>
   </div>
 
-  <!-- Verify Scorecards Modal -->
+<!-- Verify Scorecards Modal -->
   <div id="verify-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
     <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-5xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
       <h2 id="verify-modal-title" class="text-2xl font-bold text-gray-800 dark:text-white mb-4">Verify Scorecards</h2>
@@ -338,9 +338,9 @@
         <button id="verify-lock-all-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Lock All On Bale</button>
         <button id="verify-close-round-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Verify &amp; Close Round</button>
         <button id="verify-modal-close-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Close</button>
-      </div>
     </div>
   </div>
+</div>
 
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-4 py-6">
@@ -378,9 +378,10 @@
   
   <!-- Footer -->
   <footer class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200">
-    <div class="max-w-7xl mx-auto flex gap-2 justify-center">
+    <div class="max-w-7xl mx-auto flex gap-2 justify-center flex-wrap">
       <a href="index.html" class="inline-block px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">Home</a>
       <a href="archer_results_pivot.html" class="inline-block px-6 py-2 bg-primary text-white rounded font-semibold hover:bg-primary-dark transition-colors min-h-[44px] flex items-center justify-center">📊 Pivot View</a>
+      <a href="api/data_admin.php" class="inline-block px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center text-sm">🛠️ Admin</a>
     </div>
   </footer>
   
