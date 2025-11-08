@@ -353,10 +353,20 @@
                         const snapshot = await snapshotRes.json();
                         console.log('[searchArchers] Event snapshot:', event.name, snapshot);
                         
-                        if (!snapshot.divisions || !Array.isArray(snapshot.divisions)) continue;
+                        if (!snapshot.divisions || !Array.isArray(snapshot.divisions)) {
+                            console.log('[searchArchers] No divisions array in snapshot');
+                            continue;
+                        }
+                        
+                        console.log('[searchArchers] Found divisions:', snapshot.divisions.length);
                         
                         for (const division of snapshot.divisions) {
-                            if (!division.archers || !Array.isArray(division.archers)) continue;
+                            if (!division.archers || !Array.isArray(division.archers)) {
+                                console.log('[searchArchers] No archers array in division:', division);
+                                continue;
+                            }
+                            
+                            console.log('[searchArchers] Division has archers:', division.archers.length);
                             
                             for (const archer of division.archers) {
                                 // Build archer name - try archerName first, then firstName/lastName
@@ -385,8 +395,11 @@
                                 
                                 const archerNameLower = archerName.toLowerCase();
                                 
+                                console.log('[searchArchers] Checking archer:', archerName, 'against query:', query);
+                                
                                 // Check if archer name matches query
                                 if (archerNameLower.includes(queryLower)) {
+                                    console.log('[searchArchers] MATCH FOUND:', archerName);
                                     if (!matchingCards.has(archerName)) {
                                         matchingCards.set(archerName, {
                                             name: archerName,
