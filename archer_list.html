@@ -509,21 +509,51 @@
                     <input type="hidden" id="legacyTarget">
                     <input type="hidden" id="legacySize">
 
+                    <!-- Identity Section -->
                     <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Identity</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="first">First Name*</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="first" required></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="last">Last Name*</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="last" required></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="nickname">Nickname</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="nickname"></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="photoUrl">Photo URL</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="url" id="photoUrl" placeholder="https://..."></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="status">Status</label>
+                        <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Identity</h3>
+                        
+                        <!-- Photo and Status Row -->
+                        <div class="flex gap-4 mb-4">
+                            <div class="flex-1">
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="photoUrl">Avatar/Photo URL</label>
+                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="url" id="photoUrl" placeholder="https://...">
+                            </div>
+                            <div class="w-32">
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="status">Status</label>
                                 <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="status">
                                     <option value="active" selected>Active</option>
                                     <option value="inactive">Inactive</option>
                                 </select>
                             </div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="school">School (1-3 Letters)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="school" maxlength="3" placeholder="WDV"></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="grade">Grade</label>
+                        </div>
+                        
+                        <!-- Name Row -->
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="first">First Name*</label>
+                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="first" required>
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="last">Last Name*</label>
+                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="last" required>
+                            </div>
+                        </div>
+                        
+                        <!-- Nickname -->
+                        <div class="mb-3">
+                            <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="nickname">Nickname</label>
+                            <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="nickname">
+                        </div>
+                        
+                        <!-- School, Grade, Gender Row -->
+                        <div class="grid grid-cols-3 gap-3 mb-3">
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="school">School</label>
+                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="school" maxlength="3" placeholder="WDV">
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="grade">Grade</label>
                                 <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="grade">
                                     <option value="">-</option>
                                     <option value="9">9</option>
@@ -533,72 +563,87 @@
                                     <option value="GRAD">GRAD</option>
                                 </select>
                             </div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="gender">Gender</label>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="gender">Gender</label>
                                 <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="gender">
                                     <option value="M">M</option>
                                     <option value="F">F</option>
                                 </select>
                             </div>
-                            <div class="sm:col-span-2">
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="faves">Friends (extIds, comma separated)</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="faves" placeholder="archer-ext-id-1, archer-ext-id-2">
-                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Use the generated extIds (first-last-school) for quick linking.</div>
-                            </div>
+                        </div>
+                        
+                        <!-- Friends -->
+                        <div>
+                            <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="faves">Friends</label>
+                            <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="faves" placeholder="archer-ext-id-1, archer-ext-id-2">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Comma-separated extIds</div>
                         </div>
                     </section>
 
+                    <!-- Performance Section -->
                     <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Contact</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="sm:col-span-2">
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="email">Email</label>
-                                <div class="flex gap-2">
-                                    <input class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="email" id="email" placeholder="name@student.davincischools.org">
-                                    <button type="button" id="email-domain-btn" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">@student...</button>
-                                </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Click the button to append the school domain automatically (optional).</div>
-                            </div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="phone">Phone</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="tel" id="phone" placeholder="###-###-####"></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="usArcheryId">USA Archery ID</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="usArcheryId"></div>
-                        </div>
-                    </section>
-
-                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Performance</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="level">Level</label>
+                        <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Performance</h3>
+                        
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="level">Level</label>
                                 <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="level">
                                     <option value="VAR">VAR</option>
                                     <option value="JV">JV</option>
                                     <option value="BEG">BEG</option>
                                 </select>
                             </div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="jvPr">JV PR</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="jvPr" min="0" max="360"></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="varPr">Varsity PR</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="varPr" min="0" max="360"></div>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="jvPr">JV PR</label>
+                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="jvPr" min="0" max="360" placeholder="0-360">
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="varPr">VAR PR</label>
+                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="varPr" min="0" max="360" placeholder="0-360">
+                            </div>
                         </div>
                     </section>
 
+                    <!-- Equipment Section -->
                     <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Equipment & Measurements</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="domEye">Dominant Eye</label>
-                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="domEye">
-                                    <option value="">-</option>
-                                    <option value="RT">Right</option>
-                                    <option value="LT">Left</option>
-                                </select>
-                            </div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="domHand">Dominant Hand</label>
+                        <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Equipment</h3>
+                        
+                        <!-- Row 1: Hand, Eye, Height, Wingspan -->
+                        <div class="grid grid-cols-4 gap-3 mb-3">
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="domHand">Hand</label>
                                 <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="domHand">
                                     <option value="">-</option>
                                     <option value="RT">Right</option>
                                     <option value="LT">Left</option>
                                 </select>
                             </div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="heightIn">Height (in)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="heightIn" min="0" step="1"></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="wingspanIn">Wingspan (in)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="wingspanIn" min="0" step="0.1"></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="riserHeightIn">Riser Height (in)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="riserHeightIn" min="0" step="0.1"></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="limbLength">Limb Length</label>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="domEye">Eye</label>
+                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="domEye">
+                                    <option value="">-</option>
+                                    <option value="RT">Right</option>
+                                    <option value="LT">Left</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="heightIn">Ht (in)</label>
+                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="heightIn" min="0" step="1" placeholder="60">
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="wingspanIn">Wing (in)</label>
+                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="wingspanIn" min="0" step="0.1" placeholder="60.5">
+                            </div>
+                        </div>
+                        
+                        <!-- Row 2: Draw, Limb, Weight -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="drawLengthSugg">Draw (in)</label>
+                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="drawLengthSugg" min="0" step="0.1" placeholder="28.5">
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="limbLength">Limb</label>
                                 <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="limbLength">
                                     <option value="">-</option>
                                     <option value="S">S</option>
@@ -606,17 +651,58 @@
                                     <option value="L">L</option>
                                 </select>
                             </div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="limbWeightLbs">Limb Weight (lbs)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="limbWeightLbs" min="0" step="0.5"></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="drawLengthSugg">Draw Length (in)</label><input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="drawLengthSugg" min="0" step="0.1"></div>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="limbWeightLbs">Wt (lbs)</label>
+                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="limbWeightLbs" min="0" step="0.5" placeholder="20">
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden Riser Height (kept for data preservation) -->
+                        <input type="hidden" id="riserHeightIn">
+                    </section>
+
+                    <!-- Notes Section -->
+                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                        <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Notes</h3>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesGear">Gear Notes</label>
+                                <textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesGear" rows="2"></textarea>
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesCurrent">Current Notes</label>
+                                <textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesCurrent" rows="2"></textarea>
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesArchive">Archive Notes</label>
+                                <textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesArchive" rows="2"></textarea>
+                            </div>
                         </div>
                     </section>
 
+                    <!-- Contact Section -->
                     <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <h3 class="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Notes</h3>
-                        <div class="grid grid-cols-1 gap-3">
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesGear">Gear Notes</label><textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesGear" rows="2"></textarea></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesCurrent">Current Notes</label><textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesCurrent" rows="2"></textarea></div>
-                            <div><label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesArchive">Archive Notes</label><textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesArchive" rows="2"></textarea></div>
+                        <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Contact</h3>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="email">Email</label>
+                                <div class="flex gap-2">
+                                    <input class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="email" id="email" placeholder="name@student.davincischools.org">
+                                    <button type="button" id="email-domain-btn" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors whitespace-nowrap">@student...</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="phone">Phone</label>
+                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="tel" id="phone" placeholder="###-###-####">
+                                </div>
+                                <div>
+                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="usArcheryId">USA Archery ID</label>
+                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="usArcheryId">
+                                </div>
+                            </div>
                         </div>
                     </section>
                 `;
