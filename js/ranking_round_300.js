@@ -912,7 +912,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // If no event or no archers, show empty state
         if (!state.activeEventId || masterList.length === 0) {
-            preassignedSetupControls.baleListContainer.innerHTML = '<div style="text-align:center;color:#666;padding:1rem;">No Archers Available<br/>Connect to an event to load archers.</div>';
+            preassignedSetupControls.baleListContainer.innerHTML = '<div class="text-center text-gray-600 dark:text-gray-400 p-4">No Archers Available<br/>Connect to an event to load archers.</div>';
             return;
         }
         
@@ -1026,9 +1026,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (masterList.length === 0) {
             setupControls.container.innerHTML = `
-                <div style="text-align: center; padding: 2rem; color: #666;">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
-                    <h3>No Archers Available</h3>
+                <div class="text-center p-8 text-gray-600 dark:text-gray-400">
+                    <div class="text-5xl mb-4">🎯</div>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">No Archers Available</h3>
                     <p>Connect to an event to load archers.</p>
                 </div>
             `;
@@ -1518,9 +1518,9 @@ document.addEventListener('DOMContentLoaded', () => {
         banner.className = 'pre-assigned-banner';
         banner.style.cssText = 'background: #e3f2fd; padding: 12px; margin-bottom: 12px; border-radius: 4px; border-left: 4px solid #2196f3;';
         banner.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 4px;">📌 Pre-Assigned Bale</div>
-            <div style="font-size: 0.9em;">Bale ${state.baleNumber} - ${state.divisionName || 'Division'}</div>
-            <div style="font-size: 0.85em; color: #666; margin-top: 4px;">
+            <div class="font-bold mb-1 text-gray-800 dark:text-white">📌 Pre-Assigned Bale</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">Bale ${state.baleNumber} - ${state.divisionName || 'Division'}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 ${searchTerm ? `Showing ${baleArchers.length} archers matching "${searchTerm}"` : 'These archers are pre-assigned by your coach'}
             </div>
         `;
@@ -1612,9 +1612,9 @@ document.addEventListener('DOMContentLoaded', () => {
         banner.className = 'empty-bale-banner';
         banner.style.cssText = 'background: #fff3cd; padding: 12px; margin-bottom: 12px; border-radius: 4px; border-left: 4px solid #ffc107;';
         banner.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 4px;">⚠️ No Archers Assigned</div>
-            <div style="font-size: 0.9em;">Bale ${baleNumber} has no archers assigned</div>
-            <div style="font-size: 0.85em; color: #666; margin-top: 4px;">Try a different bale number or switch to manual mode</div>
+            <div class="font-bold mb-1 text-gray-800 dark:text-white">⚠️ No Archers Assigned</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">Bale ${baleNumber} has no archers assigned</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Try a different bale number or switch to manual mode</div>
         `;
         setupControls.container.appendChild(banner);
         
@@ -2231,12 +2231,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const syncIcon = getSyncStatusIcon(syncStatus);
             const status = (archer.cardStatus || 'PENDING').toUpperCase();
             const isLocked = !!state.activeEventId && (archer.locked || status === 'VER' || status === 'VOID');
-            let badgeColor = '#f1c40f';
-            if (status === 'VER') badgeColor = '#2ecc71';
-            if (status === 'VOID') badgeColor = '#e74c3c';
+            let badgeClass = 'bg-warning text-white';
+            if (status === 'VER') badgeClass = 'bg-success text-white';
+            if (status === 'VOID') badgeClass = 'bg-danger text-white';
             const statusBadge = (status === 'PENDING' && !isLocked)
                 ? ''
-                : `<span class="status-badge" style="background:${badgeColor};color:#fff;margin-right:0.35rem;">${status}</span>`;
+                : `<span class="inline-block px-2 py-1 text-xs font-bold rounded mr-1 ${badgeClass}">${status}</span>`;
             const rowLockAttr = isLocked ? 'data-locked="true" class="locked-scorecard-row"' : '';
             const lockedAttr = isLocked ? 'data-locked="true" tabindex="-1" disabled' : 'data-locked="false"';
             
@@ -2293,10 +2293,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const detailsDiv = document.createElement('div');
         detailsDiv.className = 'card-details';
         const status = (archer.cardStatus || 'PENDING').toUpperCase();
-        let statusColor = '#f1c40f';
-        if (status === 'VER') statusColor = '#2ecc71';
-        if (status === 'VOID') statusColor = '#e74c3c';
-        const statusBadge = `<span class="status-badge" style="background:${statusColor};color:#fff;">${status}</span>`;
+        let badgeClass = 'bg-warning text-white';
+        if (status === 'VER') badgeClass = 'bg-success text-white';
+        if (status === 'VOID') badgeClass = 'bg-danger text-white';
+        const statusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded ${badgeClass}">${status}</span>`;
         const notesText = archer.verificationNotes ? `<span>Notes: ${archer.verificationNotes}</span>` : '';
         detailsDiv.innerHTML = `<span>Bale ${state.baleNumber} - Target ${archer.targetAssignment}</span><span>${archer.school}</span><span>${archer.level} / ${archer.gender}</span>${statusBadge}${notesText}`;
         header.appendChild(detailsDiv);
@@ -3577,10 +3577,10 @@ function updateManualLiveControls(summaryOverride) {
 
     function getSyncStatusIcon(status) {
         const icons = {
-            'synced': '<span style="color: #4caf50; font-size: 0.9em;" title="Synced">✓</span>',
-            'pending': '<span style="color: #ff9800; font-size: 0.9em;" title="Pending">⟳</span>',
-            'failed': '<span style="color: #f44336; font-size: 0.9em;" title="Failed">✗</span>',
-            '': '<span style="color: #9e9e9e; font-size: 0.9em;" title="Not Synced">○</span>'
+            'synced': '<span class="text-success text-sm" title="Synced">✓</span>',
+            'pending': '<span class="text-warning text-sm" title="Pending">⟳</span>',
+            'failed': '<span class="text-danger text-sm" title="Failed">✗</span>',
+            '': '<span class="text-gray-400 dark:text-gray-500 text-sm" title="Not Synced">○</span>'
         };
         return icons[status] || icons[''];
     }
@@ -3745,7 +3745,7 @@ function updateManualLiveControls(summaryOverride) {
             if (!eventList) return;
             
             if (activeEvents.length === 0) {
-                eventList.innerHTML = '<p style="color: #999; text-align: center;">No active events found</p>';
+                eventList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center">No active events found</p>';
                 return;
             }
             
@@ -3755,8 +3755,8 @@ function updateManualLiveControls(summaryOverride) {
                 eventBtn.className = 'btn btn-secondary';
                 eventBtn.style.cssText = 'width: 100%; margin-bottom: 0.5rem; text-align: left; padding: 1rem;';
                 eventBtn.innerHTML = `
-                    <div style="font-weight: bold;">${ev.name}</div>
-                    <div style="font-size: 0.85em; color: #666;">${ev.date}</div>
+                    <div class="font-bold text-gray-800 dark:text-white">${ev.name}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">${ev.date}</div>
                 `;
                 eventBtn.onclick = async () => {
                     console.log('Event selected from list:', ev.id, ev.name);
@@ -3777,7 +3777,7 @@ function updateManualLiveControls(summaryOverride) {
             console.error('Failed to load events:', err);
             const eventList = document.getElementById('event-list');
             if (eventList) {
-                eventList.innerHTML = '<p style="color: #f44336;">Failed to load events</p>';
+                eventList.innerHTML = '<p class="text-danger dark:text-red-400">Failed to load events</p>';
             }
         }
     }
@@ -4588,22 +4588,22 @@ function updateManualLiveControls(summaryOverride) {
         const currentArcherIds = state.archers.map(a => a.id || a.extId || `${a.firstName}-${a.lastName}-${a.school}`);
         
         modal.innerHTML = `
-            <div style="background: white; padding: 20px; border-radius: 8px; max-width: 90%; max-height: 80%; overflow-y: auto;">
-                <h3 style="margin-top: 0;">Edit Bale Assignments</h3>
-                <p style="color: #666; margin-bottom: 16px;">Check/uncheck archers to include in this bale</p>
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-[90%] max-h-[80%] overflow-y-auto">
+                <h3 class="mt-0 text-xl font-bold text-gray-800 dark:text-white mb-2">Edit Bale Assignments</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">Check/uncheck archers to include in this bale</p>
                 
-                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 8px;">
+                <div class="max-h-[300px] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded p-2">
                     ${eventArchers.map(archer => {
                         const archerId = archer.id || archer.extId || `${archer.first}-${archer.last}-${archer.school}`;
                         const isChecked = currentArcherIds.includes(archerId);
                         return `
-                            <label style="display: block; padding: 8px; border-bottom: 1px solid #eee; cursor: pointer;">
+                            <label class="block p-2 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <input type="checkbox" ${isChecked ? 'checked' : ''} 
                                        data-archer='${JSON.stringify(archer).replace(/'/g, '&#39;')}'
-                                       style="margin-right: 8px;">
-                                <strong>${archer.first} ${archer.last}</strong> 
-                                <span style="color: #666;">(${archer.school} - ${archer.level}/${archer.gender})</span>
-                                ${archer.baleNumber ? `<span style="color: #2196f3;">- Bale ${archer.baleNumber}</span>` : ''}
+                                       class="mr-2">
+                                <strong class="text-gray-800 dark:text-white">${archer.first} ${archer.last}</strong> 
+                                <span class="text-gray-600 dark:text-gray-400">(${archer.school} - ${archer.level}/${archer.gender})</span>
+                                ${archer.baleNumber ? `<span class="text-primary dark:text-blue-400">- Bale ${archer.baleNumber}</span>` : ''}
                             </label>
                         `;
                     }).join('')}
