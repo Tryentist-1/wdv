@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Archer List</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -130,6 +132,27 @@
             <form id="archer-form" class="p-6">
                 <!-- Form content will be injected by JS -->
             </form>
+        </div>
+    </div>
+
+    <!-- Image Crop Modal -->
+    <div id="crop-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[60] hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full transition-colors duration-200">
+            <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Crop Photo</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Adjust the crop area to focus on the face</p>
+            </div>
+            <div class="p-6">
+                <div class="max-h-[60vh] overflow-hidden bg-gray-100 dark:bg-gray-900 rounded">
+                    <img id="crop-image" src="" alt="Crop preview" class="max-w-full">
+                </div>
+            </div>
+            <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" id="cancel-crop-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+                <button type="button" id="apply-crop-btn" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded font-semibold transition-colors min-h-[44px]">
+                    <i class="fas fa-crop mr-2"></i>Crop & Upload
+                </button>
+            </div>
         </div>
     </div>
 
@@ -522,7 +545,7 @@
                     fileInput.click();
                 };
                 
-                // Handle file selection
+                // Handle file selection - open crop modal
                 fileInput.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
@@ -530,66 +553,19 @@
                     // Validate file type
                     if (!file.type.startsWith('image/')) {
                         alert('Please select an image file');
+                        fileInput.value = '';
                         return;
                     }
                     
                     // Validate file size (10MB max)
                     if (file.size > 10 * 1024 * 1024) {
                         alert('File too large. Maximum size is 10MB');
+                        fileInput.value = '';
                         return;
                     }
                     
-                    // Show progress
-                    uploadBtn.classList.add('hidden');
-                    uploadProgress.classList.remove('hidden');
-                    
-                    try {
-                        // Upload file
-                        const formData = new FormData();
-                        formData.append('avatar', file);
-                        
-                        const response = await fetch('api/upload_avatar.php', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error('Upload failed');
-                        }
-                        
-                        const result = await response.json();
-                        
-                        if (result.success && result.photoUrl) {
-                            // Update photoUrl field
-                            photoUrlInput.value = result.photoUrl;
-                            
-                            // Update preview
-                            updateAvatarPreview(form);
-                            
-                            // Show success feedback
-                            uploadProgress.innerHTML = '<i class="fas fa-check mr-1"></i>Uploaded!';
-                            uploadProgress.classList.remove('text-gray-600', 'dark:text-gray-400');
-                            uploadProgress.classList.add('text-green-600', 'dark:text-green-400');
-                            
-                            setTimeout(() => {
-                                uploadProgress.classList.add('hidden');
-                                uploadProgress.classList.remove('text-green-600', 'dark:text-green-400');
-                                uploadProgress.classList.add('text-gray-600', 'dark:text-gray-400');
-                                uploadProgress.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Uploading...';
-                                uploadBtn.classList.remove('hidden');
-                            }, 2000);
-                        } else {
-                            throw new Error(result.error || 'Upload failed');
-                        }
-                    } catch (error) {
-                        console.error('Upload error:', error);
-                        alert('Failed to upload photo: ' + error.message);
-                        uploadProgress.classList.add('hidden');
-                        uploadBtn.classList.remove('hidden');
-                    }
-                    
-                    // Reset file input
-                    fileInput.value = '';
+                    // Open crop modal
+                    openCropModal(file, uploadBtn, uploadProgress, photoUrlInput, form);
                 };
                 
                 // Update preview when URL changes
@@ -642,6 +618,150 @@
                 } else {
                     element.textContent = '?';
                 }
+            }
+            
+            // Crop modal functionality
+            let cropperInstance = null;
+            let currentCropFile = null;
+            let currentUploadBtn = null;
+            let currentUploadProgress = null;
+            let currentPhotoUrlInput = null;
+            let currentForm = null;
+            
+            function openCropModal(file, uploadBtn, uploadProgress, photoUrlInput, form) {
+                const cropModal = document.getElementById('crop-modal');
+                const cropImage = document.getElementById('crop-image');
+                const cancelCropBtn = document.getElementById('cancel-crop-btn');
+                const applyCropBtn = document.getElementById('apply-crop-btn');
+                
+                // Store references
+                currentCropFile = file;
+                currentUploadBtn = uploadBtn;
+                currentUploadProgress = uploadProgress;
+                currentPhotoUrlInput = photoUrlInput;
+                currentForm = form;
+                
+                // Load image
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    cropImage.src = e.target.result;
+                    cropModal.classList.remove('hidden');
+                    
+                    // Initialize cropper
+                    if (cropperInstance) {
+                        cropperInstance.destroy();
+                    }
+                    
+                    cropperInstance = new Cropper(cropImage, {
+                        aspectRatio: 1, // Square crop
+                        viewMode: 2, // Restrict crop box to canvas
+                        dragMode: 'move',
+                        autoCropArea: 0.8,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: true,
+                        cropBoxResizable: true,
+                        toggleDragModeOnDblclick: false,
+                        responsive: true,
+                        background: false,
+                        modal: true,
+                        minCropBoxWidth: 100,
+                        minCropBoxHeight: 100
+                    });
+                };
+                reader.readAsDataURL(file);
+                
+                // Cancel button
+                cancelCropBtn.onclick = () => {
+                    closeCropModal();
+                    // Reset file input
+                    document.getElementById('avatar-file').value = '';
+                };
+                
+                // Apply crop button
+                applyCropBtn.onclick = async () => {
+                    if (!cropperInstance) return;
+                    
+                    // Get cropped canvas
+                    const canvas = cropperInstance.getCroppedCanvas({
+                        width: 1024,
+                        height: 1024,
+                        imageSmoothingEnabled: true,
+                        imageSmoothingQuality: 'high'
+                    });
+                    
+                    // Convert to blob
+                    canvas.toBlob(async (blob) => {
+                        closeCropModal();
+                        await uploadCroppedImage(blob);
+                    }, currentCropFile.type, 0.95);
+                };
+            }
+            
+            function closeCropModal() {
+                const cropModal = document.getElementById('crop-modal');
+                cropModal.classList.add('hidden');
+                
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                    cropperInstance = null;
+                }
+            }
+            
+            async function uploadCroppedImage(blob) {
+                // Show progress
+                currentUploadBtn.classList.add('hidden');
+                currentUploadProgress.classList.remove('hidden');
+                
+                try {
+                    // Create form data
+                    const formData = new FormData();
+                    formData.append('avatar', blob, currentCropFile.name);
+                    
+                    const response = await fetch('api/upload_avatar.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Upload failed');
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.success && result.photoUrl) {
+                        // Update photoUrl field
+                        currentPhotoUrlInput.value = result.photoUrl;
+                        
+                        // Update preview
+                        updateAvatarPreview(currentForm);
+                        
+                        // Show success feedback
+                        currentUploadProgress.innerHTML = '<i class="fas fa-check mr-1"></i>Uploaded!';
+                        currentUploadProgress.classList.remove('text-gray-600', 'dark:text-gray-400');
+                        currentUploadProgress.classList.add('text-green-600', 'dark:text-green-400');
+                        
+                        setTimeout(() => {
+                            currentUploadProgress.classList.add('hidden');
+                            currentUploadProgress.classList.remove('text-green-600', 'dark:text-green-400');
+                            currentUploadProgress.classList.add('text-gray-600', 'dark:text-gray-400');
+                            currentUploadProgress.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Uploading...';
+                            currentUploadBtn.classList.remove('hidden');
+                        }, 2000);
+                    } else {
+                        throw new Error(result.error || 'Upload failed');
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                    alert('Failed to upload photo: ' + error.message);
+                    currentUploadProgress.classList.add('hidden');
+                    currentUploadBtn.classList.remove('hidden');
+                }
+                
+                // Reset file input
+                document.getElementById('avatar-file').value = '';
             }
             
             function createFormFieldsHTML() {
