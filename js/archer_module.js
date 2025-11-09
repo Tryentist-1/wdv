@@ -543,52 +543,38 @@ const ArcherModule = {
     }
   },
 
-  // Load master list from MySQL database
+  // Load master list from MySQL database (PUBLIC - no auth required)
   async loadFromMySQL() {
     if (!window.LiveUpdates || !window.LiveUpdates.request) {
       throw new Error('Live Updates API is not available');
     }
     
-    let lastError = null;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const result = await window.LiveUpdates.request('/archers', 'GET');
-        console.log('API Response:', result); // Debug logging
-        
-        if (!result) {
-          throw new Error('API returned null/undefined response');
-        }
-        
-        if (!result.archers) {
-          console.error('Unexpected API response format:', result);
-          throw new Error('API response missing "archers" property');
-        }
-
-        const apiArchers = Array.isArray(result.archers) ? result.archers : [];
-        const convertedList = apiArchers.map(apiArcher => this._fromApiArcher(apiArcher));
-        this.saveList(convertedList, { lastFetchedAt: Date.now() });
-        this._setLastFetched();
-        return convertedList;
-      } catch (error) {
-        const err = (error instanceof Error) ? error : new Error(String(error));
-        lastError = err;
-        console.error('Load from MySQL failed:', err);
-        const message = (err.message || '').toLowerCase();
-        const unauthorized = message.includes('unauthorized') || message.includes('http 401');
-        if (unauthorized && attempt === 0) {
-          const granted = this._ensureArcherApiAccess({ forcePrompt: true });
-          if (granted) {
-            continue; // retry with new credentials
-          }
-          const authError = new Error('Access denied: add your coach API key or enter the event code in Coach Console, then try again.');
-          authError.cause = err;
-          throw authError;
-        }
-        throw err;
+    try {
+      const result = await window.LiveUpdates.request('/archers', 'GET');
+      console.log('API Response:', result); // Debug logging
+      
+      if (!result) {
+        throw new Error('API returned null/undefined response');
       }
-    }
+      
+      if (!result.archers) {
+        console.error('Unexpected API response format:', result);
+        throw new Error('API response missing "archers" property');
+      }
 
-    throw lastError || new Error('Failed to load from MySQL');
+      const apiArchers = Array.isArray(result.archers) ? result.archers : [];
+      const convertedList = apiArchers.map(apiArcher => this._fromApiArcher(apiArcher));
+      this.saveList(convertedList, { lastFetchedAt: Date.now() });
+      this._setLastFetched();
+      return convertedList;
+    } catch (error) {
+      const err = (error instanceof Error) ? error : new Error(String(error));
+      console.error('Load from MySQL failed:', err);
+      
+      // Reading the master list is public - no authentication prompt
+      // If there's an error, just throw it without prompting for credentials
+      throw err;
+    }
   },
 
   _fromApiArcher(apiArcher = {}) {
