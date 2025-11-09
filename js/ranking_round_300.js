@@ -180,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
             id: fallbackId,
             archerId: databaseUuid || fallbackId,  // Store both for compatibility with Live Updates
+            roundArcherId: rosterArcher.roundArcherId || overrides.roundArcherId,  // FIX: Preserve round_archer_id for sync
             extId,
             firstName,
             lastName,
@@ -2952,57 +2953,66 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function resetState() {
-        // Clear scorecard state but preserve event connection and archer list
-        // This allows starting a new scorecard for a different bale/division
+        // NEW EVENT: Clear everything for a fresh scorecard with new event
+        // This is like picking up a blank scorecard to start a new event
         
         // Clear scorecard data
         state.archers = [];
         state.currentEnd = 1;
         state.currentView = 'setup';
         state.syncStatus = {};
-        
-        // Reset bale to 1 (user can select different bale)
         state.baleNumber = 1;
         
-        // Clear division/round context (allows switching divisions)
+        // Clear division/round context
         state.divisionCode = null;
         state.divisionRoundId = null;
         state.divisionName = '';
         
-        // Keep event connection if in pre-assigned mode
-        // This preserves the bale list and event context
-        // Only clear if in manual mode
-        if (state.assignmentMode === 'manual' && !state.activeEventId) {
-            // Already in manual mode with no event - nothing to clear
-        } else if (state.assignmentMode === 'pre-assigned') {
-            // Keep event connection for pre-assigned mode
-            // User can still select different bale/division
-        }
+        // Clear event connection - user will select new event
+        state.activeEventId = null;
+        state.selectedEventId = null;
+        state.eventName = '';
+        state.assignmentMode = 'manual';
+        state.setupMode = 'manual';
         
-        // Clear Live Updates round context (but keep event if connected)
+        // Clear Live Updates completely
         if (window.LiveUpdates && LiveUpdates._state) {
             LiveUpdates._state.roundId = null;
             LiveUpdates._state.archerIds = {};
-            // Keep eventId if we're staying connected to the event
+            LiveUpdates._state.eventId = null;
         }
         
-        // Clear session storage for this scorecard
+        // Clear event-related localStorage (but keep archer identity!)
         try {
+            const today = new Date().toISOString().split('T')[0];
+            localStorage.removeItem(`rankingRound300_${today}`);
             localStorage.removeItem('current_bale_session');
-            console.log('[resetState] Cleared bale session');
+            localStorage.removeItem('event_entry_code');
+            
+            // Clear live updates sessions
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('live_updates_session:')) {
+                    localStorage.removeItem(key);
+                }
+            });
+            
+            console.log('[resetState] Cleared scorecard and event data for new event');
         } catch (e) {
             console.warn('Error clearing session:', e);
         }
         
-        // NOTE: We do NOT clear:
-        // - activeEventId/selectedEventId (preserves event connection and bale list)
-        // - event_entry_code (allows continued access to event)
+        // NOTE: We PRESERVE:
+        // - oas_archer_id cookie (archer's personal identity)
+        // - archerSelfExtId (their self-identification)
         // - Archer master list (preserved in ArcherModule)
         
         renderView();
         saveData();
         updateLiveStatusDisplay();
         updateEventHeader();
+        
+        // Show event selection modal so user can pick new event
+        showEventModal();
     }
     
     function showScoringView() {
@@ -3640,7 +3650,21 @@ async function ensureLiveRoundReady(options = {}) {
                 division = state.divisionCode;
             }
             
-            // Still need to ensure archers are registered
+            // FIX: Pre-populate archerIds mapping with known roundArcherId values
+            // This prevents creating duplicate round_archer entries when archers were added via coach.html
+            if (!LiveUpdates._state.archerIds) {
+                LiveUpdates._state.archerIds = {};
+            }
+            if (state.archers && state.archers.length) {
+                state.archers.forEach(archer => {
+                    if (archer.roundArcherId && !LiveUpdates._state.archerIds[archer.id]) {
+                        console.log(`✅ Pre-mapping archer ${archer.id} to existing roundArcherId: ${archer.roundArcherId}`);
+                        LiveUpdates._state.archerIds[archer.id] = archer.roundArcherId;
+                    }
+                });
+            }
+            
+            // Still need to ensure archers are registered (will skip if already mapped)
             if (state.archers && state.archers.length) {
                 await Promise.all(
                     state.archers.map(archer => LiveUpdates.ensureArcher(archer.id, archer))
@@ -3694,11 +3718,25 @@ async function ensureLiveRoundReady(options = {}) {
             throw new Error('roundId missing after ensureRound');
         }
 
+        // FIX: Pre-populate archerIds mapping with known roundArcherId values
+        // This prevents creating duplicate round_archer entries when archers were added via coach.html
+        if (!LiveUpdates._state.archerIds) {
+            LiveUpdates._state.archerIds = {};
+        }
         if (state.archers && state.archers.length) {
-            console.log('[ensureLiveRoundReady] Ensuring archers:', state.archers.map(a => ({ id: a.id, archerId: a.archerId, name: `${a.firstName} ${a.lastName}` })));
+            state.archers.forEach(archer => {
+                if (archer.roundArcherId && !LiveUpdates._state.archerIds[archer.id]) {
+                    console.log(`✅ Pre-mapping archer ${archer.id} to existing roundArcherId: ${archer.roundArcherId}`);
+                    LiveUpdates._state.archerIds[archer.id] = archer.roundArcherId;
+                }
+            });
+        }
+
+        if (state.archers && state.archers.length) {
+            console.log('[ensureLiveRoundReady] Ensuring archers:', state.archers.map(a => ({ id: a.id, archerId: a.archerId, roundArcherId: a.roundArcherId, name: `${a.firstName} ${a.lastName}` })));
             await Promise.all(
                 state.archers.map(archer => {
-                    console.log(`[ensureLiveRoundReady] Calling ensureArcher with id="${archer.id}", archerId="${archer.archerId}"`);
+                    console.log(`[ensureLiveRoundReady] Calling ensureArcher with id="${archer.id}", archerId="${archer.archerId}", roundArcherId="${archer.roundArcherId}"`);
                     return LiveUpdates.ensureArcher(archer.id, archer);
                 })
             );
@@ -4213,6 +4251,13 @@ function updateManualLiveControls(summaryOverride) {
         const localProgress = hasInProgressScorecard();
         if (localProgress) {
             console.log('Found in-progress scorecard - resuming scoring');
+            
+            // FIX: Initialize LiveUpdates and pre-map archer IDs when resuming from localStorage
+            if (getLiveEnabled()) {
+                console.log('[RESUME] Initializing Live Updates for resumed session (localStorage)...');
+                await ensureLiveRoundReady({ promptForCode: false });
+            }
+            
             state.currentView = 'scoring';
             renderView();
             return; // Resume scoring, skip further setup
@@ -4223,6 +4268,13 @@ function updateManualLiveControls(summaryOverride) {
             const serverProgress = await hasServerSyncedEnds();
             if (serverProgress) {
                 console.log('Found server-synced progress - resuming scoring');
+                
+                // FIX: Initialize LiveUpdates and pre-map archer IDs when resuming
+                if (getLiveEnabled()) {
+                    console.log('[RESUME] Initializing Live Updates for resumed session...');
+                    await ensureLiveRoundReady({ promptForCode: false });
+                }
+                
                 state.currentView = 'scoring';
                 renderView();
                 return; // Resume scoring, skip further setup
@@ -4299,7 +4351,12 @@ function updateManualLiveControls(summaryOverride) {
                     alert('Please select at least one archer to start scoring.');
                     return;
                 }
+                
+                // Store original button text and show loading state
+                const originalText = manualSetupControls.startScoringBtn.textContent;
+                manualSetupControls.startScoringBtn.textContent = 'Loading...';
                 manualSetupControls.startScoringBtn.disabled = true;
+                
                 try {
                     console.log('[START SCORING] Loading existing scores...');
                     // Load existing scores BEFORE initializing Live sync
@@ -4308,11 +4365,13 @@ function updateManualLiveControls(summaryOverride) {
                     
                     console.log('[START SCORING] Checking Live Updates enabled:', getLiveEnabled());
                     if (getLiveEnabled()) {
+                        manualSetupControls.startScoringBtn.textContent = 'Syncing...';
                         console.log('[START SCORING] Ensuring Live Round ready...');
                         const success = await ensureLiveRoundReady({ promptForCode: true });
                         console.log('[START SCORING] Live Round ready:', success);
                         if (!success) {
-                            alert('Live Sync could not be initialized. Scores will sync when connectivity returns.');
+                            console.warn('[START SCORING] Live sync failed, continuing offline');
+                            // Don't alert - just continue, scores will sync when connectivity returns
                         }
                     }
 
@@ -4320,12 +4379,18 @@ function updateManualLiveControls(summaryOverride) {
                     // PHASE 0: Save session for recovery on page reload
                     saveCurrentBaleSession();
 
-                    console.log('[START SCORING] Showing scoring view...');
+                    console.log('[START SCORING] Transitioning to scoring view...');
+                    manualSetupControls.startScoringBtn.textContent = 'Starting...';
+                    
+                    // Small delay to ensure UI updates
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
                     showScoringView();
+                    console.log('[START SCORING] ✅ Successfully transitioned to scoring view');
                 } catch (err) {
                     console.error('[START SCORING] Error:', err);
                     alert(`Error starting scoring: ${err.message}`);
-                } finally {
+                    manualSetupControls.startScoringBtn.textContent = originalText;
                     manualSetupControls.startScoringBtn.disabled = false;
                 }
             };

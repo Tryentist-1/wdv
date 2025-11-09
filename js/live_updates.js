@@ -284,16 +284,19 @@
 
     function ensureArcher(localId, archer) {
         if (!state.config.enabled) return Promise.resolve(null);
-        if (state.archerIds[localId]) {
-            console.log(`✅ Archer ${localId} already ensured: ${state.archerIds[localId]}`);
-            return Promise.resolve(state.archerIds[localId]);
+        
+        const alreadyMapped = !!state.archerIds[localId];
+        if (alreadyMapped) {
+            console.log(`🔄 Archer ${localId} already mapped to ${state.archerIds[localId]}, updating bale/target if needed`);
+        } else {
+            console.log(`🔄 Ensuring archer ${localId}:`, { 
+                firstName: archer.firstName, 
+                lastName: archer.lastName, 
+                baleNumber: archer.baleNumber,
+                targetAssignment: archer.targetAssignment 
+            });
         }
-        console.log(`🔄 Ensuring archer ${localId}:`, { 
-            firstName: archer.firstName, 
-            lastName: archer.lastName, 
-            baleNumber: archer.baleNumber,
-            targetAssignment: archer.targetAssignment 
-        });
+        
         return request(`/rounds/${state.roundId}/archers`, 'POST', {
             extId: localId,  // Send local ID for master archer lookup/creation
             firstName: archer.firstName || '',
@@ -311,7 +314,8 @@
             persistState();  // Save archer mapping for recovery
             // Store the master archer ID for future reference
             if (json.archerId) {
-                console.log(`✅ Archer ${localId} ${json.updated ? 'updated' : 'created'}: roundArcherId=${json.roundArcherId}, masterId=${json.archerId}`);
+                const action = alreadyMapped ? 'updated' : (json.updated ? 'updated' : 'created');
+                console.log(`✅ Archer ${localId} ${action}: roundArcherId=${json.roundArcherId}, masterId=${json.archerId}, bale=${archer.baleNumber}, target=${archer.targetAssignment}`);
             }
             return json.roundArcherId;
         });
