@@ -1149,12 +1149,13 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/scores$#i', $route, $m) && $met
         $deleteStmt = $pdo->prepare('DELETE FROM end_events WHERE round_archer_id = ?');
         $deleteStmt->execute([$roundArcherId]);
         
-        // Insert new scores
+        // Insert new scores with calculated totals
         $insertStmt = $pdo->prepare('
-            INSERT INTO end_events (round_archer_id, end_number, arrow1, arrow2, arrow3)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO end_events (round_archer_id, end_number, a1, a2, a3, end_total, running_total, tens, xs)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         
+        $runningTotal = 0;
         foreach ($scores as $endIndex => $end) {
             if (!isset($end['arrows']) || !is_array($end['arrows'])) continue;
             
@@ -1165,12 +1166,40 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/scores$#i', $route, $m) && $met
             
             // Only insert if at least one arrow has a value
             if ($a1 !== null || $a2 !== null || $a3 !== null) {
+                // Calculate end total, tens, and xs
+                $endTotal = 0;
+                $tens = 0;
+                $xs = 0;
+                
+                foreach ([$a1, $a2, $a3] as $arrow) {
+                    if ($arrow === null || $arrow === '') continue;
+                    $upper = strtoupper($arrow);
+                    if ($upper === 'X') {
+                        $endTotal += 10;
+                        $xs++;
+                    } elseif ($upper === '10') {
+                        $endTotal += 10;
+                        $tens++;
+                    } elseif ($upper === 'M') {
+                        $endTotal += 0;
+                    } else {
+                        $val = intval($arrow);
+                        $endTotal += max(0, min(10, $val));
+                    }
+                }
+                
+                $runningTotal += $endTotal;
+                
                 $insertStmt->execute([
                     $roundArcherId,
                     $endIndex + 1,
                     $a1,
                     $a2,
-                    $a3
+                    $a3,
+                    $endTotal,
+                    $runningTotal,
+                    $tens,
+                    $xs
                 ]);
             }
         }
