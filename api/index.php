@@ -1130,8 +1130,8 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/scores$#i', $route, $m) && $met
     try {
         $pdo = db();
         
-        // Check if card is locked
-        $checkStmt = $pdo->prepare('SELECT locked, card_status FROM round_archers WHERE id = ? LIMIT 1');
+        // Check if card is locked and get round_id
+        $checkStmt = $pdo->prepare('SELECT locked, card_status, round_id FROM round_archers WHERE id = ? LIMIT 1');
         $checkStmt->execute([$roundArcherId]);
         $card = $checkStmt->fetch(PDO::FETCH_ASSOC);
         
@@ -1217,12 +1217,13 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/scores$#i', $route, $m) && $met
             
             // Insert new scores with calculated totals
             $insertStmt = $pdo->prepare('
-                INSERT INTO end_events (round_archer_id, end_number, a1, a2, a3, end_total, running_total, tens, xs)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO end_events (round_id, round_archer_id, end_number, a1, a2, a3, end_total, running_total, tens, xs)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ');
             
             foreach ($validatedEnds as $end) {
                 $insertStmt->execute([
+                    $card['round_id'],
                     $roundArcherId,
                     $end['end_number'],
                     $end['a1'],

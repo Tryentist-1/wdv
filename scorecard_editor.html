@@ -764,6 +764,8 @@
             
             try {
                 // First, save the scores
+                console.log('[lock-btn] Saving scores:', currentScorecard.scores);
+                
                 const saveRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/scores`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -772,7 +774,11 @@
                     })
                 });
                 
-                if (!saveRes.ok) throw new Error('Failed to save scores');
+                if (!saveRes.ok) {
+                    const errorData = await saveRes.json().catch(() => ({ error: 'Unknown error' }));
+                    console.error('[lock-btn] Save failed:', errorData);
+                    throw new Error(errorData.error || `Failed to save scores: ${saveRes.status}`);
+                }
                 
                 // Then lock it
                 const lockRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
