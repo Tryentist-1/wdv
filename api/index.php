@@ -1145,17 +1145,16 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/scores$#i', $route, $m) && $met
             exit;
         }
         
-        // Delete existing scores
-        $deleteStmt = $pdo->prepare('DELETE FROM end_events WHERE round_archer_id = ?');
-        $deleteStmt->execute([$roundArcherId]);
+        // Validate scores data before making any changes
+        if (!is_array($scores) || empty($scores)) {
+            json_response(['error' => 'Invalid scores data: scores must be a non-empty array'], 400);
+            exit;
+        }
         
-        // Insert new scores with calculated totals
-        $insertStmt = $pdo->prepare('
-            INSERT INTO end_events (round_archer_id, end_number, a1, a2, a3, end_total, running_total, tens, xs)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ');
-        
+        // Pre-validate all score data
+        $validatedEnds = [];
         $runningTotal = 0;
+        
         foreach ($scores as $endIndex => $end) {
             if (!isset($end['arrows']) || !is_array($end['arrows'])) continue;
             
@@ -1164,7 +1163,7 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/scores$#i', $route, $m) && $met
             $a2 = $arrows[1] ?? null;
             $a3 = $arrows[2] ?? null;
             
-            // Only insert if at least one arrow has a value
+            // Only process if at least one arrow has a value
             if ($a1 !== null || $a2 !== null || $a3 !== null) {
                 // Calculate end total, tens, and xs
                 $endTotal = 0;
@@ -1190,22 +1189,64 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/scores$#i', $route, $m) && $met
                 
                 $runningTotal += $endTotal;
                 
-                $insertStmt->execute([
-                    $roundArcherId,
-                    $endIndex + 1,
-                    $a1,
-                    $a2,
-                    $a3,
-                    $endTotal,
-                    $runningTotal,
-                    $tens,
-                    $xs
-                ]);
+                $validatedEnds[] = [
+                    'end_number' => $endIndex + 1,
+                    'a1' => $a1,
+                    'a2' => $a2,
+                    'a3' => $a3,
+                    'end_total' => $endTotal,
+                    'running_total' => $runningTotal,
+                    'tens' => $tens,
+                    'xs' => $xs
+                ];
             }
         }
         
-        json_response(['success' => true, 'message' => 'Scores updated']);
+        if (empty($validatedEnds)) {
+            json_response(['error' => 'No valid score data to save'], 400);
+            exit;
+        }
+        
+        // Start transaction - all or nothing
+        $pdo->beginTransaction();
+        
+        try {
+            // Delete existing scores
+            $deleteStmt = $pdo->prepare('DELETE FROM end_events WHERE round_archer_id = ?');
+            $deleteStmt->execute([$roundArcherId]);
+            
+            // Insert new scores with calculated totals
+            $insertStmt = $pdo->prepare('
+                INSERT INTO end_events (round_archer_id, end_number, a1, a2, a3, end_total, running_total, tens, xs)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ');
+            
+            foreach ($validatedEnds as $end) {
+                $insertStmt->execute([
+                    $roundArcherId,
+                    $end['end_number'],
+                    $end['a1'],
+                    $end['a2'],
+                    $end['a3'],
+                    $end['end_total'],
+                    $end['running_total'],
+                    $end['tens'],
+                    $end['xs']
+                ]);
+            }
+            
+            // Commit transaction
+            $pdo->commit();
+            
+            json_response(['success' => true, 'message' => 'Scores updated', 'ends_saved' => count($validatedEnds)]);
+        } catch (Exception $e) {
+            // Rollback on any error - restores original scores
+            $pdo->rollBack();
+            error_log("Score update transaction failed: " . $e->getMessage());
+            throw new Exception('Failed to save scores: ' . $e->getMessage());
+        }
     } catch (Exception $e) {
+        error_log("PUT /v1/round_archers/{id}/scores error: " . $e->getMessage());
         json_response(['error' => $e->getMessage()], 500);
     }
     exit;
