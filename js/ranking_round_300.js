@@ -4061,9 +4061,11 @@ function updateManualLiveControls(summaryOverride) {
                     <div class="text-sm text-gray-600 dark:text-gray-400">${ev.date}</div>
                 `;
                 eventBtn.onclick = async () => {
-                    console.log('Event selected from list:', ev.id, ev.name, 'entryCode:', ev.entryCode);
+                    // API may return entry_code (underscore) or entryCode (camelCase)
+                    const entryCode = ev.entryCode || ev.entry_code;
+                    console.log('Event selected from list:', ev.id, ev.name, 'entryCode:', entryCode);
                     // Pass the entry code from the event list to avoid prompting again
-                    const success = await loadEventById(ev.id, ev.name, ev.entryCode);
+                    const success = await loadEventById(ev.id, ev.name, entryCode);
                     if (success) {
                         hideEventModal();
                         // Refresh UI to show loaded event
@@ -4269,6 +4271,11 @@ function updateManualLiveControls(summaryOverride) {
             const serverProgress = await hasServerSyncedEnds();
             if (serverProgress) {
                 console.log('Found server-synced progress - resuming scoring');
+                
+                // CRITICAL: Load archer data BEFORE initializing LiveUpdates
+                // This populates state.archers with division info needed for ensureLiveRoundReady
+                console.log('[RESUME] Loading existing scores to populate archer data...');
+                await loadExistingScoresForArchers();
                 
                 // FIX: Initialize LiveUpdates and pre-map archer IDs when resuming
                 if (getLiveEnabled()) {
