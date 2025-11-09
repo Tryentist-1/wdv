@@ -4061,8 +4061,9 @@ function updateManualLiveControls(summaryOverride) {
                     <div class="text-sm text-gray-600 dark:text-gray-400">${ev.date}</div>
                 `;
                 eventBtn.onclick = async () => {
-                    console.log('Event selected from list:', ev.id, ev.name);
-                    const success = await loadEventById(ev.id, ev.name);
+                    console.log('Event selected from list:', ev.id, ev.name, 'entryCode:', ev.entryCode);
+                    // Pass the entry code from the event list to avoid prompting again
+                    const success = await loadEventById(ev.id, ev.name, ev.entryCode);
                     if (success) {
                         hideEventModal();
                         // Refresh UI to show loaded event
