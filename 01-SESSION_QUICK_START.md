@@ -57,8 +57,9 @@
 - **Verification & Locking** - Complete workflow implemented
 - **Solo Olympic Matches** - ✅ Full database integration with match code authentication (Nov 2025)
 
-### ⚠️ What Needs Work (Phase 2)
-- **Team Olympic Matches** - Backend ready (database + API), frontend integration pending
+### ✅ What's Recently Completed (Phase 2)
+- **Team Olympic Matches** - ✅ Full database integration with match code authentication (Nov 2025)
+- **UX Enhancements** - ✅ Sorted archer lists, sync status indicators, match restoration
 
 ### 📅 What's Planned (Phase 3-6)
 See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
@@ -316,18 +317,30 @@ mysql -h tryentist.com -u USERNAME -p wdv_production
 **Documentation:**
 - [PHASE2_AUTH_IMPLEMENTATION.md](docs/PHASE2_AUTH_IMPLEMENTATION.md)
 
-### 🚧 Sprint 4: Team Match Frontend Integration (NEXT)
-**Goal:** Integrate Team matches with database (backend ready)
+### ✅ Sprint 4: Team Match Frontend Integration (COMPLETE)
+**Goal:** Integrate Team matches with database
 
-**Tasks:**
-1. [ ] Add team match methods to `live_updates.js`
-2. [ ] Update `team_card.js` to use database API
-3. [ ] Implement match code generation (when 6th archer added)
-4. [ ] Add offline queue support
-5. [ ] Test and deploy
+**Completed:**
+1. ✅ Added team match methods to `live_updates.js`
+2. ✅ Updated `team_card.js` to use database API
+3. ✅ Implemented match code generation (when 6th archer added)
+4. ✅ Added offline queue support
+5. ✅ Implemented restoreTeamMatch function
+6. ✅ Added sync status UI indicators
+7. ✅ Deployed to production (Nov 2025)
 
-**Estimated:** 6-8 hours  
 **Documentation:** [PHASE2_TEAM_MIGRATION_PLAN.md](docs/PHASE2_TEAM_MIGRATION_PLAN.md)
+
+### ✅ Recent Enhancements (Feature Branch)
+**Goal:** UX improvements and bug fixes
+
+**Completed:**
+1. ✅ Sort archer selection lists (selected first, then alphabetical)
+2. ✅ Sync status UI indicators (✓ synced, ⟳ pending, ✗ failed)
+3. ✅ Fixed verification field in scorecard API endpoint
+4. ✅ Team match restoration from database
+
+**Status:** Ready for testing and merge
 
 ---
 
