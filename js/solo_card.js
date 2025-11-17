@@ -180,7 +180,24 @@ document.addEventListener('DOMContentLoaded', () => {
             return name.includes(filter.toLowerCase());
         });
 
-        masterList.forEach(archer => {
+        // Sort: Selected archers first, then alphabetical by first name
+        const sortedList = masterList.sort((a, b) => {
+            const archerIdA = `${(a.first || '').trim()}-${(a.last || '').trim()}`;
+            const archerIdB = `${(b.first || '').trim()}-${(b.last || '').trim()}`;
+            const isSelectedA = (state.archer1 && state.archer1.id === archerIdA) || (state.archer2 && state.archer2.id === archerIdA);
+            const isSelectedB = (state.archer1 && state.archer1.id === archerIdB) || (state.archer2 && state.archer2.id === archerIdB);
+            
+            // Selected archers come first
+            if (isSelectedA && !isSelectedB) return -1;
+            if (!isSelectedA && isSelectedB) return 1;
+            
+            // Then sort alphabetically by first name
+            const firstNameA = (a.first || '').trim().toLowerCase();
+            const firstNameB = (b.first || '').trim().toLowerCase();
+            return firstNameA.localeCompare(firstNameB);
+        });
+
+        sortedList.forEach(archer => {
             const archerId = `${(archer.first || '').trim()}-${(archer.last || '').trim()}`;
             const isSelectedA1 = state.archer1 && state.archer1.id === archerId;
             const isSelectedA2 = state.archer2 && state.archer2.id === archerId;

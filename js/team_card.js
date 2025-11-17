@@ -106,7 +106,24 @@ document.addEventListener('DOMContentLoaded', () => {
             `${a.first} ${a.last}`.toLowerCase().includes(filter.toLowerCase())
         );
 
-        masterList.forEach(archer => {
+        // Sort: Selected archers first, then alphabetical by first name
+        const sortedList = masterList.sort((a, b) => {
+            const archerIdA = `${(a.first || '').trim()}-${(a.last || '').trim()}`;
+            const archerIdB = `${(b.first || '').trim()}-${(b.last || '').trim()}`;
+            const isSelectedA = state.team1.some(t => t.id === archerIdA) || state.team2.some(t => t.id === archerIdA);
+            const isSelectedB = state.team1.some(t => t.id === archerIdB) || state.team2.some(t => t.id === archerIdB);
+            
+            // Selected archers come first
+            if (isSelectedA && !isSelectedB) return -1;
+            if (!isSelectedA && isSelectedB) return 1;
+            
+            // Then sort alphabetically by first name
+            const firstNameA = (a.first || '').trim().toLowerCase();
+            const firstNameB = (b.first || '').trim().toLowerCase();
+            return firstNameA.localeCompare(firstNameB);
+        });
+
+        sortedList.forEach(archer => {
             const archerId = `${(archer.first || '').trim()}-${(archer.last || '').trim()}`;
             const isInTeam1 = state.team1.some(a => a.id === archerId);
             const isInTeam2 = state.team2.some(a => a.id === archerId);
