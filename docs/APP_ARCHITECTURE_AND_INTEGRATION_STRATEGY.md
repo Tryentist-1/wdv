@@ -11,6 +11,9 @@
 
 The WDV Archery Suite consists of **5 scoring modules** in various states of integration. This document provides a unified view of the architecture, identifies inconsistencies, and outlines the integration strategy for remaining modules.
 
+> **🎯 CRITICAL:** Before reading this document, understand the complete scoring workflow:  
+> See [BALE_GROUP_SCORING_WORKFLOW.md](BALE_GROUP_SCORING_WORKFLOW.md) for the end-to-end process from setup through verification and event closure. This workflow drives all architectural decisions.
+
 ### Current Integration Status
 
 | Module | Status | Storage | Auth | Database | Priority |
@@ -403,6 +406,10 @@ GET    /v1/solo-matches/:id           Get match details
 POST   /v1/solo-matches/:id/ends     Submit end scores
 PATCH  /v1/solo-matches/:id          Update match (complete, etc)
 GET    /v1/events/:id/solo-matches   List matches for event
+
+⚠️ CRITICAL - Verification Endpoints (MUST ADD):
+POST   /v1/solo-matches/:id/verify   Lock/unlock match
+POST   /v1/events/:id/solo-matches/verify-all  Verify all matches
 ```
 
 **Team Match Endpoints:**
@@ -412,12 +419,25 @@ GET    /v1/team-matches/:id          Get match details
 POST   /v1/team-matches/:id/ends     Submit end scores
 PATCH  /v1/team-matches/:id          Update match
 GET    /v1/events/:id/team-matches   List matches for event
+
+⚠️ CRITICAL - Verification Endpoints (MUST ADD):
+POST   /v1/team-matches/:id/verify   Lock/unlock match
+POST   /v1/events/:id/team-matches/verify-all  Verify all matches
 ```
 
 **Authentication:**
 - Event code required (same as ranking rounds)
 - Coach code for admin operations
 - Match ID + event code for score submission
+- **Coach code for verification/locking** (critical security)
+
+**⚠️ CRITICAL REQUIREMENT:**
+Solo/Team matches MUST implement the same verification workflow as ranking rounds:
+- Coach verification before finalization
+- Lock mechanism (locked = 1, card_status = 'VERIFIED')
+- Event closure makes matches permanent
+- Full audit trail (lock_history JSON)
+- See [BALE_GROUP_SCORING_WORKFLOW.md](BALE_GROUP_SCORING_WORKFLOW.md) for complete process
 
 ---
 
@@ -581,6 +601,13 @@ function checkForLegacyData() {
 - Coach console shows Solo/Team matches
 - Export functionality for results
 - Match history available
+
+✅ **Verification & Locking:** ⚠️ CRITICAL
+- **MUST implement same verification workflow as ranking rounds**
+- Coach verification required before finalization
+- Lock mechanism prevents tampering
+- Event closure makes scores permanent
+- See [BALE_GROUP_SCORING_WORKFLOW.md](BALE_GROUP_SCORING_WORKFLOW.md) for details
 
 ✅ **Backward Compatible:**
 - Existing ranking rounds work

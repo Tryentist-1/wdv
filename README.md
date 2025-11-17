@@ -34,6 +34,22 @@
 
 ---
 
+## 🎯 Critical: Understanding the Scoring Workflow
+
+> **Before diving into modules or architecture**, understand how scoring actually works:
+
+**📋 [BALE_GROUP_SCORING_WORKFLOW.md](docs/BALE_GROUP_SCORING_WORKFLOW.md)** ← **READ THIS FIRST**
+
+This document explains:
+- How bale groups work (4 archers, 1 digital scorer)
+- The complete workflow from setup through verification
+- Why verification and locking are critical
+- How coaches use results for decisions
+
+**All system design flows from this real-world process.**
+
+---
+
 ## 🏗️ Application Modules
 
 ### ✅ Production Ready
