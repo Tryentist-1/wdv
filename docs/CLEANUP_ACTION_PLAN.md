@@ -396,6 +396,7 @@ const payload = {
 
 ## 📚 Related Documentation
 
+- **🔑 Master Reference:** `docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md`
 - **Full Analysis:** `docs/AUTHENTICATION_ANALYSIS.md`
 - **Flow Diagrams:** `docs/AUTHENTICATION_FLOWS.md`
 - **Quick Reference:** `docs/AUTHENTICATION_QUICK_REFERENCE.md`
@@ -407,16 +408,20 @@ const payload = {
 ## ✅ Next Steps
 
 ### Immediate (This Week)
-- Review this action plan
-- Decide which issues to tackle first
-- Schedule sprint planning
+- ✅ Review this action plan
+- ✅ Create master architecture document
+- ✅ Create unified README
+- [ ] Decide which issues to tackle first
+- [ ] Schedule sprint planning
 
 ### Short Term (Next Sprint)
 - Address Issue #3 (documentation - easy win)
 - Consider Issue #2 (event code cleanup)
+- **NEW:** Begin Phase 2 - Solo/Team integration (see [Integration Plan](APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md))
 
 ### Long Term (Future)
 - Monitor for any ownership abuse (Issue #4)
+- Complete Solo/Team database integration
 - Revisit quarterly to see if priorities have changed
 
 ---
