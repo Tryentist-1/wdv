@@ -124,6 +124,39 @@ Verify event entry code.
 #### `GET /v1/events/recent`
 List recent events (entry codes hidden unless authenticated).
 
+#### `GET /v1/archers`
+Load full archer roster from master list.
+
+**Purpose:** Allows archers to view and select their profile on first app open (no authentication required).
+
+**Query Parameters:**
+- `division` (optional): Filter by division code (BVAR, BJV, GVAR, GJV)
+- `gender` (optional): Filter by gender (M, F)
+- `level` (optional): Filter by level (VAR, JV, BEG)
+
+**Response:**
+```json
+{
+  "archers": [
+    {
+      "id": "uuid",
+      "firstName": "John",
+      "lastName": "Smith",
+      "school": "WIS",
+      "level": "VAR",
+      "gender": "M",
+      "status": "active",
+      "...": "(all archer fields)"
+    }
+  ]
+}
+```
+
+**Notes:**
+- This endpoint is PUBLIC (no authentication required) as of November 2025
+- Archers need access to the roster to select their profile
+- Returns all fields; future enhancement may filter sensitive data for public access
+
 ### Authenticated Endpoints (Coach Key or Event Passcode)
 
 #### `POST /v1/rounds`

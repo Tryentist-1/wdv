@@ -34,15 +34,15 @@
   <script src="js/scorecard_view.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
-  <div class="max-w-full mx-auto px-4 py-6 pb-24">
+  <div class="max-w-full mx-auto px-2 sm:px-4 py-3 sm:py-4 pb-24">
     <!-- Header -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
-      <div class="flex justify-between items-start mb-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 mb-3 transition-colors duration-200">
+      <div class="flex justify-between items-start">
         <div>
-          <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Archer Results - Pivot View</h1>
-          <p class="text-gray-600 dark:text-gray-400 text-sm">View all archer scores across multiple rounds</p>
+          <h1 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-white mb-1">Archer Results - Pivot View</h1>
+          <p class="text-gray-600 dark:text-gray-400 text-xs sm:text-sm">View all archer scores across multiple rounds</p>
         </div>
-        <button id="dark-mode-toggle" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Toggle dark mode">
+        <button id="dark-mode-toggle" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]" title="Toggle dark mode">
           <span class="dark:hidden">🌙</span>
           <span class="hidden dark:inline">☀️</span>
         </button>
@@ -50,26 +50,35 @@
     </div>
 
     <!-- Round Selector -->
-    <div id="round-selector" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
-      <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">📅 Select Rounds to Include</h2>
-      <div id="round-checkboxes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-        <!-- Dynamic checkboxes will be inserted here -->
-      </div>
-      <div class="flex gap-2">
-        <button id="select-all-rounds-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Select All</button>
-        <button id="deselect-all-rounds-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Deselect All</button>
+    <div id="round-selector" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow-md mb-3 transition-colors duration-200">
+      <button id="toggle-round-selector" class="w-full flex justify-between items-center p-3 sm:p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">📅 Select Rounds to Include</h2>
+        <span id="round-selector-chevron" class="text-2xl transition-transform">▼</span>
+      </button>
+      <div id="round-selector-content" class="p-3 sm:p-4 pt-0">
+        <div id="round-checkboxes" class="grid grid-cols-1 gap-2 mb-3">
+          <!-- Dynamic checkboxes will be inserted here -->
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button id="select-all-rounds-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Select All</button>
+          <button id="deselect-all-rounds-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Deselect All</button>
+        </div>
       </div>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
-      <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Filters & Sort</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-3 transition-colors duration-200">
+      <button id="toggle-filters" class="w-full flex justify-between items-center p-3 sm:p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <h2 class="text-lg sm:text-xl font-bold text-gray-800 dark:text-white">Filters & Sort</h2>
+        <span id="filters-chevron" class="text-2xl transition-transform">▼</span>
+      </button>
+      <div id="filters-content" class="p-3 sm:p-4 pt-0">
       
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
         <!-- Division Filter -->
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Division</label>
-          <select id="filter-division" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors">
+          <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Division</label>
+          <select id="filter-division" class="w-full px-2 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors min-h-[44px]">
             <option value="">All Divisions</option>
             <option value="OPEN">Open</option>
             <option value="VAR">Varsity</option>
@@ -79,8 +88,8 @@
 
         <!-- Gender Filter -->
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Gender</label>
-          <select id="filter-gender" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors">
+          <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Gender</label>
+          <select id="filter-gender" class="w-full px-2 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors min-h-[44px]">
             <option value="">All Genders</option>
             <option value="M">Male</option>
             <option value="F">Female</option>
@@ -89,8 +98,8 @@
 
         <!-- Target Size Filter -->
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Target Size</label>
-          <select id="filter-target-size" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors">
+          <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Target Size</label>
+          <select id="filter-target-size" class="w-full px-2 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors min-h-[44px]">
             <option value="">All Sizes</option>
             <option value="80">80cm</option>
             <option value="122">122cm</option>
@@ -99,32 +108,34 @@
 
         <!-- Sort By -->
         <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Sort By</label>
-          <select id="sort-by" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors">
+          <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Sort By</label>
+          <select id="sort-by" class="w-full px-2 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors min-h-[44px]">
             <option value="name">Name (A-Z)</option>
             <option value="total-desc">Total Score (High to Low)</option>
             <option value="total-asc">Total Score (Low to High)</option>
+            <option value="max-desc">MAX Score (High to Low)</option>
+            <option value="max-asc">MAX Score (Low to High)</option>
             <option value="avg-desc">Average (High to Low)</option>
             <option value="avg-asc">Average (Low to High)</option>
           </select>
         </div>
 
         <!-- Search -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Search Name</label>
-          <input type="text" id="search-name" placeholder="Type to search..." class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors">
+        <div class="sm:col-span-2">
+          <label class="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Search Name</label>
+          <input type="text" id="search-name" placeholder="Type to search..." class="w-full px-2 py-2 text-sm border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:border-primary focus:outline-none transition-colors min-h-[44px]">
         </div>
       </div>
 
-      <div class="flex gap-2 flex-wrap">
-        <button id="apply-filters-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Apply Filters</button>
-        <button id="reset-filters-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Reset</button>
+      <div class="flex gap-2 flex-wrap mb-3">
+        <button id="reset-filters-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Reset</button>
         
         <!-- View Mode Toggle -->
         <div class="ml-auto flex gap-2">
-          <button id="simple-view-btn" class="px-4 py-2 bg-primary text-white rounded font-semibold transition-colors min-h-[44px]">Simple View</button>
-          <button id="advanced-view-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Advanced View</button>
+          <button id="simple-view-btn" class="px-3 py-2 bg-primary text-white rounded text-sm font-semibold transition-colors min-h-[44px]">Simple</button>
+          <button id="advanced-view-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Advanced</button>
         </div>
+      </div>
       </div>
     </div>
 
@@ -155,34 +166,34 @@
     </div>
 
     <!-- Stats Summary -->
-    <div id="stats-summary" class="hidden mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors duration-200">
-      <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">Summary Statistics</h3>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div id="stats-summary" class="hidden mt-3 bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 transition-colors duration-200">
+      <h3 class="text-sm sm:text-base font-bold text-gray-800 dark:text-white mb-2">Summary Statistics</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <div class="text-center">
-          <div class="text-3xl font-bold text-primary dark:text-blue-400" id="stat-total-archers">0</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400">Total Archers</div>
+          <div class="text-xl sm:text-2xl font-bold text-primary dark:text-blue-400" id="stat-total-archers">0</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Total Archers</div>
         </div>
         <div class="text-center">
-          <div class="text-3xl font-bold text-success dark:text-green-400" id="stat-total-rounds">0</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400">Total Rounds</div>
+          <div class="text-xl sm:text-2xl font-bold text-success dark:text-green-400" id="stat-total-rounds">0</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Total Rounds</div>
         </div>
         <div class="text-center">
-          <div class="text-3xl font-bold text-rank-gold" id="stat-highest-score">0</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400">Highest Score</div>
+          <div class="text-xl sm:text-2xl font-bold text-rank-gold" id="stat-highest-score">0</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Highest Score</div>
         </div>
         <div class="text-center">
-          <div class="text-3xl font-bold text-gray-700 dark:text-gray-300" id="stat-avg-score">0</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400">Average Score</div>
+          <div class="text-xl sm:text-2xl font-bold text-gray-700 dark:text-gray-300" id="stat-avg-score">0</div>
+          <div class="text-xs text-gray-600 dark:text-gray-400">Average Score</div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Footer -->
-  <footer class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 flex gap-2 justify-center">
-    <a href="coach.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center">← Coach</a>
-    <button id="refresh-btn" class="px-4 py-2 bg-primary text-white rounded font-semibold hover:bg-primary-dark transition-colors min-h-[44px]">🔄 Refresh</button>
-    <button id="export-csv-btn" class="px-4 py-2 bg-success text-white rounded font-semibold hover:bg-green-700 transition-colors min-h-[44px]">📊 Export CSV</button>
+  <footer class="fixed bottom-0 left-0 right-0 px-2 py-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 flex gap-1 sm:gap-2 justify-center">
+    <a href="coach.html" class="px-2 sm:px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center">← Coach</a>
+    <button id="refresh-btn" class="px-2 sm:px-3 py-2 bg-primary text-white rounded text-sm font-semibold hover:bg-primary-dark transition-colors min-h-[44px]">🔄 Refresh</button>
+    <button id="export-csv-btn" class="px-2 sm:px-3 py-2 bg-success text-white rounded text-sm font-semibold hover:bg-green-700 transition-colors min-h-[44px]">📊 Export</button>
   </footer>
 
   <script src="js/archer_module.js"></script>
@@ -326,11 +337,11 @@
       
       allRounds.forEach(round => {
         const checkbox = document.createElement('label');
-        checkbox.className = 'flex items-center gap-2 cursor-pointer p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors';
+        checkbox.className = 'flex items-center gap-2 cursor-pointer p-2 sm:p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors';
         checkbox.innerHTML = `
-          <input type="checkbox" value="${round.key}" ${selectedRounds.has(round.key) ? 'checked' : ''} class="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary">
-          <span class="text-gray-800 dark:text-white font-semibold">${round.name}</span>
-          <span class="text-sm text-gray-600 dark:text-gray-400">(${round.date})</span>
+          <input type="checkbox" value="${round.key}" ${selectedRounds.has(round.key) ? 'checked' : ''} class="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary min-h-[24px] min-w-[24px]">
+          <span class="text-sm sm:text-base text-gray-800 dark:text-white font-semibold">${round.name}</span>
+          <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-400">(${round.date})</span>
         `;
         
         checkbox.querySelector('input').addEventListener('change', function() {
@@ -424,6 +435,10 @@
             return b._totalScore - a._totalScore;
           case 'total-asc':
             return a._totalScore - b._totalScore;
+          case 'max-desc':
+            return b._maxScore - a._maxScore;
+          case 'max-asc':
+            return a._maxScore - b._maxScore;
           case 'avg-desc':
             return b._avgScore - a._avgScore;
           case 'avg-asc':
@@ -468,15 +483,15 @@
       const thead = document.getElementById('pivot-thead');
       thead.innerHTML = `
         <tr>
-          <th class="px-3 py-3 text-left font-semibold text-sm">Rank</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm">Archer</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm">Gender</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm">Face</th>
-          ${sortedRounds.map(round => `<th class="px-3 py-3 text-left font-semibold text-sm">${round.name}</th>`).join('')}
-          <th class="px-3 py-3 text-left font-semibold text-sm">MAX</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm">AVG</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm">Xs</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm">10s</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm">Rank</th>
+          <th class="px-2 py-2 text-left font-semibold text-xs sm:text-sm">Archer</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm">Gender</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm">Face</th>
+          ${sortedRounds.map(round => `<th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm">${round.name}</th>`).join('')}
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm">MAX</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm">AVG</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm">Xs</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm">10s</th>
         </tr>
       `;
       
@@ -501,28 +516,28 @@
         const fullName = `${archer.firstName} ${archer.lastName}`;
         
         let rowHTML = `
-          <td class="px-3 py-3 font-bold text-lg text-center w-12 ${rankColor}">${rank}</td>
-          <td class="px-3 py-3 font-semibold">${fullName}</td>
-          <td class="px-3 py-3">${genderText}</td>
-          <td class="px-3 py-3">${faceSize}</td>
+          <td class="px-1 sm:px-2 py-2 font-bold text-base sm:text-lg text-center ${rankColor}">${rank}</td>
+          <td class="px-2 py-2 font-semibold text-xs sm:text-sm">${fullName}</td>
+          <td class="px-1 sm:px-2 py-2 text-xs sm:text-sm">${genderText}</td>
+          <td class="px-1 sm:px-2 py-2 text-xs sm:text-sm">${faceSize}</td>
         `;
         
         // Add score cells for each selected round
         sortedRounds.forEach(round => {
           const roundData = archer.rounds[round.key];
           if (roundData) {
-            rowHTML += `<td class="px-3 py-3 font-bold text-lg text-success cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900" data-archer-index="${index}" data-round="${round.key}">${roundData.total}</td>`;
+            rowHTML += `<td class="px-1 sm:px-2 py-2 font-bold text-sm sm:text-base text-success cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900" data-archer-index="${index}" data-round="${round.key}">${roundData.total}</td>`;
           } else {
-            rowHTML += `<td class="px-3 py-3 text-gray-400 dark:text-gray-600">-</td>`;
+            rowHTML += `<td class="px-1 sm:px-2 py-2 text-xs sm:text-sm text-gray-400 dark:text-gray-600">-</td>`;
           }
         });
         
         // Add max, average, X, and 10
         rowHTML += `
-          <td class="px-3 py-3 font-bold text-lg text-success">${archer._maxScore}</td>
-          <td class="px-3 py-3">${archer._avgScore.toFixed(1)}</td>
-          <td class="px-3 py-3">${archer._xTotal}</td>
-          <td class="px-3 py-3">${archer._tenTotal}</td>
+          <td class="px-1 sm:px-2 py-2 font-bold text-sm sm:text-base text-success">${archer._maxScore}</td>
+          <td class="px-1 sm:px-2 py-2 text-xs sm:text-sm">${archer._avgScore.toFixed(1)}</td>
+          <td class="px-1 sm:px-2 py-2 text-xs sm:text-sm">${archer._xTotal}</td>
+          <td class="px-1 sm:px-2 py-2 text-xs sm:text-sm">${archer._tenTotal}</td>
         `;
         
         row.innerHTML = rowHTML;
@@ -552,29 +567,29 @@
       const thead = document.getElementById('pivot-thead');
       let headerHTML = `
         <tr>
-          <th class="px-3 py-3 text-left font-semibold text-sm" rowspan="2">Rank</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm" rowspan="2">Archer</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm" rowspan="2">Gender</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm" rowspan="2">Face</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm" rowspan="2">Rank</th>
+          <th class="px-2 py-2 text-left font-semibold text-xs sm:text-sm" rowspan="2">Archer</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm" rowspan="2">Gender</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm" rowspan="2">Face</th>
       `;
       
       sortedRounds.forEach(round => {
-        headerHTML += `<th class="px-3 py-3 text-center font-semibold text-sm border-l-2 border-gray-300 dark:border-gray-600" colspan="2">${round.name}</th>`;
+        headerHTML += `<th class="px-1 sm:px-2 py-2 text-center font-semibold text-xs sm:text-sm border-l-2 border-gray-300 dark:border-gray-600" colspan="2">${round.name}</th>`;
       });
       
       headerHTML += `
-          <th class="px-3 py-3 text-left font-semibold text-sm border-l-2 border-gray-300 dark:border-gray-600" rowspan="2">MAX</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm" rowspan="2">AVG</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm" rowspan="2">Xs</th>
-          <th class="px-3 py-3 text-left font-semibold text-sm" rowspan="2">10s</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm border-l-2 border-gray-300 dark:border-gray-600" rowspan="2">MAX</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm" rowspan="2">AVG</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm" rowspan="2">Xs</th>
+          <th class="px-1 sm:px-2 py-2 text-left font-semibold text-xs sm:text-sm" rowspan="2">10s</th>
         </tr>
         <tr>
       `;
       
       sortedRounds.forEach(round => {
         headerHTML += `
-          <th class="px-2 py-2 text-center text-xs font-semibold border-l-2 border-gray-300 dark:border-gray-600">Score</th>
-          <th class="px-2 py-2 text-center text-xs font-semibold">Avg/Arrow</th>
+          <th class="px-1 py-2 text-center text-xs font-semibold border-l-2 border-gray-300 dark:border-gray-600">Score</th>
+          <th class="px-1 py-2 text-center text-xs font-semibold">Avg/Arrow</th>
         `;
       });
       
@@ -596,10 +611,10 @@
         const genderText = archer.gender === 'M' ? 'M' : archer.gender === 'F' ? 'F' : '-';
         
         let rowHTML = `
-          <td class="px-3 py-3 font-bold text-lg text-center w-12 ${rankColor}">${rank}</td>
-          <td class="px-3 py-3 font-semibold">${fullName}</td>
-          <td class="px-3 py-3">${genderText}</td>
-          <td class="px-3 py-3">${faceSize}</td>
+          <td class="px-1 sm:px-2 py-2 font-bold text-base sm:text-lg text-center ${rankColor}">${rank}</td>
+          <td class="px-2 py-2 font-semibold text-xs sm:text-sm">${fullName}</td>
+          <td class="px-1 sm:px-2 py-2 text-xs sm:text-sm">${genderText}</td>
+          <td class="px-1 sm:px-2 py-2 text-xs sm:text-sm">${faceSize}</td>
         `;
         
         // Add score and avg cells for each selected round
@@ -615,23 +630,23 @@
             else if (avgPerArrow >= 3.0) avgClass = 'text-gray-700 dark:text-gray-400'; // Black (4, 3)
             
             rowHTML += `
-              <td class="px-2 py-3 text-center font-bold text-lg text-success cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 border-l-2 border-gray-300 dark:border-gray-600" data-archer-index="${index}" data-round="${round.key}">${roundData.total}</td>
-              <td class="px-2 py-3 text-center text-sm ${avgClass}">${roundData.avgPerArrow.toFixed(2)}</td>
+              <td class="px-1 py-2 text-center font-bold text-sm sm:text-base text-success cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 border-l-2 border-gray-300 dark:border-gray-600" data-archer-index="${index}" data-round="${round.key}">${roundData.total}</td>
+              <td class="px-1 py-2 text-center text-xs ${avgClass}">${roundData.avgPerArrow.toFixed(2)}</td>
             `;
           } else {
             rowHTML += `
-              <td class="px-2 py-3 text-center text-gray-400 dark:text-gray-600 border-l-2 border-gray-300 dark:border-gray-600">-</td>
-              <td class="px-2 py-3 text-center text-gray-400 dark:text-gray-600">-</td>
+              <td class="px-1 py-2 text-center text-xs sm:text-sm text-gray-400 dark:text-gray-600 border-l-2 border-gray-300 dark:border-gray-600">-</td>
+              <td class="px-1 py-2 text-center text-xs sm:text-sm text-gray-400 dark:text-gray-600">-</td>
             `;
           }
         });
         
         // Add max, average, X, and 10
         rowHTML += `
-          <td class="px-3 py-3 font-bold text-lg text-success border-l-2 border-gray-300 dark:border-gray-600">${archer._maxScore}</td>
-          <td class="px-3 py-3">${archer._avgScore.toFixed(1)}</td>
-          <td class="px-3 py-3">${archer._xTotal}</td>
-          <td class="px-3 py-3">${archer._tenTotal}</td>
+          <td class="px-1 sm:px-2 py-2 font-bold text-sm sm:text-base text-success border-l-2 border-gray-300 dark:border-gray-600">${archer._maxScore}</td>
+          <td class="px-1 sm:px-2 py-2 text-xs sm:text-sm">${archer._avgScore.toFixed(1)}</td>
+          <td class="px-1 sm:px-2 py-2 text-xs sm:text-sm">${archer._xTotal}</td>
+          <td class="px-1 sm:px-2 py-2 text-xs sm:text-sm">${archer._tenTotal}</td>
         `;
         
         row.innerHTML = rowHTML;
@@ -773,8 +788,32 @@
       document.getElementById('error-state').classList.add('hidden');
     }
 
+    // Collapsible panel toggle
+    document.getElementById('toggle-round-selector').addEventListener('click', function() {
+      const content = document.getElementById('round-selector-content');
+      const chevron = document.getElementById('round-selector-chevron');
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        chevron.style.transform = 'rotate(0deg)';
+      } else {
+        content.style.display = 'none';
+        chevron.style.transform = 'rotate(-90deg)';
+      }
+    });
+    
+    document.getElementById('toggle-filters').addEventListener('click', function() {
+      const content = document.getElementById('filters-content');
+      const chevron = document.getElementById('filters-chevron');
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        chevron.style.transform = 'rotate(0deg)';
+      } else {
+        content.style.display = 'none';
+        chevron.style.transform = 'rotate(-90deg)';
+      }
+    });
+
     // Event listeners
-    document.getElementById('apply-filters-btn').addEventListener('click', applyFilters);
     document.getElementById('reset-filters-btn').addEventListener('click', () => {
       document.getElementById('filter-division').value = '';
       document.getElementById('filter-gender').value = '';

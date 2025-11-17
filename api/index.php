@@ -2785,8 +2785,10 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
 }
 
 // GET /v1/archers - Load all archers from master list
+// PUBLIC ENDPOINT - No authentication required
+// Archers need access to roster for profile selection on first app open
 if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
-    require_api_key();
+    // No authentication required - this is a public endpoint
     
     // Optional query params for filtering
     $division = $_GET['division'] ?? null; // BVAR, BJV, GVAR, GJV
