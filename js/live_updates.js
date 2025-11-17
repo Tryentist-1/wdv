@@ -244,6 +244,24 @@
                     } else {
                         console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
                     }
+                } else if (path.includes('/team-matches/')) {
+                    // Check for team match code if this is a team match request
+                    const matchIdMatch = path.match(/\/team-matches\/([0-9a-f-]+)/);
+                    if (matchIdMatch) {
+                        const matchId = matchIdMatch[1];
+                        let matchCode = localStorage.getItem(`team_match_code:${matchId}`);
+                        if (!matchCode && state.teamMatchCode) {
+                            matchCode = state.teamMatchCode;
+                        }
+                        if (matchCode) {
+                            headers['X-Passcode'] = matchCode;
+                            console.log('[LiveUpdates] Using team match code for request.');
+                        } else {
+                            console.warn('[LiveUpdates] No coach key, entry code, or match code available; request may fail.');
+                        }
+                    } else {
+                        console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
+                    }
                 } else {
                     console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
                 }
@@ -603,6 +621,239 @@
         }
     }
 
+    // =====================================================
+    // PHASE 2: TEAM MATCH METHODS
+    // =====================================================
+    
+    function ensureTeamMatch({ date, location, eventId, maxSets = 4, forceNew = false }) {
+        if (!state.config.enabled) {
+            console.warn('[TeamMatch] LiveUpdates disabled, skipping match creation');
+            return Promise.resolve(null);
+        }
+        
+        console.log('[TeamMatch] ensureTeamMatch called:', { date, location, eventId, maxSets, forceNew });
+        
+        // Build match key for caching
+        const matchKey = `team_match:${eventId || 'standalone'}:${date}`;
+        
+        // If forceNew is true, skip cache and create a new match
+        if (!forceNew) {
+            // Check if we have a cached matchId for the same event
+            const cached = localStorage.getItem(matchKey);
+            if (cached) {
+                try {
+                    const cachedData = JSON.parse(cached);
+                    if (cachedData.matchId && cachedData.eventId === eventId) {
+                        console.log('[TeamMatch] ✅ Reusing existing team match:', cachedData.matchId);
+                        state.teamMatchId = cachedData.matchId;
+                        state.teamEventId = eventId;
+                        if (cachedData.matchCode) {
+                            state.teamMatchCode = cachedData.matchCode;
+                            localStorage.setItem(`team_match_code:${cachedData.matchId}`, cachedData.matchCode);
+                            console.log('[TeamMatch] Match code restored:', cachedData.matchCode);
+                        }
+                        return Promise.resolve(cachedData.matchId);
+                    }
+                } catch (e) {
+                    console.warn('[TeamMatch] Failed to parse cached team match:', e);
+                }
+            }
+        } else {
+            console.log('[TeamMatch] forceNew=true, skipping cache');
+        }
+        
+        console.log('[TeamMatch] Creating new team match in database...');
+        return request('/team-matches', 'POST', { date, location, eventId, maxSets })
+            .then(json => {
+                if (!json || !json.matchId) {
+                    console.error('[TeamMatch] ❌ Match creation failed: missing matchId', json);
+                    throw new Error('Team match creation failed: missing matchId');
+                }
+                state.teamMatchId = json.matchId;
+                state.teamEventId = eventId;
+                // Cache matchId and match code if available
+                const cacheData = { matchId: json.matchId, eventId, date };
+                if (json.matchCode) {
+                    cacheData.matchCode = json.matchCode;
+                    localStorage.setItem(`team_match_code:${json.matchId}`, json.matchCode);
+                    state.teamMatchCode = json.matchCode;
+                    console.log('[TeamMatch] 🔑 Match code received:', json.matchCode);
+                }
+                localStorage.setItem(matchKey, JSON.stringify(cacheData));
+                console.log('[TeamMatch] ✅ Team match created:', json.matchId, json.matchCode ? `(code: ${json.matchCode})` : '(no code yet)');
+                return json.matchId;
+            })
+            .catch(e => {
+                console.error('[TeamMatch] ❌ Failed to create team match:', e);
+                throw e;
+            });
+    }
+    
+    function ensureTeam(matchId, teamNumber, teamName, school) {
+        if (!state.config.enabled) return Promise.resolve(null);
+        
+        console.log(`[TeamMatch] ensureTeam called: matchId=${matchId}, teamNumber=${teamNumber}, school=${school}`);
+        
+        const mappingKey = `team_match_team:${matchId}:${teamNumber}`;
+        const alreadyMapped = localStorage.getItem(mappingKey);
+        if (alreadyMapped) {
+            try {
+                const mapped = JSON.parse(alreadyMapped);
+                console.log(`[TeamMatch] 🔄 Team ${teamNumber} already mapped to ${mapped.teamId}`);
+                return Promise.resolve(mapped.teamId);
+            } catch (e) {
+                console.warn('[TeamMatch] Failed to parse cached team mapping:', e);
+            }
+        }
+        
+        console.log(`[TeamMatch] Creating team ${teamNumber} in database...`);
+        return request(`/team-matches/${matchId}/teams`, 'POST', {
+            teamName: teamName || null,
+            school: school || '',
+            position: teamNumber
+        }).then(json => {
+            if (!json || !json.teamId) {
+                console.error(`[TeamMatch] ❌ Team ${teamNumber} creation failed: missing teamId`, json);
+                throw new Error('Team ensure failed: missing teamId');
+            }
+            localStorage.setItem(mappingKey, JSON.stringify({ teamId: json.teamId, position: teamNumber }));
+            console.log(`[TeamMatch] ✅ Team ${teamNumber} created: ${json.teamId}`);
+            return json.teamId;
+        })
+        .catch(e => {
+            console.error(`[TeamMatch] ❌ Failed to create team ${teamNumber}:`, e);
+            throw e;
+        });
+    }
+    
+    function ensureTeamArcher(matchId, teamId, localId, archer, position) {
+        if (!state.config.enabled) return Promise.resolve(null);
+        
+        const archerName = `${archer.first || archer.firstName || ''} ${archer.last || archer.lastName || ''}`.trim();
+        console.log(`[TeamMatch] ensureTeamArcher called: matchId=${matchId}, teamId=${teamId}, archer=${archerName}, position=${position}`);
+        
+        const mappingKey = `team_archer:${matchId}:${teamId}:${position}`;
+        const alreadyMapped = localStorage.getItem(mappingKey);
+        if (alreadyMapped) {
+            try {
+                const mapped = JSON.parse(alreadyMapped);
+                console.log(`[TeamMatch] 🔄 Team archer ${archerName} (pos ${position}) already mapped to ${mapped.matchArcherId}`);
+                return Promise.resolve(mapped.matchArcherId);
+            } catch (e) {
+                console.warn('[TeamMatch] Failed to parse cached archer mapping:', e);
+            }
+        }
+        
+        console.log(`[TeamMatch] Adding archer ${archerName} to team ${teamId}...`);
+        return request(`/team-matches/${matchId}/teams/${teamId}/archers`, 'POST', {
+            extId: localId,
+            firstName: archer.first || archer.firstName || '',
+            lastName: archer.last || archer.lastName || '',
+            school: archer.school || '',
+            level: archer.level || '',
+            gender: archer.gender || '',
+            position: position
+        }).then(json => {
+            if (!json || !json.matchArcherId) {
+                console.error(`[TeamMatch] ❌ Archer ${archerName} creation failed: missing matchArcherId`, json);
+                throw new Error('Team archer ensure failed: missing matchArcherId');
+            }
+            localStorage.setItem(mappingKey, JSON.stringify({ matchArcherId: json.matchArcherId, position }));
+            console.log(`[TeamMatch] ✅ Team archer ${archerName} (pos ${position}) created: ${json.matchArcherId}`);
+            
+            // Store match code if returned (generated when second team is complete)
+            if (json.matchCode) {
+                localStorage.setItem(`team_match_code:${matchId}`, json.matchCode);
+                state.teamMatchCode = json.matchCode;
+                console.log(`[TeamMatch] 🔑 Match code generated and stored: ${json.matchCode}`);
+            }
+            
+            return json.matchArcherId;
+        })
+        .catch(e => {
+            console.error(`[TeamMatch] ❌ Failed to add archer ${archerName}:`, e);
+            throw e;
+        });
+    }
+    
+    function postTeamSet(matchId, teamId, matchArcherId, setNumber, payload) {
+        if (!state.config.enabled) {
+            console.warn('[TeamMatch] LiveUpdates disabled, skipping set post');
+            return Promise.resolve();
+        }
+        
+        const reqBody = {
+            setNumber,
+            a1: payload.a1 || null,
+            setTotal: payload.setTotal || 0,
+            setPoints: payload.setPoints || 0,
+            runningPoints: payload.runningPoints || 0,
+            tens: payload.tens || 0,
+            xs: payload.xs || 0,
+            deviceTs: new Date().toISOString(),
+        };
+        
+        console.log('[TeamMatch] 📤 Posting team set:', { matchId, teamId, matchArcherId, setNumber, arrow: reqBody.a1, setTotal: reqBody.setTotal, setPoints: reqBody.setPoints });
+        
+        const doRequest = () => request(`/team-matches/${matchId}/teams/${teamId}/archers/${matchArcherId}/sets`, 'POST', reqBody)
+            .then((response) => {
+                console.log(`[TeamMatch] ✅ Set ${setNumber} posted successfully for archer ${matchArcherId}`);
+                try {
+                    window.dispatchEvent(new CustomEvent('teamSyncSuccess', { detail: { matchArcherId, setNumber } }));
+                } catch (_) {}
+                return response;
+            });
+        
+        return doRequest().catch(e => {
+            const isNetwork = (e && (e.name === 'TypeError' || /NetworkError|Failed to fetch/i.test(String(e))));
+            if (isNetwork) {
+                console.warn(`[TeamMatch] ⚠️ Network error, queuing set ${setNumber} for archer ${matchArcherId}`);
+                try {
+                    const key = `luq:team:${matchId}`;
+                    const q = JSON.parse(localStorage.getItem(key) || '[]');
+                    q.push({ teamId, matchArcherId, setNumber, body: reqBody });
+                    localStorage.setItem(key, JSON.stringify(q));
+                    console.log(`[TeamMatch] 💾 Queued set ${setNumber} (queue size: ${q.length})`);
+                    try {
+                        window.dispatchEvent(new CustomEvent('teamSyncPending', { detail: { matchArcherId, setNumber } }));
+                    } catch (_) {}
+                    return;
+                } catch (err) {
+                    console.error('[TeamMatch] ❌ Failed to queue set:', err);
+                }
+            } else {
+                console.error(`[TeamMatch] ❌ Failed to post set ${setNumber} for archer ${matchArcherId}:`, e);
+            }
+            try {
+                window.dispatchEvent(new CustomEvent('teamSyncPending', { detail: { matchArcherId, setNumber } }));
+            } catch (_) {}
+            throw e;
+        });
+    }
+    
+    function flushTeamQueue(matchId) {
+        try {
+            const key = `luq:team:${matchId}`;
+            const q = JSON.parse(localStorage.getItem(key) || '[]');
+            if (!Array.isArray(q) || q.length === 0) return Promise.resolve();
+            const tasks = q.map(item => request(`/team-matches/${matchId}/teams/${item.teamId}/archers/${item.matchArcherId}/sets`, 'POST', item.body));
+            return Promise.allSettled(tasks).then(results => {
+                const remaining = [];
+                results.forEach((res, idx) => {
+                    if (res.status !== 'fulfilled') remaining.push(q[idx]);
+                });
+                localStorage.setItem(key, JSON.stringify(remaining));
+                if (remaining.length === 0) {
+                    console.log('✅ Team match queue flushed successfully');
+                } else {
+                    console.warn(`⚠️ Team match queue: ${remaining.length} items failed to sync`);
+                }
+            });
+        } catch (_) {
+            return Promise.resolve();
+        }
+    }
+
     // --- PUBLIC API ---
     const publicApi = {
         setConfig,
@@ -616,6 +867,12 @@
         ensureSoloArcher,
         postSoloSet,
         flushSoloQueue,
+        // Phase 2: Team match methods
+        ensureTeamMatch,
+        ensureTeam,
+        ensureTeamArcher,
+        postTeamSet,
+        flushTeamQueue,
         request,
         clearSession: clearPersistedState,  // Expose for debugging/new events
         _state: state,

@@ -40,6 +40,64 @@ function generate_solo_match_code(PDO $pdo, string $archer1FirstName, string $ar
     return $code;
 }
 
+// Generate match code: team-[INITIALS]-[MMDD]
+// Example: team-TASJ-1117 (Team 1: Terry, Adam, Sarah vs Team 2: John, Jane, Joe on Nov 17)
+function generate_team_match_code(PDO $pdo, array $team1Archers, array $team2Archers, string $date): string {
+    // Extract first letter of first and last name for each archer (up to 3 per team)
+    $initials1 = '';
+    $initials2 = '';
+    
+    foreach ($team1Archers as $archer) {
+        $name = $archer['archer_name'] ?? '';
+        $parts = explode(' ', $name, 2);
+        $first = $parts[0] ?? '';
+        $last = $parts[1] ?? '';
+        if ($first && $last) {
+            $initials1 .= strtoupper(substr($first, 0, 1) . substr($last, 0, 1));
+        }
+    }
+    
+    foreach ($team2Archers as $archer) {
+        $name = $archer['archer_name'] ?? '';
+        $parts = explode(' ', $name, 2);
+        $first = $parts[0] ?? '';
+        $last = $parts[1] ?? '';
+        if ($first && $last) {
+            $initials2 .= strtoupper(substr($first, 0, 1) . substr($last, 0, 1));
+        }
+    }
+    
+    // Limit to fit VARCHAR(20): "team-" (5) + initials (max 10) + "-" (1) + MMDD (4) = 20
+    // So max 10 initials total (5 per team, or 3 per team if we want to be safe)
+    $initials1 = substr($initials1, 0, 5); // Limit to 5 chars (2-3 archers)
+    $initials2 = substr($initials2, 0, 5); // Limit to 5 chars (2-3 archers)
+    
+    // Get MMDD from date
+    $dateParts = explode('-', $date);
+    $mmdd = $dateParts[1] . $dateParts[2];
+    
+    $code = 'team-' . $initials1 . $initials2 . '-' . $mmdd;
+    
+    // Ensure code doesn't exceed 20 chars (truncate if needed)
+    $code = substr($code, 0, 20);
+    
+    // Ensure uniqueness
+    $baseCode = $code;
+    $counter = 1;
+    do {
+        $stmt = $pdo->prepare('SELECT id FROM team_matches WHERE match_code = ? LIMIT 1');
+        $stmt->execute([$code]);
+        if ($stmt->fetch()) {
+            $code = $baseCode . $counter;
+            $counter++;
+        } else {
+            break;
+        }
+    } while (true);
+    
+    return $code;
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
@@ -3362,14 +3420,20 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
 // =====================================================
 
 // POST /v1/team-matches - Create new team match
+// Note: For standalone matches (no eventId), we allow creation without auth.
+// Match code will be generated when second team is fully populated (3 archers each).
 if (preg_match('#^/v1/team-matches$#', $route) && $method === 'POST') {
-    require_api_key();
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     
     $eventId = $input['eventId'] ?? null;
     $date = $input['date'] ?? date('Y-m-d');
     $location = $input['location'] ?? null;
     $maxSets = $input['maxSets'] ?? 4;
+    
+    // Require auth only if match is linked to an event
+    if ($eventId) {
+        require_api_key();
+    }
     
     try {
         $pdo = db();
@@ -3386,13 +3450,35 @@ if (preg_match('#^/v1/team-matches$#', $route) && $method === 'POST') {
 }
 
 // POST /v1/team-matches/:id/teams - Add team to match
+// Note: For standalone matches, we allow adding first team without auth.
+// Once match code is generated (when second team complete), it's required for subsequent requests.
 if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams$#i', $route, $m) && $method === 'POST') {
-    require_api_key();
     $matchId = $m[1];
+    
+    // Check if match exists and if it has a match code
+    try {
+        $pdo = db();
+        $matchCheck = $pdo->prepare('SELECT event_id, match_code FROM team_matches WHERE id=?');
+        $matchCheck->execute([$matchId]);
+        $matchData = $matchCheck->fetch();
+        
+        if (!$matchData) {
+            json_response(['error' => 'Match not found'], 404);
+            exit;
+        }
+        
+        // Require auth if match is linked to event OR if match code already exists
+        if ($matchData['event_id'] || $matchData['match_code']) {
+            require_api_key();
+        }
+    } catch (Exception $e) {
+        // If we can't check, require auth to be safe
+        require_api_key();
+    }
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     
     $teamName = $input['teamName'] ?? null;
-    $school = $input['school'] ?? '';
+    $school = substr(trim($input['school'] ?? ''), 0, 3); // Limit to 3 chars for VARCHAR(3)
     $position = (int)($input['position'] ?? 0);
     
     if ($position < 1 || $position > 2) {
@@ -3437,10 +3523,33 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams$#i', $route, $m) && $metho
 }
 
 // POST /v1/team-matches/:id/teams/:teamId/archers - Add archer to team
+// Note: Generate match code when second team is complete (3 archers each)
+// Note: For standalone matches, we allow adding archers to first team without auth.
+// Once match code is generated (when second team complete), it's required for subsequent requests.
 if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers$#i', $route, $m) && $method === 'POST') {
-    require_api_key();
     $matchId = $m[1];
     $teamId = $m[2];
+    
+    // Check if match exists and if it has a match code
+    try {
+        $pdo = db();
+        $matchCheck = $pdo->prepare('SELECT event_id, match_code FROM team_matches WHERE id=?');
+        $matchCheck->execute([$matchId]);
+        $matchData = $matchCheck->fetch();
+        
+        if (!$matchData) {
+            json_response(['error' => 'Match not found'], 404);
+            exit;
+        }
+        
+        // Require auth if match is linked to event OR if match code already exists
+        if ($matchData['event_id'] || $matchData['match_code']) {
+            require_api_key(); // This now accepts match codes via require_api_key()
+        }
+    } catch (Exception $e) {
+        // If we can't check, require auth to be safe
+        require_api_key();
+    }
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     
     $firstName = trim($input['firstName'] ?? '');
@@ -3503,7 +3612,63 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers$#i', 
             $updateStmt = $pdo->prepare('UPDATE team_match_archers SET archer_id=?, archer_name=?, school=?, level=?, gender=? WHERE id=?');
             $archerName = trim("$firstName $lastName");
             $updateStmt->execute([$archerId, $archerName, $school, $level, $gender, $existingRow['id']]);
-            json_response(['matchArcherId' => $existingRow['id'], 'archerId' => $archerId, 'updated' => true], 200);
+            
+            // Check if match code should be generated (after update too)
+            $matchCode = null;
+            $teams = $pdo->prepare('SELECT t.id, t.position, COUNT(tma.id) as archer_count 
+                                     FROM team_match_teams t 
+                                     LEFT JOIN team_match_archers tma ON t.id = tma.team_id 
+                                     WHERE t.match_id = ? 
+                                     GROUP BY t.id, t.position 
+                                     ORDER BY t.position');
+            $teams->execute([$matchId]);
+            $teamRows = $teams->fetchAll();
+            
+            if (count($teamRows) === 2) {
+                $team1Count = (int)($teamRows[0]['archer_count'] ?? 0);
+                $team2Count = (int)($teamRows[1]['archer_count'] ?? 0);
+                
+                if ($team1Count === 3 && $team2Count === 3) {
+                    // Get all archers for both teams
+                    $team1Archers = $pdo->prepare('SELECT archer_name FROM team_match_archers tma 
+                                                    JOIN team_match_teams t ON tma.team_id = t.id 
+                                                    WHERE t.match_id = ? AND t.position = 1 
+                                                    ORDER BY tma.position');
+                    $team1Archers->execute([$matchId]);
+                    $team1ArcherRows = $team1Archers->fetchAll();
+                    
+                    $team2Archers = $pdo->prepare('SELECT archer_name FROM team_match_archers tma 
+                                                    JOIN team_match_teams t ON tma.team_id = t.id 
+                                                    WHERE t.match_id = ? AND t.position = 2 
+                                                    ORDER BY tma.position');
+                    $team2Archers->execute([$matchId]);
+                    $team2ArcherRows = $team2Archers->fetchAll();
+                    
+                    // Get match date
+                    $matchStmt = $pdo->prepare('SELECT date FROM team_matches WHERE id = ?');
+                    $matchStmt->execute([$matchId]);
+                    $matchDate = $matchStmt->fetchColumn();
+                    
+                    // Check if match code already exists
+                    $existingCodeStmt = $pdo->prepare('SELECT match_code FROM team_matches WHERE id = ?');
+                    $existingCodeStmt->execute([$matchId]);
+                    $existingCode = $existingCodeStmt->fetchColumn();
+                    
+                    if (!$existingCode && count($team1ArcherRows) === 3 && count($team2ArcherRows) === 3 && $matchDate) {
+                        $matchCode = generate_team_match_code($pdo, $team1ArcherRows, $team2ArcherRows, $matchDate);
+                        
+                        // Update match with code
+                        $updateStmt = $pdo->prepare('UPDATE team_matches SET match_code = ? WHERE id = ?');
+                        $updateStmt->execute([$matchCode, $matchId]);
+                    }
+                }
+            }
+            
+            $response = ['matchArcherId' => $existingRow['id'], 'archerId' => $archerId, 'updated' => true];
+            if ($matchCode) {
+                $response['matchCode'] = $matchCode;
+            }
+            json_response($response, 200);
             exit;
         }
         
@@ -3513,7 +3678,58 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers$#i', 
         $stmt = $pdo->prepare('INSERT INTO team_match_archers (id, match_id, team_id, archer_id, archer_name, school, level, gender, position, created_at) VALUES (?,?,?,?,?,?,?,?,?,NOW())');
         $stmt->execute([$matchArcherId, $matchId, $teamId, $archerId, $archerName, $school, $level, $gender, $position]);
         
-        json_response(['matchArcherId' => $matchArcherId, 'archerId' => $archerId, 'created' => true], 201);
+        // Generate match code when both teams are complete (3 archers each)
+        $matchCode = null;
+        $teams = $pdo->prepare('SELECT t.id, t.position, COUNT(tma.id) as archer_count 
+                                 FROM team_match_teams t 
+                                 LEFT JOIN team_match_archers tma ON t.id = tma.team_id 
+                                 WHERE t.match_id = ? 
+                                 GROUP BY t.id, t.position 
+                                 ORDER BY t.position');
+        $teams->execute([$matchId]);
+        $teamRows = $teams->fetchAll();
+        
+        if (count($teamRows) === 2) {
+            $team1Count = (int)($teamRows[0]['archer_count'] ?? 0);
+            $team2Count = (int)($teamRows[1]['archer_count'] ?? 0);
+            
+            // Both teams have 3 archers - generate match code
+            if ($team1Count === 3 && $team2Count === 3) {
+                // Get all archers for both teams
+                $team1Archers = $pdo->prepare('SELECT archer_name FROM team_match_archers tma 
+                                                JOIN team_match_teams t ON tma.team_id = t.id 
+                                                WHERE t.match_id = ? AND t.position = 1 
+                                                ORDER BY tma.position');
+                $team1Archers->execute([$matchId]);
+                $team1ArcherRows = $team1Archers->fetchAll();
+                
+                $team2Archers = $pdo->prepare('SELECT archer_name FROM team_match_archers tma 
+                                                JOIN team_match_teams t ON tma.team_id = t.id 
+                                                WHERE t.match_id = ? AND t.position = 2 
+                                                ORDER BY tma.position');
+                $team2Archers->execute([$matchId]);
+                $team2ArcherRows = $team2Archers->fetchAll();
+                
+                // Get match date
+                $matchStmt = $pdo->prepare('SELECT date FROM team_matches WHERE id = ?');
+                $matchStmt->execute([$matchId]);
+                $matchDate = $matchStmt->fetchColumn();
+                
+                if (count($team1ArcherRows) === 3 && count($team2ArcherRows) === 3 && $matchDate) {
+                    $matchCode = generate_team_match_code($pdo, $team1ArcherRows, $team2ArcherRows, $matchDate);
+                    
+                    // Update match with code
+                    $updateStmt = $pdo->prepare('UPDATE team_matches SET match_code = ? WHERE id = ?');
+                    $updateStmt->execute([$matchCode, $matchId]);
+                }
+            }
+        }
+        
+        $response = ['matchArcherId' => $matchArcherId, 'archerId' => $archerId, 'created' => true];
+        if ($matchCode) {
+            $response['matchCode'] = $matchCode;
+        }
+        json_response($response, 201);
     } catch (Exception $e) {
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }

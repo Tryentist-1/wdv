@@ -15,7 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
         team1: [],            // Array of up to 3 archer objects
         team2: [],            // Array of up to 3 archer objects
         scores: {},           // { t1: [[s1..s6], ...], t2: [[s1..s6], ...], so: {t1:[s1,s2,s3], t2:[s1,s2,s3]} }
-        shootOffWinner: null  // 't1' or 't2' if judge call is needed
+        shootOffWinner: null, // 't1' or 't2' if judge call is needed
+        // Phase 2: Database integration
+        matchId: null,
+        teamIds: { t1: null, t2: null },
+        matchArcherIds: { t1: {}, t2: {} }, // { t1: {0: id, 1: id, 2: id}, t2: {...} }
+        eventId: null,
+        syncStatus: { t1: {}, t2: {} },
+        location: ''
     };
 
     const sessionKey = `teamCard_${new Date().toISOString().split('T')[0]}`;
@@ -60,7 +67,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function saveData() {
-        localStorage.setItem(sessionKey, JSON.stringify(state));
+        // Phase 2: Only store session state, not scores (scores are in database)
+        const sessionState = {
+            currentView: state.currentView,
+            matchId: state.matchId,
+            teamIds: state.teamIds,
+            matchArcherIds: state.matchArcherIds,
+            eventId: state.eventId,
+            location: state.location,
+            // Store team archer IDs for restoration
+            team1: state.team1.map(a => ({ id: a.id, first: a.first, last: a.last })),
+            team2: state.team2.map(a => ({ id: a.id, first: a.first, last: a.last }))
+        };
+        try {
+            localStorage.setItem(sessionKey, JSON.stringify(sessionState));
+        } catch (e) {
+            console.error("Error saving session state to localStorage", e);
+        }
     }
 
     function loadData() {
@@ -147,7 +170,8 @@ document.addEventListener('DOMContentLoaded', () => {
         startScoringBtn.classList.toggle('btn-secondary', !isValid);
     }
     
-    function startScoring() {
+    // Phase 2: Create match in database before starting
+    async function startScoring() {
         const t1Count = state.team1.length;
         const t2Count = state.team2.length;
 
@@ -156,16 +180,97 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Initialize scores if they don't exist
-        const numArrows = t1Count * 2; // Each archer shoots 2 arrows per end
-        state.scores.t1 = Array(4).fill(null).map(() => Array(numArrows).fill(''));
-        state.scores.t2 = Array(4).fill(null).map(() => Array(numArrows).fill(''));
-        state.scores.so = { t1: Array(t1Count).fill(''), t2: Array(t1Count).fill('') };
+        // Check if LiveUpdates is available
+        if (!window.LiveUpdates || !window.LiveUpdates.ensureTeamMatch) {
+            console.error('LiveUpdates API not available');
+            alert('Database connection not available. Please refresh the page.');
+            return;
+        }
         
-        state.currentView = 'scoring';
-        renderScoringView();
-        renderView();
-        saveData();
+        try {
+            // Get event ID from URL or localStorage (if available)
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('event') || state.eventId || null;
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Create match in database (force new match - don't reuse cache)
+            console.log('Creating team match in database...');
+            const matchId = await window.LiveUpdates.ensureTeamMatch({
+                date: today,
+                location: state.location || '',
+                eventId: eventId,
+                maxSets: 4,
+                forceNew: true  // Always create a new match when starting scoring
+            });
+            
+            if (!matchId) {
+                throw new Error('Failed to create match in database');
+            }
+            
+            state.matchId = matchId;
+            state.eventId = eventId;
+            
+            // Add teams
+            console.log('Adding teams to match...');
+            const team1Id = await window.LiveUpdates.ensureTeam(matchId, 1, null, state.team1[0]?.school || '');
+            const team2Id = await window.LiveUpdates.ensureTeam(matchId, 2, null, state.team2[0]?.school || '');
+            
+            if (!team1Id || !team2Id) {
+                throw new Error('Failed to add teams to match');
+            }
+            
+            state.teamIds = { t1: team1Id, t2: team2Id };
+            
+            // Add archers to teams
+            console.log('[TeamCard] Adding archers to teams...');
+            for (let i = 0; i < state.team1.length; i++) {
+                const a1Id = state.team1[i].id;
+                const archerName = `${state.team1[i].first} ${state.team1[i].last}`;
+                console.log(`[TeamCard] Adding Team 1 archer ${i + 1}: ${archerName}`);
+                const matchArcherId1 = await window.LiveUpdates.ensureTeamArcher(matchId, team1Id, a1Id, state.team1[i], i + 1);
+                if (!matchArcherId1) {
+                    throw new Error(`Failed to add archer ${i + 1} to team 1`);
+                }
+                if (!state.matchArcherIds.t1) state.matchArcherIds.t1 = {};
+                state.matchArcherIds.t1[i] = matchArcherId1;
+                console.log(`[TeamCard] ✅ Team 1 archer ${i + 1} added: ${matchArcherId1}`);
+            }
+            
+            for (let i = 0; i < state.team2.length; i++) {
+                const a2Id = state.team2[i].id;
+                const archerName = `${state.team2[i].first} ${state.team2[i].last}`;
+                console.log(`[TeamCard] Adding Team 2 archer ${i + 1}: ${archerName}`);
+                const matchArcherId2 = await window.LiveUpdates.ensureTeamArcher(matchId, team2Id, a2Id, state.team2[i], i + 1);
+                if (!matchArcherId2) {
+                    throw new Error(`Failed to add archer ${i + 1} to team 2`);
+                }
+                if (!state.matchArcherIds.t2) state.matchArcherIds.t2 = {};
+                state.matchArcherIds.t2[i] = matchArcherId2;
+                console.log(`[TeamCard] ✅ Team 2 archer ${i + 1} added: ${matchArcherId2}`);
+            }
+            
+            // Initialize scores
+            const numArrows = t1Count * 2; // Each archer shoots 2 arrows per end
+            state.scores.t1 = Array(4).fill(null).map(() => Array(numArrows).fill(''));
+            state.scores.t2 = Array(4).fill(null).map(() => Array(numArrows).fill(''));
+            state.scores.so = { t1: Array(t1Count).fill(''), t2: Array(t1Count).fill('') };
+            
+            state.syncStatus = { t1: {}, t2: {} };
+            state.currentView = 'scoring';
+            saveData();
+            renderScoringView();
+            renderView();
+            
+            console.log('✅ Team match started successfully:', matchId);
+            
+            // Flush any pending queue
+            if (window.LiveUpdates.flushTeamQueue) {
+                window.LiveUpdates.flushTeamQueue(matchId).catch(e => console.warn('Queue flush failed:', e));
+            }
+        } catch (e) {
+            console.error('Failed to start match:', e);
+            alert(`Failed to start match: ${e.message}. Please try again.`);
+        }
     }
 
     // --- SCORING VIEW LOGIC ---
@@ -359,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function handleScoreInput(e) {
+    async function handleScoreInput(e) {
         const input = e.target;
         const { team, end, arrow } = input.dataset;
         if (end === 'so') {
@@ -371,11 +476,130 @@ document.addEventListener('DOMContentLoaded', () => {
         input.parentElement.className = getScoreColor(input.value);
         updateScoreHighlightsAndTotals();
         saveData();
+        
+        // Phase 2: Post to database if match is active
+        if (state.matchId && state.teamIds[team] && end !== 'so' && window.LiveUpdates && window.LiveUpdates.postTeamSet) {
+            const setNumber = parseInt(end, 10) + 1;
+            const archerIndex = parseInt(arrow, 10); // Arrow index 0-2 corresponds to archer position 1-3
+            const matchArcherId = state.matchArcherIds[team] && state.matchArcherIds[team][archerIndex];
+            
+            if (matchArcherId) {
+                // Get all arrows for this set (team total)
+                const setScores = state.scores[team][parseInt(end, 10)];
+                const setTotal = setScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                
+                // Calculate set points (compare with opponent team)
+                let setPoints = 0;
+                let runningPoints = 0;
+                const opponentTeam = team === 't1' ? 't2' : 't1';
+                const opponentScores = state.scores[opponentTeam][parseInt(end, 10)];
+                const opponentTotal = opponentScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                
+                // Only calculate if both teams have all arrows entered
+                const allArrowsEntered = setScores.every(s => s !== '' && s !== null);
+                const opponentAllEntered = opponentScores.every(s => s !== '' && s !== null);
+                
+                if (allArrowsEntered && opponentAllEntered) {
+                    if (setTotal > opponentTotal) setPoints = 2;
+                    else if (setTotal < opponentTotal) setPoints = 0;
+                    else setPoints = 1;
+                    
+                    // Calculate running points (sum of all previous sets)
+                    const currentSet = parseInt(end, 10);
+                    for (let i = 0; i <= currentSet; i++) {
+                        const myScores = state.scores[team][i];
+                        const oppScores = state.scores[opponentTeam][i];
+                        const myTotal = myScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                        const oppTotal = oppScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                        if (myTotal > oppTotal) runningPoints += 2;
+                        else if (myTotal === oppTotal) runningPoints += 1;
+                    }
+                }
+                
+                // Count tens and Xs for this archer's arrow only
+                const tens = parseScoreValue(input.value) === 10 ? 1 : 0;
+                const xs = String(input.value).toUpperCase() === 'X' ? 1 : 0;
+                
+                // Post this archer's set score (1 arrow per archer per set)
+                try {
+                    const arrowValue = input.value || null;
+                    console.log(`[TeamCard] 📤 Posting score: Team=${team}, Archer=${archerIndex + 1}, Set=${setNumber}, Arrow=${arrowValue}`);
+                    updateSyncStatus(team, archerIndex, setNumber, 'pending');
+                    await window.LiveUpdates.postTeamSet(state.matchId, state.teamIds[team], matchArcherId, setNumber, {
+                        a1: arrowValue,
+                        setTotal: allArrowsEntered && opponentAllEntered ? setTotal : 0,
+                        setPoints: allArrowsEntered && opponentAllEntered ? setPoints : 0,
+                        runningPoints: allArrowsEntered && opponentAllEntered ? runningPoints : 0,
+                        tens,
+                        xs
+                    });
+                    updateSyncStatus(team, archerIndex, setNumber, 'synced');
+                    console.log(`[TeamCard] ✅ Score synced successfully: Team=${team}, Archer=${archerIndex + 1}, Set=${setNumber}`);
+                } catch (e) {
+                    console.error(`[TeamCard] ❌ Failed to sync score: Team=${team}, Archer=${archerIndex + 1}, Set=${setNumber}:`, e);
+                    updateSyncStatus(team, archerIndex, setNumber, 'failed');
+                }
+            }
+        }
     }
     
+    // Phase 2: Helper function to parse score value
+    function parseScoreValue(score) {
+        if (!score || score === '') return 0;
+        if (String(score).toUpperCase() === 'X' || String(score).toUpperCase() === 'M') return 0;
+        const num = parseInt(score, 10);
+        return isNaN(num) ? 0 : num;
+    }
+    
+    // Phase 2: Update sync status for UI feedback
+    function updateSyncStatus(team, archerIndex, setNumber, status) {
+        if (!state.syncStatus[team]) state.syncStatus[team] = {};
+        if (!state.syncStatus[team][archerIndex]) state.syncStatus[team][archerIndex] = {};
+        state.syncStatus[team][archerIndex][setNumber] = status;
+        // TODO: Update UI to show sync status (green checkmark, yellow pending, red failed)
+    }
+    
+    // Phase 2: Reset clears session state (database match remains for coach visibility)
     function resetMatch() {
         if(confirm("Are you sure you want to start a new match? This will clear all scores.")) {
-            Object.assign(state, { team1: [], team2: [], scores: {}, shootOffWinner: null, currentView: 'setup' });
+            // Clear cached match from localStorage so a new match will be created
+            const oldMatchId = state.matchId;
+            if (oldMatchId) {
+                // Clear the match code cache
+                localStorage.removeItem(`team_match_code:${oldMatchId}`);
+                // Clear team mappings for this match
+                localStorage.removeItem(`team_match_team:${oldMatchId}:1`);
+                localStorage.removeItem(`team_match_team:${oldMatchId}:2`);
+                // Clear archer mappings for this match
+                if (state.teamIds.t1) {
+                    for (let i = 0; i < 3; i++) {
+                        localStorage.removeItem(`team_archer:${oldMatchId}:${state.teamIds.t1}:${i + 1}`);
+                    }
+                }
+                if (state.teamIds.t2) {
+                    for (let i = 0; i < 3; i++) {
+                        localStorage.removeItem(`team_archer:${oldMatchId}:${state.teamIds.t2}:${i + 1}`);
+                    }
+                }
+            }
+            // Clear the match cache by date/event so ensureTeamMatch will create a new one
+            const today = new Date().toISOString().split('T')[0];
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('event') || state.eventId || null;
+            const matchKey = `team_match:${eventId || 'standalone'}:${today}`;
+            localStorage.removeItem(matchKey);
+            
+            state.team1 = [];
+            state.team2 = [];
+            state.scores = {};
+            state.shootOffWinner = null;
+            state.currentView = 'setup';
+            // Phase 2: Clear database references (match remains in DB for coach)
+            state.matchId = null;
+            state.teamIds = { t1: null, t2: null };
+            state.matchArcherIds = { t1: {}, t2: {} };
+            state.eventId = null;
+            state.syncStatus = { t1: {}, t2: {} };
             localStorage.removeItem(sessionKey);
             renderSetupView();
             renderView();
@@ -384,16 +608,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIALIZATION ---
     async function init() {
-        await ArcherModule.loadDefaultCSVIfNeeded();
+        console.log('[TeamCard] 🚀 Initializing Team Match Card...');
+        console.log('[TeamCard] LiveUpdates available:', !!window.LiveUpdates);
+        console.log('[TeamCard] LiveUpdates enabled:', window.LiveUpdates?._state?.config?.enabled);
+        
+        // Phase 2: Load archers from MySQL first (for better UX)
+        try {
+            console.log('[TeamCard] Loading archers from MySQL...');
+            await ArcherModule.loadFromMySQL();
+            console.log('[TeamCard] ✅ Archers loaded from MySQL');
+        } catch (e) {
+            console.warn('[TeamCard] ⚠️ Failed to load archers from MySQL, using CSV fallback:', e);
+            await ArcherModule.loadDefaultCSVIfNeeded();
+        }
+        
         loadData();
+        console.log('[TeamCard] Session state loaded:', {
+            currentView: state.currentView,
+            matchId: state.matchId,
+            team1Count: state.team1.length,
+            team2Count: state.team2.length
+        });
+        
         renderKeypad();
         if (state.currentView === 'scoring' && state.team1.length === 3 && state.team2.length === 3) {
+            console.log('[TeamCard] Restoring scoring view from session');
             renderScoringView();
         } else {
+            console.log('[TeamCard] Starting in setup view');
             state.currentView = 'setup';
             renderSetupView();
         }
         renderView();
+        console.log('[TeamCard] ✅ Initialization complete');
 
         searchInput.addEventListener('input', () => renderSetupView(searchInput.value));
         archerSelectionContainer.addEventListener('click', handleTeamSelection);
