@@ -318,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <th colspan="6">Team 2 (${t2ArcherNames})</th>
                     <th colspan="2">End Total</th>
                     <th colspan="2">Set Points</th>
+                    <th rowspan="3">Sync</th>
                 </tr>
                 <tr><th colspan="16" style="background-color: #f8f9fa;"></th></tr>
                 <tr>
@@ -329,6 +330,17 @@ document.addEventListener('DOMContentLoaded', () => {
             </thead><tbody>`;
 
         for (let i = 0; i < 4; i++) {
+            const setNumber = i + 1;
+            // Get sync status for all archers in this set
+            const syncStatuses = [];
+            for (let archIdx = 0; archIdx < 3; archIdx++) {
+                const t1Status = state.syncStatus?.t1?.[archIdx]?.[setNumber] || '';
+                const t2Status = state.syncStatus?.t2?.[archIdx]?.[setNumber] || '';
+                if (t1Status) syncStatuses.push(t1Status);
+                if (t2Status) syncStatuses.push(t2Status);
+            }
+            const syncIcon = getSyncStatusIcon(syncStatuses);
+            
             tableHTML += `<tr id="end-${i+1}"><td>End ${i+1}</td>
                 ${state.scores.t1[i].map((s, a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t1" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`).join('')}
                 ${state.scores.t2[i].map((s, a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t2" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`).join('')}
@@ -336,9 +348,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="calculated-cell" id="t2-e${i+1}-total"></td>
                 <td class="calculated-cell" id="t1-e${i+1}-setpts"></td>
                 <td class="calculated-cell" id="t2-e${i+1}-setpts"></td>
+                <td class="sync-status-cell" id="sync-e${i+1}" data-set="${setNumber}">${syncIcon}</td>
             </tr>`;
         }
 
+        // Get shoot-off sync status
+        const soSyncStatuses = [];
+        for (let archIdx = 0; archIdx < 3; archIdx++) {
+            const t1Status = state.syncStatus?.t1?.[archIdx]?.[5] || '';
+            const t2Status = state.syncStatus?.t2?.[archIdx]?.[5] || '';
+            if (t1Status) soSyncStatuses.push(t1Status);
+            if (t2Status) soSyncStatuses.push(t2Status);
+        }
+        const soSyncIcon = getSyncStatusIcon(soSyncStatuses);
+        
         tableHTML += `<tr id="shoot-off" style="display: none;">
                 <td>S.O.</td>
                 ${state.scores.so.t1.map((s,a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t1" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`).join('')}<td colspan="3"></td>
@@ -347,14 +370,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td colspan="2" id="so-winner-cell" class="calculated-cell">
                     <span id="so-winner-text"></span>
                 </td>
+                <td class="sync-status-cell" id="sync-so" data-set="5">${soSyncIcon}</td>
             </tr></tbody>
             <tfoot>
                 <tr><td colspan="15" style="text-align: right; font-weight: bold;">Match Score:</td>
                     <td class="calculated-cell" id="t1-match-score"></td>
                     <td class="calculated-cell" id="t2-match-score"></td>
+                    <td></td>
                 </tr>
                 <tr id="judge-call-row" style="display: none;">
-                    <td colspan="17" style="text-align: center; padding: 8px; background-color: #fffacd;">
+                    <td colspan="18" style="text-align: center; padding: 8px; background-color: #fffacd;">
                         <span style="font-weight: bold; margin-right: 10px;">Judge Call (Closest to Center):</span>
                         <span class="tie-breaker-controls">
                             <button class="btn" data-winner="t1">Team 1 Wins</button>
@@ -362,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </span>
                     </td>
                 </tr>
-                <tr><td colspan="17" id="match-result"></td></tr>
+                <tr><td colspan="18" id="match-result"></td></tr>
             </tfoot>
         </table>`;
         scoreTableContainer.innerHTML = tableHTML;
@@ -573,7 +598,42 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.syncStatus[team]) state.syncStatus[team] = {};
         if (!state.syncStatus[team][archerIndex]) state.syncStatus[team][archerIndex] = {};
         state.syncStatus[team][archerIndex][setNumber] = status;
-        // TODO: Update UI to show sync status (green checkmark, yellow pending, red failed)
+        
+        // Update UI indicator
+        const setId = setNumber === 5 ? 'so' : setNumber;
+        const syncCell = document.getElementById(`sync-e${setId}`);
+        if (syncCell) {
+            // Get all sync statuses for this set (all archers in both teams)
+            const syncStatuses = [];
+            for (let archIdx = 0; archIdx < 3; archIdx++) {
+                const t1Status = state.syncStatus?.t1?.[archIdx]?.[setNumber] || '';
+                const t2Status = state.syncStatus?.t2?.[archIdx]?.[setNumber] || '';
+                if (t1Status) syncStatuses.push(t1Status);
+                if (t2Status) syncStatuses.push(t2Status);
+            }
+            syncCell.innerHTML = getSyncStatusIcon(syncStatuses);
+        }
+    }
+    
+    // Phase 2: Get sync status icon (shows worst status across all archers)
+    function getSyncStatusIcon(statuses) {
+        // Determine overall status (failed > pending > synced > none)
+        let overallStatus = '';
+        if (statuses.includes('failed')) {
+            overallStatus = 'failed';
+        } else if (statuses.includes('pending')) {
+            overallStatus = 'pending';
+        } else if (statuses.includes('synced')) {
+            overallStatus = 'synced';
+        }
+        
+        const icons = {
+            'synced': '<span class="sync-status-icon" style="color: #4caf50; font-size: 1.2em;" title="Synced">✓</span>',
+            'pending': '<span class="sync-status-icon" style="color: #ff9800; font-size: 1.2em;" title="Pending">⟳</span>',
+            'failed': '<span class="sync-status-icon" style="color: #f44336; font-size: 1.2em;" title="Failed">✗</span>',
+            '': '<span class="sync-status-icon" style="color: #ccc; font-size: 1.2em;" title="Not Synced">○</span>'
+        };
+        return icons[overallStatus] || icons[''];
     }
     
     // Phase 2: Reset clears session state (database match remains for coach visibility)

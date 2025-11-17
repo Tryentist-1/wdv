@@ -370,6 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <th colspan="3">Archer 2</th>
                     <th colspan="2">End Total</th>
                     <th colspan="2">Set Points</th>
+                    <th rowspan="2">Sync</th>
                 </tr>
                 <tr>
                     <th>A1</th><th>A2</th><th>A3</th>
@@ -381,6 +382,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <tbody>`;
 
         for (let i = 0; i < 5; i++) {
+            const setNumber = i + 1;
+            const syncStatusA1 = state.syncStatus?.a1?.[setNumber] || '';
+            const syncStatusA2 = state.syncStatus?.a2?.[setNumber] || '';
+            const syncIcon = getSyncStatusIcon(syncStatusA1, syncStatusA2);
+            
             tableHTML += `<tr id="end-${i+1}">
                 <td>End ${i+1}</td>
                 <td class="${getScoreColor(state.scores.a1[i][0])}"><input type="text" data-archer="a1" data-end="${i}" data-arrow="0" value="${state.scores.a1[i][0]}" readonly></td>
@@ -393,9 +399,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="calculated-cell" id="a2-e${i+1}-total"></td>
                 <td class="calculated-cell" id="a1-e${i+1}-setpts"></td>
                 <td class="calculated-cell" id="a2-e${i+1}-setpts"></td>
+                <td class="sync-status-cell" id="sync-e${i+1}" data-set="${setNumber}">${syncIcon}</td>
             </tr>`;
         }
 
+        const soSyncStatusA1 = state.syncStatus?.a1?.[6] || '';
+        const soSyncStatusA2 = state.syncStatus?.a2?.[6] || '';
+        const soSyncIcon = getSyncStatusIcon(soSyncStatusA1, soSyncStatusA2);
+        
         tableHTML += `
             <tr id="shoot-off" style="display: none;">
                 <td>S.O.</td>
@@ -410,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="btn btn-sm" data-winner="a2">A2 Wins</button>
                     </span>
                 </td>
+                <td class="sync-status-cell" id="sync-so" data-set="6">${soSyncIcon}</td>
             </tr>
             </tbody>
             <tfoot>
@@ -417,8 +429,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td colspan="8" style="text-align: right; font-weight: bold;">Match Score:</td>
                     <td class="calculated-cell" id="a1-match-score"></td>
                     <td class="calculated-cell" id="a2-match-score"></td>
+                    <td></td>
                 </tr>
-                <tr><td colspan="10" id="match-result"></td></tr>
+                <tr><td colspan="11" id="match-result"></td></tr>
             </tfoot>
         </table>`;
         scoreTableContainer.innerHTML = tableHTML;
@@ -668,7 +681,36 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateSyncStatus(archer, setNumber, status) {
         if (!state.syncStatus[archer]) state.syncStatus[archer] = {};
         state.syncStatus[archer][setNumber] = status;
-        // TODO: Update UI to show sync status (green checkmark, yellow pending, red failed)
+        
+        // Update UI indicator - find the cell for this set
+        const setId = setNumber === 6 ? 'so' : setNumber;
+        const syncCell = document.getElementById(`sync-e${setId}`);
+        if (syncCell) {
+            const syncStatusA1 = state.syncStatus?.a1?.[setNumber] || '';
+            const syncStatusA2 = state.syncStatus?.a2?.[setNumber] || '';
+            syncCell.innerHTML = getSyncStatusIcon(syncStatusA1, syncStatusA2);
+        }
+    }
+    
+    // Phase 2: Get sync status icon (shows worst status if both archers have status)
+    function getSyncStatusIcon(statusA1, statusA2) {
+        // Determine overall status (failed > pending > synced > none)
+        let overallStatus = '';
+        if (statusA1 === 'failed' || statusA2 === 'failed') {
+            overallStatus = 'failed';
+        } else if (statusA1 === 'pending' || statusA2 === 'pending') {
+            overallStatus = 'pending';
+        } else if (statusA1 === 'synced' || statusA2 === 'synced') {
+            overallStatus = 'synced';
+        }
+        
+        const icons = {
+            'synced': '<span class="sync-status-icon" style="color: #4caf50; font-size: 1.2em;" title="Synced">✓</span>',
+            'pending': '<span class="sync-status-icon" style="color: #ff9800; font-size: 1.2em;" title="Pending">⟳</span>',
+            'failed': '<span class="sync-status-icon" style="color: #f44336; font-size: 1.2em;" title="Failed">✗</span>',
+            '': '<span class="sync-status-icon" style="color: #ccc; font-size: 1.2em;" title="Not Synced">○</span>'
+        };
+        return icons[overallStatus] || icons[''];
     }
     
     // Phase 2: Reset clears session state (database match remains for coach visibility)
