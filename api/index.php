@@ -927,6 +927,10 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)/scorecard$#i', $r
                 ra.bale_number,
                 ra.target_assignment,
                 ra.target_size,
+                ra.locked,
+                ra.card_status,
+                ra.verified_at,
+                ra.verified_by,
                 r.division,
                 r.round_type,
                 e.name as event_name,
@@ -991,7 +995,10 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)/scorecard$#i', $r
             'running_total' => $runningTotal,
             'total_tens' => $totalTens,
             'total_xs' => $totalXs,
-            'verified' => false // TODO: Add verification field to schema
+            'verified' => (bool)$raData['locked'],
+            'card_status' => $raData['card_status'] ?? 'PENDING',
+            'verified_at' => $raData['verified_at'],
+            'verified_by' => $raData['verified_by']
         ]);
     } catch (Exception $e) {
         error_log("Scorecard retrieval failed: " . $e->getMessage());
