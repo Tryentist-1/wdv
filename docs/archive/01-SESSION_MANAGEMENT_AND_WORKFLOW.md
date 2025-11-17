@@ -1,6 +1,18 @@
 # Session Management & Workflow Documentation
 
-> **Working doc:** Capture in-flight tasks and observations here during a session. When wrapping up, distil the highlights into `docs/archive/SESSION_SUMMARY.md` for the historical log.
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> This document has been replaced by `SESSION_QUICK_START.md` (now `01-SESSION_QUICK_START.md`) at the project root.
+> 
+> **Use instead:** [01-SESSION_QUICK_START.md](../../01-SESSION_QUICK_START.md)
+> 
+> This file is kept for historical reference only. The content below reflects session management approaches from October 2025 and may no longer be current.
+
+---
+
+## Historical Content (Pre-November 17, 2025)
+
+> **Original purpose:** Working doc to capture in-flight tasks and observations during a session. When wrapping up, distil the highlights into `docs/archive/SESSION_SUMMARY.md` for the historical log.
 
 ## 🔄 Follow‑up Status Update — November 3, 2025
 
