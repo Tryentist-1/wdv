@@ -106,7 +106,24 @@ document.addEventListener('DOMContentLoaded', () => {
             `${a.first} ${a.last}`.toLowerCase().includes(filter.toLowerCase())
         );
 
-        masterList.forEach(archer => {
+        // Sort: Selected archers first, then alphabetical by first name
+        const sortedList = masterList.sort((a, b) => {
+            const archerIdA = `${(a.first || '').trim()}-${(a.last || '').trim()}`;
+            const archerIdB = `${(b.first || '').trim()}-${(b.last || '').trim()}`;
+            const isSelectedA = state.team1.some(t => t.id === archerIdA) || state.team2.some(t => t.id === archerIdA);
+            const isSelectedB = state.team1.some(t => t.id === archerIdB) || state.team2.some(t => t.id === archerIdB);
+            
+            // Selected archers come first
+            if (isSelectedA && !isSelectedB) return -1;
+            if (!isSelectedA && isSelectedB) return 1;
+            
+            // Then sort alphabetically by first name
+            const firstNameA = (a.first || '').trim().toLowerCase();
+            const firstNameB = (b.first || '').trim().toLowerCase();
+            return firstNameA.localeCompare(firstNameB);
+        });
+
+        sortedList.forEach(archer => {
             const archerId = `${(archer.first || '').trim()}-${(archer.last || '').trim()}`;
             const isInTeam1 = state.team1.some(a => a.id === archerId);
             const isInTeam2 = state.team2.some(a => a.id === archerId);
@@ -301,6 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <th colspan="6">Team 2 (${t2ArcherNames})</th>
                     <th colspan="2">End Total</th>
                     <th colspan="2">Set Points</th>
+                    <th rowspan="3">Sync</th>
                 </tr>
                 <tr><th colspan="16" style="background-color: #f8f9fa;"></th></tr>
                 <tr>
@@ -312,6 +330,17 @@ document.addEventListener('DOMContentLoaded', () => {
             </thead><tbody>`;
 
         for (let i = 0; i < 4; i++) {
+            const setNumber = i + 1;
+            // Get sync status for all archers in this set
+            const syncStatuses = [];
+            for (let archIdx = 0; archIdx < 3; archIdx++) {
+                const t1Status = state.syncStatus?.t1?.[archIdx]?.[setNumber] || '';
+                const t2Status = state.syncStatus?.t2?.[archIdx]?.[setNumber] || '';
+                if (t1Status) syncStatuses.push(t1Status);
+                if (t2Status) syncStatuses.push(t2Status);
+            }
+            const syncIcon = getSyncStatusIcon(syncStatuses);
+            
             tableHTML += `<tr id="end-${i+1}"><td>End ${i+1}</td>
                 ${state.scores.t1[i].map((s, a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t1" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`).join('')}
                 ${state.scores.t2[i].map((s, a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t2" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`).join('')}
@@ -319,9 +348,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="calculated-cell" id="t2-e${i+1}-total"></td>
                 <td class="calculated-cell" id="t1-e${i+1}-setpts"></td>
                 <td class="calculated-cell" id="t2-e${i+1}-setpts"></td>
+                <td class="sync-status-cell" id="sync-e${i+1}" data-set="${setNumber}">${syncIcon}</td>
             </tr>`;
         }
 
+        // Get shoot-off sync status
+        const soSyncStatuses = [];
+        for (let archIdx = 0; archIdx < 3; archIdx++) {
+            const t1Status = state.syncStatus?.t1?.[archIdx]?.[5] || '';
+            const t2Status = state.syncStatus?.t2?.[archIdx]?.[5] || '';
+            if (t1Status) soSyncStatuses.push(t1Status);
+            if (t2Status) soSyncStatuses.push(t2Status);
+        }
+        const soSyncIcon = getSyncStatusIcon(soSyncStatuses);
+        
         tableHTML += `<tr id="shoot-off" style="display: none;">
                 <td>S.O.</td>
                 ${state.scores.so.t1.map((s,a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t1" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`).join('')}<td colspan="3"></td>
@@ -330,14 +370,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td colspan="2" id="so-winner-cell" class="calculated-cell">
                     <span id="so-winner-text"></span>
                 </td>
+                <td class="sync-status-cell" id="sync-so" data-set="5">${soSyncIcon}</td>
             </tr></tbody>
             <tfoot>
                 <tr><td colspan="15" style="text-align: right; font-weight: bold;">Match Score:</td>
                     <td class="calculated-cell" id="t1-match-score"></td>
                     <td class="calculated-cell" id="t2-match-score"></td>
+                    <td></td>
                 </tr>
                 <tr id="judge-call-row" style="display: none;">
-                    <td colspan="17" style="text-align: center; padding: 8px; background-color: #fffacd;">
+                    <td colspan="18" style="text-align: center; padding: 8px; background-color: #fffacd;">
                         <span style="font-weight: bold; margin-right: 10px;">Judge Call (Closest to Center):</span>
                         <span class="tie-breaker-controls">
                             <button class="btn" data-winner="t1">Team 1 Wins</button>
@@ -345,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </span>
                     </td>
                 </tr>
-                <tr><td colspan="17" id="match-result"></td></tr>
+                <tr><td colspan="18" id="match-result"></td></tr>
             </tfoot>
         </table>`;
         scoreTableContainer.innerHTML = tableHTML;
@@ -556,7 +598,188 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.syncStatus[team]) state.syncStatus[team] = {};
         if (!state.syncStatus[team][archerIndex]) state.syncStatus[team][archerIndex] = {};
         state.syncStatus[team][archerIndex][setNumber] = status;
-        // TODO: Update UI to show sync status (green checkmark, yellow pending, red failed)
+        
+        // Update UI indicator
+        const setId = setNumber === 5 ? 'so' : setNumber;
+        const syncCell = document.getElementById(`sync-e${setId}`);
+        if (syncCell) {
+            // Get all sync statuses for this set (all archers in both teams)
+            const syncStatuses = [];
+            for (let archIdx = 0; archIdx < 3; archIdx++) {
+                const t1Status = state.syncStatus?.t1?.[archIdx]?.[setNumber] || '';
+                const t2Status = state.syncStatus?.t2?.[archIdx]?.[setNumber] || '';
+                if (t1Status) syncStatuses.push(t1Status);
+                if (t2Status) syncStatuses.push(t2Status);
+            }
+            syncCell.innerHTML = getSyncStatusIcon(syncStatuses);
+        }
+    }
+    
+    // Phase 2: Get sync status icon (shows worst status across all archers)
+    function getSyncStatusIcon(statuses) {
+        // Determine overall status (failed > pending > synced > none)
+        let overallStatus = '';
+        if (statuses.includes('failed')) {
+            overallStatus = 'failed';
+        } else if (statuses.includes('pending')) {
+            overallStatus = 'pending';
+        } else if (statuses.includes('synced')) {
+            overallStatus = 'synced';
+        }
+        
+        const icons = {
+            'synced': '<span class="sync-status-icon" style="color: #4caf50; font-size: 1.2em;" title="Synced">✓</span>',
+            'pending': '<span class="sync-status-icon" style="color: #ff9800; font-size: 1.2em;" title="Pending">⟳</span>',
+            'failed': '<span class="sync-status-icon" style="color: #f44336; font-size: 1.2em;" title="Failed">✗</span>',
+            '': '<span class="sync-status-icon" style="color: #ccc; font-size: 1.2em;" title="Not Synced">○</span>'
+        };
+        return icons[overallStatus] || icons[''];
+    }
+    
+    // Phase 2: Restore match from database if matchId exists
+    async function restoreTeamMatchFromDatabase() {
+        if (!state.matchId || !window.LiveUpdates) return false;
+        
+        try {
+            const match = await window.LiveUpdates.request(`/team-matches/${state.matchId}`, 'GET');
+            if (!match || !match.match) return false;
+            
+            console.log('[TeamCard] Restoring team match from database:', state.matchId);
+            
+            // Restore teams and archers from match data
+            const teams = match.match.teams || [];
+            if (teams.length >= 2) {
+                const team1Data = teams.find(t => t.position === 1);
+                const team2Data = teams.find(t => t.position === 2);
+                
+                if (team1Data && team2Data && team1Data.archers && team2Data.archers) {
+                    // Store team IDs
+                    state.teamIds = {
+                        t1: team1Data.id,
+                        t2: team2Data.id
+                    };
+                    
+                    // Find archers in master list by name
+                    const masterList = ArcherModule.loadList();
+                    state.team1 = [];
+                    state.team2 = [];
+                    state.matchArcherIds = { t1: {}, t2: {} };
+                    
+                    // Restore Team 1 archers
+                    team1Data.archers.forEach((archerData, index) => {
+                        const archerName = archerData.archer_name || '';
+                        const nameParts = archerName.split(' ');
+                        const firstName = nameParts[0] || '';
+                        const lastName = nameParts.slice(1).join(' ') || '';
+                        
+                        const archer = masterList.find(a => 
+                            a.first.toLowerCase() === firstName.toLowerCase() &&
+                            a.last.toLowerCase() === lastName.toLowerCase()
+                        );
+                        
+                        if (archer) {
+                            archer.id = `${archer.first}-${archer.last}`;
+                            state.team1.push(archer);
+                            state.matchArcherIds.t1[index] = archerData.id;
+                        } else {
+                            // Create a minimal archer object if not found in master list
+                            state.team1.push({
+                                id: `${firstName}-${lastName}`,
+                                first: firstName,
+                                last: lastName,
+                                school: archerData.school || '',
+                                level: archerData.level || 'VAR',
+                                gender: archerData.gender || ''
+                            });
+                            state.matchArcherIds.t1[index] = archerData.id;
+                        }
+                    });
+                    
+                    // Restore Team 2 archers
+                    team2Data.archers.forEach((archerData, index) => {
+                        const archerName = archerData.archer_name || '';
+                        const nameParts = archerName.split(' ');
+                        const firstName = nameParts[0] || '';
+                        const lastName = nameParts.slice(1).join(' ') || '';
+                        
+                        const archer = masterList.find(a => 
+                            a.first.toLowerCase() === firstName.toLowerCase() &&
+                            a.last.toLowerCase() === lastName.toLowerCase()
+                        );
+                        
+                        if (archer) {
+                            archer.id = `${archer.first}-${archer.last}`;
+                            state.team2.push(archer);
+                            state.matchArcherIds.t2[index] = archerData.id;
+                        } else {
+                            // Create a minimal archer object if not found in master list
+                            state.team2.push({
+                                id: `${firstName}-${lastName}`,
+                                first: firstName,
+                                last: lastName,
+                                school: archerData.school || '',
+                                level: archerData.level || 'VAR',
+                                gender: archerData.gender || ''
+                            });
+                            state.matchArcherIds.t2[index] = archerData.id;
+                        }
+                    });
+                    
+                    // Restore scores from database
+                    const numArrows = state.team1.length * 2; // Each archer shoots 2 arrows per end
+                    state.scores = {
+                        t1: Array(4).fill(null).map(() => Array(numArrows).fill('')),
+                        t2: Array(4).fill(null).map(() => Array(numArrows).fill('')),
+                        so: { t1: Array(state.team1.length).fill(''), t2: Array(state.team1.length).fill('') }
+                    };
+                    
+                    // Restore Team 1 scores
+                    team1Data.archers.forEach((archerData, archIdx) => {
+                        if (archerData.sets && archerData.sets.length > 0) {
+                            archerData.sets.forEach(set => {
+                                if (set.set_number <= 4) {
+                                    const setIdx = set.set_number - 1;
+                                    const arrowStartIdx = archIdx * 2;
+                                    if (set.a1) state.scores.t1[setIdx][arrowStartIdx] = set.a1;
+                                    if (set.a2) state.scores.t1[setIdx][arrowStartIdx + 1] = set.a2;
+                                } else if (set.set_number === 5) {
+                                    // Shoot-off
+                                    if (set.a1) state.scores.so.t1[archIdx] = set.a1;
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Restore Team 2 scores
+                    team2Data.archers.forEach((archerData, archIdx) => {
+                        if (archerData.sets && archerData.sets.length > 0) {
+                            archerData.sets.forEach(set => {
+                                if (set.set_number <= 4) {
+                                    const setIdx = set.set_number - 1;
+                                    const arrowStartIdx = archIdx * 2;
+                                    if (set.a1) state.scores.t2[setIdx][arrowStartIdx] = set.a1;
+                                    if (set.a2) state.scores.t2[setIdx][arrowStartIdx + 1] = set.a2;
+                                } else if (set.set_number === 5) {
+                                    // Shoot-off
+                                    if (set.a1) state.scores.so.t2[archIdx] = set.a1;
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Restore event ID if present
+                    if (match.match.event_id) {
+                        state.eventId = match.match.event_id;
+                    }
+                    
+                    state.currentView = 'scoring';
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.error('[TeamCard] Failed to restore match from database:', e);
+        }
+        return false;
     }
     
     // Phase 2: Reset clears session state (database match remains for coach visibility)
@@ -631,6 +854,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         renderKeypad();
+        
+        // Phase 2: Restore match from database if matchId exists
+        if (state.matchId && window.LiveUpdates) {
+            const restored = await restoreTeamMatchFromDatabase();
+            if (restored) {
+                console.log('[TeamCard] ✅ Match restored from database');
+                // Flush any pending queue
+                if (window.LiveUpdates.flushTeamQueue) {
+                    window.LiveUpdates.flushTeamQueue(state.matchId).catch(e => console.warn('Queue flush failed:', e));
+                }
+            }
+        }
+        
         if (state.currentView === 'scoring' && state.team1.length === 3 && state.team2.length === 3) {
             console.log('[TeamCard] Restoring scoring view from session');
             renderScoringView();
