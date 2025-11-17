@@ -636,6 +636,152 @@ document.addEventListener('DOMContentLoaded', () => {
         return icons[overallStatus] || icons[''];
     }
     
+    // Phase 2: Restore match from database if matchId exists
+    async function restoreTeamMatchFromDatabase() {
+        if (!state.matchId || !window.LiveUpdates) return false;
+        
+        try {
+            const match = await window.LiveUpdates.request(`/team-matches/${state.matchId}`, 'GET');
+            if (!match || !match.match) return false;
+            
+            console.log('[TeamCard] Restoring team match from database:', state.matchId);
+            
+            // Restore teams and archers from match data
+            const teams = match.match.teams || [];
+            if (teams.length >= 2) {
+                const team1Data = teams.find(t => t.position === 1);
+                const team2Data = teams.find(t => t.position === 2);
+                
+                if (team1Data && team2Data && team1Data.archers && team2Data.archers) {
+                    // Store team IDs
+                    state.teamIds = {
+                        t1: team1Data.id,
+                        t2: team2Data.id
+                    };
+                    
+                    // Find archers in master list by name
+                    const masterList = ArcherModule.loadList();
+                    state.team1 = [];
+                    state.team2 = [];
+                    state.matchArcherIds = { t1: {}, t2: {} };
+                    
+                    // Restore Team 1 archers
+                    team1Data.archers.forEach((archerData, index) => {
+                        const archerName = archerData.archer_name || '';
+                        const nameParts = archerName.split(' ');
+                        const firstName = nameParts[0] || '';
+                        const lastName = nameParts.slice(1).join(' ') || '';
+                        
+                        const archer = masterList.find(a => 
+                            a.first.toLowerCase() === firstName.toLowerCase() &&
+                            a.last.toLowerCase() === lastName.toLowerCase()
+                        );
+                        
+                        if (archer) {
+                            archer.id = `${archer.first}-${archer.last}`;
+                            state.team1.push(archer);
+                            state.matchArcherIds.t1[index] = archerData.id;
+                        } else {
+                            // Create a minimal archer object if not found in master list
+                            state.team1.push({
+                                id: `${firstName}-${lastName}`,
+                                first: firstName,
+                                last: lastName,
+                                school: archerData.school || '',
+                                level: archerData.level || 'VAR',
+                                gender: archerData.gender || ''
+                            });
+                            state.matchArcherIds.t1[index] = archerData.id;
+                        }
+                    });
+                    
+                    // Restore Team 2 archers
+                    team2Data.archers.forEach((archerData, index) => {
+                        const archerName = archerData.archer_name || '';
+                        const nameParts = archerName.split(' ');
+                        const firstName = nameParts[0] || '';
+                        const lastName = nameParts.slice(1).join(' ') || '';
+                        
+                        const archer = masterList.find(a => 
+                            a.first.toLowerCase() === firstName.toLowerCase() &&
+                            a.last.toLowerCase() === lastName.toLowerCase()
+                        );
+                        
+                        if (archer) {
+                            archer.id = `${archer.first}-${archer.last}`;
+                            state.team2.push(archer);
+                            state.matchArcherIds.t2[index] = archerData.id;
+                        } else {
+                            // Create a minimal archer object if not found in master list
+                            state.team2.push({
+                                id: `${firstName}-${lastName}`,
+                                first: firstName,
+                                last: lastName,
+                                school: archerData.school || '',
+                                level: archerData.level || 'VAR',
+                                gender: archerData.gender || ''
+                            });
+                            state.matchArcherIds.t2[index] = archerData.id;
+                        }
+                    });
+                    
+                    // Restore scores from database
+                    const numArrows = state.team1.length * 2; // Each archer shoots 2 arrows per end
+                    state.scores = {
+                        t1: Array(4).fill(null).map(() => Array(numArrows).fill('')),
+                        t2: Array(4).fill(null).map(() => Array(numArrows).fill('')),
+                        so: { t1: Array(state.team1.length).fill(''), t2: Array(state.team1.length).fill('') }
+                    };
+                    
+                    // Restore Team 1 scores
+                    team1Data.archers.forEach((archerData, archIdx) => {
+                        if (archerData.sets && archerData.sets.length > 0) {
+                            archerData.sets.forEach(set => {
+                                if (set.set_number <= 4) {
+                                    const setIdx = set.set_number - 1;
+                                    const arrowStartIdx = archIdx * 2;
+                                    if (set.a1) state.scores.t1[setIdx][arrowStartIdx] = set.a1;
+                                    if (set.a2) state.scores.t1[setIdx][arrowStartIdx + 1] = set.a2;
+                                } else if (set.set_number === 5) {
+                                    // Shoot-off
+                                    if (set.a1) state.scores.so.t1[archIdx] = set.a1;
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Restore Team 2 scores
+                    team2Data.archers.forEach((archerData, archIdx) => {
+                        if (archerData.sets && archerData.sets.length > 0) {
+                            archerData.sets.forEach(set => {
+                                if (set.set_number <= 4) {
+                                    const setIdx = set.set_number - 1;
+                                    const arrowStartIdx = archIdx * 2;
+                                    if (set.a1) state.scores.t2[setIdx][arrowStartIdx] = set.a1;
+                                    if (set.a2) state.scores.t2[setIdx][arrowStartIdx + 1] = set.a2;
+                                } else if (set.set_number === 5) {
+                                    // Shoot-off
+                                    if (set.a1) state.scores.so.t2[archIdx] = set.a1;
+                                }
+                            });
+                        }
+                    });
+                    
+                    // Restore event ID if present
+                    if (match.match.event_id) {
+                        state.eventId = match.match.event_id;
+                    }
+                    
+                    state.currentView = 'scoring';
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.error('[TeamCard] Failed to restore match from database:', e);
+        }
+        return false;
+    }
+    
     // Phase 2: Reset clears session state (database match remains for coach visibility)
     function resetMatch() {
         if(confirm("Are you sure you want to start a new match? This will clear all scores.")) {
@@ -708,6 +854,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         renderKeypad();
+        
+        // Phase 2: Restore match from database if matchId exists
+        if (state.matchId && window.LiveUpdates) {
+            const restored = await restoreTeamMatchFromDatabase();
+            if (restored) {
+                console.log('[TeamCard] ✅ Match restored from database');
+                // Flush any pending queue
+                if (window.LiveUpdates.flushTeamQueue) {
+                    window.LiveUpdates.flushTeamQueue(state.matchId).catch(e => console.warn('Queue flush failed:', e));
+                }
+            }
+        }
+        
         if (state.currentView === 'scoring' && state.team1.length === 3 && state.team2.length === 3) {
             console.log('[TeamCard] Restoring scoring view from session');
             renderScoringView();

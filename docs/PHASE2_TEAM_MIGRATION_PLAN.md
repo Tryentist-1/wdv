@@ -717,8 +717,11 @@ async function init() {
     renderKeypad();
     
     // Restore match from database if matchId exists
-    if (state.matchId && window.LiveUpdates && window.LiveUpdates.restoreTeamMatch) {
-        // TODO: Implement restoreTeamMatch if needed
+    if (state.matchId && window.LiveUpdates) {
+        const restored = await restoreTeamMatchFromDatabase();
+        if (restored) {
+            console.log('[TeamCard] ✅ Match restored from database');
+        }
     }
     
     if (state.currentView === 'scoring' && state.team1.length > 0 && state.team2.length > 0) {
