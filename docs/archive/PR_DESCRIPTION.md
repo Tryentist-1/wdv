@@ -1,5 +1,13 @@
 # Phase 1: Archer Data Unification with Smart Matching and Full Field Sync
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Historical PR description from Phase 1 - work completed
+> 
+> This file is kept for historical reference only.
+
+---
+
 ## 🎯 Overview
 
 This PR implements Phase 1 of the archer data unification plan, making MySQL the single source of truth with complete field synchronization, smart matching, and UUID preservation.

@@ -1,5 +1,15 @@
 # Phase 1 Local Testing Guide
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Phase 1 testing guide - superseded by current testing documentation
+> 
+> **Superseded by:** docs/AUTOMATED_TESTING.md and docs/MANUAL_TESTING_CHECKLIST.md
+> 
+> This file is kept for historical reference only.
+
+---
+
 **Date:** November 5, 2025  
 **Server:** http://localhost:8001
 

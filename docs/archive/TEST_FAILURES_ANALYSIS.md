@@ -1,5 +1,13 @@
 # Test Failures Analysis
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Historical test failure analysis - issues resolved
+> 
+> This file is kept for historical reference only.
+
+---
+
 ## Summary
 After fixing API detection, we have **30 passing tests** and **4 failing tests**.
 
