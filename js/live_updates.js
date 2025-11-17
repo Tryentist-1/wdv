@@ -418,6 +418,148 @@
         loadPersistedState();  // Restore roundId and archerIds from previous session
     }
 
+    // =====================================================
+    // PHASE 2: SOLO MATCH METHODS
+    // =====================================================
+    
+    function ensureSoloMatch({ date, location, eventId, maxSets = 5 }) {
+        if (!state.config.enabled) return Promise.resolve(null);
+        
+        // Check if we have a cached matchId for the same event
+        const matchKey = `solo_match:${eventId || 'standalone'}:${date}`;
+        const cached = localStorage.getItem(matchKey);
+        if (cached) {
+            try {
+                const cachedData = JSON.parse(cached);
+                if (cachedData.matchId && cachedData.eventId === eventId) {
+                    console.log('✅ Reusing existing solo match:', cachedData.matchId);
+                    state.soloMatchId = cachedData.matchId;
+                    state.soloEventId = eventId;
+                    return Promise.resolve(cachedData.matchId);
+                }
+            } catch (e) {
+                console.warn('Failed to parse cached solo match:', e);
+            }
+        }
+        
+        return request('/solo-matches', 'POST', { date, location, eventId, maxSets })
+            .then(json => {
+                if (!json || !json.matchId) {
+                    throw new Error('Solo match creation failed: missing matchId');
+                }
+                state.soloMatchId = json.matchId;
+                state.soloEventId = eventId;
+                // Cache matchId
+                localStorage.setItem(matchKey, JSON.stringify({ matchId: json.matchId, eventId, date }));
+                console.log('Solo match created:', json.matchId);
+                return json.matchId;
+            });
+    }
+    
+    function ensureSoloArcher(matchId, localId, archer, position) {
+        if (!state.config.enabled) return Promise.resolve(null);
+        
+        const mappingKey = `solo_archer:${matchId}:${position}`;
+        const alreadyMapped = localStorage.getItem(mappingKey);
+        if (alreadyMapped) {
+            try {
+                const mapped = JSON.parse(alreadyMapped);
+                console.log(`🔄 Solo archer ${localId} position ${position} already mapped to ${mapped.matchArcherId}`);
+                return Promise.resolve(mapped.matchArcherId);
+            } catch (e) {
+                console.warn('Failed to parse cached archer mapping:', e);
+            }
+        }
+        
+        return request(`/solo-matches/${matchId}/archers`, 'POST', {
+            extId: localId,
+            firstName: archer.first || archer.firstName || '',
+            lastName: archer.last || archer.lastName || '',
+            school: archer.school || '',
+            level: archer.level || '',
+            gender: archer.gender || '',
+            position: position
+        }).then(json => {
+            if (!json || !json.matchArcherId) {
+                throw new Error('Solo archer ensure failed: missing matchArcherId');
+            }
+            // Cache mapping
+            localStorage.setItem(mappingKey, JSON.stringify({ matchArcherId: json.matchArcherId, position }));
+            console.log(`✅ Solo archer ${localId} position ${position} mapped: ${json.matchArcherId}`);
+            return json.matchArcherId;
+        });
+    }
+    
+    function postSoloSet(matchId, matchArcherId, setNumber, payload) {
+        if (!state.config.enabled) return Promise.resolve();
+        
+        const reqBody = {
+            setNumber,
+            a1: payload.a1 || null,
+            a2: payload.a2 || null,
+            a3: payload.a3 || null,
+            setTotal: payload.setTotal || 0,
+            setPoints: payload.setPoints || 0,
+            runningPoints: payload.runningPoints || 0,
+            tens: payload.tens || 0,
+            xs: payload.xs || 0,
+            deviceTs: new Date().toISOString(),
+        };
+        
+        console.log('📤 Posting solo set:', { matchId, matchArcherId, setNumber, payload: reqBody });
+        
+        const doRequest = () => request(`/solo-matches/${matchId}/archers/${matchArcherId}/sets`, 'POST', reqBody)
+            .then(() => {
+                try {
+                    window.dispatchEvent(new CustomEvent('soloSyncSuccess', { detail: { matchArcherId, setNumber } }));
+                } catch (_) {}
+            });
+        
+        // Basic offline queue: persist if request fails due to network, flush later
+        return doRequest().catch(e => {
+            const isNetwork = (e && (e.name === 'TypeError' || /NetworkError|Failed to fetch/i.test(String(e))));
+            if (isNetwork) {
+                try {
+                    const key = `luq:solo:${matchId}`;
+                    const q = JSON.parse(localStorage.getItem(key) || '[]');
+                    q.push({ matchArcherId, setNumber, body: reqBody });
+                    localStorage.setItem(key, JSON.stringify(q));
+                    try {
+                        window.dispatchEvent(new CustomEvent('soloSyncPending', { detail: { matchArcherId, setNumber } }));
+                    } catch (_) {}
+                    return; // resolve quietly; will be retried later
+                } catch (_) {}
+            }
+            try {
+                window.dispatchEvent(new CustomEvent('soloSyncPending', { detail: { matchArcherId, setNumber } }));
+            } catch (_) {}
+            throw e;
+        });
+    }
+    
+    function flushSoloQueue(matchId) {
+        try {
+            const key = `luq:solo:${matchId}`;
+            const q = JSON.parse(localStorage.getItem(key) || '[]');
+            if (!Array.isArray(q) || q.length === 0) return Promise.resolve();
+            const tasks = q.map(item => request(`/solo-matches/${matchId}/archers/${item.matchArcherId}/sets`, 'POST', item.body));
+            return Promise.allSettled(tasks).then(results => {
+                const remaining = [];
+                results.forEach((res, idx) => {
+                    if (res.status !== 'fulfilled') remaining.push(q[idx]);
+                });
+                localStorage.setItem(key, JSON.stringify(remaining));
+                if (remaining.length === 0) {
+                    console.log('✅ Solo match queue flushed successfully');
+                } else {
+                    console.warn(`⚠️ Solo match queue: ${remaining.length} items failed to sync`);
+                }
+            });
+        } catch (_) {
+            return Promise.resolve();
+        }
+    }
+
     // --- PUBLIC API ---
     const publicApi = {
         setConfig,
@@ -426,6 +568,11 @@
         ensureArcher,
         postEnd,
         flushQueue,
+        // Phase 2: Solo match methods
+        ensureSoloMatch,
+        ensureSoloArcher,
+        postSoloSet,
+        flushSoloQueue,
         request,
         clearSession: clearPersistedState,  // Expose for debugging/new events
         _state: state,

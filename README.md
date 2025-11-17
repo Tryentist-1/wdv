@@ -283,6 +283,7 @@ open https://tryentist.com/wdv/
 | [AUTHENTICATION_ANALYSIS.md](docs/AUTHENTICATION_ANALYSIS.md) | Complete auth system |
 | [AUTHENTICATION_FLOWS.md](docs/AUTHENTICATION_FLOWS.md) | Visual flow diagrams |
 | [AUTHENTICATION_QUICK_REFERENCE.md](docs/AUTHENTICATION_QUICK_REFERENCE.md) | Quick lookup |
+| [STORAGE_TIER_AUDIT.md](docs/STORAGE_TIER_AUDIT.md) | 3-tier storage verification |
 
 ### 🎓 User Guides
 | Document | Purpose |

@@ -10,15 +10,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- STATE MANAGEMENT ---
     const state = {
         app: 'SoloCard',
-        version: '1.0',
+        version: '2.0', // Phase 2: Database integration
         currentView: 'setup', // 'setup' or 'scoring'
         archer1: null,        // Stores the full archer object for Archer 1
         archer2: null,        // Stores the full archer object for Archer 2
         scores: {},           // { a1: [[s1,s2,s3], ...], a2: [[s1,s2,s3], ...], so: {a1: s, a2: s} }
-        shootOffWinner: null  // 'a1' or 'a2' if judge call is needed
+        shootOffWinner: null, // 'a1' or 'a2' if judge call is needed
+        // Phase 2: Database integration
+        matchId: null,        // Database match ID (UUID)
+        matchArcherIds: {},   // { a1: matchArcherId, a2: matchArcherId }
+        eventId: null,        // Optional event ID for coach visibility
+        syncStatus: {},       // Track sync status per archer per set: { a1: { setNumber: 'synced'|'pending'|'failed' } }
+        location: ''          // Match location
     };
 
-    const sessionKey = `soloCard_${new Date().toISOString().split('T')[0]}`;
+    const sessionKey = `soloCard_session_${new Date().toISOString().split('T')[0]}`;
 
     // --- DOM ELEMENT REFERENCES ---
     const views = {
@@ -49,11 +55,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- PERSISTENCE ---
+    // Phase 2: Only save session state (temporary, can be reconstructed from DB)
     function saveData() {
         try {
-            localStorage.setItem(sessionKey, JSON.stringify(state));
+            // Only save session state, not scores (scores are in database)
+            const sessionState = {
+                matchId: state.matchId,
+                matchArcherIds: state.matchArcherIds,
+                eventId: state.eventId,
+                location: state.location,
+                currentView: state.currentView,
+                // Keep archer selections for UI (will be restored from DB if matchId exists)
+                archer1: state.archer1 ? { id: state.archer1.id, first: state.archer1.first, last: state.archer1.last } : null,
+                archer2: state.archer2 ? { id: state.archer2.id, first: state.archer2.first, last: state.archer2.last } : null
+            };
+            localStorage.setItem(sessionKey, JSON.stringify(sessionState));
         } catch (e) {
-            console.error("Error saving data to localStorage", e);
+            console.error("Error saving session state to localStorage", e);
         }
     }
 
@@ -62,12 +80,96 @@ document.addEventListener('DOMContentLoaded', () => {
         if (storedState) {
             try {
                 const loadedState = JSON.parse(storedState);
-                Object.assign(state, loadedState);
+                // Restore session state only
+                state.matchId = loadedState.matchId || null;
+                state.matchArcherIds = loadedState.matchArcherIds || {};
+                state.eventId = loadedState.eventId || null;
+                state.location = loadedState.location || '';
+                state.currentView = loadedState.currentView || 'setup';
+                // Restore archer references (will need to reload from ArcherModule)
+                if (loadedState.archer1) {
+                    const a1 = ArcherModule.getArcherById(loadedState.archer1.id);
+                    if (a1) {
+                        a1.id = loadedState.archer1.id;
+                        state.archer1 = a1;
+                    }
+                }
+                if (loadedState.archer2) {
+                    const a2 = ArcherModule.getArcherById(loadedState.archer2.id);
+                    if (a2) {
+                        a2.id = loadedState.archer2.id;
+                        state.archer2 = a2;
+                    }
+                }
             } catch (e) {
-                console.error("Error parsing stored data. Starting fresh.", e);
+                console.error("Error parsing stored session state. Starting fresh.", e);
                 localStorage.removeItem(sessionKey);
             }
         }
+    }
+    
+    // Phase 2: Restore match from database if matchId exists
+    async function restoreMatchFromDatabase() {
+        if (!state.matchId || !window.LiveUpdates) return false;
+        
+        try {
+            const match = await window.LiveUpdates.request(`/solo-matches/${state.matchId}`, 'GET');
+            if (!match || !match.match) return false;
+            
+            console.log('✅ Restored solo match from database:', state.matchId);
+            
+            // Restore archers from match data
+            const matchArchers = match.match.archers || [];
+            if (matchArchers.length >= 2) {
+                const a1Data = matchArchers.find(a => a.position === 1);
+                const a2Data = matchArchers.find(a => a.position === 2);
+                
+                if (a1Data && a2Data) {
+                    // Find archers in master list by name
+                    const masterList = ArcherModule.loadList();
+                    const a1 = masterList.find(a => 
+                        `${a.first} ${a.last}`.toLowerCase() === a1Data.archer_name.toLowerCase()
+                    );
+                    const a2 = masterList.find(a => 
+                        `${a.first} ${a.last}`.toLowerCase() === a2Data.archer_name.toLowerCase()
+                    );
+                    
+                    if (a1 && a2) {
+                        a1.id = `${a1.first}-${a1.last}`;
+                        a2.id = `${a2.first}-${a2.last}`;
+                        state.archer1 = a1;
+                        state.archer2 = a2;
+                        state.matchArcherIds = {
+                            a1: a1Data.id,
+                            a2: a2Data.id
+                        };
+                    }
+                    
+                    // Restore scores from database
+                    state.scores = { a1: Array(5).fill(null).map(() => ['', '', '']), a2: Array(5).fill(null).map(() => ['', '', '']), so: { a1: '', a2: '' } };
+                    matchArchers.forEach(archerData => {
+                        const archerKey = archerData.position === 1 ? 'a1' : 'a2';
+                        if (archerData.sets && archerData.sets.length > 0) {
+                            archerData.sets.forEach(set => {
+                                if (set.set_number <= 5) {
+                                    const setIdx = set.set_number - 1;
+                                    state.scores[archerKey][setIdx] = [set.a1 || '', set.a2 || '', set.a3 || ''];
+                                } else if (set.set_number === 6) {
+                                    // Shoot-off
+                                    state.scores.so[archerKey] = set.a1 || '';
+                                }
+                            });
+                        }
+                    });
+                    
+                    state.currentView = 'scoring';
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to restore match from database:', e);
+        }
+        return false;
     }
 
     // --- LOGIC ---
@@ -140,25 +242,88 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    function startScoring() {
+    // Phase 2: Create match in database before starting
+    async function startScoring() {
         if (!state.archer1 || !state.archer2) {
             alert("Please select two archers to start the match.");
             return;
         }
-        // Initialize scores if they don't exist
-        if (!state.scores.a1 || state.scores.a1.length !== 5) {
-            state.scores.a1 = Array(5).fill(null).map(() => ['', '', '']);
+        
+        // Check if LiveUpdates is available
+        if (!window.LiveUpdates || !window.LiveUpdates.ensureSoloMatch) {
+            console.error('LiveUpdates API not available');
+            alert('Database connection not available. Please refresh the page.');
+            return;
         }
-        if (!state.scores.a2 || state.scores.a2.length !== 5) {
-            state.scores.a2 = Array(5).fill(null).map(() => ['', '', '']);
+        
+        try {
+            // Get event ID from URL or localStorage (if available)
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('event') || state.eventId || null;
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Create match in database
+            console.log('Creating solo match in database...');
+            const matchId = await window.LiveUpdates.ensureSoloMatch({
+                date: today,
+                location: state.location || '',
+                eventId: eventId,
+                maxSets: 5
+            });
+            
+            if (!matchId) {
+                throw new Error('Failed to create match in database');
+            }
+            
+            state.matchId = matchId;
+            state.eventId = eventId;
+            
+            // Add archers to match
+            console.log('Adding archers to match...');
+            const a1Id = state.archer1.id;
+            const a2Id = state.archer2.id;
+            
+            const matchArcherId1 = await window.LiveUpdates.ensureSoloArcher(matchId, a1Id, state.archer1, 1);
+            const matchArcherId2 = await window.LiveUpdates.ensureSoloArcher(matchId, a2Id, state.archer2, 2);
+            
+            if (!matchArcherId1 || !matchArcherId2) {
+                throw new Error('Failed to add archers to match');
+            }
+            
+            state.matchArcherIds = {
+                a1: matchArcherId1,
+                a2: matchArcherId2
+            };
+            
+            // Initialize scores
+            if (!state.scores.a1 || state.scores.a1.length !== 5) {
+                state.scores.a1 = Array(5).fill(null).map(() => ['', '', '']);
+            }
+            if (!state.scores.a2 || state.scores.a2.length !== 5) {
+                state.scores.a2 = Array(5).fill(null).map(() => ['', '', '']);
+            }
+            if (!state.scores.so) {
+                state.scores.so = { a1: '', a2: '' };
+            }
+            
+            // Initialize sync status
+            state.syncStatus = { a1: {}, a2: {} };
+            
+            state.currentView = 'scoring';
+            saveData();
+            renderScoringView();
+            renderView();
+            
+            console.log('✅ Solo match started successfully:', matchId);
+            
+            // Flush any pending queue
+            if (window.LiveUpdates.flushSoloQueue) {
+                window.LiveUpdates.flushSoloQueue(matchId).catch(e => console.warn('Queue flush failed:', e));
+            }
+        } catch (e) {
+            console.error('Failed to start match:', e);
+            alert(`Failed to start match: ${e.message}. Please try again.`);
         }
-        if (!state.scores.so) {
-            state.scores.so = { a1: '', a2: '' };
-        }
-        state.currentView = 'scoring';
-        renderScoringView();
-        renderView();
-        saveData();
     }
 
     function renderScoringView() {
@@ -399,7 +564,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function handleScoreInput(e) {
+    // Phase 2: Post scores to database when entered
+    async function handleScoreInput(e) {
         const input = e.target;
         const { archer, end, arrow } = input.dataset;
 
@@ -412,8 +578,82 @@ document.addEventListener('DOMContentLoaded', () => {
         // Re-render the entire view to ensure consistency
         renderScoringView();
         saveData();
+        
+        // Phase 2: Post to database if match is active
+        if (state.matchId && state.matchArcherIds[archer] && window.LiveUpdates && window.LiveUpdates.postSoloSet) {
+            const setNumber = end === 'so' ? 6 : (parseInt(end, 10) + 1);
+            const matchArcherId = state.matchArcherIds[archer];
+            
+            // Calculate set totals and points
+            const setScores = end === 'so' 
+                ? [state.scores.so[archer], '', ''] 
+                : state.scores[archer][parseInt(end, 10)];
+            
+            const setTotal = setScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
+            
+            // Calculate set points (compare with opponent)
+            let setPoints = 0;
+            let runningPoints = 0;
+            if (end !== 'so') {
+                const opponentArcher = archer === 'a1' ? 'a2' : 'a1';
+                const opponentScores = state.scores[opponentArcher][parseInt(end, 10)];
+                const opponentTotal = opponentScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                
+                if (setTotal > opponentTotal) setPoints = 2;
+                else if (setTotal < opponentTotal) setPoints = 0;
+                else setPoints = 1;
+                
+                // Calculate running points (sum of all previous sets)
+                const currentSet = parseInt(end, 10);
+                for (let i = 0; i <= currentSet; i++) {
+                    const myScores = state.scores[archer][i];
+                    const oppScores = state.scores[opponentArcher][i];
+                    const myTotal = myScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                    const oppTotal = oppScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                    if (myTotal > oppTotal) runningPoints += 2;
+                    else if (myTotal === oppTotal) runningPoints += 1;
+                }
+            }
+            
+            // Count tens and Xs
+            const tens = setScores.filter(s => parseScoreValue(s) === 10).length;
+            const xs = setScores.filter(s => String(s).toUpperCase() === 'X').length;
+            
+            // Only post if all 3 arrows are entered (or shoot-off with 1 arrow)
+            const isComplete = end === 'so' 
+                ? (state.scores.so.a1 !== '' && state.scores.so.a2 !== '')
+                : setScores.every(s => s !== '' && s !== null);
+            
+            if (isComplete) {
+                try {
+                    updateSyncStatus(archer, setNumber, 'pending');
+                    await window.LiveUpdates.postSoloSet(state.matchId, matchArcherId, setNumber, {
+                        a1: setScores[0] || null,
+                        a2: setScores[1] || null,
+                        a3: setScores[2] || null,
+                        setTotal,
+                        setPoints,
+                        runningPoints,
+                        tens,
+                        xs
+                    });
+                    updateSyncStatus(archer, setNumber, 'synced');
+                } catch (e) {
+                    console.error('Failed to sync set to database:', e);
+                    updateSyncStatus(archer, setNumber, 'failed');
+                }
+            }
+        }
     }
     
+    // Phase 2: Update sync status for UI feedback
+    function updateSyncStatus(archer, setNumber, status) {
+        if (!state.syncStatus[archer]) state.syncStatus[archer] = {};
+        state.syncStatus[archer][setNumber] = status;
+        // TODO: Update UI to show sync status (green checkmark, yellow pending, red failed)
+    }
+    
+    // Phase 2: Reset clears session state (database match remains for coach visibility)
     function resetMatch() {
         if(confirm("Are you sure you want to start a new match? This will clear all scores.")) {
             state.archer1 = null;
@@ -421,6 +661,11 @@ document.addEventListener('DOMContentLoaded', () => {
             state.scores = {};
             state.shootOffWinner = null;
             state.currentView = 'setup';
+            // Phase 2: Clear database references (match remains in DB for coach)
+            state.matchId = null;
+            state.matchArcherIds = {};
+            state.eventId = null;
+            state.syncStatus = {};
             localStorage.removeItem(sessionKey);
             renderSetupView();
             renderView();
@@ -622,9 +867,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIALIZATION ---
     async function init() {
-        await ArcherModule.loadDefaultCSVIfNeeded();
+        // Phase 2: Try to load archer list from MySQL first (public endpoint)
+        try {
+            if (window.LiveUpdates && window.LiveUpdates.request) {
+                await ArcherModule.loadFromMySQL();
+                console.log('✅ Archer list loaded from MySQL');
+            } else {
+                console.warn('⚠️ LiveUpdates not available, loading from CSV/localStorage');
+                await ArcherModule.loadDefaultCSVIfNeeded();
+            }
+        } catch (e) {
+            console.warn('⚠️ Failed to load from MySQL, falling back to CSV:', e);
+            await ArcherModule.loadDefaultCSVIfNeeded();
+        }
+        
         loadData();
         renderKeypad();
+        
+        // Phase 2: Restore match from database if matchId exists
+        if (state.matchId && window.LiveUpdates) {
+            const restored = await restoreMatchFromDatabase();
+            if (restored) {
+                console.log('✅ Match restored from database');
+                // Flush any pending queue
+                if (window.LiveUpdates.flushSoloQueue) {
+                    window.LiveUpdates.flushSoloQueue(state.matchId).catch(e => 
+                        console.warn('Queue flush failed:', e)
+                    );
+                }
+            } else {
+                console.log('⚠️ Match not found in database, starting fresh');
+                // Clear invalid matchId
+                state.matchId = null;
+                state.matchArcherIds = {};
+            }
+        }
 
         if (state.currentView === 'scoring' && state.archer1 && state.archer2) {
             renderScoringView();
@@ -633,6 +910,18 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSetupView();
         }
         renderView();
+        
+        // Phase 2: Set up offline/online listeners
+        if (window.LiveUpdates && window.LiveUpdates.flushSoloQueue) {
+            window.addEventListener('online', () => {
+                if (state.matchId) {
+                    console.log('🌐 Online - flushing solo match queue...');
+                    window.LiveUpdates.flushSoloQueue(state.matchId).catch(e => 
+                        console.warn('Queue flush failed:', e)
+                    );
+                }
+            });
+        }
 
         searchInput.addEventListener('input', () => renderSetupView(searchInput.value));
         archerSelectionContainer.addEventListener('click', handleArcherSelection);

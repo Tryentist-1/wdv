@@ -88,6 +88,7 @@ See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 
 **Authentication/Storage:**
 - [docs/AUTHENTICATION_ANALYSIS.md](docs/AUTHENTICATION_ANALYSIS.md)
+- [docs/STORAGE_TIER_AUDIT.md](docs/STORAGE_TIER_AUDIT.md)
 - [docs/CLEANUP_ACTION_PLAN.md](docs/CLEANUP_ACTION_PLAN.md)
 
 **Ranking Rounds:**

@@ -2993,4 +2993,599 @@ if (preg_match('#^/v1/archers/search$#', $route) && $method === 'GET') {
     exit;
 }
 
+// =====================================================
+// PHASE 2: SOLO OLYMPIC MATCH ENDPOINTS
+// =====================================================
+
+// POST /v1/solo-matches - Create new solo match
+if (preg_match('#^/v1/solo-matches$#', $route) && $method === 'POST') {
+    require_api_key();
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $eventId = $input['eventId'] ?? null;
+    $date = $input['date'] ?? date('Y-m-d');
+    $location = $input['location'] ?? null;
+    $maxSets = $input['maxSets'] ?? 5;
+    
+    try {
+        $pdo = db();
+        $matchId = $genUuid();
+        
+        $stmt = $pdo->prepare('INSERT INTO solo_matches (id, event_id, date, location, max_sets, status, created_at) VALUES (?, ?, ?, ?, ?, "Not Started", NOW())');
+        $stmt->execute([$matchId, $eventId, $date, $location, $maxSets]);
+        
+        json_response(['matchId' => $matchId], 201);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/solo-matches/:id/archers - Add archer to solo match
+if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $matchId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $firstName = trim($input['firstName'] ?? '');
+    $lastName = trim($input['lastName'] ?? '');
+    $extId = $input['extId'] ?? null;
+    $school = $input['school'] ?? '';
+    $level = $input['level'] ?? '';
+    $gender = $input['gender'] ?? '';
+    $position = (int)($input['position'] ?? 0);
+    
+    if ($firstName === '' || $lastName === '' || $position < 1 || $position > 2) {
+        json_response(['error' => 'firstName, lastName, and position (1 or 2) required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Ensure match exists
+        $hasMatch = $pdo->prepare('SELECT id FROM solo_matches WHERE id=?');
+        $hasMatch->execute([$matchId]);
+        if (!$hasMatch->fetch()) {
+            json_response(['error' => 'Match not found'], 404);
+            exit;
+        }
+        
+        // Find or create archer in master table
+        $archerId = null;
+        if ($extId) {
+            $stmt = $pdo->prepare('SELECT id FROM archers WHERE ext_id = ? LIMIT 1');
+            $stmt->execute([$extId]);
+            $archerRow = $stmt->fetch();
+            if ($archerRow) {
+                $archerId = $archerRow['id'];
+            }
+        }
+        
+        if (!$archerId && $firstName && $lastName && $school) {
+            $stmt = $pdo->prepare('SELECT id FROM archers WHERE first_name = ? AND last_name = ? AND school = ? LIMIT 1');
+            $stmt->execute([$firstName, $lastName, $school]);
+            $archerRow = $stmt->fetch();
+            if ($archerRow) {
+                $archerId = $archerRow['id'];
+            }
+        }
+        
+        if (!$archerId) {
+            $archerId = $genUuid();
+            $stmt = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+            $stmt->execute([$archerId, $extId, $firstName, $lastName, $school, $level, $gender]);
+        }
+        
+        // Check if archer already exists in this match at this position
+        $existing = $pdo->prepare('SELECT id FROM solo_match_archers WHERE match_id=? AND position=? LIMIT 1');
+        $existing->execute([$matchId, $position]);
+        $existingRow = $existing->fetch();
+        
+        if ($existingRow) {
+            // Update existing
+            $updateStmt = $pdo->prepare('UPDATE solo_match_archers SET archer_id=?, archer_name=?, school=?, level=?, gender=? WHERE id=?');
+            $archerName = trim("$firstName $lastName");
+            $updateStmt->execute([$archerId, $archerName, $school, $level, $gender, $existingRow['id']]);
+            json_response(['matchArcherId' => $existingRow['id'], 'archerId' => $archerId, 'updated' => true], 200);
+            exit;
+        }
+        
+        // Create new
+        $matchArcherId = $genUuid();
+        $archerName = trim("$firstName $lastName");
+        $stmt = $pdo->prepare('INSERT INTO solo_match_archers (id, match_id, archer_id, archer_name, school, level, gender, position, created_at) VALUES (?,?,?,?,?,?,?,?,NOW())');
+        $stmt->execute([$matchArcherId, $matchId, $archerId, $archerName, $school, $level, $gender, $position]);
+        
+        json_response(['matchArcherId' => $matchArcherId, 'archerId' => $archerId, 'created' => true], 201);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/solo-matches/:id/archers/:archerId/sets - Submit set scores
+if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers/([0-9a-f-]+)/sets$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $matchId = $m[1];
+    $matchArcherId = $m[2];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $setNumber = (int)($input['setNumber'] ?? 0);
+    $a1 = $input['a1'] ?? null;
+    $a2 = $input['a2'] ?? null;
+    $a3 = $input['a3'] ?? null;
+    $setTotal = (int)($input['setTotal'] ?? 0);
+    $setPoints = (int)($input['setPoints'] ?? 0);
+    $runningPoints = (int)($input['runningPoints'] ?? 0);
+    $tens = (int)($input['tens'] ?? 0);
+    $xs = (int)($input['xs'] ?? 0);
+    $deviceTs = $input['deviceTs'] ?? null;
+    if ($deviceTs) {
+        try {
+            $dt = new DateTime($deviceTs);
+            $deviceTs = $dt->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            $deviceTs = null;
+        }
+    }
+    
+    if ($setNumber < 1) {
+        json_response(['error' => 'setNumber required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Check if set already exists
+        $existing = $pdo->prepare('SELECT id FROM solo_match_sets WHERE match_archer_id=? AND set_number=? LIMIT 1');
+        $existing->execute([$matchArcherId, $setNumber]);
+        $existingRow = $existing->fetch();
+        
+        if ($existingRow) {
+            // Update existing
+            $updateStmt = $pdo->prepare('UPDATE solo_match_sets SET a1=?, a2=?, a3=?, set_total=?, set_points=?, running_points=?, tens=?, xs=?, device_ts=? WHERE id=?');
+            $updateStmt->execute([$a1, $a2, $a3, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs, $existingRow['id']]);
+            json_response(['setId' => $existingRow['id'], 'updated' => true], 200);
+            exit;
+        }
+        
+        // Create new
+        $setId = $genUuid();
+        $stmt = $pdo->prepare('INSERT INTO solo_match_sets (id, match_id, match_archer_id, set_number, a1, a2, a3, set_total, set_points, running_points, tens, xs, device_ts, server_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())');
+        $stmt->execute([$setId, $matchId, $matchArcherId, $setNumber, $a1, $a2, $a3, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs]);
+        
+        // Update match status to In Progress
+        $updateMatch = $pdo->prepare('UPDATE solo_matches SET status="In Progress" WHERE id=? AND status="Not Started"');
+        $updateMatch->execute([$matchId]);
+        
+        json_response(['setId' => $setId, 'created' => true], 201);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// GET /v1/solo-matches/:id - Get solo match details
+if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $matchId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Get match details
+        $matchStmt = $pdo->prepare('SELECT * FROM solo_matches WHERE id=?');
+        $matchStmt->execute([$matchId]);
+        $match = $matchStmt->fetch();
+        
+        if (!$match) {
+            json_response(['error' => 'Match not found'], 404);
+            exit;
+        }
+        
+        // Get archers
+        $archersStmt = $pdo->prepare('SELECT * FROM solo_match_archers WHERE match_id=? ORDER BY position');
+        $archersStmt->execute([$matchId]);
+        $archers = $archersStmt->fetchAll();
+        
+        // Get sets for each archer
+        foreach ($archers as &$archer) {
+            $setsStmt = $pdo->prepare('SELECT * FROM solo_match_sets WHERE match_archer_id=? ORDER BY set_number');
+            $setsStmt->execute([$archer['id']]);
+            $archer['sets'] = $setsStmt->fetchAll();
+        }
+        
+        $match['archers'] = $archers;
+        json_response(['match' => $match], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// PATCH /v1/solo-matches/:id - Update match (winner, status, verification)
+if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 'PATCH') {
+    require_api_key();
+    $matchId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    try {
+        $pdo = db();
+        
+        $updates = [];
+        $params = [];
+        
+        if (isset($input['status'])) {
+            $updates[] = 'status=?';
+            $params[] = $input['status'];
+        }
+        if (isset($input['winnerArcherId'])) {
+            $updates[] = 'winner_archer_id=?';
+            $params[] = $input['winnerArcherId'];
+        }
+        if (isset($input['shootOff'])) {
+            $updates[] = 'shoot_off=?';
+            $params[] = $input['shootOff'] ? 1 : 0;
+        }
+        if (isset($input['locked'])) {
+            $updates[] = 'locked=?';
+            $params[] = $input['locked'] ? 1 : 0;
+        }
+        if (isset($input['cardStatus'])) {
+            $updates[] = 'card_status=?';
+            $params[] = $input['cardStatus'];
+        }
+        if (isset($input['notes'])) {
+            $updates[] = 'notes=?';
+            $params[] = $input['notes'];
+        }
+        
+        if (empty($updates)) {
+            json_response(['error' => 'No fields to update'], 400);
+            exit;
+        }
+        
+        $updates[] = 'updated_at=NOW()';
+        $params[] = $matchId;
+        
+        $sql = 'UPDATE solo_matches SET ' . implode(', ', $updates) . ' WHERE id=?';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        
+        json_response(['message' => 'Match updated successfully'], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// =====================================================
+// PHASE 2: TEAM OLYMPIC MATCH ENDPOINTS
+// =====================================================
+
+// POST /v1/team-matches - Create new team match
+if (preg_match('#^/v1/team-matches$#', $route) && $method === 'POST') {
+    require_api_key();
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $eventId = $input['eventId'] ?? null;
+    $date = $input['date'] ?? date('Y-m-d');
+    $location = $input['location'] ?? null;
+    $maxSets = $input['maxSets'] ?? 4;
+    
+    try {
+        $pdo = db();
+        $matchId = $genUuid();
+        
+        $stmt = $pdo->prepare('INSERT INTO team_matches (id, event_id, date, location, max_sets, status, created_at) VALUES (?, ?, ?, ?, ?, "Not Started", NOW())');
+        $stmt->execute([$matchId, $eventId, $date, $location, $maxSets]);
+        
+        json_response(['matchId' => $matchId], 201);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/team-matches/:id/teams - Add team to match
+if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $matchId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $teamName = $input['teamName'] ?? null;
+    $school = $input['school'] ?? '';
+    $position = (int)($input['position'] ?? 0);
+    
+    if ($position < 1 || $position > 2) {
+        json_response(['error' => 'position (1 or 2) required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Ensure match exists
+        $hasMatch = $pdo->prepare('SELECT id FROM team_matches WHERE id=?');
+        $hasMatch->execute([$matchId]);
+        if (!$hasMatch->fetch()) {
+            json_response(['error' => 'Match not found'], 404);
+            exit;
+        }
+        
+        // Check if team already exists at this position
+        $existing = $pdo->prepare('SELECT id FROM team_match_teams WHERE match_id=? AND position=? LIMIT 1');
+        $existing->execute([$matchId, $position]);
+        $existingRow = $existing->fetch();
+        
+        if ($existingRow) {
+            // Update existing
+            $updateStmt = $pdo->prepare('UPDATE team_match_teams SET team_name=?, school=? WHERE id=?');
+            $updateStmt->execute([$teamName, $school, $existingRow['id']]);
+            json_response(['teamId' => $existingRow['id'], 'updated' => true], 200);
+            exit;
+        }
+        
+        // Create new
+        $teamId = $genUuid();
+        $stmt = $pdo->prepare('INSERT INTO team_match_teams (id, match_id, team_name, school, position, created_at) VALUES (?,?,?,?,?,NOW())');
+        $stmt->execute([$teamId, $matchId, $teamName, $school, $position]);
+        
+        json_response(['teamId' => $teamId, 'created' => true], 201);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/team-matches/:id/teams/:teamId/archers - Add archer to team
+if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $matchId = $m[1];
+    $teamId = $m[2];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $firstName = trim($input['firstName'] ?? '');
+    $lastName = trim($input['lastName'] ?? '');
+    $extId = $input['extId'] ?? null;
+    $school = $input['school'] ?? '';
+    $level = $input['level'] ?? '';
+    $gender = $input['gender'] ?? '';
+    $position = (int)($input['position'] ?? 0);
+    
+    if ($firstName === '' || $lastName === '' || $position < 1 || $position > 3) {
+        json_response(['error' => 'firstName, lastName, and position (1-3) required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Ensure team exists
+        $hasTeam = $pdo->prepare('SELECT id FROM team_match_teams WHERE id=? AND match_id=?');
+        $hasTeam->execute([$teamId, $matchId]);
+        if (!$hasTeam->fetch()) {
+            json_response(['error' => 'Team not found'], 404);
+            exit;
+        }
+        
+        // Find or create archer in master table
+        $archerId = null;
+        if ($extId) {
+            $stmt = $pdo->prepare('SELECT id FROM archers WHERE ext_id = ? LIMIT 1');
+            $stmt->execute([$extId]);
+            $archerRow = $stmt->fetch();
+            if ($archerRow) {
+                $archerId = $archerRow['id'];
+            }
+        }
+        
+        if (!$archerId && $firstName && $lastName && $school) {
+            $stmt = $pdo->prepare('SELECT id FROM archers WHERE first_name = ? AND last_name = ? AND school = ? LIMIT 1');
+            $stmt->execute([$firstName, $lastName, $school]);
+            $archerRow = $stmt->fetch();
+            if ($archerRow) {
+                $archerId = $archerRow['id'];
+            }
+        }
+        
+        if (!$archerId) {
+            $archerId = $genUuid();
+            $stmt = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+            $stmt->execute([$archerId, $extId, $firstName, $lastName, $school, $level, $gender]);
+        }
+        
+        // Check if archer already exists in this team at this position
+        $existing = $pdo->prepare('SELECT id FROM team_match_archers WHERE team_id=? AND position=? LIMIT 1');
+        $existing->execute([$teamId, $position]);
+        $existingRow = $existing->fetch();
+        
+        if ($existingRow) {
+            // Update existing
+            $updateStmt = $pdo->prepare('UPDATE team_match_archers SET archer_id=?, archer_name=?, school=?, level=?, gender=? WHERE id=?');
+            $archerName = trim("$firstName $lastName");
+            $updateStmt->execute([$archerId, $archerName, $school, $level, $gender, $existingRow['id']]);
+            json_response(['matchArcherId' => $existingRow['id'], 'archerId' => $archerId, 'updated' => true], 200);
+            exit;
+        }
+        
+        // Create new
+        $matchArcherId = $genUuid();
+        $archerName = trim("$firstName $lastName");
+        $stmt = $pdo->prepare('INSERT INTO team_match_archers (id, match_id, team_id, archer_id, archer_name, school, level, gender, position, created_at) VALUES (?,?,?,?,?,?,?,?,?,NOW())');
+        $stmt->execute([$matchArcherId, $matchId, $teamId, $archerId, $archerName, $school, $level, $gender, $position]);
+        
+        json_response(['matchArcherId' => $matchArcherId, 'archerId' => $archerId, 'created' => true], 201);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/team-matches/:id/teams/:teamId/archers/:archerId/sets - Submit set scores
+if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers/([0-9a-f-]+)/sets$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $matchId = $m[1];
+    $teamId = $m[2];
+    $matchArcherId = $m[3];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $setNumber = (int)($input['setNumber'] ?? 0);
+    $a1 = $input['a1'] ?? null;
+    $setTotal = (int)($input['setTotal'] ?? 0);
+    $setPoints = (int)($input['setPoints'] ?? 0);
+    $runningPoints = (int)($input['runningPoints'] ?? 0);
+    $tens = (int)($input['tens'] ?? 0);
+    $xs = (int)($input['xs'] ?? 0);
+    $deviceTs = $input['deviceTs'] ?? null;
+    if ($deviceTs) {
+        try {
+            $dt = new DateTime($deviceTs);
+            $deviceTs = $dt->format('Y-m-d H:i:s');
+        } catch (Exception $e) {
+            $deviceTs = null;
+        }
+    }
+    
+    if ($setNumber < 1) {
+        json_response(['error' => 'setNumber required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Check if set already exists
+        $existing = $pdo->prepare('SELECT id FROM team_match_sets WHERE match_archer_id=? AND set_number=? LIMIT 1');
+        $existing->execute([$matchArcherId, $setNumber]);
+        $existingRow = $existing->fetch();
+        
+        if ($existingRow) {
+            // Update existing
+            $updateStmt = $pdo->prepare('UPDATE team_match_sets SET a1=?, set_total=?, set_points=?, running_points=?, tens=?, xs=?, device_ts=? WHERE id=?');
+            $updateStmt->execute([$a1, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs, $existingRow['id']]);
+            json_response(['setId' => $existingRow['id'], 'updated' => true], 200);
+            exit;
+        }
+        
+        // Create new
+        $setId = $genUuid();
+        $stmt = $pdo->prepare('INSERT INTO team_match_sets (id, match_id, team_id, match_archer_id, set_number, a1, set_total, set_points, running_points, tens, xs, device_ts, server_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW())');
+        $stmt->execute([$setId, $matchId, $teamId, $matchArcherId, $setNumber, $a1, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs]);
+        
+        // Update match status to In Progress
+        $updateMatch = $pdo->prepare('UPDATE team_matches SET status="In Progress" WHERE id=? AND status="Not Started"');
+        $updateMatch->execute([$matchId]);
+        
+        json_response(['setId' => $setId, 'created' => true], 201);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// GET /v1/team-matches/:id - Get team match details
+if (preg_match('#^/v1/team-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $matchId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Get match details
+        $matchStmt = $pdo->prepare('SELECT * FROM team_matches WHERE id=?');
+        $matchStmt->execute([$matchId]);
+        $match = $matchStmt->fetch();
+        
+        if (!$match) {
+            json_response(['error' => 'Match not found'], 404);
+            exit;
+        }
+        
+        // Get teams
+        $teamsStmt = $pdo->prepare('SELECT * FROM team_match_teams WHERE match_id=? ORDER BY position');
+        $teamsStmt->execute([$matchId]);
+        $teams = $teamsStmt->fetchAll();
+        
+        // Get archers and sets for each team
+        foreach ($teams as &$team) {
+            $archersStmt = $pdo->prepare('SELECT * FROM team_match_archers WHERE team_id=? ORDER BY position');
+            $archersStmt->execute([$team['id']]);
+            $archers = $archersStmt->fetchAll();
+            
+            foreach ($archers as &$archer) {
+                $setsStmt = $pdo->prepare('SELECT * FROM team_match_sets WHERE match_archer_id=? ORDER BY set_number');
+                $setsStmt->execute([$archer['id']]);
+                $archer['sets'] = $setsStmt->fetchAll();
+            }
+            
+            $team['archers'] = $archers;
+        }
+        
+        $match['teams'] = $teams;
+        json_response(['match' => $match], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// PATCH /v1/team-matches/:id - Update match (winner, status, verification)
+if (preg_match('#^/v1/team-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 'PATCH') {
+    require_api_key();
+    $matchId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    try {
+        $pdo = db();
+        
+        $updates = [];
+        $params = [];
+        
+        if (isset($input['status'])) {
+            $updates[] = 'status=?';
+            $params[] = $input['status'];
+        }
+        if (isset($input['winnerTeamId'])) {
+            $updates[] = 'winner_team_id=?';
+            $params[] = $input['winnerTeamId'];
+        }
+        if (isset($input['shootOff'])) {
+            $updates[] = 'shoot_off=?';
+            $params[] = $input['shootOff'] ? 1 : 0;
+        }
+        if (isset($input['locked'])) {
+            $updates[] = 'locked=?';
+            $params[] = $input['locked'] ? 1 : 0;
+        }
+        if (isset($input['cardStatus'])) {
+            $updates[] = 'card_status=?';
+            $params[] = $input['cardStatus'];
+        }
+        if (isset($input['notes'])) {
+            $updates[] = 'notes=?';
+            $params[] = $input['notes'];
+        }
+        
+        if (empty($updates)) {
+            json_response(['error' => 'No fields to update'], 400);
+            exit;
+        }
+        
+        $updates[] = 'updated_at=NOW()';
+        $params[] = $matchId;
+        
+        $sql = 'UPDATE team_matches SET ' . implode(', ', $updates) . ' WHERE id=?';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        
+        json_response(['message' => 'Match updated successfully'], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 json_response(['error' => 'Not Found', 'route' => $route], 404);
