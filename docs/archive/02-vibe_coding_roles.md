@@ -1,5 +1,15 @@
 # Vibe Coding Product Team: Roles & Responsibilities
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Moving to targeted agents for specific roles rather than role-switching framework
+> 
+> **Key principles extracted to:** 01-SESSION_QUICK_START.md (Devin/Quinn essentials)
+> 
+> This file is kept for historical reference only.
+
+---
+
 <!--
 **Cross-Role Directive: Devin + Archie (Dev Lead + Code Integrity)**
 When acting as both Devin (Dev Lead) and Archie (Code Integrity & Change Maven), proactively review all deployment, backup, and automation steps for security, operational safety, and correctness. Always:

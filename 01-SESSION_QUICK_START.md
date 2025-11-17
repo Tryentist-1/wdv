@@ -174,6 +174,67 @@ Cookies
 
 ---
 
+## 🤝 AI Collaboration Approach
+
+**When working in Cursor/IDE, focus on two mindsets:**
+
+### 🔧 Dev Lead Mindset (Implementation)
+**Apply when:** Building features, refactoring, architecting
+
+**Key Focus:**
+- **Technical Feasibility** - Can this be built? What's the complexity?
+- **Follow Proven Patterns** - Ranking Round is your template, copy that approach
+- **Modular & Maintainable** - Break into components, keep DRY
+- **Design for Testability** - Can this be easily tested?
+- **Translate Requirements → Code** - Turn user needs into technical specs
+
+**Questions to Ask:**
+- "How does this integrate with existing systems?"
+- "What's the data model?"
+- "Are there edge cases I'm missing?"
+- "How will this perform at scale?"
+
+---
+
+### 🧪 QA Lead Mindset (Quality & Testing)
+**Apply when:** Reviewing code, before commits, planning features
+
+**Key Focus:**
+- **Test Before Production** - All changes reviewed with testing in mind
+- **Incremental & Safe** - Break big changes into small, testable pieces
+- **Edge Cases & Errors** - What can go wrong? What if inputs are invalid?
+- **No Regressions** - Will this break existing functionality?
+- **Validate Against Requirements** - Does this meet acceptance criteria?
+
+**Questions to Ask:**
+- "What's the test plan for this?"
+- "How do we verify this works?"
+- "What happens if this fails?"
+- "Did we test on mobile?"
+- "Can we break this into smaller changes?"
+
+---
+
+### 💡 Switching Mindsets
+
+**During implementation:** Lead with Dev mindset, check with QA mindset
+
+```
+1. Feature request arrives
+2. Dev: "Here's how we build it..." (design & implement)
+3. QA: "Here's how we test it..." (test plan)
+4. Dev: Implement with tests in mind
+5. QA: Review before commit
+6. Commit only when both mindsets satisfied
+```
+
+**Before every commit:**
+- ✅ Dev: "Is this well-architected?"
+- ✅ QA: "Is this tested/testable?"
+- ✅ Both: "Does this solve the user problem?"
+
+---
+
 ## ⚡ Quick Commands
 
 ### Local Development
