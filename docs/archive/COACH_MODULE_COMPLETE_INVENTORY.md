@@ -1,5 +1,15 @@
 # Coach Module Complete Inventory
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Point-in-time snapshot (marked "COMPLETE") - may be outdated
+> 
+> **Superseded by:** Current coach implementation docs
+> 
+> This file is kept for historical reference only.
+
+---
+
 **Date:** November 7, 2025  
 **Purpose:** Complete audit of all components, styling, and functionality in the Coach Console module to ensure full Tailwind CSS migration and consistency.
 

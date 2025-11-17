@@ -1,5 +1,13 @@
 # Technical Deep Dive: `score360-with-keypad.html`
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Score360 module may be superseded by Ranking Round modules
+> 
+> This file is kept for historical reference only.
+
+---
+
 **Document Owner:** Gemini (Technical Analyst)
 **Status:** Analysis Complete
 **Date:** 2025-06-12

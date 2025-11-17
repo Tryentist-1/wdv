@@ -1,5 +1,13 @@
 # Audit Scripts Documentation
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Audit scripts from earlier development phase - may no longer be used
+> 
+> This file is kept for historical reference only.
+
+---
+
 This document describes the audit scripts available for maintaining code quality and consistency.
 
 ---

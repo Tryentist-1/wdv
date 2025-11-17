@@ -1,5 +1,13 @@
 # Dark Mode Issues to Fix
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Issues list from November 7 audit - likely resolved in current codebase
+> 
+> This file is kept for historical reference only. Check current code for dark mode status.
+
+---
+
 **Generated:** November 7, 2025  
 **Source:** audit_dark_mode.sh output
 

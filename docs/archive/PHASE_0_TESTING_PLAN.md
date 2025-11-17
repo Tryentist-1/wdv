@@ -1,6 +1,14 @@
 # Phase 0 Testing Plan
 ## OAS Ranking Online 3.0 - Session Persistence & Bale Groups
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Phase 0 testing completed - cookie-based session persistence implemented
+> 
+> This file is kept for historical reference only.
+
+---
+
 **Date:** October 28, 2025  
 **Branch:** OAS-Ranking-Online-3.0  
 **Status:** Ready for Testing

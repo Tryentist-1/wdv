@@ -1,5 +1,15 @@
 # Ranking Round Module Complete Inventory
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Point-in-time snapshot (marked "COMPLETE") - may be outdated
+> 
+> **Superseded by:** Current implementation docs in LIVE_SCORING_IMPLEMENTATION.md and ARCHER_SCORING_WORKFLOW.md
+> 
+> This file is kept for historical reference only.
+
+---
+
 **Date:** November 7, 2025  
 **Purpose:** Complete audit of all components, styling, and functionality in the Ranking Round 300 module to document full Tailwind CSS migration status.
 

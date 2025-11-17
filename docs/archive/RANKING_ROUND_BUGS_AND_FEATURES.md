@@ -1,5 +1,13 @@
 # Ranking Round: Bugs & Feature Requests
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Bug/feature list from October development - likely resolved in current codebase
+> 
+> This file is kept for historical reference only. Check current issue tracker for active bugs/features.
+
+---
+
 **Date**: October 21, 2025  
 **Status**: Active Development  
 **Priority**: High

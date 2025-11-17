@@ -1,5 +1,15 @@
 ## Release Notes – Ranking Round 2.0 (Oct 2025)
 
+> **⚠️ ARCHIVED November 17, 2025**
+> 
+> **Reason:** Historical release notes - superseded by current version (v1.3.0+)
+> 
+> **Current release notes:** See RELEASE_NOTES_v1.3.0.md at project root
+> 
+> This file is kept for historical reference only.
+
+---
+
 ### Deployment
 - New streamlined FTP deploy script (`DeployFTP.sh`):
   - Incremental uploads by default (`--only-newer`, `--parallel=4`).

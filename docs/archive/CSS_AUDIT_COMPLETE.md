@@ -1,4 +1,13 @@
 # Complete CSS & HTML Audit - Archery Score Management
+
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Audit completed, design system implemented
+> 
+> This file is kept for historical reference only. The audit results informed the current design system implementation.
+
+---
+
 **Date:** November 7, 2025  
 **Purpose:** Comprehensive analysis before unified design system implementation
 

@@ -1,5 +1,13 @@
 # 🎉 Ranking Round Tuning - DEPLOYMENT COMPLETE
 
+> **⚠️ DEPRECATED - ARCHIVED November 17, 2025**
+> 
+> **Reason:** Deployment completed October 15, 2025 - all features live in production
+> 
+> This file is kept for historical reference only.
+
+---
+
 **Date**: October 15, 2025  
 **Time**: 2:30 PM  
 **Status**: ✅ **ALL PHASES DEPLOYED TO PRODUCTION**
