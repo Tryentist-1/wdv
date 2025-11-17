@@ -10,6 +10,36 @@ $genUuid = function(): string {
     return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
 };
 
+// Generate match code: solo-[initials]-[MMDD]
+// Example: solo-JSJD-1117 (John Smith vs Jane Doe on Nov 17)
+function generate_solo_match_code(PDO $pdo, string $archer1FirstName, string $archer1LastName, string $archer2FirstName, string $archer2LastName, string $date): string {
+    // Extract first letter of first and last name for each archer
+    $initials1 = strtoupper(substr($archer1FirstName, 0, 1) . substr($archer1LastName, 0, 1));
+    $initials2 = strtoupper(substr($archer2FirstName, 0, 1) . substr($archer2LastName, 0, 1));
+    
+    // Get MMDD from date (YYYY-MM-DD format)
+    $dateParts = explode('-', $date);
+    $mmdd = $dateParts[1] . $dateParts[2]; // MM + DD
+    
+    $code = 'solo-' . $initials1 . $initials2 . '-' . $mmdd;
+    
+    // Ensure uniqueness - if code exists, append a number
+    $baseCode = $code;
+    $counter = 1;
+    do {
+        $stmt = $pdo->prepare('SELECT id FROM solo_matches WHERE match_code = ? LIMIT 1');
+        $stmt->execute([$code]);
+        if ($stmt->fetch()) {
+            $code = $baseCode . $counter;
+            $counter++;
+        } else {
+            break;
+        }
+    } while (true);
+    
+    return $code;
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
@@ -2998,14 +3028,20 @@ if (preg_match('#^/v1/archers/search$#', $route) && $method === 'GET') {
 // =====================================================
 
 // POST /v1/solo-matches - Create new solo match
+// Note: For standalone matches (no eventId), we allow creation without auth.
+// Match code will be generated when second archer is added, then used for auth.
 if (preg_match('#^/v1/solo-matches$#', $route) && $method === 'POST') {
-    require_api_key();
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     
     $eventId = $input['eventId'] ?? null;
     $date = $input['date'] ?? date('Y-m-d');
     $location = $input['location'] ?? null;
     $maxSets = $input['maxSets'] ?? 5;
+    
+    // Require auth only if match is linked to an event
+    if ($eventId) {
+        require_api_key();
+    }
     
     try {
         $pdo = db();
@@ -3022,9 +3058,31 @@ if (preg_match('#^/v1/solo-matches$#', $route) && $method === 'POST') {
 }
 
 // POST /v1/solo-matches/:id/archers - Add archer to solo match
+// Note: For standalone matches, we allow adding first archer without auth.
+// Once match code is generated (when second archer added), it's required for subsequent requests.
 if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers$#i', $route, $m) && $method === 'POST') {
-    require_api_key();
     $matchId = $m[1];
+    
+    // Check if match exists and if it has a match code
+    try {
+        $pdo = db();
+        $matchCheck = $pdo->prepare('SELECT event_id, match_code FROM solo_matches WHERE id=?');
+        $matchCheck->execute([$matchId]);
+        $matchData = $matchCheck->fetch();
+        
+        if (!$matchData) {
+            json_response(['error' => 'Match not found'], 404);
+            exit;
+        }
+        
+        // Require auth if match is linked to event OR if match code already exists
+        if ($matchData['event_id'] || $matchData['match_code']) {
+            require_api_key();
+        }
+    } catch (Exception $e) {
+        // If we can't check, require auth to be safe
+        require_api_key();
+    }
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     
     $firstName = trim($input['firstName'] ?? '');
@@ -3097,7 +3155,44 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers$#i', $route, $m) && $met
         $stmt = $pdo->prepare('INSERT INTO solo_match_archers (id, match_id, archer_id, archer_name, school, level, gender, position, created_at) VALUES (?,?,?,?,?,?,?,?,NOW())');
         $stmt->execute([$matchArcherId, $matchId, $archerId, $archerName, $school, $level, $gender, $position]);
         
-        json_response(['matchArcherId' => $matchArcherId, 'archerId' => $archerId, 'created' => true], 201);
+        // Generate match code when second archer is added
+        $matchCode = null;
+        $archers = $pdo->prepare('SELECT archer_name, position FROM solo_match_archers WHERE match_id = ? ORDER BY position');
+        $archers->execute([$matchId]);
+        $archerRows = $archers->fetchAll();
+        
+        if (count($archerRows) === 2) {
+            // Parse archer names to get first/last names
+            $archer1Name = $archerRows[0]['archer_name'];
+            $archer2Name = $archerRows[1]['archer_name'];
+            
+            $archer1Parts = explode(' ', $archer1Name, 2);
+            $archer2Parts = explode(' ', $archer2Name, 2);
+            
+            $archer1First = $archer1Parts[0] ?? '';
+            $archer1Last = $archer1Parts[1] ?? '';
+            $archer2First = $archer2Parts[0] ?? '';
+            $archer2Last = $archer2Parts[1] ?? '';
+            
+            // Get match date
+            $matchStmt = $pdo->prepare('SELECT date FROM solo_matches WHERE id = ?');
+            $matchStmt->execute([$matchId]);
+            $matchDate = $matchStmt->fetchColumn();
+            
+            if ($archer1First && $archer1Last && $archer2First && $archer2Last && $matchDate) {
+                $matchCode = generate_solo_match_code($pdo, $archer1First, $archer1Last, $archer2First, $archer2Last, $matchDate);
+                
+                // Update match with code
+                $updateStmt = $pdo->prepare('UPDATE solo_matches SET match_code = ? WHERE id = ?');
+                $updateStmt->execute([$matchCode, $matchId]);
+            }
+        }
+        
+        $response = ['matchArcherId' => $matchArcherId, 'archerId' => $archerId, 'created' => true];
+        if ($matchCode) {
+            $response['matchCode'] = $matchCode;
+        }
+        json_response($response, 201);
     } catch (Exception $e) {
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
@@ -3105,8 +3200,9 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers$#i', $route, $m) && $met
 }
 
 // POST /v1/solo-matches/:id/archers/:archerId/sets - Submit set scores
+// Note: Requires match code (for standalone) or event code/coach key (for event-linked)
 if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers/([0-9a-f-]+)/sets$#i', $route, $m) && $method === 'POST') {
-    require_api_key();
+    require_api_key(); // This now accepts match codes via require_api_key()
     $matchId = $m[1];
     $matchArcherId = $m[2];
     $input = json_decode(file_get_contents('php://input'), true) ?? [];

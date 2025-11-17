@@ -226,7 +226,27 @@
                 headers['X-Passcode'] = entryCode;
                 console.log('[LiveUpdates] Using event entry code for request.');
             } else {
-                console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
+                // Check for solo match code if this is a solo match request
+                if (path.includes('/solo-matches/')) {
+                    const matchIdMatch = path.match(/\/solo-matches\/([0-9a-f-]+)/);
+                    if (matchIdMatch) {
+                        const matchId = matchIdMatch[1];
+                        let matchCode = localStorage.getItem(`solo_match_code:${matchId}`);
+                        if (!matchCode && state.soloMatchCode) {
+                            matchCode = state.soloMatchCode;
+                        }
+                        if (matchCode) {
+                            headers['X-Passcode'] = matchCode;
+                            console.log('[LiveUpdates] Using solo match code for request.');
+                        } else {
+                            console.warn('[LiveUpdates] No coach key, entry code, or match code available; request may fail.');
+                        }
+                    } else {
+                        console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
+                    }
+                } else {
+                    console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
+                }
             }
         }
         
@@ -422,23 +442,32 @@
     // PHASE 2: SOLO MATCH METHODS
     // =====================================================
     
-    function ensureSoloMatch({ date, location, eventId, maxSets = 5 }) {
+    function ensureSoloMatch({ date, location, eventId, maxSets = 5, forceNew = false }) {
         if (!state.config.enabled) return Promise.resolve(null);
         
-        // Check if we have a cached matchId for the same event
+        // Build match key for caching (used both for checking cache and storing new match)
         const matchKey = `solo_match:${eventId || 'standalone'}:${date}`;
-        const cached = localStorage.getItem(matchKey);
-        if (cached) {
-            try {
-                const cachedData = JSON.parse(cached);
-                if (cachedData.matchId && cachedData.eventId === eventId) {
-                    console.log('✅ Reusing existing solo match:', cachedData.matchId);
-                    state.soloMatchId = cachedData.matchId;
-                    state.soloEventId = eventId;
-                    return Promise.resolve(cachedData.matchId);
+        
+        // If forceNew is true, skip cache and create a new match
+        if (!forceNew) {
+            // Check if we have a cached matchId for the same event
+            const cached = localStorage.getItem(matchKey);
+            if (cached) {
+                try {
+                    const cachedData = JSON.parse(cached);
+                    if (cachedData.matchId && cachedData.eventId === eventId) {
+                        console.log('✅ Reusing existing solo match:', cachedData.matchId);
+                        state.soloMatchId = cachedData.matchId;
+                        state.soloEventId = eventId;
+                        if (cachedData.matchCode) {
+                            state.soloMatchCode = cachedData.matchCode;
+                            localStorage.setItem(`solo_match_code:${cachedData.matchId}`, cachedData.matchCode);
+                        }
+                        return Promise.resolve(cachedData.matchId);
+                    }
+                } catch (e) {
+                    console.warn('Failed to parse cached solo match:', e);
                 }
-            } catch (e) {
-                console.warn('Failed to parse cached solo match:', e);
             }
         }
         
@@ -449,9 +478,15 @@
                 }
                 state.soloMatchId = json.matchId;
                 state.soloEventId = eventId;
-                // Cache matchId
-                localStorage.setItem(matchKey, JSON.stringify({ matchId: json.matchId, eventId, date }));
-                console.log('Solo match created:', json.matchId);
+                // Cache matchId and match code if available
+                const cacheData = { matchId: json.matchId, eventId, date };
+                if (json.matchCode) {
+                    cacheData.matchCode = json.matchCode;
+                    localStorage.setItem(`solo_match_code:${json.matchId}`, json.matchCode);
+                    state.soloMatchCode = json.matchCode;
+                }
+                localStorage.setItem(matchKey, JSON.stringify(cacheData));
+                console.log('Solo match created:', json.matchId, json.matchCode ? `(code: ${json.matchCode})` : '');
                 return json.matchId;
             });
     }
@@ -486,6 +521,14 @@
             // Cache mapping
             localStorage.setItem(mappingKey, JSON.stringify({ matchArcherId: json.matchArcherId, position }));
             console.log(`✅ Solo archer ${localId} position ${position} mapped: ${json.matchArcherId}`);
+            
+            // Store match code if returned (generated when second archer is added)
+            if (json.matchCode) {
+                localStorage.setItem(`solo_match_code:${matchId}`, json.matchCode);
+                state.soloMatchCode = json.matchCode;
+                console.log(`🔑 Solo match code stored: ${json.matchCode}`);
+            }
+            
             return json.matchArcherId;
         });
     }

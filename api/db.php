@@ -30,13 +30,28 @@ function require_api_key(): void {
     }
     $passOk = (strlen($pass) > 0) && (strtolower($pass) === strtolower(PASSCODE));
     $authorized = ($key === API_KEY) || $passOk;
-    // Allow event entry codes as passcodes for archer endpoints
+    // Allow event entry codes and match codes as passcodes for archer endpoints
     if (!$authorized && strlen($pass) > 0) {
         try {
             $pdo = db();
+            // Check event entry codes
             $stmt = $pdo->prepare('SELECT id FROM events WHERE LOWER(entry_code) = LOWER(?) LIMIT 1');
             $stmt->execute([$pass]);
-            $authorized = (bool)$stmt->fetchColumn();
+            if ($stmt->fetchColumn()) {
+                $authorized = true;
+            } else {
+                // Check solo match codes
+                $stmt = $pdo->prepare('SELECT id FROM solo_matches WHERE LOWER(match_code) = LOWER(?) LIMIT 1');
+                $stmt->execute([$pass]);
+                if ($stmt->fetchColumn()) {
+                    $authorized = true;
+                } else {
+                    // Check team match codes
+                    $stmt = $pdo->prepare('SELECT id FROM team_matches WHERE LOWER(match_code) = LOWER(?) LIMIT 1');
+                    $stmt->execute([$pass]);
+                    $authorized = (bool)$stmt->fetchColumn();
+                }
+            }
         } catch (Exception $e) {
             // fall through to unauthorized if DB not available
         }

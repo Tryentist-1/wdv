@@ -262,13 +262,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const eventId = urlParams.get('event') || state.eventId || null;
             const today = new Date().toISOString().split('T')[0];
             
-            // Create match in database
+            // Create match in database (force new match - don't reuse cache)
             console.log('Creating solo match in database...');
             const matchId = await window.LiveUpdates.ensureSoloMatch({
                 date: today,
                 location: state.location || '',
                 eventId: eventId,
-                maxSets: 5
+                maxSets: 5,
+                forceNew: true  // Always create a new match when starting scoring
             });
             
             if (!matchId) {
@@ -656,6 +657,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Phase 2: Reset clears session state (database match remains for coach visibility)
     function resetMatch() {
         if(confirm("Are you sure you want to start a new match? This will clear all scores.")) {
+            // Clear cached match from localStorage so a new match will be created
+            const oldMatchId = state.matchId;
+            if (oldMatchId) {
+                // Clear the match code cache
+                localStorage.removeItem(`solo_match_code:${oldMatchId}`);
+                // Clear archer mappings for this match
+                localStorage.removeItem(`solo_archer:${oldMatchId}:1`);
+                localStorage.removeItem(`solo_archer:${oldMatchId}:2`);
+            }
+            // Clear the match cache by date/event so ensureSoloMatch will create a new one
+            const today = new Date().toISOString().split('T')[0];
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('event') || state.eventId || null;
+            const matchKey = `solo_match:${eventId || 'standalone'}:${today}`;
+            localStorage.removeItem(matchKey);
+            
             state.archer1 = null;
             state.archer2 = null;
             state.scores = {};
