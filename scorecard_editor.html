@@ -150,12 +150,15 @@
                 
                 <!-- Lock/Unlock Controls (Coach only) -->
                 <div id="lock-controls" class="hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div class="flex gap-3 items-center">
+                    <div class="flex gap-3 items-center flex-wrap">
                         <button id="unlock-btn" class="px-4 py-2 bg-warning text-white rounded hover:bg-warning-dark transition font-semibold">
                             🔓 Unlock for Editing
                         </button>
                         <button id="lock-btn" class="hidden px-4 py-2 bg-success text-white rounded hover:bg-success-dark transition font-semibold">
                             🔒 Lock & Save
+                        </button>
+                        <button id="void-btn" class="px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark transition font-semibold">
+                            ✗ Void Card
                         </button>
                         <input type="text" id="edit-reason" placeholder="Reason for edit (required)" 
                                class="hidden flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
@@ -433,6 +436,15 @@
             // Lock Controls (Coach only)
             if (isCoach) {
                 document.getElementById('lock-controls').classList.remove('hidden');
+                const isVoided = card.card_status === 'VOID';
+                
+                // Void button: show unless already voided
+                if (isVoided) {
+                    document.getElementById('void-btn').classList.add('hidden');
+                } else {
+                    document.getElementById('void-btn').classList.remove('hidden');
+                }
+                
                 if (isLocked) {
                     document.getElementById('unlock-btn').classList.remove('hidden');
                     document.getElementById('lock-btn').classList.add('hidden');
@@ -798,6 +810,42 @@
             } catch (error) {
                 console.error('[lock] Error:', error);
                 alert('Failed to save and lock scorecard: ' + error.message);
+            }
+        });
+        
+        // Void button handler
+        document.getElementById('void-btn').addEventListener('click', async () => {
+            const reason = prompt('Enter reason for voiding this scorecard (required):');
+            if (!reason || reason.trim() === '') {
+                alert('Void cancelled. Reason is required.');
+                return;
+            }
+            
+            if (!confirm('⚠️ VOID this scorecard?\n\nThis action cannot be undone. The scorecard will be marked as VOID and locked.\n\nReason: ' + reason.trim())) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'void',
+                        notes: reason.trim()
+                    })
+                });
+                
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `Failed to void scorecard: ${res.status}`);
+                }
+                
+                isLocked = true;
+                await loadScorecard();
+                alert('✓ Scorecard voided successfully.');
+            } catch (error) {
+                console.error('[void] Error:', error);
+                alert('Failed to void scorecard: ' + error.message);
             }
         });
         
