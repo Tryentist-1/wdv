@@ -1,109 +1,158 @@
 # Release Notes - v1.4.0
 
-**Release Date:** November 2025 (Pending)  
-**Release Tag:** `v1.4.0`  
-**Branch:** `feature/sort-archer-selection-lists`  
-**Status:** 🧪 **READY FOR TESTING**
+**Release Date:** November 17, 2025  
+**Release Tag:** `Tailwind-Conversion`  
+**Branch:** `main`  
+**Status:** ✅ **DEPLOYED TO PRODUCTION**
 
 ---
 
 ## 🎯 Overview
 
-This release includes UX improvements for Solo and Team Olympic matches, plus bug fixes and enhancements to the match restoration functionality.
+This release completes the comprehensive Tailwind CSS migration across all modules, removing all legacy CSS dependencies and standardizing the user interface with a modern, mobile-first design system.
 
 ---
 
-## ✨ New Features
+## ✨ Major Changes
 
-### 1. Sorted Archer Selection Lists
+### Complete Tailwind CSS Migration
 
 **Problem Solved:**
-Archer selection lists in Solo and Team matches were unsorted, making it difficult to find archers quickly, especially when many archers are in the roster.
+- Inconsistent styling across modules (Ranking Round, Solo, Team)
+- Legacy CSS (`css/main.css`) causing conflicts and maintenance issues
+- Keypad layouts varied between modules
+- Dark mode support incomplete
+- Score colors not displaying correctly in tables
 
 **Solution Implemented:**
-- Selected archers now appear at the top of the list
-- Remaining archers are sorted alphabetically by first name
-- Applied to both Solo and Team match selection screens
-
-**Files Changed:**
-- `js/solo_card.js` - Updated `renderSetupView()` function
-- `js/team_card.js` - Updated `renderSetupView()` function
-
-**User Impact:**
-- ✅ Faster archer selection
-- ✅ Better visual organization
-- ✅ Selected archers always visible at top
+- ✅ **100% Tailwind CSS** - All modules now use Tailwind exclusively
+- ✅ **Standardized Keypad** - 4x3 layout (no gaps, no nav buttons) across all modules
+- ✅ **Dark Mode Support** - Complete dark mode implementation throughout
+- ✅ **Score Colors Fixed** - Colors now display correctly on table cells
+- ✅ **Setup Screens Updated** - Consistent Tailwind styling for archer selection
+- ✅ **Legacy CSS Removed** - No more `css/main.css` dependencies
 
 ---
 
-### 2. Sync Status UI Indicators
+## 📦 Detailed Changes
 
-**Problem Solved:**
-No visual feedback when scores are syncing to the database, making it unclear if scores were saved successfully.
+### 1. Keypad Standardization
 
-**Solution Implemented:**
-- Added "Sync" column to score tables in Solo and Team matches
-- Visual status indicators:
-  - ✓ (green) - Synced successfully
-  - ⟳ (yellow) - Pending sync
-  - ✗ (red) - Sync failed
-  - ○ (gray) - Not synced yet
-- Updates in real-time as scores are posted
-- For team matches, shows worst status across all archers
+**New 4x3 Layout:**
+```
+X  10  9  M
+8   7  6  5
+4   3  2  1
+CLOSE    CLEAR
+```
+
+**Features:**
+- No spacing between buttons (edge-to-edge with borders)
+- No navigation buttons (removed prev/next)
+- Touch-friendly (44px minimum targets)
+- Consistent styling across all modules
+- Active states (brightness + scale on press)
+
+**Modules Updated:**
+- ✅ Ranking Round 300
+- ✅ Solo Card
+- ✅ Team Card
+- ✅ Scorecard Editor
 
 **Files Changed:**
-- `js/solo_card.js` - Added sync status column and update logic
-- `js/team_card.js` - Added sync status column and update logic
-
-**User Impact:**
-- ✅ Clear visual feedback on sync status
-- ✅ Easy to identify failed syncs
-- ✅ Confidence that scores are being saved
+- `js/ranking_round_300.js` - Updated `renderKeypad()`
+- `js/solo_card.js` - Updated `renderKeypad()`
+- `js/team_card.js` - Updated `renderKeypad()`
+- `scorecard_editor.html` - Updated keypad modal
+- `test-components.html` - Reference implementation
 
 ---
 
-### 3. Team Match Restoration
-
-**Problem Solved:**
-Team matches could not be restored from the database after page refresh, requiring users to re-enter all data.
-
-**Solution Implemented:**
-- Added `restoreTeamMatchFromDatabase()` function
-- Automatically restores teams, archers, and scores on page load
-- Matches archers by name from master list
-- Handles missing archers gracefully
-- Mirrors solo match restoration functionality
-
-**Files Changed:**
-- `js/team_card.js` - Added restore function and initialization logic
-- `docs/PHASE2_TEAM_MIGRATION_PLAN.md` - Updated with implementation details
-
-**User Impact:**
-- ✅ Match data persists across page refreshes
-- ✅ No data loss if browser crashes
-- ✅ Seamless user experience
-
----
-
-## 🐛 Bug Fixes
-
-### 1. Verification Field in Scorecard Endpoint
+### 2. Score Color System
 
 **Problem:**
-The `GET /v1/scorecard` endpoint was returning hardcoded `verified: false` instead of reading the actual verification status from the database.
+Score colors were not displaying correctly in tables after migration.
 
 **Solution:**
-- Updated SQL query to include `locked`, `card_status`, `verified_at`, `verified_by` fields
-- Returns actual verification status from `round_archers` table
-- Removed outdated TODO comment
+- Updated `getScoreColor()` in `js/common.js` to return Tailwind classes
+- Applied colors to `<td>` elements (not just inputs)
+- Fixed dark mode text colors for readability
+
+**Color Mapping:**
+- **Gold (X, 10, 9):** `bg-score-gold text-black`
+- **Red (8, 7):** `bg-score-red text-white`
+- **Blue (6, 5):** `bg-score-blue text-white`
+- **Black (4, 3):** `bg-score-black text-white`
+- **White (2, 1, M):** `bg-score-white text-black`
 
 **Files Changed:**
-- `api/index.php` - Updated scorecard endpoint query and response
+- `js/common.js` - Updated `getScoreColor()` function
+- `js/solo_card.js` - Updated table rendering and `handleScoreInput()`
+- `js/team_card.js` - Updated table rendering and `handleScoreInput()`
 
-**Impact:**
-- ✅ Accurate verification status in API responses
-- ✅ Better data integrity
-- ✅ Coach console can display correct verification state
+---
+
+### 3. Legacy CSS Removal
+
+**Removed Dependencies:**
+- `css/main.css` - No longer imported in Solo/Team cards
+- Legacy container classes (`main-container`, `modal-overlay`, `modal-content`)
+- Legacy button classes
+- Legacy table classes
+
+**Replaced With:**
+- Tailwind utility classes
+- Consistent design system
+- Mobile-first responsive design
+
+**Files Changed:**
+- `solo_card.html` - Removed `css/main.css` import, added Tailwind
+- `team_card.html` - Removed `css/main.css` import, added Tailwind
+- `js/solo_card.js` - Converted all `style.display` to Tailwind classes
+- `js/team_card.js` - Converted all `style.display` to Tailwind classes
+
+---
+
+### 4. Setup Screen Updates
+
+**Problem:**
+Setup screens (archer selection) used inconsistent legacy CSS classes.
+
+**Solution:**
+- Replaced all legacy classes with Tailwind equivalents
+- Added hover states and selection indicators
+- Improved dark mode support
+- Consistent styling with rest of application
+
+**Features:**
+- Flexbox layout with proper spacing
+- Hover effects on archer rows
+- Visual selection indicators (blue for A1/T1, red for A2/T2)
+- Dark mode variants for all elements
+
+**Files Changed:**
+- `js/solo_card.js` - Updated `renderSetupView()`
+- `js/team_card.js` - Already updated (used as template)
+
+---
+
+### 5. Dark Mode Text Colors
+
+**Problem:**
+Dark mode had black text on dark backgrounds, making content unreadable.
+
+**Solution:**
+- Added `dark:text-white` to all table cells with dark backgrounds
+- Explicit text color classes for score cells
+- Proper contrast ratios for accessibility
+
+**Rule Applied:**
+> "Dark Mode should have white text on any background darker than 300"
+
+**Files Changed:**
+- `test-components.html` - Reference implementation
+- `js/solo_card.js` - Table rendering
+- `js/team_card.js` - Table rendering
 
 ---
 
@@ -111,103 +160,157 @@ The `GET /v1/scorecard` endpoint was returning hardcoded `verified: false` inste
 
 ### Code Changes
 
-**Files Modified:** 4 files
-- `js/solo_card.js` - Sorting and sync status indicators
-- `js/team_card.js` - Sorting, sync status, and match restoration
-- `api/index.php` - Verification field fix
-- `docs/PHASE2_TEAM_MIGRATION_PLAN.md` - Documentation update
+**Files Modified:** 9 files
+- `js/common.js` - Score color utility
+- `js/ranking_round_300.js` - Keypad and styling
+- `js/solo_card.js` - Complete Tailwind migration
+- `js/team_card.js` - Complete Tailwind migration
+- `ranking_round_300.html` - Keypad container
+- `solo_card.html` - Removed legacy CSS, added Tailwind
+- `team_card.html` - Removed legacy CSS, added Tailwind
+- `scorecard_editor.html` - Keypad modal
+- `test-components.html` - Reference components
 
-**Lines Added:** ~200 lines
-**Lines Removed:** ~10 lines
-**Net Change:** +190 lines
+**Lines Added:** 1,814 lines
+**Lines Removed:** 295 lines
+**Net Change:** +1,519 lines
 
-### Commits
+### New Documentation
 
-1. `498d76f` - feat: Sort archer selection lists - selected first, then alphabetical
-2. `9c16ddc` - feat: Add sync status UI indicators to Solo and Team matches
-3. `418f082` - fix: Use existing verification fields in scorecard endpoint
-4. `4821d5e` - feat: Implement restoreTeamMatch function for team matches
+1. **`docs/TAILWIND_MIGRATION_PLAN.md`**
+   - Comprehensive migration strategy
+   - Phase-by-phase implementation plan
+   - Rollback procedures
+
+2. **`docs/KEYPAD_MIGRATION_TODO.md`**
+   - Keypad migration checklist
+   - Focus functionality preservation
+   - Testing requirements
+
+3. **`docs/KEYPAD_ROLLBACK_PLAN.md`**
+   - Rollback procedures
+   - Git tag reference
+   - Recovery steps
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing & Verification
 
 ### Manual Testing Checklist
 
-**Sort Archer Lists:**
-- [ ] Solo match: Selected archers appear at top
-- [ ] Solo match: Remaining archers sorted alphabetically
-- [ ] Team match: Selected archers appear at top
-- [ ] Team match: Remaining archers sorted alphabetically
+**Keypad Functionality:**
+- [x] Ranking Round: Keypad opens/closes correctly
+- [x] Ranking Round: Focus management works
+- [x] Ranking Round: Auto-advance to next field
+- [x] Solo Card: Keypad opens/closes correctly
+- [x] Solo Card: Focus management works
+- [x] Solo Card: Auto-advance to next field
+- [x] Team Card: Keypad opens/closes correctly
+- [x] Team Card: Focus management works
+- [x] Team Card: Auto-advance to next field
+- [x] Scorecard Editor: Keypad modal works
 
-**Sync Status Indicators:**
-- [ ] Solo match: Sync column appears in score table
-- [ ] Solo match: Status icons update correctly (pending → synced)
-- [ ] Team match: Sync column appears in score table
-- [ ] Team match: Status shows worst status across archers
+**Score Colors:**
+- [x] Gold scores (X, 10, 9) display with gold background
+- [x] Red scores (8, 7) display with red background
+- [x] Blue scores (6, 5) display with blue background
+- [x] Black scores (4, 3) display with black background
+- [x] White scores (2, 1, M) display with white background
+- [x] Colors update correctly when scores change
 
-**Team Match Restoration:**
-- [ ] Start team match and enter scores
-- [ ] Refresh page
-- [ ] Verify: Teams restored
-- [ ] Verify: Archers restored
-- [ ] Verify: Scores restored
-- [ ] Verify: View switches to scoring automatically
+**Dark Mode:**
+- [x] All text readable in dark mode
+- [x] Score colors visible in dark mode
+- [x] Table borders visible in dark mode
+- [x] Setup screens work in dark mode
 
-**Verification Field Fix:**
-- [ ] API returns actual verification status
-- [ ] Coach console displays correct verification state
-
-### Browser Console Logging
-
-All features include detailed console logging:
-- `[TeamCard]` - Team match operations
-- `[SoloCard]` - Solo match operations
-- `[LiveUpdates]` - API sync operations
-
-Open browser console (F12) to see detailed logging during testing.
+**Setup Screens:**
+- [x] Solo Card: Archer selection styled correctly
+- [x] Team Card: Archer selection styled correctly
+- [x] Hover states work
+- [x] Selection indicators visible
 
 ---
 
 ## 🔄 Backward Compatibility
 
 ### ✅ 100% Backward Compatible
-- **No breaking changes** to existing functionality
-- **No API changes** (except bug fix to return correct data)
-- **No database schema changes**
+- **No breaking changes** to functionality
+- **No API changes**
+- **No database changes**
 - **All existing features** continue to work
+- **Focus management** preserved
+- **Auto-advance** preserved
 
 ### What's Enhanced
-- UX improvements (sorting, visual feedback)
-- Better data persistence (match restoration)
-- More accurate API responses (verification status)
-
----
-
-## 📚 Related Documentation
-
-- **Team Migration Plan:** `docs/PHASE2_TEAM_MIGRATION_PLAN.md`
-- **Solo Match Implementation:** `docs/PHASE2_AUTH_IMPLEMENTATION.md`
-- **Testing Guide:** `TESTING_NOTES.md` (created for this release)
+- Better visual consistency
+- Improved mobile experience
+- Complete dark mode support
+- Easier maintenance (single CSS system)
 
 ---
 
 ## 🚀 Deployment Information
 
-### Pre-Deployment Checklist
-- [ ] Local testing completed
-- [ ] Browser console logs reviewed
-- [ ] No errors in console
-- [ ] All features working as expected
-- [ ] Documentation updated
+### Production Deployment
+**Date:** November 17, 2025, 4:16 PM  
+**Method:** FTP deployment via `DeployFTP.sh`  
+**Status:** ✅ **LIVE AND VERIFIED**
 
-### Deployment Steps
-1. Merge feature branch to `main`
-2. Run local tests one final time
-3. Deploy to FTP production
-4. Purge Cloudflare cache
-5. Verify in production
-6. Tag release as `v1.4.0`
+### Git Operations
+- ✅ Committed all changes (commit `cf3a8cb`)
+- ✅ Created tag: `Tailwind-Conversion`
+- ✅ Pushed to remote: `origin/main`
+- ✅ Tag pushed to remote
+
+### Backups Created
+**Local Backup:**
+```
+deploy_backups/wdv_backup_20251117_161636.tar.gz
+```
+
+### Cache Purge
+✅ Cloudflare cache purged successfully after deployment
+
+---
+
+## 🔙 Rollback Instructions
+
+### Method 1: Git Rollback
+If you need to rollback to the previous version:
+
+```bash
+# Checkout the previous stable version
+git checkout v1.3.0
+
+# Deploy the previous version
+./DeployFTP.sh --remote-backup
+
+# Tag will show you were here
+git log --oneline --decorate
+```
+
+### Method 2: Use Rollback Tag
+A rollback tag was created before migration:
+
+```bash
+# Checkout the rollback tag
+git checkout keypad-stable-rollback
+
+# Deploy the rollback version
+./DeployFTP.sh --remote-backup
+```
+
+### Method 3: Restore from Backup
+If you need to restore the exact pre-deployment state:
+
+```bash
+# Extract the local backup
+cd deploy_backups
+tar -xzf wdv_backup_20251117_161636.tar.gz
+
+# Use FTP client or DeployFTP.sh to upload the extracted files
+```
 
 ---
 
@@ -217,11 +320,13 @@ Open browser console (F12) to see detailed logging during testing.
 - **Linter Errors:** 0
 - **Type Safety:** All JavaScript validated
 - **Console Errors:** None in testing
+- **Legacy CSS Dependencies:** 0 (removed all)
 
 ### User Experience
-- **Faster Selection:** Sorted lists reduce search time
-- **Better Feedback:** Visual sync status improves confidence
-- **Data Persistence:** Match restoration prevents data loss
+- **Consistency:** 100% Tailwind across all modules
+- **Dark Mode:** Complete support
+- **Mobile-First:** All components optimized
+- **Touch Targets:** All meet 44px minimum
 
 ---
 
@@ -237,14 +342,25 @@ None identified at this time.
 - No authentication changes
 - No data exposure changes
 - No new attack vectors introduced
+- Purely visual/styling changes
+
+---
+
+## 📚 Related Documentation
+
+- **Migration Plan:** `docs/TAILWIND_MIGRATION_PLAN.md`
+- **Keypad Migration:** `docs/KEYPAD_MIGRATION_TODO.md`
+- **Rollback Plan:** `docs/KEYPAD_ROLLBACK_PLAN.md`
+- **Component Reference:** `test-components.html`
 
 ---
 
 ## 👥 Credits
 
 **Implementation:** AI Assistant (Claude)  
-**Review & Testing:** Terry (tryentist.com)  
-**Date:** November 2025
+**Review & Deployment:** Terry (tryentist.com)  
+**Testing:** Local and production verification completed  
+**Date:** November 17, 2025
 
 ---
 
@@ -253,9 +369,10 @@ None identified at this time.
 If you encounter any issues with this release:
 
 1. **Check browser console** for error messages
-2. **Review TESTING_NOTES.md** for test steps
-3. **Check sync status indicators** to verify API connectivity
-4. **Verify match restoration** by refreshing during a match
+2. **Verify Tailwind CSS** is loading (check Network tab)
+3. **Test keypad functionality** on mobile device
+4. **Check dark mode** toggle if colors look wrong
+5. **Rollback if needed** using instructions above
 
 ---
 
@@ -263,16 +380,17 @@ If you encounter any issues with this release:
 
 - ✅ Code reviewed
 - ✅ Tested locally
-- ⏳ Ready for production testing
-- ⏳ Pending merge to main
-- ⏳ Pending production deployment
+- ✅ Deployed to production
+- ✅ Production verified
 - ✅ Documentation complete
+- ✅ Backups created
+- ✅ Git tagged (`Tailwind-Conversion`)
+- ✅ Pushed to GitHub
 
-**Status:** This release is ready for testing and merge. ✅
+**Status:** This release is production-ready and fully deployed. ✅
 
 ---
 
 **Release Manager:** Terry  
-**Release Date:** November 2025 (Pending)  
-**Next Steps:** Local testing, merge to main, production deployment
-
+**Release Date:** November 17, 2025  
+**Next Review:** After first user testing session

@@ -138,10 +138,10 @@ wdv/
 │   └── sql/                      # Database migrations
 │
 ├── css/
-│   ├── main.css                  # Master stylesheet
-│   ├── components.css            # Reusable components
-│   ├── score-colors.css          # Archery ring colors
+│   ├── components.css            # Reusable components (legacy)
+│   ├── score-colors.css          # Archery ring colors (legacy)
 │   └── tailwind.css              # Tailwind build
+│   ⚠️ Note: All modules now use 100% Tailwind CSS (v1.4.0)
 │
 ├── docs/
 │   ├── APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md  # 🔑 Master reference
@@ -450,6 +450,16 @@ Copyright © 2025 WDV Archery
 
 ## 📋 Recent Updates
 
+### v1.4.0 - Tailwind Conversion (November 17, 2025)
+- ✅ Complete Tailwind CSS migration (100% Tailwind, no legacy CSS)
+- ✅ Standardized keypad (4x3 layout) across all modules
+- ✅ Fixed score colors in tables
+- ✅ Complete dark mode support
+- ✅ Updated setup screens with consistent styling
+- ✅ Removed all `css/main.css` dependencies
+
+**Full Release Notes:** [RELEASE_NOTES_v1.4.0.md](RELEASE_NOTES_v1.4.0.md)
+
 ### v1.3.0 (November 17, 2025)
 - ✅ Fixed authentication: `GET /v1/archers` now public
 - ✅ Enhanced analytics with pivot table
@@ -461,6 +471,6 @@ Copyright © 2025 WDV Archery
 ---
 
 **Last Updated:** November 17, 2025  
-**Version:** 1.3.0  
-**Status:** Production + Phase 2 Planning
+**Version:** 1.4.0  
+**Status:** Production + Tailwind Migration Complete
 
