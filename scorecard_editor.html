@@ -214,29 +214,29 @@
                 End <span id="modal-end"></span>, Arrow <span id="modal-arrow"></span>
             </p>
             
-            <!-- Score Buttons -->
-            <div class="grid grid-cols-4 gap-2 mb-4">
-                <button onclick="setScore('X')" class="score-btn score-X px-4 py-3 rounded font-bold text-lg">X</button>
-                <button onclick="setScore('10')" class="score-btn score-10 px-4 py-3 rounded font-bold text-lg">10</button>
-                <button onclick="setScore('9')" class="score-btn score-9 px-4 py-3 rounded font-bold text-lg">9</button>
-                <button onclick="setScore('8')" class="score-btn score-8 px-4 py-3 rounded font-bold text-lg">8</button>
-                <button onclick="setScore('7')" class="score-btn score-7 px-4 py-3 rounded font-bold text-lg">7</button>
-                <button onclick="setScore('6')" class="score-btn score-6 px-4 py-3 rounded font-bold text-lg">6</button>
-                <button onclick="setScore('5')" class="score-btn score-5 px-4 py-3 rounded font-bold text-lg">5</button>
-                <button onclick="setScore('4')" class="score-btn score-4 px-4 py-3 rounded font-bold text-lg">4</button>
-                <button onclick="setScore('3')" class="score-btn score-3 px-4 py-3 rounded font-bold text-lg">3</button>
-                <button onclick="setScore('2')" class="score-btn score-2 px-4 py-3 rounded font-bold text-lg">2</button>
-                <button onclick="setScore('1')" class="score-btn score-1 px-4 py-3 rounded font-bold text-lg">1</button>
-                <button onclick="setScore('M')" class="score-btn score-M px-4 py-3 rounded font-bold text-lg">M</button>
-            </div>
-            
-            <div class="flex gap-3">
-                <button onclick="closeScoreModal()" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                    Cancel
-                </button>
-                <button onclick="clearScore()" class="flex-1 px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark transition">
-                    Clear
-                </button>
+            <!-- Score Buttons - New 4x3 layout: no gaps, no navigation buttons -->
+            <div class="grid grid-cols-4 gap-0 mb-4 bg-gray-800 dark:bg-gray-900 rounded-lg shadow-lg overflow-hidden">
+                <!-- Row 1: X, 10, 9, M -->
+                <button onclick="setScore('X')" class="score-btn score-X p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">X</button>
+                <button onclick="setScore('10')" class="score-btn score-10 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">10</button>
+                <button onclick="setScore('9')" class="score-btn score-9 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">9</button>
+                <button onclick="setScore('M')" class="score-btn score-M p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-200 text-black dark:text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">M</button>
+                
+                <!-- Row 2: 8, 7, 6, 5 -->
+                <button onclick="setScore('8')" class="score-btn score-8 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">8</button>
+                <button onclick="setScore('7')" class="score-btn score-7 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">7</button>
+                <button onclick="setScore('6')" class="score-btn score-6 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">6</button>
+                <button onclick="setScore('5')" class="score-btn score-5 p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">5</button>
+                
+                <!-- Row 3: 4, 3, 2, 1 -->
+                <button onclick="setScore('4')" class="score-btn score-4 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">4</button>
+                <button onclick="setScore('3')" class="score-btn score-3 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">3</button>
+                <button onclick="setScore('2')" class="score-btn score-2 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">2</button>
+                <button onclick="setScore('1')" class="score-btn score-1 p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">1</button>
+                
+                <!-- Row 4: CLOSE (left), CLEAR (right) -->
+                <button onclick="closeScoreModal()" class="p-4 text-lg font-bold border-r border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2">CLOSE</button>
+                <button onclick="clearScore()" class="p-4 text-lg font-bold cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger-light dark:bg-danger-dark text-danger-dark dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2">CLEAR</button>
             </div>
         </div>
     </div>

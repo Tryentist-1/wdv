@@ -60,9 +60,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- VIEW MANAGEMENT & PERSISTENCE ---
     function renderView() {
-        Object.values(views).forEach(view => view.style.display = 'none');
+        Object.values(views).forEach(view => {
+            view.classList.add('hidden');
+            view.classList.remove('block');
+        });
         if (views[state.currentView]) {
-            views[state.currentView].style.display = 'block';
+            views[state.currentView].classList.remove('hidden');
+            views[state.currentView].classList.add('block');
         }
     }
     
@@ -129,17 +133,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const isInTeam2 = state.team2.some(a => a.id === archerId);
 
             const row = document.createElement('div');
-            row.className = 'archer-select-row';
-            if (isInTeam1) row.classList.add('selected-a1');
-            if (isInTeam2) row.classList.add('selected-a2');
+            row.className = 'flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors';
+            if (isInTeam1) row.classList.add('bg-blue-50', 'dark:bg-blue-900/20');
+            if (isInTeam2) row.classList.add('bg-red-50', 'dark:bg-red-900/20');
 
             row.innerHTML = `
-                <span class="favorite-star">${archer.fave ? '★' : '☆'}</span>
-                <div class="archer-name-label">${archer.first} ${archer.last}</div>
-                <div class="archer-details-label">(${archer.level || 'VAR'})</div>
-                <div class="selection-buttons">
-                    <button class="btn btn-sm ${isInTeam1 ? 'btn-primary' : 'btn-secondary'}" data-id="${archerId}" data-role="t1" ${!isInTeam1 && state.team1.length >= 3 ? 'disabled' : ''}>T1</button>
-                    <button class="btn btn-sm ${isInTeam2 ? 'btn-danger' : 'btn-secondary'}" data-id="${archerId}" data-role="t2" ${!isInTeam2 && state.team2.length >= 3 ? 'disabled' : ''}>T2</button>
+                <span class="text-yellow-500 text-lg">${archer.fave ? '★' : '☆'}</span>
+                <div class="flex-1 font-semibold text-gray-800 dark:text-white">${archer.first} ${archer.last}</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">(${archer.level || 'VAR'})</div>
+                <div class="flex gap-2">
+                    <button class="px-3 py-1 text-sm ${isInTeam1 ? 'bg-primary text-white' : 'bg-secondary text-white'} rounded-lg hover:opacity-80 font-semibold transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed" data-id="${archerId}" data-role="t1" ${!isInTeam1 && state.team1.length >= 3 ? 'disabled' : ''}>T1</button>
+                    <button class="px-3 py-1 text-sm ${isInTeam2 ? 'bg-danger text-white' : 'bg-secondary text-white'} rounded-lg hover:opacity-80 font-semibold transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed" data-id="${archerId}" data-role="t2" ${!isInTeam2 && state.team2.length >= 3 ? 'disabled' : ''}>T2</button>
                 </div>
             `;
             archerSelectionContainer.appendChild(row);
@@ -301,31 +305,70 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.team1.length || !state.team2.length) return;
         matchSummaryDisplay.innerHTML = `
             <span class="team-summary a1-summary">Team 1</span>
-            <span style="margin: 0 10px;">vs</span>
+            <span class="mx-2">vs</span>
             <span class="team-summary a2-summary">Team 2</span>
         `;
     }
 
     function renderScoreTable() {
+        // Ensure scores arrays are initialized
+        if (!state.scores.t1 || !Array.isArray(state.scores.t1)) {
+            state.scores.t1 = [[], [], [], []];
+        }
+        if (!state.scores.t2 || !Array.isArray(state.scores.t2)) {
+            state.scores.t2 = [[], [], [], []];
+        }
+        // Ensure each end array has 6 elements (for 6 arrows)
+        for (let i = 0; i < 4; i++) {
+            if (!state.scores.t1[i] || !Array.isArray(state.scores.t1[i])) {
+                state.scores.t1[i] = ['', '', '', '', '', ''];
+            }
+            if (!state.scores.t2[i] || !Array.isArray(state.scores.t2[i])) {
+                state.scores.t2[i] = ['', '', '', '', '', ''];
+            }
+        }
+        // Ensure shoot-off scores are initialized
+        if (!state.scores.so) {
+            state.scores.so = { t1: ['', '', ''], t2: ['', '', ''] };
+        }
+        if (!state.scores.so.t1 || !Array.isArray(state.scores.so.t1)) {
+            state.scores.so.t1 = ['', '', ''];
+        }
+        if (!state.scores.so.t2 || !Array.isArray(state.scores.so.t2)) {
+            state.scores.so.t2 = ['', '', ''];
+        }
+        
         const t1ArcherNames = state.team1.map(a => `${a.first} ${a.last.charAt(0)}`).join(' | ');
         const t2ArcherNames = state.team2.map(a => `${a.first} ${a.last.charAt(0)}`).join(' | ');
 
-        let tableHTML = `<table class="score-table" id="team_round_table">
-            <thead>
+        let tableHTML = `<table class="w-full border-collapse text-sm bg-white dark:bg-gray-700" id="team_round_table">
+            <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
                 <tr>
-                    <th rowspan="3">End</th>
-                    <th colspan="6">Team 1 (${t1ArcherNames})</th>
-                    <th colspan="6">Team 2 (${t2ArcherNames})</th>
-                    <th colspan="2">End Total</th>
-                    <th colspan="2">Set Points</th>
-                    <th rowspan="3">Sync</th>
+                    <th rowspan="3" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End</th>
+                    <th colspan="6" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Team 1 (${t1ArcherNames})</th>
+                    <th colspan="6" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Team 2 (${t2ArcherNames})</th>
+                    <th colspan="2" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End Total</th>
+                    <th colspan="2" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Set Points</th>
+                    <th rowspan="3" class="px-2 py-2 text-center font-bold">Sync</th>
                 </tr>
-                <tr><th colspan="16" style="background-color: #f8f9fa;"></th></tr>
+                <tr><th colspan="16" class="bg-gray-100 dark:bg-gray-700 h-1 p-0"></th></tr>
                 <tr>
-                    <th>A1</th><th>A2</th><th>A3</th><th>A4</th><th>A5</th><th>A6</th>
-                    <th>A1</th><th>A2</th><th>A3</th><th>A4</th><th>A5</th><th>A6</th>
-                    <th>T1</th><th>T2</th>
-                    <th>T1</th><th>T2</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A4</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A5</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A6</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A4</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A5</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A6</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T1</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T2</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T1</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T2</th>
                 </tr>
             </thead><tbody>`;
 
@@ -341,14 +384,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const syncIcon = getSyncStatusIcon(syncStatuses);
             
-            tableHTML += `<tr id="end-${i+1}"><td>End ${i+1}</td>
-                ${state.scores.t1[i].map((s, a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t1" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`).join('')}
-                ${state.scores.t2[i].map((s, a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t2" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`).join('')}
-                <td class="calculated-cell" id="t1-e${i+1}-total"></td>
-                <td class="calculated-cell" id="t2-e${i+1}-total"></td>
-                <td class="calculated-cell" id="t1-e${i+1}-setpts"></td>
-                <td class="calculated-cell" id="t2-e${i+1}-setpts"></td>
-                <td class="sync-status-cell" id="sync-e${i+1}" data-set="${setNumber}">${syncIcon}</td>
+            tableHTML += `<tr id="end-${i+1}" class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
+                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">End ${i+1}</td>
+                ${state.scores.t1[i].map((s, a) => `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(s)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t1" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`).join('')}
+                ${state.scores.t2[i].map((s, a) => `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(s)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t2" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`).join('')}
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-e${i+1}-total"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-e${i+1}-total"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-e${i+1}-setpts"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-e${i+1}-setpts"></td>
+                <td class="px-2 py-1 text-center" id="sync-e${i+1}" data-set="${setNumber}">${syncIcon}</td>
             </tr>`;
         }
 
@@ -362,32 +406,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const soSyncIcon = getSyncStatusIcon(soSyncStatuses);
         
-        tableHTML += `<tr id="shoot-off" style="display: none;">
-                <td>S.O.</td>
-                ${state.scores.so.t1.map((s,a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t1" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`).join('')}<td colspan="3"></td>
-                ${state.scores.so.t2.map((s,a) => `<td class="${getScoreColor(s)}"><input type="text" data-team="t2" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`).join('')}<td colspan="3"></td>
-                <td class="calculated-cell" id="t1-so-total"></td><td class="calculated-cell" id="t2-so-total"></td>
-                <td colspan="2" id="so-winner-cell" class="calculated-cell">
+        tableHTML += `<tr id="shoot-off" class="hidden border-b border-gray-200 dark:border-gray-600">
+                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">S.O.</td>
+                ${state.scores.so.t1.map((s,a) => `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(s)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t1" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`).join('')}<td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
+                ${state.scores.so.t2.map((s,a) => `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(s)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t2" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`).join('')}<td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-so-total"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-so-total"></td>
+                <td colspan="2" id="so-winner-cell" class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">
                     <span id="so-winner-text"></span>
                 </td>
-                <td class="sync-status-cell" id="sync-so" data-set="5">${soSyncIcon}</td>
+                <td class="px-2 py-1 text-center" id="sync-so" data-set="5">${soSyncIcon}</td>
             </tr></tbody>
-            <tfoot>
-                <tr><td colspan="15" style="text-align: right; font-weight: bold;">Match Score:</td>
-                    <td class="calculated-cell" id="t1-match-score"></td>
-                    <td class="calculated-cell" id="t2-match-score"></td>
-                    <td></td>
+            <tfoot class="bg-gray-200 dark:bg-gray-600">
+                <tr><td colspan="15" class="px-2 py-2 text-right font-bold dark:text-white">Match Score:</td>
+                    <td class="px-2 py-2 text-center font-bold dark:text-white" id="t1-match-score"></td>
+                    <td class="px-2 py-2 text-center font-bold dark:text-white" id="t2-match-score"></td>
+                    <td class="px-2 py-2"></td>
                 </tr>
-                <tr id="judge-call-row" style="display: none;">
-                    <td colspan="18" style="text-align: center; padding: 8px; background-color: #fffacd;">
-                        <span style="font-weight: bold; margin-right: 10px;">Judge Call (Closest to Center):</span>
+                <tr id="judge-call-row" class="hidden">
+                    <td colspan="18" class="text-center p-2 bg-yellow-100 dark:bg-yellow-900/20">
+                        <span class="font-bold mr-2">Judge Call (Closest to Center):</span>
                         <span class="tie-breaker-controls">
-                            <button class="btn" data-winner="t1">Team 1 Wins</button>
-                            <button class="btn" data-winner="t2">Team 2 Wins</button>
+                            <button class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]" data-winner="t1">Team 1 Wins</button>
+                            <button class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]" data-winner="t2">Team 2 Wins</button>
                         </span>
                     </td>
                 </tr>
-                <tr><td colspan="18" id="match-result"></td></tr>
+                <tr><td colspan="18" id="match-result" class="px-2 py-2 text-center font-bold"></td></tr>
             </tfoot>
         </table>`;
         scoreTableContainer.innerHTML = tableHTML;
@@ -423,10 +468,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const shootOffRow = document.getElementById('shoot-off');
         const judgeCallRow = document.getElementById('judge-call-row');
-        judgeCallRow.style.display = 'none'; // Hide by default
+        judgeCallRow.classList.add('hidden');
+        judgeCallRow.classList.remove('table-row');
 
         if (!matchOver && t1MatchScore === 4 && t2MatchScore === 4) {
-            shootOffRow.style.display = 'table-row';
+            shootOffRow.classList.remove('hidden');
+            shootOffRow.classList.add('table-row');
             const t1SoTotal = state.scores.so.t1.reduce((sum, s) => sum + parseScoreValue(s), 0);
             const t2SoTotal = state.scores.so.t2.reduce((sum, s) => sum + parseScoreValue(s), 0);
             document.getElementById('t1-so-total').textContent = t1SoTotal;
@@ -463,7 +510,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             soWinnerText.textContent = `T${winner === 't1' ? 1 : 2} Wins (Closest)`;
                         } else {
                             soWinnerText.textContent = 'Tied!';
-                            judgeCallRow.style.display = 'table-row';
+                            judgeCallRow.classList.remove('hidden');
+                            judgeCallRow.classList.add('table-row');
                         }
                     }
                 }
@@ -471,22 +519,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 soWinnerText.textContent = 'Enter S.O. Scores';
             }
         } else {
-            shootOffRow.style.display = 'none';
+            shootOffRow.classList.add('hidden');
+            shootOffRow.classList.remove('table-row');
         }
 
         const matchResultEl = document.getElementById('match-result');
         if (matchOver) {
             matchResultEl.textContent = `Match Over: Team ${winner === 't1' ? 1 : 2} Wins!`;
-            matchResultEl.style.color = 'var(--primary-green)';
+            matchResultEl.classList.add('text-success');
+            matchResultEl.classList.remove('text-gray-500');
         } else {
             matchResultEl.textContent = 'Match in Progress...';
-            matchResultEl.style.color = 'var(--medium-gray)';
+            matchResultEl.classList.add('text-gray-500');
+            matchResultEl.classList.remove('text-success');
         }
     }
     
     function renderKeypad() {
         if (!keypadElement) return;
-        keypadElement.innerHTML = `<div class="keypad"><button class="keypad-btn" data-value="X">X</button><button class="keypad-btn" data-value="10">10</button><button class="keypad-btn" data-value="9">9</button><button class="keypad-btn nav-btn" data-action="prev">&larr;</button><button class="keypad-btn" data-value="8">8</button><button class="keypad-btn" data-value="7">7</button><button class="keypad-btn" data-value="6">6</button><button class="keypad-btn nav-btn" data-action="next">&rarr;</button><button class="keypad-btn" data-value="5">5</button><button class="keypad-btn" data-value="4">4</button><button class="keypad-btn" data-value="3">3</button><button class="keypad-btn" data-action="clear">CLR</button><button class="keypad-btn" data-value="2">2</button><button class="keypad-btn" data-value="1">1</button><button class="keypad-btn" data-value="M">M</button><button class="keypad-btn" data-action="close">Close</button></div>`;
+        // New 4x3 layout: Tailwind CSS, no gaps, no navigation buttons, no rounded corners, edge-to-edge borders
+        keypadElement.innerHTML = `
+            <div class="grid grid-cols-4 gap-0 w-full">
+                <!-- Row 1: X, 10, 9, M -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="X">X</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="10">10</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="9">9</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-200 text-black dark:text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="M">M</button>
+                
+                <!-- Row 2: 8, 7, 6, 5 -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="8">8</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="7">7</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="6">6</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="5">5</button>
+                
+                <!-- Row 3: 4, 3, 2, 1 -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="4">4</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="3">3</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="2">2</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="1">1</button>
+                
+                <!-- Row 4: CLOSE (left), CLEAR (right) -->
+                <button class="keypad-btn p-4 text-lg font-bold border-r border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2 rounded-none" style="border-radius: 0 !important;" data-action="close">CLOSE</button>
+                <button class="keypad-btn p-4 text-lg font-bold cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger-light dark:bg-danger-dark text-danger-dark dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2 rounded-none" style="border-radius: 0 !important;" data-action="clear">CLEAR</button>
+            </div>
+        `;
     }
 
     function handleKeypadClick(e) {
@@ -495,14 +571,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const action = button.dataset.action, value = button.dataset.value, input = keypad.currentlyFocusedInput;
         const allInputs = Array.from(document.querySelectorAll('#scoring-view input[type="text"]'));
         const currentIndex = allInputs.indexOf(input);
-        if (action === 'prev' && currentIndex > 0) allInputs[currentIndex - 1].focus();
-        else if (action === 'next' && currentIndex < allInputs.length - 1) allInputs[currentIndex + 1].focus();
-        else if (action === 'close') { keypadElement.style.display = 'none'; document.body.classList.remove('keypad-visible'); }
+        
+        // Close action
+        if (action === 'close') { 
+            keypadElement.classList.add('hidden');
+            keypadElement.classList.remove('grid'); 
+            document.body.classList.remove('keypad-visible'); 
+            return;
+        }
         else {
             input.value = (action === 'clear') ? '' : value;
             handleScoreInput({ target: input });
             if (value && currentIndex < allInputs.length - 1) allInputs[currentIndex + 1].focus();
-            else { keypadElement.style.display = 'none'; document.body.classList.remove('keypad-visible'); }
+            else { 
+                keypadElement.classList.add('hidden');
+                keypadElement.classList.remove('grid');
+                document.body.classList.remove('keypad-visible'); 
+            }
         }
     }
 
@@ -515,7 +600,17 @@ document.addEventListener('DOMContentLoaded', () => {
             state.scores[team][parseInt(end, 10)][parseInt(arrow, 10)] = input.value;
         }
 
-        input.parentElement.className = getScoreColor(input.value);
+        // Update score color classes on the cell (preserve other Tailwind classes)
+        const cell = input.parentElement;
+        if (cell) {
+            // Remove old score color classes
+            cell.classList.remove('bg-score-gold', 'bg-score-red', 'bg-score-blue', 'bg-score-black', 'bg-score-white', 'text-black', 'text-white', 'dark:text-black');
+            // Add new score color classes
+            const scoreClasses = getScoreColor(input.value).split(' ');
+            scoreClasses.forEach(cls => {
+                if (cls) cell.classList.add(cls);
+            });
+        }
         updateScoreHighlightsAndTotals();
         saveData();
         
@@ -628,10 +723,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         const icons = {
-            'synced': '<span class="sync-status-icon" style="color: #4caf50; font-size: 1.2em;" title="Synced">✓</span>',
-            'pending': '<span class="sync-status-icon" style="color: #ff9800; font-size: 1.2em;" title="Pending">⟳</span>',
-            'failed': '<span class="sync-status-icon" style="color: #f44336; font-size: 1.2em;" title="Failed">✗</span>',
-            '': '<span class="sync-status-icon" style="color: #ccc; font-size: 1.2em;" title="Not Synced">○</span>'
+            'synced': '<span class="text-success text-xl" title="Synced">✓</span>',
+            'pending': '<span class="text-warning text-xl" title="Pending">⟳</span>',
+            'failed': '<span class="text-danger text-xl" title="Failed">✗</span>',
+            '': '<span class="text-gray-400 dark:text-gray-500 text-xl" title="Not Synced">○</span>'
         };
         return icons[overallStatus] || icons[''];
     }
@@ -888,7 +983,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.addEventListener('focusin', (e) => {
             if (e.target.matches('#scoring-view input[type="text"]')) {
                 keypad.currentlyFocusedInput = e.target;
-                keypadElement.style.display = 'grid';
+                keypadElement.classList.remove('hidden');
+                keypadElement.classList.add('grid');
                 document.body.classList.add('keypad-visible');
             }
         });

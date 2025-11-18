@@ -2679,24 +2679,30 @@ document.addEventListener('DOMContentLoaded', () => {
         keypad.element.style.display = 'none';
         
         // Tailwind-styled keypad (keeping keypad-btn class for event handler)
+        // New 4x3 layout: no gaps, no navigation buttons, no rounded corners, edge-to-edge borders
         keypad.element.innerHTML = `
-            <div class="grid grid-cols-4 gap-2 w-full max-w-xs">
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black border-yellow-600 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="X">X</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black border-yellow-600 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="10">10</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black border-yellow-600 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="9">9</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-orange text-white border-orange-dark min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-action="prev">&larr;</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white border-red-800 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="8">8</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white border-red-800 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="7">7</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white border-blue-900 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="6">6</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-orange text-white border-orange-dark min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-action="next">&rarr;</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white border-blue-900 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="5">5</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white border-gray-700 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="4">4</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white border-gray-700 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="3">3</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger text-white border-danger-dark min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-action="clear">CLR</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black border-gray-300 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="2">2</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black border-gray-300 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="1">1</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-white text-gray-600 border-gray-400 min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="M">M</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-2 rounded-md cursor-pointer transition-all duration-150 flex items-center justify-center bg-primary text-white border-primary-dark min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-action="close">✓</button>
+            <div class="grid grid-cols-4 gap-0 w-full">
+                <!-- Row 1: X, 10, 9, M -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="X">X</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="10">10</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="9">9</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-200 text-black dark:text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="M">M</button>
+                
+                <!-- Row 2: 8, 7, 6, 5 -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="8">8</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="7">7</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="6">6</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="5">5</button>
+                
+                <!-- Row 3: 4, 3, 2, 1 -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="4">4</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="3">3</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="2">2</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="1">1</button>
+                
+                <!-- Row 4: CLOSE (left), CLEAR (right) -->
+                <button class="keypad-btn p-4 text-lg font-bold border-r border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2 rounded-none" style="border-radius: 0 !important;" data-action="close">CLOSE</button>
+                <button class="keypad-btn p-4 text-lg font-bold cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger-light dark:bg-danger-dark text-danger-dark dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2 rounded-none" style="border-radius: 0 !important;" data-action="clear">CLEAR</button>
             </div>
         `;
         
@@ -2766,15 +2772,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const allInputs = Array.from(document.querySelectorAll('#scoring-view .score-input'));
         const currentIndex = allInputs.indexOf(input);
         
-        // Navigation
-        if (action === 'prev') {
-            if (currentIndex > 0) allInputs[currentIndex - 1].focus();
-            return;
-        }
-        if (action === 'next') {
-            if (currentIndex < allInputs.length - 1) allInputs[currentIndex + 1].focus();
-            return;
-        }
+        // Close action
         if (action === 'close') {
             keypad.element.style.display = 'none';
             document.body.classList.remove('keypad-visible');

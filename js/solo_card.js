@@ -48,9 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- VIEW MANAGEMENT ---
     function renderView() {
-        Object.values(views).forEach(view => view.style.display = 'none');
+        Object.values(views).forEach(view => {
+            view.classList.add('hidden');
+            view.classList.remove('block');
+        });
         if (views[state.currentView]) {
-            views[state.currentView].style.display = 'block';
+            views[state.currentView].classList.remove('hidden');
+            views[state.currentView].classList.add('block');
         }
     }
 
@@ -203,17 +207,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const isSelectedA2 = state.archer2 && state.archer2.id === archerId;
 
             const row = document.createElement('div');
-            row.className = 'archer-select-row';
-            if (isSelectedA1) row.classList.add('selected-a1');
-            if (isSelectedA2) row.classList.add('selected-a2');
+            row.className = 'flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors';
+            if (isSelectedA1) row.classList.add('bg-blue-50', 'dark:bg-blue-900/20');
+            if (isSelectedA2) row.classList.add('bg-red-50', 'dark:bg-red-900/20');
 
             row.innerHTML = `
-                <span class="favorite-star">${archer.fave ? '★' : '☆'}</span>
-                <div class="archer-name-label">${archer.first} ${archer.last}</div>
-                <div class="archer-details-label">(${archer.level || 'VAR'})</div>
-                <div class="selection-buttons">
-                    <button class="btn btn-sm ${isSelectedA1 ? 'btn-primary' : 'btn-secondary'}" data-id="${archerId}" data-role="a1">A1</button>
-                    <button class="btn btn-sm ${isSelectedA2 ? 'btn-danger' : 'btn-secondary'}" data-id="${archerId}" data-role="a2">A2</button>
+                <span class="text-yellow-500 text-lg">${archer.fave ? '★' : '☆'}</span>
+                <div class="flex-1 font-semibold text-gray-800 dark:text-white">${archer.first} ${archer.last}</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">(${archer.level || 'VAR'})</div>
+                <div class="flex gap-2">
+                    <button class="px-3 py-1 text-sm ${isSelectedA1 ? 'bg-primary text-white' : 'bg-secondary text-white'} rounded-lg hover:opacity-80 font-semibold transition-colors min-h-[44px]" data-id="${archerId}" data-role="a1">A1</button>
+                    <button class="px-3 py-1 text-sm ${isSelectedA2 ? 'bg-danger text-white' : 'bg-secondary text-white'} rounded-lg hover:opacity-80 font-semibold transition-colors min-h-[44px]" data-id="${archerId}" data-role="a2">A2</button>
                 </div>
             `;
             archerSelectionContainer.appendChild(row);
@@ -362,21 +366,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderScoreTable() {
-        let tableHTML = `<table class="score-table" id="solo_round_table">
-            <thead>
+        // Ensure scores arrays are initialized
+        if (!state.scores.a1 || !Array.isArray(state.scores.a1)) {
+            state.scores.a1 = [[], [], [], [], []];
+        }
+        if (!state.scores.a2 || !Array.isArray(state.scores.a2)) {
+            state.scores.a2 = [[], [], [], [], []];
+        }
+        // Ensure each end array has 3 elements (for 3 arrows)
+        for (let i = 0; i < 5; i++) {
+            if (!state.scores.a1[i] || !Array.isArray(state.scores.a1[i])) {
+                state.scores.a1[i] = ['', '', ''];
+            }
+            if (!state.scores.a2[i] || !Array.isArray(state.scores.a2[i])) {
+                state.scores.a2[i] = ['', '', ''];
+            }
+        }
+        
+        let tableHTML = `<table class="w-full border-collapse text-sm bg-white dark:bg-gray-700" id="solo_round_table">
+            <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
                 <tr>
-                    <th rowspan="2">End</th>
-                    <th colspan="3">Archer 1</th>
-                    <th colspan="3">Archer 2</th>
-                    <th colspan="2">End Total</th>
-                    <th colspan="2">Set Points</th>
-                    <th rowspan="2">Sync</th>
+                    <th rowspan="2" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End</th>
+                    <th colspan="3" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Archer 1</th>
+                    <th colspan="3" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Archer 2</th>
+                    <th colspan="2" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End Total</th>
+                    <th colspan="2" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Set Points</th>
+                    <th rowspan="2" class="px-2 py-2 text-center font-bold">Sync</th>
                 </tr>
                 <tr>
-                    <th>A1</th><th>A2</th><th>A3</th>
-                    <th>A1</th><th>A2</th><th>A3</th>
-                    <th>A1</th><th>A2</th>
-                    <th>A1</th><th>A2</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
                 </tr>
             </thead>
             <tbody>`;
@@ -387,19 +414,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const syncStatusA2 = state.syncStatus?.a2?.[setNumber] || '';
             const syncIcon = getSyncStatusIcon(syncStatusA1, syncStatusA2);
             
-            tableHTML += `<tr id="end-${i+1}">
-                <td>End ${i+1}</td>
-                <td class="${getScoreColor(state.scores.a1[i][0])}"><input type="text" data-archer="a1" data-end="${i}" data-arrow="0" value="${state.scores.a1[i][0]}" readonly></td>
-                <td class="${getScoreColor(state.scores.a1[i][1])}"><input type="text" data-archer="a1" data-end="${i}" data-arrow="1" value="${state.scores.a1[i][1]}" readonly></td>
-                <td class="${getScoreColor(state.scores.a1[i][2])}"><input type="text" data-archer="a1" data-end="${i}" data-arrow="2" value="${state.scores.a1[i][2]}" readonly></td>
-                <td class="${getScoreColor(state.scores.a2[i][0])}"><input type="text" data-archer="a2" data-end="${i}" data-arrow="0" value="${state.scores.a2[i][0]}" readonly></td>
-                <td class="${getScoreColor(state.scores.a2[i][1])}"><input type="text" data-archer="a2" data-end="${i}" data-arrow="1" value="${state.scores.a2[i][1]}" readonly></td>
-                <td class="${getScoreColor(state.scores.a2[i][2])}"><input type="text" data-archer="a2" data-end="${i}" data-arrow="2" value="${state.scores.a2[i][2]}" readonly></td>
-                <td class="calculated-cell" id="a1-e${i+1}-total"></td>
-                <td class="calculated-cell" id="a2-e${i+1}-total"></td>
-                <td class="calculated-cell" id="a1-e${i+1}-setpts"></td>
-                <td class="calculated-cell" id="a2-e${i+1}-setpts"></td>
-                <td class="sync-status-cell" id="sync-e${i+1}" data-set="${setNumber}">${syncIcon}</td>
+            tableHTML += `<tr id="end-${i+1}" class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
+                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">End ${i+1}</td>
+                <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a1[i][0])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a1" data-end="${i}" data-arrow="0" value="${state.scores.a1[i][0]}" readonly></td>
+                <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a1[i][1])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a1" data-end="${i}" data-arrow="1" value="${state.scores.a1[i][1]}" readonly></td>
+                <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a1[i][2])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a1" data-end="${i}" data-arrow="2" value="${state.scores.a1[i][2]}" readonly></td>
+                <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a2[i][0])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a2" data-end="${i}" data-arrow="0" value="${state.scores.a2[i][0]}" readonly></td>
+                <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a2[i][1])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a2" data-end="${i}" data-arrow="1" value="${state.scores.a2[i][1]}" readonly></td>
+                <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a2[i][2])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a2" data-end="${i}" data-arrow="2" value="${state.scores.a2[i][2]}" readonly></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a1-e${i+1}-total"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a2-e${i+1}-total"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a1-e${i+1}-setpts"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a2-e${i+1}-setpts"></td>
+                <td class="px-2 py-1 text-center" id="sync-e${i+1}" data-set="${setNumber}">${syncIcon}</td>
             </tr>`;
         }
 
@@ -408,27 +435,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const soSyncIcon = getSyncStatusIcon(soSyncStatusA1, soSyncStatusA2);
         
         tableHTML += `
-            <tr id="shoot-off" style="display: none;">
-                <td>S.O.</td>
-                <td colspan="2" class="${getScoreColor(state.scores.so.a1)}"><input type="text" data-archer="a1" data-end="so" data-arrow="0" value="${state.scores.so.a1}" readonly></td><td></td>
-                <td colspan="2" class="${getScoreColor(state.scores.so.a2)}"><input type="text" data-archer="a2" data-end="so" data-arrow="0" value="${state.scores.so.a2}" readonly></td><td></td>
-                <td class="calculated-cell" id="a1-so-total"></td>
-                <td class="calculated-cell" id="a2-so-total"></td>
-                <td colspan="2" id="so-winner-cell">
+                <tr id="shoot-off" class="hidden border-b border-gray-200 dark:border-gray-600">
+                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">S.O.</td>
+                <td colspan="2" class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.so.a1)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a1" data-end="so" data-arrow="0" value="${state.scores.so.a1}" readonly></td><td class="border-r border-gray-200 dark:border-gray-600"></td>
+                <td colspan="2" class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.so.a2)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a2" data-end="so" data-arrow="0" value="${state.scores.so.a2}" readonly></td><td class="border-r border-gray-200 dark:border-gray-600"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a1-so-total"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a2-so-total"></td>
+                <td colspan="2" id="so-winner-cell" class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">
                     <span id="so-winner-text"></span>
-                    <span class="tie-breaker-controls" style="display:none;">
-                        <button class="btn btn-sm" data-winner="a1">A1 Wins</button>
-                        <button class="btn btn-sm" data-winner="a2">A2 Wins</button>
+                    <span class="tie-breaker-controls hidden">
+                        <button class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]" data-winner="a1">A1 Wins</button>
+                        <button class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]" data-winner="a2">A2 Wins</button>
                     </span>
                 </td>
-                <td class="sync-status-cell" id="sync-so" data-set="6">${soSyncIcon}</td>
+                <td class="px-2 py-1 text-center" id="sync-so" data-set="6">${soSyncIcon}</td>
             </tr>
             </tbody>
-            <tfoot>
+            <tfoot class="bg-gray-200 dark:bg-gray-600">
                 <tr>
-                    <td colspan="8" style="text-align: right; font-weight: bold;">Match Score:</td>
-                    <td class="calculated-cell" id="a1-match-score"></td>
-                    <td class="calculated-cell" id="a2-match-score"></td>
+                    <td colspan="8" class="px-2 py-2 text-right font-bold dark:text-white">Match Score:</td>
+                    <td class="px-2 py-2 text-center font-bold dark:text-white" id="a1-match-score"></td>
+                    <td class="px-2 py-2 text-center font-bold dark:text-white" id="a2-match-score"></td>
                     <td></td>
                 </tr>
                 <tr><td colspan="11" id="match-result"></td></tr>
@@ -483,7 +510,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const tieBreakerControls = document.querySelector('.tie-breaker-controls');
 
         if (!matchOver && a1MatchScore === 5 && a2MatchScore === 5) {
-            shootOffRow.style.display = 'table-row';
+            shootOffRow.classList.remove('hidden');
+            shootOffRow.classList.add('table-row');
             const soScoreA1 = state.scores.so.a1;
             const soScoreA2 = state.scores.so.a2;
             const soValueA1 = parseScoreValue(soScoreA1);
@@ -496,29 +524,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     winner = 'a1';
                     matchOver = true;
                     soWinnerText.textContent = "A1 Wins S.O.";
-                    tieBreakerControls.style.display = 'none';
+                    tieBreakerControls.classList.add('hidden');
+                    tieBreakerControls.classList.remove('inline-block');
                 } else if (soValueA2 > soValueA1) {
                     winner = 'a2';
                     matchOver = true;
                     soWinnerText.textContent = "A2 Wins S.O.";
-                    tieBreakerControls.style.display = 'none';
+                    tieBreakerControls.classList.add('hidden');
+                    tieBreakerControls.classList.remove('inline-block');
                 } else {
                     if (state.shootOffWinner) {
                          winner = state.shootOffWinner;
                          matchOver = true;
                          soWinnerText.textContent = `S.O. Tied! ${winner === 'a1' ? 'A1' : 'A2'} Wins (Closest)`;
-                         tieBreakerControls.style.display = 'none';
+                         tieBreakerControls.classList.add('hidden');
+                    tieBreakerControls.classList.remove('inline-block');
                     } else {
                         soWinnerText.textContent = 'Tied! Judge Call:';
-                        tieBreakerControls.style.display = 'inline-block';
+                        tieBreakerControls.classList.remove('hidden');
+                        tieBreakerControls.classList.add('inline-block');
                     }
                 }
             } else {
                 soWinnerText.textContent = 'Enter S.O. Scores';
-                tieBreakerControls.style.display = 'none';
+                tieBreakerControls.classList.add('hidden');
+                tieBreakerControls.classList.remove('inline-block');
             }
         } else {
-            shootOffRow.style.display = 'none';
+            shootOffRow.classList.add('hidden');
+            shootOffRow.classList.remove('table-row');
         }
 
         const matchResultEl = document.getElementById('match-result');
@@ -534,7 +568,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderKeypad() {
         if (!keypadElement) return;
-        keypadElement.innerHTML = `<div class="keypad"><button class="keypad-btn" data-value="X">X</button><button class="keypad-btn" data-value="10">10</button><button class="keypad-btn" data-value="9">9</button><button class="keypad-btn nav-btn" data-action="prev">&larr;</button><button class="keypad-btn" data-value="8">8</button><button class="keypad-btn" data-value="7">7</button><button class="keypad-btn" data-value="6">6</button><button class="keypad-btn nav-btn" data-action="next">&rarr;</button><button class="keypad-btn" data-value="5">5</button><button class="keypad-btn" data-value="4">4</button><button class="keypad-btn" data-value="3">3</button><button class="keypad-btn" data-action="clear">CLR</button><button class="keypad-btn" data-value="2">2</button><button class="keypad-btn" data-value="1">1</button><button class="keypad-btn" data-value="M">M</button><button class="keypad-btn" data-action="close">Close</button></div>`;
+        // New 4x3 layout: Tailwind CSS, no gaps, no navigation buttons, no rounded corners, edge-to-edge borders
+        keypadElement.innerHTML = `
+            <div class="grid grid-cols-4 gap-0 w-full">
+                <!-- Row 1: X, 10, 9, M -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="X">X</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="10">10</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="9">9</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-200 text-black dark:text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="M">M</button>
+                
+                <!-- Row 2: 8, 7, 6, 5 -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="8">8</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="7">7</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="6">6</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="5">5</button>
+                
+                <!-- Row 3: 4, 3, 2, 1 -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="4">4</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="3">3</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="2">2</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="1">1</button>
+                
+                <!-- Row 4: CLOSE (left), CLEAR (right) -->
+                <button class="keypad-btn p-4 text-lg font-bold border-r border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2 rounded-none" style="border-radius: 0 !important;" data-action="close">CLOSE</button>
+                <button class="keypad-btn p-4 text-lg font-bold cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger-light dark:bg-danger-dark text-danger-dark dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2 rounded-none" style="border-radius: 0 !important;" data-action="clear">CLEAR</button>
+            </div>
+        `;
     }
 
     function handleKeypadClick(e) {
@@ -545,20 +604,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const value = button.dataset.value;
         const input = keypad.currentlyFocusedInput;
 
-        // --- Navigation ---
-        if (action === 'prev' || action === 'next') {
-            const allInputs = Array.from(document.querySelectorAll('#scoring-view input[type="text"]'));
-            const currentIndex = allInputs.indexOf(input);
-            if (action === 'prev' && currentIndex > 0) {
-                allInputs[currentIndex - 1].focus();
-            } else if (action === 'next' && currentIndex < allInputs.length - 1) {
-                allInputs[currentIndex + 1].focus();
-            }
-            return;
-        }
-
+        // --- Close action ---
         if (action === 'close') {
-            keypadElement.style.display = 'none';
+            keypadElement.classList.add('hidden');
+            keypadElement.classList.remove('grid');
             document.body.classList.remove('keypad-visible');
             return;
         }
@@ -589,7 +638,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 allInputs[currentIndex + 1].focus();
             } else {
                 // If it's the last input, close the keypad
-                keypadElement.style.display = 'none';
+                keypadElement.classList.add('hidden');
+            keypadElement.classList.remove('grid');
                 document.body.classList.remove('keypad-visible');
             }
         }
@@ -930,14 +980,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function showExportModal() {
         const exportModal = document.getElementById('export-modal');
         if (exportModal) {
-            exportModal.style.display = 'flex';
+            exportModal.classList.remove('hidden');
+            exportModal.classList.add('flex');
         }
     }
 
     function hideExportModal() {
         const exportModal = document.getElementById('export-modal');
         if (exportModal) {
-            exportModal.style.display = 'none';
+            exportModal.classList.add('hidden');
+            exportModal.classList.remove('flex');
         }
     }
 
@@ -1008,7 +1060,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.addEventListener('focusin', (e) => {
             if (e.target.matches('#scoring-view input[type="text"]')) {
                 keypad.currentlyFocusedInput = e.target;
-                keypadElement.style.display = 'grid';
+                keypadElement.classList.remove('hidden');
+                keypadElement.classList.add('grid');
                 document.body.classList.add('keypad-visible');
             }
         });

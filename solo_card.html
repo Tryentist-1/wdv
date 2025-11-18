@@ -4,85 +4,169 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>OAS Solo Match Card</title>
-    <link rel="stylesheet" href="css/main.css">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'score-gold': '#FFD700',
+                        'score-red': '#DC143C',
+                        'score-blue': '#4169E1',
+                        'score-black': '#000000',
+                        'score-white': '#FFFFFF',
+                        'score-miss': '#808080',
+                        'primary': {
+                            DEFAULT: '#2d7dd9',
+                            dark: '#1b5bbf',
+                            light: '#e7f1ff',
+                        },
+                        'secondary': {
+                            DEFAULT: '#6c757d',
+                            dark: '#5a6268',
+                            light: '#e9ecef',
+                        },
+                        'success': {
+                            DEFAULT: '#28a745',
+                            dark: '#1e7e34',
+                            light: '#d1e7dd',
+                        },
+                        'danger': {
+                            DEFAULT: '#d92d20',
+                            dark: '#b0241a',
+                            light: '#f8d7da',
+                        },
+                        'warning': {
+                            DEFAULT: '#ffc107',
+                            dark: '#d39e00',
+                            light: '#fff3cd',
+                        },
+                        'info': {
+                            DEFAULT: '#0dcaf0',
+                            dark: '#0a98b0',
+                            light: '#d0f7fa',
+                        },
+                        'purple': {
+                            DEFAULT: '#6f42c1',
+                            dark: '#563d7c',
+                            light: '#efebf5',
+                        },
+                        'orange': {
+                            DEFAULT: '#f28c18',
+                            dark: '#e8690b',
+                            light: '#fff4e8',
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Score input utility class */
+        .score-input {
+            width: 100%;
+            height: 100%;
+            min-height: 44px;
+            text-align: center;
+            font-weight: bold;
+            border: none;
+            background-color: transparent;
+        }
+        
+        .score-input:focus {
+            outline: 2px solid #2d7dd9;
+            outline-offset: -2px;
+        }
+        
+        /* Safe area insets for iOS */
+        .safe-top { padding-top: env(safe-area-inset-top, 0); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
+    </style>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- html2canvas for screenshot functionality -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-    <div id="app-container" class="main-container">
+    <div id="app-container" class="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
         
         <!-- Setup View -->
         <div id="setup-view">
-            <header class="page-header">
-                <h1>Solo Match Setup</h1>
+            <header class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                <h1 class="text-xl font-bold text-gray-800 dark:text-white">Solo Match Setup</h1>
             </header>
-            <div class="page-subheader">
-                <input type="text" id="archer-search-input" class="archer-search-bar" placeholder="Search archers...">
-                <button id="start-scoring-btn" class="btn btn-primary">Start Scoring</button>
+            <div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-3">
+                <input type="text" id="archer-search-input" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Search archers...">
+                <button id="start-scoring-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">Start Scoring</button>
             </div>
-            <div id="archer-selection-container" class="archer-select-list">
+            <div id="archer-selection-container" class="flex-1 overflow-auto p-4">
                 <!-- Archer selection list will be rendered here -->
             </div>
         </div>
 
         <!-- Scoring View -->
-        <div id="scoring-view" style="display: none;">
-            <header class="page-header">
-                <div class="header-left">
-                    <h1 id="scoring-header-title">Solo Match</h1>
+        <div id="scoring-view" class="hidden">
+            <header class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <div>
+                    <h1 id="scoring-header-title" class="text-xl font-bold text-gray-800 dark:text-white">Solo Match</h1>
                 </div>
-                <div class="header-right">
-                    <button id="edit-setup-btn" class="btn btn-secondary">Edit</button>
+                <div>
+                    <button id="edit-setup-btn" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Edit</button>
                 </div>
             </header>
-            <div id="match-summary-display" class="page-subheader">
+            <div id="match-summary-display" class="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <!-- Match summary will be rendered here -->
             </div>
-            <div id="score-table-container" class="table-wrapper">
+            <div id="score-table-container" class="flex-1 overflow-auto p-4">
                 <!-- The score table will be generated by JS here -->
             </div>
-            <div class="controls-container" style="display: none;">
+            <div class="controls-container hidden">
                 <!-- Future controls can go here -->
             </div>
         </div>
 
         <!-- Keypad -->
-        <div id="score-keypad" class="keypad-container" style="display: none;"></div>
+        <div id="score-keypad" class="fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-bottom overflow-hidden hidden"></div>
 
         <!-- Export Modal -->
-        <div id="export-modal" class="modal-overlay" style="display: none;">
-            <div class="modal-content">
-              <h2>Export Options</h2>
-              <div class="export-options">
-                <div class="export-option">
-                  <h3>📸 Screenshot</h3>
-                  <p>Save a visual image of the scorecard to your device</p>
-                  <button id="take-screenshot-btn" class="btn btn-purple">Take Screenshot</button>
+        <div id="export-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden transition-colors duration-200">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 transition-colors duration-200">
+              <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Export Options</h2>
+              <div class="space-y-4 mb-6">
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📸 Screenshot</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Save a visual image of the scorecard to your device</p>
+                  <button id="take-screenshot-btn" class="px-4 py-2 bg-purple text-white rounded hover:bg-purple-dark font-semibold transition-colors min-h-[44px]">Take Screenshot</button>
                 </div>
-                <div class="export-option">
-                  <h3>📄 JSON Data</h3>
-                  <p>Export raw score data for coaches or server upload</p>
-                  <button id="download-json-btn" class="btn btn-orange">Download JSON</button>
-                  <button id="copy-json-btn" class="btn btn-secondary">Copy to Clipboard</button>
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📄 JSON Data</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Export raw score data for coaches or server upload</p>
+                  <div class="flex gap-2">
+                    <button id="download-json-btn" class="px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark font-semibold transition-colors min-h-[44px]">Download JSON</button>
+                    <button id="copy-json-btn" class="px-4 py-2 bg-secondary text-white rounded hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Copy to Clipboard</button>
+                  </div>
                 </div>
-                <div class="export-option">
-                  <h3>📧 Send to Coach</h3>
-                  <p>Email the score data directly to coaches</p>
-                  <button id="email-coach-btn" class="btn btn-success">Email Coach</button>
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📧 Send to Coach</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Email the score data directly to coaches</p>
+                  <button id="email-coach-btn" class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark font-semibold transition-colors min-h-[44px]">Email Coach</button>
                 </div>
               </div>
-              <div class="modal-buttons">
-                <button id="modal-close-export" class="btn btn-secondary">Close</button>
+              <div class="flex justify-end">
+                <button id="modal-close-export" class="px-4 py-2 bg-secondary text-white rounded hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Close</button>
               </div>
             </div>
         </div>
 
         <!-- Global Footer -->
-        <footer class="global-footer" style="justify-content: space-between;">
-            <a href="index.html" class="btn btn-secondary">Home</a>
-            <button id="new-match-btn" class="btn btn-danger">New Match</button>
-            <button id="export-btn" class="btn btn-purple">📤 Export</button>
+        <footer class="px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-between gap-2 safe-bottom">
+            <a href="index.html" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px] flex items-center">Home</a>
+            <button id="new-match-btn" class="px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors min-h-[44px]">New Match</button>
+            <button id="export-btn" class="px-4 py-2 bg-purple text-white rounded-lg hover:bg-purple-dark font-semibold transition-colors min-h-[44px]">📤 Export</button>
         </footer>
 
     </div>

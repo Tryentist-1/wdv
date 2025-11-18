@@ -29,26 +29,34 @@ function parseScoreValue(score) {
 }
 
 /**
- * Gets the appropriate CSS class for a given score value for color-coding.
+ * Gets the appropriate Tailwind CSS classes for a given score value for color-coding.
  * @param {string|number} score The score value.
- * @returns {string} The CSS class name.
+ * @returns {string} The Tailwind CSS class names (background and text color).
  */
 function getScoreColor(score) {
-    if (score === '' || score === null || score === undefined) return 'score-empty';
+    if (score === '' || score === null || score === undefined) return '';
     const strScore = String(score).toUpperCase().trim();
-    if (strScore === 'X') return 'score-x';
-    if (strScore === 'M') return 'score-m';
-    if (strScore === '10') return 'score-10';
-    if (strScore === '9') return 'score-9';
-    if (strScore === '8') return 'score-8';
-    if (strScore === '7') return 'score-7';
-    if (strScore === '6') return 'score-6';
-    if (strScore === '5') return 'score-5';
-    if (strScore === '4') return 'score-4';
-    if (strScore === '3') return 'score-3';
-    if (strScore === '2') return 'score-2';
-    if (strScore === '1') return 'score-1';
-    return 'score-empty';
+    // Gold: X, 10, 9
+    if (strScore === 'X' || strScore === '10' || strScore === '9') {
+        return 'bg-score-gold text-black dark:text-black';
+    }
+    // Red: 8, 7
+    if (strScore === '8' || strScore === '7') {
+        return 'bg-score-red text-white';
+    }
+    // Blue: 6, 5
+    if (strScore === '6' || strScore === '5') {
+        return 'bg-score-blue text-white';
+    }
+    // Black: 4, 3
+    if (strScore === '4' || strScore === '3') {
+        return 'bg-score-black text-white';
+    }
+    // White: 2, 1, M
+    if (strScore === '2' || strScore === '1' || strScore === 'M') {
+        return 'bg-score-white text-black dark:text-black';
+    }
+    return '';
 }
 
 /**
