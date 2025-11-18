@@ -60,12 +60,20 @@ php api/test_db_connection.php
 
 Should show: ✅ Connection successful!
 
-### 6. Start Server
+### 6. Build Tailwind CSS
+```bash
+# Compile Tailwind CSS (required for styling)
+npm run build:css
+```
+
+**Note:** The project uses compiled Tailwind CSS instead of CDN for reliability. After editing `css/tailwind.css`, run `npm run build:css` to regenerate `css/tailwind-compiled.css`.
+
+### 7. Start Server
 ```bash
 npm run serve
 ```
 
-### 7. Open Browser
+### 8. Open Browser
 - Main app: http://localhost:8001/index.html
 - Coach console: http://localhost:8001/coach.html
 - API test: http://localhost:8001/api/test_harness.html

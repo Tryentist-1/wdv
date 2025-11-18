@@ -750,6 +750,18 @@ if (!empty($filters['name_like'])) {
                     View on GitHub
                 </a>
             </div>
+            <div class="link-card">
+                <strong>📝 Scorecard Editor</strong>
+                <a href="../scorecard_editor.html" target="_blank">scorecard_editor.html</a>
+            </div>
+            <div class="link-card">
+                <strong>🧪 API Test Harness</strong>
+                <a href="test_harness.html" target="_blank">test_harness.html</a>
+            </div>
+            <div class="link-card">
+                <strong>🔧 Diagnostic Tool</strong>
+                <a href="../diagnostic_tool.html" target="_blank">diagnostic_tool.html</a>
+            </div>
         </div>
     </div>
 </body>

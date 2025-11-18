@@ -282,6 +282,142 @@ function process_round_archer_verification(PDO $pdo, string $roundArcherId, stri
     return $updated;
 }
 
+function process_solo_match_verification(PDO $pdo, string $matchId, string $action, string $verifiedBy = '', string $notes = ''): array {
+    $stmt = $pdo->prepare('SELECT id, event_id, status, locked, card_status, verified_by, verified_at, notes, lock_history FROM solo_matches WHERE id = ? LIMIT 1');
+    $stmt->execute([$matchId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$row) {
+        throw new Exception('Match not found', 404);
+    }
+
+    if (empty($row['event_id'])) {
+        throw new Exception('Standalone matches are not part of verification workflow', 400);
+    }
+
+    $action = strtolower($action);
+    $actor = $verifiedBy !== '' ? $verifiedBy : 'Coach';
+    $timestamp = date('Y-m-d H:i:s');
+    $history = decode_lock_history($row['lock_history'] ?? null);
+
+    if (!in_array($action, ['lock', 'unlock', 'void'], true)) {
+        throw new Exception('Invalid action', 400);
+    }
+
+    if ($action === 'lock') {
+        if ((bool)$row['locked']) {
+            throw new Exception('Match already locked', 409);
+        }
+        if ($row['status'] !== 'Completed') {
+            throw new Exception('Cannot verify an incomplete match. Match must be Completed.', 409);
+        }
+        // Verify match has sets scored
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM solo_match_sets WHERE match_id = ?');
+        $countStmt->execute([$matchId]);
+        if ((int)$countStmt->fetchColumn() === 0) {
+            throw new Exception('Cannot verify an empty match', 409);
+        }
+        $history[] = ['action' => 'lock', 'actor' => $actor, 'timestamp' => $timestamp, 'notes' => $notes ?: null];
+        $update = $pdo->prepare('UPDATE solo_matches SET locked = 1, card_status = ?, verified_by = ?, verified_at = ?, notes = ?, lock_history = ? WHERE id = ?');
+        $newNotes = ($notes !== '') ? $notes : ($row['notes'] ?? null);
+        $update->execute(['VER', $actor, $timestamp, $newNotes, json_encode($history), $matchId]);
+    } elseif ($action === 'unlock') {
+        if (!(bool)$row['locked'] && $row['card_status'] !== 'VOID') {
+            throw new Exception('Match is not locked', 409);
+        }
+        // Check if event is closed (cannot unlock after event closure)
+        $eventStmt = $pdo->prepare('SELECT status FROM events WHERE id = ? LIMIT 1');
+        $eventStmt->execute([$row['event_id']]);
+        $event = $eventStmt->fetch(PDO::FETCH_ASSOC);
+        if ($event && $event['status'] === 'Completed') {
+            throw new Exception('Cannot unlock match after event is closed', 409);
+        }
+        $history[] = ['action' => 'unlock', 'actor' => $actor, 'timestamp' => $timestamp, 'notes' => $notes ?: null];
+        $update = $pdo->prepare('UPDATE solo_matches SET locked = 0, card_status = ?, verified_by = NULL, verified_at = NULL, notes = ?, lock_history = ? WHERE id = ?');
+        $newNotes = ($notes !== '') ? $notes : ($row['notes'] ?? null);
+        $update->execute(['PENDING', $newNotes, json_encode($history), $matchId]);
+    } else { // void
+        $history[] = ['action' => 'void', 'actor' => $actor, 'timestamp' => $timestamp, 'notes' => $notes ?: null];
+        $update = $pdo->prepare('UPDATE solo_matches SET locked = 1, card_status = ?, verified_by = ?, verified_at = ?, notes = ?, lock_history = ? WHERE id = ?');
+        $voidNotes = ($notes !== '') ? $notes : 'VOID';
+        $update->execute(['VOID', $actor, $timestamp, $voidNotes, json_encode($history), $matchId]);
+    }
+
+    $refetch = $pdo->prepare('SELECT id, event_id, status, locked, card_status, verified_by, verified_at, notes, lock_history FROM solo_matches WHERE id = ? LIMIT 1');
+    $refetch->execute([$matchId]);
+    $updated = $refetch->fetch(PDO::FETCH_ASSOC);
+    $updated['lock_history'] = decode_lock_history($updated['lock_history'] ?? null);
+    return $updated;
+}
+
+function process_team_match_verification(PDO $pdo, string $matchId, string $action, string $verifiedBy = '', string $notes = ''): array {
+    $stmt = $pdo->prepare('SELECT id, event_id, status, locked, card_status, verified_by, verified_at, notes, lock_history FROM team_matches WHERE id = ? LIMIT 1');
+    $stmt->execute([$matchId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$row) {
+        throw new Exception('Match not found', 404);
+    }
+
+    if (empty($row['event_id'])) {
+        throw new Exception('Standalone matches are not part of verification workflow', 400);
+    }
+
+    $action = strtolower($action);
+    $actor = $verifiedBy !== '' ? $verifiedBy : 'Coach';
+    $timestamp = date('Y-m-d H:i:s');
+    $history = decode_lock_history($row['lock_history'] ?? null);
+
+    if (!in_array($action, ['lock', 'unlock', 'void'], true)) {
+        throw new Exception('Invalid action', 400);
+    }
+
+    if ($action === 'lock') {
+        if ((bool)$row['locked']) {
+            throw new Exception('Match already locked', 409);
+        }
+        if ($row['status'] !== 'Completed') {
+            throw new Exception('Cannot verify an incomplete match. Match must be Completed.', 409);
+        }
+        // Verify match has sets scored
+        $countStmt = $pdo->prepare('SELECT COUNT(*) FROM team_match_sets WHERE match_id = ?');
+        $countStmt->execute([$matchId]);
+        if ((int)$countStmt->fetchColumn() === 0) {
+            throw new Exception('Cannot verify an empty match', 409);
+        }
+        $history[] = ['action' => 'lock', 'actor' => $actor, 'timestamp' => $timestamp, 'notes' => $notes ?: null];
+        $update = $pdo->prepare('UPDATE team_matches SET locked = 1, card_status = ?, verified_by = ?, verified_at = ?, notes = ?, lock_history = ? WHERE id = ?');
+        $newNotes = ($notes !== '') ? $notes : ($row['notes'] ?? null);
+        $update->execute(['VER', $actor, $timestamp, $newNotes, json_encode($history), $matchId]);
+    } elseif ($action === 'unlock') {
+        if (!(bool)$row['locked'] && $row['card_status'] !== 'VOID') {
+            throw new Exception('Match is not locked', 409);
+        }
+        // Check if event is closed (cannot unlock after event closure)
+        $eventStmt = $pdo->prepare('SELECT status FROM events WHERE id = ? LIMIT 1');
+        $eventStmt->execute([$row['event_id']]);
+        $event = $eventStmt->fetch(PDO::FETCH_ASSOC);
+        if ($event && $event['status'] === 'Completed') {
+            throw new Exception('Cannot unlock match after event is closed', 409);
+        }
+        $history[] = ['action' => 'unlock', 'actor' => $actor, 'timestamp' => $timestamp, 'notes' => $notes ?: null];
+        $update = $pdo->prepare('UPDATE team_matches SET locked = 0, card_status = ?, verified_by = NULL, verified_at = NULL, notes = ?, lock_history = ? WHERE id = ?');
+        $newNotes = ($notes !== '') ? $notes : ($row['notes'] ?? null);
+        $update->execute(['PENDING', $newNotes, json_encode($history), $matchId]);
+    } else { // void
+        $history[] = ['action' => 'void', 'actor' => $actor, 'timestamp' => $timestamp, 'notes' => $notes ?: null];
+        $update = $pdo->prepare('UPDATE team_matches SET locked = 1, card_status = ?, verified_by = ?, verified_at = ?, notes = ?, lock_history = ? WHERE id = ?');
+        $voidNotes = ($notes !== '') ? $notes : 'VOID';
+        $update->execute(['VOID', $actor, $timestamp, $voidNotes, json_encode($history), $matchId]);
+    }
+
+    $refetch = $pdo->prepare('SELECT id, event_id, status, locked, card_status, verified_by, verified_at, notes, lock_history FROM team_matches WHERE id = ? LIMIT 1');
+    $refetch->execute([$matchId]);
+    $updated = $refetch->fetch(PDO::FETCH_ASSOC);
+    $updated['lock_history'] = decode_lock_history($updated['lock_history'] ?? null);
+    return $updated;
+}
+
 // Normalize archer field values
 $normalizeArcherField = function($field, $value) {
     if ($value === null || $value === '') return null;
@@ -1370,7 +1506,7 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/verify$#i', $route, $m) && $met
             'history' => $result['lock_history']
         ]);
     } catch (Exception $e) {
-        $status = $e->getCode();
+        $status = (int)$e->getCode();
         if ($status < 100 || $status > 599) $status = 400;
         json_response(['error' => $e->getMessage()], $status);
     }
@@ -1400,7 +1536,7 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/verification$#i', $route, $m) &
             'history' => $result['lock_history']
         ]);
     } catch (Exception $e) {
-        $status = $e->getCode();
+        $status = (int)$e->getCode();
         if ($status < 100 || $status > 599) $status = 400;
         json_response(['error' => $e->getMessage()], $status);
     }
@@ -1487,7 +1623,7 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/verification/bale$#i', $route, $m) && 
             'details' => $locked
         ]);
     } catch (Exception $e) {
-        $status = $e->getCode();
+        $status = (int)$e->getCode();
         if ($status < 100 || $status > 599) $status = 400;
         json_response(['error' => $e->getMessage()], $status);
     }
@@ -1559,7 +1695,7 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/verification/close$#i', $route, $m) &&
             'voidedCards' => $voided
         ]);
     } catch (Exception $e) {
-        $status = $e->getCode();
+        $status = (int)$e->getCode();
         if ($status < 100 || $status > 599) $status = 400;
         json_response(['error' => $e->getMessage()], $status);
     }
@@ -3366,7 +3502,210 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
     exit;
 }
 
+// GET /v1/events/:id/solo-matches - Get all solo matches for an event
+if (preg_match('#^/v1/events/([0-9a-f-]+)/solo-matches$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $eventId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Get all matches for this event
+        $matchesStmt = $pdo->prepare('
+            SELECT 
+                sm.id,
+                sm.event_id,
+                sm.date,
+                sm.location,
+                sm.status,
+                sm.locked,
+                sm.card_status,
+                sm.verified_at,
+                sm.verified_by,
+                sm.winner_archer_id,
+                sm.match_code,
+                sm.created_at
+            FROM solo_matches sm
+            WHERE sm.event_id = ?
+            ORDER BY sm.date DESC, sm.created_at DESC
+        ');
+        $matchesStmt->execute([$eventId]);
+        $matches = $matchesStmt->fetchAll();
+        
+        // For each match, get archers and their scores
+        foreach ($matches as &$match) {
+            $archersStmt = $pdo->prepare('
+                SELECT 
+                    sma.id,
+                    sma.position,
+                    sma.archer_name,
+                    sma.school,
+                    sma.archer_id,
+                    COALESCE(SUM(sms.set_points), 0) as total_set_points,
+                    COUNT(sms.id) as sets_completed
+                FROM solo_match_archers sma
+                LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id
+                WHERE sma.match_id = ?
+                GROUP BY sma.id, sma.position, sma.archer_name, sma.school, sma.archer_id
+                ORDER BY sma.position
+            ');
+            $archersStmt->execute([$match['id']]);
+            $archers = $archersStmt->fetchAll();
+            
+            // Determine winner name
+            $match['archer1'] = $archers[0] ?? null;
+            $match['archer2'] = $archers[1] ?? null;
+            
+            if ($match['winner_archer_id']) {
+                foreach ($archers as $archer) {
+                    if ($archer['archer_id'] === $match['winner_archer_id']) {
+                        $match['winner_name'] = $archer['archer_name'];
+                        break;
+                    }
+                }
+            }
+            
+            // Format as "Archer A vs Archer B"
+            if ($match['archer1'] && $match['archer2']) {
+                $match['match_display'] = $match['archer1']['archer_name'] . ' vs ' . $match['archer2']['archer_name'];
+            }
+        }
+        
+        json_response(['matches' => $matches], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// GET /v1/events/:id/team-matches - Get all team matches for an event
+if (preg_match('#^/v1/events/([0-9a-f-]+)/team-matches$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $eventId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Get all matches for this event
+        $matchesStmt = $pdo->prepare('
+            SELECT 
+                tm.id,
+                tm.event_id,
+                tm.date,
+                tm.location,
+                tm.status,
+                tm.locked,
+                tm.card_status,
+                tm.verified_at,
+                tm.verified_by,
+                tm.winner_team_id,
+                tm.match_code,
+                tm.created_at
+            FROM team_matches tm
+            WHERE tm.event_id = ?
+            ORDER BY tm.date DESC, tm.created_at DESC
+        ');
+        $matchesStmt->execute([$eventId]);
+        $matches = $matchesStmt->fetchAll();
+        
+        // For each match, get teams and their scores
+        foreach ($matches as &$match) {
+            $teamsStmt = $pdo->prepare('
+                SELECT 
+                    tmt.id,
+                    tmt.position,
+                    tmt.team_name,
+                    tmt.school,
+                    tmt.sets_won,
+                    COALESCE(MAX(tms.running_points), 0) as total_set_points,
+                    COUNT(DISTINCT tms.set_number) as sets_completed
+                FROM team_match_teams tmt
+                LEFT JOIN team_match_sets tms ON tms.team_id = tmt.id
+                WHERE tmt.match_id = ?
+                GROUP BY tmt.id, tmt.position, tmt.team_name, tmt.school, tmt.sets_won
+                ORDER BY tmt.position
+            ');
+            $teamsStmt->execute([$match['id']]);
+            $teams = $teamsStmt->fetchAll();
+            
+            // Get archers for each team
+            foreach ($teams as &$team) {
+                $archersStmt = $pdo->prepare('
+                    SELECT archer_name, school, position
+                    FROM team_match_archers
+                    WHERE team_id = ?
+                    ORDER BY position
+                ');
+                $archersStmt->execute([$team['id']]);
+                $team['archers'] = $archersStmt->fetchAll();
+            }
+            
+            $match['team1'] = $teams[0] ?? null;
+            $match['team2'] = $teams[1] ?? null;
+            
+            // Determine winner team name
+            if ($match['winner_team_id']) {
+                foreach ($teams as $team) {
+                    if ($team['id'] === $match['winner_team_id']) {
+                        $match['winner_name'] = $team['team_name'] ?: $team['school'];
+                        break;
+                    }
+                }
+            }
+            
+            // Format as "Team A vs Team B"
+            if ($match['team1'] && $match['team2']) {
+                $team1Name = $match['team1']['team_name'] ?: $match['team1']['school'] ?: 'Team 1';
+                $team2Name = $match['team2']['team_name'] ?: $match['team2']['school'] ?: 'Team 2';
+                $match['match_display'] = $team1Name . ' vs ' . $team2Name;
+            }
+        }
+        
+        json_response(['matches' => $matches], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/solo-matches/:id/verify - Lock/Unlock/Void match
+if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/verify$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $matchId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $action = trim($input['action'] ?? '');
+    $verifiedBy = trim($input['verifiedBy'] ?? '');
+    $notes = trim($input['notes'] ?? '');
+
+    if (empty($action)) {
+        json_response(['error' => 'Action is required (lock, unlock, or void)'], 400);
+        exit;
+    }
+
+    try {
+        $pdo = db();
+        $result = process_solo_match_verification($pdo, $matchId, $action, $verifiedBy, $notes);
+        json_response([
+            'matchId' => $result['id'],
+            'eventId' => $result['event_id'],
+            'status' => $result['status'],
+            'locked' => (bool)$result['locked'],
+            'cardStatus' => $result['card_status'],
+            'verifiedBy' => $result['verified_by'],
+            'verifiedAt' => $result['verified_at'],
+            'notes' => $result['notes'],
+            'history' => $result['lock_history']
+        ]);
+    } catch (Exception $e) {
+        $status = (int)$e->getCode();
+        if ($status < 100 || $status > 599) $status = 400;
+        json_response(['error' => $e->getMessage()], $status);
+    }
+    exit;
+}
+
 // PATCH /v1/solo-matches/:id - Update match (winner, status, verification)
+// NOTE: Direct locking via PATCH is deprecated. Use POST /v1/solo-matches/:id/verify instead.
 if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 'PATCH') {
     require_api_key();
     $matchId = $m[1];
@@ -3390,13 +3729,17 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
             $updates[] = 'shoot_off=?';
             $params[] = $input['shootOff'] ? 1 : 0;
         }
-        if (isset($input['locked'])) {
-            $updates[] = 'locked=?';
-            $params[] = $input['locked'] ? 1 : 0;
-        }
-        if (isset($input['cardStatus'])) {
-            $updates[] = 'card_status=?';
-            $params[] = $input['cardStatus'];
+        // Deprecated: Direct locking via PATCH. Use POST /v1/solo-matches/:id/verify instead.
+        // Keeping for backward compatibility but adding warning.
+        if (isset($input['locked']) || isset($input['cardStatus'])) {
+            if (isset($input['locked'])) {
+                $updates[] = 'locked=?';
+                $params[] = $input['locked'] ? 1 : 0;
+            }
+            if (isset($input['cardStatus'])) {
+                $updates[] = 'card_status=?';
+                $params[] = $input['cardStatus'];
+            }
         }
         if (isset($input['notes'])) {
             $updates[] = 'notes=?';
@@ -3851,7 +4194,44 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
     exit;
 }
 
+// POST /v1/team-matches/:id/verify - Lock/Unlock/Void match
+if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/verify$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $matchId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $action = trim($input['action'] ?? '');
+    $verifiedBy = trim($input['verifiedBy'] ?? '');
+    $notes = trim($input['notes'] ?? '');
+
+    if (empty($action)) {
+        json_response(['error' => 'Action is required (lock, unlock, or void)'], 400);
+        exit;
+    }
+
+    try {
+        $pdo = db();
+        $result = process_team_match_verification($pdo, $matchId, $action, $verifiedBy, $notes);
+        json_response([
+            'matchId' => $result['id'],
+            'eventId' => $result['event_id'],
+            'status' => $result['status'],
+            'locked' => (bool)$result['locked'],
+            'cardStatus' => $result['card_status'],
+            'verifiedBy' => $result['verified_by'],
+            'verifiedAt' => $result['verified_at'],
+            'notes' => $result['notes'],
+            'history' => $result['lock_history']
+        ]);
+    } catch (Exception $e) {
+        $status = (int)$e->getCode();
+        if ($status < 100 || $status > 599) $status = 400;
+        json_response(['error' => $e->getMessage()], $status);
+    }
+    exit;
+}
+
 // PATCH /v1/team-matches/:id - Update match (winner, status, verification)
+// NOTE: Direct locking via PATCH is deprecated. Use POST /v1/team-matches/:id/verify instead.
 if (preg_match('#^/v1/team-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 'PATCH') {
     require_api_key();
     $matchId = $m[1];
@@ -3875,13 +4255,17 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
             $updates[] = 'shoot_off=?';
             $params[] = $input['shootOff'] ? 1 : 0;
         }
-        if (isset($input['locked'])) {
-            $updates[] = 'locked=?';
-            $params[] = $input['locked'] ? 1 : 0;
-        }
-        if (isset($input['cardStatus'])) {
-            $updates[] = 'card_status=?';
-            $params[] = $input['cardStatus'];
+        // Deprecated: Direct locking via PATCH. Use POST /v1/team-matches/:id/verify instead.
+        // Keeping for backward compatibility but adding warning.
+        if (isset($input['locked']) || isset($input['cardStatus'])) {
+            if (isset($input['locked'])) {
+                $updates[] = 'locked=?';
+                $params[] = $input['locked'] ? 1 : 0;
+            }
+            if (isset($input['cardStatus'])) {
+                $updates[] = 'card_status=?';
+                $params[] = $input['cardStatus'];
+            }
         }
         if (isset($input['notes'])) {
             $updates[] = 'notes=?';

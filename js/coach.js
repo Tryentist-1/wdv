@@ -1666,6 +1666,9 @@
     // Load and display rounds
     await loadEventRounds(event.id);
     
+    // Load and display matches
+    await loadEventMatches(event.id);
+    
     document.getElementById('cancel-edit-event-btn').onclick = () => {
       modal.style.display = 'none';
       currentEditEventId = null;
@@ -1685,6 +1688,11 @@
     document.getElementById('edit-delete-event-btn').onclick = () => {
       deleteEvent(event.id, event.name);
     };
+    
+    // Match management buttons
+    document.getElementById('create-solo-match-btn').onclick = () => createMatch('solo');
+    document.getElementById('create-team-match-btn').onclick = () => createMatch('team');
+    document.getElementById('refresh-matches-btn').onclick = () => loadEventMatches(event.id);
     
     document.getElementById('submit-edit-event-btn').onclick = async () => {
       const name = nameInput.value.trim();
@@ -1790,6 +1798,249 @@
     };
   }
   
+  // ==================== Match Management ====================
+  
+  let currentMatchType = null; // 'solo' or 'team'
+  
+  async function loadEventMatches(eventId) {
+    try {
+      // Load solo matches
+      const soloResponse = await req(`/events/${eventId}/solo-matches`, 'GET');
+      renderSoloMatches(soloResponse.matches || []);
+      
+      // Load team matches
+      const teamResponse = await req(`/events/${eventId}/team-matches`, 'GET');
+      renderTeamMatches(teamResponse.matches || []);
+    } catch (err) {
+      console.error('Error loading matches:', err);
+      document.getElementById('solo-matches-list').innerHTML = '<div class="text-red-500 text-sm py-2">Error loading matches</div>';
+      document.getElementById('team-matches-list').innerHTML = '<div class="text-red-500 text-sm py-2">Error loading matches</div>';
+    }
+  }
+  
+  function renderSoloMatches(matches) {
+    const container = document.getElementById('solo-matches-list');
+    if (!matches || matches.length === 0) {
+      container.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No solo matches yet</div>';
+      return;
+    }
+    
+    let html = '';
+    matches.forEach(match => {
+      const status = match.status || 'Not Started';
+      const cardStatus = match.card_status || 'PENDING';
+      const locked = match.locked ? '🔒' : '';
+      const verified = cardStatus === 'VER' ? '✅' : cardStatus === 'VOID' ? '❌' : '';
+      
+      const archer1 = match.archer1 || {};
+      const archer2 = match.archer2 || {};
+      const score1 = archer1.total_set_points || 0;
+      const score2 = archer2.total_set_points || 0;
+      const winner = match.winner_name ? `🏆 ${match.winner_name}` : '';
+      
+      html += `
+        <div class="p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex-1">
+              <div class="font-semibold text-gray-800 dark:text-white text-sm">
+                ${match.match_display || 'Match'}
+              </div>
+              <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                ${status} ${locked} ${verified}
+                ${match.date ? ` • ${match.date}` : ''}
+              </div>
+              ${score1 > 0 || score2 > 0 ? `
+                <div class="text-sm mt-1">
+                  <span class="font-medium">${archer1.archer_name || 'Archer 1'}:</span> ${score1} pts
+                  <span class="mx-2">vs</span>
+                  <span class="font-medium">${archer2.archer_name || 'Archer 2'}:</span> ${score2} pts
+                  ${winner ? `<span class="ml-2 text-primary">${winner}</span>` : ''}
+                </div>
+              ` : ''}
+            </div>
+            <div class="flex gap-1 ml-2">
+              <button onclick="coach.openMatch('${match.id}', 'solo')" 
+                class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-xs font-semibold transition-colors">
+                Open
+              </button>
+              ${status === 'Completed' && !match.locked ? `
+                <button onclick="coach.verifyMatch('${match.id}', 'solo')" 
+                  class="px-2 py-1 bg-success hover:bg-success-dark text-white rounded text-xs font-semibold transition-colors">
+                  Verify
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = html;
+  }
+  
+  function renderTeamMatches(matches) {
+    const container = document.getElementById('team-matches-list');
+    if (!matches || matches.length === 0) {
+      container.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No team matches yet</div>';
+      return;
+    }
+    
+    let html = '';
+    matches.forEach(match => {
+      const status = match.status || 'Not Started';
+      const cardStatus = match.card_status || 'PENDING';
+      const locked = match.locked ? '🔒' : '';
+      const verified = cardStatus === 'VER' ? '✅' : cardStatus === 'VOID' ? '❌' : '';
+      
+      const team1 = match.team1 || {};
+      const team2 = match.team2 || {};
+      const score1 = team1.total_set_points || 0;
+      const score2 = team2.total_set_points || 0;
+      const winner = match.winner_name ? `🏆 ${match.winner_name}` : '';
+      
+      const team1Name = team1.team_name || team1.school || 'Team 1';
+      const team2Name = team2.team_name || team2.school || 'Team 2';
+      
+      html += `
+        <div class="p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
+          <div class="flex justify-between items-start mb-2">
+            <div class="flex-1">
+              <div class="font-semibold text-gray-800 dark:text-white text-sm">
+                ${match.match_display || `${team1Name} vs ${team2Name}`}
+              </div>
+              <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                ${status} ${locked} ${verified}
+                ${match.date ? ` • ${match.date}` : ''}
+              </div>
+              ${score1 > 0 || score2 > 0 ? `
+                <div class="text-sm mt-1">
+                  <span class="font-medium">${team1Name}:</span> ${score1} pts
+                  <span class="mx-2">vs</span>
+                  <span class="font-medium">${team2Name}:</span> ${score2} pts
+                  ${winner ? `<span class="ml-2 text-primary">${winner}</span>` : ''}
+                </div>
+              ` : ''}
+            </div>
+            <div class="flex gap-1 ml-2">
+              <button onclick="coach.openMatch('${match.id}', 'team')" 
+                class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-xs font-semibold transition-colors">
+                Open
+              </button>
+              ${status === 'Completed' && !match.locked ? `
+                <button onclick="coach.verifyMatch('${match.id}', 'team')" 
+                  class="px-2 py-1 bg-success hover:bg-success-dark text-white rounded text-xs font-semibold transition-colors">
+                  Verify
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = html;
+  }
+  
+  async function createMatch(matchType) {
+    if (!currentEditEventId) {
+      alert('No event selected');
+      return;
+    }
+    
+    currentMatchType = matchType;
+    const modal = document.getElementById('create-match-modal');
+    const title = document.getElementById('create-match-title');
+    const dateInput = document.getElementById('match-date');
+    const locationInput = document.getElementById('match-location');
+    const maxSetsSelect = document.getElementById('match-max-sets');
+    
+    title.textContent = `Create ${matchType === 'solo' ? 'Solo' : 'Team'} Match`;
+    dateInput.value = new Date().toISOString().split('T')[0];
+    locationInput.value = '';
+    maxSetsSelect.value = matchType === 'solo' ? '5' : '4';
+    
+    modal.style.display = 'flex';
+    
+    document.getElementById('cancel-create-match-btn').onclick = () => {
+      modal.style.display = 'none';
+      currentMatchType = null;
+    };
+    
+    document.getElementById('submit-create-match-btn').onclick = async () => {
+      const date = dateInput.value;
+      const location = locationInput.value.trim();
+      const maxSets = parseInt(maxSetsSelect.value);
+      
+      if (!date) {
+        alert('Please select a date');
+        return;
+      }
+      
+      try {
+        const btn = document.getElementById('submit-create-match-btn');
+        btn.disabled = true;
+        btn.textContent = 'Creating...';
+        
+        const endpoint = matchType === 'solo' ? '/solo-matches' : '/team-matches';
+        const response = await req(endpoint, 'POST', {
+          eventId: currentEditEventId,
+          date,
+          location: location || null,
+          maxSets
+        });
+        
+        modal.style.display = 'none';
+        alert(`Match created! Opening match for scoring...`);
+        
+        // Open the match for scoring
+        openMatch(response.matchId, matchType);
+        
+        // Refresh matches list
+        await loadEventMatches(currentEditEventId);
+      } catch (err) {
+        alert(`Error creating match: ${err.message}`);
+      } finally {
+        const btn = document.getElementById('submit-create-match-btn');
+        btn.disabled = false;
+        btn.textContent = 'Create Match';
+        currentMatchType = null;
+      }
+    };
+  }
+  
+  function openMatch(matchId, matchType) {
+    const baseUrl = window.location.origin + window.location.pathname.replace('coach.html', '');
+    const page = matchType === 'solo' ? 'solo_card.html' : 'team_card.html';
+    const url = `${baseUrl}${page}?event=${currentEditEventId}&match=${matchId}`;
+    window.open(url, '_blank');
+  }
+  
+  async function verifyMatch(matchId, matchType) {
+    const verifiedBy = prompt('Enter your name for verification:');
+    if (!verifiedBy) return;
+    
+    const notes = prompt('Enter notes (optional):') || '';
+    
+    const action = confirm('Lock this match? (Cancel to void instead)') ? 'lock' : 'void';
+    
+    try {
+      const endpoint = matchType === 'solo' 
+        ? `/solo-matches/${matchId}/verify`
+        : `/team-matches/${matchId}/verify`;
+      
+      await req(endpoint, 'POST', {
+        action,
+        verifiedBy,
+        notes
+      });
+      
+      alert(`Match ${action === 'lock' ? 'verified and locked' : 'voided'} successfully!`);
+      await loadEventMatches(currentEditEventId);
+    } catch (err) {
+      alert(`Error verifying match: ${err.message}`);
+    }
+  }
+  
   // ==================== Global Functions (for inline onclick) ====================
   
   window.coach = {
@@ -1799,7 +2050,10 @@
     editEvent,
     manageBales,
     showQRCode,
-    verifyEvent
+    verifyEvent,
+    openMatch,
+    verifyMatch,
+    createMatch
   };
 
 })();

@@ -20,6 +20,20 @@
 
 ---
 
+### 1.5. **Tournament Rules** (3 min read)
+**[docs/OAS_RULES.md](docs/OAS_RULES.md)**
+
+**Why:** Understand tournament structure and formats
+- Ranking rounds determine seeding
+- Solo elimination brackets (Top 8)
+- Team elimination brackets (Top 8 schools)
+- Point systems for championships
+- Tournament flow and advancement rules
+
+**Key Takeaway:** Tournament structure drives bracket generation and match organization.
+
+---
+
 ### 2. **System Architecture** (5 min scan)
 **[docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md)**
 
@@ -105,6 +119,12 @@ See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 **Verification/Locking:**
 - [docs/SPRINT_VERIFY_SCORECARDS.md](docs/SPRINT_VERIFY_SCORECARDS.md)
 - [docs/BALE_GROUP_SCORING_WORKFLOW.md](docs/BALE_GROUP_SCORING_WORKFLOW.md)
+
+**Event Management:**
+- [docs/Feature_EventPlanning_Product.md](docs/Feature_EventPlanning_Product.md) - Event creation and tournament flow (Phase 3+)
+
+**Archer Management:**
+- [docs/Feature_ArcherProfile.md](docs/Feature_ArcherProfile.md) - Archer profile and career stats (Phase 3+)
 
 **Testing:**
 - [docs/AUTOMATED_TESTING.md](docs/AUTOMATED_TESTING.md)
@@ -413,6 +433,8 @@ When Terry says... | He means...
 **"Round archer"** | Individual scorecard (one per archer per round)
 **"Entry code"** | Event-specific code for archer authentication
 **"Coach passcode"** | Static admin code for coach authentication
+**"Top 8"** | Top 8 archers/teams advance to elimination brackets (see [OAS_RULES.md](docs/OAS_RULES.md))
+**"Bracket"** | Single-elimination tournament structure (see [OAS_RULES.md](docs/OAS_RULES.md))
 
 ---
 

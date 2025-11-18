@@ -93,14 +93,20 @@ This document explains:
 git clone <repo-url>
 cd wdv
 
-# 2. Run setup script
+# 2. Install dependencies
+npm install
+
+# 3. Build Tailwind CSS
+npm run build:css
+
+# 4. Run setup script
 ./setup_local.sh
 
-# 3. Start PHP server
+# 5. Start PHP server
 npm run serve
 
-# 4. Open browser
-open http://localhost:3000
+# 6. Open browser
+open http://localhost:8001
 ```
 
 ### Detailed Setup
@@ -140,8 +146,9 @@ wdv/
 ├── css/
 │   ├── components.css            # Reusable components (legacy)
 │   ├── score-colors.css          # Archery ring colors (legacy)
-│   └── tailwind.css              # Tailwind build
-│   ⚠️ Note: All modules now use 100% Tailwind CSS (v1.4.0)
+│   ├── tailwind.css              # Tailwind source (edit this)
+│   ├── tailwind-compiled.css     # Compiled Tailwind CSS (generated)
+│   ⚠️ Note: All modules use compiled Tailwind CSS. Run `npm run build:css` after editing `tailwind.css`
 │
 ├── docs/
 │   ├── APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md  # 🔑 Master reference
@@ -271,6 +278,8 @@ open https://tryentist.com/wdv/
 | Document | Purpose | Audience |
 |----------|---------|----------|
 | [APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md) | **Master reference** - Full system overview | Developers |
+| [BALE_GROUP_SCORING_WORKFLOW.md](docs/BALE_GROUP_SCORING_WORKFLOW.md) | **Critical workflow** - How scoring works in real competitions | Developers |
+| [OAS_RULES.md](docs/OAS_RULES.md) | **Tournament rules** - Tournament structure and formats | All |
 | [ARCHER_SCORING_WORKFLOW.md](docs/ARCHER_SCORING_WORKFLOW.md) | How archers use the app | Archers & Coaches |
 | [PRODUCT_REQUIREMENTS.md](docs/PRODUCT_REQUIREMENTS.md) | Original product vision | All |
 
@@ -318,6 +327,8 @@ open https://tryentist.com/wdv/
 | [ANALYTICS_PIVOT_ENHANCEMENTS.md](docs/ANALYTICS_PIVOT_ENHANCEMENTS.md) | Analytics features |
 | [ARCHER_DATA_UNIFICATION_PHASE1.md](docs/ARCHER_DATA_UNIFICATION_PHASE1.md) | Data model |
 | [OAS_RANKING_ONLINE_3.0_REQUIREMENTS.md](docs/OAS_RANKING_ONLINE_3.0_REQUIREMENTS.md) | Live scoring design |
+| [Feature_EventPlanning_Product.md](docs/Feature_EventPlanning_Product.md) | Event management and tournament flow (Phase 3+) |
+| [Feature_ArcherProfile.md](docs/Feature_ArcherProfile.md) | Archer profile and career stats (Phase 3+) |
 
 ---
 

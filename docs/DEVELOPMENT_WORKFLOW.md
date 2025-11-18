@@ -191,6 +191,36 @@ npm run setup
 - Install required extensions
 - Configure linting and formatting
 
+### 4. CSS Compilation (Tailwind CSS)
+The project uses **compiled Tailwind CSS** instead of CDN for reliability and offline support.
+
+**Initial Setup:**
+```bash
+# Install dependencies (if not already done)
+npm install
+
+# Compile CSS
+npm run build:css
+```
+
+**During Development:**
+```bash
+# Watch mode - auto-compiles on changes
+npm run watch:css
+
+# Or manually compile after changes
+npm run build:css
+
+# Production build (minified)
+npm run build:css:prod
+```
+
+**Important:**
+- Source file: `css/tailwind.css` (edit this file)
+- Compiled file: `css/tailwind-compiled.css` (used by HTML files)
+- Always run `npm run build:css` after editing Tailwind CSS
+- The compiled file is committed to git (so it works even if build tools aren't installed)
+
 ## Documentation Updates
 
 When making changes that affect documentation:

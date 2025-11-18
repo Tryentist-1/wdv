@@ -582,6 +582,9 @@ Every lock/unlock action recorded:
 - [LIVE_SCORING_IMPLEMENTATION.md](LIVE_SCORING_IMPLEMENTATION.md) - API endpoints
 - [ARCHER_SCORING_WORKFLOW.md](ARCHER_SCORING_WORKFLOW.md) - Archer perspective
 
+**Tournament Structure:**
+- [OAS_RULES.md](OAS_RULES.md) - Tournament rules, bracket formats (Top 8, elimination rounds), point systems
+
 **Future Implementation:**
 - [APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md) - Phase 2 Solo/Team
 - [FUTURE_VISION_AND_ROADMAP.md](FUTURE_VISION_AND_ROADMAP.md) - Long-term vision

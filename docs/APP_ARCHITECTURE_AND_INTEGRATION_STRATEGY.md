@@ -680,6 +680,10 @@ function checkForLegacyData() {
 2. Complete Team integration
 3. Deprecate localStorage-only modes
 4. Add advanced features (tournaments, brackets)
+5. Implement event planning workflow (see [Feature_EventPlanning_Product.md](Feature_EventPlanning_Product.md))
+6. Add archer profile pages (see [Feature_ArcherProfile.md](Feature_ArcherProfile.md))
+
+**Note:** Tournament bracket generation and event management features are defined in [OAS_RULES.md](OAS_RULES.md) and [Feature_EventPlanning_Product.md](Feature_EventPlanning_Product.md). These will drive Phase 3+ development priorities.
 
 ---
 

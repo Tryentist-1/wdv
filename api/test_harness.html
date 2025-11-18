@@ -447,6 +447,84 @@
                 <div class="output-area" id="output-workflow">Waiting to run...</div>
             </div>
         </div>
+
+        <!-- Test 7: Solo Match Verification -->
+        <div class="test-section">
+            <div class="test-header">
+                <span>Test 7: Solo Match Verification (POST /solo-matches/:id/verify)</span>
+                <span class="status-badge pending" id="status-solo-verify">Not Run</span>
+            </div>
+            <div class="test-body">
+                <div class="test-controls">
+                    <div class="input-group">
+                        <label>Solo Match ID</label>
+                        <input type="text" id="solo-verify-match-id" placeholder="Enter match UUID">
+                    </div>
+                    <div class="input-group">
+                        <label>Action</label>
+                        <select id="solo-verify-action">
+                            <option value="lock">Lock</option>
+                            <option value="unlock">Unlock</option>
+                            <option value="void">Void</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Verified By (optional)</label>
+                        <input type="text" id="solo-verify-by" placeholder="Coach name" value="Test Coach">
+                    </div>
+                    <div class="input-group">
+                        <label>Notes (optional)</label>
+                        <input type="text" id="solo-verify-notes" placeholder="Verification notes">
+                    </div>
+                </div>
+                <button class="test-btn" onclick="testSoloMatchVerification()">▶ Test Solo Match Verification</button>
+                <button class="clear-btn" onclick="clearOutput('output-solo-verify')">Clear</button>
+                <div class="quick-fill">
+                    💡 Note: Match must be event-linked and status='Completed' to lock. Use Coach Key mode for this test.
+                </div>
+                <div class="results-grid" id="solo-verify-results"></div>
+                <div class="output-area" id="output-solo-verify">Waiting to run...</div>
+            </div>
+        </div>
+
+        <!-- Test 8: Team Match Verification -->
+        <div class="test-section">
+            <div class="test-header">
+                <span>Test 8: Team Match Verification (POST /team-matches/:id/verify)</span>
+                <span class="status-badge pending" id="status-team-verify">Not Run</span>
+            </div>
+            <div class="test-body">
+                <div class="test-controls">
+                    <div class="input-group">
+                        <label>Team Match ID</label>
+                        <input type="text" id="team-verify-match-id" placeholder="Enter match UUID">
+                    </div>
+                    <div class="input-group">
+                        <label>Action</label>
+                        <select id="team-verify-action">
+                            <option value="lock">Lock</option>
+                            <option value="unlock">Unlock</option>
+                            <option value="void">Void</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Verified By (optional)</label>
+                        <input type="text" id="team-verify-by" placeholder="Coach name" value="Test Coach">
+                    </div>
+                    <div class="input-group">
+                        <label>Notes (optional)</label>
+                        <input type="text" id="team-verify-notes" placeholder="Verification notes">
+                    </div>
+                </div>
+                <button class="test-btn" onclick="testTeamMatchVerification()">▶ Test Team Match Verification</button>
+                <button class="clear-btn" onclick="clearOutput('output-team-verify')">Clear</button>
+                <div class="quick-fill">
+                    💡 Note: Match must be event-linked and status='Completed' to lock. Use Coach Key mode for this test.
+                </div>
+                <div class="results-grid" id="team-verify-results"></div>
+                <div class="output-area" id="output-team-verify">Waiting to run...</div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -509,8 +587,8 @@
             } else {
                 coachBtn.classList.add('active');
                 eventBtn.classList.remove('active');
-                label.textContent = 'Coach API Key (X-API-Key)';
-                input.placeholder = 'Enter coach API key...';
+                label.textContent = 'Coach Passcode (X-Passcode)';
+                input.placeholder = 'Enter coach passcode...';
                 input.value = state.authValue || 'wdva26';
             }
         }
@@ -520,7 +598,9 @@
             if (state.authMode === 'event-code') {
                 headers['X-Passcode'] = state.authValue;
             } else {
-                headers['X-API-Key'] = state.authValue;
+                // Coach mode: Use X-Passcode for coach passcode, X-API-Key for API key
+                // The API accepts both, but X-Passcode is more common for coach authentication
+                headers['X-Passcode'] = state.authValue;
             }
             return headers;
         }
@@ -1183,6 +1263,190 @@
             document.getElementById('end-a1').value = '8';
             document.getElementById('end-a2').value = '8';
             document.getElementById('end-a3').value = '8';
+        }
+
+        // Test 7: Solo Match Verification
+        async function testSoloMatchVerification() {
+            const outputId = 'output-solo-verify';
+            clearOutput(outputId);
+            setStatus('solo-verify', 'pending');
+            
+            const matchId = document.getElementById('solo-verify-match-id').value.trim();
+            const action = document.getElementById('solo-verify-action').value;
+            const verifiedBy = document.getElementById('solo-verify-by').value.trim();
+            const notes = document.getElementById('solo-verify-notes').value.trim();
+            
+            if (!matchId) {
+                log(outputId, '✗ Please provide Solo Match ID', 'error');
+                setStatus('solo-verify', 'error');
+                return;
+            }
+            
+            const body = { action };
+            if (verifiedBy) body.verifiedBy = verifiedBy;
+            if (notes) body.notes = notes;
+            
+            try {
+                log(outputId, `Testing: POST /solo-matches/${matchId}/verify`, 'info');
+                log(outputId, `Auth: Coach Passcode required (X-Passcode)`, 'info');
+                log(outputId, `Body: ${JSON.stringify(body, null, 2)}`, 'info');
+                
+                // Ensure we're using coach key mode
+                const originalMode = state.authMode;
+                if (state.authMode !== 'coach-key') {
+                    log(outputId, '⚠ Switching to Coach Key mode for verification endpoint', 'warning');
+                    state.authMode = 'coach-key';
+                }
+                
+                const result = await apiRequest(`/solo-matches/${matchId}/verify`, 'POST', body, true);
+                
+                // Restore original mode
+                state.authMode = originalMode;
+                
+                log(outputId, `Status: ${result.statusCode}`, result.ok ? 'success' : 'error');
+                log(outputId, `Response: ${JSON.stringify(result.data, null, 2)}`, 'info');
+                
+                if (result.ok && result.data) {
+                    log(outputId, `✓ Solo match verification ${action} successful!`, 'success');
+                    
+                    // Display result
+                    const resultsDiv = document.getElementById('solo-verify-results');
+                    resultsDiv.innerHTML = `
+                        <div class="result-item">
+                            <div class="result-label">Match ID</div>
+                            <div class="result-value">${result.data.matchId || matchId}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Locked</div>
+                            <div class="result-value">${result.data.locked ? 'Yes' : 'No'}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Card Status</div>
+                            <div class="result-value">${result.data.cardStatus || 'N/A'}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Verified By</div>
+                            <div class="result-value">${result.data.verifiedBy || 'N/A'}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Verified At</div>
+                            <div class="result-value">${result.data.verifiedAt || 'N/A'}</div>
+                        </div>
+                        ${result.data.history && result.data.history.length ? `
+                        <div class="result-item">
+                            <div class="result-label">Lock History</div>
+                            <div class="result-value">${JSON.stringify(result.data.history, null, 2)}</div>
+                        </div>
+                        ` : ''}
+                    `;
+                    
+                    setStatus('solo-verify', 'success');
+                } else {
+                    log(outputId, `✗ Solo match verification failed!`, 'error');
+                    if (result.statusCode === 400) {
+                        log(outputId, 'Hint: Match must be event-linked and status="Completed" to lock', 'warning');
+                    }
+                    if (result.statusCode === 401) {
+                        log(outputId, 'Hint: Use Coach Key mode with valid passcode (wdva26)', 'warning');
+                    }
+                    setStatus('solo-verify', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+                setStatus('solo-verify', 'error');
+            }
+        }
+
+        // Test 8: Team Match Verification
+        async function testTeamMatchVerification() {
+            const outputId = 'output-team-verify';
+            clearOutput(outputId);
+            setStatus('team-verify', 'pending');
+            
+            const matchId = document.getElementById('team-verify-match-id').value.trim();
+            const action = document.getElementById('team-verify-action').value;
+            const verifiedBy = document.getElementById('team-verify-by').value.trim();
+            const notes = document.getElementById('team-verify-notes').value.trim();
+            
+            if (!matchId) {
+                log(outputId, '✗ Please provide Team Match ID', 'error');
+                setStatus('team-verify', 'error');
+                return;
+            }
+            
+            const body = { action };
+            if (verifiedBy) body.verifiedBy = verifiedBy;
+            if (notes) body.notes = notes;
+            
+            try {
+                log(outputId, `Testing: POST /team-matches/${matchId}/verify`, 'info');
+                log(outputId, `Auth: Coach Passcode required (X-Passcode)`, 'info');
+                log(outputId, `Body: ${JSON.stringify(body, null, 2)}`, 'info');
+                
+                // Ensure we're using coach key mode
+                const originalMode = state.authMode;
+                if (state.authMode !== 'coach-key') {
+                    log(outputId, '⚠ Switching to Coach Key mode for verification endpoint', 'warning');
+                    state.authMode = 'coach-key';
+                }
+                
+                const result = await apiRequest(`/team-matches/${matchId}/verify`, 'POST', body, true);
+                
+                // Restore original mode
+                state.authMode = originalMode;
+                
+                log(outputId, `Status: ${result.statusCode}`, result.ok ? 'success' : 'error');
+                log(outputId, `Response: ${JSON.stringify(result.data, null, 2)}`, 'info');
+                
+                if (result.ok && result.data) {
+                    log(outputId, `✓ Team match verification ${action} successful!`, 'success');
+                    
+                    // Display result
+                    const resultsDiv = document.getElementById('team-verify-results');
+                    resultsDiv.innerHTML = `
+                        <div class="result-item">
+                            <div class="result-label">Match ID</div>
+                            <div class="result-value">${result.data.matchId || matchId}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Locked</div>
+                            <div class="result-value">${result.data.locked ? 'Yes' : 'No'}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Card Status</div>
+                            <div class="result-value">${result.data.cardStatus || 'N/A'}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Verified By</div>
+                            <div class="result-value">${result.data.verifiedBy || 'N/A'}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-label">Verified At</div>
+                            <div class="result-value">${result.data.verifiedAt || 'N/A'}</div>
+                        </div>
+                        ${result.data.history && result.data.history.length ? `
+                        <div class="result-item">
+                            <div class="result-label">Lock History</div>
+                            <div class="result-value">${JSON.stringify(result.data.history, null, 2)}</div>
+                        </div>
+                        ` : ''}
+                    `;
+                    
+                    setStatus('team-verify', 'success');
+                } else {
+                    log(outputId, `✗ Team match verification failed!`, 'error');
+                    if (result.statusCode === 400) {
+                        log(outputId, 'Hint: Match must be event-linked and status="Completed" to lock', 'warning');
+                    }
+                    if (result.statusCode === 401) {
+                        log(outputId, 'Hint: Use Coach Key mode with valid passcode (wdva26)', 'warning');
+                    }
+                    setStatus('team-verify', 'error');
+                }
+            } catch (error) {
+                log(outputId, `Error: ${error.message}`, 'error');
+                setStatus('team-verify', 'error');
+            }
         }
     </script>
 </body>
