@@ -3235,9 +3235,11 @@ if (preg_match('#^/v1/solo-matches$#', $route) && $method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     
     $eventId = $input['eventId'] ?? null;
+    $bracketId = $input['bracketId'] ?? null;
     $date = $input['date'] ?? date('Y-m-d');
     $location = $input['location'] ?? null;
     $maxSets = $input['maxSets'] ?? 5;
+    $bracketMatchId = null;
     
     // Require auth only if match is linked to an event
     if ($eventId) {
@@ -3246,12 +3248,40 @@ if (preg_match('#^/v1/solo-matches$#', $route) && $method === 'POST') {
     
     try {
         $pdo = db();
+        
+        // If bracketId is provided, validate it and get bracket info
+        if ($bracketId) {
+            $bracketStmt = $pdo->prepare('SELECT id, event_id, bracket_type, bracket_format, division FROM brackets WHERE id = ?');
+            $bracketStmt->execute([$bracketId]);
+            $bracket = $bracketStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$bracket) {
+                json_response(['error' => 'Bracket not found'], 404);
+                exit;
+            }
+            
+            // Verify bracket type is SOLO
+            if ($bracket['bracket_type'] !== 'SOLO') {
+                json_response(['error' => 'Bracket type must be SOLO for solo matches'], 400);
+                exit;
+            }
+            
+            // Ensure eventId matches bracket's event
+            if ($eventId && $eventId !== $bracket['event_id']) {
+                json_response(['error' => 'Event ID does not match bracket event'], 400);
+                exit;
+            }
+            
+            $eventId = $bracket['event_id']; // Use bracket's event ID
+        }
+        
         $matchId = $genUuid();
         
-        $stmt = $pdo->prepare('INSERT INTO solo_matches (id, event_id, date, location, max_sets, status, created_at) VALUES (?, ?, ?, ?, ?, "Not Started", NOW())');
-        $stmt->execute([$matchId, $eventId, $date, $location, $maxSets]);
+        // Note: bracket_match_id will be generated when archers are added (we need their IDs)
+        $stmt = $pdo->prepare('INSERT INTO solo_matches (id, event_id, bracket_id, date, location, max_sets, status, created_at) VALUES (?, ?, ?, ?, ?, ?, "Not Started", NOW())');
+        $stmt->execute([$matchId, $eventId, $bracketId, $date, $location, $maxSets]);
         
-        json_response(['matchId' => $matchId], 201);
+        json_response(['matchId' => $matchId, 'bracketId' => $bracketId], 201);
     } catch (Exception $e) {
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
@@ -3355,6 +3385,47 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers$#i', $route, $m) && $met
         $archerName = trim("$firstName $lastName");
         $stmt = $pdo->prepare('INSERT INTO solo_match_archers (id, match_id, archer_id, archer_name, school, level, gender, position, created_at) VALUES (?,?,?,?,?,?,?,?,NOW())');
         $stmt->execute([$matchArcherId, $matchId, $archerId, $archerName, $school, $level, $gender, $position]);
+        
+        // Check if this is the second archer - if so, generate bracket_match_id if bracket exists
+        $archerCountStmt = $pdo->prepare('SELECT COUNT(*) as count FROM solo_match_archers WHERE match_id = ?');
+        $archerCountStmt->execute([$matchId]);
+        $archerCount = $archerCountStmt->fetch(PDO::FETCH_ASSOC)['count'];
+        
+        if ($archerCount === 2) {
+            // Get match info to check for bracket
+            $matchInfoStmt = $pdo->prepare('SELECT bracket_id, bracket_format FROM solo_matches WHERE id = ?');
+            $matchInfoStmt->execute([$matchId]);
+            $matchInfo = $matchInfoStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($matchInfo && $matchInfo['bracket_id']) {
+                // Get both archer IDs
+                $archersStmt = $pdo->prepare('SELECT archer_id, position FROM solo_match_archers WHERE match_id = ? ORDER BY position');
+                $archersStmt->execute([$matchId]);
+                $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                if (count($archers) === 2) {
+                    $archer1Id = $archers[0]['archer_id'];
+                    $archer2Id = $archers[1]['archer_id'];
+                    
+                    // For elimination brackets, we need round and match number from bracket structure
+                    // For now, generate a simple ID - will be refined when bracket structure is clearer
+                    if ($matchInfo['bracket_format'] === 'ELIMINATION') {
+                        // For elimination, bracket_match_id format: {DIVISION}{ROUND}{MATCH}-{INITIALS1}-{INITIALS2}
+                        // We'll need to determine round and match number from bracket structure
+                        // For now, use a placeholder that can be updated later
+                        $bracketMatchId = generate_elimination_match_id($pdo, $matchInfo['bracket_id'], 'quarter', 1, $archer1Id, $archer2Id);
+                    } else {
+                        // For Swiss, use existing match code system
+                        $bracketMatchId = null; // Will use match_code instead
+                    }
+                    
+                    if ($bracketMatchId) {
+                        $updateMatchStmt = $pdo->prepare('UPDATE solo_matches SET bracket_match_id = ? WHERE id = ?');
+                        $updateMatchStmt->execute([$bracketMatchId, $matchId]);
+                    }
+                }
+            }
+        }
         
         // Generate match code when second archer is added
         $matchCode = null;
@@ -3776,9 +3847,11 @@ if (preg_match('#^/v1/team-matches$#', $route) && $method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     
     $eventId = $input['eventId'] ?? null;
+    $bracketId = $input['bracketId'] ?? null;
     $date = $input['date'] ?? date('Y-m-d');
     $location = $input['location'] ?? null;
     $maxSets = $input['maxSets'] ?? 4;
+    $bracketMatchId = null;
     
     // Require auth only if match is linked to an event
     if ($eventId) {
@@ -3787,12 +3860,40 @@ if (preg_match('#^/v1/team-matches$#', $route) && $method === 'POST') {
     
     try {
         $pdo = db();
+        
+        // If bracketId is provided, validate it and get bracket info
+        if ($bracketId) {
+            $bracketStmt = $pdo->prepare('SELECT id, event_id, bracket_type, bracket_format, division FROM brackets WHERE id = ?');
+            $bracketStmt->execute([$bracketId]);
+            $bracket = $bracketStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$bracket) {
+                json_response(['error' => 'Bracket not found'], 404);
+                exit;
+            }
+            
+            // Verify bracket type is TEAM
+            if ($bracket['bracket_type'] !== 'TEAM') {
+                json_response(['error' => 'Bracket type must be TEAM for team matches'], 400);
+                exit;
+            }
+            
+            // Ensure eventId matches bracket's event
+            if ($eventId && $eventId !== $bracket['event_id']) {
+                json_response(['error' => 'Event ID does not match bracket event'], 400);
+                exit;
+            }
+            
+            $eventId = $bracket['event_id']; // Use bracket's event ID
+        }
+        
         $matchId = $genUuid();
         
-        $stmt = $pdo->prepare('INSERT INTO team_matches (id, event_id, date, location, max_sets, status, created_at) VALUES (?, ?, ?, ?, ?, "Not Started", NOW())');
-        $stmt->execute([$matchId, $eventId, $date, $location, $maxSets]);
+        // Note: bracket_match_id will be generated when teams are added (we need their IDs)
+        $stmt = $pdo->prepare('INSERT INTO team_matches (id, event_id, bracket_id, date, location, max_sets, status, created_at) VALUES (?, ?, ?, ?, ?, ?, "Not Started", NOW())');
+        $stmt->execute([$matchId, $eventId, $bracketId, $date, $location, $maxSets]);
         
-        json_response(['matchId' => $matchId], 201);
+        json_response(['matchId' => $matchId, 'bracketId' => $bracketId], 201);
     } catch (Exception $e) {
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
@@ -4285,6 +4386,709 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
         $stmt->execute($params);
         
         json_response(['message' => 'Match updated successfully'], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// =====================================================
+// PHASE 2 ENHANCEMENT: BRACKET MANAGEMENT ENDPOINTS
+// =====================================================
+
+// Helper function: Get archer initials (first letter of first and last name)
+function get_archer_initials(string $firstName, string $lastName): string {
+    $first = strtoupper(substr(trim($firstName), 0, 1));
+    $last = strtoupper(substr(trim($lastName), 0, 1));
+    return $first . $last;
+}
+
+// Helper function: Get school abbreviation (first 2 letters, uppercase)
+function get_school_abbrev(string $school): string {
+    return strtoupper(substr(trim($school), 0, 2));
+}
+
+// Helper function: Generate bracket match ID for elimination
+// Format: {DIVISION}{ROUND}{MATCH}-{ARCHER1_INITIALS}-{ARCHER2_INITIALS}
+// Example: BVARQ1-TC-AG (Boys Varsity, Quarter Final 1, Trenton Cowles vs Alex Gilliam)
+function generate_elimination_match_id(PDO $pdo, string $bracketId, string $round, int $matchNumber, string $archer1Id, string $archer2Id): string {
+    // Get bracket division
+    $bracketStmt = $pdo->prepare('SELECT division, bracket_type FROM brackets WHERE id = ?');
+    $bracketStmt->execute([$bracketId]);
+    $bracket = $bracketStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$bracket) {
+        throw new Exception('Bracket not found', 404);
+    }
+    
+    $division = $bracket['division'];
+    $type = $bracket['bracket_type'];
+    
+    // Round codes: Q = Quarter, S = Semi, F = Final, B = Bronze
+    $roundCode = '';
+    if ($round === 'quarter') $roundCode = 'Q';
+    elseif ($round === 'semi') $roundCode = 'S';
+    elseif ($round === 'final') $roundCode = 'F';
+    elseif ($round === 'bronze') $roundCode = 'B';
+    
+    // For teams, add 'T' after division
+    $prefix = $type === 'TEAM' ? $division . 'TA' : $division;
+    
+    // Get archer/team names for initials
+    if ($type === 'SOLO') {
+        $archer1Stmt = $pdo->prepare('SELECT first_name, last_name FROM archers WHERE id = ?');
+        $archer1Stmt->execute([$archer1Id]);
+        $archer1 = $archer1Stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $archer2Stmt = $pdo->prepare('SELECT first_name, last_name FROM archers WHERE id = ?');
+        $archer2Stmt->execute([$archer2Id]);
+        $archer2 = $archer2Stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$archer1 || !$archer2) {
+            throw new Exception('Archers not found', 404);
+        }
+        
+        $initials1 = get_archer_initials($archer1['first_name'], $archer1['last_name']);
+        $initials2 = get_archer_initials($archer2['first_name'], $archer2['last_name']);
+    } else {
+        // For teams, use school abbreviations
+        $team1Stmt = $pdo->prepare('SELECT DISTINCT school FROM team_match_teams tmt JOIN team_matches tm ON tm.id = tmt.match_id WHERE tm.id IN (SELECT match_id FROM team_match_archers WHERE archer_id = ?) LIMIT 1');
+        $team1Stmt->execute([$archer1Id]);
+        $team1 = $team1Stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $team2Stmt = $pdo->prepare('SELECT DISTINCT school FROM team_match_teams tmt JOIN team_matches tm ON tm.id = tmt.match_id WHERE tm.id IN (SELECT match_id FROM team_match_archers WHERE archer_id = ?) LIMIT 1');
+        $team2Stmt->execute([$archer2Id]);
+        $team2 = $team2Stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $initials1 = $team1 ? get_school_abbrev($team1['school']) : 'T1';
+        $initials2 = $team2 ? get_school_abbrev($team2['school']) : 'T2';
+    }
+    
+    return $prefix . $roundCode . $matchNumber . '-' . $initials1 . '-' . $initials2;
+}
+
+// POST /v1/events/:id/brackets - Create bracket
+if (preg_match('#^/v1/events/([0-9a-f-]+)/brackets$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $eventId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $bracketType = strtoupper($input['bracketType'] ?? '');
+    $bracketFormat = strtoupper($input['bracketFormat'] ?? '');
+    $division = $input['division'] ?? '';
+    $bracketSize = (int)($input['bracketSize'] ?? 8);
+    $createdBy = trim($input['createdBy'] ?? 'Coach');
+    
+    if (!in_array($bracketType, ['SOLO', 'TEAM'], true)) {
+        json_response(['error' => 'bracketType must be SOLO or TEAM'], 400);
+        exit;
+    }
+    
+    if (!in_array($bracketFormat, ['ELIMINATION', 'SWISS'], true)) {
+        json_response(['error' => 'bracketFormat must be ELIMINATION or SWISS'], 400);
+        exit;
+    }
+    
+    if (empty($division)) {
+        json_response(['error' => 'division is required'], 400);
+        exit;
+    }
+    
+    // For elimination, bracket size must be 8
+    if ($bracketFormat === 'ELIMINATION' && $bracketSize !== 8) {
+        $bracketSize = 8;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Verify event exists
+        $eventStmt = $pdo->prepare('SELECT id FROM events WHERE id = ?');
+        $eventStmt->execute([$eventId]);
+        if (!$eventStmt->fetch()) {
+            json_response(['error' => 'Event not found'], 404);
+            exit;
+        }
+        
+        $bracketId = $genUuid();
+        $stmt = $pdo->prepare('
+            INSERT INTO brackets (id, event_id, bracket_type, bracket_format, division, bracket_size, status, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ');
+        $stmt->execute([$bracketId, $eventId, $bracketType, $bracketFormat, $division, $bracketSize, 'OPEN', $createdBy]);
+        
+        json_response([
+            'bracketId' => $bracketId,
+            'eventId' => $eventId,
+            'bracketType' => $bracketType,
+            'bracketFormat' => $bracketFormat,
+            'division' => $division,
+            'bracketSize' => $bracketSize,
+            'status' => 'OPEN'
+        ], 201);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// GET /v1/events/:id/brackets - List all brackets for event
+if (preg_match('#^/v1/events/([0-9a-f-]+)/brackets$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $eventId = $m[1];
+    
+    try {
+        $pdo = db();
+        $stmt = $pdo->prepare('
+            SELECT 
+                b.id,
+                b.event_id,
+                b.bracket_type,
+                b.bracket_format,
+                b.division,
+                b.bracket_size,
+                b.status,
+                b.created_at,
+                b.created_by,
+                COUNT(be.id) as entry_count
+            FROM brackets b
+            LEFT JOIN bracket_entries be ON be.bracket_id = b.id
+            WHERE b.event_id = ?
+            GROUP BY b.id, b.event_id, b.bracket_type, b.bracket_format, b.division, b.bracket_size, b.status, b.created_at, b.created_by
+            ORDER BY b.bracket_type, b.division, b.created_at
+        ');
+        $stmt->execute([$eventId]);
+        $brackets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        json_response(['brackets' => $brackets], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// GET /v1/brackets/:id - Get bracket details
+if (preg_match('#^/v1/brackets/([0-9a-f-]+)$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $bracketId = $m[1];
+    
+    try {
+        $pdo = db();
+        $stmt = $pdo->prepare('
+            SELECT 
+                b.*,
+                COUNT(be.id) as entry_count
+            FROM brackets b
+            LEFT JOIN bracket_entries be ON be.bracket_id = b.id
+            WHERE b.id = ?
+            GROUP BY b.id
+        ');
+        $stmt->execute([$bracketId]);
+        $bracket = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$bracket) {
+            json_response(['error' => 'Bracket not found'], 404);
+            exit;
+        }
+        
+        json_response(['bracket' => $bracket], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// PATCH /v1/brackets/:id - Update bracket
+if (preg_match('#^/v1/brackets/([0-9a-f-]+)$#i', $route, $m) && $method === 'PATCH') {
+    require_api_key();
+    $bracketId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    try {
+        $pdo = db();
+        
+        $updates = [];
+        $params = [];
+        
+        if (isset($input['status'])) {
+            $updates[] = 'status=?';
+            $params[] = $input['status'];
+        }
+        if (isset($input['bracketSize'])) {
+            $updates[] = 'bracket_size=?';
+            $params[] = (int)$input['bracketSize'];
+        }
+        
+        if (empty($updates)) {
+            json_response(['error' => 'No fields to update'], 400);
+            exit;
+        }
+        
+        $updates[] = 'updated_at=NOW()';
+        $params[] = $bracketId;
+        
+        $sql = 'UPDATE brackets SET ' . implode(', ', $updates) . ' WHERE id=?';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        
+        json_response(['message' => 'Bracket updated successfully'], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// DELETE /v1/brackets/:id - Delete bracket
+if (preg_match('#^/v1/brackets/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
+    require_api_key();
+    $bracketId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Verify bracket exists
+        $checkStmt = $pdo->prepare('SELECT id FROM brackets WHERE id = ?');
+        $checkStmt->execute([$bracketId]);
+        if (!$checkStmt->fetch()) {
+            json_response(['error' => 'Bracket not found'], 404);
+            exit;
+        }
+        
+        // Delete bracket (cascade will delete entries)
+        $stmt = $pdo->prepare('DELETE FROM brackets WHERE id = ?');
+        $stmt->execute([$bracketId]);
+        
+        json_response(['message' => 'Bracket deleted successfully'], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/brackets/:id/entries - Add archer/team to bracket
+if (preg_match('#^/v1/brackets/([0-9a-f-]+)/entries$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $bracketId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $entryType = strtoupper($input['entryType'] ?? '');
+    $archerId = $input['archerId'] ?? null;
+    $schoolId = $input['schoolId'] ?? null;
+    $seedPosition = isset($input['seedPosition']) ? (int)$input['seedPosition'] : null;
+    
+    if (!in_array($entryType, ['ARCHER', 'TEAM'], true)) {
+        json_response(['error' => 'entryType must be ARCHER or TEAM'], 400);
+        exit;
+    }
+    
+    if ($entryType === 'ARCHER' && !$archerId) {
+        json_response(['error' => 'archerId is required for ARCHER entry type'], 400);
+        exit;
+    }
+    
+    if ($entryType === 'TEAM' && !$schoolId) {
+        json_response(['error' => 'schoolId is required for TEAM entry type'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Verify bracket exists
+        $bracketStmt = $pdo->prepare('SELECT id, bracket_type, bracket_format FROM brackets WHERE id = ?');
+        $bracketStmt->execute([$bracketId]);
+        $bracket = $bracketStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$bracket) {
+            json_response(['error' => 'Bracket not found'], 404);
+            exit;
+        }
+        
+        // Verify entry type matches bracket type
+        $expectedType = $bracket['bracket_type'] === 'SOLO' ? 'ARCHER' : 'TEAM';
+        if ($entryType !== $expectedType) {
+            json_response(['error' => "Entry type must be {$expectedType} for this bracket"], 400);
+            exit;
+        }
+        
+        // Check if entry already exists
+        if ($entryType === 'ARCHER') {
+            $checkStmt = $pdo->prepare('SELECT id FROM bracket_entries WHERE bracket_id = ? AND archer_id = ?');
+            $checkStmt->execute([$bracketId, $archerId]);
+        } else {
+            $checkStmt = $pdo->prepare('SELECT id FROM bracket_entries WHERE bracket_id = ? AND school_id = ?');
+            $checkStmt->execute([$bracketId, $schoolId]);
+        }
+        
+        if ($checkStmt->fetch()) {
+            json_response(['error' => 'Entry already exists in bracket'], 409);
+            exit;
+        }
+        
+        $entryId = $genUuid();
+        $stmt = $pdo->prepare('
+            INSERT INTO bracket_entries (id, bracket_id, entry_type, archer_id, school_id, seed_position)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ');
+        $stmt->execute([$entryId, $bracketId, $entryType, $archerId, $schoolId, $seedPosition]);
+        
+        json_response([
+            'entryId' => $entryId,
+            'bracketId' => $bracketId,
+            'entryType' => $entryType
+        ], 201);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// GET /v1/brackets/:id/entries - List bracket entries
+if (preg_match('#^/v1/brackets/([0-9a-f-]+)/entries$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $bracketId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Get entries with archer/team details
+        $stmt = $pdo->prepare('
+            SELECT 
+                be.id,
+                be.bracket_id,
+                be.entry_type,
+                be.archer_id,
+                be.school_id,
+                be.seed_position,
+                be.swiss_wins,
+                be.swiss_losses,
+                be.swiss_points,
+                be.created_at,
+                a.first_name,
+                a.last_name,
+                a.school as archer_school
+            FROM bracket_entries be
+            LEFT JOIN archers a ON a.id = be.archer_id
+            WHERE be.bracket_id = ?
+            ORDER BY be.seed_position ASC, be.swiss_points DESC, be.swiss_wins DESC
+        ');
+        $stmt->execute([$bracketId]);
+        $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        json_response(['entries' => $entries], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// DELETE /v1/brackets/:id/entries/:entryId - Remove entry from bracket
+if (preg_match('#^/v1/brackets/([0-9a-f-]+)/entries/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
+    require_api_key();
+    $bracketId = $m[1];
+    $entryId = $m[2];
+    
+    try {
+        $pdo = db();
+        
+        // Verify entry exists and belongs to bracket
+        $checkStmt = $pdo->prepare('SELECT id FROM bracket_entries WHERE id = ? AND bracket_id = ?');
+        $checkStmt->execute([$entryId, $bracketId]);
+        if (!$checkStmt->fetch()) {
+            json_response(['error' => 'Entry not found'], 404);
+            exit;
+        }
+        
+        $stmt = $pdo->prepare('DELETE FROM bracket_entries WHERE id = ?');
+        $stmt->execute([$entryId]);
+        
+        json_response(['message' => 'Entry removed successfully'], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/brackets/:id/generate - Auto-generate elimination bracket from Top 8 ranking
+if (preg_match('#^/v1/brackets/([0-9a-f-]+)/generate$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $bracketId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    try {
+        $pdo = db();
+        
+        // Get bracket details
+        $bracketStmt = $pdo->prepare('SELECT b.*, e.id as event_id FROM brackets b JOIN events e ON e.id = b.event_id WHERE b.id = ?');
+        $bracketStmt->execute([$bracketId]);
+        $bracket = $bracketStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$bracket) {
+            json_response(['error' => 'Bracket not found'], 404);
+            exit;
+        }
+        
+        if ($bracket['bracket_format'] !== 'ELIMINATION') {
+            json_response(['error' => 'Auto-generation only available for ELIMINATION brackets'], 400);
+            exit;
+        }
+        
+        // Get Top 8 archers/teams from ranking rounds for this division
+        $division = $bracket['division'];
+        $bracketType = $bracket['bracket_type'];
+        
+        if ($bracketType === 'SOLO') {
+            // Get Top 8 archers from ranking rounds
+            $rankingStmt = $pdo->prepare('
+                SELECT 
+                    ra.archer_id,
+                    a.first_name,
+                    a.last_name,
+                    a.school,
+                    SUM(ee.end_total) as total_score,
+                    SUM(ee.tens) as total_10s,
+                    SUM(ee.xs) as total_xs
+                FROM round_archers ra
+                JOIN rounds r ON r.id = ra.round_id
+                JOIN events e ON e.id = r.event_id
+                JOIN archers a ON a.id = ra.archer_id
+                LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
+                WHERE e.id = ? 
+                  AND r.division = ?
+                  AND ra.card_status = "VER"
+                  AND ra.locked = 1
+                GROUP BY ra.archer_id, a.first_name, a.last_name, a.school
+                ORDER BY total_score DESC, total_10s DESC, total_xs DESC
+                LIMIT 8
+            ');
+            $rankingStmt->execute([$bracket['event_id'], $division]);
+            $topArchers = $rankingStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (count($topArchers) < 8) {
+                json_response(['error' => 'Not enough verified ranking scores. Need 8 archers with verified scores.'], 400);
+                exit;
+            }
+            
+            // Add archers to bracket entries with seed positions
+            $pdo->beginTransaction();
+            try {
+                foreach ($topArchers as $index => $archer) {
+                    $seedPosition = $index + 1;
+                    $entryId = $genUuid();
+                    $entryStmt = $pdo->prepare('
+                        INSERT INTO bracket_entries (id, bracket_id, entry_type, archer_id, seed_position)
+                        VALUES (?, ?, "ARCHER", ?, ?)
+                    ');
+                    $entryStmt->execute([$entryId, $bracketId, $archer['archer_id'], $seedPosition]);
+                }
+                
+                // Update bracket status
+                $updateStmt = $pdo->prepare('UPDATE brackets SET status = "IN_PROGRESS" WHERE id = ?');
+                $updateStmt->execute([$bracketId]);
+                
+                $pdo->commit();
+                
+                json_response([
+                    'message' => 'Bracket generated successfully',
+                    'entriesAdded' => count($topArchers),
+                    'bracketId' => $bracketId
+                ], 200);
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                throw $e;
+            }
+        } else {
+            // TEAM bracket - get Top 8 schools
+            // For now, use school from archers (simplified - will need team eligibility logic later)
+            $teamStmt = $pdo->prepare('
+                SELECT 
+                    a.school,
+                    SUM(ee.end_total) as total_score,
+                    SUM(ee.tens) as total_10s,
+                    SUM(ee.xs) as total_xs,
+                    COUNT(DISTINCT ra.archer_id) as archer_count
+                FROM round_archers ra
+                JOIN rounds r ON r.id = ra.round_id
+                JOIN events e ON e.id = r.event_id
+                JOIN archers a ON a.id = ra.archer_id
+                LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
+                WHERE e.id = ? 
+                  AND r.division = ?
+                  AND ra.card_status = "VER"
+                  AND ra.locked = 1
+                GROUP BY a.school
+                HAVING archer_count >= 3
+                ORDER BY total_score DESC, total_10s DESC, total_xs DESC
+                LIMIT 8
+            ');
+            $teamStmt->execute([$bracket['event_id'], $division]);
+            $topSchools = $teamStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (count($topSchools) < 8) {
+                json_response(['error' => 'Not enough schools with 3+ verified archers. Need 8 schools.'], 400);
+                exit;
+            }
+            
+            // Add schools to bracket entries
+            $pdo->beginTransaction();
+            try {
+                foreach ($topSchools as $index => $school) {
+                    $seedPosition = $index + 1;
+                    $entryId = $genUuid();
+                    // For teams, we use school as identifier (school_id will be NULL for now, using school name)
+                    $entryStmt = $pdo->prepare('
+                        INSERT INTO bracket_entries (id, bracket_id, entry_type, school_id, seed_position)
+                        VALUES (?, ?, "TEAM", ?, ?)
+                    ');
+                    // Note: school_id is CHAR(36) but we're storing school code for now
+                    // This may need adjustment based on actual school table structure
+                    $entryStmt->execute([$entryId, $bracketId, $school['school'], $seedPosition]);
+                }
+                
+                $updateStmt = $pdo->prepare('UPDATE brackets SET status = "IN_PROGRESS" WHERE id = ?');
+                $updateStmt->execute([$bracketId]);
+                
+                $pdo->commit();
+                
+                json_response([
+                    'message' => 'Team bracket generated successfully',
+                    'entriesAdded' => count($topSchools),
+                    'bracketId' => $bracketId
+                ], 200);
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                throw $e;
+            }
+        }
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// GET /v1/brackets/:id/results - Get bracket results for results module
+if (preg_match('#^/v1/brackets/([0-9a-f-]+)/results$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $bracketId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Get bracket info
+        $bracketStmt = $pdo->prepare('SELECT * FROM brackets WHERE id = ?');
+        $bracketStmt->execute([$bracketId]);
+        $bracket = $bracketStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$bracket) {
+            json_response(['error' => 'Bracket not found'], 404);
+            exit;
+        }
+        
+        $result = [
+            'bracket' => $bracket,
+            'qualification' => [],
+            'rounds' => [
+                'quarterfinals' => [],
+                'semifinals' => [],
+                'finals' => []
+            ]
+        ];
+        
+        // Get qualification ranking (Top 8 from ranking rounds)
+        if ($bracket['bracket_type'] === 'SOLO') {
+            $qualStmt = $pdo->prepare('
+                SELECT 
+                    ra.archer_id,
+                    a.first_name,
+                    a.last_name,
+                    a.school,
+                    SUM(ee.end_total) as total_score,
+                    SUM(ee.tens) as total_10s,
+                    SUM(ee.xs) as total_xs,
+                    ROW_NUMBER() OVER (ORDER BY SUM(ee.end_total) DESC, SUM(ee.tens) DESC, SUM(ee.xs) DESC) as rank
+                FROM round_archers ra
+                JOIN rounds r ON r.id = ra.round_id
+                JOIN events e ON e.id = r.event_id
+                JOIN archers a ON a.id = ra.archer_id
+                LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
+                WHERE e.id = ? 
+                  AND r.division = ?
+                  AND ra.card_status = "VER"
+                  AND ra.locked = 1
+                GROUP BY ra.archer_id, a.first_name, a.last_name, a.school
+                ORDER BY total_score DESC, total_10s DESC, total_xs DESC
+                LIMIT 8
+            ');
+            $qualStmt->execute([$bracket['event_id'], $bracket['division']]);
+            $qualResults = $qualStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($qualResults as $index => $row) {
+                $result['qualification'][] = [
+                    'rank' => $index + 1,
+                    'archer_id' => $row['archer_id'],
+                    'archer_name' => trim($row['first_name'] . ' ' . $row['last_name']),
+                    'school' => $row['school'],
+                    'total_score' => (int)$row['total_score'],
+                    'total_10s' => (int)$row['total_10s'],
+                    'total_xs' => (int)$row['total_xs']
+                ];
+            }
+        }
+        
+        // Get matches for each round
+        if ($bracket['bracket_format'] === 'ELIMINATION') {
+            // Quarter Finals (Q1-Q4)
+            $qStmt = $pdo->prepare('
+                SELECT sm.*, sma1.archer_name as archer1_name, sma2.archer_name as archer2_name
+                FROM solo_matches sm
+                JOIN solo_match_archers sma1 ON sma1.match_id = sm.id AND sma1.position = 1
+                JOIN solo_match_archers sma2 ON sma2.match_id = sm.id AND sma2.position = 2
+                WHERE sm.bracket_id = ? AND sm.bracket_match_id LIKE ?
+                ORDER BY sm.bracket_match_id
+            ');
+            $qStmt->execute([$bracketId, $bracket['division'] . 'Q%']);
+            $quarters = $qStmt->fetchAll(PDO::FETCH_ASSOC);
+            $result['rounds']['quarterfinals'] = $quarters;
+            
+            // Semi Finals (S1-S2)
+            $sStmt = $pdo->prepare('
+                SELECT sm.*, sma1.archer_name as archer1_name, sma2.archer_name as archer2_name
+                FROM solo_matches sm
+                JOIN solo_match_archers sma1 ON sma1.match_id = sm.id AND sma1.position = 1
+                JOIN solo_match_archers sma2 ON sma2.match_id = sm.id AND sma2.position = 2
+                WHERE sm.bracket_id = ? AND sm.bracket_match_id LIKE ?
+                ORDER BY sm.bracket_match_id
+            ');
+            $sStmt->execute([$bracketId, $bracket['division'] . 'S%']);
+            $semis = $sStmt->fetchAll(PDO::FETCH_ASSOC);
+            $result['rounds']['semifinals'] = $semis;
+            
+            // Finals (F1, B1)
+            $fStmt = $pdo->prepare('
+                SELECT sm.*, sma1.archer_name as archer1_name, sma2.archer_name as archer2_name
+                FROM solo_matches sm
+                JOIN solo_match_archers sma1 ON sma1.match_id = sm.id AND sma1.position = 1
+                JOIN solo_match_archers sma2 ON sma2.match_id = sm.id AND sma2.position = 2
+                WHERE sm.bracket_id = ? AND (sm.bracket_match_id LIKE ? OR sm.bracket_match_id LIKE ?)
+                ORDER BY sm.bracket_match_id
+            ');
+            $fStmt->execute([$bracketId, $bracket['division'] . 'F%', $bracket['division'] . 'B%']);
+            $finals = $fStmt->fetchAll(PDO::FETCH_ASSOC);
+            $result['rounds']['finals'] = $finals;
+        } else {
+            // Swiss format - return all matches
+            $swissStmt = $pdo->prepare('
+                SELECT sm.*, sma1.archer_name as archer1_name, sma2.archer_name as archer2_name
+                FROM solo_matches sm
+                JOIN solo_match_archers sma1 ON sma1.match_id = sm.id AND sma1.position = 1
+                JOIN solo_match_archers sma2 ON sma2.match_id = sm.id AND sma2.position = 2
+                WHERE sm.bracket_id = ?
+                ORDER BY sm.created_at
+            ');
+            $swissStmt->execute([$bracketId]);
+            $swissMatches = $swissStmt->fetchAll(PDO::FETCH_ASSOC);
+            $result['rounds']['swiss'] = $swissMatches;
+        }
+        
+        json_response($result, 200);
     } catch (Exception $e) {
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }

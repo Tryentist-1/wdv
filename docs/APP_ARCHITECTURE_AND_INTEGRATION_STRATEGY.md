@@ -20,8 +20,9 @@ The WDV Archery Suite consists of **5 scoring modules** in various states of int
 |--------|--------|---------|------|----------|----------|
 | **Ranking Round 360** | ✅ **INTEGRATED** | DB + localStorage | Event Code | MySQL | LIVE |
 | **Ranking Round 300** | ✅ **INTEGRATED** | DB + localStorage | Event Code | MySQL | LIVE |
-| **Solo Olympic Match** | ⚠️ **LOCAL ONLY** | localStorage only | None | ❌ No | PHASE 2 |
-| **Team Olympic Match** | ⚠️ **LOCAL ONLY** | localStorage only | None | ❌ No | PHASE 2 |
+| **Solo Olympic Match** | ✅ **INTEGRATED** | DB + localStorage | Event/Bracket Code | MySQL | LIVE |
+| **Team Olympic Match** | ✅ **INTEGRATED** | DB + localStorage | Event/Bracket Code | MySQL | LIVE |
+| **Bracket Management** | ✅ **INTEGRATED** | DB + localStorage | Coach Auth | MySQL | LIVE |
 | **Practice Analyzer** | ✅ **STANDALONE** | localStorage only | None | N/A | COMPLETE |
 
 ---

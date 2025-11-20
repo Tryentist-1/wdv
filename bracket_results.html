@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Bracket Results</title>
+  <link rel="stylesheet" href="css/tailwind-compiled.css">
+  <style>
+    .bg-primary { background-color: #0d6efd !important; }
+    .bg-primary-dark { background-color: #0a58ca !important; }
+    .bg-success { background-color: #198754 !important; }
+    .text-primary { color: #0d6efd !important; }
+    .text-success { color: #198754 !important; }
+    .hover\:bg-primary-dark:hover { background-color: #0a58ca !important; }
+    .winner-row { background-color: #d4edda !important; }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen p-4">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Bracket Results</h1>
+      <div id="bracket-info" class="text-gray-600 dark:text-gray-400">
+        Loading bracket information...
+      </div>
+    </div>
+
+    <!-- Tab Navigation (for Elimination brackets) -->
+    <div id="elimination-tabs" class="hidden mb-6 border-b-2 border-gray-300 dark:border-gray-600">
+      <button class="tab-btn active px-4 py-2 font-semibold text-primary border-b-2 border-primary" data-tab="qual">Qual Ranking</button>
+      <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary" data-tab="quarters">Quarter Finals</button>
+      <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary" data-tab="semis">Semi Finals</button>
+      <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary" data-tab="finals">Finals</button>
+    </div>
+
+    <!-- Qualification Ranking Tab -->
+    <div id="qual-tab" class="tab-content hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 overflow-x-auto">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Qualification Ranking (Top 8)</h2>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b-2 border-gray-300 dark:border-gray-600">
+              <th class="text-left p-2 font-semibold">Rank</th>
+              <th class="text-left p-2 font-semibold">Name</th>
+              <th class="text-left p-2 font-semibold">School</th>
+              <th class="text-right p-2 font-semibold">Total Score</th>
+              <th class="text-right p-2 font-semibold">10s</th>
+              <th class="text-right p-2 font-semibold">Xs</th>
+            </tr>
+          </thead>
+          <tbody id="qual-table-body">
+            <tr><td colspan="6" class="text-center p-4 text-gray-500">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quarter Finals Tab -->
+    <div id="quarters-tab" class="tab-content hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Quarter Finals</h2>
+        <div id="quarters-matches" class="space-y-4">
+          <div class="text-gray-500 text-center p-4">Loading matches...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Semi Finals Tab -->
+    <div id="semis-tab" class="tab-content hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Semi Finals</h2>
+        <div id="semis-matches" class="space-y-4">
+          <div class="text-gray-500 text-center p-4">Loading matches...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Finals Tab -->
+    <div id="finals-tab" class="tab-content hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Finals Round</h2>
+        <div id="finals-matches" class="space-y-4">
+          <div class="text-gray-500 text-center p-4">Loading matches...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Swiss Bracket View -->
+    <div id="swiss-view" class="hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Swiss Leaderboard</h2>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b-2 border-gray-300 dark:border-gray-600">
+              <th class="text-left p-2 font-semibold">Rank</th>
+              <th class="text-left p-2 font-semibold">Name</th>
+              <th class="text-left p-2 font-semibold">School</th>
+              <th class="text-center p-2 font-semibold">W-L</th>
+              <th class="text-right p-2 font-semibold">Points</th>
+            </tr>
+          </thead>
+          <tbody id="swiss-leaderboard-body">
+            <tr><td colspan="5" class="text-center p-4 text-gray-500">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">All Matches</h2>
+        <div id="swiss-matches" class="space-y-4">
+          <div class="text-gray-500 text-center p-4">Loading matches...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Coach Actions (if authenticated) -->
+    <div id="coach-actions" class="hidden mt-6">
+      <button id="validate-close-btn" class="px-6 py-3 bg-success hover:bg-success-dark text-white rounded-lg font-semibold transition-colors">
+        ✅ Validate All and Close Bracket
+      </button>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || 8001}/api/index.php/v1`
+        : 'https://tryentist.com/wdv/api/v1';
+      
+      const API_KEY = localStorage.getItem('coach_api_key') || 'wdva26';
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const bracketId = urlParams.get('bracketId');
+      
+      if (!bracketId) {
+        document.body.innerHTML = '<div class="p-8 text-center"><h1 class="text-2xl font-bold text-red-600 mb-4">Error</h1><p>No bracket ID provided. Please access this page from the Coach Console.</p></div>';
+        return;
+      }
+      
+      let bracketData = null;
+      
+      async function req(endpoint, method = 'GET', data = null) {
+        const options = {
+          method,
+          headers: {
+            'X-API-Key': API_KEY,
+            'Content-Type': 'application/json'
+          }
+        };
+        
+        if (data && method !== 'GET') {
+          options.body = JSON.stringify(data);
+        }
+        
+        const response = await fetch(`${API_BASE}${endpoint}`, options);
+        const json = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(json.error || 'Request failed');
+        }
+        
+        return json;
+      }
+      
+      async function loadBracketResults() {
+        try {
+          const data = await req(`/brackets/${bracketId}/results`);
+          bracketData = data;
+          
+          // Update header
+          const bracket = data.bracket;
+          document.getElementById('bracket-info').textContent = 
+            `${bracket.bracket_type} ${bracket.bracket_format} - ${bracket.division} (${bracket.status})`;
+          
+          // Show appropriate view
+          if (bracket.bracket_format === 'ELIMINATION') {
+            document.getElementById('elimination-tabs').classList.remove('hidden');
+            renderQualification(data.qualification || []);
+            renderMatches('quarters', data.rounds.quarterfinals || []);
+            renderMatches('semis', data.rounds.semifinals || []);
+            renderMatches('finals', data.rounds.finals || []);
+            showTab('qual');
+          } else {
+            document.getElementById('swiss-view').classList.remove('hidden');
+            renderSwissLeaderboard(data.rounds.swiss || []);
+            renderSwissMatches(data.rounds.swiss || []);
+          }
+          
+          // Show coach actions if authenticated
+          if (localStorage.getItem('coach_auth') === 'true' || API_KEY) {
+            document.getElementById('coach-actions').classList.remove('hidden');
+          }
+          
+        } catch (err) {
+          console.error('Error loading bracket results:', err);
+          document.body.innerHTML = `<div class="p-8 text-center"><h1 class="text-2xl font-bold text-red-600 mb-4">Error</h1><p>${err.message}</p></div>`;
+        }
+      }
+      
+      function renderQualification(qual) {
+        const tbody = document.getElementById('qual-table-body');
+        if (qual.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-500">No qualification data</td></tr>';
+          return;
+        }
+        
+        let html = '';
+        qual.forEach((entry, index) => {
+          const isTop8 = index < 8;
+          const rowClass = isTop8 ? 'bg-yellow-50 dark:bg-yellow-900/20' : '';
+          html += `
+            <tr class="${rowClass}">
+              <td class="p-2 font-semibold">${entry.rank}</td>
+              <td class="p-2">${entry.archer_name}</td>
+              <td class="p-2">${entry.school || ''}</td>
+              <td class="p-2 text-right font-semibold">${entry.total_score}</td>
+              <td class="p-2 text-right">${entry.total_10s}</td>
+              <td class="p-2 text-right">${entry.total_xs}</td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      }
+      
+      function renderMatches(round, matches) {
+        const container = document.getElementById(`${round}-matches`);
+        if (!matches || matches.length === 0) {
+          container.innerHTML = '<div class="text-gray-500 text-center p-4">No matches yet</div>';
+          return;
+        }
+        
+        let html = '';
+        matches.forEach(match => {
+          const matchId = match.bracket_match_id || match.id;
+          html += `
+            <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+              <div class="font-semibold text-lg mb-3 text-gray-800 dark:text-white">${matchId}</div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead>
+                    <tr class="border-b border-gray-300 dark:border-gray-600">
+                      <th class="text-left p-2">Target</th>
+                      <th class="text-left p-2">Name (Rank)</th>
+                      <th class="text-center p-2">End 1</th>
+                      <th class="text-center p-2">End 2</th>
+                      <th class="text-center p-2">End 3</th>
+                      <th class="text-center p-2">End 4</th>
+                      <th class="text-center p-2">End 5</th>
+                      <th class="text-right p-2">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${renderMatchRow(match.archer1_name || 'Archer 1', match, 1)}
+                    ${renderMatchRow(match.archer2_name || 'Archer 2', match, 2)}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      }
+      
+      function renderMatchRow(archerName, match, position) {
+        // This is simplified - in production, you'd fetch full match details
+        // For now, show placeholder data
+        return `
+          <tr class="${match.winner_archer_id === match[`archer${position}_id`] ? 'winner-row' : ''}">
+            <td class="p-2">${position === 1 ? '15A' : '16A'}</td>
+            <td class="p-2 font-medium">${archerName}</td>
+            <td class="p-2 text-center">-</td>
+            <td class="p-2 text-center">-</td>
+            <td class="p-2 text-center">-</td>
+            <td class="p-2 text-center">-</td>
+            <td class="p-2 text-center">-</td>
+            <td class="p-2 text-right font-semibold">-</td>
+          </tr>
+        `;
+      }
+      
+      function renderSwissLeaderboard(matches) {
+        // Extract leaderboard from matches
+        const leaderboard = {};
+        
+        matches.forEach(match => {
+          // Process match to update leaderboard
+          // This is simplified - would need full match data
+        });
+        
+        const tbody = document.getElementById('swiss-leaderboard-body');
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">Leaderboard data coming soon</td></tr>';
+      }
+      
+      function renderSwissMatches(matches) {
+        const container = document.getElementById('swiss-matches');
+        if (!matches || matches.length === 0) {
+          container.innerHTML = '<div class="text-gray-500 text-center p-4">No matches yet</div>';
+          return;
+        }
+        
+        container.innerHTML = '<div class="text-gray-500 text-center p-4">Swiss match display coming soon</div>';
+      }
+      
+      function showTab(tabName) {
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.classList.remove('active', 'text-primary', 'border-b-2', 'border-primary');
+          btn.classList.add('text-gray-600', 'dark:text-gray-400');
+        });
+        
+        // Show selected tab
+        document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+        const btn = document.querySelector(`[data-tab="${tabName}"]`);
+        if (btn) {
+          btn.classList.add('active', 'text-primary', 'border-b-2', 'border-primary');
+          btn.classList.remove('text-gray-600', 'dark:text-gray-400');
+        }
+      }
+      
+      // Tab navigation
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tab = btn.getAttribute('data-tab');
+          showTab(tab);
+        });
+      });
+      
+      // Validate and close button
+      document.getElementById('validate-close-btn')?.addEventListener('click', async () => {
+        if (!confirm('Validate all matches and close this bracket? This will mark it as COMPLETED.')) {
+          return;
+        }
+        
+        try {
+          await req(`/brackets/${bracketId}`, 'PATCH', { status: 'COMPLETED' });
+          alert('Bracket validated and closed successfully!');
+          await loadBracketResults();
+        } catch (err) {
+          alert('Error: ' + err.message);
+        }
+      });
+      
+      // Load data on page load
+      loadBracketResults();
+    })();
+  </script>
+</body>
+</html>
+

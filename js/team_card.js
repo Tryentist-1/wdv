@@ -21,8 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
         teamIds: { t1: null, t2: null },
         matchArcherIds: { t1: {}, t2: {} }, // { t1: {0: id, 1: id, 2: id}, t2: {...} }
         eventId: null,
+        bracketId: null,
         syncStatus: { t1: {}, t2: {} },
-        location: ''
+        location: '',
+        events: [],
+        brackets: []
     };
 
     const sessionKey = `teamCard_${new Date().toISOString().split('T')[0]}`;
@@ -215,11 +218,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const today = new Date().toISOString().split('T')[0];
             
             // Create match in database (force new match - don't reuse cache)
+            // Get event ID and bracket ID from URL or localStorage (if available)
+            const urlParams = new URLSearchParams(window.location.search);
+            const eventId = urlParams.get('event') || state.eventId || null;
+            const bracketId = urlParams.get('bracket') || state.bracketId || null;
+            
             console.log('Creating team match in database...');
             const matchId = await window.LiveUpdates.ensureTeamMatch({
                 date: today,
                 location: state.location || '',
                 eventId: eventId,
+                bracketId: bracketId,
                 maxSets: 4,
                 forceNew: true  // Always create a new match when starting scoring
             });

@@ -20,8 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
         matchId: null,        // Database match ID (UUID)
         matchArcherIds: {},   // { a1: matchArcherId, a2: matchArcherId }
         eventId: null,        // Optional event ID for coach visibility
+        bracketId: null,      // Optional bracket ID for tournament matches
         syncStatus: {},       // Track sync status per archer per set: { a1: { setNumber: 'synced'|'pending'|'failed' } }
-        location: ''          // Match location
+        location: '',         // Match location
+        events: [],           // Available events
+        brackets: []          // Available brackets for selected event
     };
 
     const sessionKey = `soloCard_session_${new Date().toISOString().split('T')[0]}`;
@@ -34,6 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const archerSelectionContainer = document.getElementById('archer-selection-container');
     const searchInput = document.getElementById('archer-search-input');
     const startScoringBtn = document.getElementById('start-scoring-btn');
+    const eventSelect = document.getElementById('event-select');
+    const bracketSelect = document.getElementById('bracket-select');
+    const bracketSelection = document.getElementById('bracket-selection');
+    const matchTypeText = document.getElementById('match-type-text');
+    const refreshEventsBtn = document.getElementById('refresh-events-btn');
     const scoreTableContainer = document.getElementById('score-table-container');
     const keypadElement = document.getElementById('score-keypad');
     const editSetupBtn = document.getElementById('edit-setup-btn');
@@ -278,9 +286,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         try {
-            // Get event ID from URL or localStorage (if available)
+            // Get event ID and bracket ID from URL or localStorage (if available)
             const urlParams = new URLSearchParams(window.location.search);
             const eventId = urlParams.get('event') || state.eventId || null;
+            const bracketId = urlParams.get('bracket') || state.bracketId || null;
             const today = new Date().toISOString().split('T')[0];
             
             // Create match in database (force new match - don't reuse cache)
@@ -289,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 date: today,
                 location: state.location || '',
                 eventId: eventId,
+                bracketId: bracketId,
                 maxSets: 5,
                 forceNew: true  // Always create a new match when starting scoring
             });
@@ -993,6 +1003,128 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- EVENT/BRACKET MANAGEMENT ---
+    async function loadEvents() {
+        try {
+            const response = await fetch('/api/v1/events/recent');
+            if (response.ok) {
+                const data = await response.json();
+                state.events = data.events || [];
+                renderEventSelect();
+            } else {
+                console.log('Events require authentication - standalone mode only');
+                state.events = [];
+                renderEventSelect();
+            }
+        } catch (error) {
+            console.log('Could not load events:', error.message);
+            state.events = [];
+            renderEventSelect();
+        }
+    }
+    
+    function renderEventSelect() {
+        if (!eventSelect) return;
+        
+        eventSelect.innerHTML = '<option value="">Standalone Match (No Event)</option>';
+        
+        // Only show active events
+        const activeEvents = state.events.filter(e => e.status === 'Active');
+        activeEvents.forEach(event => {
+            const option = document.createElement('option');
+            option.value = event.id;
+            option.textContent = `${event.name} - ${event.date}`;
+            eventSelect.appendChild(option);
+        });
+        
+        // Set selected value if we have one
+        if (state.eventId) {
+            eventSelect.value = state.eventId;
+            loadBrackets(state.eventId);
+        }
+    }
+    
+    async function handleEventSelection() {
+        const eventId = eventSelect.value;
+        state.eventId = eventId || null;
+        state.bracketId = null;
+        state.brackets = [];
+        
+        if (eventId) {
+            await loadBrackets(eventId);
+            if (bracketSelection) bracketSelection.classList.remove('hidden');
+        } else {
+            if (bracketSelection) bracketSelection.classList.add('hidden');
+        }
+        
+        updateMatchTypeIndicator();
+        saveData();
+    }
+    
+    async function loadBrackets(eventId) {
+        try {
+            const response = await fetch(`/api/v1/events/${eventId}/brackets`);
+            if (response.ok) {
+                const data = await response.json();
+                state.brackets = (data.brackets || []).filter(b => b.bracket_type === 'SOLO');
+                renderBracketSelect();
+            } else {
+                console.log('Could not load brackets for event');
+                state.brackets = [];
+                renderBracketSelect();
+            }
+        } catch (error) {
+            console.log('Error loading brackets:', error.message);
+            state.brackets = [];
+            renderBracketSelect();
+        }
+    }
+    
+    function renderBracketSelect() {
+        if (!bracketSelect) return;
+        
+        bracketSelect.innerHTML = '<option value="">No Bracket (Standalone)</option>';
+        
+        state.brackets.forEach(bracket => {
+            const option = document.createElement('option');
+            option.value = bracket.id;
+            const formatText = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+            option.textContent = `${bracket.division} ${formatText} (${bracket.status})`;
+            bracketSelect.appendChild(option);
+        });
+        
+        // Set selected value if we have one
+        if (state.bracketId) {
+            bracketSelect.value = state.bracketId;
+        }
+    }
+    
+    function handleBracketSelection() {
+        state.bracketId = bracketSelect.value || null;
+        updateMatchTypeIndicator();
+        saveData();
+    }
+    
+    function updateMatchTypeIndicator() {
+        if (!matchTypeText) return;
+        
+        if (state.eventId && state.bracketId) {
+            const bracket = state.brackets.find(b => b.id === state.bracketId);
+            const event = state.events.find(e => e.id === state.eventId);
+            if (bracket && event) {
+                const formatText = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+                matchTypeText.textContent = `${formatText} bracket match in "${event.name}"`;
+            }
+        } else if (state.eventId) {
+            const event = state.events.find(e => e.id === state.eventId);
+            if (event) {
+                matchTypeText.textContent = `Event match in "${event.name}" (no bracket)`;
+            }
+        } else {
+            matchTypeText.textContent = 'Standalone match - not linked to any event';
+        }
+    }
+
     // --- INITIALIZATION ---
     async function init() {
         // Phase 2: Try to load archer list from MySQL first (public endpoint)
@@ -1030,6 +1162,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.matchArcherIds = {};
             }
         }
+
+        // Load events and set up event/bracket selection
+        await loadEvents();
+        
+        // Set up event listeners for event/bracket selection
+        if (eventSelect) eventSelect.addEventListener('change', handleEventSelection);
+        if (bracketSelect) bracketSelect.addEventListener('change', handleBracketSelection);
+        if (refreshEventsBtn) refreshEventsBtn.addEventListener('click', loadEvents);
+        
+        // Check for URL parameters (for QR code access)
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventId = urlParams.get('event');
+        const bracketId = urlParams.get('bracket');
+        
+        if (eventId) {
+            state.eventId = eventId;
+            if (bracketId) {
+                state.bracketId = bracketId;
+            }
+            // Re-render selects with URL parameters
+            renderEventSelect();
+            if (eventId) {
+                await loadBrackets(eventId);
+                if (bracketSelection) bracketSelection.classList.remove('hidden');
+            }
+        }
+        
+        updateMatchTypeIndicator();
 
         if (state.currentView === 'scoring' && state.archer1 && state.archer2) {
             renderScoringView();

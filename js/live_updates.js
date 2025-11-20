@@ -460,11 +460,11 @@
     // PHASE 2: SOLO MATCH METHODS
     // =====================================================
     
-    function ensureSoloMatch({ date, location, eventId, maxSets = 5, forceNew = false }) {
+    function ensureSoloMatch({ date, location, eventId, bracketId, maxSets = 5, forceNew = false }) {
         if (!state.config.enabled) return Promise.resolve(null);
         
         // Build match key for caching (used both for checking cache and storing new match)
-        const matchKey = `solo_match:${eventId || 'standalone'}:${date}`;
+        const matchKey = `solo_match:${eventId || 'standalone'}:${bracketId || 'none'}:${date}`;
         
         // If forceNew is true, skip cache and create a new match
         if (!forceNew) {
@@ -473,7 +473,7 @@
             if (cached) {
                 try {
                     const cachedData = JSON.parse(cached);
-                    if (cachedData.matchId && cachedData.eventId === eventId) {
+                    if (cachedData.matchId && cachedData.eventId === eventId && cachedData.bracketId === bracketId) {
                         console.log('✅ Reusing existing solo match:', cachedData.matchId);
                         state.soloMatchId = cachedData.matchId;
                         state.soloEventId = eventId;
@@ -489,7 +489,7 @@
             }
         }
         
-        return request('/solo-matches', 'POST', { date, location, eventId, maxSets })
+        return request('/solo-matches', 'POST', { date, location, eventId, bracketId, maxSets })
             .then(json => {
                 if (!json || !json.matchId) {
                     throw new Error('Solo match creation failed: missing matchId');
@@ -625,7 +625,7 @@
     // PHASE 2: TEAM MATCH METHODS
     // =====================================================
     
-    function ensureTeamMatch({ date, location, eventId, maxSets = 4, forceNew = false }) {
+    function ensureTeamMatch({ date, location, eventId, bracketId, maxSets = 4, forceNew = false }) {
         if (!state.config.enabled) {
             console.warn('[TeamMatch] LiveUpdates disabled, skipping match creation');
             return Promise.resolve(null);
@@ -634,7 +634,7 @@
         console.log('[TeamMatch] ensureTeamMatch called:', { date, location, eventId, maxSets, forceNew });
         
         // Build match key for caching
-        const matchKey = `team_match:${eventId || 'standalone'}:${date}`;
+        const matchKey = `team_match:${eventId || 'standalone'}:${bracketId || 'none'}:${date}`;
         
         // If forceNew is true, skip cache and create a new match
         if (!forceNew) {
@@ -643,7 +643,7 @@
             if (cached) {
                 try {
                     const cachedData = JSON.parse(cached);
-                    if (cachedData.matchId && cachedData.eventId === eventId) {
+                    if (cachedData.matchId && cachedData.eventId === eventId && cachedData.bracketId === bracketId) {
                         console.log('[TeamMatch] ✅ Reusing existing team match:', cachedData.matchId);
                         state.teamMatchId = cachedData.matchId;
                         state.teamEventId = eventId;
@@ -663,7 +663,7 @@
         }
         
         console.log('[TeamMatch] Creating new team match in database...');
-        return request('/team-matches', 'POST', { date, location, eventId, maxSets })
+        return request('/team-matches', 'POST', { date, location, eventId, bracketId, maxSets })
             .then(json => {
                 if (!json || !json.matchId) {
                     console.error('[TeamMatch] ❌ Match creation failed: missing matchId', json);

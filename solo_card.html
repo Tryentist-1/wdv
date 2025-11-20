@@ -99,6 +99,42 @@
             <header class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <h1 class="text-xl font-bold text-gray-800 dark:text-white">Solo Match Setup</h1>
             </header>
+            
+            <!-- Event/Bracket Selection -->
+            <div class="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700">
+                <div class="space-y-3">
+                    <!-- Event Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Event (Optional)
+                        </label>
+                        <div class="flex gap-2">
+                            <select id="event-select" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="">Standalone Match (No Event)</option>
+                            </select>
+                            <button id="refresh-events-btn" class="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Bracket Selection (shown when event selected) -->
+                    <div id="bracket-selection" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Bracket
+                        </label>
+                        <select id="bracket-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="">Select Bracket...</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Match Type Indicator -->
+                    <div id="match-type-indicator" class="text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <span id="match-type-text">Standalone match - not linked to any event</span>
+                    </div>
+                </div>
+            </div>
             <div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-3">
                 <input type="text" id="archer-search-input" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Search archers...">
                 <button id="start-scoring-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">Start Scoring</button>

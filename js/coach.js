@@ -1667,7 +1667,7 @@
     await loadEventRounds(event.id);
     
     // Load and display matches
-    await loadEventMatches(event.id);
+    await loadEventBrackets(event.id);
     
     document.getElementById('cancel-edit-event-btn').onclick = () => {
       modal.style.display = 'none';
@@ -1690,9 +1690,8 @@
     };
     
     // Match management buttons
-    document.getElementById('create-solo-match-btn').onclick = () => createMatch('solo');
-    document.getElementById('create-team-match-btn').onclick = () => createMatch('team');
-    document.getElementById('refresh-matches-btn').onclick = () => loadEventMatches(event.id);
+    document.getElementById('create-bracket-btn').onclick = () => openCreateBracketModal();
+    document.getElementById('refresh-brackets-btn').onclick = () => loadEventBrackets(event.id);
     
     document.getElementById('submit-edit-event-btn').onclick = async () => {
       const name = nameInput.value.trim();
@@ -1798,77 +1797,51 @@
     };
   }
   
-  // ==================== Match Management ====================
+  // ==================== Bracket Management ====================
   
-  let currentMatchType = null; // 'solo' or 'team'
+  let currentBracketId = null;
   
-  async function loadEventMatches(eventId) {
+  async function loadEventBrackets(eventId) {
     try {
-      // Load solo matches
-      const soloResponse = await req(`/events/${eventId}/solo-matches`, 'GET');
-      renderSoloMatches(soloResponse.matches || []);
-      
-      // Load team matches
-      const teamResponse = await req(`/events/${eventId}/team-matches`, 'GET');
-      renderTeamMatches(teamResponse.matches || []);
+      const response = await req(`/events/${eventId}/brackets`, 'GET');
+      renderBrackets(response.brackets || []);
     } catch (err) {
-      console.error('Error loading matches:', err);
-      document.getElementById('solo-matches-list').innerHTML = '<div class="text-red-500 text-sm py-2">Error loading matches</div>';
-      document.getElementById('team-matches-list').innerHTML = '<div class="text-red-500 text-sm py-2">Error loading matches</div>';
+      console.error('Error loading brackets:', err);
+      document.getElementById('brackets-list').innerHTML = '<div class="text-red-500 text-sm py-2">Error loading brackets</div>';
     }
   }
   
-  function renderSoloMatches(matches) {
-    const container = document.getElementById('solo-matches-list');
-    if (!matches || matches.length === 0) {
-      container.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No solo matches yet</div>';
+  function renderBrackets(brackets) {
+    const container = document.getElementById('brackets-list');
+    if (!brackets || brackets.length === 0) {
+      container.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No brackets yet. Create a bracket after ranking rounds are complete.</div>';
       return;
     }
     
     let html = '';
-    matches.forEach(match => {
-      const status = match.status || 'Not Started';
-      const cardStatus = match.card_status || 'PENDING';
-      const locked = match.locked ? '🔒' : '';
-      const verified = cardStatus === 'VER' ? '✅' : cardStatus === 'VOID' ? '❌' : '';
-      
-      const archer1 = match.archer1 || {};
-      const archer2 = match.archer2 || {};
-      const score1 = archer1.total_set_points || 0;
-      const score2 = archer2.total_set_points || 0;
-      const winner = match.winner_name ? `🏆 ${match.winner_name}` : '';
+    brackets.forEach(bracket => {
+      const status = bracket.status || 'OPEN';
+      const statusColor = status === 'COMPLETED' ? 'text-success' : status === 'IN_PROGRESS' ? 'text-primary' : 'text-gray-600';
+      const entryCount = bracket.entry_count || 0;
       
       html += `
         <div class="p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
           <div class="flex justify-between items-start mb-2">
             <div class="flex-1">
               <div class="font-semibold text-gray-800 dark:text-white text-sm">
-                ${match.match_display || 'Match'}
+                ${bracket.bracket_type} ${bracket.bracket_format} - ${bracket.division}
               </div>
               <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                ${status} ${locked} ${verified}
-                ${match.date ? ` • ${match.date}` : ''}
+                <span class="${statusColor}">${status}</span>
+                ${entryCount > 0 ? ` • ${entryCount} entries` : ' • No entries'}
+                ${bracket.bracket_size ? ` • Size: ${bracket.bracket_size}` : ''}
               </div>
-              ${score1 > 0 || score2 > 0 ? `
-                <div class="text-sm mt-1">
-                  <span class="font-medium">${archer1.archer_name || 'Archer 1'}:</span> ${score1} pts
-                  <span class="mx-2">vs</span>
-                  <span class="font-medium">${archer2.archer_name || 'Archer 2'}:</span> ${score2} pts
-                  ${winner ? `<span class="ml-2 text-primary">${winner}</span>` : ''}
-                </div>
-              ` : ''}
             </div>
             <div class="flex gap-1 ml-2">
-              <button onclick="coach.openMatch('${match.id}', 'solo')" 
+              <button onclick="coach.editBracket('${bracket.id}')" 
                 class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-xs font-semibold transition-colors">
-                Open
+                Edit
               </button>
-              ${status === 'Completed' && !match.locked ? `
-                <button onclick="coach.verifyMatch('${match.id}', 'solo')" 
-                  class="px-2 py-1 bg-success hover:bg-success-dark text-white rounded text-xs font-semibold transition-colors">
-                  Verify
-                </button>
-              ` : ''}
             </div>
           </div>
         </div>
@@ -1878,168 +1851,223 @@
     container.innerHTML = html;
   }
   
-  function renderTeamMatches(matches) {
-    const container = document.getElementById('team-matches-list');
-    if (!matches || matches.length === 0) {
-      container.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No team matches yet</div>';
-      return;
-    }
-    
-    let html = '';
-    matches.forEach(match => {
-      const status = match.status || 'Not Started';
-      const cardStatus = match.card_status || 'PENDING';
-      const locked = match.locked ? '🔒' : '';
-      const verified = cardStatus === 'VER' ? '✅' : cardStatus === 'VOID' ? '❌' : '';
-      
-      const team1 = match.team1 || {};
-      const team2 = match.team2 || {};
-      const score1 = team1.total_set_points || 0;
-      const score2 = team2.total_set_points || 0;
-      const winner = match.winner_name ? `🏆 ${match.winner_name}` : '';
-      
-      const team1Name = team1.team_name || team1.school || 'Team 1';
-      const team2Name = team2.team_name || team2.school || 'Team 2';
-      
-      html += `
-        <div class="p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
-          <div class="flex justify-between items-start mb-2">
-            <div class="flex-1">
-              <div class="font-semibold text-gray-800 dark:text-white text-sm">
-                ${match.match_display || `${team1Name} vs ${team2Name}`}
-              </div>
-              <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                ${status} ${locked} ${verified}
-                ${match.date ? ` • ${match.date}` : ''}
-              </div>
-              ${score1 > 0 || score2 > 0 ? `
-                <div class="text-sm mt-1">
-                  <span class="font-medium">${team1Name}:</span> ${score1} pts
-                  <span class="mx-2">vs</span>
-                  <span class="font-medium">${team2Name}:</span> ${score2} pts
-                  ${winner ? `<span class="ml-2 text-primary">${winner}</span>` : ''}
-                </div>
-              ` : ''}
-            </div>
-            <div class="flex gap-1 ml-2">
-              <button onclick="coach.openMatch('${match.id}', 'team')" 
-                class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-xs font-semibold transition-colors">
-                Open
-              </button>
-              ${status === 'Completed' && !match.locked ? `
-                <button onclick="coach.verifyMatch('${match.id}', 'team')" 
-                  class="px-2 py-1 bg-success hover:bg-success-dark text-white rounded text-xs font-semibold transition-colors">
-                  Verify
-                </button>
-              ` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    });
-    
-    container.innerHTML = html;
-  }
-  
-  async function createMatch(matchType) {
+  function openCreateBracketModal() {
     if (!currentEditEventId) {
       alert('No event selected');
       return;
     }
     
-    currentMatchType = matchType;
-    const modal = document.getElementById('create-match-modal');
-    const title = document.getElementById('create-match-title');
-    const dateInput = document.getElementById('match-date');
-    const locationInput = document.getElementById('match-location');
-    const maxSetsSelect = document.getElementById('match-max-sets');
+    const modal = document.getElementById('create-bracket-modal');
+    const typeSelect = document.getElementById('bracket-type');
+    const formatSelect = document.getElementById('bracket-format');
+    const divisionSelect = document.getElementById('bracket-division');
+    const sizeInput = document.getElementById('bracket-size');
     
-    title.textContent = `Create ${matchType === 'solo' ? 'Solo' : 'Team'} Match`;
-    dateInput.value = new Date().toISOString().split('T')[0];
-    locationInput.value = '';
-    maxSetsSelect.value = matchType === 'solo' ? '5' : '4';
+    // Reset form
+    typeSelect.value = 'SOLO';
+    formatSelect.value = 'ELIMINATION';
+    divisionSelect.value = 'BV';
+    sizeInput.value = '8';
     
     modal.style.display = 'flex';
     
-    document.getElementById('cancel-create-match-btn').onclick = () => {
+    // Update size input based on format
+    formatSelect.onchange = () => {
+      if (formatSelect.value === 'ELIMINATION') {
+        sizeInput.value = '8';
+        sizeInput.disabled = true;
+      } else {
+        sizeInput.disabled = false;
+      }
+    };
+    formatSelect.onchange(); // Initial call
+    
+    document.getElementById('cancel-create-bracket-btn').onclick = () => {
       modal.style.display = 'none';
-      currentMatchType = null;
     };
     
-    document.getElementById('submit-create-match-btn').onclick = async () => {
-      const date = dateInput.value;
-      const location = locationInput.value.trim();
-      const maxSets = parseInt(maxSetsSelect.value);
+    document.getElementById('submit-create-bracket-btn').onclick = async () => {
+      const bracketType = typeSelect.value;
+      const bracketFormat = formatSelect.value;
+      const division = divisionSelect.value;
+      const bracketSize = parseInt(sizeInput.value);
       
-      if (!date) {
-        alert('Please select a date');
+      if (bracketFormat === 'ELIMINATION' && bracketSize !== 8) {
+        alert('Elimination brackets must be size 8');
         return;
       }
       
       try {
-        const btn = document.getElementById('submit-create-match-btn');
+        const btn = document.getElementById('submit-create-bracket-btn');
         btn.disabled = true;
         btn.textContent = 'Creating...';
         
-        const endpoint = matchType === 'solo' ? '/solo-matches' : '/team-matches';
-        const response = await req(endpoint, 'POST', {
-          eventId: currentEditEventId,
-          date,
-          location: location || null,
-          maxSets
+        const response = await req(`/events/${currentEditEventId}/brackets`, 'POST', {
+          bracketType,
+          bracketFormat,
+          division,
+          bracketSize,
+          createdBy: 'Coach'
         });
         
         modal.style.display = 'none';
-        alert(`Match created! Opening match for scoring...`);
+        alert('Bracket created successfully!');
         
-        // Open the match for scoring
-        openMatch(response.matchId, matchType);
+        // Refresh brackets list
+        await loadEventBrackets(currentEditEventId);
         
-        // Refresh matches list
-        await loadEventMatches(currentEditEventId);
-      } catch (err) {
-        alert(`Error creating match: ${err.message}`);
-      } finally {
-        const btn = document.getElementById('submit-create-match-btn');
         btn.disabled = false;
-        btn.textContent = 'Create Match';
-        currentMatchType = null;
+        btn.textContent = 'Create Bracket';
+      } catch (err) {
+        alert('Error creating bracket: ' + (err.message || 'Unknown error'));
+        btn.disabled = false;
+        btn.textContent = 'Create Bracket';
       }
     };
   }
   
-  function openMatch(matchId, matchType) {
-    const baseUrl = window.location.origin + window.location.pathname.replace('coach.html', '');
-    const page = matchType === 'solo' ? 'solo_card.html' : 'team_card.html';
-    const url = `${baseUrl}${page}?event=${currentEditEventId}&match=${matchId}`;
-    window.open(url, '_blank');
-  }
-  
-  async function verifyMatch(matchId, matchType) {
-    const verifiedBy = prompt('Enter your name for verification:');
-    if (!verifiedBy) return;
-    
-    const notes = prompt('Enter notes (optional):') || '';
-    
-    const action = confirm('Lock this match? (Cancel to void instead)') ? 'lock' : 'void';
+  async function editBracket(bracketId) {
+    currentBracketId = bracketId;
     
     try {
-      const endpoint = matchType === 'solo' 
-        ? `/solo-matches/${matchId}/verify`
-        : `/team-matches/${matchId}/verify`;
+      // Load bracket details
+      const bracketResponse = await req(`/brackets/${bracketId}`, 'GET');
+      const bracket = bracketResponse.bracket;
       
-      await req(endpoint, 'POST', {
-        action,
-        verifiedBy,
-        notes
-      });
+      // Load bracket entries
+      const entriesResponse = await req(`/brackets/${bracketId}/entries`, 'GET');
+      const entries = entriesResponse.entries || [];
       
-      alert(`Match ${action === 'lock' ? 'verified and locked' : 'voided'} successfully!`);
-      await loadEventMatches(currentEditEventId);
+      // Update modal
+      const modal = document.getElementById('edit-bracket-modal');
+      const title = document.getElementById('edit-bracket-title');
+      const statusSelect = document.getElementById('bracket-status');
+      const entriesList = document.getElementById('bracket-entries-list');
+      
+      title.textContent = `${bracket.bracket_type} ${bracket.bracket_format} - ${bracket.division}`;
+      statusSelect.value = bracket.status || 'OPEN';
+      
+      // Render entries
+      if (entries.length === 0) {
+        entriesList.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No entries yet</div>';
+      } else {
+        let html = '';
+        entries.forEach(entry => {
+          const name = entry.entry_type === 'ARCHER' 
+            ? `${entry.first_name || ''} ${entry.last_name || ''}`.trim() || 'Unknown Archer'
+            : entry.school_id || 'Unknown Team';
+          const seed = entry.seed_position ? `Seed ${entry.seed_position}` : '';
+          const swiss = bracket.bracket_format === 'SWISS' 
+            ? ` • W-L: ${entry.swiss_wins || 0}-${entry.swiss_losses || 0} (${entry.swiss_points || 0} pts)`
+            : '';
+          
+          html += `
+            <div class="p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded mb-2 flex justify-between items-center">
+              <div>
+                <span class="font-medium text-sm">${name}</span>
+                ${seed ? `<span class="text-xs text-gray-500 ml-2">${seed}</span>` : ''}
+                ${swiss ? `<span class="text-xs text-gray-500 ml-2">${swiss}</span>` : ''}
+              </div>
+              <button onclick="coach.removeBracketEntry('${bracketId}', '${entry.id}')" 
+                class="px-2 py-1 bg-danger hover:bg-red-700 text-white rounded text-xs font-semibold transition-colors">
+                Remove
+              </button>
+            </div>
+          `;
+        });
+        entriesList.innerHTML = html;
+      }
+      
+      modal.style.display = 'flex';
+      
+      // Set up event handlers
+      document.getElementById('cancel-edit-bracket-btn').onclick = () => {
+        modal.style.display = 'none';
+        currentBracketId = null;
+      };
+      
+      document.getElementById('generate-bracket-btn').onclick = async () => {
+        if (bracket.bracket_format !== 'ELIMINATION') {
+          alert('Auto-generation only available for ELIMINATION brackets');
+          return;
+        }
+        
+        if (!confirm('This will generate bracket entries from Top 8 ranking scores. Continue?')) {
+          return;
+        }
+        
+        try {
+          const btn = document.getElementById('generate-bracket-btn');
+          btn.disabled = true;
+          btn.textContent = 'Generating...';
+          
+          await req(`/brackets/${bracketId}/generate`, 'POST', {});
+          
+          alert('Bracket generated successfully!');
+          
+          // Refresh bracket data
+          await editBracket(bracketId);
+          
+          btn.disabled = false;
+          btn.textContent = '🎯 Generate from Top 8';
+        } catch (err) {
+          alert('Error generating bracket: ' + (err.message || 'Unknown error'));
+          btn.disabled = false;
+          btn.textContent = '🎯 Generate from Top 8';
+        }
+      };
+      
+      document.getElementById('bracket-status').onchange = async () => {
+        const newStatus = statusSelect.value;
+        try {
+          await req(`/brackets/${bracketId}`, 'PATCH', { status: newStatus });
+          alert('Bracket status updated');
+        } catch (err) {
+          alert('Error updating status: ' + (err.message || 'Unknown error'));
+        }
+      };
+      
+      document.getElementById('view-bracket-results-btn').onclick = () => {
+        window.location.href = `bracket_results.html?bracketId=${bracketId}`;
+      };
+      
+      document.getElementById('delete-bracket-btn').onclick = async () => {
+        if (!confirm('Are you sure you want to delete this bracket? This cannot be undone.')) {
+          return;
+        }
+        
+        try {
+          await req(`/brackets/${bracketId}`, 'DELETE');
+          alert('Bracket deleted');
+          modal.style.display = 'none';
+          await loadEventBrackets(bracket.event_id);
+        } catch (err) {
+          alert('Error deleting bracket: ' + (err.message || 'Unknown error'));
+        }
+      };
+      
     } catch (err) {
-      alert(`Error verifying match: ${err.message}`);
+      alert('Error loading bracket: ' + (err.message || 'Unknown error'));
     }
   }
+  
+  async function removeBracketEntry(bracketId, entryId) {
+    if (!confirm('Remove this entry from the bracket?')) {
+      return;
+    }
+    
+    try {
+      await req(`/brackets/${bracketId}/entries/${entryId}`, 'DELETE');
+      await editBracket(bracketId); // Refresh
+    } catch (err) {
+      alert('Error removing entry: ' + (err.message || 'Unknown error'));
+    }
+  }
+  
+  // Expose functions globally
+  window.coach = window.coach || {};
+  window.coach.editBracket = editBracket;
+  window.coach.removeBracketEntry = removeBracketEntry;
   
   // ==================== Global Functions (for inline onclick) ====================
   
@@ -2051,9 +2079,8 @@
     manageBales,
     showQRCode,
     verifyEvent,
-    openMatch,
-    verifyMatch,
-    createMatch
+    editBracket,
+    removeBracketEntry
   };
 
 })();

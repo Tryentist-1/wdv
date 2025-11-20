@@ -253,37 +253,23 @@
         </div>
       </div>
       
-      <!-- Results Matches Section -->
+      <!-- Brackets Section -->
       <div class="mb-5 border-t-2 border-gray-200 dark:border-gray-700 pt-5">
         <div class="flex justify-between items-center mb-3">
-          <label class="block font-semibold text-gray-700 dark:text-gray-300">Match Results</label>
+          <label class="block font-semibold text-gray-700 dark:text-gray-300">Brackets</label>
           <div class="flex gap-2">
-            <button id="create-solo-match-btn" class="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors">
-              ➕ Solo Match
+            <button id="create-bracket-btn" class="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors">
+              ➕ Create Bracket
             </button>
-            <button id="create-team-match-btn" class="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors">
-              ➕ Team Match
-            </button>
-            <button id="refresh-matches-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+            <button id="refresh-brackets-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
               🔄 Refresh
             </button>
           </div>
         </div>
         
-        <!-- Solo Matches -->
-        <div class="mb-4">
-          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Solo Matches</h3>
-          <div id="solo-matches-list" class="space-y-2 max-h-[200px] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-gray-700">
-            <div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No solo matches yet</div>
-          </div>
-        </div>
-        
-        <!-- Team Matches -->
-        <div class="mb-4">
-          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Team Matches</h3>
-          <div id="team-matches-list" class="space-y-2 max-h-[200px] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-gray-700">
-            <div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No team matches yet</div>
-          </div>
+        <!-- Brackets List -->
+        <div id="brackets-list" class="space-y-2 max-h-[300px] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-gray-700">
+          <div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No brackets yet. Create a bracket after ranking rounds are complete.</div>
         </div>
       </div>
       
@@ -344,32 +330,81 @@
     </div>
   </div>
 
-<!-- Create Match Modal -->
-  <div id="create-match-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
+<!-- Create Bracket Modal -->
+  <div id="create-bracket-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
     <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-md w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
-      <h2 id="create-match-title" class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4">Create Match</h2>
+      <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4">Create Bracket</h2>
       
       <div class="mb-4">
-        <label for="match-date" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
-        <input type="date" id="match-date" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        <label for="bracket-type" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Bracket Type</label>
+        <select id="bracket-type" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+          <option value="SOLO">Solo</option>
+          <option value="TEAM">Team</option>
+        </select>
       </div>
       
       <div class="mb-4">
-        <label for="match-location" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Location (optional)</label>
-        <input type="text" id="match-location" placeholder="Gymnasium A" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        <label for="bracket-format" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Bracket Format</label>
+        <select id="bracket-format" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+          <option value="ELIMINATION">Elimination (Top 8)</option>
+          <option value="SWISS">Swiss</option>
+        </select>
       </div>
       
       <div class="mb-4">
-        <label for="match-max-sets" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Max Sets</label>
-        <select id="match-max-sets" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
-          <option value="5">5 (Solo - Best of 5)</option>
-          <option value="4">4 (Team - Best of 4)</option>
+        <label for="bracket-division" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Division</label>
+        <select id="bracket-division" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+          <option value="BV">BV (Boys Varsity)</option>
+          <option value="BJV">BJV (Boys JV)</option>
+          <option value="GV">GV (Girls Varsity)</option>
+          <option value="GJV">GJV (Girls JV)</option>
+          <option value="MIXED_VAR">MIXED_VAR (Mixed Varsity - Team only)</option>
+        </select>
+      </div>
+      
+      <div class="mb-4">
+        <label for="bracket-size" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Bracket Size</label>
+        <input type="number" id="bracket-size" value="8" min="4" max="16" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Elimination brackets are always 8. Swiss brackets can be 4-16.</p>
+      </div>
+      
+      <div class="flex gap-2 mt-6">
+        <button id="cancel-create-bracket-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+        <button id="submit-create-bracket-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Create Bracket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Bracket Modal -->
+  <div id="edit-bracket-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
+    <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+      <h2 id="edit-bracket-title" class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4">Edit Bracket</h2>
+      
+      <div class="mb-4">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Bracket Entries</span>
+          <button id="generate-bracket-btn" class="px-3 py-1 bg-success hover:bg-success-dark text-white rounded text-sm font-semibold transition-colors">
+            🎯 Generate from Top 8
+          </button>
+        </div>
+        <div id="bracket-entries-list" class="border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700 max-h-[300px] overflow-y-auto">
+          <div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No entries yet</div>
+        </div>
+      </div>
+      
+      <div class="mb-4">
+        <label for="bracket-status" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+        <select id="bracket-status" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+          <option value="OPEN">OPEN</option>
+          <option value="IN_PROGRESS">IN_PROGRESS</option>
+          <option value="COMPLETED">COMPLETED</option>
         </select>
       </div>
       
       <div class="flex gap-2 mt-6">
-        <button id="cancel-create-match-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-        <button id="submit-create-match-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Create Match</button>
+        <button id="view-bracket-results-btn" class="flex-1 px-4 py-2 bg-success hover:bg-success-dark text-white rounded font-semibold transition-colors min-h-[44px]">📊 View Results</button>
+        <button id="cancel-edit-bracket-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Close</button>
+        <button id="delete-bracket-btn" class="px-4 py-2 bg-danger hover:bg-red-700 text-white rounded font-semibold transition-colors min-h-[44px]">🗑️ Delete</button>
       </div>
     </div>
   </div>
