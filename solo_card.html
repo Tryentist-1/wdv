@@ -5,65 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>OAS Solo Match Card</title>
     
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'score-gold': '#FFD700',
-                        'score-red': '#DC143C',
-                        'score-blue': '#4169E1',
-                        'score-black': '#000000',
-                        'score-white': '#FFFFFF',
-                        'score-miss': '#808080',
-                        'primary': {
-                            DEFAULT: '#2d7dd9',
-                            dark: '#1b5bbf',
-                            light: '#e7f1ff',
-                        },
-                        'secondary': {
-                            DEFAULT: '#6c757d',
-                            dark: '#5a6268',
-                            light: '#e9ecef',
-                        },
-                        'success': {
-                            DEFAULT: '#28a745',
-                            dark: '#1e7e34',
-                            light: '#d1e7dd',
-                        },
-                        'danger': {
-                            DEFAULT: '#d92d20',
-                            dark: '#b0241a',
-                            light: '#f8d7da',
-                        },
-                        'warning': {
-                            DEFAULT: '#ffc107',
-                            dark: '#d39e00',
-                            light: '#fff3cd',
-                        },
-                        'info': {
-                            DEFAULT: '#0dcaf0',
-                            dark: '#0a98b0',
-                            light: '#d0f7fa',
-                        },
-                        'purple': {
-                            DEFAULT: '#6f42c1',
-                            dark: '#563d7c',
-                            light: '#efebf5',
-                        },
-                        'orange': {
-                            DEFAULT: '#f28c18',
-                            dark: '#e8690b',
-                            light: '#fff4e8',
-                        },
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Tailwind CSS Compiled -->
+    <link rel="stylesheet" href="css/tailwind-compiled.css">
+    
+    <!-- Custom Color Utilities (fallback) -->
+    <style>
+        .bg-score-gold { background-color: #FFD700; }
+        .bg-score-red { background-color: #DC143C; }
+        .bg-score-blue { background-color: #4169E1; }
+        .bg-score-black { background-color: #000000; }
+        .bg-score-white { background-color: #FFFFFF; }
+        .text-score-gold { color: #FFD700; }
+        .text-score-red { color: #DC143C; }
+        .text-score-blue { color: #4169E1; }
+        .text-score-black { color: #000000; }
+        .text-score-white { color: #FFFFFF; }
+        .bg-primary { background-color: #2d7dd9; }
+        .bg-primary-dark { background-color: #1b5bbf; }
+        .bg-danger { background-color: #d92d20; }
+        .bg-danger-dark { background-color: #b0241a; }
+        .text-primary { color: #2d7dd9; }
+        .text-danger { color: #d92d20; }
+        .text-white { color: #ffffff; }
+    </style>
     
     <style>
         /* Score input utility class */
