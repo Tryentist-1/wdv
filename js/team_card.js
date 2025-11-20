@@ -933,6 +933,135 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- EVENT/BRACKET MANAGEMENT ---
+    async function loadEvents() {
+        try {
+            const response = await fetch('api/v1/events/recent');
+            if (response.ok) {
+                const data = await response.json();
+                state.events = data.events || [];
+                renderEventSelect();
+            } else {
+                console.log('Events require authentication - standalone mode only');
+                state.events = [];
+                renderEventSelect();
+            }
+        } catch (error) {
+            console.log('Could not load events:', error.message);
+            state.events = [];
+            renderEventSelect();
+        }
+    }
+    
+    function renderEventSelect() {
+        const eventSelect = document.getElementById('event-select');
+        if (!eventSelect) return;
+        
+        eventSelect.innerHTML = '<option value="">Standalone Match (No Event)</option>';
+        
+        // Only show active events
+        const activeEvents = state.events.filter(e => e.status === 'Active');
+        activeEvents.forEach(event => {
+            const option = document.createElement('option');
+            option.value = event.id;
+            option.textContent = `${event.name} - ${event.date}`;
+            eventSelect.appendChild(option);
+        });
+        
+        // Set selected value if we have one
+        if (state.eventId) {
+            eventSelect.value = state.eventId;
+            loadBrackets(state.eventId);
+        }
+    }
+    
+    async function handleEventSelection() {
+        const eventSelect = document.getElementById('event-select');
+        const bracketSelection = document.getElementById('bracket-selection');
+        
+        const eventId = eventSelect.value;
+        state.eventId = eventId || null;
+        state.bracketId = null;
+        state.brackets = [];
+        
+        if (eventId) {
+            await loadBrackets(eventId);
+            if (bracketSelection) bracketSelection.classList.remove('hidden');
+        } else {
+            if (bracketSelection) bracketSelection.classList.add('hidden');
+        }
+        
+        updateMatchTypeIndicator();
+        saveData();
+    }
+    
+    async function loadBrackets(eventId) {
+        try {
+            const response = await fetch(`api/v1/events/${eventId}/brackets`);
+            if (response.ok) {
+                const data = await response.json();
+                state.brackets = (data.brackets || []).filter(b => b.bracket_type === 'TEAM');
+                renderBracketSelect();
+            } else {
+                console.log('Could not load brackets for event');
+                state.brackets = [];
+                renderBracketSelect();
+            }
+        } catch (error) {
+            console.log('Error loading brackets:', error.message);
+            state.brackets = [];
+            renderBracketSelect();
+        }
+    }
+    
+    function renderBracketSelect() {
+        const bracketSelect = document.getElementById('bracket-select');
+        if (!bracketSelect) return;
+        
+        bracketSelect.innerHTML = '<option value="">No Bracket (Standalone)</option>';
+        
+        state.brackets.forEach(bracket => {
+            const option = document.createElement('option');
+            option.value = bracket.id;
+            const formatText = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+            option.textContent = `${bracket.division} ${formatText} (${bracket.status})`;
+            bracketSelect.appendChild(option);
+        });
+        
+        // Set selected value if we have one
+        if (state.bracketId) {
+            bracketSelect.value = state.bracketId;
+        }
+    }
+    
+    function handleBracketSelection() {
+        const bracketSelect = document.getElementById('bracket-select');
+        state.bracketId = bracketSelect.value || null;
+        updateMatchTypeIndicator();
+        saveData();
+    }
+    
+    function updateMatchTypeIndicator() {
+        const matchTypeText = document.getElementById('match-type-text');
+        if (!matchTypeText) return;
+        
+        if (state.eventId && state.bracketId) {
+            const bracket = state.brackets.find(b => b.id === state.bracketId);
+            const event = state.events.find(e => e.id === state.eventId);
+            if (bracket && event) {
+                const formatText = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+                matchTypeText.textContent = `${formatText} bracket match in "${event.name}"`;
+            }
+        } else if (state.eventId) {
+            const event = state.events.find(e => e.id === state.eventId);
+            if (event) {
+                matchTypeText.textContent = `Event match in "${event.name}" (no bracket)`;
+            }
+        } else {
+            matchTypeText.textContent = 'Standalone match - not linked to any event';
+        }
+    }
+
     // --- INITIALIZATION ---
     async function init() {
         console.log('[TeamCard] 🚀 Initializing Team Match Card...');

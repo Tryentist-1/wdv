@@ -1006,7 +1006,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- EVENT/BRACKET MANAGEMENT ---
     async function loadEvents() {
         try {
-            const response = await fetch('/api/v1/events/recent');
+            const response = await fetch('api/v1/events/recent');
             if (response.ok) {
                 const data = await response.json();
                 state.events = data.events || [];
@@ -1063,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     async function loadBrackets(eventId) {
         try {
-            const response = await fetch(`/api/v1/events/${eventId}/brackets`);
+            const response = await fetch(`api/v1/events/${eventId}/brackets`);
             if (response.ok) {
                 const data = await response.json();
                 state.brackets = (data.brackets || []).filter(b => b.bracket_type === 'SOLO');
