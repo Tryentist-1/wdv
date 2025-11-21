@@ -108,10 +108,23 @@ npm run serve
 
 # 6. Open browser
 open http://localhost:8001
+
+# 7. View Component Library (UI Templates)
+open http://localhost:8001/test-components.html
 ```
 
 ### Detailed Setup
 See [QUICK_START_LOCAL.md](QUICK_START_LOCAL.md) for full instructions.
+
+### 🎨 Component Library
+**`test-components.html`** - Complete UI template library with:
+- All button styles and states
+- Scoring table layouts (bale view + individual scorecard)
+- Score input colors and styling
+- Status badges and headers
+- Keypad layouts and modal examples
+
+**Use this as the reference** for all UI styling and components.
 
 ---
 
