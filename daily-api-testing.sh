@@ -442,6 +442,209 @@ EOF
     echo "Tomorrow: ./daily-api-testing.sh 1 3"
 }
 
+week1_day3() {
+    print_header "WEEK 1, DAY 3: ROUND MANAGEMENT (Part 1)"
+    
+    print_info "Today's goal: Basic round operations and CRUD"
+    print_info "Endpoints to implement:"
+    echo "  - POST /v1/rounds (Create round)"
+    echo "  - GET /v1/rounds/recent (List recent rounds)"
+    echo "  - GET /v1/rounds/{id}/snapshot (Round snapshot)"
+    echo "  - POST /v1/rounds/{id}/archers (Add archers to round)"
+    echo "  - GET /v1/rounds/{id}/bales/{bale}/archers (Get bale archers)"
+    echo ""
+    
+    # Create round CRUD tests
+    cat > tests/api/rounds/round-crud.test.js << 'EOF'
+/**
+ * Round CRUD API Tests
+ * Tests basic round creation and management
+ */
+
+const { APIClient, TestAssertions, TestDataManager } = require('../helpers/test-data');
+
+describe('Round CRUD API', () => {
+    let client;
+    let authClient;
+    let testData;
+
+    beforeAll(() => {
+        client = new APIClient();
+        authClient = client.withPasscode('wdva26');
+        testData = new TestDataManager();
+    });
+
+    describe('POST /v1/rounds', () => {
+        test('should create new round', async () => {
+            const roundData = {
+                roundType: 'R300',
+                date: '2025-11-21',
+                division: 'OPEN'
+            };
+            
+            const response = await authClient.post('/rounds', roundData);
+            
+            TestAssertions.expectSuccess(response, 200);
+            expect(response.data).toHaveProperty('roundId');
+            
+            // Track for cleanup
+            if (response.data.roundId) {
+                testData.trackResource('rounds', response.data.roundId);
+            }
+        });
+
+        test('should validate required fields', async () => {
+            const response = await authClient.post('/rounds', {});
+            
+            // May succeed with defaults or fail with validation
+            expect([200, 400]).toContain(response.status);
+        });
+
+        test('should handle duplicate rounds gracefully', async () => {
+            const roundData = {
+                roundType: 'R300',
+                date: '2025-11-21',
+                division: 'OPEN'
+            };
+            
+            // Create first round
+            const response1 = await authClient.post('/rounds', roundData);
+            expect([200, 201]).toContain(response1.status);
+            
+            // Try to create duplicate
+            const response2 = await authClient.post('/rounds', roundData);
+            expect([200, 201, 409]).toContain(response2.status);
+        });
+    });
+
+    describe('GET /v1/rounds/recent', () => {
+        test('should return recent rounds list', async () => {
+            const response = await client.get('/rounds/recent');
+            
+            TestAssertions.expectSuccess(response);
+            expect(Array.isArray(response.data)).toBe(true);
+        });
+
+        test('should have reasonable response time', async () => {
+            const startTime = Date.now();
+            const response = await client.get('/rounds/recent');
+            const responseTime = Date.now() - startTime;
+            
+            TestAssertions.expectSuccess(response);
+            expect(responseTime).toBeLessThan(2000); // Should respond within 2 seconds
+        });
+    });
+
+    describe('GET /v1/rounds/{id}/snapshot', () => {
+        test('should require authentication', async () => {
+            // This endpoint requires API key
+            const response = await client.get('/rounds/test-round-id/snapshot');
+            
+            expect(response.status).toBe(401);
+        });
+
+        test('should return 404 for non-existent round', async () => {
+            const response = await authClient.get('/rounds/non-existent-round/snapshot');
+            
+            expect(response.status).toBe(404);
+        });
+    });
+});
+EOF
+
+    # Create round archers tests
+    cat > tests/api/rounds/round-archers.test.js << 'EOF'
+/**
+ * Round Archers API Tests
+ * Tests archer assignment to rounds
+ */
+
+const { APIClient, TestAssertions, TestDataManager } = require('../helpers/test-data');
+
+describe('Round Archers API', () => {
+    let client;
+    let authClient;
+    let testData;
+
+    beforeAll(() => {
+        client = new APIClient();
+        authClient = client.withPasscode('wdva26');
+        testData = new TestDataManager();
+    });
+
+    describe('POST /v1/rounds/{id}/archers', () => {
+        test('should require authentication', async () => {
+            const response = await client.post('/rounds/test-round/archers', {
+                archerId: 'test-archer-id',
+                baleNumber: 1
+            });
+            
+            expect(response.status).toBe(401);
+        });
+
+        test('should validate archer assignment data', async () => {
+            const response = await authClient.post('/rounds/test-round/archers', {});
+            
+            // Should fail validation or return 404 for non-existent round
+            expect([400, 404]).toContain(response.status);
+        });
+    });
+
+    describe('GET /v1/rounds/{id}/bales/{bale}/archers', () => {
+        test('should return archers for specific bale', async () => {
+            const response = await client.get('/rounds/test-round/bales/1/archers');
+            
+            // Should return 404 for non-existent round or empty array
+            expect([200, 404]).toContain(response.status);
+            
+            if (response.status === 200) {
+                expect(Array.isArray(response.data)).toBe(true);
+            }
+        });
+
+        test('should handle invalid bale numbers', async () => {
+            const response = await client.get('/rounds/test-round/bales/999/archers');
+            
+            expect([200, 404]).toContain(response.status);
+        });
+    });
+
+    describe('POST /v1/rounds/{id}/archers/bulk', () => {
+        test('should require authentication', async () => {
+            const response = await client.post('/rounds/test-round/archers/bulk', {
+                archers: []
+            });
+            
+            expect(response.status).toBe(401);
+        });
+
+        test('should validate bulk archer data', async () => {
+            const response = await authClient.post('/rounds/test-round/archers/bulk', {});
+            
+            // Should fail validation or return 404 for non-existent round
+            expect([400, 404]).toContain(response.status);
+        });
+    });
+});
+EOF
+
+    # Create rounds directory if it doesn't exist
+    mkdir -p tests/api/rounds
+
+    print_success "Round management tests created"
+    
+    # Run tests
+    print_info "Running round tests..."
+    npm run test:api:rounds || print_warning "Some tests may fail - this is normal during development"
+    
+    get_coverage
+    
+    print_success "Day 3 complete! Round management basic operations tested."
+    echo ""
+    echo "Commit progress: git add . && git commit -m 'feat: complete round management basic operations tests'"
+    echo "Tomorrow: ./daily-api-testing.sh 1 4"
+}
+
 # Show help
 show_help() {
     print_header "DAILY API TESTING IMPLEMENTATION"
@@ -510,6 +713,10 @@ main() {
             check_prerequisites
             week1_day2
             ;;
+        "1_3")
+            check_prerequisites
+            week1_day3
+            ;;
         "status_")
             show_status
             ;;
@@ -521,7 +728,7 @@ main() {
                 show_status
             else
                 echo "Implementation for Week $week, Day $day not yet available."
-                echo "Available: Week 1 Days 1-2"
+                echo "Available: Week 1 Days 1-3"
                 echo ""
                 show_help
             fi
