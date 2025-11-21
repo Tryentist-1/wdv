@@ -2,9 +2,10 @@
 
 > **Mobile-first web applications for Olympic Archery in Schools (OAS) scoring**
 
-[![Version](https://img.shields.io/badge/version-1.4.3-blue.svg)](RELEASE_NOTES_v1.4.3.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-production-green.svg)]()
 [![Database](https://img.shields.io/badge/database-MySQL-orange.svg)]()
+[![Components](https://img.shields.io/badge/components-standardized-purple.svg)]()
 
 ---
 
@@ -135,7 +136,10 @@ wdv/
 │   ├── common.js                 # Shared utilities ✅
 │   ├── coach.js                  # Coach console ✅
 │   ├── solo_card.js              # Solo match logic ✅
-│   └── team_card.js              # Team match logic ⚠️
+│   ├── team_card.js              # Team match logic ✅
+│   ├── archer_selector.js        # 🆕 Standardized archer selection component
+│   ├── score_keypad.js           # 🆕 Touch-optimized score input keypad
+│   └── scorecard_view.js         # Enhanced scorecard rendering utilities
 │
 ├── api/
 │   ├── index.php                 # RESTful API router
@@ -393,10 +397,23 @@ open https://tryentist.com/wdv/
 
 ## 🐛 Known Issues & Limitations
 
-### Cross-Module UI Consistency
-- ⚠️ **Legacy CSS in Ranking Rounds** – `ranking_round.html` and `ranking_round_300.html` still rely on `css/main.css` + bespoke tables while Solo/Team/Coach views use Tailwind; iPhone-first spacing, safe-area padding, and dark mode diverge.
-- ⚠️ **Duplicated Archer List & Score Helpers** – `js/ranking_round.js`, `js/ranking_round_300.js`, `js/solo_card.js`, and `js/team_card.js` each implement their own roster filtering plus `parseScoreValue`/`getScoreColor` helpers despite `js/archer_module.js` and `js/common.js` already providing the same shapes.
-- ⚠️ **Results Surfaces Fragmented** – `results.html`, `archer_results_pivot.html`, and `archer_history.html` fetch and render leaderboards separately instead of sharing a single responsive component on top of `ScorecardView`.
+### UI Standardization Progress
+
+#### ✅ Completed (v1.5.0)
+- ✅ **Standardized Components Created** – `js/archer_selector.js` and `js/score_keypad.js` provide reusable, mobile-first components with consistent UX patterns
+- ✅ **Team Module Integration** – `team_card.html` now uses ArcherSelector with beautiful UI, touch-optimized interactions, and team assignment workflow
+- ✅ **Enhanced ScorecardView** – Added `renderArcherTable` function for consistent table rendering across modules
+- ✅ **Security Improvements** – Added path sanitization to LiveUpdates API client
+
+#### 🔄 In Progress
+- ⚠️ **Legacy CSS in Ranking Rounds** – `ranking_round.html` and `ranking_round_300.html` still use legacy CSS while Solo/Team use Tailwind
+- ⚠️ **Partial Component Integration** – Solo and Ranking modules not yet using standardized components
+- ⚠️ **Results Surfaces Fragmented** – Multiple results views still need unification
+
+#### 🎯 Next Integration Targets
+1. **Solo Card** – Simpler integration (2 archers vs 4+ in ranking rounds)
+2. **Ranking Rounds** – More complex but high value for consistency
+3. **Results Views** – Unify leaderboard rendering
 
 **Tracking:** [APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md#shared-ui-standardization)
 
@@ -458,6 +475,18 @@ Copyright © 2025 WDV Archery
 
 ## 📋 Recent Updates
 
+### v1.5.0 - Standardized Components & Team Integration (November 21, 2025)
+- ✅ **New Standardized Components:**
+  - `js/archer_selector.js` – Reusable archer selection with search, favorites, avatars
+  - `js/score_keypad.js` – Touch-optimized score input with color coding
+- ✅ **Team Module Integration** – Complete ArcherSelector integration with beautiful UI
+- ✅ **Enhanced ScorecardView** – Added `renderArcherTable` function for consistent rendering
+- ✅ **Security Improvements** – Path sanitization in LiveUpdates API client
+- ✅ **Mobile-First Design** – Touch targets, safe-area padding, responsive layouts
+- ✅ **Proven Architecture** – Team module demonstrates successful component integration
+
+**Integration Status:** 1 of 4 modules using standardized components (Team ✅, Solo/Ranking pending)
+
 ### v1.4.0 - Tailwind Conversion (November 17, 2025)
 - ✅ Complete Tailwind CSS migration (100% Tailwind, no legacy CSS)
 - ✅ Standardized keypad (4x3 layout) across all modules
@@ -478,6 +507,6 @@ Copyright © 2025 WDV Archery
 
 ---
 
-**Last Updated:** November 17, 2025  
-**Version:** 1.4.0  
-**Status:** Production + Tailwind Migration Complete
+**Last Updated:** November 21, 2025  
+**Version:** 1.5.0  
+**Status:** Production + Standardized Components Foundation

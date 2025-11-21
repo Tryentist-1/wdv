@@ -103,6 +103,39 @@ npm run serve
 
 ---
 
+## 🧩 Standardized Components (v1.5.0)
+
+The application now includes reusable UI components for consistent user experience:
+
+### ArcherSelector Component
+**File:** `js/archer_selector.js`  
+**Status:** ✅ Integrated in Team module  
+**Features:** Search, favorites, avatars, mobile-first design
+
+**Test it:**
+1. Visit `http://localhost:8001/team_card.html`
+2. See the beautiful archer selection interface
+3. Try search, team assignment (T1/T2), and favorites
+
+### ScoreKeypad Component  
+**File:** `js/score_keypad.js`  
+**Status:** ✅ Available for integration  
+**Features:** Touch-optimized 4×3 layout, score colors, auto-advance
+
+### Enhanced ScorecardView
+**File:** `js/scorecard_view.js`  
+**Status:** ✅ Enhanced with `renderArcherTable()`  
+**Features:** Consistent table rendering across modules
+
+### Integration Status
+- ✅ **Team Module** - Complete ArcherSelector integration
+- ⏳ **Solo Module** - Next integration target
+- ⏳ **Ranking Rounds** - Future integration target
+
+**Documentation:** See `docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md#shared-ui-standardization`
+
+---
+
 ## 🐛 Troubleshooting
 
 **MySQL not running?**

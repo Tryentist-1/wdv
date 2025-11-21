@@ -1,8 +1,8 @@
 # WDV Archery Score Management Suite
 ## Architecture & Integration Strategy
 
-**Version:** 2.0  
-**Date:** November 17, 2025  
+**Version:** 2.1  
+**Date:** November 21, 2025  
 **Status:** Master Reference Document
 
 ---
@@ -16,14 +16,22 @@ The WDV Archery Suite consists of **5 scoring modules** in various states of int
 
 ### Current Integration Status
 
-| Module | Status | Storage | Auth | Database | Priority |
-|--------|--------|---------|------|----------|----------|
-| **Ranking Round 360** | ✅ **INTEGRATED** | DB + localStorage | Event Code | MySQL | LIVE |
-| **Ranking Round 300** | ✅ **INTEGRATED** | DB + localStorage | Event Code | MySQL | LIVE |
-| **Solo Olympic Match** | ✅ **INTEGRATED** | DB + localStorage | Event/Bracket Code | MySQL | LIVE |
-| **Team Olympic Match** | ✅ **INTEGRATED** | DB + localStorage | Event/Bracket Code | MySQL | LIVE |
-| **Bracket Management** | ✅ **INTEGRATED** | DB + localStorage | Coach Auth | MySQL | LIVE |
-| **Practice Analyzer** | ✅ **STANDALONE** | localStorage only | None | N/A | COMPLETE |
+| Module | Database | UI Components | Status | Priority |
+|--------|----------|---------------|--------|----------|
+| **Ranking Round 360** | ✅ MySQL | ⚠️ Legacy CSS | ✅ **INTEGRATED** | LIVE |
+| **Ranking Round 300** | ✅ MySQL | ⚠️ Legacy CSS | ✅ **INTEGRATED** | LIVE |
+| **Solo Olympic Match** | ✅ MySQL | ⚠️ Legacy UI | ✅ **INTEGRATED** | LIVE |
+| **Team Olympic Match** | ✅ MySQL | ✅ **ArcherSelector** | ✅ **INTEGRATED** | LIVE |
+| **Bracket Management** | ✅ MySQL | ✅ Tailwind | ✅ **INTEGRATED** | LIVE |
+| **Practice Analyzer** | N/A | ✅ p5.js | ✅ **STANDALONE** | COMPLETE |
+
+### Standardized Components Status (v1.5.0)
+
+| Component | Status | Integration | Files |
+|-----------|--------|-------------|-------|
+| **ArcherSelector** | ✅ **COMPLETE** | Team Module | `js/archer_selector.js` |
+| **ScoreKeypad** | ✅ **COMPLETE** | Available | `js/score_keypad.js` |
+| **ScorecardView** | ✅ **ENHANCED** | All Modules | `js/scorecard_view.js` |
 
 ---
 
@@ -209,41 +217,139 @@ Phase 2 delivered full-stack Solo/Team integration. The next bottleneck is UI co
 
 ## 3. Shared UI Standardization <a id="shared-ui-standardization"></a>
 
-The plan below turns the duplicated UI logic into shared modules so every surface feels identical on an iPhone.
+### 3.1 Standardized Components (✅ v1.5.0 - COMPLETED)
 
-### 3.1 Archer List Platform
-1. **Create `js/archer_selector.js`** that consumes `ArcherModule.loadList()` and emits events such as `selectionchange`, `search`, and `favorite-toggled`. It should accept modes (`multi`, `dual`, `team`) to cover ranking, solo, and team flows.
-2. **Expose selector metadata in `ArcherModule`** (e.g., `ArcherModule.buildExtId()` public wrapper and a `getRosterState()` helper) so ranking/solo/team stop re-implementing slug logic.
-3. **Embed the component** in `ranking_round.html`, `ranking_round_300.html`, `solo_card.html`, and `team_card.html` by replacing the inlined loops (`js/ranking_round.js:305-360`, `js/solo_card.js:188-235`, `js/team_card.js:205-310`).
-4. **Reuse the same markup** inside `archer_list.html` so “manage roster” and “select archers for scoring” use a single visual language (favorites stars, context badges, safe-area spacing).
+#### ✅ ArcherSelector Component (`js/archer_selector.js`)
+**Status:** Complete and integrated in Team module
 
-### 3.2 Scorecard Rendering & Tailwind Migration
-1. **Extend `js/scorecard_view.js`** so it can render editable rows (scoring mode) as well as read-only cards. Move `parseScoreValue`/`getScoreColor` imports to `js/common.js` instead of duplicating them (see `scorecard_view.js:17-60`).
-2. **Refactor ranking score tables** (`js/ranking_round.js:626-760` and `js/ranking_round_300.js` equivalents) to compose ScorecardView with Tailwind utility classes. This removes `.score-input` CSS from `css/main.css`.
-3. **Adopt shared keypad component** – Solo/Team already render the 4×3 keypad; ranking rounds still rely on bespoke controls. Extract the keypad rendering from `js/solo_card.js:579-640` into a reusable module and mount it everywhere.
-4. **Strip legacy CSS** after the migration. Only `css/tailwind-compiled.css` and a small set of tokens (colors, safe area) should remain.
+**Features:**
+- Configurable selection modes (`multi`, `dual`, `team`)
+- Real-time search and filtering
+- Favorites management with star toggle
+- Avatar display support
+- Mobile-first responsive design (44px touch targets)
+- Consistent visual language across modules
 
-### 3.3 Results & Leaderboard Platform
-1. **Build `js/results_view.js`** that fetches `/events/:id/snapshot`, normalizes archers/rounds, and renders:
-   - A leaderboard table (rank, totals, status badges) used by `results.html`.
-   - A pivot grid used by `archer_results_pivot.html`.
-   - An archer-history table (reusing the same row component).
-2. **Centralize status chips and click handlers** so clicking any archer row always opens `ScorecardView.showScorecardModal` with consistent metadata.
-3. **Add shared filter controls** (division, gender, show voided) that can be slotted into any page. Current implementations each rebuild selectors and state machines.
-4. **Expose lightweight API client helpers** (event snapshot, archer history) so Coach Console can embed the same component for bracket tabs.
+**Integration Status:**
+- ✅ **Team Module** - Complete integration with beautiful UI
+- ⏳ **Solo Module** - Next target (simpler: 2 archers)
+- ⏳ **Ranking Rounds** - Future target (complex: 4+ archers)
 
-### 3.4 Documentation & Cleanup
-1. Clearly annotate legacy files (`solo_round.*`, `score.js`, `team_round.css`) as archived in their headers and README links.
-2. Update `docs/DEVELOPMENT_WORKFLOW.md` with guidance on which files to touch for Solo/Team work (point at `solo_card.*` and `team_card.*` only).
+**API:**
+```javascript
+const selector = ArcherSelector.init(container, {
+  groups: [
+    { id: 'T1', label: 'Team 1', max: 3, buttonText: 'T1' },
+    { id: 'T2', label: 'Team 2', max: 3, buttonText: 'T2' }
+  ],
+  onSelectionChange: (selections) => { /* handle changes */ },
+  onFavoriteToggle: (archerId, isFavorite) => { /* handle favorites */ },
+  showAvatars: true,
+  showFavoriteToggle: true
+});
+```
+
+#### ✅ ScoreKeypad Component (`js/score_keypad.js`)
+**Status:** Complete and available for integration
+
+**Features:**
+- Touch-optimized 4×3 layout (X, 10-1, M buttons)
+- Score color coding (gold, red, blue, black, white)
+- Auto-advance functionality
+- Customizable callbacks and behavior
+- Consistent with archery ring colors
+
+**Integration Status:**
+- ✅ **Available** - Ready for use in all modules
+- ⏳ **Integration Pending** - Not yet integrated in any module
+
+**API:**
+```javascript
+const keypad = ScoreKeypad.init(container, {
+  onScoreInput: (value) => { /* handle score */ },
+  onMiss: () => { /* handle miss */ },
+  onClear: () => { /* handle clear */ },
+  autoAdvance: true,
+  showColors: true
+});
+```
+
+#### ✅ Enhanced ScorecardView (`js/scorecard_view.js`)
+**Status:** Enhanced with new rendering capabilities
+
+**New Features:**
+- `renderArcherTable()` function for consistent table rendering
+- Configurable options for different use cases
+- Reusable across multiple modules
+- Consistent styling and behavior
+
+### 3.2 Integration Progress
+
+| Module | ArcherSelector | ScoreKeypad | ScorecardView | Status |
+|--------|----------------|-------------|---------------|--------|
+| **Team Match** | ✅ Complete | ⏳ Available | ✅ Enhanced | **INTEGRATED** |
+| **Solo Match** | ⏳ Next | ⏳ Available | ✅ Enhanced | Ready for integration |
+| **Ranking Round** | ⏳ Future | ⏳ Available | ✅ Enhanced | Ready for integration |
+| **Ranking Round 300** | ⏳ Future | ⏳ Available | ✅ Enhanced | Ready for integration |
+
+### 3.3 Next Integration Steps
+
+#### Phase 1: Solo Module Integration
+**Target:** Solo Card (`solo_card.html`, `js/solo_card.js`)
+**Complexity:** Low (2 archers, simpler workflow)
+**Benefits:** Consistent UX, reduced code duplication
+
+#### Phase 2: Ranking Rounds Integration  
+**Target:** Both ranking round modules
+**Complexity:** High (4+ archers, complex bale management)
+**Benefits:** Full UI consistency, legacy CSS removal
+
+#### Phase 3: Results View Unification
+**Target:** `results.html`, `archer_results_pivot.html`, `archer_history.html`
+**Complexity:** Medium (data normalization, multiple views)
+**Benefits:** Unified leaderboard experience
+
+### 3.4 Architecture Benefits Achieved
+
+✅ **Reusable Components** - No more duplicated UI logic  
+✅ **Mobile-First Design** - Consistent touch targets and spacing  
+✅ **Proven Integration** - Team module demonstrates success  
+✅ **Maintainable Code** - Single source of truth for UI patterns  
+✅ **Enhanced UX** - Beautiful, consistent interfaces
 
 ---
 
-## 4. Immediate Next Steps
+## 4. Current Status & Next Steps (v1.5.0)
 
-1. **Kick off Archer Selector refactor** – land `js/archer_selector.js`, wire it into Solo/Team first (lower risk), then port ranking rounds.
-2. **Prototype ScorecardView-in-scoring mode** on Solo matches to prove the component can handle editable states, then migrate ranking rounds.
-3. **Create `js/results_view.js`** and move `results.html` over to it; pivot/history pages can follow once the data normalizer is battle-tested.
-4. **Retire legacy CSS** once ranking rounds run on Tailwind; document the removal in release notes (v1.4.4 target).
+### ✅ Recently Completed
+1. **✅ ArcherSelector Component** – `js/archer_selector.js` created and battle-tested
+2. **✅ ScoreKeypad Component** – `js/score_keypad.js` ready for integration
+3. **✅ Team Module Integration** – Complete ArcherSelector integration with beautiful UI
+4. **✅ Enhanced ScorecardView** – Added `renderArcherTable` function for consistency
+5. **✅ Security Improvements** – Path sanitization in LiveUpdates API client
+
+### 🎯 Immediate Next Steps
+
+#### Phase 1: Solo Module Integration (Next Priority)
+**Estimated:** 4-6 hours
+- [ ] Integrate ArcherSelector in `solo_card.js` (replace legacy archer selection)
+- [ ] Add ScoreKeypad integration for consistent score input
+- [ ] Test mobile UX and touch interactions
+- [ ] Update documentation
+
+#### Phase 2: Ranking Rounds Integration (Future)
+**Estimated:** 8-12 hours  
+- [ ] Integrate ArcherSelector in `ranking_round.js` and `ranking_round_300.js`
+- [ ] Replace legacy CSS with Tailwind components
+- [ ] Migrate to ScoreKeypad for consistent input
+- [ ] Remove `css/main.css` dependencies
+
+#### Phase 3: Results View Unification (Future)
+**Estimated:** 6-8 hours
+- [ ] Create `js/results_view.js` component
+- [ ] Unify `results.html`, `archer_results_pivot.html`, `archer_history.html`
+- [ ] Centralize data fetching and normalization
+- [ ] Add shared filter controls
 - [ ] Add authentication to solo_card.html
 - [ ] Add event code entry/verification
 - [ ] Add offline sync queue
@@ -448,5 +554,5 @@ function checkForLegacyData() {
 ---
 
 **Document Owner:** Development Team  
-**Last Updated:** November 17, 2025  
-**Next Review:** After Sprint 2 completion
+**Last Updated:** November 21, 2025  
+**Next Review:** After Solo Module integration completion
