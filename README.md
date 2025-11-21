@@ -2,10 +2,10 @@
 
 > **Mobile-first web applications for Olympic Archery in Schools (OAS) scoring**
 
-[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-production-green.svg)]()
 [![Database](https://img.shields.io/badge/database-MySQL-orange.svg)]()
-[![Components](https://img.shields.io/badge/components-standardized-purple.svg)]()
+[![Components](https://img.shields.io/badge/components-50%25_integrated-purple.svg)]()
 
 ---
 
@@ -402,6 +402,7 @@ open https://tryentist.com/wdv/
 #### ✅ Completed (v1.5.0)
 - ✅ **Standardized Components Created** – `js/archer_selector.js` and `js/score_keypad.js` provide reusable, mobile-first components with consistent UX patterns
 - ✅ **Team Module Integration** – `team_card.html` now uses ArcherSelector with beautiful UI, touch-optimized interactions, and team assignment workflow
+- ✅ **Solo Module Integration** – `solo_card.html` now uses ArcherSelector with A1/A2 selection, search, and consistent UX
 - ✅ **Enhanced ScorecardView** – Added `renderArcherTable` function for consistent table rendering across modules
 - ✅ **Security Improvements** – Added path sanitization to LiveUpdates API client
 
@@ -411,9 +412,8 @@ open https://tryentist.com/wdv/
 - ⚠️ **Results Surfaces Fragmented** – Multiple results views still need unification
 
 #### 🎯 Next Integration Targets
-1. **Solo Card** – Simpler integration (2 archers vs 4+ in ranking rounds)
-2. **Ranking Rounds** – More complex but high value for consistency
-3. **Results Views** – Unify leaderboard rendering
+1. **Ranking Rounds** – More complex but high value for consistency (4+ archers, bale management)
+2. **Results Views** – Unify leaderboard rendering across multiple interfaces
 
 **Tracking:** [APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md#shared-ui-standardization)
 
@@ -475,6 +475,14 @@ Copyright © 2025 WDV Archery
 
 ## 📋 Recent Updates
 
+### v1.5.1 - Solo Module Integration Complete (November 21, 2025)
+- ✅ **Solo Module Integration** – Complete ArcherSelector integration with A1/A2 selection
+- ✅ **UI Consistency Achievement** – 50% of scoring modules now use standardized components
+- ✅ **Enhanced User Experience** – Beautiful, consistent interface across Solo and Team modules
+- ✅ **Code Quality Improvement** – Reduced duplication, cleaner architecture patterns
+
+**Integration Progress:** 2 of 4 modules complete (Team ✅, Solo ✅, Ranking pending)
+
 ### v1.5.0 - Standardized Components & Team Integration (November 21, 2025)
 - ✅ **New Standardized Components:**
   - `js/archer_selector.js` – Reusable archer selection with search, favorites, avatars
@@ -485,7 +493,7 @@ Copyright © 2025 WDV Archery
 - ✅ **Mobile-First Design** – Touch targets, safe-area padding, responsive layouts
 - ✅ **Proven Architecture** – Team module demonstrates successful component integration
 
-**Integration Status:** 1 of 4 modules using standardized components (Team ✅, Solo/Ranking pending)
+**Integration Status:** 2 of 4 modules using standardized components (Team ✅, Solo ✅, Ranking pending)
 
 ### v1.4.0 - Tailwind Conversion (November 17, 2025)
 - ✅ Complete Tailwind CSS migration (100% Tailwind, no legacy CSS)
@@ -508,5 +516,5 @@ Copyright © 2025 WDV Archery
 ---
 
 **Last Updated:** November 21, 2025  
-**Version:** 1.5.0  
-**Status:** Production + Standardized Components Foundation
+**Version:** 1.5.1  
+**Status:** Production + 50% Component Integration Complete
