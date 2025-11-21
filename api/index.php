@@ -3393,11 +3393,19 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers$#i', $route, $m) && $met
         
         if ($archerCount === 2) {
             // Get match info to check for bracket
-            $matchInfoStmt = $pdo->prepare('SELECT bracket_id, bracket_format FROM solo_matches WHERE id = ?');
+            $matchInfoStmt = $pdo->prepare('SELECT bracket_id FROM solo_matches WHERE id = ?');
             $matchInfoStmt->execute([$matchId]);
             $matchInfo = $matchInfoStmt->fetch(PDO::FETCH_ASSOC);
             
             if ($matchInfo && $matchInfo['bracket_id']) {
+                $bracketFormat = null;
+                $bracketStmt = $pdo->prepare('SELECT bracket_format FROM brackets WHERE id = ?');
+                $bracketStmt->execute([$matchInfo['bracket_id']]);
+                $bracketRow = $bracketStmt->fetch(PDO::FETCH_ASSOC);
+                if ($bracketRow) {
+                    $bracketFormat = $bracketRow['bracket_format'];
+                }
+
                 // Get both archer IDs
                 $archersStmt = $pdo->prepare('SELECT archer_id, position FROM solo_match_archers WHERE match_id = ? ORDER BY position');
                 $archersStmt->execute([$matchId]);
@@ -3409,7 +3417,7 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers$#i', $route, $m) && $met
                     
                     // For elimination brackets, we need round and match number from bracket structure
                     // For now, generate a simple ID - will be refined when bracket structure is clearer
-                    if ($matchInfo['bracket_format'] === 'ELIMINATION') {
+                    if ($bracketFormat === 'ELIMINATION') {
                         // For elimination, bracket_match_id format: {DIVISION}{ROUND}{MATCH}-{INITIALS1}-{INITIALS2}
                         // We'll need to determine round and match number from bracket structure
                         // For now, use a placeholder that can be updated later

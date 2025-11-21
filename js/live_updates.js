@@ -161,7 +161,24 @@
         } catch (_) {}
     }
 
+    function sanitizeRequestPath(path) {
+        if (typeof path !== 'string') return null;
+        let cleaned = path.trim();
+        if (!cleaned.startsWith('/')) {
+            cleaned = `/${cleaned}`;
+        }
+        if (!/^\/[A-Za-z0-9_\-\/]+$/.test(cleaned)) {
+            console.warn('[LiveUpdates] Invalid request path skipped:', path);
+            return null;
+        }
+        return cleaned;
+    }
+
     async function request(path, method, body, _retried) {
+        const normalizedPath = sanitizeRequestPath(path);
+        if (!normalizedPath) {
+            throw new Error(`Invalid LiveUpdates path: ${path}`);
+        }
         // Debug: Log API base being used
         const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
         if (isLocalhost && state.config.apiBase && state.config.apiBase.includes('tryentist.com')) {
@@ -227,8 +244,8 @@
                 console.log('[LiveUpdates] Using event entry code for request.');
             } else {
                 // Check for solo match code if this is a solo match request
-                if (path.includes('/solo-matches/')) {
-                    const matchIdMatch = path.match(/\/solo-matches\/([0-9a-f-]+)/);
+                if (normalizedPath.includes('/solo-matches/')) {
+                    const matchIdMatch = normalizedPath.match(/\/solo-matches\/([0-9a-f-]+)/);
                     if (matchIdMatch) {
                         const matchId = matchIdMatch[1];
                         let matchCode = localStorage.getItem(`solo_match_code:${matchId}`);
@@ -244,9 +261,9 @@
                     } else {
                         console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
                     }
-                } else if (path.includes('/team-matches/')) {
+                } else if (normalizedPath.includes('/team-matches/')) {
                     // Check for team match code if this is a team match request
-                    const matchIdMatch = path.match(/\/team-matches\/([0-9a-f-]+)/);
+                    const matchIdMatch = normalizedPath.match(/\/team-matches\/([0-9a-f-]+)/);
                     if (matchIdMatch) {
                         const matchId = matchIdMatch[1];
                         let matchCode = localStorage.getItem(`team_match_code:${matchId}`);
@@ -268,7 +285,8 @@
             }
         }
         
-        const res = await fetch(`${state.config.apiBase}${path}`, {
+        const apiBase = state.config.apiBase || getApiBase();
+        const res = await fetch(`${apiBase}${normalizedPath}`, {
             method,
             headers,
             body: body ? JSON.stringify(body) : undefined,

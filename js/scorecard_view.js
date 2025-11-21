@@ -176,9 +176,9 @@ const ScorecardView = (() => {
         <tfoot class="bg-gray-50 dark:bg-gray-800 border-t-2 border-gray-300 dark:border-gray-600">
           <tr>
             <td colspan="4" class="px-2 py-3 text-right font-bold text-gray-800 dark:text-white">Round Totals:</td>
-            <td class="px-2 py-3 text-center font-bold text-gray-800 dark:text-white">${totalTensOverall + totalXsOverall}</td>
+            <td class="px-2 py-3 text-center font-bold text-gray-800 dark:text-white">${totalTensOverall}</td>
             <td class="px-2 py-3 text-center font-bold text-gray-800 dark:text-white">${totalXsOverall}</td>
-            <td class="px-2 py-3 text-center"></td>
+            <td class="px-2 py-3 text-center text-gray-800 dark:text-white"></td>
             <td class="px-2 py-3 text-center font-bold text-lg text-gray-800 dark:text-white">${runningTotal}</td>
             <td class="px-2 py-3 text-center font-bold ${finalAvgClass}">${finalAvg > 0 ? finalAvg : ''}</td>
           </tr>
@@ -258,7 +258,10 @@ const ScorecardView = (() => {
   // Public API
   return {
     renderScorecard,
-    showScorecardModal
+    renderArcherTable,
+    showScorecardModal,
+    parseScoreValue,
+    getScoreColor
   };
 })();
 
@@ -266,4 +269,123 @@ const ScorecardView = (() => {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ScorecardView;
 }
+  function renderArcherTable(archerList = [], roundData = {}, options = {}) {
+    const {
+      totalEnds = 10,
+      currentEnd = 1,
+      arrowsPerEnd = 3
+    } = roundData || {};
 
+    const {
+      editable = false,
+      showSyncColumn = false,
+      showCardButton = false,
+      cardButtonLabel = 'Card',
+      getRowLabel = (archer) => {
+        const target = archer.targetAssignment ? ` (${archer.targetAssignment})` : '';
+        return `${archer.firstName || ''} ${archer.lastName || ''}${target}`.trim();
+      },
+      getInputAttrs = () => '',
+      getSyncIcon = () => '',
+      getCardButton = () => '',
+      limitRunningTotalToCurrentEnd = false
+    } = options || {};
+
+    let html = `
+      <table class="score-table">
+        <thead>
+          <tr>
+            <th>Archer</th>
+            ${Array.from({ length: arrowsPerEnd }).map((_, idx) => `<th>A${idx + 1}</th>`).join('')}
+            <th>10s</th>
+            <th>Xs</th>
+            <th>End</th>
+            <th>Run</th>
+            <th>Avg</th>
+            ${showSyncColumn ? '<th style="width:30px;">⟳</th>' : ''}
+            ${showCardButton ? `<th>${cardButtonLabel}</th>` : ''}
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    archerList.forEach(archer => {
+      const archerScores = Array.isArray(archer.scores) ? archer.scores : [];
+      const endIndex = Math.max(0, Math.min(totalEnds - 1, currentEnd - 1));
+      const endScores = Array.isArray(archerScores[endIndex]) ? archerScores[endIndex] : Array(arrowsPerEnd).fill('');
+      let endTotal = 0;
+      let endTens = 0;
+      let endXs = 0;
+      let isComplete = endScores.every(s => s !== '' && s !== null && s !== undefined);
+
+      endScores.forEach(scoreValue => {
+        const value = parseScoreValue(scoreValue);
+        endTotal += value;
+        if (String(scoreValue).toUpperCase() === 'X') {
+          endXs++;
+          endTens++;
+        } else if (value === 10) {
+          endTens++;
+        }
+      });
+
+      let runningTotal = 0;
+      archerScores.forEach((end, idx) => {
+        if (limitRunningTotalToCurrentEnd && idx > endIndex) return;
+        if (Array.isArray(end)) {
+          end.forEach(scoreValue => {
+            if (scoreValue !== null && scoreValue !== '') {
+              runningTotal += parseScoreValue(scoreValue);
+            }
+          });
+        }
+      });
+
+      const arrowsInEnd = endScores.filter(s => s !== '' && s !== null && s !== undefined).length;
+      const avgValue = arrowsInEnd > 0 ? (endTotal / arrowsInEnd).toFixed(1) : '';
+      let avgClass = '';
+      if (avgValue) {
+        const avgNum = parseFloat(avgValue);
+        if (avgNum >= 9) avgClass = 'score-gold';
+        else if (avgNum >= 7) avgClass = 'score-red';
+        else if (avgNum >= 5) avgClass = 'score-blue';
+        else if (avgNum >= 3) avgClass = 'score-black';
+        else avgClass = 'score-white';
+      }
+
+      html += `<tr data-archer-id="${archer.id || ''}">
+        <td>${getRowLabel(archer)}</td>`;
+
+      for (let arrowIdx = 0; arrowIdx < arrowsPerEnd; arrowIdx++) {
+        const scoreValue = endScores[arrowIdx] || '';
+        const colorClass = getScoreColor(scoreValue);
+        if (editable) {
+          const attrs = getInputAttrs(archer, endIndex, arrowIdx) || '';
+          html += `<td class="score-cell ${colorClass}"><input type="text" class="score-input" value="${scoreValue || ''}" ${attrs}></td>`;
+        } else {
+          html += `<td class="score-cell ${colorClass}">${scoreValue || ''}</td>`;
+        }
+      }
+
+      html += `
+        <td class="calculated-cell">${isComplete ? (endTens + endXs) : ''}</td>
+        <td class="calculated-cell">${isComplete ? endXs : ''}</td>
+        <td class="calculated-cell">${isComplete ? endTotal : ''}</td>
+        <td class="calculated-cell">${isComplete ? runningTotal : ''}</td>
+        <td class="calculated-cell ${avgClass}">${avgValue}</td>
+      `;
+
+      if (showSyncColumn) {
+        html += `<td class="sync-status-indicator">${getSyncIcon(archer, { currentEnd }) || ''}</td>`;
+      }
+
+      if (showCardButton) {
+        html += `<td>${getCardButton(archer) || ''}</td>`;
+      }
+
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    return html;
+  }

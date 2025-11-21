@@ -2,6 +2,8 @@
 // Full logic script for WDV scorecard apps (300, 360, etc.)
 // Handles tabs, UI, score calculations, localStorage, and session management
 // V3: Added console logging for reset button debugging.
+// LEGACY NOTICE: This file is retained for historical reference.
+// Do NOT extend it—new work must use ranking_round*.js with Tailwind + LiveUpdates.
 
 (function () {
   // Data arrays including new fields

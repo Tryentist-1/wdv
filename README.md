@@ -371,9 +371,9 @@ open https://tryentist.com/wdv/
 - ✅ Bracket management system (elimination & Swiss formats)
 - ✅ Coach Console UI for bracket management
 - ✅ Bracket results module with tab navigation
-- ✅ Integration with Solo/Team match creation
-- [ ] Frontend integration (next)
-- [ ] Match code generation (`team-[INITIALS]-[MMDD]`)
+- ✅ Integration with Solo/Team match creation screens (event + bracket selectors, QR support)
+- ✅ Frontend integration with LiveUpdates + offline queue (solo_card.html, team_card.html)
+- ✅ Match code generation + restoration (`solo-[INITIALS]-[MMDD]`, `team-[INITIALS]-[MMDD]`)
 
 **See:** [PHASE2_TEAM_MIGRATION_PLAN.md](docs/PHASE2_TEAM_MIGRATION_PLAN.md)
 
@@ -393,19 +393,12 @@ open https://tryentist.com/wdv/
 
 ## 🐛 Known Issues & Limitations
 
-### Solo & Team Modules
-- ⚠️ **localStorage only** - No database integration
-- ⚠️ **No coach visibility** - Coaches can't see matches
-- ⚠️ **No cross-device sync** - Matches tied to one device
-- ⚠️ **No event integration** - Can't link to competitions
+### Cross-Module UI Consistency
+- ⚠️ **Legacy CSS in Ranking Rounds** – `ranking_round.html` and `ranking_round_300.html` still rely on `css/main.css` + bespoke tables while Solo/Team/Coach views use Tailwind; iPhone-first spacing, safe-area padding, and dark mode diverge.
+- ⚠️ **Duplicated Archer List & Score Helpers** – `js/ranking_round.js`, `js/ranking_round_300.js`, `js/solo_card.js`, and `js/team_card.js` each implement their own roster filtering plus `parseScoreValue`/`getScoreColor` helpers despite `js/archer_module.js` and `js/common.js` already providing the same shapes.
+- ⚠️ **Results Surfaces Fragmented** – `results.html`, `archer_results_pivot.html`, and `archer_history.html` fetch and render leaderboards separately instead of sharing a single responsive component on top of `ScorecardView`.
 
-**Fix:** Phase 2 integration (see [Integration Plan](docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md))
-
-### Authentication
-- ⚠️ **Event codes** - Need better management UI
-- ⚠️ **Coach passcode** - Static value (not per-coach)
-
-**Tracking:** [CLEANUP_ACTION_PLAN.md](docs/CLEANUP_ACTION_PLAN.md)
+**Tracking:** [APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md#shared-ui-standardization)
 
 ---
 
@@ -488,4 +481,3 @@ Copyright © 2025 WDV Archery
 **Last Updated:** November 17, 2025  
 **Version:** 1.4.0  
 **Status:** Production + Tailwind Migration Complete
-

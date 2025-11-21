@@ -84,80 +84,79 @@ The WDV Archery Suite consists of **5 scoring modules** in various states of int
 
 ---
 
-### 1.2 Solo Olympic Match (⚠️ NEEDS INTEGRATION)
+### 1.2 Solo Olympic Match (✅ INTEGRATED – Phase 2)
 
 **Files:**
-- `solo_card.html` - Head-to-head 1v1 match
-- `solo_round.html` - Alternative implementation (?)
-- `js/solo_card.js` (5 localStorage references)
-- `js/solo_round.js` (7 localStorage references)
+- `solo_card.html` – Tailwind-based iPhone layout with event/bracket selectors
+- `js/solo_card.js` – Database-backed state machine + keypad renderer
+- `js/solo_round.js` – Legacy local-only build (kept for backwards compatibility)
 
-**Current Storage:**
+**Storage Strategy:**
 ```javascript
-// localStorage ONLY (no database)
-- Solo match state
-- Archer names
-- Set points (first to 6 wins)
-- End scores (3 arrows per end)
-- Shoot-off handling (5-5 tie)
+// Database (MySQL)
+- solo_matches (match metadata, match_code, bracket/event links)
+- solo_match_archers (two positions + per-archer metadata)
+- solo_match_sets (ends 1-5 + shoot-off, tens/xs tracking)
+- solo_match_lock_history (audit trail for coach verification)
+
+// localStorage (per-session cache)
+- soloCard_session_<date> (matchId, archer IDs, event/bracket context)
+- solo_match:<event>:<bracket>:<date> (cached matchId + matchCode reuse)
+- live_updates queue (pending set posts when offline)
+
+// Cookies
+- `oas_archer_id` (shared via common.js for identification)
 ```
 
-**Current Features:**
-- ✅ 1v1 match scoring
-- ✅ Set points calculation (2 for win, 1 for tie)
-- ✅ First to 6 set points wins
-- ✅ 1-arrow shoot-off for 5-5 ties
-- ✅ localStorage persistence
-- ❌ No database integration
-- ❌ No multi-device sync
-- ❌ No coach visibility
-- ❌ No authentication
+**Authentication & Sync:**
+- `LiveUpdates.ensureSoloMatch/ensureSoloArcher/postSoloSet` hit `/v1/solo-matches` endpoints
+- Supports event entry codes OR generated match codes (`solo-[INITIALS]-[MMDD]`)
+- Offline queue persists pending sets and flushes via `window.LiveUpdates.flushSoloQueue(matchId)`
 
-**Integration Needs:**
-- Database schema for solo matches
-- Match creation/retrieval endpoints
-- Real-time score sync
-- Authentication (event code or match code)
-- Coach console integration
-- Match history/results
+**Features:**
+- Dual archer selector powered by `ArcherModule` with favorites, search, and safe-area sized buttons
+- Event + bracket dropdown populates from `GET /v1/events` and `GET /v1/events/:id/brackets`
+- Match restoration via `GET /v1/solo-matches/:id`
+- Score table renders set points, shoot-off, and sync indicators (lines 378–520 in `js/solo_card.js`)
+- Export modal (screenshot, JSON, email) to keep parity with ranking rounds
+
+> `solo_round.html/js` remain as frozen legacy references; all new work should extend `solo_card.*`.
 
 ---
 
-### 1.3 Team Olympic Match (⚠️ NEEDS INTEGRATION)
+### 1.3 Team Olympic Match (✅ INTEGRATED – Phase 2)
 
 **Files:**
-- `team_card.html` - Team vs team match (3 archers each)
-- `js/team_card.js` (4 localStorage references)
+- `team_card.html` – Tailwind UI for team setup + scoring
+- `js/team_card.js` – Database-backed 3v3 scoring logic
 
-**Current Storage:**
+**Storage Strategy:**
 ```javascript
-// localStorage ONLY (no database)
-- Team match state
-- Team names & rosters (3 archers per team)
-- Set points (first to 5 wins)
-- End scores (6 arrows per end: 2 per archer)
-- Shoot-off handling (4-4 tie: 3 arrows, 1 per archer)
+// Database (MySQL)
+- team_matches (match metadata, match_code, bracket/event links)
+- team_match_teams (two teams per match)
+- team_match_archers (up to three per team)
+- team_match_sets (4 sets + shoot-off rows, tens/xs)
+- team_match_lock_history (audit trail)
+
+// localStorage (session + offline resilience)
+- teamCard_session_<date> (matchId, team IDs, selected archers)
+- team_match:<event>:<bracket>:<date> cache + `team_match_code:<matchId>`
+- live_updates queue namespaces per match/team
 ```
 
-**Current Features:**
-- ✅ Team match scoring (3v3)
-- ✅ Set points calculation
-- ✅ First to 5 set points wins
-- ✅ 3-arrow shoot-off for 4-4 ties
-- ✅ localStorage persistence
-- ❌ No database integration
-- ❌ No multi-device sync
-- ❌ No coach visibility
-- ❌ No authentication
+**Authentication & Sync:**
+- Uses the same LiveUpdates client (`ensureTeamMatch`, `ensureTeam`, `ensureTeamArcher`, `postTeamSet`, `flushTeamQueue`)
+- Standalone matches allowed with generated `team-[INITIALS]-[MMDD]` codes; event/bracket linking enforced when entry code present
+- Coach verification happens via `/v1/team-matches/:id/verify`
 
-**Integration Needs:**
-- Database schema for team matches
-- Team/roster management
-- Match creation/retrieval endpoints
-- Real-time score sync
-- Authentication (event code or match code)
-- Coach console integration
-- Match history/results
+**Features:**
+- Flexible roster selector that enforces mirrored team sizes (lines 205–309 in `js/team_card.js`)
+- Set-by-set scoreboard with 6 arrow inputs per team, set points, sync badges, and shoot-off logic (lines 360–520)
+- Restores ongoing matches via `GET /v1/team-matches/:id`, including per-archer mappings
+- Exposes export/reset tooling consistent with Solo + Ranking
+
+**Legacy Note:** `team_round.css` + older scorecard files are retained for archival purposes but are no longer used in production.
 
 ---
 
@@ -183,342 +182,68 @@ The WDV Archery Suite consists of **5 scoring modules** in various states of int
 
 ---
 
-## 2. Core Inconsistencies Identified
+## 2. Core Focus After Phase 2
 
-### 2.1 Storage Strategy Inconsistency
+Phase 2 delivered full-stack Solo/Team integration. The next bottleneck is UI consistency: ranking rounds still look and behave differently from the Tailwind-based Solo/Team modules, and three separate results surfaces duplicate logic. The following gaps are now the priorities.
 
-**Problem:** Different modules use different storage patterns with no unified strategy.
+### 2.1 UI Framework Divergence
+- `ranking_round.html` and `ranking_round_300.html` still load `css/main.css` and the legacy table layout instead of Tailwind (`solo_card.html`/`team_card.html` ship with `css/tailwind-compiled.css`).
+- Safe-area padding, touch target sizing, and dark-mode toggles exist in Solo/Team, Results, and Coach Console, but not in the ranking pages.
+- Maintaining two styling systems (legacy CSS + Tailwind) slows down adjustments for iPhone-first layouts.
 
-| Module | Database | localStorage | Cookies | sessionStorage |
-|--------|----------|--------------|---------|----------------|
-| Ranking Round | ✅ Primary | ✅ Cache/State | ✅ Auth/ID | ❌ |
-| Solo Match | ❌ None | ✅ Primary | ❌ None | ❌ |
-| Team Match | ❌ None | ✅ Primary | ❌ None | ❌ |
-| Practice | ❌ N/A | ✅ Only | ❌ None | ❌ |
+### 2.2 Archer List & Score Helpers Duplicated
+- `getRosterState`/`renderArcherSelectList` are re-implemented in `js/ranking_round.js:151-360`, `js/ranking_round_300.js:210-420`, `js/solo_card.js:188-260`, and `js/team_card.js:203-315` even though `js/archer_module.js` already normalizes roster data.
+- `parseScoreValue`/`getScoreColor` live in `js/common.js`, but the same helpers are copied into `js/solo_card.js`, `js/team_card.js`, `js/ranking_round.js`, `js/ranking_round_300.js`, and `js/scorecard_view.js`.
+- Result: inconsistent favorites icons, sorting, and color semantics between modules.
 
-**Impact:**
-- Solo/Team matches isolated (no coach visibility)
-- No cross-device sync
-- No integration with event management
-- Different UX patterns
+### 2.3 Results & Scorecard Rendering Fragmentation
+- `results.html:200-334`, `archer_results_pivot.html:334-520`, and `archer_history.html:200-282` each implement their own leaderboard tables, filtering logic, and dark-mode toggles even though they all consume the same `/v1/events/:id/snapshot` or `/v1/archers/:id/history` payloads.
+- `js/scorecard_view.js` already encapsulates the per-archer card UI, but every view still manually transforms API responses, recreates rank colors, and wires click handlers.
+- Maintaining three distinct renderers complicates feature requests such as “show verification badges everywhere” or “add Swiss bracket standings to any results view.”
 
----
-
-### 2.2 Authentication Inconsistency
-
-**Problem:** Ranking Round has robust auth, Solo/Team have none.
-
-| Module | Public Access | Archer Auth | Coach Auth | Event Integration |
-|--------|---------------|-------------|------------|-------------------|
-| Ranking Round | ✅ Roster | ✅ Event Code | ✅ Coach Code | ✅ Full |
-| Solo Match | ✅ All | ❌ None | ❌ None | ❌ None |
-| Team Match | ✅ All | ❌ None | ❌ None | ❌ None |
-| Practice | ✅ All | ❌ N/A | ❌ N/A | ❌ N/A |
-
-**Impact:**
-- Solo/Team matches not tied to events
-- Coaches can't see Solo/Team scores
-- No leaderboard for Solo/Team
-- Can't track match history
+### 2.4 Legacy Scripts Still Shipping
+- `js/score.js`, `solo_round.html/js`, and older CSS bundles remain in the repo for historical reasons. They are useful references but show up in IDE search results and confuse new contributors.
+- Without clear guidance, fixes occasionally land in the wrong file (e.g., modifying `solo_round.js` instead of `solo_card.js`).
 
 ---
 
-### 2.3 Documentation Gaps
+## 3. Shared UI Standardization <a id="shared-ui-standardization"></a>
 
-**Problem:** Documentation focuses on Ranking Round, ignores Solo/Team.
+The plan below turns the duplicated UI logic into shared modules so every surface feels identical on an iPhone.
 
-**Missing Documentation:**
-- Solo/Team integration plan
-- Unified storage strategy
-- Complete module inventory
-- Migration path for localStorage data
-- Combined README/getting started guide
+### 3.1 Archer List Platform
+1. **Create `js/archer_selector.js`** that consumes `ArcherModule.loadList()` and emits events such as `selectionchange`, `search`, and `favorite-toggled`. It should accept modes (`multi`, `dual`, `team`) to cover ranking, solo, and team flows.
+2. **Expose selector metadata in `ArcherModule`** (e.g., `ArcherModule.buildExtId()` public wrapper and a `getRosterState()` helper) so ranking/solo/team stop re-implementing slug logic.
+3. **Embed the component** in `ranking_round.html`, `ranking_round_300.html`, `solo_card.html`, and `team_card.html` by replacing the inlined loops (`js/ranking_round.js:305-360`, `js/solo_card.js:188-235`, `js/team_card.js:205-310`).
+4. **Reuse the same markup** inside `archer_list.html` so “manage roster” and “select archers for scoring” use a single visual language (favorites stars, context badges, safe-area spacing).
 
----
+### 3.2 Scorecard Rendering & Tailwind Migration
+1. **Extend `js/scorecard_view.js`** so it can render editable rows (scoring mode) as well as read-only cards. Move `parseScoreValue`/`getScoreColor` imports to `js/common.js` instead of duplicating them (see `scorecard_view.js:17-60`).
+2. **Refactor ranking score tables** (`js/ranking_round.js:626-760` and `js/ranking_round_300.js` equivalents) to compose ScorecardView with Tailwind utility classes. This removes `.score-input` CSS from `css/main.css`.
+3. **Adopt shared keypad component** – Solo/Team already render the 4×3 keypad; ranking rounds still rely on bespoke controls. Extract the keypad rendering from `js/solo_card.js:579-640` into a reusable module and mount it everywhere.
+4. **Strip legacy CSS** after the migration. Only `css/tailwind-compiled.css` and a small set of tokens (colors, safe area) should remain.
 
-## 3. Unified Storage Strategy
+### 3.3 Results & Leaderboard Platform
+1. **Build `js/results_view.js`** that fetches `/events/:id/snapshot`, normalizes archers/rounds, and renders:
+   - A leaderboard table (rank, totals, status badges) used by `results.html`.
+   - A pivot grid used by `archer_results_pivot.html`.
+   - An archer-history table (reusing the same row component).
+2. **Centralize status chips and click handlers** so clicking any archer row always opens `ScorecardView.showScorecardModal` with consistent metadata.
+3. **Add shared filter controls** (division, gender, show voided) that can be slotted into any page. Current implementations each rebuild selectors and state machines.
+4. **Expose lightweight API client helpers** (event snapshot, archer history) so Coach Console can embed the same component for bracket tabs.
 
-### 3.1 Storage Decision Matrix
-
-**Use Database For:**
-- ✅ Master archer roster
-- ✅ Event definitions
-- ✅ All scores (ranking, solo, team)
-- ✅ Match/round metadata
-- ✅ Coach-visible data
-- ✅ Cross-device sync needs
-
-**Use localStorage For:**
-- ✅ Active session state (current round/match)
-- ✅ UI preferences
-- ✅ Cached roster (with timestamp)
-- ✅ Offline score queue
-- ✅ Temporary draft data
-
-**Use Cookies For:**
-- ✅ Long-term user identification (archer ID)
-- ✅ Authentication state (coach auth)
-- ✅ Data needing automatic expiry
-
-**Use sessionStorage For:**
-- ⚠️ Currently unused (consider for tab-specific state)
+### 3.4 Documentation & Cleanup
+1. Clearly annotate legacy files (`solo_round.*`, `score.js`, `team_round.css`) as archived in their headers and README links.
+2. Update `docs/DEVELOPMENT_WORKFLOW.md` with guidance on which files to touch for Solo/Team work (point at `solo_card.*` and `team_card.*` only).
 
 ---
 
-### 3.2 Recommended Storage Pattern (All Modules)
+## 4. Immediate Next Steps
 
-```javascript
-// DATABASE (source of truth)
-const PRIMARY_STORAGE = {
-  archers: 'MySQL archers table',
-  events: 'MySQL events table',
-  ranking_rounds: 'MySQL rounds + round_archers + end_events tables',
-  solo_matches: 'MySQL solo_matches table (TO BE CREATED)',
-  team_matches: 'MySQL team_matches table (TO BE CREATED)',
-};
-
-// LOCALSTORAGE (cache + session state)
-const SESSION_STORAGE = {
-  // Current session (clear on "New Match/Round")
-  current_session: {
-    type: 'ranking' | 'solo' | 'team' | 'practice',
-    id: 'uuid',
-    state: {/* round/match-specific state */},
-    lastUpdated: timestamp
-  },
-  
-  // Cache (clear when stale)
-  cached_archer_list: {
-    data: [...],
-    fetched_at: timestamp,
-    ttl: 3600000 // 1 hour
-  },
-  
-  // Auth (synced with cookies)
-  event_entry_code: 'ABC123',
-  event_metadata: {/* cached event data */},
-  
-  // Offline queue
-  pending_sync: [
-    {endpoint: '/end-events', payload: {...}, timestamp}
-  ]
-};
-
-// COOKIES (persistent identification)
-const PERSISTENT_STORAGE = {
-  oas_archer_id: 'uuid', // 365 days
-  coach_auth: 'true',    // 90 days
-};
-```
-
----
-
-## 4. Integration Plan for Solo & Team Modules
-
-### Phase 2A: Database Schema & API (Backend)
-
-**Priority:** HIGH  
-**Effort:** 6-8 hours  
-**Status:** NOT STARTED
-
-#### 4.1 Database Schema
-
-**Tables to Create:**
-
-```sql
--- Solo Matches
-CREATE TABLE solo_matches (
-  id CHAR(36) PRIMARY KEY,
-  event_id CHAR(36),                    -- Link to events table
-  archer1_id CHAR(36) NOT NULL,          -- From archers table
-  archer2_id CHAR(36) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  completed_at TIMESTAMP NULL,
-  winner_archer_id CHAR(36),
-  final_set_points_a1 INT,
-  final_set_points_a2 INT,
-  status VARCHAR(20) DEFAULT 'in_progress',
-  FOREIGN KEY (event_id) REFERENCES events(id),
-  FOREIGN KEY (archer1_id) REFERENCES archers(id),
-  FOREIGN KEY (archer2_id) REFERENCES archers(id),
-  INDEX idx_event (event_id),
-  INDEX idx_archers (archer1_id, archer2_id)
-);
-
--- Solo Match Ends (set points scoring)
-CREATE TABLE solo_match_ends (
-  id CHAR(36) PRIMARY KEY,
-  match_id CHAR(36) NOT NULL,
-  end_number INT NOT NULL,
-  archer1_arrows JSON,                   -- [10, 9, 8]
-  archer2_arrows JSON,
-  archer1_total INT,
-  archer2_total INT,
-  set_points_awarded VARCHAR(10),        -- 'archer1_2', 'archer2_2', 'tie_1'
-  archer1_cumulative_sp INT,
-  archer2_cumulative_sp INT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (match_id) REFERENCES solo_matches(id) ON DELETE CASCADE,
-  INDEX idx_match (match_id)
-);
-
--- Team Matches
-CREATE TABLE team_matches (
-  id CHAR(36) PRIMARY KEY,
-  event_id CHAR(36),
-  team1_name VARCHAR(100),
-  team2_name VARCHAR(100),
-  team1_archer_ids JSON,                 -- [uuid1, uuid2, uuid3]
-  team2_archer_ids JSON,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  completed_at TIMESTAMP NULL,
-  winner_team INT,                       -- 1 or 2
-  final_set_points_t1 INT,
-  final_set_points_t2 INT,
-  status VARCHAR(20) DEFAULT 'in_progress',
-  FOREIGN KEY (event_id) REFERENCES events(id),
-  INDEX idx_event (event_id)
-);
-
--- Team Match Ends
-CREATE TABLE team_match_ends (
-  id CHAR(36) PRIMARY KEY,
-  match_id CHAR(36) NOT NULL,
-  end_number INT NOT NULL,
-  team1_arrows JSON,                     -- [10,9,8,7,10,9] (2 per archer)
-  team2_arrows JSON,
-  team1_total INT,
-  team2_total INT,
-  set_points_awarded VARCHAR(10),        -- 'team1_2', 'team2_2', 'tie_1'
-  team1_cumulative_sp INT,
-  team2_cumulative_sp INT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (match_id) REFERENCES team_matches(id) ON DELETE CASCADE,
-  INDEX idx_match (match_id)
-);
-```
-
-#### 4.2 API Endpoints to Create
-
-**Solo Match Endpoints:**
-```
-POST   /v1/solo-matches              Create new solo match
-GET    /v1/solo-matches/:id           Get match details
-POST   /v1/solo-matches/:id/ends     Submit end scores
-PATCH  /v1/solo-matches/:id          Update match (complete, etc)
-GET    /v1/events/:id/solo-matches   List matches for event
-
-⚠️ CRITICAL - Verification Endpoints (MUST ADD):
-POST   /v1/solo-matches/:id/verify   Lock/unlock match
-POST   /v1/events/:id/solo-matches/verify-all  Verify all matches
-```
-
-**Team Match Endpoints:**
-```
-POST   /v1/team-matches              Create new team match
-GET    /v1/team-matches/:id          Get match details
-POST   /v1/team-matches/:id/ends     Submit end scores
-PATCH  /v1/team-matches/:id          Update match
-GET    /v1/events/:id/team-matches   List matches for event
-
-⚠️ CRITICAL - Verification Endpoints (MUST ADD):
-POST   /v1/team-matches/:id/verify   Lock/unlock match
-POST   /v1/events/:id/team-matches/verify-all  Verify all matches
-```
-
-**Authentication:**
-- Event code required (same as ranking rounds)
-- Coach code for admin operations
-- Match ID + event code for score submission
-- **Coach code for verification/locking** (critical security)
-
-**⚠️ CRITICAL REQUIREMENT:**
-Solo/Team matches MUST implement the same verification workflow as ranking rounds:
-- Coach verification before finalization
-- Lock mechanism (locked = 1, card_status = 'VERIFIED')
-- Event closure makes matches permanent
-- Full audit trail (lock_history JSON)
-- See [BALE_GROUP_SCORING_WORKFLOW.md](BALE_GROUP_SCORING_WORKFLOW.md) for complete process
-
----
-
-### Phase 2B: Frontend Integration (Client)
-
-**Priority:** MEDIUM  
-**Effort:** 8-10 hours per module  
-**Status:** NOT STARTED
-
-#### 4.3 Solo/Team Module Refactoring
-
-**Pattern to Follow (from Ranking Round):**
-
-```javascript
-// 1. Remove all direct localStorage references
-// 2. Add LiveUpdates.js integration
-// 3. Add authentication handling
-// 4. Add offline queue for scores
-// 5. Keep session state in localStorage (cache only)
-
-// BEFORE (current):
-localStorage.setItem('solo_match_state', JSON.stringify(matchData));
-
-// AFTER (integrated):
-// Save to database first
-await LiveUpdates.request('/solo-matches', 'POST', matchData);
-
-// Cache state locally
-localStorage.setItem('current_session', JSON.stringify({
-  type: 'solo',
-  match_id: matchData.id,
-  cached_at: Date.now()
-}));
-```
-
-**Files to Update:**
-- `js/solo_card.js` - Add database calls
-- `js/team_card.js` - Add database calls
-- `solo_card.html` - Add event code entry
-- `team_card.html` - Add event code entry
-
----
-
-### Phase 2C: Coach Console Integration
-
-**Priority:** MEDIUM  
-**Effort:** 4-6 hours  
-**Status:** NOT STARTED
-
-**Add to Coach Console:**
-- View Solo matches tab
-- View Team matches tab
-- Match results display
-- Match history
-- Export match results
-
----
-
-## 5. Recommended Implementation Order
-
-### Sprint 1: Documentation & Strategy ✅ DONE
-- [x] Create this master architecture document
-- [x] Document storage strategy (`CLEANUP_ACTION_PLAN.md`)
-- [x] Document authentication (`AUTHENTICATION_ANALYSIS.md`)
-- [x] Create unified README (see below)
-
-### Sprint 2: Backend Foundation
-**Estimated:** 8-10 hours
-
-- [ ] Create migration SQL for solo_matches tables
-- [ ] Create migration SQL for team_matches tables
-- [ ] Add solo match API endpoints to `api/index.php`
-- [ ] Add team match API endpoints
-- [ ] Test endpoints with curl/Postman
-- [ ] Update `api/test_harness.html` for new endpoints
-
-### Sprint 3: Solo Module Integration
-**Estimated:** 10-12 hours
-
-- [ ] Refactor `js/solo_card.js` to use database
+1. **Kick off Archer Selector refactor** – land `js/archer_selector.js`, wire it into Solo/Team first (lower risk), then port ranking rounds.
+2. **Prototype ScorecardView-in-scoring mode** on Solo matches to prove the component can handle editable states, then migrate ranking rounds.
+3. **Create `js/results_view.js`** and move `results.html` over to it; pivot/history pages can follow once the data normalizer is battle-tested.
+4. **Retire legacy CSS** once ranking rounds run on Tailwind; document the removal in release notes (v1.4.4 target).
 - [ ] Add authentication to solo_card.html
 - [ ] Add event code entry/verification
 - [ ] Add offline sync queue
@@ -725,4 +450,3 @@ function checkForLegacyData() {
 **Document Owner:** Development Team  
 **Last Updated:** November 17, 2025  
 **Next Review:** After Sprint 2 completion
-

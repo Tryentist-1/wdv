@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
         team1: [],            // Array of up to 3 archer objects
         team2: [],            // Array of up to 3 archer objects
         scores: {},           // { t1: [[s1..s6], ...], t2: [[s1..s6], ...], so: {t1:[s1,s2,s3], t2:[s1,s2,s3]} }
+        currentSet: 1,
         shootOffWinner: null, // 't1' or 't2' if judge call is needed
         // Phase 2: Database integration
         matchId: null,
@@ -29,6 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const sessionKey = `teamCard_${new Date().toISOString().split('T')[0]}`;
+    const TOTAL_TEAM_SETS = 4;
+    const ARROWS_PER_ARCHER = 2;
+    const SHOOT_OFF_KEY = 'so';
 
     // --- DOM ELEMENT REFERENCES ---
     const views = {
@@ -44,9 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const newMatchBtn = document.getElementById('new-match-btn');
     const matchSummaryDisplay = document.getElementById('match-summary-display');
 
-    let keypad = {
-        currentlyFocusedInput: null
-    };
+    let scoreKeypad = null;
 
     // --- UTILITY FUNCTIONS ---
     /**
@@ -107,82 +109,151 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- SETUP VIEW LOGIC ---
-    function renderSetupView(filter = '') {
-        archerSelectionContainer.innerHTML = '';
-        const masterList = ArcherModule.loadList().filter(a => 
-            `${a.first} ${a.last}`.toLowerCase().includes(filter.toLowerCase())
-        );
+    let archerSelector = null;
 
-        // Sort: Selected archers first, then alphabetical by first name
-        const sortedList = masterList.sort((a, b) => {
-            const archerIdA = `${(a.first || '').trim()}-${(a.last || '').trim()}`;
-            const archerIdB = `${(b.first || '').trim()}-${(b.last || '').trim()}`;
-            const isSelectedA = state.team1.some(t => t.id === archerIdA) || state.team2.some(t => t.id === archerIdA);
-            const isSelectedB = state.team1.some(t => t.id === archerIdB) || state.team2.some(t => t.id === archerIdB);
-            
-            // Selected archers come first
-            if (isSelectedA && !isSelectedB) return -1;
-            if (!isSelectedA && isSelectedB) return 1;
-            
-            // Then sort alphabetically by first name
-            const firstNameA = (a.first || '').trim().toLowerCase();
-            const firstNameB = (b.first || '').trim().toLowerCase();
-            return firstNameA.localeCompare(firstNameB);
+    function initializeArcherSelector() {
+        if (!archerSelectionContainer || typeof ArcherSelector === 'undefined') {
+            console.warn('ArcherSelector component unavailable.');
+            return;
+        }
+
+        archerSelector = ArcherSelector.init(archerSelectionContainer, {
+            groups: [
+                { id: 't1', label: 'Team 1', buttonText: 'T1', max: 3, accentClass: 'bg-primary text-white' },
+                { id: 't2', label: 'Team 2', buttonText: 'T2', max: 3, accentClass: 'bg-danger text-white' }
+            ],
+            emptyMessage: 'No archers found. Sync your roster to begin.',
+            onSelectionChange: handleSelectorChange,
+            onFavoriteToggle: handleFavoriteToggle
         });
 
-        sortedList.forEach(archer => {
-            const archerId = `${(archer.first || '').trim()}-${(archer.last || '').trim()}`;
-            const isInTeam1 = state.team1.some(a => a.id === archerId);
-            const isInTeam2 = state.team2.some(a => a.id === archerId);
+        refreshArcherRoster();
+        syncSelectorSelection();
+    }
 
-            const row = document.createElement('div');
-            row.className = 'flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors';
-            if (isInTeam1) row.classList.add('bg-blue-50', 'dark:bg-blue-900/20');
-            if (isInTeam2) row.classList.add('bg-red-50', 'dark:bg-red-900/20');
+    function refreshArcherRoster() {
+        if (!archerSelector || typeof ArcherModule === 'undefined') return;
+        try {
+            const roster = ArcherModule.loadList() || [];
+            const ctx = getSelectorContext();
+            archerSelector.setContext(ctx);
+            archerSelector.setRoster(roster);
+            if (searchInput && searchInput.value) {
+                archerSelector.setFilter(searchInput.value);
+            }
+        } catch (err) {
+            console.warn('Failed to load archer roster for selector:', err);
+            archerSelector.setRoster([]);
+        }
+    }
 
-            row.innerHTML = `
-                <span class="text-yellow-500 text-lg">${archer.fave ? '★' : '☆'}</span>
-                <div class="flex-1 font-semibold text-gray-800 dark:text-white">${archer.first} ${archer.last}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">(${archer.level || 'VAR'})</div>
-                <div class="flex gap-2">
-                    <button class="px-3 py-1 text-sm ${isInTeam1 ? 'bg-primary text-white' : 'bg-secondary text-white'} rounded-lg hover:opacity-80 font-semibold transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed" data-id="${archerId}" data-role="t1" ${!isInTeam1 && state.team1.length >= 3 ? 'disabled' : ''}>T1</button>
-                    <button class="px-3 py-1 text-sm ${isInTeam2 ? 'bg-danger text-white' : 'bg-secondary text-white'} rounded-lg hover:opacity-80 font-semibold transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed" data-id="${archerId}" data-role="t2" ${!isInTeam2 && state.team2.length >= 3 ? 'disabled' : ''}>T2</button>
-                </div>
-            `;
-            archerSelectionContainer.appendChild(row);
-        });
+    function getSelectorContext() {
+        if (typeof ArcherModule === 'undefined') {
+            return { favorites: new Set(), selfExtId: '' };
+        }
+        const selfArcher = typeof ArcherModule.getSelfArcher === 'function' ? ArcherModule.getSelfArcher() : null;
+        const favorites = new Set((selfArcher?.faves || []).filter(Boolean));
+        const selfExtId = selfArcher?.extId || (typeof ArcherModule.getSelfExtId === 'function' ? ArcherModule.getSelfExtId() : '');
+        return { favorites, selfExtId };
+    }
+
+    async function handleFavoriteToggle(archer) {
+        if (!archer || typeof ArcherModule === 'undefined' || typeof ArcherModule.toggleFriend !== 'function') {
+            return;
+        }
+        const extId = archer.extId || archer.id;
+        if (!extId) return;
+        const selfExtId = typeof ArcherModule.getSelfExtId === 'function' ? ArcherModule.getSelfExtId() : '';
+        if (!selfExtId) {
+            alert('Set "Who am I" first by selecting yourself in the Archer List.');
+            return;
+        }
+        try {
+            await ArcherModule.toggleFriend(extId);
+            refreshArcherRoster();
+        } catch (error) {
+            alert('Unable to update favorites: ' + (error.message || 'Unknown error'));
+        }
+    }
+
+    function normalizeTeamArcher(archer) {
+        if (!archer) return null;
+        const normalized = Object.assign({}, archer);
+        normalized.id = normalized.id || `${(normalized.first || '').trim()}-${(normalized.last || '').trim()}`;
+        normalized.extId = normalized.extId || normalized.id;
+        return normalized;
+    }
+
+    function syncSelectorSelection() {
+        if (!archerSelector) return;
+        const selection = {
+            t1: state.team1.map(normalizeTeamArcher),
+            t2: state.team2.map(normalizeTeamArcher)
+        };
+        archerSelector.setSelection(selection);
         updateStartButtonState();
     }
 
-    function handleTeamSelection(e) {
-        const button = e.target.closest('button[data-role]');
-        if (!button) return;
+    function handleSelectorChange(selectionMap) {
+        state.team1 = (selectionMap.t1 || []).map(normalizeTeamArcher);
+        state.team2 = (selectionMap.t2 || []).map(normalizeTeamArcher);
+        saveData();
+        updateStartButtonState();
+    }
 
-        const archerId = button.dataset.id;
-        const role = button.dataset.role;
-        const archer = ArcherModule.getArcherById(archerId);
-        if (!archer) return;
-        archer.id = archerId;
+    function initializeKeypad() {
+        if (!keypadElement || typeof ScoreKeypad === 'undefined') return;
+        scoreKeypad = ScoreKeypad.init(keypadElement, {
+            inputSelector: '#scoring-view input[type=\"text\"]',
+            getInputKey: (input) => {
+                if (!input || !input.dataset) return '';
+                return [
+                    input.dataset.team || '',
+                    input.dataset.archer || '',
+                    input.dataset.end || '',
+                    input.dataset.arrow || ''
+                ].join('|');
+            },
+            onShow: () => document.body.classList.add('keypad-visible'),
+            onHide: () => document.body.classList.remove('keypad-visible')
+        });
+    }
 
-        const targetTeam = role === 't1' ? state.team1 : state.team2;
-        const otherTeam = role === 't1' ? state.team2 : state.team1;
-        const archerIndexInTarget = targetTeam.findIndex(a => a.id === archerId);
-        const archerIndexInOther = otherTeam.findIndex(a => a.id === archerId);
+    function getArrowsPerSet() {
+        const teamSize = Math.max(state.team1.length, state.team2.length, 1);
+        return Math.max(2, teamSize * ARROWS_PER_ARCHER);
+    }
 
-        if (archerIndexInTarget > -1) { // Archer is in the team, so remove them
-            targetTeam.splice(archerIndexInTarget, 1);
-        } else { // Archer is not in the team, so add them
-            if (targetTeam.length < 3) {
-                if (archerIndexInOther > -1) { // Remove from other team if present
-                    otherTeam.splice(archerIndexInOther, 1);
-                }
-                targetTeam.push(archer);
-            } else {
-                alert(`Team ${role === 't1' ? '1' : '2'} is already full.`);
+    function ensureScoreArrays() {
+        const arrowSlots = getArrowsPerSet();
+        if (!state.scores.t1 || !Array.isArray(state.scores.t1)) {
+            state.scores.t1 = Array.from({ length: TOTAL_TEAM_SETS }, () => Array(arrowSlots).fill(''));
+        }
+        if (!state.scores.t2 || !Array.isArray(state.scores.t2)) {
+            state.scores.t2 = Array.from({ length: TOTAL_TEAM_SETS }, () => Array(arrowSlots).fill(''));
+        }
+        for (let i = 0; i < TOTAL_TEAM_SETS; i++) {
+            if (!Array.isArray(state.scores.t1[i])) {
+                state.scores.t1[i] = Array(arrowSlots).fill('');
+            } else if (state.scores.t1[i].length !== arrowSlots) {
+                state.scores.t1[i] = Array.from({ length: arrowSlots }, (_, idx) => state.scores.t1[i][idx] || '');
+            }
+            if (!Array.isArray(state.scores.t2[i])) {
+                state.scores.t2[i] = Array(arrowSlots).fill('');
+            } else if (state.scores.t2[i].length !== arrowSlots) {
+                state.scores.t2[i] = Array.from({ length: arrowSlots }, (_, idx) => state.scores.t2[i][idx] || '');
             }
         }
-        saveData();
-        renderSetupView(searchInput.value);
+
+        if (!state.scores.so) {
+            state.scores.so = { t1: [], t2: [] };
+        }
+        state.scores.so.t1 = Array.from({ length: state.team1.length || 3 }, (_, idx) => {
+            return state.scores.so.t1 && state.scores.so.t1[idx] !== undefined ? state.scores.so.t1[idx] : '';
+        });
+        state.scores.so.t2 = Array.from({ length: state.team2.length || 3 }, (_, idx) => {
+            return state.scores.so.t2 && state.scores.so.t2[idx] !== undefined ? state.scores.so.t2[idx] : '';
+        });
     }
 
     function updateStartButtonState() {
@@ -541,62 +612,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    function renderKeypad() {
-        if (!keypadElement) return;
-        // New 4x3 layout: Tailwind CSS, no gaps, no navigation buttons, no rounded corners, edge-to-edge borders
-        keypadElement.innerHTML = `
-            <div class="grid grid-cols-4 gap-0 w-full">
-                <!-- Row 1: X, 10, 9, M -->
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="X">X</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="10">10</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="9">9</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-200 text-black dark:text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="M">M</button>
-                
-                <!-- Row 2: 8, 7, 6, 5 -->
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="8">8</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="7">7</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="6">6</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="5">5</button>
-                
-                <!-- Row 3: 4, 3, 2, 1 -->
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="4">4</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="3">3</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="2">2</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="1">1</button>
-                
-                <!-- Row 4: CLOSE (left), CLEAR (right) -->
-                <button class="keypad-btn p-4 text-lg font-bold border-r border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2 rounded-none" style="border-radius: 0 !important;" data-action="close">CLOSE</button>
-                <button class="keypad-btn p-4 text-lg font-bold cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger-light dark:bg-danger-dark text-danger-dark dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2 rounded-none" style="border-radius: 0 !important;" data-action="clear">CLEAR</button>
-            </div>
-        `;
-    }
-
-    function handleKeypadClick(e) {
-        const button = e.target.closest('.keypad-btn');
-        if (!button || !keypad.currentlyFocusedInput) return;
-        const action = button.dataset.action, value = button.dataset.value, input = keypad.currentlyFocusedInput;
-        const allInputs = Array.from(document.querySelectorAll('#scoring-view input[type="text"]'));
-        const currentIndex = allInputs.indexOf(input);
-        
-        // Close action
-        if (action === 'close') { 
-            keypadElement.classList.add('hidden');
-            keypadElement.classList.remove('grid'); 
-            document.body.classList.remove('keypad-visible'); 
-            return;
-        }
-        else {
-            input.value = (action === 'clear') ? '' : value;
-            handleScoreInput({ target: input });
-            if (value && currentIndex < allInputs.length - 1) allInputs[currentIndex + 1].focus();
-            else { 
-                keypadElement.classList.add('hidden');
-                keypadElement.classList.remove('grid');
-                document.body.classList.remove('keypad-visible'); 
-            }
-        }
-    }
-
     async function handleScoreInput(e) {
         const input = e.target;
         const { team, end, arrow } = input.dataset;
@@ -925,7 +940,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.eventId = null;
             state.syncStatus = { t1: {}, t2: {} };
             localStorage.removeItem(sessionKey);
-            renderSetupView();
+            syncSelectorSelection();
             renderView();
         }
     }
@@ -1083,7 +1098,8 @@ document.addEventListener('DOMContentLoaded', () => {
             team2Count: state.team2.length
         });
         
-        renderKeypad();
+        initializeKeypad();
+        initializeArcherSelector();
         
         // Phase 2: Restore match from database if matchId exists
         if (state.matchId && window.LiveUpdates) {
@@ -1103,24 +1119,23 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             console.log('[TeamCard] Starting in setup view');
             state.currentView = 'setup';
-            renderSetupView();
+            syncSelectorSelection();
         }
         renderView();
         console.log('[TeamCard] ✅ Initialization complete');
 
-        searchInput.addEventListener('input', () => renderSetupView(searchInput.value));
-        archerSelectionContainer.addEventListener('click', handleTeamSelection);
+        searchInput.addEventListener('input', () => {
+            if (archerSelector) {
+                archerSelector.setFilter(searchInput.value);
+            }
+        });
         startScoringBtn.addEventListener('click', startScoring);
         editSetupBtn.addEventListener('click', () => { state.currentView = 'setup'; renderView(); });
         newMatchBtn.addEventListener('click', resetMatch);
-        keypadElement.addEventListener('click', handleKeypadClick);
         
         document.body.addEventListener('focusin', (e) => {
-            if (e.target.matches('#scoring-view input[type="text"]')) {
-                keypad.currentlyFocusedInput = e.target;
-                keypadElement.classList.remove('hidden');
-                keypadElement.classList.add('grid');
-                document.body.classList.add('keypad-visible');
+            if (e.target.matches('#scoring-view input[type="text"]') && scoreKeypad) {
+                scoreKeypad.showForInput(e.target);
             }
         });
         

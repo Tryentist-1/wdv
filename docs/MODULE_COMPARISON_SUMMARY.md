@@ -1,299 +1,81 @@
-# Module Comparison & Inconsistencies Summary
+# Module Comparison & UI Consistency Summary
 
-**Date:** November 17, 2025  
-**Purpose:** Quick visual reference for module inconsistencies
-
----
-
-## 🎯 The Big Picture
-
-You have **5 scoring modules** in **3 different states**:
-
-```
-✅ FULLY INTEGRATED (Ranking Round)
-  │
-  ├─ ranking_round.html (360)
-  └─ ranking_round_300.html (300)
-      └─ Database + Live Sync + Auth + Coach Visibility
-
-⚠️ NEEDS INTEGRATION (Solo & Team Olympic)
-  │
-  ├─ solo_card.html (1v1 match)
-  └─ team_card.html (3v3 match)
-      └─ localStorage ONLY - No DB, No Sync, No Coach
-
-✅ STANDALONE (Practice)
-  │
-  └─ gemini-oneshot.html
-      └─ Intentionally isolated (personal practice)
-```
+**Date:** November 23, 2025  
+**Purpose:** Quick visual snapshot after Phase 2 integration + the gaps we still need to close.
 
 ---
 
-## 📊 Side-by-Side Comparison
+## 🎯 Big Picture
 
-| Feature | Ranking Round | Solo Match | Team Match | Practice |
-|---------|---------------|------------|------------|----------|
-| **Database** | ✅ Full MySQL | ❌ None | ❌ None | ❌ N/A |
-| **localStorage** | Cache only | Primary | Primary | Primary |
-| **Cookies** | Archer ID + Auth | ❌ None | ❌ None | ❌ None |
-| **Authentication** | Event Code | ❌ None | ❌ None | ❌ None |
-| **Coach Visibility** | ✅ Full | ❌ None | ❌ None | ❌ N/A |
-| **Cross-Device Sync** | ✅ Yes | ❌ No | ❌ No | ❌ N/A |
-| **Live Leaderboard** | ✅ Yes | ❌ No | ❌ No | ❌ N/A |
-| **Event Integration** | ✅ Full | ❌ None | ❌ None | ❌ N/A |
-| **Offline Capability** | ✅ Queue | ✅ Yes | ✅ Yes | ✅ Yes |
-| **API Endpoints** | ✅ Full REST | ❌ None | ❌ None | ❌ N/A |
-| **Mobile UX** | ✅ Optimized | ✅ Good | ✅ Good | ✅ Good |
+```
+✅ Ranking Round 360  ┐
+✅ Ranking Round 300  ├─ Fully integrated (DB + LiveUpdates + Auth)
+✅ Solo Olympic Match ┤
+✅ Team Olympic Match ┘
+
+🏹 Practice Analyzer  – intentionally standalone (p5.js, local-only)
+```
+
+All four production scoring modules now share the same backend stack (MySQL, `/api/v1`, LiveUpdates queue). The remaining inconsistencies are in the UI layer: ranking rounds still run on legacy CSS, while Solo/Team/Results use Tailwind and new shared components.
 
 ---
 
-## 🔍 Key Inconsistencies
+## 📊 Module Status Snapshot
 
-### 1. Storage Pattern Inconsistency
-
-**Ranking Round** (integrated):
-```javascript
-// Source of truth: MySQL database
-PRIMARY: MySQL tables
-  → archers, events, rounds, round_archers, end_events
-
-// Cache layer: localStorage
-CACHE: localStorage
-  → current session state
-  → cached archer list (1 hour TTL)
-  → offline score queue
-
-// Identification: Cookies
-PERSISTENT: Cookies
-  → oas_archer_id (365 days)
-  → coach_auth (90 days)
-```
-
-**Solo/Team** (not integrated):
-```javascript
-// EVERYTHING in localStorage (no database)
-PRIMARY: localStorage ONLY
-  → match state
-  → archer names
-  → all scores
-  → match history
-
-// No cache needed (no external data)
-// No cookies (no persistent ID)
-// No server sync (isolated to device)
-```
-
-**Impact:**
-- ❌ Solo/Team matches lost if browser data cleared
-- ❌ Can't view matches on different device
-- ❌ Coach can't see Solo/Team results
-- ❌ No leaderboard for Solo/Team
-- ❌ Can't tie matches to events
+| Feature | Ranking 360 | Ranking 300 | Solo Match | Team Match |
+|---------|-------------|-------------|------------|------------|
+| **Database** | ✅ rounds, round_archers, end_events | ✅ same | ✅ solo_matches + sets | ✅ team_matches + sets |
+| **Local Storage** | Session cache + offline queue | Session cache + offline queue | Session cache + offline queue | Session cache + offline queue |
+| **Authentication** | Event code + coach key | Event code + coach key | Event code or match code | Event code or match code |
+| **Coach Visibility** | ✅ `results.html`, Coach Console | ✅ | ✅ `/v1/events/:id/solo-matches` | ✅ `/v1/events/:id/team-matches` |
+| **Live Sync** | ✅ LiveUpdates (`postEnd`) | ✅ | ✅ `ensureSoloMatch/postSoloSet` | ✅ `ensureTeamMatch/postTeamSet` |
+| **UI Framework** | Legacy CSS (`css/main.css`) | Legacy CSS | Tailwind + safe-area classes | Tailwind + safe-area classes |
+| **Scorecard Renderer** | Custom table per page | Custom table per page | Shared ScorecardView + keypad | Shared ScorecardView + keypad |
 
 ---
 
-### 2. Authentication Inconsistency
+## ⚠️ Inconsistencies to Fix
 
-**Ranking Round:**
-```
-┌─────────────────────────────────────────┐
-│ PUBLIC: Load archer roster              │
-│   GET /v1/archers (no auth)              │
-├─────────────────────────────────────────┤
-│ ARCHER: Submit scores                    │
-│   Event Code required                    │
-│   POST /v1/end-events                    │
-├─────────────────────────────────────────┤
-│ COACH: Full admin                        │
-│   API Key/Passcode required              │
-│   All CRUD operations                    │
-└─────────────────────────────────────────┘
-```
+### 1. UI Framework Split
+- Ranking pages still import `css/main.css` and bespoke `.score-input` styles, so they ignore safe-area padding, dark mode, and 44px targets that we enforce elsewhere.
+- Solo/Team/Coach/Results are already Tailwind-first (`css/tailwind-compiled.css`).
 
-**Solo/Team:**
-```
-┌─────────────────────────────────────────┐
-│ NO AUTHENTICATION                        │
-│   Everything is public                   │
-│   No event codes                         │
-│   No coach access control                │
-└─────────────────────────────────────────┘
-```
+### 2. Archer List Logic Duplicated
+- `getRosterState` + selector rendering lives in `js/ranking_round.js`, `js/ranking_round_300.js`, `js/solo_card.js`, `js/team_card.js`, and `archer_list.html`.
+- Favorites, search, and “self archer” badges behave slightly differently in each module.
 
-**Impact:**
-- ❌ Solo/Team not tied to events
-- ❌ No access control
-- ❌ Can't restrict editing
-- ❌ No audit trail
+### 3. Scorecard & Results Rendering Fragmented
+- Ranking rounds render their own scoring table (`js/ranking_round.js:626+`), Solo/Team use ScorecardView, and results pages (`results.html`, `archer_results_pivot.html`, `archer_history.html`) each reinvent leaderboard tables.
+- Helper functions like `parseScoreValue` / `getScoreColor` are defined in five places even though `js/common.js` exists.
+
+### 4. Legacy Artifacts Still in Tree
+- `js/score.js`, `solo_round.html/js`, and `team_round.css` are legacy but still show up in searches, making it easy to edit the wrong file.
 
 ---
 
-### 3. Data Flow Inconsistency
+## ✅ Action Plan (mirrors Architecture doc §3)
 
-**Ranking Round Flow:**
-```
-Archer Device                     Server                Coach Console
-     │                               │                        │
-     │───── POST /v1/rounds ────────>│                        │
-     │<──── round_id + meta ─────────│                        │
-     │                               │                        │
-     │───── POST /v1/end-events ────>│                        │
-     │      (end 1 scores)            │                        │
-     │                               │────── Live Update ────>│
-     │                               │                        │
-     │───── POST /v1/end-events ────>│                        │
-     │      (end 2 scores)            │                        │
-     │                               │────── Live Update ────>│
-     │                               │                        │
-     │                          [ MySQL stores everything ]   │
-```
+1. **Archer Selector Component**
+   - Build `js/archer_selector.js` on top of `ArcherModule`.
+   - Support `multi`, `dual`, and `team` modes so every scoring page uses identical markup + logic.
 
-**Solo/Team Flow:**
-```
-Archer Device                     Server                Coach Console
-     │                               │                        │
-     │                               │                        │
-     │  [localStorage ONLY]          │                        │
-     │  No server interaction        │     [ Nothing ]        │
-     │  No coach visibility          │                        │
-     │  Isolated to device           │                        │
-     │                               │                        │
-```
+2. **ScorecardView Everywhere**
+   - Extend `js/scorecard_view.js` so it can power editable tables.
+   - Adopt Tailwind in `ranking_round*.html` and drop `css/main.css`.
+   - Extract the keypad logic from `js/solo_card.js:579-640` into a shared module.
 
-**Impact:**
-- ❌ Coach has no visibility into Solo/Team matches
-- ❌ Can't generate match reports
-- ❌ Can't export results
-- ❌ Can't do analytics
+3. **Results View Platform**
+   - Create `js/results_view.js` to normalize `/events/:id/snapshot` + `/archers/:id/history`.
+   - Reuse it in `results.html`, `archer_results_pivot.html`, `archer_history.html`, and Coach Console tabs.
+
+4. **Document & Flag Legacy Files**
+   - Mark archived files at the top (e.g., banner comment “LEGACY – DO NOT EDIT”).
+   - Update `README.md` and `docs/DEVELOPMENT_WORKFLOW.md` to point contributors at the modern Solo/Team files.
 
 ---
 
-## 🎯 What Needs to Happen (Phase 2)
-
-### Goal: Make Solo/Team Match the Ranking Round Pattern
-
-**Add to Solo/Team:**
-
-1. **Database Schema**
-   ```sql
-   solo_matches table
-   solo_match_ends table
-   team_matches table
-   team_match_ends table
-   ```
-
-2. **API Endpoints**
-   ```
-   POST   /v1/solo-matches
-   GET    /v1/solo-matches/:id
-   POST   /v1/solo-matches/:id/ends
-   PATCH  /v1/solo-matches/:id
-   ```
-
-3. **Authentication**
-   ```javascript
-   // Require event code for match creation
-   // Store in localStorage same as ranking rounds
-   // Use for score submission
-   ```
-
-4. **Coach Integration**
-   ```javascript
-   // Add Solo/Team tabs to coach console
-   // Show live matches
-   // Export results
-   ```
-
-5. **Frontend Refactoring**
-   ```javascript
-   // Replace localStorage with database calls
-   // Add offline queue (like ranking rounds)
-   // Keep localStorage as cache only
-   ```
-
----
-
-## 📋 Detailed Plan Available
-
-**See:** [APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md)
-
-**Key Sections:**
-- Section 4: Integration Plan for Solo & Team
-- Section 5: Implementation Order (4 sprints)
-- Section 6: Migration Strategy
-- Section 7: Success Criteria
-
-**Estimated Effort:** 32-40 hours total
-- Backend: 8-10 hours
-- Solo Frontend: 10-12 hours
-- Team Frontend: 10-12 hours
-- Testing: 4-6 hours
-
----
-
-## ✅ Immediate Actions
-
-### This Week
-1. ✅ **Document inconsistencies** (this doc + master doc)
-2. ✅ **Create unified README**
-3. ✅ **Review with team**
-4. [ ] **Decide: Solo first or Team first?**
-5. [ ] **Create Sprint 2 ticket (backend schema)**
-
-### Next Sprint (Backend)
-1. [ ] Create database migration SQL
-2. [ ] Add API endpoints
-3. [ ] Test endpoints
-4. [ ] Update API documentation
-
-### Following Sprints (Frontend)
-1. [ ] Refactor Solo module
-2. [ ] Refactor Team module
-3. [ ] Add coach console integration
-4. [ ] End-to-end testing
-
----
-
-## 🚫 What to Avoid
-
-### Don't Break Working Code
-- ✅ Ranking rounds work great - leave them alone
-- ✅ Solo/Team work offline - preserve that capability
-- ✅ Practice app is fine standalone - don't touch it
-
-### Don't Over-Engineer
-- ❌ Don't add complex frameworks
-- ❌ Don't change storage patterns that work
-- ❌ Keep it simple - match existing patterns
-
-### Don't Rush
-- ❌ These aren't critical bugs
-- ❌ Take time to do it right
-- ❌ Test thoroughly before deploying
-
----
-
-## 📚 Reference Documents
-
-**Start Here:**
-- [APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md) - **MASTER REFERENCE**
-- [README.md](../README.md) - Project overview
-
-**Authentication:**
-- [AUTHENTICATION_ANALYSIS.md](AUTHENTICATION_ANALYSIS.md)
-- [CLEANUP_ACTION_PLAN.md](CLEANUP_ACTION_PLAN.md)
-
-**User Workflows:**
-- [ARCHER_SCORING_WORKFLOW.md](ARCHER_SCORING_WORKFLOW.md)
-- [PRODUCT_REQUIREMENTS.md](PRODUCT_REQUIREMENTS.md)
-
-**API & Backend:**
-- [LIVE_SCORING_IMPLEMENTATION.md](LIVE_SCORING_IMPLEMENTATION.md)
-
----
-
-**TL;DR:** Ranking Round is fully integrated (database, auth, coach visibility). Solo/Team modules work but are localStorage-only and invisible to coaches. Phase 2 plan ready to integrate them using the same pattern as Ranking Round.
-
-**Next Step:** Review [APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md) and decide on Sprint 2 priorities.
-
+## 🔗 References
+- `js/ranking_round.js:151-360` – current selector + table code.
+- `js/solo_card.js:188-520` / `js/team_card.js:205-520` – Tailwind-based selectors & score tables.
+- `results.html:200-334`, `archer_results_pivot.html:334-520`, `archer_history.html:200-282` – independent leaderboard/render logic.
+- `js/scorecard_view.js` – shared per-archer modal component.

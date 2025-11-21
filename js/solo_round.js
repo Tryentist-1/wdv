@@ -1,5 +1,6 @@
 // JavaScript logic for the Solo Olympic Round Scorecard (solo_round.html)
 // Based on team_round.js but adapted for individual matches
+// LEGACY NOTICE: This script is archival only. Use js/solo_card.js for active development.
 
 (function () { // Wrap in an IIFE
     console.log("Solo Olympic Round Scorecard JS loaded");
