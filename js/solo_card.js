@@ -52,7 +52,129 @@ document.addEventListener('DOMContentLoaded', () => {
         currentlyFocusedInput: null
     };
 
+    // --- ARCHER SELECTOR SETUP ---
+    let archerSelector = null;
+    const SOLO_SELECTOR_GROUPS = [
+        { id: 'a1', label: 'Archer 1', buttonText: 'A1', max: 1, accentClass: 'bg-primary text-white' },
+        { id: 'a2', label: 'Archer 2', buttonText: 'A2', max: 1, accentClass: 'bg-danger text-white' }
+    ];
+
     // --- UTILITY FUNCTIONS ---
+
+    // --- ARCHER SELECTOR FUNCTIONS ---
+    function initializeArcherSelector() {
+        if (!archerSelectionContainer || typeof ArcherSelector === 'undefined') {
+            console.warn('ArcherSelector component unavailable.');
+            return;
+        }
+
+        archerSelector = ArcherSelector.init(archerSelectionContainer, {
+            groups: SOLO_SELECTOR_GROUPS,
+            emptyMessage: 'No archers found. Sync your roster to begin.',
+            onSelectionChange: handleSelectorChange,
+            onFavoriteToggle: handleFavoriteToggle,
+            showAvatars: true,
+            showFavoriteToggle: true
+        });
+    }
+
+    function refreshArcherRoster() {
+        if (!archerSelector || typeof ArcherModule === 'undefined') return;
+        try {
+            const roster = ArcherModule.loadList() || [];
+            const ctx = getSelectorContext();
+            archerSelector.setContext(ctx);
+            archerSelector.setRoster(roster);
+            if (searchInput && searchInput.value) {
+                archerSelector.setFilter(searchInput.value);
+            }
+        } catch (err) {
+            console.warn('Failed to load archer roster for selector:', err);
+            archerSelector.setRoster([]);
+        }
+    }
+
+    function getSelectorContext() {
+        if (typeof ArcherModule === 'undefined') return { favorites: new Set(), selfExtId: '' };
+        const selfExtId = ArcherModule.getSelfExtId() || '';
+        
+        // Get favorites from self archer's faves array
+        let favorites = new Set();
+        if (selfExtId) {
+            const selfArcher = ArcherModule.loadList().find(a => a.extId === selfExtId);
+            if (selfArcher && selfArcher.faves) {
+                favorites = new Set(selfArcher.faves);
+            }
+        }
+        
+        return {
+            favorites,
+            selfExtId
+        };
+    }
+
+    function syncSelectorSelection() {
+        if (!archerSelector) return;
+        const selection = {
+            a1: state.archer1 ? [normalizeArcher(state.archer1)] : [],
+            a2: state.archer2 ? [normalizeArcher(state.archer2)] : []
+        };
+        archerSelector.setSelection(selection);
+        updateStartButtonState();
+    }
+
+    function normalizeArcher(archer) {
+        if (!archer) return null;
+        return {
+            extId: archer.extId || archer.id,
+            first: archer.first,
+            last: archer.last,
+            level: archer.level,
+            school: archer.school,
+            gender: archer.gender
+        };
+    }
+
+    function handleSelectorChange(selectionMap) {
+        // Convert ArcherSelector format back to Solo module format
+        const a1Selection = selectionMap.a1 && selectionMap.a1.length > 0 ? selectionMap.a1[0] : null;
+        const a2Selection = selectionMap.a2 && selectionMap.a2.length > 0 ? selectionMap.a2[0] : null;
+        
+        // Update state
+        state.archer1 = a1Selection ? {
+            id: `${a1Selection.first}-${a1Selection.last}`,
+            extId: a1Selection.extId,
+            first: a1Selection.first,
+            last: a1Selection.last,
+            level: a1Selection.level,
+            school: a1Selection.school,
+            gender: a1Selection.gender
+        } : null;
+        
+        state.archer2 = a2Selection ? {
+            id: `${a2Selection.first}-${a2Selection.last}`,
+            extId: a2Selection.extId,
+            first: a2Selection.first,
+            last: a2Selection.last,
+            level: a2Selection.level,
+            school: a2Selection.school,
+            gender: a2Selection.gender
+        } : null;
+        
+        saveData();
+        updateStartButtonState();
+    }
+
+    async function handleFavoriteToggle(archerId, isFavorite) {
+        if (typeof ArcherModule !== 'undefined' && typeof ArcherModule.toggleFriend === 'function') {
+            try {
+                await ArcherModule.toggleFriend(archerId);
+                refreshArcherRoster(); // Refresh to show updated favorite status
+            } catch (err) {
+                console.error('Failed to toggle favorite:', err);
+            }
+        }
+    }
 
     // --- VIEW MANAGEMENT ---
     function renderView() {
@@ -186,78 +308,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LOGIC ---
     function renderSetupView(filter = '') {
-        archerSelectionContainer.innerHTML = '';
-        const masterList = ArcherModule.loadList().filter(a => {
-            const name = `${a.first} ${a.last}`.toLowerCase();
-            return name.includes(filter.toLowerCase());
-        });
-
-        // Sort: Selected archers first, then alphabetical by first name
-        const sortedList = masterList.sort((a, b) => {
-            const archerIdA = `${(a.first || '').trim()}-${(a.last || '').trim()}`;
-            const archerIdB = `${(b.first || '').trim()}-${(b.last || '').trim()}`;
-            const isSelectedA = (state.archer1 && state.archer1.id === archerIdA) || (state.archer2 && state.archer2.id === archerIdA);
-            const isSelectedB = (state.archer1 && state.archer1.id === archerIdB) || (state.archer2 && state.archer2.id === archerIdB);
-            
-            // Selected archers come first
-            if (isSelectedA && !isSelectedB) return -1;
-            if (!isSelectedA && isSelectedB) return 1;
-            
-            // Then sort alphabetically by first name
-            const firstNameA = (a.first || '').trim().toLowerCase();
-            const firstNameB = (b.first || '').trim().toLowerCase();
-            return firstNameA.localeCompare(firstNameB);
-        });
-
-        sortedList.forEach(archer => {
-            const archerId = `${(archer.first || '').trim()}-${(archer.last || '').trim()}`;
-            const isSelectedA1 = state.archer1 && state.archer1.id === archerId;
-            const isSelectedA2 = state.archer2 && state.archer2.id === archerId;
-
-            const row = document.createElement('div');
-            row.className = 'flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors';
-            if (isSelectedA1) row.classList.add('bg-blue-50', 'dark:bg-blue-900/20');
-            if (isSelectedA2) row.classList.add('bg-red-50', 'dark:bg-red-900/20');
-
-            row.innerHTML = `
-                <span class="text-yellow-500 text-lg">${archer.fave ? '★' : '☆'}</span>
-                <div class="flex-1 font-semibold text-gray-800 dark:text-white">${archer.first} ${archer.last}</div>
-                <div class="text-sm text-gray-600 dark:text-gray-400">(${archer.level || 'VAR'})</div>
-                <div class="flex gap-2">
-                    <button class="px-3 py-1 text-sm ${isSelectedA1 ? 'bg-primary text-white' : 'bg-secondary text-white'} rounded-lg hover:opacity-80 font-semibold transition-colors min-h-[44px]" data-id="${archerId}" data-role="a1">A1</button>
-                    <button class="px-3 py-1 text-sm ${isSelectedA2 ? 'bg-danger text-white' : 'bg-secondary text-white'} rounded-lg hover:opacity-80 font-semibold transition-colors min-h-[44px]" data-id="${archerId}" data-role="a2">A2</button>
-                </div>
-            `;
-            archerSelectionContainer.appendChild(row);
-        });
-
-        updateStartButtonState();
-    }
-
-    function handleArcherSelection(e) {
-        const button = e.target.closest('button[data-role]');
-        if (!button) return;
-
-        const archerId = button.dataset.id;
-        const role = button.dataset.role;
-        const archer = ArcherModule.getArcherById(archerId);
-
-        if (!archer) return; // Archer not found, something is wrong.
-
-        // Add the generated ID to the archer object so we can reference it later
-        archer.id = archerId;
-
-        if (role === 'a1') {
-            if (state.archer2 && state.archer2.id === archerId) state.archer2 = null; // Unset from other role if needed
-            state.archer1 = (state.archer1 && state.archer1.id === archerId) ? null : archer;
-        } else if (role === 'a2') {
-            if (state.archer1 && state.archer1.id === archerId) state.archer1 = null; // Unset from other role if needed
-            state.archer2 = (state.archer2 && state.archer2.id === archerId) ? null : archer;
+        if (!archerSelector) {
+            initializeArcherSelector();
         }
+        refreshArcherRoster();
+        syncSelectorSelection();
         
-        saveData();
-        renderSetupView(searchInput.value);
+        // Apply filter if provided
+        if (filter && archerSelector) {
+            archerSelector.setFilter(filter);
+        }
     }
+
 
     function updateStartButtonState() {
         if (state.archer1 && state.archer2) {
@@ -1143,6 +1205,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         loadData();
         renderKeypad();
+        initializeArcherSelector();
         
         // Phase 2: Restore match from database if matchId exists
         if (state.matchId && window.LiveUpdates) {
@@ -1211,8 +1274,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        searchInput.addEventListener('input', () => renderSetupView(searchInput.value));
-        archerSelectionContainer.addEventListener('click', handleArcherSelection);
+        searchInput.addEventListener('input', () => {
+            if (archerSelector) {
+                archerSelector.setFilter(searchInput.value);
+            }
+        });
         startScoringBtn.addEventListener('click', startScoring);
         editSetupBtn.addEventListener('click', editSetup);
         newMatchBtn.addEventListener('click', resetMatch);
