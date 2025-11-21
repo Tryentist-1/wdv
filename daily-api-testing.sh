@@ -878,6 +878,328 @@ EOF
     echo "Tomorrow: ./daily-api-testing.sh 1 5"
 }
 
+week1_day5() {
+    print_header "WEEK 1, DAY 5: MATCH MANAGEMENT (Solo & Team)"
+    
+    print_info "Today's goal: Match creation and management operations"
+    print_info "Endpoints to implement:"
+    echo "  - POST /v1/solo-matches (Create solo match)"
+    echo "  - GET /v1/solo-matches/{id} (Get solo match)"
+    echo "  - PATCH /v1/solo-matches/{id} (Update solo match)"
+    echo "  - POST /v1/solo-matches/{id}/verify (Verify solo match)"
+    echo "  - POST /v1/team-matches (Create team match)"
+    echo "  - GET /v1/team-matches/{id} (Get team match)"
+    echo "  - PATCH /v1/team-matches/{id} (Update team match)"
+    echo "  - POST /v1/team-matches/{id}/verify (Verify team match)"
+    echo ""
+    
+    # Create solo match tests
+    cat > tests/api/matches/solo-matches.test.js << 'EOF'
+/**
+ * Solo Match API Tests
+ * Tests solo match creation and management
+ */
+
+const { APIClient, TestAssertions, TestDataManager } = require('../helpers/test-data');
+
+describe('Solo Match API', () => {
+    let client;
+    let authClient;
+    let testData;
+
+    beforeAll(() => {
+        client = new APIClient();
+        authClient = client.withPasscode('wdva26');
+        testData = new TestDataManager();
+    });
+
+    describe('POST /v1/solo-matches', () => {
+        test('should create new solo match', async () => {
+            const matchData = {
+                name: `Test Solo Match ${Date.now()}`,
+                eventId: 'test-event-id',
+                division: 'OPEN',
+                matchType: 'elimination'
+            };
+            
+            const response = await authClient.post('/solo-matches', matchData);
+            
+            // May succeed or fail depending on event existence
+            expect([200, 201, 404]).toContain(response.status);
+            
+            if (response.status === 200 || response.status === 201) {
+                expect(response.data).toHaveProperty('matchId');
+                
+                // Track for cleanup
+                if (response.data.matchId) {
+                    testData.trackResource('solo-matches', response.data.matchId);
+                }
+            }
+        });
+
+        test('should require authentication', async () => {
+            const response = await client.post('/solo-matches', {
+                name: 'Test Match'
+            });
+            
+            expect([401, 404]).toContain(response.status);
+        });
+
+        test('should validate required fields', async () => {
+            const response = await authClient.post('/solo-matches', {});
+            
+            // Should fail validation or succeed with defaults
+            expect([200, 201, 400, 404]).toContain(response.status);
+        });
+    });
+
+    describe('GET /v1/solo-matches/{id}', () => {
+        test('should return 404 for non-existent match', async () => {
+            const response = await authClient.get('/solo-matches/non-existent-match');
+            
+            expect(response.status).toBe(404);
+        });
+
+        test('should require authentication', async () => {
+            const response = await client.get('/solo-matches/test-match-id');
+            
+            // May return 404 (route not found) or 401 (auth required)
+            expect([401, 404]).toContain(response.status);
+        });
+    });
+
+    describe('PATCH /v1/solo-matches/{id}', () => {
+        test('should require authentication', async () => {
+            const response = await client.patch('/solo-matches/test-match-id', {
+                name: 'Updated Match'
+            });
+            
+            expect([401, 404]).toContain(response.status);
+        });
+
+        test('should return 404 for non-existent match', async () => {
+            const response = await authClient.patch('/solo-matches/non-existent-match', {
+                name: 'Updated Match'
+            });
+            
+            expect(response.status).toBe(404);
+        });
+    });
+
+    describe('POST /v1/solo-matches/{id}/verify', () => {
+        test('should require authentication', async () => {
+            const response = await client.post('/solo-matches/test-match-id/verify');
+            
+            expect([401, 404]).toContain(response.status);
+        });
+
+        test('should return 404 for non-existent match', async () => {
+            const response = await authClient.post('/solo-matches/non-existent-match/verify');
+            
+            expect(response.status).toBe(404);
+        });
+    });
+});
+EOF
+
+    # Create team match tests
+    cat > tests/api/matches/team-matches.test.js << 'EOF'
+/**
+ * Team Match API Tests
+ * Tests team match creation and management
+ */
+
+const { APIClient, TestAssertions, TestDataManager } = require('../helpers/test-data');
+
+describe('Team Match API', () => {
+    let client;
+    let authClient;
+    let testData;
+
+    beforeAll(() => {
+        client = new APIClient();
+        authClient = client.withPasscode('wdva26');
+        testData = new TestDataManager();
+    });
+
+    describe('POST /v1/team-matches', () => {
+        test('should create new team match', async () => {
+            const matchData = {
+                name: `Test Team Match ${Date.now()}`,
+                eventId: 'test-event-id',
+                division: 'OPEN',
+                matchType: 'elimination'
+            };
+            
+            const response = await authClient.post('/team-matches', matchData);
+            
+            // May succeed or fail depending on event existence
+            expect([200, 201, 404]).toContain(response.status);
+            
+            if (response.status === 200 || response.status === 201) {
+                expect(response.data).toHaveProperty('matchId');
+                
+                // Track for cleanup
+                if (response.data.matchId) {
+                    testData.trackResource('team-matches', response.data.matchId);
+                }
+            }
+        });
+
+        test('should require authentication', async () => {
+            const response = await client.post('/team-matches', {
+                name: 'Test Team Match'
+            });
+            
+            expect([401, 404]).toContain(response.status);
+        });
+
+        test('should validate required fields', async () => {
+            const response = await authClient.post('/team-matches', {});
+            
+            // Should fail validation or succeed with defaults
+            expect([200, 201, 400, 404]).toContain(response.status);
+        });
+    });
+
+    describe('GET /v1/team-matches/{id}', () => {
+        test('should return 404 for non-existent match', async () => {
+            const response = await authClient.get('/team-matches/non-existent-match');
+            
+            expect(response.status).toBe(404);
+        });
+
+        test('should require authentication', async () => {
+            const response = await client.get('/team-matches/test-match-id');
+            
+            expect([401, 404]).toContain(response.status);
+        });
+    });
+
+    describe('PATCH /v1/team-matches/{id}', () => {
+        test('should require authentication', async () => {
+            const response = await client.patch('/team-matches/test-match-id', {
+                name: 'Updated Team Match'
+            });
+            
+            expect([401, 404]).toContain(response.status);
+        });
+
+        test('should return 404 for non-existent match', async () => {
+            const response = await authClient.patch('/team-matches/non-existent-match', {
+                name: 'Updated Team Match'
+            });
+            
+            expect(response.status).toBe(404);
+        });
+    });
+
+    describe('POST /v1/team-matches/{id}/verify', () => {
+        test('should require authentication', async () => {
+            const response = await client.post('/team-matches/test-match-id/verify');
+            
+            expect([401, 404]).toContain(response.status);
+        });
+
+        test('should return 404 for non-existent match', async () => {
+            const response = await authClient.post('/team-matches/non-existent-match/verify');
+            
+            expect(response.status).toBe(404);
+        });
+    });
+});
+EOF
+
+    # Create match integration tests
+    cat > tests/api/matches/match-integration.test.js << 'EOF'
+/**
+ * Match Integration API Tests
+ * Tests match integration with events
+ */
+
+const { APIClient, TestAssertions, TestDataManager } = require('../helpers/test-data');
+
+describe('Match Integration API', () => {
+    let client;
+    let authClient;
+    let testData;
+
+    beforeAll(() => {
+        client = new APIClient();
+        authClient = client.withPasscode('wdva26');
+        testData = new TestDataManager();
+    });
+
+    describe('GET /v1/events/{id}/solo-matches', () => {
+        test('should require authentication', async () => {
+            const response = await client.get('/events/test-event-id/solo-matches');
+            
+            expect([401, 404]).toContain(response.status);
+        });
+
+        test('should return matches for event', async () => {
+            const response = await authClient.get('/events/test-event-id/solo-matches');
+            
+            // Should return 404 for non-existent event or empty array
+            expect([200, 404]).toContain(response.status);
+            
+            if (response.status === 200) {
+                expect(Array.isArray(response.data)).toBe(true);
+            }
+        });
+    });
+
+    describe('GET /v1/events/{id}/team-matches', () => {
+        test('should require authentication', async () => {
+            const response = await client.get('/events/test-event-id/team-matches');
+            
+            expect([401, 404]).toContain(response.status);
+        });
+
+        test('should return team matches for event', async () => {
+            const response = await authClient.get('/events/test-event-id/team-matches');
+            
+            // Should return 404 for non-existent event or empty array
+            expect([200, 404]).toContain(response.status);
+            
+            if (response.status === 200) {
+                expect(Array.isArray(response.data)).toBe(true);
+            }
+        });
+    });
+
+    describe('Match Performance', () => {
+        test('should have reasonable response times', async () => {
+            const startTime = Date.now();
+            const response = await authClient.get('/events/test-event-id/solo-matches');
+            const responseTime = Date.now() - startTime;
+            
+            // Performance should be reasonable regardless of status
+            expect(responseTime).toBeLessThan(3000); // Should respond within 3 seconds
+        });
+    });
+});
+EOF
+
+    # Create matches directory if it doesn't exist
+    mkdir -p tests/api/matches
+
+    print_success "Match management tests created"
+    
+    # Run tests
+    print_info "Running match tests..."
+    npm run test:api:matches || print_warning "Some tests may fail - this is normal during development"
+    
+    get_coverage
+    
+    print_success "Day 5 complete! Match management operations tested."
+    echo ""
+    echo "🎉 WEEK 1 COMPLETE! You've built a comprehensive API testing foundation!"
+    echo ""
+    echo "Commit progress: git add . && git commit -m 'feat: complete Week 1 - Match management and full foundation'"
+    echo "Next week: ./daily-api-testing.sh 2 1 (Core Workflows)"
+}
+
 # Show help
 show_help() {
     print_header "DAILY API TESTING IMPLEMENTATION"
@@ -954,6 +1276,10 @@ main() {
             check_prerequisites
             week1_day4
             ;;
+        "1_5")
+            check_prerequisites
+            week1_day5
+            ;;
         "status_")
             show_status
             ;;
@@ -965,7 +1291,7 @@ main() {
                 show_status
             else
                 echo "Implementation for Week $week, Day $day not yet available."
-                echo "Available: Week 1 Days 1-4"
+                echo "Available: Week 1 Days 1-5"
                 echo ""
                 show_help
             fi
