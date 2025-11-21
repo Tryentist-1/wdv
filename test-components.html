@@ -141,6 +141,7 @@
             <a href="#headers" class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Headers</a>
             <a href="#modals" class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Modals</a>
             <a href="#keypad" class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Keypad</a>
+            <a href="#archer-selection" class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Archer Selection</a>
         </nav>
     </div>
 
@@ -667,6 +668,169 @@
     </section>
 
     <!-- Footer -->
+    <!-- Archer Selection Components -->
+    <section id="archer-selection" class="mb-12">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Archer Selection Components</h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Archer Cards -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Archer Cards</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 space-y-3">
+                    <!-- Standard Archer Card -->
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm">
+                            AD
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-gray-900 dark:text-white truncate">Adjani De La Riva</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">W • VAR</div>
+                        </div>
+                        <button class="text-gray-400 hover:text-red-500 transition-colors p-1">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                        <div class="flex gap-1">
+                            <button class="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600 transition-colors">A1</button>
+                            <button class="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600 transition-colors">A2</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Archer Card with Avatar -->
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                        <img src="avatars/alina.jpg" alt="Alina Vizcarra" class="w-10 h-10 rounded-full object-cover">
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-gray-900 dark:text-white truncate">Alina Vizcarra</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">W • VAR</div>
+                        </div>
+                        <button class="text-red-500 hover:text-red-600 transition-colors p-1">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                        <div class="flex gap-1">
+                            <button class="px-3 py-1 bg-primary text-white text-sm rounded hover:bg-primary-dark transition-colors">A1</button>
+                            <button class="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600 transition-colors">A2</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Selected Archer Card -->
+                    <div class="flex items-center gap-3 p-3 bg-primary-light dark:bg-primary/20 border-2 border-primary rounded-lg">
+                        <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm">
+                            AL
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-gray-900 dark:text-white truncate">Alan Lopez</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">W • JV</div>
+                        </div>
+                        <button class="text-gray-400 hover:text-red-500 transition-colors p-1">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                        <div class="flex gap-1">
+                            <button class="px-3 py-1 bg-primary text-white text-sm rounded shadow-md">A1</button>
+                            <button class="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600 transition-colors">A2</button>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    ✨ Hover states, avatar support, favorite hearts, position selection
+                </p>
+            </div>
+            
+            <!-- Archer Selection Features -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Selection Features</h3>
+                <div class="space-y-4 text-sm text-gray-600 dark:text-gray-300">
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Avatar Display:</strong> Shows archer photos when available, falls back to initials
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Favorite System:</strong> Heart icons for marking favorite archers (red when favorited)
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Position Selection:</strong> A1/A2 buttons for dual matches, customizable for team modes
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Selection States:</strong> Visual feedback with border and background changes
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Search Integration:</strong> Real-time filtering as user types
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Mobile Optimized:</strong> Touch-friendly targets, responsive layout
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Dark Mode:</strong> Full Tailwind dark mode support
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Implementation Status -->
+                <div class="mt-6">
+                    <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">📊 Implementation Status</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="text-success">✅</span>
+                            <strong>Solo Card:</strong> <span class="text-gray-600 dark:text-gray-400">Fully integrated with ArcherSelector</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-success">✅</span>
+                            <strong>Team Card:</strong> <span class="text-gray-600 dark:text-gray-400">Fully integrated with ArcherSelector</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-warning">⚠️</span>
+                            <strong>Ranking Round 300:</strong> <span class="text-gray-600 dark:text-gray-400">Needs ArcherSelector integration</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search Bar Example -->
+        <div class="mt-8">
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Search Integration</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div class="flex gap-3 mb-4">
+                    <input type="text" 
+                           placeholder="Search archers..." 
+                           class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                    <button class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        Start Scoring
+                    </button>
+                </div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                    No archers found. Sync your roster to begin.
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                ✨ Real-time search filtering • Start button enables when archers selected • Empty state messaging
+            </p>
+        </div>
+    </section>
+
     <footer class="mt-12 text-center text-sm text-gray-500">
         <p>Component Library - Archery Score Management</p>
         <p class="mt-2">Test on mobile: <code class="bg-gray-200 px-2 py-1 rounded">http://172.16.0.97:8001/test-components.html</code></p>
