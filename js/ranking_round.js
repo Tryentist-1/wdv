@@ -1599,11 +1599,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.body.addEventListener('click', (e) => {
             if (e.target.classList.contains('view-card-btn')) {
-                state.currentView = 'card';
-                state.activeArcherId = e.target.dataset.archerId;
-                renderCardView(state.activeArcherId);
-                renderView();
-                keypad.element.style.display = 'none';
+                const archerId = e.target.dataset.archerId;
+                showArcherScorecardModal(archerId);
+                if (keypad.element) keypad.element.style.display = 'none';
             }
         });
         

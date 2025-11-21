@@ -74,9 +74,10 @@ npm run serve
 ```
 
 ### 8. Open Browser
-- Main app: http://localhost:8001/index.html
-- Coach console: http://localhost:8001/coach.html
-- API test: http://localhost:8001/api/test_harness.html
+- **Main app:** http://localhost:8001/index.html
+- **Coach console:** http://localhost:8001/coach.html
+- **Component library:** http://localhost:8001/test-components.html
+- **API test harness:** http://localhost:8001/api/test_harness.html
 
 ---
 
@@ -133,6 +134,30 @@ The application now includes reusable UI components for consistent user experien
 - ⏳ **Ranking Rounds** - Future integration target
 
 **Documentation:** See `docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md#shared-ui-standardization`
+
+---
+
+## 🧪 Testing Your Setup
+
+### Verify Everything Works
+```bash
+# 1. Test component library (visual verification)
+open http://localhost:8001/test-components.html
+
+# 2. Run local E2E tests
+npm run test:local
+
+# 3. Test API endpoints
+./test_phase1_local.sh
+
+# 4. Manual sanity check
+cat tests/manual_sanity_check.md
+```
+
+### Testing Resources
+- **📋 [TESTING_STRATEGY.md](TESTING_STRATEGY.md)** - Complete testing overview
+- **🎨 Component Library** - http://localhost:8001/test-components.html
+- **📁 Test Organization** - [tests/TEST_ORGANIZATION.md](tests/TEST_ORGANIZATION.md)
 
 ---
 

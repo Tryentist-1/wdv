@@ -247,22 +247,33 @@ The application uses a **three-tier storage pattern**:
 
 ## 🧪 Testing
 
-### Run All Tests
+### Quick Test Commands
 ```bash
-# Unit tests (QUnit)
+# Run all E2E tests (primary)
 npm test
 
-# E2E tests (Playwright)
-npm run test:e2e
+# Interactive test UI
+npm run test:ui
 
-# Manual test guide
+# Component library (visual testing)
+open http://localhost:8001/test-components.html
+
+# Local development tests
+npm run test:local
+
+# Manual test checklist
 cat tests/manual_sanity_check.md
 ```
 
+### Testing Strategy
+- **📋 [TESTING_STRATEGY.md](TESTING_STRATEGY.md)** - Complete testing overview and workflow
+- **🎨 [test-components.html](test-components.html)** - Visual component library for UI testing
+- **📁 [tests/TEST_ORGANIZATION.md](tests/TEST_ORGANIZATION.md)** - Test structure and organization
+
 ### Test Documentation
-- [AUTOMATED_TESTING.md](docs/AUTOMATED_TESTING.md)
-- [PHASE_0_TESTING_PLAN.md](docs/PHASE_0_TESTING_PLAN.md)
-- [Manual Testing Checklist](docs/MANUAL_TESTING_CHECKLIST.md)
+- [AUTOMATED_TESTING.md](docs/AUTOMATED_TESTING.md) - Playwright E2E testing
+- [MANUAL_TESTING_CHECKLIST.md](docs/MANUAL_TESTING_CHECKLIST.md) - Manual test procedures
+- [tests/README.md](tests/README.md) - Test suite commands and status
 
 ---
 

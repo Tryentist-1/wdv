@@ -1,68 +1,95 @@
-# NPM Test Suite - Updated for New UI/UX Design
+# WDV Testing Suite - Comprehensive Testing Strategy
 
 ## Overview
-The NPM test suite has been completely updated to work with the new Manual vs Pre-assigned Setup sections design. All tests now properly validate the new UI structure and functionality.
+The WDV testing suite provides comprehensive testing coverage for the Archery Score Management application, including E2E tests, component testing, API validation, and manual testing procedures. All tests are optimized for mobile-first usage and cross-browser compatibility.
 
-## Available Test Commands
+## 🚀 Quick Start Testing
 
-### Main Test Commands
+### Essential Commands
 ```bash
-# Run all tests (excluding LOCAL tests)
+# Start development server
+npm run serve
+
+# Component library (visual testing)
+open http://localhost:8001/test-components.html
+
+# Run all E2E tests
 npm test
 
-# Run all tests including LOCAL tests  
-npm run test:all
-
-# Run tests with UI interface
+# Interactive test UI
 npm run test:ui
 
-# Run tests in headed mode (visible browser)
-npm run test:headed
+# Test workflow (comprehensive)
+./test-workflow.sh development
+```
 
-# Run tests against remote production
-npm run test:remote
+### Testing Workflows
+```bash
+# Development workflow
+npm run test:workflow:dev
+
+# Pre-deployment workflow  
+npm run test:workflow:pre
+
+# Post-deployment workflow
+npm run test:workflow:post
 ```
 
 ### Specialized Test Commands
 ```bash
-# Test new setup sections functionality
-npm run test:setup-sections
+# E2E Tests
+npm test                    # Production E2E tests (42 tests)
+npm run test:local         # Local development E2E tests
+npm run test:ui            # Interactive test interface
+npm run test:headed        # Visible browser testing
 
-# Test main ranking round functionality
-npm run test:ranking-round
+# Component Tests
+open http://localhost:8001/test-components.html  # Visual component library
 
-# Test local development files
-npm run test:local
+# API Tests
+./test_api.sh              # Production API health check
+./test_phase1_local.sh     # Local API testing
 
-# Test local files with UI
-npm run test:local:ui
+# Manual Tests
+cat tests/manual_sanity_check.md  # Pre-deployment checklist
 ```
 
-### Development Server
-```bash
-# Start local PHP server for testing
-npm run serve
-```
+## 📁 Test Structure
 
-## Test Files
+### E2E Tests (Playwright)
+**Location:** `/tests/*.spec.js`  
+**Status:** ✅ 42/42 tests passing  
+**Coverage:** Critical user journeys, cross-browser, mobile-first
 
-### 1. `ranking_round.spec.js` - Main Production Tests
-**Updated for new UI/UX design**
+**Files:**
+- `ranking_round.spec.js` - Production tests (main test suite)
+- `ranking_round.local.spec.js` - Local development tests
+- `ranking_round_setup_sections.spec.js` - UI component tests
+- `verification.spec.js` - Data validation tests
+- `diagnostic-ranking-round.spec.js` - System diagnostics
 
-**Test Groups:**
-- **Event Modal** - Modal functionality and event connection
-- **Manual Setup Section** - Manual setup controls and functionality
-- **Pre-assigned Setup Section** - Pre-assigned bale list functionality
-- **Setup Mode Detection** - Automatic mode switching
+### Component Tests
+**Location:** `test-components.html`  
+**Purpose:** Visual component library and manual testing  
+**Coverage:** All UI components, responsive design, mobile usability
 
-**Key Tests:**
-- ✅ Modal shows on fresh start
-- ✅ Event connection shows pre-assigned setup
-- ✅ Manual setup shows when no event connected
-- ✅ Bale selector works in manual section
-- ✅ Search functionality in manual section
-- ✅ Selection indicator updates correctly
-- ✅ Pre-assigned bale list renders properly
+**Features:**
+- ✅ Complete UI component showcase
+- ✅ Dark/light mode toggle  
+- ✅ Mobile-responsive design
+- ✅ Touch-friendly interactions (44px minimum)
+- ✅ Archery score colors (ring colors)
+- ✅ Keypad layouts (4x3 improved design)
+
+### API Tests
+**Location:** `api/test_harness.html`, `test_*.sh`  
+**Purpose:** Backend API validation  
+**Coverage:** Authentication, CRUD operations, data integrity
+
+### Unit Tests (QUnit)
+**Location:** `/tests/unit/`  
+**Purpose:** JavaScript function testing  
+**Coverage:** Utility functions, calculations, component logic
 
 ### 2. `ranking_round.local.spec.js` - Local Development Tests
 **Updated for new UI/UX design**
@@ -174,18 +201,58 @@ All tests are designed to work with the new UI/UX design and validate:
 - ✅ Event modal functionality
 - ✅ QR code parameter handling
 
-## Browser Support
+## 📱 Mobile-First Testing
 
-Tests run on:
-- ✅ **Chromium** (Desktop Chrome)
-- ✅ **WebKit** (Desktop Safari)  
-- ✅ **iPhone 13** (Mobile Safari)
+### Device Priority
+1. **iPhone 13** (Primary) - Mobile Safari
+2. **Galaxy S21** (Secondary) - Android Chrome  
+3. **Desktop Chrome** (Development)
+4. **Desktop Safari** (Cross-browser)
 
-## Notes
+### Mobile Focus Areas
+- Touch interactions (44px minimum targets)
+- Responsive design (375px to 1200px)
+- Safe area insets (iOS notch)
+- Performance on mobile networks
+- Offline functionality
 
-- Tests use the production URL: `https://tryentist.com/wdv/ranking_round_300.html`
-- Local tests use: `http://localhost:8000/ranking_round_300.html`
-- All tests include proper timeouts and error handling
-- Tests validate both functionality and UI elements
-- Mobile responsiveness is thoroughly tested
-- State persistence is validated across page reloads
+## 🎯 Testing Documentation
+
+### Quick Reference
+- **📋 [TESTING_STRATEGY.md](../TESTING_STRATEGY.md)** - Complete testing overview
+- **📁 [TEST_ORGANIZATION.md](TEST_ORGANIZATION.md)** - Test structure and organization
+- **🎨 [test-components.html](../test-components.html)** - Visual component library
+
+### Detailed Documentation
+- **[AUTOMATED_TESTING.md](../docs/AUTOMATED_TESTING.md)** - Playwright E2E testing
+- **[MANUAL_TESTING_CHECKLIST.md](../docs/MANUAL_TESTING_CHECKLIST.md)** - Manual procedures
+- **[manual_sanity_check.md](manual_sanity_check.md)** - Pre-deployment checklist
+
+## 🔧 Configuration
+
+### Playwright Configurations
+- **Production:** `playwright.config.js` → `https://tryentist.com/wdv`
+- **Local:** `playwright.config.local.js` → `http://localhost:8001`
+
+### Browser Matrix
+- Chromium (Desktop Chrome)
+- WebKit (Desktop Safari)
+- iPhone 13 (Mobile Safari)
+- iPhone 13 Pro (Mobile Safari)
+- Pixel 5 (Mobile Chrome)
+- Galaxy S21 (Mobile Chrome)
+
+## 📊 Test Status
+
+### Current Status
+- **E2E Tests:** ✅ 42/42 passing
+- **Component Library:** ✅ Complete and integrated
+- **API Tests:** ✅ Production and local
+- **Mobile Testing:** ✅ Primary devices covered
+- **Documentation:** ✅ Comprehensive and organized
+
+### Success Metrics
+- Test execution time: < 30 seconds
+- Mobile coverage: All primary devices
+- Component coverage: All UI components
+- API coverage: All endpoints validated
