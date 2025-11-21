@@ -22,6 +22,7 @@
     "test:api:rounds": "jest tests/api/rounds --verbose",
     "test:api:events": "jest tests/api/events --verbose",
     "test:api:matches": "jest tests/api/matches --verbose",
+    "test:api:scoring": "jest tests/api/scoring --verbose",
     "test:api:brackets": "jest tests/api/brackets --verbose",
     "test:api:integration": "jest tests/api/integration --verbose",
     "test:api:all": "jest tests/api --verbose",

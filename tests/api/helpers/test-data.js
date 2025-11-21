@@ -208,6 +208,10 @@ class APIClient {
         return this.request(endpoint, { method: 'PATCH', body, headers });
     }
 
+    async put(endpoint, body, headers = {}) {
+        return this.request(endpoint, { method: 'PUT', body, headers });
+    }
+
     async delete(endpoint, headers = {}) {
         return this.request(endpoint, { method: 'DELETE', headers });
     }
