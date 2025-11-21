@@ -169,7 +169,9 @@ class APIClient {
             config.body = JSON.stringify(config.body);
         }
 
-        const response = await fetch(url, config);
+        // Add node-fetch if not available globally
+        const fetchFn = global.fetch || require('node-fetch');
+        const response = await fetchFn(url, config);
         
         let data = null;
         const contentType = response.headers.get('content-type');

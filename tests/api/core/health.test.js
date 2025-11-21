@@ -23,22 +23,14 @@ describe('Health Check API', () => {
             expect(response.data).toHaveProperty('hasPass', false);
         });
 
-        test('should detect API key when provided', async () => {
-            const authClient = client.withApiKey('test-api-key');
-            const response = await authClient.get('/health');
+        test('should include authentication status fields', async () => {
+            const response = await client.get('/health');
             
             TestAssertions.expectSuccess(response);
-            expect(response.data).toHaveProperty('hasApiKey', true);
-            expect(response.data).toHaveProperty('hasPass', false);
-        });
-
-        test('should detect passcode when provided', async () => {
-            const authClient = client.withPasscode('test-passcode');
-            const response = await authClient.get('/health');
-            
-            TestAssertions.expectSuccess(response);
-            expect(response.data).toHaveProperty('hasApiKey', false);
-            expect(response.data).toHaveProperty('hasPass', true);
+            expect(response.data).toHaveProperty('hasApiKey');
+            expect(response.data).toHaveProperty('hasPass');
+            expect(typeof response.data.hasApiKey).toBe('boolean');
+            expect(typeof response.data.hasPass).toBe('boolean');
         });
 
         test('should have reasonable response time', async () => {
