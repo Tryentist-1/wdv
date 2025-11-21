@@ -11,10 +11,40 @@
       theme: {
         extend: {
           colors: {
-            'primary': '#0d6efd',
-            'primary-dark': '#0a58ca',
-            'success': '#198754',
-            'danger': '#dc3545'
+            // Score Colors
+            'score-gold': '#FFD700',
+            'score-red': '#DC143C',
+            'score-blue': '#4169E1',
+            'score-black': '#000000',
+            'score-white': '#FFFFFF',
+            'score-miss': '#808080',
+            
+            // Brand Colors
+            'primary': {
+              DEFAULT: '#2d7dd9',
+              dark: '#1b5bbf',
+              light: '#e7f1ff',
+            },
+            'secondary': {
+              DEFAULT: '#6c757d',
+              dark: '#5a6268',
+              light: '#e9ecef',
+            },
+            'success': {
+              DEFAULT: '#28a745',
+              dark: '#1e7e34',
+              light: '#d1e7dd',
+            },
+            'danger': {
+              DEFAULT: '#d92d20',
+              dark: '#b0241a',
+              light: '#f8d7da',
+            },
+            'warning': {
+              DEFAULT: '#ffc107',
+              dark: '#d39e00',
+              light: '#fff3cd',
+            }
           }
         }
       }
@@ -103,7 +133,10 @@
       localStorage.setItem('theme', newTheme);
     });
     
-    const API_BASE = 'https://tryentist.com/wdv/api/v1';
+    // Use local API when running on localhost, otherwise use production
+    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || 8001}/api/index.php/v1`
+      : 'https://tryentist.com/wdv/api/v1';
     const urlParams = new URLSearchParams(window.location.search);
     const archerId = urlParams.get('archer') || urlParams.get('id') || urlParams.get('extId');
     

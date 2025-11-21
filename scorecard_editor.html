@@ -246,7 +246,10 @@
     
     <script src="js/common.js"></script>
     <script>
-        const API_BASE = '/wdv/api/v1';
+        // Use local API when running on localhost, otherwise use production
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || 8001}/api/index.php/v1`
+            : 'https://tryentist.com/wdv/api/v1';
         let currentScorecard = null;
         let currentEndIndex = null;
         let currentArrowIndex = null;

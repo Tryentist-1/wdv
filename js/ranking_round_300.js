@@ -385,10 +385,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Delegated handlers (robust across rerenders)
         document.body.addEventListener('click', (e) => {
             if (e.target.classList && e.target.classList.contains('view-card-btn')) {
-                state.currentView = 'card';
-                state.activeArcherId = e.target.dataset.archerId;
-                renderCardView(state.activeArcherId);
-                renderView();
+                const archerId = e.target.dataset.archerId;
+                renderCardView(archerId);
                 if (keypad.element) keypad.element.style.display = 'none';
             }
         });
@@ -2551,73 +2549,35 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderCardView(archerId) {
         const archer = state.archers.find(a => a.id == archerId);
         if (!archer) return;
-        const displayName = `${archer.firstName} ${archer.lastName}`;
-        cardControls.archerNameDisplay.textContent = displayName;
-        const header = cardControls.archerNameDisplay.parentElement;
-        header.querySelectorAll('.card-details').forEach(el => el.remove());
-        const detailsDiv = document.createElement('div');
-        detailsDiv.className = 'card-details';
-        const status = (archer.cardStatus || 'PENDING').toUpperCase();
-        let badgeClass = 'bg-warning text-white';
-        if (status === 'VER') badgeClass = 'bg-success text-white';
-        if (status === 'VOID') badgeClass = 'bg-danger text-white';
-        const statusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded ${badgeClass}">${status}</span>`;
-        const notesText = archer.verificationNotes ? `<span>Notes: ${archer.verificationNotes}</span>` : '';
-        detailsDiv.innerHTML = `<span>Bale ${state.baleNumber} - Target ${archer.targetAssignment}</span><span>${archer.school}</span><span>${archer.level} / ${archer.gender}</span>${statusBadge}${notesText}`;
-        header.appendChild(detailsDiv);
-        const table = document.createElement('table');
-        table.className = 'w-full border-collapse text-sm bg-white dark:bg-gray-700';
-        table.dataset.archerId = archerId;
-        table.innerHTML = `<thead class="bg-primary dark:bg-primary-dark text-white"><tr><th class="px-2 py-2 text-center font-bold w-12">E</th><th class="px-2 py-2 text-center font-bold w-12">A1</th><th class="px-2 py-2 text-center font-bold w-12">A2</th><th class="px-2 py-2 text-center font-bold w-12">A3</th><th class="px-2 py-2 text-center font-bold w-14">END</th><th class="px-2 py-2 text-center font-bold w-14">RUN</th><th class="px-2 py-2 text-center font-bold w-12">X</th><th class="px-2 py-2 text-center font-bold w-12">10</th><th class="px-2 py-2 text-center font-bold w-14">AVG</th></tr></thead>`;
-        const tbody = document.createElement('tbody');
-        let tableHTML = '';
-        let runningTotal = 0, totalTensOverall = 0, totalXsOverall = 0;
-        for (let i = 0; i < state.totalEnds; i++) {
-            const endNum = i + 1;
-            const endScores = archer.scores[i] || ['', '', ''];
-            let endTotal = 0, endTens = 0, endXs = 0;
-            let isComplete = endScores.every(s => s !== '');
-            endScores.forEach(scoreValue => {
-                endTotal += parseScoreValue(scoreValue);
-                if (scoreValue === '10') endTens++;
-                else if (String(scoreValue).toUpperCase() === 'X') endXs++;
-            });
-            if (isComplete) {
-                runningTotal += endTotal;
-                totalTensOverall += endTens;
-                totalXsOverall += endXs;
+        
+        // Convert archer data to ScorecardView format
+        const archerData = {
+            id: archer.id,
+            firstName: archer.firstName,
+            lastName: archer.lastName,
+            school: archer.school,
+            level: archer.level,
+            gender: archer.gender,
+            scores: archer.scores,
+            verified: archer.cardStatus === 'VER',
+            completed: archer.scores.filter(s => s.every(val => val !== '')).length >= state.totalEnds
+        };
+        
+        const roundData = {
+            totalEnds: state.totalEnds,
+            eventName: state.eventName || 'Ranking Round',
+            division: archer.level || '',
+            roundType: 'R300'
+        };
+        
+        // Use standardized ScorecardView modal
+        ScorecardView.showScorecardModal(archerData, roundData, {
+            onClose: () => {
+                // Return to scoring view when modal closes
+                state.currentView = 'scoring';
+                renderView();
             }
-            // Calculate average for THIS END only (not running average)
-            const avg = isComplete ? (endTotal / 3).toFixed(1) : '';
-            let avgClass = '';
-            if (isComplete) {
-                const avgNum = parseFloat(avg);
-                if (avgNum >= 9) avgClass = 'score-gold';
-                else if (avgNum >= 7) avgClass = 'score-red';
-                else if (avgNum >= 5) avgClass = 'score-blue';
-                else if (avgNum >= 3) avgClass = 'score-black';
-                else avgClass = 'score-white';
-            }
-            tableHTML += `<tr class="border-b border-gray-200 dark:border-gray-600"><td class="px-2 py-1 text-center font-semibold text-gray-800 dark:text-white">${endNum}</td>${endScores.map(s => `<td class="px-2 py-1 text-center ${getScoreColor(s)} font-bold">${s}</td>`).join('')}<td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold">${isComplete ? endTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white">${isComplete ? runningTotal : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white">${isComplete ? endXs : ''}</td><td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white">${isComplete ? (endTens + endXs) : ''}</td><td class="px-2 py-1 text-center ${avgClass} font-bold">${avg}</td></tr>`;
-        }
-        tbody.innerHTML = tableHTML;
-        table.appendChild(tbody);
-        const tfoot = table.createTFoot();
-        const footerRow = tfoot.insertRow();
-        let finalAvg = 0, finalAvgClass = '';
-        const completedEnds = archer.scores.filter(s => s.every(val => val !== '')).length;
-        if (completedEnds > 0) {
-            finalAvg = (runningTotal / (completedEnds * 3)).toFixed(1);
-            const avgNum = parseFloat(finalAvg);
-            if (avgNum >= 9) finalAvgClass = 'score-gold';
-            else if (avgNum >= 7) finalAvgClass = 'score-red';
-            else if (avgNum >= 5) finalAvgClass = 'score-blue';
-            else if (avgNum >= 3) finalAvgClass = 'score-black';
-            else finalAvgClass = 'score-white';
-        }
-        footerRow.innerHTML = `<td colspan="4" class="px-2 py-1 text-right font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">Round Totals:</td><td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">${totalTensOverall + totalXsOverall}</td><td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">${totalXsOverall}</td><td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white"></td><td class="px-2 py-1 text-center font-bold bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white">${runningTotal}</td><td class="px-2 py-1 text-center font-bold ${finalAvgClass}">${finalAvg > 0 ? finalAvg : ''}</td>`;
-        cardControls.container.innerHTML = '';
-        cardControls.container.appendChild(table);
+        });
     }
     
     function getBaleTotals() {
@@ -4667,10 +4627,8 @@ function updateManualLiveControls(summaryOverride) {
 
         document.body.addEventListener('click', (e) => {
             if (e.target.classList.contains('view-card-btn')) {
-                state.currentView = 'card';
-                state.activeArcherId = e.target.dataset.archerId;
-                renderCardView(state.activeArcherId);
-                renderView();
+                const archerId = e.target.dataset.archerId;
+                renderCardView(archerId);
                 if (keypad.element) {
                     keypad.element.style.display = 'none';
                 }
