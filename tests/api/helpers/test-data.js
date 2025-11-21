@@ -160,9 +160,10 @@ class APIClient {
 
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
+        
         const config = {
-            headers: { ...this.defaultHeaders, ...options.headers },
-            ...options
+            ...options,
+            headers: { ...this.defaultHeaders, ...(options.headers || {}) }
         };
 
         if (config.body && typeof config.body === 'object') {
@@ -213,17 +214,19 @@ class APIClient {
 
     // Authentication helpers
     withApiKey(apiKey) {
-        return new APIClient(this.baseURL, {
+        const newClient = new APIClient(this.baseURL, {
             ...this.defaultHeaders,
             'X-API-Key': apiKey
         });
+        return newClient;
     }
 
     withPasscode(passcode) {
-        return new APIClient(this.baseURL, {
+        const newClient = new APIClient(this.baseURL, {
             ...this.defaultHeaders,
             'X-Passcode': passcode
         });
+        return newClient;
     }
 }
 
