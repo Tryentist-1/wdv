@@ -1,5 +1,7 @@
 @import "tailwindcss";
-@config "../tailwind.config.js";
+
+/* Configure dark mode variant for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Tell Tailwind which files to scan for classes */
 @source "../*.html";
@@ -58,7 +60,7 @@
 }
 
 .score-input.is-locked {
-  @apply bg-gray-200 text-gray-500 cursor-not-allowed;
+  @apply bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed;
 }
 
 /* Score Color Backgrounds */
@@ -88,6 +90,10 @@
   border: 1px solid #d1d5db;
 }
 
+.dark .score-input-white {
+  border-color: #4b5563;
+}
+
 .score-input-miss {
   background-color: var(--color-score-miss);
   color: white;
@@ -95,7 +101,7 @@
 
 /* Tables */
 .table-scoring {
-  @apply w-full border-collapse text-sm bg-white;
+  @apply w-full border-collapse text-sm bg-white dark:bg-gray-800;
 }
 
 .table-scoring thead {
@@ -108,20 +114,20 @@
 }
 
 .table-scoring td {
-  @apply px-2 py-1 text-center border border-gray-300;
+  @apply px-2 py-1 text-center border border-gray-300 dark:border-gray-600;
 }
 
 .table-scoring tbody tr:nth-child(even) {
-  @apply bg-gray-50;
+  @apply bg-gray-50 dark:bg-gray-700/50;
 }
 
 .table-scoring tbody tr:hover {
-  @apply bg-blue-50;
+  @apply bg-blue-50 dark:bg-gray-600;
 }
 
 /* Calculated Cells */
 .cell-calculated {
-  @apply bg-gray-100 font-normal;
+  @apply bg-gray-100 dark:bg-gray-700 font-normal;
 }
 
 .cell-bold {
@@ -130,15 +136,15 @@
 
 /* Sticky First Column */
 .cell-sticky {
-  @apply sticky left-0 bg-white z-[5];
+  @apply sticky left-0 bg-white dark:bg-gray-800 z-[5];
 }
 
 .table-scoring tbody tr:nth-child(even) .cell-sticky {
-  @apply bg-gray-50;
+  @apply bg-gray-50 dark:bg-gray-700/50;
 }
 
 .table-scoring tbody tr:hover .cell-sticky {
-  @apply bg-blue-50;
+  @apply bg-blue-50 dark:bg-gray-600;
 }
 
 /* Status Badges */
@@ -162,7 +168,7 @@
 }
 
 .status-off {
-  @apply bg-gray-200 text-gray-600;
+  @apply bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300;
 }
 
 /* Touch Targets */

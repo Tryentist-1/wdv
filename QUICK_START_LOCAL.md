@@ -68,6 +68,8 @@ npm run build:css
 
 **Note:** The project uses compiled Tailwind CSS instead of CDN for reliability. After editing `css/tailwind.css`, run `npm run build:css` to regenerate `css/tailwind-compiled.css`.
 
+**Dark Mode:** Dark mode is configured using Tailwind v4's `@custom-variant` directive. If dark mode isn't working, verify that `css/tailwind.css` contains the dark mode variant configuration.
+
 ### 7. Start Server
 ```bash
 npm run serve
