@@ -226,7 +226,13 @@
 
         row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors text-gray-800 dark:text-gray-200';
         const isLocked = round.locked || round.card_status === 'VER';
-        const canDelete = !isLocked && (round.ends_completed === 0 || round.final_score === 0);
+        const canDelete = !isLocked && (
+          round.ends_completed === 0 || 
+          round.final_score === 0 || 
+          (round.ends_completed <= 3 && round.final_score < 100) || // Test rounds with few ends and low scores
+          round.event_name?.toLowerCase().includes('test') || // Any event with "test" in name
+          round.event_name?.toLowerCase().includes('practice') // Any practice event
+        );
         
         row.innerHTML = `
           <td class="px-3 py-3">${round.event_date || 'N/A'}</td>
