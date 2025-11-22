@@ -572,6 +572,9 @@
                 
                 // Update avatar preview based on current data
                 updateAvatarPreview(form);
+                
+                // Initialize notes history functionality
+                initializeNotesHistory(form);
             }
             
             function initializeAvatarUpload(form) {
@@ -661,6 +664,50 @@
                 } else {
                     element.textContent = '?';
                 }
+            }
+            
+            function initializeNotesHistory(form) {
+                const moveToHistoryBtn = form.querySelector('#move-to-history-btn');
+                const currentNotesInput = form.querySelector('#notesCurrent');
+                const archiveNotesInput = form.querySelector('#notesArchive');
+                
+                if (!moveToHistoryBtn || !currentNotesInput || !archiveNotesInput) return;
+                
+                moveToHistoryBtn.onclick = (e) => {
+                    e.preventDefault();
+                    
+                    const currentNote = currentNotesInput.value.trim();
+                    if (!currentNote) {
+                        alert('No current note to move to history.');
+                        return;
+                    }
+                    
+                    // Create timestamp (short format at end)
+                    const now = new Date();
+                    const timestamp = now.toLocaleDateString('en-US', { 
+                        month: 'numeric', 
+                        day: 'numeric', 
+                        year: '2-digit' 
+                    });
+                    
+                    // Format: "Note text (11/22/25)"
+                    const timestampedNote = `${currentNote} (${timestamp})`;
+                    
+                    // Get existing archive
+                    const existingArchive = archiveNotesInput.value.trim();
+                    
+                    // Prepend new note to archive (most recent first)
+                    const newArchive = existingArchive 
+                        ? `${timestampedNote}\n${existingArchive}`
+                        : timestampedNote;
+                    
+                    // Update fields
+                    archiveNotesInput.value = newArchive;
+                    currentNotesInput.value = '';
+                    
+                    // Focus back to current notes for next entry
+                    currentNotesInput.focus();
+                };
             }
             
             // Crop modal functionality
@@ -987,12 +1034,17 @@
                                 <textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesGear" rows="2"></textarea>
                             </div>
                             <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesCurrent">Current Notes</label>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300" for="notesCurrent">Current Notes</label>
+                                    <button type="button" id="move-to-history-btn" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors" title="Move current note to history">
+                                        <i class="fas fa-arrow-down mr-1"></i>Move to History
+                                    </button>
+                                </div>
                                 <textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesCurrent" rows="2"></textarea>
                             </div>
                             <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesArchive">Archive Notes</label>
-                                <textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesArchive" rows="2"></textarea>
+                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesArchive">Notes History (Read Only)</label>
+                                <textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none cursor-not-allowed" id="notesArchive" rows="3" readonly placeholder="Previous notes will appear here with timestamps..."></textarea>
                             </div>
                         </div>
                     </section>
