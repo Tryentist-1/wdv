@@ -1,4 +1,9 @@
 @import "tailwindcss";
+@config "../tailwind.config.js";
+
+/* Tell Tailwind which files to scan for classes */
+@source "../*.html";
+@source "../js/**/*.js";
 
 @theme {
   /* Score Colors */
