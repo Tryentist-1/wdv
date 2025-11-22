@@ -1,96 +1,214 @@
 /* Unified Scorecard List Design */
 .scorecard-list-item {
-    @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-3 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .scorecard-list-item:hover {
     transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-color: #93c5fd;
+}
+
+.dark .scorecard-list-item {
+    background-color: #1f2937;
+    border-color: #374151;
+}
+
+.dark .scorecard-list-item:hover {
+    border-color: #2563eb;
 }
 
 .scorecard-event-name {
-    @apply text-lg font-bold text-gray-900 dark:text-white mb-2 truncate;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dark .scorecard-event-name {
+    color: #f9fafb;
 }
 
 .scorecard-event-details {
-    @apply text-sm text-gray-600 dark:text-gray-400 mb-3 flex flex-wrap gap-2;
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.dark .scorecard-event-details {
+    color: #9ca3af;
 }
 
 .scorecard-event-detail {
-    @apply inline-flex items-center;
+    display: inline-flex;
+    align-items: center;
 }
 
 .scorecard-stats-grid {
-    @apply grid grid-cols-5 gap-2 mb-3;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .scorecard-stat {
-    @apply text-center;
+    text-align: center;
 }
 
 .scorecard-stat-label {
-    @apply text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium;
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.dark .scorecard-stat-label {
+    color: #9ca3af;
 }
 
 .scorecard-stat-value {
-    @apply text-lg font-bold text-gray-900 dark:text-white leading-tight;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.25;
+}
+
+.dark .scorecard-stat-value {
+    color: #f9fafb;
 }
 
 .scorecard-stat-value.large {
-    @apply text-xl;
+    font-size: 1.25rem;
+    color: #0d6efd;
 }
 
 .scorecard-actions {
-    @apply flex justify-end gap-2;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
 }
 
 .scorecard-action-btn {
-    @apply p-2 rounded-full transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-gray-700;
+    padding: 0.5rem;
+    border-radius: 9999px;
+    transition: all 0.2s ease-in-out;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.scorecard-action-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.dark .scorecard-action-btn:hover {
+    background-color: #374151;
 }
 
 .scorecard-action-btn.delete {
-    @apply text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20;
+    color: #dc2626;
+}
+
+.scorecard-action-btn.delete:hover {
+    background-color: #fef2f2;
+}
+
+.dark .scorecard-action-btn.delete:hover {
+    background-color: rgba(185, 28, 28, 0.2);
 }
 
 .scorecard-action-btn.view {
-    @apply text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20;
+    color: #2563eb;
+}
+
+.scorecard-action-btn.view:hover {
+    background-color: #eff6ff;
+}
+
+.dark .scorecard-action-btn.view:hover {
+    background-color: rgba(37, 99, 235, 0.2);
 }
 
 /* Status badges */
 .status-badge {
-    @apply inline-flex items-center px-2 py-1 text-xs font-bold rounded-full;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 9999px;
 }
 
 .status-badge.verified {
-    @apply bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400;
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.dark .status-badge.verified {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
 }
 
 .status-badge.pending {
-    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400;
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.dark .status-badge.pending {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
 }
 
 .status-badge.void {
-    @apply bg-gray-100 text-gray-600 dark:bg-gray-900/20 dark:text-gray-400;
+    background-color: #f3f4f6;
+    color: #4b5563;
+}
+
+.dark .status-badge.void {
+    background-color: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
 }
 
 .status-badge.locked {
-    @apply bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400;
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.dark .status-badge.locked {
+    background-color: rgba(37, 99, 235, 0.2);
+    color: #60a5fa;
 }
 
 /* Mobile responsive adjustments */
 @media (max-width: 640px) {
     .scorecard-stats-grid {
-        @apply grid-cols-3;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     
     .scorecard-event-details {
-        @apply text-xs;
+        font-size: 0.75rem;
     }
     
     .scorecard-stat-value {
-        @apply text-base;
+        font-size: 1rem;
     }
     
     .scorecard-stat-value.large {
-        @apply text-lg;
+        font-size: 1.125rem;
     }
 }
