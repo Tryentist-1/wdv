@@ -305,7 +305,7 @@
           const historyRes = await fetch(`api/v1/archers/${archer.id}/history`);
           if (historyRes.ok) {
             const historyData = await historyRes.json();
-            const rounds = historyData.rounds || [];
+            const rounds = historyData.history || historyData.rounds || [];
             
             // Find incomplete rounds (not locked, incomplete ends, or test rounds)
             const openRounds = rounds.filter(round => {
