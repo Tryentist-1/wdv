@@ -127,7 +127,18 @@
     <div id="archer-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transition-colors duration-200">
             <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 z-10">
-                <h2 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-white">Add Archer</h2>
+                <div class="flex justify-between items-center">
+                    <h2 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-white">Add Archer</h2>
+                    <div id="archer-navigation" class="hidden flex gap-2">
+                        <button type="button" id="prev-archer-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Previous archer">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="archer-position" class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">1 of 25</span>
+                        <button type="button" id="next-archer-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Next archer">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
             <form id="archer-form" class="p-6">
                 <!-- Form content will be injected by JS -->
@@ -190,6 +201,7 @@
             let editingIndex = null;
             let sortMode = 'name'; // 'name' or 'level'
             let lastSyncMessage = '';
+            let filteredArcherIndices = []; // For navigation
 
             function formatTimestamp(ts) {
                 if (!ts) return 'Never';
@@ -318,6 +330,9 @@
                     container.innerHTML = '<p style="text-align:center; padding: 20px; color: #6c757d;">No archers found.</p>';
                     return;
                 }
+
+                // Store filtered indices for navigation
+                filteredArcherIndices = items.map(item => item.index);
 
                 items.forEach(({ archer, index }) => {
                     const row = document.createElement('div');
@@ -544,6 +559,9 @@
                 } else {
                     modalTitle.textContent = 'Add Archer';
                     setFormValue(form, 'status', 'active');
+                    // Hide navigation for new archers
+                    const navigationDiv = document.getElementById('archer-navigation');
+                    if (navigationDiv) navigationDiv.classList.add('hidden');
                 }
 
                 const emailDomainBtn = form.querySelector('#email-domain-btn');
@@ -589,6 +607,11 @@
                 
                 // Initialize notes history functionality
                 initializeNotesHistory(form);
+                
+                // Initialize navigation if editing
+                if (index !== null) {
+                    initializeArcherNavigation(index);
+                }
             }
             
             function initializeAvatarUpload(form) {
@@ -721,6 +744,49 @@
                     
                     // Focus back to current notes for next entry
                     currentNotesInput.focus();
+                };
+            }
+            
+            function initializeArcherNavigation(currentIndex) {
+                const navigationDiv = document.getElementById('archer-navigation');
+                const prevBtn = document.getElementById('prev-archer-btn');
+                const nextBtn = document.getElementById('next-archer-btn');
+                const positionSpan = document.getElementById('archer-position');
+                
+                if (!navigationDiv || !prevBtn || !nextBtn || !positionSpan) return;
+                
+                // Show navigation
+                navigationDiv.classList.remove('hidden');
+                
+                // Find current position in filtered list
+                const currentPosition = filteredArcherIndices.indexOf(currentIndex);
+                const totalArchers = filteredArcherIndices.length;
+                
+                if (currentPosition === -1 || totalArchers <= 1) {
+                    navigationDiv.classList.add('hidden');
+                    return;
+                }
+                
+                // Update position display
+                positionSpan.textContent = `${currentPosition + 1} of ${totalArchers}`;
+                
+                // Update button states
+                prevBtn.disabled = currentPosition === 0;
+                nextBtn.disabled = currentPosition === totalArchers - 1;
+                
+                // Add click handlers
+                prevBtn.onclick = () => {
+                    if (currentPosition > 0) {
+                        const prevIndex = filteredArcherIndices[currentPosition - 1];
+                        openModal(prevIndex);
+                    }
+                };
+                
+                nextBtn.onclick = () => {
+                    if (currentPosition < totalArchers - 1) {
+                        const nextIndex = filteredArcherIndices[currentPosition + 1];
+                        openModal(nextIndex);
+                    }
                 };
             }
             
