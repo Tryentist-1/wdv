@@ -4,25 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Archer Results - Pivot View</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/tailwind-compiled.css">
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            'primary': '#0d6efd',
-            'primary-dark': '#0a58ca',
-            'success': '#198754',
-            'danger': '#dc3545',
-            'rank-gold': '#f39c12',
-            'rank-silver': '#95a5a6',
-            'rank-bronze': '#cd7f32'
-          }
-        }
-      }
-    }
-    
     // Initialize dark mode from localStorage
     (function() {
       const savedTheme = localStorage.getItem('theme');
