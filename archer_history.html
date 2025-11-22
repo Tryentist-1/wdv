@@ -247,7 +247,7 @@
           <td class="px-3 py-3">${round.total_xs || 0}</td>
           <td class="px-3 py-3">
             ${canDelete ? `<button onclick="deleteScorecard('${round.round_id}', '${round.round_archer_id}', '${round.event_name}', this)" class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors" title="Delete abandoned scorecard">
-              <i class="fas fa-trash"></i>
+              <i class="fas fa-trash-alt"></i>
             </button>` : (isLocked ? '<span class="text-gray-400 text-xs">🔒 Locked</span>' : '<span class="text-gray-400 text-xs">-</span>')}
           </td>
         `;
@@ -344,18 +344,29 @@
         buttonElement.disabled = true;
         buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         
+        // Get coach credentials from localStorage or cookies
+        const coachApiKey = localStorage.getItem('coach_api_key') || 
+                           localStorage.getItem('coach_passcode') || 
+                           getCookie('coach_auth') || 
+                           'wdva26'; // Default coach passcode
+        
+        const headers = {
+          'Content-Type': 'application/json',
+          'X-Passcode': coachApiKey,
+          'X-API-Key': coachApiKey
+        };
+        
         const response = await fetch(`${API_BASE}/rounds/${roundId}/archers/${roundArcherId}`, {
           method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+          headers: headers
         });
         
         if (!response.ok) {
           if (response.status === 401 || response.status === 403) {
-            throw new Error('You need coach permissions to delete scorecards. Please authenticate in the Coach Console first.');
+            throw new Error('Authentication required. Please visit the Coach Console to authenticate first, then try again.');
           }
-          throw new Error(`Failed to delete scorecard (HTTP ${response.status})`);
+          const errorText = await response.text().catch(() => 'Unknown error');
+          throw new Error(`Failed to delete scorecard (HTTP ${response.status}): ${errorText}`);
         }
         
         const result = await response.json();
@@ -372,8 +383,20 @@
         
         // Re-enable button on error
         buttonElement.disabled = false;
-        buttonElement.innerHTML = '<i class="fas fa-trash"></i>';
+        buttonElement.innerHTML = '<i class="fas fa-trash-alt"></i>';
       }
+    }
+    
+    // Helper function to get cookie value
+    function getCookie(name) {
+      const nameEQ = name + '=';
+      const ca = document.cookie.split(';');
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+      }
+      return null;
     }
 
     // Load history on page load
