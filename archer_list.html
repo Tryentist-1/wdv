@@ -418,7 +418,21 @@
 
                     const detailsLabel = document.createElement('div');
                     const statusBadge = (archer.status || 'active').toUpperCase() === 'ACTIVE' ? 'Active' : 'Inactive';
-                    detailsLabel.textContent = `${(archer.school || 'N/A').toUpperCase()} • Grade ${archer.grade || '-'} • ${archer.level || 'VAR'} / ${archer.gender || 'M'} • ${statusBadge}`;
+                    
+                    // Build details with PR info
+                    let detailsText = `${(archer.school || 'N/A').toUpperCase()} • Grade ${archer.grade || '-'} • ${archer.level || 'VAR'} / ${archer.gender || 'M'} • ${statusBadge}`;
+                    
+                    // Add PR info if available
+                    const jvPr = archer.jvPr ? parseInt(archer.jvPr) : null;
+                    const varPr = archer.varPr ? parseInt(archer.varPr) : null;
+                    if (jvPr || varPr) {
+                        const prParts = [];
+                        if (jvPr) prParts.push(`JV PR: ${jvPr}`);
+                        if (varPr) prParts.push(`VAR PR: ${varPr}`);
+                        detailsText += ` • ${prParts.join(' • ')}`;
+                    }
+                    
+                    detailsLabel.textContent = detailsText;
                     detailsLabel.className = 'archer-details-label';
                     
                     nameDiv.appendChild(nameLabel);
