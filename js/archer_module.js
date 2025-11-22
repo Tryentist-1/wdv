@@ -53,6 +53,9 @@ const DEFAULT_ARCHER_TEMPLATE = {
   usArcheryId: '',
   jvPr: '',
   varPr: '',
+  shirtSize: '',
+  pantSize: '',
+  hatSize: '',
   // Legacy local-only fields kept for backward compatibility until scoring apps migrate
   bale: '',
   target: '',
@@ -240,6 +243,9 @@ const ArcherModule = {
       usArcheryId: this._safeString(legacy.usArcheryId || legacy.usarchery || legacy.us_archery_id),
       jvPr: legacy.jvPr || legacy.jv_pr || '',
       varPr: legacy.varPr || legacy.var_pr || '',
+      shirtSize: legacy.shirtSize || '',
+      pantSize: legacy.pantSize || '',
+      hatSize: legacy.hatSize || '',
       coachFavorite: !!legacy.coachFavorite || !!legacy.fave,
       fave: !!legacy.coachFavorite || !!legacy.fave,
       faves: this._parseFaves(legacy.faves),
@@ -454,7 +460,10 @@ const ArcherModule = {
       phone: this._safeString(data.phone),
       usArcheryId: this._safeString(data.usArcheryId),
       jvPr: this._toNullableInt(data.jvPr),
-      varPr: this._toNullableInt(data.varPr)
+      varPr: this._toNullableInt(data.varPr),
+      shirtSize: this._safeString(data.shirtSize),
+      pantSize: this._safeString(data.pantSize),
+      hatSize: this._safeString(data.hatSize)
     };
     return payload;
   },
@@ -610,6 +619,9 @@ const ArcherModule = {
       usArcheryId: this._safeString(apiArcher.usArcheryId ?? apiArcher.us_archery_id),
       jvPr: apiArcher.jvPr ?? apiArcher.jv_pr ?? '',
       varPr: apiArcher.varPr ?? apiArcher.var_pr ?? '',
+      shirtSize: this._safeString(apiArcher.shirtSize ?? apiArcher.shirt_size),
+      pantSize: this._safeString(apiArcher.pantSize ?? apiArcher.pant_size),
+      hatSize: this._safeString(apiArcher.hatSize ?? apiArcher.hat_size),
       coachFavorite: !!apiArcher.coachFavorite,
       fave: !!apiArcher.coachFavorite,
       bale: '',
@@ -804,9 +816,12 @@ const ArcherModule = {
       status: lookup('status') || 'active',
       email: lookup('email'),
       phone: lookup('phone'),
-      usArcheryId: lookup('usa_archery_id') || lookup('usaarcheryid') || lookup('usaarchery'),
-      jvPr: lookup('jv_pr') || lookup('jvpr'),
-      varPr: lookup('var_pr') || lookup('varpr'),
+        usArcheryId: lookup('usa_archery_id') || lookup('usaarcheryid') || lookup('usaarchery'),
+        jvPr: lookup('jv_pr') || lookup('jvpr'),
+        varPr: lookup('var_pr') || lookup('varpr'),
+        shirtSize: lookup('shirt_size') || lookup('shirtsize'),
+        pantSize: lookup('pant_size') || lookup('pantsize'),
+        hatSize: lookup('hat_size') || lookup('hatsize'),
       domEye: lookup('dom_eye') || lookup('domeye'),
       domHand: lookup('dom_hand') || lookup('domhand'),
       heightIn: lookup('height') || lookup('height_in'),
@@ -870,7 +885,10 @@ const ArcherModule = {
       'notesGear',
       'notesCurrent',
       'notesArchive',
-      'faves'
+      'faves',
+      'shirtSize',
+      'pantSize',
+      'hatSize'
     ];
     const rows = list.map(archer => {
       const normalized = this._applyTemplate(archer);
