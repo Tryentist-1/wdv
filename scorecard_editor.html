@@ -7,6 +7,7 @@
     
     <!-- Tailwind CSS Compiled -->
     <link rel="stylesheet" href="css/tailwind-compiled.css">
+    <link rel="stylesheet" href="css/unified-scorecard-list.css">
     
     <style>
         /* Score color classes - matching ranking_round_300.js */
@@ -300,47 +301,76 @@
                 // Render results
                 let html = '';
                 
+                // Flatten all cards from all archers into a single list
+                const allCards = [];
                 results.forEach(result => {
                     const archer = result.archer;
                     const cards = result.scorecards || [];
-                    
-                    html += `
-                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                            <h4 class="font-bold text-gray-800 dark:text-white mb-2">
-                                ${archer.firstName} ${archer.lastName}
-                                ${archer.school ? `<span class="text-sm font-normal text-gray-600 dark:text-gray-400">(${archer.school})</span>` : ''}
-                            </h4>
-                            ${cards.length === 0 ? '<p class="text-sm text-gray-500 dark:text-gray-400">No scorecards found</p>' : ''}
-                            <div class="space-y-1">
-                    `;
-                    
                     cards.forEach(card => {
-                        const statusBadge = card.cardStatus === 'VER' ? '✓' : 
-                                          card.cardStatus === 'VOID' ? '✗' : '⏳';
-                        const statusColor = card.cardStatus === 'VER' ? 'text-success' : 
-                                          card.cardStatus === 'VOID' ? 'text-gray-500' : 'text-warning';
-                        
-                        html += `
-                            <a href="?id=${card.roundArcherId}&mode=${mode}" 
-                               class="block px-3 py-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-600 rounded border border-gray-200 dark:border-gray-600 transition-colors">
-                                <div class="flex justify-between items-center">
-                                    <div class="text-sm">
-                                        <span class="font-medium">${card.eventName || 'Event'}</span>
-                                        <span class="text-gray-600 dark:text-gray-400">• ${card.roundType || card.division || 'Round'}</span>
-                                        ${card.eventDate || card.date ? `<span class="text-gray-500 dark:text-gray-500">• ${card.eventDate || card.date}</span>` : ''}
-                                    </div>
-                                    <span class="${statusColor} font-bold">${statusBadge}</span>
-                                </div>
-                                ${card.totalScore > 0 ? `<div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Score: ${card.totalScore}</div>` : ''}
-                            </a>
-                        `;
+                        allCards.push({
+                            ...card,
+                            archerName: `${archer.firstName} ${archer.lastName}`,
+                            archerSchool: archer.school
+                        });
                     });
-                    
-                    html += `
-                            </div>
-                        </div>
-                    `;
                 });
+
+                if (allCards.length === 0) {
+                    html = '<p class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No scorecards found</p>';
+                } else {
+                    // Create unified scorecard list
+                    const options = {
+                        columns: ['Scorecard', 'Status', 'Total', 'Avg', 'Xs', '10s'],
+                        onItemClick: (card) => {
+                            window.location.href = `?id=${card.roundArcherId}&mode=${mode}`;
+                        },
+                        getEventName: (card) => card.eventName || 'Event',
+                        getTotal: (card) => card.totalScore || 0,
+                        getAvg: (card) => {
+                            const total = card.totalScore || 0;
+                            const ends = card.endsCompleted || 10;
+                            return ends > 0 ? (total / (ends * 3)).toFixed(1) : '0.0';
+                        },
+                        getXs: (card) => card.xs || 0,
+                        getTens: (card) => card.tens || 0,
+                        getStatus: (card) => card.cardStatus || 'PEND'
+                    };
+
+                    // Override formatEventDetails to include archer name
+                    const originalFormatEventDetails = UnifiedScorecardList.formatEventDetails;
+                    UnifiedScorecardList.formatEventDetails = function(card) {
+                        const parts = [];
+                        
+                        // Archer name and school
+                        let archerInfo = card.archerName || 'Unknown Archer';
+                        if (card.archerSchool) {
+                            archerInfo += ` (${card.archerSchool})`;
+                        }
+                        parts.push(archerInfo);
+                        
+                        // Round type and division
+                        if (card.roundType || card.division) {
+                            parts.push(card.roundType || card.division);
+                        }
+                        
+                        // Date
+                        if (card.eventDate || card.date) {
+                            const date = new Date(card.eventDate || card.date);
+                            if (!isNaN(date.getTime())) {
+                                parts.push(date.toLocaleDateString('en-US', { 
+                                    month: 'short', day: 'numeric', year: '2-digit' 
+                                }));
+                            }
+                        }
+                        
+                        return parts.join(' • ');
+                    };
+
+                    html = UnifiedScorecardList.render(allCards, options);
+                    
+                    // Restore original function
+                    UnifiedScorecardList.formatEventDetails = originalFormatEventDetails;
+                }
                 
                 resultsDiv.innerHTML = html;
                 
@@ -910,5 +940,6 @@
             document.getElementById('error-message').textContent = message;
         }
     </script>
+    <script src="js/unified_scorecard_list.js"></script>
 </body>
 </html>
