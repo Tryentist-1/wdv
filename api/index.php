@@ -1227,9 +1227,46 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)$#i', $route, $m) 
 
 // Remove a round archer (from a bale/round)
 if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
-    require_api_key();
     $roundId = $m[1];
     $roundArcherId = $m[2];
+    
+    // Check if this is archer self-deletion
+    $archerSelf = $_SERVER['HTTP_X_ARCHER_SELF'] ?? '';
+    $archerIdHeader = $_SERVER['HTTP_X_ARCHER_ID'] ?? '';
+    
+    $isArcherSelfDelete = false;
+    if ($archerSelf === 'true' && !empty($archerIdHeader)) {
+        // Verify the archer ID matches the scorecard owner
+        try {
+            $pdo = db();
+            $checkStmt = $pdo->prepare('
+                SELECT ra.archer_id, ra.locked, ra.card_status 
+                FROM round_archers ra 
+                WHERE ra.id = ? AND ra.round_id = ?
+            ');
+            $checkStmt->execute([$roundArcherId, $roundId]);
+            $scorecard = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($scorecard && $scorecard['archer_id'] === $archerIdHeader) {
+                // Check if scorecard is locked/verified
+                if ($scorecard['locked'] || $scorecard['card_status'] === 'VER') {
+                    json_response(['error' => 'Cannot delete locked or verified scorecard'], 403);
+                    exit;
+                }
+                $isArcherSelfDelete = true;
+            }
+        } catch (Exception $e) {
+            error_log("Archer self-delete check failed: " . $e->getMessage());
+            json_response(['error' => 'Database error during authorization check'], 500);
+            exit;
+        }
+    }
+    
+    // If not archer self-delete, require coach API key
+    if (!$isArcherSelfDelete) {
+        require_api_key();
+    }
+    
     try {
         $pdo = db();
         $stmt = $pdo->prepare('DELETE FROM round_archers WHERE round_id = ? AND id = ?');
