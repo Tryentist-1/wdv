@@ -204,6 +204,17 @@
         <div id="welcome-self" class="text-center"></div>
       </div>
       
+      <!-- Open Assignments Section -->
+      <div id="open-assignments" class="hidden space-y-3">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+          <i class="fas fa-tasks mr-2 text-blue-600 dark:text-blue-400"></i>
+          Your Open Assignments
+        </h2>
+        <div id="assignments-list" class="space-y-2">
+          <!-- Assignments will be populated here -->
+        </div>
+      </div>
+      
       <!-- Main Modules -->
       <div class="grid grid-cols-2 gap-4">
         <a href="ranking_round_300.html" class="block px-4 py-4 bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Score competitive ranking rounds with multiple archers">
@@ -288,38 +299,118 @@
       document.getElementById('onboarding-modal').classList.add('hidden');
     }
 
-    // Load active event indicator
-    async function loadActiveEvent() {
+    // Load open assignments for the current archer
+    async function loadOpenAssignments() {
       try {
-        const today = new Date().toISOString().slice(0, 10);
-        const res = await fetch('https://tryentist.com/wdv/api/v1/events/recent');
+        // Get current archer
+        let archer = null;
+        if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
+          archer = window.ArcherModule.getSelfArcher();
+        }
         
-        // Handle 401 gracefully - events endpoint requires auth
-        if (!res.ok) {
-          console.log('Events endpoint requires authentication');
+        if (!archer || !archer.id) {
+          console.log('No archer set - cannot load assignments');
           return;
         }
         
-        const data = await res.json();
-        const events = data.events || [];
+        const assignments = [];
         
-        // Find active event for today
-        const activeEvent = events.find(ev => ev.date === today && ev.status === 'Active');
-        
-        if (activeEvent) {
-          const banner = document.getElementById('active-event-banner');
-          const nameEl = document.getElementById('active-event-name');
-          const detailsEl = document.getElementById('active-event-details');
-          const linkEl = document.getElementById('active-event-link');
-          
-          nameEl.textContent = activeEvent.name;
-          detailsEl.textContent = `Today - ${today}`;
-          linkEl.href = 'ranking_round_300.html';
-          banner.style.display = 'block';
+        // Check for open ranking rounds
+        try {
+          const historyRes = await fetch(`api/v1/archers/${archer.id}/history`);
+          if (historyRes.ok) {
+            const historyData = await historyRes.json();
+            const rounds = historyData.rounds || [];
+            
+            // Find incomplete rounds (not locked, low score, or few ends)
+            const openRounds = rounds.filter(round => {
+              const isLocked = round.locked || round.card_status === 'VER';
+              const hasLowScore = (round.final_score || 0) < 50;
+              const hasIncompleteEnds = (round.ends_completed || 0) < 10;
+              return !isLocked && (hasLowScore || hasIncompleteEnds);
+            });
+            
+            openRounds.forEach(round => {
+              assignments.push({
+                type: 'ranking',
+                title: round.event_name || 'Ranking Round',
+                subtitle: `${round.round_type || 'R300'} • ${round.division || 'Unknown Division'}`,
+                details: `Bale ${round.bale_number || '?'} • ${round.ends_completed || 0}/10 ends`,
+                link: `ranking_round_300.html?event=${round.event_id}&round=${round.round_id}&archer=${archer.id}`,
+                icon: 'fas fa-trophy',
+                color: 'bg-teal-600 hover:bg-teal-700',
+                urgent: (round.ends_completed || 0) > 0 // Has started but not finished
+              });
+            });
+          }
+        } catch (e) {
+          console.log('Could not load ranking round history:', e.message);
         }
+        
+        // Check for active events (if accessible)
+        try {
+          const today = new Date().toISOString().slice(0, 10);
+          const eventsRes = await fetch('api/v1/events/recent');
+          if (eventsRes.ok) {
+            const eventsData = await eventsRes.json();
+            const events = eventsData.events || [];
+            
+            // Find active events for today
+            const activeEvents = events.filter(ev => 
+              ev.date === today && 
+              (ev.status === 'Active' || ev.status === 'Not Started')
+            );
+            
+            activeEvents.forEach(event => {
+              assignments.push({
+                type: 'event',
+                title: event.name,
+                subtitle: `Active Event • Today`,
+                details: `Status: ${event.status}`,
+                link: `ranking_round_300.html?event=${event.id}`,
+                icon: 'fas fa-calendar-check',
+                color: 'bg-blue-600 hover:bg-blue-700',
+                urgent: event.status === 'Active'
+              });
+            });
+          }
+        } catch (e) {
+          console.log('Could not load active events:', e.message);
+        }
+        
+        // Display assignments
+        const assignmentsSection = document.getElementById('open-assignments');
+        const assignmentsList = document.getElementById('assignments-list');
+        
+        if (assignments.length === 0) {
+          assignmentsSection.classList.add('hidden');
+          return;
+        }
+        
+        // Sort by urgency (urgent first)
+        assignments.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+        
+        assignmentsList.innerHTML = assignments.map(assignment => `
+          <a href="${assignment.link}" class="block p-4 ${assignment.color} dark:${assignment.color.replace('bg-', 'bg-').replace('hover:bg-', 'hover:bg-')} text-white rounded-lg transition-all hover:-translate-y-0.5 shadow-lg">
+            <div class="flex items-center">
+              <i class="${assignment.icon} text-xl mr-3"></i>
+              <div class="flex-1">
+                <div class="font-semibold text-lg flex items-center">
+                  ${assignment.title}
+                  ${assignment.urgent ? '<span class="ml-2 px-2 py-1 bg-red-500 text-xs rounded-full animate-pulse">!</span>' : ''}
+                </div>
+                <div class="text-sm opacity-90">${assignment.subtitle}</div>
+                <div class="text-xs opacity-75">${assignment.details}</div>
+              </div>
+              <i class="fas fa-chevron-right text-lg opacity-75"></i>
+            </div>
+          </a>
+        `).join('');
+        
+        assignmentsSection.classList.remove('hidden');
+        
       } catch (e) {
-        // Silently fail - this is an optional enhancement
-        console.log('Could not load active event:', e.message);
+        console.log('Could not load open assignments:', e.message);
       }
     }
 
@@ -499,6 +590,7 @@
       }
 
       updateWelcomeMessage();
+      loadOpenAssignments();
       
       // Dark mode toggle functionality
       const darkModeToggle = document.getElementById('dark-mode-toggle');
