@@ -453,7 +453,12 @@ if (!empty($filters['name_like'])) {
                 <table>
                     <thead>
                         <tr>
-                            <th>Select</th>
+                            <th>
+                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                    <input type="checkbox" id="select-all-checkbox" style="margin: 0;">
+                                    <span>Select All</span>
+                                </label>
+                            </th>
                             <th>Event</th>
                             <th>Counts</th>
                             <th>Latest Activity</th>
@@ -764,6 +769,58 @@ if (!empty($filters['name_like'])) {
             </div>
         </div>
     </div>
+
+    <script>
+        // Select All functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            const eventCheckboxes = document.querySelectorAll('input[name="event_ids[]"]');
+            
+            if (selectAllCheckbox && eventCheckboxes.length > 0) {
+                // Handle Select All checkbox change
+                selectAllCheckbox.addEventListener('change', function() {
+                    const isChecked = this.checked;
+                    eventCheckboxes.forEach(checkbox => {
+                        checkbox.checked = isChecked;
+                    });
+                });
+                
+                // Handle individual checkbox changes to update Select All state
+                eventCheckboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const checkedCount = document.querySelectorAll('input[name="event_ids[]"]:checked').length;
+                        const totalCount = eventCheckboxes.length;
+                        
+                        if (checkedCount === 0) {
+                            selectAllCheckbox.checked = false;
+                            selectAllCheckbox.indeterminate = false;
+                        } else if (checkedCount === totalCount) {
+                            selectAllCheckbox.checked = true;
+                            selectAllCheckbox.indeterminate = false;
+                        } else {
+                            selectAllCheckbox.checked = false;
+                            selectAllCheckbox.indeterminate = true;
+                        }
+                    });
+                });
+                
+                // Initialize Select All state based on current selections
+                const initialCheckedCount = document.querySelectorAll('input[name="event_ids[]"]:checked').length;
+                const totalCount = eventCheckboxes.length;
+                
+                if (initialCheckedCount === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (initialCheckedCount === totalCount) {
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = true;
+                }
+            }
+        });
+    </script>
 </body>
 </html>
 
