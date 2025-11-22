@@ -186,18 +186,18 @@
           round.event_name?.toLowerCase().includes('practice')
         );
         
-        // Status badge
-        let statusBadge = '';
+        // Status text
+        let statusText = '';
         if (round.card_status === 'VER') {
-          statusBadge = '<span class="status-badge verified">VER</span>';
+          statusText = 'VER';
         } else if (round.card_status === 'VOID') {
-          statusBadge = '<span class="status-badge void">VOID</span>';
+          statusText = 'VOID';
         } else if (isLocked) {
-          statusBadge = '<span class="status-badge locked">LOCK</span>';
+          statusText = 'LOCK';
         } else if (round.ends_completed >= 10 || round.final_score > 0) {
-          statusBadge = '<span class="status-badge completed">COMP</span>';
+          statusText = 'COMP';
         } else {
-          statusBadge = '<span class="status-badge pending">PEND</span>';
+          statusText = 'PEND';
         }
         
         // Calculate average arrow score
@@ -214,11 +214,11 @@
             <div class="scorecard-event-name">${round.event_name || 'Unknown Event'}</div>
             <div class="scorecard-event-details">${eventDate} • ${round.round_type || 'R300'} • ${divisionNames[round.division] || round.division || 'Open'} • Bale ${round.bale_number || '?'}</div>
           </div>
-          <div class="scorecard-stat-value">${statusBadge}</div>
+          <div class="scorecard-stat-value">${statusText}</div>
           <div class="scorecard-stat-value total">${round.final_score || 0}</div>
           <div class="scorecard-stat-value">${avgArrow}</div>
           <div class="scorecard-stat-value">${round.total_xs || 0}</div>
-          <div class="scorecard-stat-value">${(round.total_tens || 0) + (round.total_xs || 0)}</div>
+          <div class="scorecard-stat-value">${round.total_tens || 0}</div>
         `;
 
         // Make the whole item clickable except for action buttons

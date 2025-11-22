@@ -180,15 +180,15 @@
       return ((archer.cardStatus || archer.status || 'PENDING') + '').toUpperCase();
     }
 
-    function renderStatusBadge(status) {
+    function renderStatusText(status) {
       if (status === 'VER') {
-        return '<span class="status-badge verified">VER</span>';
+        return 'VER';
       } else if (status === 'VOID') {
-        return '<span class="status-badge void">VOID</span>';
+        return 'VOID';
       } else if (status === 'PENDING' || status === 'PEND') {
-        return '<span class="status-badge pending">PEND</span>';
+        return 'PEND';
       } else {
-        return '<span class="status-badge completed">COMP</span>';
+        return 'COMP';
       }
     }
 
@@ -230,7 +230,7 @@
         const target = archer.target || archer.targetAssignment || archer.target_assignment || '-';
         const name = archer.archerName || archer.name || [archer.firstName, archer.lastName].filter(Boolean).join(' ');
         const status = getCardStatus(archer);
-        const statusBadge = renderStatusBadge(status);
+        const statusText = renderStatusText(status);
         
         // Rank styling
         const rankColor = rank === 1 ? 'text-yellow-500' : rank === 2 ? 'text-gray-400' : rank === 3 ? 'text-orange-600' : 'text-gray-600';
@@ -248,7 +248,7 @@
             </div>
             <div class="scorecard-event-details">${archer.school || 'No School'} • Bale ${bale} • Target ${target}</div>
           </div>
-          <div class="scorecard-stat-value">${statusBadge}</div>
+          <div class="scorecard-stat-value">${statusText}</div>
           <div class="scorecard-stat-value total">${total}</div>
           <div class="scorecard-stat-value">${avg}</div>
           <div class="scorecard-stat-value">${archer.xs || (archer.scorecard && archer.scorecard.xs) || 0}</div>
