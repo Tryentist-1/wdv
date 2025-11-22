@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Event Results</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="css/tailwind-compiled.css">
+  <link rel="stylesheet" href="css/unified-scorecard-list.css">
   <script src="js/scorecard_view.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
@@ -197,35 +199,11 @@
       // Sort by total (descending)
       const sorted = [...archers].sort((a, b) => normTotal(b) - normTotal(a));
 
-      const table = document.createElement('table');
-      table.className = 'w-full border-collapse bg-white dark:bg-gray-800 shadow-md rounded-b-lg overflow-hidden';
-
-      // Table Header
-      table.innerHTML = `
-        <thead class="bg-gray-700 dark:bg-gray-600 text-white">
-          <tr>
-            <th class="px-3 py-3 text-left font-semibold text-sm">Rank</th>
-            <th class="px-3 py-3 text-left font-semibold text-sm">Archer</th>
-            <th class="px-3 py-3 text-left font-semibold text-sm">School</th>
-            <th class="px-3 py-3 text-left font-semibold text-sm">Bale</th>
-            <th class="px-3 py-3 text-left font-semibold text-sm">Target</th>
-            <th class="px-3 py-3 text-left font-semibold text-sm">Status</th>
-            <th class="px-3 py-3 text-left font-semibold text-sm">Total</th>
-            <th class="px-3 py-3 text-left font-semibold text-sm">Avg</th>
-            <th class="px-3 py-3 text-left font-semibold text-sm">Xs</th>
-            <th class="px-3 py-3 text-left font-semibold text-sm">10s</th>
-          </tr>
-        </thead>
-        <tbody class="text-gray-700 dark:text-gray-300"></tbody>
-      `;
-
-      const tbody = table.querySelector('tbody');
+      const container = document.createElement('div');
+      container.className = 'scorecard-list';
 
       sorted.forEach((archer, index) => {
         const rank = index + 1;
-        const row = document.createElement('tr');
-        
-        const rankColor = rank === 1 ? 'text-rank-gold' : rank === 2 ? 'text-rank-silver' : rank === 3 ? 'text-rank-bronze' : 'text-gray-800 dark:text-white';
         const total = normTotal(archer);
         const arrowsShot = (archer.scorecard && archer.scorecard.ends) ? archer.scorecard.ends.length * 3 : undefined;
         const avgVal = (arrowsShot && arrowsShot > 0) ? (total / arrowsShot) : (archer.avgPerArrow || 0);
@@ -235,28 +213,58 @@
         const name = archer.archerName || archer.name || [archer.firstName, archer.lastName].filter(Boolean).join(' ');
         const status = getCardStatus(archer);
         const statusBadge = renderStatusBadge(status);
-
-        row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors';
-        row.innerHTML = `
-          <td class="px-3 py-3 font-bold text-lg text-center w-12 ${rankColor}">${rank}</td>
-          <td class="px-3 py-3 font-semibold">${name} <span class="text-primary text-xs">📄</span></td>
-          <td class="px-3 py-3">${archer.school || '-'}</td>
-          <td class="px-3 py-3">${bale}</td>
-          <td class="px-3 py-3">${target}</td>
-          <td class="px-3 py-3">${statusBadge}</td>
-          <td class="px-3 py-3 font-bold text-lg text-success">${total}</td>
-          <td class="px-3 py-3">${avg}</td>
-          <td class="px-3 py-3">${archer.xs || (archer.scorecard && archer.scorecard.xs) || 0}</td>
-          <td class="px-3 py-3">${archer.tens || (archer.scorecard && archer.scorecard.tens) || 0}</td>
-        `;
         
-        // Make row clickable to view scorecard
-        row.onclick = () => showArcherScorecard(archer);
+        // Rank styling
+        const rankColor = rank === 1 ? 'text-yellow-500' : rank === 2 ? 'text-gray-400' : rank === 3 ? 'text-orange-600' : 'text-gray-600';
+        const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
 
-        tbody.appendChild(row);
+        const item = document.createElement('div');
+        item.className = 'scorecard-item';
+        item.onclick = () => showArcherScorecard(archer);
+
+        item.innerHTML = `
+          <div class="scorecard-header">
+            <div class="scorecard-event-name">
+              <span class="${rankColor} font-bold mr-2">${rankIcon}</span>
+              ${name}
+            </div>
+            <div class="scorecard-details-line">
+              <span>${archer.school || 'No School'}</span>
+              <span>•</span>
+              <span>Bale ${bale}</span>
+              <span>•</span>
+              <span>Target ${target}</span>
+            </div>
+          </div>
+          
+          <div class="scorecard-stats-row">
+            <div class="scorecard-stat-item">
+              <div class="scorecard-stat-label">Status</div>
+              <div class="scorecard-stat-value">${statusBadge}</div>
+            </div>
+            <div class="scorecard-stat-item">
+              <div class="scorecard-stat-label">Total</div>
+              <div class="scorecard-stat-value total-score">${total}</div>
+            </div>
+            <div class="scorecard-stat-item">
+              <div class="scorecard-stat-label">Avg</div>
+              <div class="scorecard-stat-value">${avg}</div>
+            </div>
+            <div class="scorecard-stat-item">
+              <div class="scorecard-stat-label">Xs</div>
+              <div class="scorecard-stat-value">${archer.xs || (archer.scorecard && archer.scorecard.xs) || 0}</div>
+            </div>
+            <div class="scorecard-stat-item">
+              <div class="scorecard-stat-label">10s</div>
+              <div class="scorecard-stat-value">${archer.tens || (archer.scorecard && archer.scorecard.tens) || 0}</div>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(item);
       });
 
-      return table;
+      return container;
     }
     
     function showArcherScorecard(archer) {
