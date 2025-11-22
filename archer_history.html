@@ -95,6 +95,7 @@
               <th class="px-3 py-3 text-left font-semibold">Score</th>
               <th class="px-3 py-3 text-left font-semibold">10s</th>
               <th class="px-3 py-3 text-left font-semibold">Xs</th>
+              <th class="px-3 py-3 text-left font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody id="history-body">
@@ -224,6 +225,9 @@
         };
 
         row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors text-gray-800 dark:text-gray-200';
+        const isLocked = round.locked || round.card_status === 'VER';
+        const canDelete = !isLocked && (round.ends_completed === 0 || round.final_score === 0);
+        
         row.innerHTML = `
           <td class="px-3 py-3">${round.event_date || 'N/A'}</td>
           <td class="px-3 py-3">${round.event_name || 'Unknown Event'} <span class="text-primary text-xs">📄</span></td>
@@ -235,6 +239,11 @@
           <td class="px-3 py-3 font-bold text-lg">${round.final_score || 0}</td>
           <td class="px-3 py-3">${round.total_tens || 0}</td>
           <td class="px-3 py-3">${round.total_xs || 0}</td>
+          <td class="px-3 py-3">
+            ${canDelete ? `<button onclick="deleteScorecard('${round.round_id}', '${round.round_archer_id}', '${round.event_name}', this)" class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors" title="Delete abandoned scorecard">
+              <i class="fas fa-trash"></i>
+            </button>` : (isLocked ? '<span class="text-gray-400 text-xs">🔒 Locked</span>' : '<span class="text-gray-400 text-xs">-</span>')}
+          </td>
         `;
         
         // Make row clickable to view scorecard
@@ -316,6 +325,48 @@
       } catch (err) {
         console.error('Error loading scorecard:', err);
         alert('Error loading scorecard: ' + err.message + '\n\nCheck console for details.');
+      }
+    }
+
+    async function deleteScorecard(roundId, roundArcherId, eventName, buttonElement) {
+      if (!confirm(`Delete this abandoned scorecard from "${eventName}"?\n\nThis action cannot be undone.`)) {
+        return;
+      }
+      
+      try {
+        // Disable button during request
+        buttonElement.disabled = true;
+        buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        
+        const response = await fetch(`${API_BASE}/rounds/${roundId}/archers/${roundArcherId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            throw new Error('You need coach permissions to delete scorecards. Please authenticate in the Coach Console first.');
+          }
+          throw new Error(`Failed to delete scorecard (HTTP ${response.status})`);
+        }
+        
+        const result = await response.json();
+        if (result.ok) {
+          alert('Scorecard deleted successfully!');
+          // Reload the history to reflect changes
+          loadHistory();
+        } else {
+          throw new Error(result.error || 'Delete failed');
+        }
+      } catch (error) {
+        console.error('Delete scorecard error:', error);
+        alert('Failed to delete scorecard: ' + error.message);
+        
+        // Re-enable button on error
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = '<i class="fas fa-trash"></i>';
       }
     }
 
