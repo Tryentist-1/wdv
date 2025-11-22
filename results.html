@@ -181,10 +181,15 @@
     }
 
     function renderStatusBadge(status) {
-      let color = '#f1c40f';
-      if (status === 'VER') color = '#2ecc71';
-      if (status === 'VOID') color = '#e74c3c';
-      return `<span class="status-badge" style="background:${color};color:#fff;">${status}</span>`;
+      if (status === 'VER') {
+        return '<span class="status-badge verified">VER</span>';
+      } else if (status === 'VOID') {
+        return '<span class="status-badge void">VOID</span>';
+      } else if (status === 'PENDING' || status === 'PEND') {
+        return '<span class="status-badge pending">PEND</span>';
+      } else {
+        return '<span class="status-badge completed">COMP</span>';
+      }
     }
 
     function filterArchersForDisplay(archers = []) {
@@ -219,42 +224,39 @@
         const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
 
         const item = document.createElement('div');
-        item.className = 'scorecard-item';
+        item.className = 'scorecard-list-item';
         item.onclick = () => showArcherScorecard(archer);
 
         item.innerHTML = `
-          <div class="scorecard-header">
-            <div class="scorecard-event-name">
-              <span class="${rankColor} font-bold mr-2">${rankIcon}</span>
-              ${name}
-            </div>
-            <div class="scorecard-details-line">
-              <span>${archer.school || 'No School'}</span>
-              <span>•</span>
-              <span>Bale ${bale}</span>
-              <span>•</span>
-              <span>Target ${target}</span>
-            </div>
+          <div class="scorecard-event-name">
+            <span class="${rankColor} font-bold mr-2">${rankIcon}</span>
+            ${name}
           </div>
           
-          <div class="scorecard-stats-row">
-            <div class="scorecard-stat-item">
-              <div class="scorecard-stat-label">Status</div>
+          <div class="scorecard-event-details">
+            <span class="scorecard-event-detail">${archer.school || 'No School'}</span>
+            <span class="scorecard-event-detail">• Bale ${bale}</span>
+            <span class="scorecard-event-detail">• Target ${target}</span>
+          </div>
+          
+          <div class="scorecard-stats-grid">
+            <div class="scorecard-stat">
+              <div class="scorecard-stat-label">STATUS</div>
               <div class="scorecard-stat-value">${statusBadge}</div>
             </div>
-            <div class="scorecard-stat-item">
-              <div class="scorecard-stat-label">Total</div>
-              <div class="scorecard-stat-value total-score">${total}</div>
+            <div class="scorecard-stat">
+              <div class="scorecard-stat-label">TOTAL</div>
+              <div class="scorecard-stat-value large">${total}</div>
             </div>
-            <div class="scorecard-stat-item">
-              <div class="scorecard-stat-label">Avg</div>
+            <div class="scorecard-stat">
+              <div class="scorecard-stat-label">AVG</div>
               <div class="scorecard-stat-value">${avg}</div>
             </div>
-            <div class="scorecard-stat-item">
+            <div class="scorecard-stat">
               <div class="scorecard-stat-label">Xs</div>
               <div class="scorecard-stat-value">${archer.xs || (archer.scorecard && archer.scorecard.xs) || 0}</div>
             </div>
-            <div class="scorecard-stat-item">
+            <div class="scorecard-stat">
               <div class="scorecard-stat-label">10s</div>
               <div class="scorecard-stat-value">${archer.tens || (archer.scorecard && archer.scorecard.tens) || 0}</div>
             </div>

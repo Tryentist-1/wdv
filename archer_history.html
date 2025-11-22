@@ -179,13 +179,15 @@
         // Status badge
         let statusBadge = '';
         if (round.card_status === 'VER') {
-          statusBadge = '<span class="status-badge verified">✓ VER</span>';
+          statusBadge = '<span class="status-badge verified">VER</span>';
         } else if (round.card_status === 'VOID') {
-          statusBadge = '<span class="status-badge void">✗ VOID</span>';
+          statusBadge = '<span class="status-badge void">VOID</span>';
         } else if (isLocked) {
-          statusBadge = '<span class="status-badge locked">🔒 LOCKED</span>';
+          statusBadge = '<span class="status-badge locked">LOCK</span>';
+        } else if (round.ends_completed >= 10 || round.final_score > 0) {
+          statusBadge = '<span class="status-badge completed">COMP</span>';
         } else {
-          statusBadge = '<span class="status-badge pending">⏳ PEND</span>';
+          statusBadge = '<span class="status-badge pending">PEND</span>';
         }
         
         // Calculate average arrow score
