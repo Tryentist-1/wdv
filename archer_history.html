@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Archer History</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="css/tailwind-compiled.css">
+  <link rel="stylesheet" href="css/unified-scorecard-list.css">
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -79,29 +81,10 @@
     <div id="loading" class="text-center py-12 text-gray-600 dark:text-gray-400">Loading history...</div>
     <div id="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg my-6 hidden"></div>
 
-    <!-- History Table -->
-    <div id="history-container" class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-6 hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-sm">
-          <thead class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-b-2 border-gray-300 dark:border-gray-600">
-            <tr>
-              <th class="px-3 py-3 text-left font-semibold">Date</th>
-              <th class="px-3 py-3 text-left font-semibold">Event</th>
-              <th class="px-3 py-3 text-left font-semibold">Round</th>
-              <th class="px-3 py-3 text-left font-semibold">Division</th>
-              <th class="px-3 py-3 text-left font-semibold">Bale</th>
-              <th class="px-3 py-3 text-left font-semibold">Target</th>
-              <th class="px-3 py-3 text-left font-semibold">Ends</th>
-              <th class="px-3 py-3 text-left font-semibold">Score</th>
-              <th class="px-3 py-3 text-left font-semibold">10s</th>
-              <th class="px-3 py-3 text-left font-semibold">Xs</th>
-              <th class="px-3 py-3 text-left font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="history-body">
-            <!-- Populated dynamically -->
-          </tbody>
-        </table>
+    <!-- History List -->
+    <div id="history-container" class="mb-6 hidden">
+      <div id="history-body" class="space-y-3">
+        <!-- Populated dynamically with unified scorecard list items -->
       </div>
     </div>
 
@@ -211,51 +194,109 @@
     }
 
     function renderHistory(history) {
-      const tbody = document.getElementById('history-body');
-      tbody.innerHTML = '';
+      const container = document.getElementById('history-body');
+      container.innerHTML = '';
+
+      if (history.length === 0) {
+        container.innerHTML = '<div class="text-center py-12 text-gray-500 dark:text-gray-400">No scoring history found for this archer.</div>';
+        return;
+      }
+
+      const divisionNames = {
+        'BVAR': 'Boys Varsity',
+        'GVAR': 'Girls Varsity', 
+        'BJV': 'Boys JV',
+        'GJV': 'Girls JV'
+      };
 
       history.forEach(round => {
-        const row = document.createElement('tr');
+        const item = document.createElement('div');
+        item.className = 'scorecard-list-item';
         
-        const divisionNames = {
-          'BVAR': 'Boys Varsity',
-          'GVAR': 'Girls Varsity',
-          'BJV': 'Boys JV',
-          'GJV': 'Girls JV'
-        };
-
-        row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors text-gray-800 dark:text-gray-200';
         const isLocked = round.locked || round.card_status === 'VER';
         const canDelete = !isLocked && (
           round.ends_completed === 0 || 
           round.final_score === 0 || 
-          (round.ends_completed <= 3 && round.final_score < 100) || // Test rounds with few ends and low scores
-          round.event_name?.toLowerCase().includes('test') || // Any event with "test" in name
-          round.event_name?.toLowerCase().includes('practice') // Any practice event
+          (round.ends_completed <= 3 && round.final_score < 100) ||
+          round.event_name?.toLowerCase().includes('test') || 
+          round.event_name?.toLowerCase().includes('practice')
         );
         
-        row.innerHTML = `
-          <td class="px-3 py-3">${round.event_date || 'N/A'}</td>
-          <td class="px-3 py-3">${round.event_name || 'Unknown Event'} <span class="text-primary text-xs">📄</span></td>
-          <td class="px-3 py-3">${round.round_type || 'R300'}</td>
-          <td class="px-3 py-3">${divisionNames[round.division] || round.division || 'N/A'}</td>
-          <td class="px-3 py-3">${round.bale_number || '-'}</td>
-          <td class="px-3 py-3">${round.target_assignment || '-'}</td>
-          <td class="px-3 py-3">${round.ends_completed || 0}</td>
-          <td class="px-3 py-3 font-bold text-lg">${round.final_score || 0}</td>
-          <td class="px-3 py-3">${round.total_tens || 0}</td>
-          <td class="px-3 py-3">${round.total_xs || 0}</td>
-          <td class="px-3 py-3">
-            ${canDelete ? `<button onclick="deleteScorecard('${round.round_id}', '${round.round_archer_id}', '${round.event_name}', this)" class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors" title="Delete abandoned scorecard">
-              <i class="fas fa-trash-alt"></i>
-            </button>` : (isLocked ? '<span class="text-gray-400 text-xs">🔒 Locked</span>' : '<span class="text-gray-400 text-xs">-</span>')}
-          </td>
-        `;
+        // Status badge
+        let statusBadge = '';
+        if (round.card_status === 'VER') {
+          statusBadge = '<span class="status-badge verified">✓ VER</span>';
+        } else if (round.card_status === 'VOID') {
+          statusBadge = '<span class="status-badge void">✗ VOID</span>';
+        } else if (isLocked) {
+          statusBadge = '<span class="status-badge locked">🔒 LOCKED</span>';
+        } else {
+          statusBadge = '<span class="status-badge pending">⏳ PEND</span>';
+        }
         
-        // Make row clickable to view scorecard
-        row.onclick = () => showRoundScorecard(round);
+        // Calculate average arrow score
+        const avgArrow = round.final_score && round.ends_completed ? 
+          (round.final_score / (round.ends_completed * 3)).toFixed(1) : '0.0';
+        
+        // Format date
+        const eventDate = round.event_date ? new Date(round.event_date).toLocaleDateString('en-US', { 
+          month: 'short', day: 'numeric', year: '2-digit' 
+        }) : 'N/A';
+        
+        item.innerHTML = `
+          <div class="scorecard-event-name">${round.event_name || 'Unknown Event'}</div>
+          
+          <div class="scorecard-event-details">
+            <span class="scorecard-event-detail">${eventDate}</span>
+            <span class="scorecard-event-detail">• ${round.round_type || 'R300'}</span>
+            <span class="scorecard-event-detail">• ${divisionNames[round.division] || round.division || 'Open Div'}</span>
+            <span class="scorecard-event-detail">• Bale ${round.bale_number || '?'} ${round.target_assignment || ''}</span>
+          </div>
+          
+          <div class="scorecard-stats-grid">
+            <div class="scorecard-stat">
+              <div class="scorecard-stat-label">STATUS</div>
+              <div class="scorecard-stat-value">${statusBadge}</div>
+            </div>
+            <div class="scorecard-stat">
+              <div class="scorecard-stat-label">TOTAL</div>
+              <div class="scorecard-stat-value large">${round.final_score || 0}</div>
+            </div>
+            <div class="scorecard-stat">
+              <div class="scorecard-stat-label">AVG</div>
+              <div class="scorecard-stat-value">${avgArrow}</div>
+            </div>
+            <div class="scorecard-stat">
+              <div class="scorecard-stat-label">Xs</div>
+              <div class="scorecard-stat-value">${round.total_xs || 0}</div>
+            </div>
+            <div class="scorecard-stat">
+              <div class="scorecard-stat-label">10s</div>
+              <div class="scorecard-stat-value">${(round.total_tens || 0) + (round.total_xs || 0)}</div>
+            </div>
+          </div>
+          
+          <div class="scorecard-actions">
+            ${canDelete ? `
+              <button onclick="deleteScorecard('${round.round_id}', '${round.round_archer_id}', '${round.event_name}', this)" 
+                      class="scorecard-action-btn delete" title="Delete abandoned scorecard">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            ` : ''}
+            <button onclick="event.stopPropagation(); showRoundScorecard(${JSON.stringify(round).replace(/"/g, '&quot;')})" 
+                    class="scorecard-action-btn view" title="View scorecard details">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        `;
 
-        tbody.appendChild(row);
+        // Make the whole item clickable except for action buttons
+        item.onclick = (e) => {
+          if (e.target.closest('.scorecard-actions')) return;
+          showRoundScorecard(round);
+        };
+
+        container.appendChild(item);
       });
     }
 

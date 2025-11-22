@@ -160,6 +160,9 @@
                         <button id="void-btn" class="px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark transition font-semibold">
                             ✗ Void Card
                         </button>
+                        <button id="delete-btn" class="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded transition font-semibold">
+                            <i class="fas fa-trash-alt mr-2"></i>Delete Card
+                        </button>
                         <input type="text" id="edit-reason" placeholder="Reason for edit (required)" 
                                class="hidden flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
                     </div>
@@ -815,6 +818,88 @@
                 alert('Failed to save and lock scorecard: ' + error.message);
             }
         });
+        
+        // Delete button handler
+        document.getElementById('delete-btn').addEventListener('click', async () => {
+            // Check if this scorecard can be deleted
+            const card = currentScorecard;
+            const isLocked = card.locked || card.card_status === 'VER';
+            const canDelete = !isLocked && (
+                card.ends_completed === 0 || 
+                card.final_score === 0 || 
+                (card.ends_completed <= 3 && card.final_score < 100) ||
+                card.event_name?.toLowerCase().includes('test') || 
+                card.event_name?.toLowerCase().includes('practice')
+            );
+            
+            if (!canDelete) {
+                alert('This scorecard cannot be deleted. Only unlocked, abandoned, or test scorecards can be deleted.');
+                return;
+            }
+            
+            if (!confirm(`Delete this scorecard from "${card.event_name}"?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                // Get authentication headers
+                const coachApiKey = localStorage.getItem('coach_api_key') || 
+                                   localStorage.getItem('coach_passcode') || 
+                                   getCookie('coach_auth') || 
+                                   'wdva26';
+                
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'X-Passcode': coachApiKey,
+                    'X-API-Key': coachApiKey
+                };
+                
+                // Check if this is archer self-deletion
+                const currentArcherId = card.archer_id;
+                const selfArcherId = localStorage.getItem('archerSelfExtId');
+                if (currentArcherId && selfArcherId && currentArcherId === selfArcherId) {
+                    headers['X-Archer-ID'] = currentArcherId;
+                    headers['X-Archer-Self'] = 'true';
+                }
+                
+                const response = await fetch(`${API_BASE}/rounds/${card.round_id}/archers/${roundArcherId}`, {
+                    method: 'DELETE',
+                    headers: headers
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error('Authentication required. Please visit the Coach Console to authenticate first, then try again.');
+                    }
+                    const errorText = await response.text().catch(() => 'Unknown error');
+                    throw new Error(`Failed to delete scorecard (HTTP ${response.status}): ${errorText}`);
+                }
+                
+                const result = await response.json();
+                if (result.ok) {
+                    alert('Scorecard deleted successfully!');
+                    // Go back to previous page or archer history
+                    window.history.back();
+                } else {
+                    throw new Error(result.error || 'Delete failed');
+                }
+            } catch (error) {
+                console.error('Delete scorecard error:', error);
+                alert('Failed to delete scorecard: ' + error.message);
+            }
+        });
+        
+        // Helper function to get cookie value
+        function getCookie(name) {
+            const nameEQ = name + '=';
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
         
         // Void button handler
         document.getElementById('void-btn').addEventListener('click', async () => {
