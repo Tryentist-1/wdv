@@ -200,11 +200,16 @@
     let filteredData = [];
     let viewMode = 'simple'; // 'simple' or 'advanced'
 
-    // Dark mode toggle
-    document.getElementById('dark-mode-toggle').addEventListener('click', function() {
-      document.documentElement.classList.toggle('dark');
-      const isDark = document.documentElement.classList.contains('dark');
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    // Dark mode toggle - wait for DOM
+    document.addEventListener('DOMContentLoaded', () => {
+      const darkModeToggle = document.getElementById('dark-mode-toggle');
+      if (darkModeToggle) {
+        darkModeToggle.addEventListener('click', function() {
+          document.documentElement.classList.toggle('dark');
+          const isDark = document.documentElement.classList.contains('dark');
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        });
+      }
     });
 
     // Load all events and their results

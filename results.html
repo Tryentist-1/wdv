@@ -43,20 +43,26 @@
   </footer>
 
   <script>
-    // Dark mode toggle
-    const darkModeToggle = document.getElementById('dark-mode-toggle');
-    const htmlElement = document.documentElement;
+    // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
     
-    // Check for saved preference or default to light mode
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    if (savedTheme === 'dark') {
-      htmlElement.classList.add('dark');
-    }
-    
-    darkModeToggle.addEventListener('click', () => {
-      htmlElement.classList.toggle('dark');
-      const newTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
-      localStorage.setItem('theme', newTheme);
+    // Dark mode toggle - wait for DOM
+    document.addEventListener('DOMContentLoaded', () => {
+      const darkModeToggle = document.getElementById('dark-mode-toggle');
+      if (darkModeToggle) {
+        darkModeToggle.addEventListener('click', () => {
+          const htmlElement = document.documentElement;
+          htmlElement.classList.toggle('dark');
+          const newTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
+          localStorage.setItem('theme', newTheme);
+        });
+      }
     });
     
     function getApiBase() {

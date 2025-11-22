@@ -582,6 +582,15 @@
       window.location.href = window.location.pathname + '?nocache=' + Date.now();
     }
 
+    // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+    
     // Onboarding disabled - outdated tutorial
     document.addEventListener('DOMContentLoaded', function() {
       // showOnboarding(); // DISABLED - Tutorial needs updating
@@ -600,12 +609,6 @@
       // Dark mode toggle functionality
       const darkModeToggle = document.getElementById('dark-mode-toggle');
       if (darkModeToggle) {
-        // Check for saved dark mode preference or default to light mode
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          document.documentElement.classList.add('dark');
-        }
-        
         darkModeToggle.addEventListener('click', () => {
           document.documentElement.classList.toggle('dark');
           const isDark = document.documentElement.classList.contains('dark');
