@@ -1,38 +1,73 @@
-/* Unified Scorecard List Design */
+/* Unified Scorecard List Design - Compact 2-Line Layout */
+.scorecard-list-container {
+    display: flex;
+    flex-direction: column;
+}
+
+.scorecard-list-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background-color: #f3f4f6;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dark .scorecard-list-header {
+    background-color: #374151;
+    border-bottom-color: #4b5563;
+    color: #d1d5db;
+}
+
 .scorecard-list-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+    gap: 0.5rem;
+    align-items: center;
     background-color: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0.5rem 0.75rem;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    min-height: 3rem;
 }
 
 .scorecard-list-item:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border-color: #93c5fd;
+    background-color: #f9fafb;
+    border-left: 3px solid #3b82f6;
+    padding-left: calc(0.75rem - 3px);
 }
 
 .dark .scorecard-list-item {
     background-color: #1f2937;
-    border-color: #374151;
+    border-bottom-color: #374151;
 }
 
 .dark .scorecard-list-item:hover {
-    border-color: #2563eb;
+    background-color: #111827;
+    border-left-color: #60a5fa;
+}
+
+.scorecard-event-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
 }
 
 .scorecard-event-name {
-    font-size: 1rem;
-    font-weight: 700;
+    font-size: 0.875rem;
+    font-weight: 600;
     color: #111827;
-    margin-bottom: 0.25rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.2;
 }
 
 .dark .scorecard-event-name {
@@ -42,10 +77,9 @@
 .scorecard-event-details {
     font-size: 0.75rem;
     color: #6b7280;
-    margin-bottom: 0.5rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     line-height: 1.2;
 }
 
@@ -53,50 +87,26 @@
     color: #9ca3af;
 }
 
-.scorecard-event-detail {
-    display: inline-flex;
-    align-items: center;
-}
-
-.scorecard-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.25rem;
-    margin-bottom: 0.5rem;
-}
-
-.scorecard-stat {
-    text-align: center;
-}
-
-.scorecard-stat-label {
-    font-size: 0.625rem;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 500;
-    margin-bottom: 0.125rem;
-    line-height: 1;
-}
-
-.dark .scorecard-stat-label {
-    color: #9ca3af;
-}
-
 .scorecard-stat-value {
-    font-size: 1rem;
-    font-weight: 700;
+    font-size: 0.875rem;
+    font-weight: 600;
     color: #111827;
-    line-height: 1;
+    text-align: center;
+    line-height: 1.2;
 }
 
 .dark .scorecard-stat-value {
     color: #f9fafb;
 }
 
-.scorecard-stat-value.large {
-    font-size: 1.125rem;
+.scorecard-stat-value.total {
+    font-size: 1rem;
+    font-weight: 700;
     color: #0d6efd;
+}
+
+.dark .scorecard-stat-value.total {
+    color: #60a5fa;
 }
 
 .scorecard-actions {

@@ -205,7 +205,20 @@
       const sorted = [...archers].sort((a, b) => normTotal(b) - normTotal(a));
 
       const container = document.createElement('div');
-      container.className = 'scorecard-list';
+      container.className = 'scorecard-list-container';
+      
+      // Add header row
+      const header = document.createElement('div');
+      header.className = 'scorecard-list-header';
+      header.innerHTML = `
+        <div>Archer</div>
+        <div>Status</div>
+        <div>Total</div>
+        <div>Avg</div>
+        <div>Xs</div>
+        <div>10s</div>
+      `;
+      container.appendChild(header);
 
       sorted.forEach((archer, index) => {
         const rank = index + 1;
@@ -228,39 +241,18 @@
         item.onclick = () => showArcherScorecard(archer);
 
         item.innerHTML = `
-          <div class="scorecard-event-name">
-            <span class="${rankColor} font-bold mr-2">${rankIcon}</span>
-            ${name}
+          <div class="scorecard-event-info">
+            <div class="scorecard-event-name">
+              <span class="${rankColor} font-bold mr-2">${rankIcon}</span>
+              ${name}
+            </div>
+            <div class="scorecard-event-details">${archer.school || 'No School'} • Bale ${bale} • Target ${target}</div>
           </div>
-          
-          <div class="scorecard-event-details">
-            <span class="scorecard-event-detail">${archer.school || 'No School'}</span>
-            <span class="scorecard-event-detail">• Bale ${bale}</span>
-            <span class="scorecard-event-detail">• Target ${target}</span>
-          </div>
-          
-          <div class="scorecard-stats-grid">
-            <div class="scorecard-stat">
-              <div class="scorecard-stat-label">STATUS</div>
-              <div class="scorecard-stat-value">${statusBadge}</div>
-            </div>
-            <div class="scorecard-stat">
-              <div class="scorecard-stat-label">TOTAL</div>
-              <div class="scorecard-stat-value large">${total}</div>
-            </div>
-            <div class="scorecard-stat">
-              <div class="scorecard-stat-label">AVG</div>
-              <div class="scorecard-stat-value">${avg}</div>
-            </div>
-            <div class="scorecard-stat">
-              <div class="scorecard-stat-label">Xs</div>
-              <div class="scorecard-stat-value">${archer.xs || (archer.scorecard && archer.scorecard.xs) || 0}</div>
-            </div>
-            <div class="scorecard-stat">
-              <div class="scorecard-stat-label">10s</div>
-              <div class="scorecard-stat-value">${archer.tens || (archer.scorecard && archer.scorecard.tens) || 0}</div>
-            </div>
-          </div>
+          <div class="scorecard-stat-value">${statusBadge}</div>
+          <div class="scorecard-stat-value total">${total}</div>
+          <div class="scorecard-stat-value">${avg}</div>
+          <div class="scorecard-stat-value">${archer.xs || (archer.scorecard && archer.scorecard.xs) || 0}</div>
+          <div class="scorecard-stat-value">${archer.tens || (archer.scorecard && archer.scorecard.tens) || 0}</div>
         `;
 
         container.appendChild(item);

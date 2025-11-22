@@ -37,8 +37,18 @@
 
     <!-- History List -->
     <div id="history-container" class="mb-6 hidden">
-      <div id="history-body" class="space-y-3">
-        <!-- Populated dynamically with unified scorecard list items -->
+      <div class="scorecard-list-container">
+        <div class="scorecard-list-header">
+          <div>Event</div>
+          <div>Status</div>
+          <div>Total</div>
+          <div>Avg</div>
+          <div>Xs</div>
+          <div>10s</div>
+        </div>
+        <div id="history-body">
+          <!-- Populated dynamically with unified scorecard list items -->
+        </div>
       </div>
     </div>
 
@@ -200,50 +210,15 @@
         }) : 'N/A';
         
         item.innerHTML = `
-          <div class="scorecard-event-name">${round.event_name || 'Unknown Event'}</div>
-          
-          <div class="scorecard-event-details">
-            <span class="scorecard-event-detail">${eventDate}</span>
-            <span class="scorecard-event-detail">• ${round.round_type || 'R300'}</span>
-            <span class="scorecard-event-detail">• ${divisionNames[round.division] || round.division || 'Open Div'}</span>
-            <span class="scorecard-event-detail">• Bale ${round.bale_number || '?'} ${round.target_assignment || ''}</span>
+          <div class="scorecard-event-info">
+            <div class="scorecard-event-name">${round.event_name || 'Unknown Event'}</div>
+            <div class="scorecard-event-details">${eventDate} • ${round.round_type || 'R300'} • ${divisionNames[round.division] || round.division || 'Open'} • Bale ${round.bale_number || '?'}</div>
           </div>
-          
-          <div class="scorecard-stats-grid">
-            <div class="scorecard-stat">
-              <div class="scorecard-stat-label">STATUS</div>
-              <div class="scorecard-stat-value">${statusBadge}</div>
-            </div>
-            <div class="scorecard-stat">
-              <div class="scorecard-stat-label">TOTAL</div>
-              <div class="scorecard-stat-value large">${round.final_score || 0}</div>
-            </div>
-            <div class="scorecard-stat">
-              <div class="scorecard-stat-label">AVG</div>
-              <div class="scorecard-stat-value">${avgArrow}</div>
-            </div>
-            <div class="scorecard-stat">
-              <div class="scorecard-stat-label">Xs</div>
-              <div class="scorecard-stat-value">${round.total_xs || 0}</div>
-            </div>
-            <div class="scorecard-stat">
-              <div class="scorecard-stat-label">10s</div>
-              <div class="scorecard-stat-value">${(round.total_tens || 0) + (round.total_xs || 0)}</div>
-            </div>
-          </div>
-          
-          <div class="scorecard-actions">
-            ${canDelete ? `
-              <button onclick="deleteScorecard('${round.round_id}', '${round.round_archer_id}', '${round.event_name}', this)" 
-                      class="scorecard-action-btn delete" title="Delete abandoned scorecard">
-                <i class="fas fa-trash-alt"></i>
-              </button>
-            ` : ''}
-            <button onclick="event.stopPropagation(); showRoundScorecard(${JSON.stringify(round).replace(/"/g, '&quot;')})" 
-                    class="scorecard-action-btn view" title="View scorecard details">
-              <i class="fas fa-eye"></i>
-            </button>
-          </div>
+          <div class="scorecard-stat-value">${statusBadge}</div>
+          <div class="scorecard-stat-value total">${round.final_score || 0}</div>
+          <div class="scorecard-stat-value">${avgArrow}</div>
+          <div class="scorecard-stat-value">${round.total_xs || 0}</div>
+          <div class="scorecard-stat-value">${(round.total_tens || 0) + (round.total_xs || 0)}</div>
         `;
 
         // Make the whole item clickable except for action buttons
