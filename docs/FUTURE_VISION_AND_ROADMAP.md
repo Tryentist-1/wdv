@@ -29,14 +29,15 @@
 ---
 
 ### Where We're Going (2026+)
-> "Manage coach-athlete collaboration, tournament brackets, and full team competitions"
+> "Manage coach-athlete collaboration, advanced tournament brackets, and full team competitions"
 
 **Complete team management & tournament platform** with:
-- 🎯 Solo/Team Olympic match integration (Phase 2)
-- 🤝 Coach-athlete progress tracking & collaboration
-- 🏆 Tournament bracket management
+- ✅ Solo/Team Olympic match integration (Phase 2 - COMPLETE)
+- ✅ Tournament bracket management foundation (Phase 4 - PARTIALLY COMPLETE)
+- 🤝 Coach-athlete progress tracking & collaboration (Phase 3 - PLANNED)
+- 🏆 Advanced bracket features (double elimination, round robin, visualization)
 - 📊 Season-long analytics & growth tracking
-- 👥 Team-wide competition management
+- 👥 Team-wide competition management (Phase 5 - PLANNED)
 - 📈 Individual improvement plans
 
 ---
@@ -244,8 +245,26 @@ CREATE TABLE archer_goals (
 
 ---
 
-### 📅 Phase 4 - Tournament Bracket Management (2026 Q2)
+### ✅ Phase 4 - Tournament Bracket Management (2025 Q4 - PARTIALLY COMPLETE)
 **Goal:** Support full tournament workflows with brackets for Solo & Team competitions
+
+**Status:** ✅ Foundation Complete (November 2025)
+- ✅ Database schema for brackets and bracket_entries
+- ✅ Elimination bracket auto-generation (Top 8)
+- ✅ Swiss bracket support
+- ✅ Coach Console UI for bracket management
+- ✅ Bracket results viewing (`bracket_results.html`)
+- ✅ Archer assignment display on home page
+- ✅ Direct links from assignments to match setup
+- ✅ Auto-population of archers in Solo match setup
+- ✅ Archer match history page (`archer_matches.html`)
+
+**Remaining Work (2026 Q1-Q2):**
+- ⏳ Double elimination brackets
+- ⏳ Round robin brackets
+- ⏳ Advanced bracket visualization
+- ⏳ Tournament-wide bracket management
+- ⏳ Print/export bracket views
 
 #### 4.1 Tournament Structure
 

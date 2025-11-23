@@ -106,7 +106,7 @@ npm run serve
 
 ---
 
-## 🧩 Standardized Components (v1.5.0)
+## 🧩 Standardized Components (v1.5.0+)
 
 The application now includes reusable UI components for consistent user experience:
 
@@ -132,10 +132,52 @@ The application now includes reusable UI components for consistent user experien
 
 ### Integration Status
 - ✅ **Team Module** - Complete ArcherSelector integration
-- ⏳ **Solo Module** - Next integration target
+- ✅ **Solo Module** - Event & bracket selection integrated
 - ⏳ **Ranking Rounds** - Future integration target
 
 **Documentation:** See `docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md#shared-ui-standardization`
+
+---
+
+## 🏆 Bracket Management Features (v1.5.3+)
+
+The application now supports tournament bracket management for Solo and Team matches:
+
+### Bracket Types
+- **Elimination Brackets**: Auto-generated from Top 8 ranking results
+- **Swiss Brackets**: Open format with manual match creation
+
+### Key Features
+- ✅ Event-linked bracket creation and management
+- ✅ Automatic bracket assignment for archers
+- ✅ Bracket results viewing (`bracket_results.html`)
+- ✅ Archer match history (`archer_matches.html`)
+- ✅ Home page assignment display with direct links
+- ✅ Auto-population of archers in Solo match setup
+
+### Testing Bracket Features
+1. **Create Test Data:**
+   ```bash
+   php api/create_test_bracket_data.php
+   ```
+
+2. **View Bracket Results:**
+   - Visit `http://localhost:8001/bracket_results.html?bracketId=<bracket-id>`
+   - See detailed match scores and progression
+
+3. **Archer Match History:**
+   - Visit `http://localhost:8001/archer_matches.html`
+   - Filter by tournament matches or standalone matches
+
+4. **Test Assignment Flow:**
+   - Log in as an archer with bracket assignments
+   - Click assignment from home page
+   - Verify auto-population in Solo match setup
+
+**Documentation:**
+- [Bracket Management Implementation](docs/BRACKET_MANAGEMENT_IMPLEMENTATION_PLAN.md)
+- [Event & Bracket UI](docs/EVENT_BRACKET_UI_IMPLEMENTATION.md)
+- [Bracket Test Plan](docs/BRACKET_RESULTS_TEST_PLAN.md)
 
 ---
 

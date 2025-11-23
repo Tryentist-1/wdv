@@ -394,14 +394,22 @@ open https://tryentist.com/wdv/
 **Goal:** Integrate Solo & Team Olympic match scoring with bracket management
 
 **Status:** ✅ COMPLETED (November 20, 2025)
+
+**Solo & Team Match Features:**
 - ✅ Solo & Team match database schema
 - ✅ API endpoints for Solo & Team matches
-- ✅ Bracket management system (elimination & Swiss formats)
-- ✅ Coach Console UI for bracket management
-- ✅ Bracket results module with tab navigation
-- ✅ Integration with Solo/Team match creation screens (event + bracket selectors, QR support)
 - ✅ Frontend integration with LiveUpdates + offline queue (solo_card.html, team_card.html)
 - ✅ Match code generation + restoration (`solo-[INITIALS]-[MMDD]`, `team-[INITIALS]-[MMDD]`)
+
+**Bracket Management Features (v1.5.3):**
+- ✅ Bracket management system (elimination & Swiss formats)
+- ✅ Coach Console UI for bracket creation and management
+- ✅ Bracket results viewing with detailed match scores (`bracket_results.html`)
+- ✅ Integration with Solo/Team match creation screens (event + bracket selectors, QR support)
+- ✅ Archer assignment display on home page with direct navigation
+- ✅ Auto-population of archers in Solo match setup from bracket assignments
+- ✅ Archer match history page (`archer_matches.html`)
+- ✅ URL parameter support for direct bracket/round access
 
 **See:** [PHASE2_TEAM_MIGRATION_PLAN.md](docs/PHASE2_TEAM_MIGRATION_PLAN.md)
 
