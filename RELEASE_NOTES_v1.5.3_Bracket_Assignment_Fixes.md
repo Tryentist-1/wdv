@@ -3,7 +3,7 @@
 **Release Date:** November 21, 2025  
 **Version:** 1.5.3  
 **Deployment:** Production (FTP)  
-**Git Commit:** TBD
+**Git Commit:** d7e09e7
 
 ## 🎯 Overview
 
