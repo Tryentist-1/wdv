@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>My Matches</title>
+  <link rel="stylesheet" href="css/tailwind-compiled.css">
+  <script>
+    // Initialize dark mode immediately
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+  <div class="max-w-6xl mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 transition-colors duration-200">
+      <div class="flex justify-between items-center mb-2">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">My Matches</h1>
+        <button id="dark-mode-toggle" 
+                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2 min-w-[44px] min-h-[44px]">
+          <span class="dark:hidden">🌙 Dark</span>
+          <span class="hidden dark:inline">☀️ Light</span>
+        </button>
+      </div>
+      <div id="archer-info" class="text-gray-600 dark:text-gray-400">
+        Loading...
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-2 mb-6 transition-colors duration-200">
+      <div class="flex gap-2 overflow-x-auto">
+        <button class="filter-btn active px-4 py-2 font-semibold text-primary border-b-2 border-primary whitespace-nowrap min-w-[44px] min-h-[44px]" data-filter="all">All Matches</button>
+        <button class="filter-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary whitespace-nowrap min-w-[44px] min-h-[44px]" data-filter="bracket">Tournament</button>
+        <button class="filter-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary whitespace-nowrap min-w-[44px] min-h-[44px]" data-filter="informal">Informal</button>
+      </div>
+    </div>
+
+    <!-- Loading/Error States -->
+    <div id="loading" class="text-center py-12 text-gray-600 dark:text-gray-400">Loading matches...</div>
+    <div id="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg my-6 hidden"></div>
+
+    <!-- Matches List -->
+    <div id="matches-container" class="hidden">
+      <div id="matches-list" class="space-y-4">
+        <!-- Matches will be rendered here -->
+      </div>
+      <div id="no-matches" class="text-center py-12 text-gray-500 dark:text-gray-400 hidden">
+        <p class="text-lg mb-2">No matches found.</p>
+        <p>Start a match to see your results here!</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200">
+    <div class="max-w-6xl mx-auto">
+      <a href="index.html" class="inline-block px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">← Back to Home</a>
+    </div>
+  </footer>
+
+  <script>
+    // Dark mode toggle
+    document.getElementById('dark-mode-toggle')?.addEventListener('click', () => {
+      const html = document.documentElement;
+      html.classList.toggle('dark');
+      const newTheme = html.classList.contains('dark') ? 'dark' : 'light';
+      localStorage.setItem('theme', newTheme);
+    });
+
+    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || 8001}/api/index.php/v1`
+      : 'https://tryentist.com/wdv/api/v1';
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const archerId = urlParams.get('archer') || urlParams.get('id');
+    
+    let allMatches = [];
+    let currentFilter = 'all';
+    
+    async function loadMatches() {
+      if (!archerId) {
+        showError('No archer ID provided. Please use ?archer={id} in the URL.');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API_BASE}/archers/${encodeURIComponent(archerId)}/matches`);
+        
+        if (!res.ok) {
+          if (res.status === 404) {
+            showError('Archer not found or no matches available.');
+          } else {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          return;
+        }
+        
+        const data = await res.json();
+        allMatches = data.matches || [];
+        
+        // Update archer info
+        document.getElementById('archer-info').innerHTML = `
+          <div class="text-lg font-semibold dark:text-white">${data.archer.full_name}</div>
+          <div>${data.total_matches} total matches (${data.bracket_matches} tournament, ${data.informal_matches} informal)</div>
+        `;
+        
+        document.getElementById('archer-info').classList.remove('hidden');
+        renderMatches();
+        document.getElementById('matches-container').classList.remove('hidden');
+        document.getElementById('loading').classList.add('hidden');
+        
+      } catch (err) {
+        console.error('Error loading matches:', err);
+        showError('Failed to load matches: ' + err.message);
+      }
+    }
+    
+    function showError(message) {
+      const errorDiv = document.getElementById('error');
+      errorDiv.textContent = message;
+      errorDiv.classList.remove('hidden');
+      document.getElementById('loading').classList.add('hidden');
+    }
+    
+    function renderMatches() {
+      const container = document.getElementById('matches-list');
+      const noMatches = document.getElementById('no-matches');
+      
+      // Filter matches
+      let filtered = allMatches;
+      if (currentFilter === 'bracket') {
+        filtered = allMatches.filter(m => m.match_type === 'bracket');
+      } else if (currentFilter === 'informal') {
+        filtered = allMatches.filter(m => m.match_type === 'informal');
+      }
+      
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        noMatches.classList.remove('hidden');
+        return;
+      }
+      
+      noMatches.classList.add('hidden');
+      
+      let html = '';
+      filtered.forEach(match => {
+        const isBracket = match.match_type === 'bracket';
+        const matchTitle = isBracket 
+          ? `${match.event_name || 'Tournament'} - ${match.bracket_division || ''} ${match.bracket_format || ''}`
+          : 'Informal Match';
+        const matchId = match.bracket_match_id || match.match_code || 'Match';
+        const resultClass = match.is_winner ? 'text-success font-semibold' : match.result === 'T' ? 'text-warning' : 'text-gray-600 dark:text-gray-400';
+        const resultText = match.is_winner ? 'W' : match.result === 'T' ? 'T' : 'L';
+        
+        html += `
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200 border-l-4 ${match.is_winner ? 'border-success' : 'border-gray-300 dark:border-gray-600'}">
+            <div class="flex justify-between items-start mb-3">
+              <div>
+                <div class="font-semibold text-lg text-gray-800 dark:text-white">${match.opponent.name}</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">${matchTitle}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">${matchId}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-2xl font-bold ${resultClass}">${resultText}</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">${match.my_total_set_points} - ${match.opponent_total_set_points}</div>
+              </div>
+            </div>
+            
+            ${renderMatchSets(match)}
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+    
+    function renderMatchSets(match) {
+      if (!match.my_sets || match.my_sets.length === 0) {
+        return '<div class="text-sm text-gray-500 dark:text-gray-400 italic">No scores recorded</div>';
+      }
+      
+      let html = '<div class="mt-3 grid grid-cols-5 gap-2 text-sm">';
+      
+      for (let i = 1; i <= 5; i++) {
+        const mySet = match.my_sets.find(s => s.set_number === i);
+        const oppSet = match.opponent_sets.find(s => s.set_number === i);
+        
+        if (mySet && oppSet) {
+          const myWon = mySet.set_points > oppSet.set_points;
+          const bgClass = myWon ? 'bg-success/20 border-success' : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600';
+          html += `
+            <div class="border rounded p-2 ${bgClass}">
+              <div class="font-semibold text-center dark:text-white">End ${i}</div>
+              <div class="text-center text-xs mt-1">
+                <div class="${myWon ? 'text-success font-bold' : 'dark:text-white'}">${mySet.set_total}(${mySet.xs})</div>
+                <div class="text-gray-600 dark:text-gray-400">${oppSet.set_total}(${oppSet.xs})</div>
+              </div>
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="border rounded p-2 bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+              <div class="font-semibold text-center dark:text-white">End ${i}</div>
+              <div class="text-center text-xs mt-1 text-gray-400">-</div>
+            </div>
+          `;
+        }
+      }
+      
+      html += '</div>';
+      return html;
+    }
+    
+    // Filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Update active state
+        document.querySelectorAll('.filter-btn').forEach(b => {
+          b.classList.remove('active', 'text-primary', 'border-b-2', 'border-primary');
+          b.classList.add('text-gray-600', 'dark:text-gray-400');
+        });
+        btn.classList.add('active', 'text-primary', 'border-b-2', 'border-primary');
+        btn.classList.remove('text-gray-600', 'dark:text-gray-400');
+        
+        // Update filter
+        currentFilter = btn.getAttribute('data-filter');
+        renderMatches();
+      });
+    });
+    
+    // Load on page load
+    loadMatches();
+  </script>
+</body>
+</html>
+
+

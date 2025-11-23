@@ -2,6 +2,7 @@
 
 **Date:** November 20, 2025  
 **Status:** ✅ IMPLEMENTED  
+**Last Updated:** November 21, 2025 (v1.5.3 - Enhanced with URL parameter support and auto-population)  
 **Purpose:** Add event and bracket selection UI to Solo and Team match modules
 
 ---

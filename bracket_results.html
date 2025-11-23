@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -12,52 +12,105 @@
     .text-primary { color: #0d6efd !important; }
     .text-success { color: #198754 !important; }
     .hover\:bg-primary-dark:hover { background-color: #0a58ca !important; }
-    .winner-row { background-color: #d4edda !important; }
+    .winner-row { 
+      background-color: #d4edda !important; 
+    }
+    .dark .winner-row {
+      background-color: rgba(34, 197, 94, 0.2) !important;
+    }
+    .winner-text {
+      color: #198754 !important;
+    }
+    .dark .winner-text {
+      color: #4ade80 !important;
+    }
   </style>
+  <script>
+    // Dark mode toggle functionality
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const isDark = html.classList.contains('dark');
+      
+      if (isDark) {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.classList.remove('light');
+        html.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    }
+    
+    // Initialize theme from localStorage or system preference
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+      }
+    }
+    
+    // Run on page load
+    initTheme();
+  </script>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 min-h-screen p-4">
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen p-4 transition-colors duration-200">
   <div class="max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Bracket Results</h1>
+    <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
+      <div class="flex justify-between items-center mb-2">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Bracket Results</h1>
+        <button onclick="toggleDarkMode()" 
+                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2">
+          <span class="dark:hidden">🌙 Dark</span>
+          <span class="hidden dark:inline">☀️ Light</span>
+        </button>
+      </div>
       <div id="bracket-info" class="text-gray-600 dark:text-gray-400">
         Loading bracket information...
       </div>
     </div>
 
     <!-- Tab Navigation (for Elimination brackets) -->
-    <div id="elimination-tabs" class="hidden mb-6 border-b-2 border-gray-300 dark:border-gray-600">
-      <button class="tab-btn active px-4 py-2 font-semibold text-primary border-b-2 border-primary" data-tab="qual">Qual Ranking</button>
-      <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary" data-tab="quarters">Quarter Finals</button>
-      <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary" data-tab="semis">Semi Finals</button>
-      <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary" data-tab="finals">Finals</button>
+    <div id="elimination-tabs" class="hidden mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-2 transition-colors duration-200">
+      <div class="flex gap-2 overflow-x-auto">
+        <button class="tab-btn active px-4 py-2 font-semibold text-primary border-b-2 border-primary whitespace-nowrap min-w-[44px] min-h-[44px]" data-tab="qual">Qual Ranking</button>
+        <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary whitespace-nowrap min-w-[44px] min-h-[44px]" data-tab="quarters">Quarter Finals</button>
+        <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary whitespace-nowrap min-w-[44px] min-h-[44px]" data-tab="semis">Semi Finals</button>
+        <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary whitespace-nowrap min-w-[44px] min-h-[44px]" data-tab="finals">Finals Round</button>
+      </div>
     </div>
 
     <!-- Qualification Ranking Tab -->
     <div id="qual-tab" class="tab-content hidden">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 overflow-x-auto">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 overflow-x-auto transition-colors duration-200">
         <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Qualification Ranking (Top 8)</h2>
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b-2 border-gray-300 dark:border-gray-600">
-              <th class="text-left p-2 font-semibold">Rank</th>
-              <th class="text-left p-2 font-semibold">Name</th>
-              <th class="text-left p-2 font-semibold">School</th>
-              <th class="text-right p-2 font-semibold">Total Score</th>
-              <th class="text-right p-2 font-semibold">10s</th>
-              <th class="text-right p-2 font-semibold">Xs</th>
-            </tr>
-          </thead>
-          <tbody id="qual-table-body">
-            <tr><td colspan="6" class="text-center p-4 text-gray-500">Loading...</td></tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto -mx-4 px-4">
+          <table class="w-full text-sm border-collapse min-w-[600px]">
+            <thead>
+              <tr class="border-b-2 border-gray-300 dark:border-gray-600 bg-primary dark:bg-primary-dark text-white">
+                <th class="text-left p-2 font-semibold">Rank</th>
+                <th class="text-left p-2 font-semibold">Name</th>
+                <th class="text-left p-2 font-semibold">School</th>
+                <th class="text-right p-2 font-semibold">Total Score</th>
+                <th class="text-right p-2 font-semibold">10s</th>
+                <th class="text-right p-2 font-semibold">Xs</th>
+              </tr>
+            </thead>
+            <tbody id="qual-table-body">
+              <tr><td colspan="6" class="text-center p-4 text-gray-500">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
     <!-- Quarter Finals Tab -->
     <div id="quarters-tab" class="tab-content hidden">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
         <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Quarter Finals</h2>
         <div id="quarters-matches" class="space-y-4">
           <div class="text-gray-500 text-center p-4">Loading matches...</div>
@@ -67,7 +120,7 @@
 
     <!-- Semi Finals Tab -->
     <div id="semis-tab" class="tab-content hidden">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
         <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Semi Finals</h2>
         <div id="semis-matches" class="space-y-4">
           <div class="text-gray-500 text-center p-4">Loading matches...</div>
@@ -77,7 +130,7 @@
 
     <!-- Finals Tab -->
     <div id="finals-tab" class="tab-content hidden">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
         <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Finals Round</h2>
         <div id="finals-matches" class="space-y-4">
           <div class="text-gray-500 text-center p-4">Loading matches...</div>
@@ -87,25 +140,27 @@
 
     <!-- Swiss Bracket View -->
     <div id="swiss-view" class="hidden">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 transition-colors duration-200">
         <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Swiss Leaderboard</h2>
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b-2 border-gray-300 dark:border-gray-600">
-              <th class="text-left p-2 font-semibold">Rank</th>
-              <th class="text-left p-2 font-semibold">Name</th>
-              <th class="text-left p-2 font-semibold">School</th>
-              <th class="text-center p-2 font-semibold">W-L</th>
-              <th class="text-right p-2 font-semibold">Points</th>
-            </tr>
-          </thead>
-          <tbody id="swiss-leaderboard-body">
-            <tr><td colspan="5" class="text-center p-4 text-gray-500">Loading...</td></tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto -mx-4 px-4">
+          <table class="w-full text-sm border-collapse min-w-[600px]">
+            <thead>
+              <tr class="border-b-2 border-gray-300 dark:border-gray-600 bg-primary dark:bg-primary-dark text-white">
+                <th class="text-left p-2 font-semibold">Rank</th>
+                <th class="text-left p-2 font-semibold">Name</th>
+                <th class="text-left p-2 font-semibold">School</th>
+                <th class="text-center p-2 font-semibold">W-L</th>
+                <th class="text-right p-2 font-semibold">Points</th>
+              </tr>
+            </thead>
+            <tbody id="swiss-leaderboard-body">
+              <tr><td colspan="5" class="text-center p-4 text-gray-500">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
       
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
         <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">All Matches</h2>
         <div id="swiss-matches" class="space-y-4">
           <div class="text-gray-500 text-center p-4">Loading matches...</div>
@@ -115,7 +170,7 @@
 
     <!-- Coach Actions (if authenticated) -->
     <div id="coach-actions" class="hidden mt-6">
-      <button id="validate-close-btn" class="px-6 py-3 bg-success hover:bg-success-dark text-white rounded-lg font-semibold transition-colors">
+      <button id="validate-close-btn" class="px-6 py-3 bg-success hover:bg-success-dark text-white rounded-lg font-semibold transition-colors min-w-[44px] min-h-[44px]">
         ✅ Validate All and Close Bracket
       </button>
     </div>
@@ -169,8 +224,11 @@
           
           // Update header
           const bracket = data.bracket;
-          document.getElementById('bracket-info').textContent = 
-            `${bracket.bracket_type} ${bracket.bracket_format} - ${bracket.division} (${bracket.status})`;
+          const eventName = bracket.event_name || 'Event';
+          document.getElementById('bracket-info').innerHTML = `
+            <div class="text-lg font-semibold">${eventName}</div>
+            <div>${bracket.bracket_type} ${bracket.bracket_format} - ${bracket.division} (${bracket.status})</div>
+          `;
           
           // Show appropriate view
           if (bracket.bracket_format === 'ELIMINATION') {
@@ -182,7 +240,7 @@
             showTab('qual');
           } else {
             document.getElementById('swiss-view').classList.remove('hidden');
-            renderSwissLeaderboard(data.rounds.swiss || []);
+            renderSwissLeaderboard(data.leaderboard || []);
             renderSwissMatches(data.rounds.swiss || []);
           }
           
@@ -209,13 +267,13 @@
           const isTop8 = index < 8;
           const rowClass = isTop8 ? 'bg-yellow-50 dark:bg-yellow-900/20' : '';
           html += `
-            <tr class="${rowClass}">
-              <td class="p-2 font-semibold">${entry.rank}</td>
-              <td class="p-2">${entry.archer_name}</td>
-              <td class="p-2">${entry.school || ''}</td>
-              <td class="p-2 text-right font-semibold">${entry.total_score}</td>
-              <td class="p-2 text-right">${entry.total_10s}</td>
-              <td class="p-2 text-right">${entry.total_xs}</td>
+            <tr class="${rowClass} border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <td class="p-2 font-semibold dark:text-white">${entry.rank}</td>
+              <td class="p-2 dark:text-white">${entry.archer_name}</td>
+              <td class="p-2 dark:text-gray-300">${entry.school || ''}</td>
+              <td class="p-2 text-right font-semibold dark:text-white">${entry.total_score}</td>
+              <td class="p-2 text-right dark:text-white">${entry.total_10s}</td>
+              <td class="p-2 text-right dark:text-white">${entry.total_xs}</td>
             </tr>
           `;
         });
@@ -232,26 +290,31 @@
         let html = '';
         matches.forEach(match => {
           const matchId = match.bracket_match_id || match.id;
+          const a1 = match.archer1 || {};
+          const a2 = match.archer2 || {};
+          const a1IsWinner = match.winner_archer_id === a1.archer_id;
+          const a2IsWinner = match.winner_archer_id === a2.archer_id;
+          
           html += `
-            <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+            <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 transition-colors duration-200">
               <div class="font-semibold text-lg mb-3 text-gray-800 dark:text-white">${matchId}</div>
-              <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+              <div class="overflow-x-auto -mx-4 px-4">
+                <table class="w-full text-sm border-collapse min-w-[600px]">
                   <thead>
-                    <tr class="border-b border-gray-300 dark:border-gray-600">
-                      <th class="text-left p-2">Target</th>
-                      <th class="text-left p-2">Name (Rank)</th>
-                      <th class="text-center p-2">End 1</th>
-                      <th class="text-center p-2">End 2</th>
-                      <th class="text-center p-2">End 3</th>
-                      <th class="text-center p-2">End 4</th>
-                      <th class="text-center p-2">End 5</th>
-                      <th class="text-right p-2">Total</th>
+                    <tr class="border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                      <th class="text-left p-2 font-semibold dark:text-white">Target</th>
+                      <th class="text-left p-2 font-semibold dark:text-white">Name (Rank)</th>
+                      <th class="text-center p-2 font-semibold dark:text-white">End 1</th>
+                      <th class="text-center p-2 font-semibold dark:text-white">End 2</th>
+                      <th class="text-center p-2 font-semibold dark:text-white">End 3</th>
+                      <th class="text-center p-2 font-semibold dark:text-white">End 4</th>
+                      <th class="text-center p-2 font-semibold dark:text-white">End 5</th>
+                      <th class="text-right p-2 font-semibold dark:text-white">Total Score</th>
                     </tr>
                   </thead>
                   <tbody>
-                    ${renderMatchRow(match.archer1_name || 'Archer 1', match, 1)}
-                    ${renderMatchRow(match.archer2_name || 'Archer 2', match, 2)}
+                    ${renderMatchRow(a1, 1, a1IsWinner)}
+                    ${renderMatchRow(a2, 2, a2IsWinner)}
                   </tbody>
                 </table>
               </div>
@@ -261,34 +324,69 @@
         container.innerHTML = html;
       }
       
-      function renderMatchRow(archerName, match, position) {
-        // This is simplified - in production, you'd fetch full match details
-        // For now, show placeholder data
+      function renderMatchRow(archer, position, isWinner) {
+        if (!archer || !archer.name) {
+          return `
+            <tr class="border-b border-gray-200 dark:border-gray-600">
+              <td class="p-2">${position === 1 ? '15A' : '16A'}</td>
+              <td class="p-2 font-medium dark:text-white">-</td>
+              <td class="p-2 text-center dark:text-white">-</td>
+              <td class="p-2 text-center dark:text-white">-</td>
+              <td class="p-2 text-center dark:text-white">-</td>
+              <td class="p-2 text-center dark:text-white">-</td>
+              <td class="p-2 text-center dark:text-white">-</td>
+              <td class="p-2 text-right font-semibold dark:text-white">-</td>
+            </tr>
+          `;
+        }
+        
+        const nameDisplay = archer.seed ? `${archer.name} (${archer.seed})` : archer.name;
+        const rowClass = isWinner ? 'winner-row' : '';
+        const textClass = isWinner ? 'winner-text' : 'dark:text-white';
+        const sets = archer.sets || [];
+        
+        // Build end columns
+        let endCells = '';
+        for (let i = 1; i <= 5; i++) {
+          const set = sets.find(s => s.end === i);
+          if (set) {
+            const scoreClass = isWinner ? 'winner-text font-semibold' : 'dark:text-white';
+            endCells += `<td class="p-2 text-center ${scoreClass}">${set.display || `${set.score}(${set.xs})`}</td>`;
+          } else {
+            endCells += `<td class="p-2 text-center dark:text-gray-400">-</td>`;
+          }
+        }
+        
         return `
-          <tr class="${match.winner_archer_id === match[`archer${position}_id`] ? 'winner-row' : ''}">
-            <td class="p-2">${position === 1 ? '15A' : '16A'}</td>
-            <td class="p-2 font-medium">${archerName}</td>
-            <td class="p-2 text-center">-</td>
-            <td class="p-2 text-center">-</td>
-            <td class="p-2 text-center">-</td>
-            <td class="p-2 text-center">-</td>
-            <td class="p-2 text-center">-</td>
-            <td class="p-2 text-right font-semibold">-</td>
+          <tr class="${rowClass} border-b border-gray-200 dark:border-gray-600">
+            <td class="p-2 dark:text-white">${position === 1 ? '15A' : '16A'}</td>
+            <td class="p-2 font-medium ${textClass}">${nameDisplay}</td>
+            ${endCells}
+            <td class="p-2 text-right font-semibold ${textClass}">${archer.total_set_points || 0}</td>
           </tr>
         `;
       }
       
-      function renderSwissLeaderboard(matches) {
-        // Extract leaderboard from matches
-        const leaderboard = {};
-        
-        matches.forEach(match => {
-          // Process match to update leaderboard
-          // This is simplified - would need full match data
-        });
-        
+      function renderSwissLeaderboard(leaderboard) {
         const tbody = document.getElementById('swiss-leaderboard-body');
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">Leaderboard data coming soon</td></tr>';
+        if (!leaderboard || leaderboard.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">No leaderboard data</td></tr>';
+          return;
+        }
+        
+        let html = '';
+        leaderboard.forEach(entry => {
+          html += `
+            <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <td class="p-2 font-semibold dark:text-white">${entry.rank}</td>
+              <td class="p-2 dark:text-white">${entry.archer_name}</td>
+              <td class="p-2 dark:text-gray-300">${entry.school || ''}</td>
+              <td class="p-2 text-center dark:text-white">${entry.record}</td>
+              <td class="p-2 text-right font-semibold dark:text-white">${entry.points}</td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
       }
       
       function renderSwissMatches(matches) {
@@ -298,7 +396,22 @@
           return;
         }
         
-        container.innerHTML = '<div class="text-gray-500 text-center p-4">Swiss match display coming soon</div>';
+        let html = '';
+        matches.forEach(match => {
+          const a1 = match.archer1 || {};
+          const a2 = match.archer2 || {};
+          html += `
+            <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 transition-colors duration-200">
+              <div class="font-semibold mb-2 text-gray-800 dark:text-white">
+                ${a1.name || 'Archer 1'} vs ${a2.name || 'Archer 2'}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-400">
+                ${match.match_code || match.bracket_match_id || 'Match'}
+              </div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
       }
       
       function showTab(tabName) {
@@ -347,4 +460,3 @@
   </script>
 </body>
 </html>
-

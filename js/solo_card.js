@@ -76,6 +76,13 @@ document.addEventListener('DOMContentLoaded', () => {
             showAvatars: true,
             showFavoriteToggle: true
         });
+        
+        // If we have pending bracket sync, do it now
+        if (state.pendingBracketSync && state.archer1 && state.archer2) {
+            console.log('[SoloCard] Syncing bracket assignment now that selector is ready');
+            syncSelectorSelection();
+            state.pendingBracketSync = false;
+        }
     }
 
     function refreshArcherRoster() {
@@ -109,9 +116,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         return {
             favorites,
-            selfExtId
+            selfExtId,
+            selfArcher: typeof ArcherModule !== 'undefined' ? ArcherModule.getSelfArcher() : null
         };
     }
+    
+    // Store self archer reference
+    let selfArcher = null;
 
     function syncSelectorSelection() {
         if (!archerSelector) return;
@@ -1161,10 +1172,167 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    function handleBracketSelection() {
+    async function handleBracketSelection() {
         state.bracketId = bracketSelect.value || null;
         updateMatchTypeIndicator();
+        
+        // For elimination brackets, check if archer has an assigned match
+        if (state.bracketId && typeof ArcherModule !== 'undefined') {
+            const selfArcher = ArcherModule.getSelfArcher();
+            console.log('[SoloCard] Bracket selected, checking assignment for archer:', selfArcher);
+            if (selfArcher) {
+                // Try multiple ID formats
+                const archerId = selfArcher.id || selfArcher.extId || (selfArcher.first && selfArcher.last ? `${selfArcher.first}-${selfArcher.last}` : null);
+                if (archerId) {
+                    console.log('[SoloCard] Loading bracket assignment for:', archerId);
+                    await loadBracketAssignment(archerId);
+                } else {
+                    console.log('[SoloCard] No archer ID found in selfArcher:', selfArcher);
+                }
+            } else {
+                console.log('[SoloCard] No self archer found');
+            }
+        }
+        
         saveData();
+    }
+    
+    async function loadBracketAssignment(archerId) {
+        if (!state.bracketId || !archerId) {
+            console.log('[SoloCard] Cannot load assignment - missing bracketId or archerId:', { bracketId: state.bracketId, archerId });
+            return;
+        }
+        
+        // Try to get database UUID from archer, or use name-based lookup
+        let url;
+        if (typeof ArcherModule !== 'undefined') {
+            const selfArcher = ArcherModule.getSelfArcher();
+            if (selfArcher) {
+                const firstName = selfArcher.first || '';
+                const lastName = selfArcher.last || '';
+                
+                // First try UUID if it looks like one
+                if (archerId.length === 36 && archerId.includes('-')) {
+                    url = `api/v1/brackets/${state.bracketId}/archer-assignment/${archerId}`;
+                } else if (firstName && lastName) {
+                    // Use name-based lookup
+                    url = `api/v1/brackets/${state.bracketId}/archer-assignment/by-name/${encodeURIComponent(firstName)}/${encodeURIComponent(lastName)}`;
+                    console.log('[SoloCard] Using name-based lookup:', firstName, lastName);
+                } else {
+                    url = `api/v1/brackets/${state.bracketId}/archer-assignment/${archerId}`;
+                }
+            } else {
+                url = `api/v1/brackets/${state.bracketId}/archer-assignment/${archerId}`;
+            }
+        } else {
+            url = `api/v1/brackets/${state.bracketId}/archer-assignment/${archerId}`;
+        }
+        
+        try {
+            console.log('[SoloCard] Fetching bracket assignment from:', url);
+            const response = await fetch(url);
+            console.log('[SoloCard] Assignment response status:', response.status);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('[SoloCard] Assignment data:', data);
+                
+                if (data.assignment && data.assignment.opponent) {
+                    // Pre-populate opponent for elimination bracket
+                    const opponent = data.assignment.opponent;
+                    
+                        // Find opponent in archer list
+                        if (typeof ArcherModule !== 'undefined') {
+                            // Refresh roster to ensure we have latest archers
+                            refreshArcherRoster();
+                            const roster = ArcherModule.loadList() || [];
+                            const currentSelfArcher = ArcherModule.getSelfArcher();
+                        
+                        console.log('[SoloCard] Looking for opponent in roster:', opponent.name, 'ID:', opponent.id);
+                        console.log('[SoloCard] Roster size:', roster.length);
+                        
+                        // Try to find opponent by ID first, then by name
+                        let opponentArcher = roster.find(a => {
+                            const aId = a.id || a.archerId || `${a.first}-${a.last}`;
+                            return aId === opponent.id;
+                        });
+                        
+                        if (!opponentArcher) {
+                            console.log('[SoloCard] Opponent not found by ID, trying name match...');
+                            // Try by name match (case insensitive, handle variations)
+                            opponentArcher = roster.find(a => {
+                                if (!a.first || !a.last) return false;
+                                const fullName = `${a.first} ${a.last}`.toLowerCase().trim();
+                                const opponentName = opponent.name.toLowerCase().trim();
+                                return fullName === opponentName;
+                            });
+                            
+                            if (!opponentArcher) {
+                                // Try partial match (first name + last name initial)
+                                const opponentParts = opponent.name.toLowerCase().trim().split(' ');
+                                if (opponentParts.length >= 2) {
+                                    opponentArcher = roster.find(a => {
+                                        if (!a.first || !a.last) return false;
+                                        return a.first.toLowerCase() === opponentParts[0] &&
+                                               a.last.toLowerCase().startsWith(opponentParts[1]);
+                                    });
+                                }
+                            }
+                        }
+                        
+                        if (opponentArcher) {
+                            console.log('[SoloCard] Found opponent in roster:', opponentArcher);
+                        } else {
+                            console.log('[SoloCard] Opponent NOT found in roster. Available archers:', roster.map(a => `${a.first} ${a.last}`).slice(0, 10));
+                        }
+                        
+                        // Set archer 1 (self) if not already set
+                        if (!state.archer1 && currentSelfArcher) {
+                            state.archer1 = normalizeArcher(currentSelfArcher);
+                            console.log('[SoloCard] Set archer1 (self):', state.archer1);
+                        }
+                        
+                        if (opponentArcher) {
+                            // Set archer 2 (opponent)
+                            state.archer2 = normalizeArcher(opponentArcher);
+                            console.log('[SoloCard] Set archer2 (opponent):', state.archer2);
+                            
+                            // Sync selection if selector is ready
+                            if (archerSelector) {
+                                syncSelectorSelection();
+                                console.log('[SoloCard] Synced selector with archers');
+                            } else {
+                                console.log('[SoloCard] Archer selector not ready yet, will sync when ready');
+                                // Store flag to sync later
+                                state.pendingBracketSync = true;
+                            }
+                        } else {
+                            console.log('[SoloCard] Opponent not found in roster:', opponent.name);
+                        }
+                        
+                        // Show assignment info in match type indicator
+                        if (matchTypeText) {
+                            const matchInfo = data.assignment.match_id || `Quarter Final ${data.assignment.match_number}`;
+                            const bracket = state.brackets.find(b => b.id === state.bracketId);
+                            const event = state.events.find(e => e.id === state.eventId);
+                            const formatText = bracket?.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+                            const eventName = event?.name || 'Event';
+                            
+                            matchTypeText.textContent = `${formatText} bracket: ${matchInfo} - You (Seed ${data.archer.seed}) vs ${opponent.name} (Seed ${opponent.seed})`;
+                            matchTypeText.classList.add('font-semibold', 'text-primary');
+                            console.log('[SoloCard] Updated match type indicator with assignment');
+                        }
+                    }
+                } else if (data.assignment && data.assignment.message) {
+                    // Swiss bracket - show message
+                    if (matchTypeText) {
+                        matchTypeText.textContent = data.assignment.message;
+                    }
+                }
+            }
+        } catch (error) {
+            console.log('Could not load bracket assignment:', error);
+        }
     }
     
     function updateMatchTypeIndicator() {
@@ -1207,6 +1375,16 @@ document.addEventListener('DOMContentLoaded', () => {
         renderKeypad();
         initializeArcherSelector();
         
+        // After selector is initialized, sync any pending bracket assignment
+        // Use setTimeout to ensure selector is fully ready
+        setTimeout(() => {
+            if (state.pendingBracketSync && state.archer1 && state.archer2 && archerSelector) {
+                console.log('[SoloCard] Syncing bracket assignment after selector initialization');
+                syncSelectorSelection();
+                state.pendingBracketSync = false;
+            }
+        }, 200);
+        
         // Phase 2: Restore match from database if matchId exists
         if (state.matchId && window.LiveUpdates) {
             const restored = await restoreMatchFromDatabase();
@@ -1226,6 +1404,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Get self archer reference
+        if (typeof ArcherModule !== 'undefined') {
+            selfArcher = ArcherModule.getSelfArcher();
+        }
+        
         // Load events and set up event/bracket selection
         await loadEvents();
         
@@ -1234,21 +1417,72 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bracketSelect) bracketSelect.addEventListener('change', handleBracketSelection);
         if (refreshEventsBtn) refreshEventsBtn.addEventListener('click', loadEvents);
         
-        // Check for URL parameters (for QR code access)
+        // Check for URL parameters (for QR code access or bracket assignments)
         const urlParams = new URLSearchParams(window.location.search);
         const eventId = urlParams.get('event');
         const bracketId = urlParams.get('bracket');
         
         if (eventId) {
             state.eventId = eventId;
-            if (bracketId) {
-                state.bracketId = bracketId;
-            }
             // Re-render selects with URL parameters
             renderEventSelect();
-            if (eventId) {
-                await loadBrackets(eventId);
-                if (bracketSelection) bracketSelection.classList.remove('hidden');
+            if (eventSelect) {
+                eventSelect.value = eventId;
+            }
+            
+            // Load brackets for this event
+            await loadBrackets(eventId);
+            if (bracketSelection) bracketSelection.classList.remove('hidden');
+            
+            if (bracketId) {
+                state.bracketId = bracketId;
+                // Set bracket in dropdown (after brackets are loaded)
+                if (bracketSelect) {
+                    bracketSelect.value = bracketId;
+                }
+                
+                // Load bracket assignment and auto-populate archers
+                if (typeof ArcherModule !== 'undefined') {
+                    const selfArcher = ArcherModule.getSelfArcher();
+                    if (selfArcher) {
+                        // Try multiple ID formats
+                        let archerId = selfArcher.id || selfArcher.archerId || selfArcher.extId || null;
+                        
+                        // If we have extId but not UUID, try to find UUID
+                        if (archerId && !archerId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+                            const firstName = selfArcher.first || '';
+                            const lastName = selfArcher.last || '';
+                            if (firstName && lastName) {
+                                try {
+                                    const searchRes = await fetch(`api/v1/archers/search?q=${encodeURIComponent(firstName + ' ' + lastName)}`);
+                                    if (searchRes.ok) {
+                                        const searchData = await searchRes.json();
+                                        if (searchData.results && searchData.results.length > 0) {
+                                            const match = searchData.results.find(r => 
+                                                r.archer.firstName.toLowerCase() === firstName.toLowerCase() &&
+                                                r.archer.lastName.toLowerCase() === lastName.toLowerCase()
+                                            );
+                                            if (match && match.archer.id) {
+                                                archerId = match.archer.id;
+                                            }
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.log('[SoloCard] Could not search for UUID:', e);
+                                }
+                            }
+                        }
+                        
+                        if (archerId) {
+                            console.log('[SoloCard] Loading bracket assignment from URL params for archer:', archerId);
+                            await loadBracketAssignment(archerId);
+                        } else {
+                            console.log('[SoloCard] No archer ID found for bracket assignment');
+                        }
+                    } else {
+                        console.log('[SoloCard] No self archer found for bracket assignment');
+                    }
+                }
             }
         }
         

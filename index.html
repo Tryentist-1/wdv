@@ -293,31 +293,110 @@
           archer = window.ArcherModule.getSelfArcher();
         }
         
-        if (!archer || !archer.id) {
-          console.log('No archer set - cannot load assignments');
+        if (!archer) {
+          console.log('[index] No archer set - cannot load assignments');
           return;
         }
+        
+        // Get archer ID - need UUID for history endpoint
+        // UUID format: 36 chars with dashes (e.g., "3c7533af-eda1-48c7-b688-3279e75cc697")
+        // Check multiple possible ID fields
+        let archerId = archer.id || archer.archerId || archer.databaseId || null;
+        let isUUID = archerId && archerId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+        
+        console.log('[index] Archer object:', { 
+          first: archer.first, 
+          last: archer.last, 
+          id: archer.id, 
+          archerId: archer.archerId,
+          databaseId: archer.databaseId,
+          extId: archer.extId,
+          allKeys: Object.keys(archer)
+        });
+        
+        // If we don't have a UUID, try to find it by searching
+        if (!isUUID && archer.first && archer.last) {
+          try {
+            console.log('[index] Searching for UUID by name:', archer.first, archer.last);
+            const searchRes = await fetch(`api/v1/archers/search?q=${encodeURIComponent(archer.first + ' ' + archer.last)}`);
+            if (searchRes.ok) {
+              const searchData = await searchRes.json();
+              console.log('[index] Search results:', searchData);
+              // The search API returns results in a different format
+              if (searchData.results && searchData.results.length > 0) {
+                const match = searchData.results.find(r => 
+                  r.archer.firstName.toLowerCase() === archer.first.toLowerCase() &&
+                  r.archer.lastName.toLowerCase() === archer.last.toLowerCase()
+                );
+                if (match && match.archer.id) {
+                  archerId = match.archer.id;
+                  isUUID = true;
+                  console.log('[index] Found UUID for archer:', archerId);
+                } else {
+                  console.log('[index] No exact name match found in search results');
+                }
+              } else {
+                console.log('[index] No search results returned');
+              }
+            } else {
+              console.log('[index] Search request failed:', searchRes.status, searchRes.statusText);
+            }
+          } catch (e) {
+            console.log('[index] Could not search for archer UUID:', e.message);
+          }
+        }
+        
+        if (!archerId || !isUUID) {
+          console.log('[index] No valid UUID found - cannot load assignments. Final archerId:', archerId, 'isUUID:', isUUID);
+          return;
+        }
+        
+        console.log('[index] Loading assignments for archer UUID:', archerId);
         
         const assignments = [];
         
         // Check for open ranking rounds
         try {
-          const historyRes = await fetch(`api/v1/archers/${archer.id}/history`);
+          const historyRes = await fetch(`api/v1/archers/${archerId}/history`);
+          console.log('[index] History API response status:', historyRes.status);
           if (historyRes.ok) {
             const historyData = await historyRes.json();
+            console.log('[index] History data:', historyData);
             const rounds = historyData.history || historyData.rounds || [];
+            console.log('[index] Total rounds found:', rounds.length);
             
-            // Find incomplete rounds (not locked, incomplete ends, or test rounds)
+            // Find incomplete rounds
+            // Note: History API doesn't return locked/card_status, so we check ends_completed
             const openRounds = rounds.filter(round => {
-              const isLocked = round.locked || round.card_status === 'VER';
-              const hasIncompleteEnds = (round.ends_completed || 0) < 10;
+              const endsCompleted = parseInt(round.ends_completed || 0);
+              const hasIncompleteEnds = endsCompleted < 10;
               const isTestRound = round.event_name?.toLowerCase().includes('test') || 
                                  round.event_name?.toLowerCase().includes('practice');
-              const hasLowScore = (round.final_score || 0) < 100; // More generous threshold
+              const finalScore = parseInt(round.final_score || 0);
+              const hasLowScore = finalScore < 100;
               
-              // Show if not locked AND (incomplete ends OR test/practice rounds with low scores)
-              return !isLocked && (hasIncompleteEnds || (isTestRound && hasLowScore));
+              // Show if:
+              // 1. Has incomplete ends (not finished) - PRIMARY condition
+              // 2. OR is today's round (show active rounds even if complete, for quick access)
+              const isToday = round.event_date === new Date().toISOString().slice(0, 10);
+              const shouldShow = hasIncompleteEnds || (isToday && endsCompleted > 0);
+              
+              console.log('[index] Round check:', {
+                event: round.event_name,
+                date: round.event_date,
+                endsCompleted,
+                finalScore,
+                hasIncompleteEnds,
+                isTestRound,
+                hasLowScore,
+                isToday,
+                shouldShow
+              });
+              
+              return shouldShow;
             });
+            
+            console.log('[index] Open rounds found:', openRounds.length);
             
             openRounds.forEach(round => {
               assignments.push({
@@ -325,15 +404,73 @@
                 title: round.event_name || 'Ranking Round',
                 subtitle: `${round.round_type || 'R300'} • ${round.division || 'Unknown Division'}`,
                 details: `Bale ${round.bale_number || '?'} • ${round.ends_completed || 0}/10 ends`,
-                link: `ranking_round_300.html?event=${round.event_id}&round=${round.round_id}&archer=${archer.id}`,
+                link: `ranking_round_300.html?event=${round.event_id}&round=${round.round_id}&archer=${archerId}`,
                 icon: 'fas fa-trophy',
                 color: 'bg-teal-600 hover:bg-teal-700',
-                urgent: (round.ends_completed || 0) > 0 // Has started but not finished
+                urgent: (round.ends_completed || 0) > 0 && (round.ends_completed || 0) < 10 // Has started but not finished
               });
             });
           }
         } catch (e) {
           console.log('Could not load ranking round history:', e.message);
+        }
+        
+        // Check for bracket assignments
+        try {
+          console.log('[index] Checking for bracket assignments...');
+          // Get recent events to find brackets
+          const eventsRes = await fetch('api/v1/events/recent');
+          if (eventsRes.ok) {
+            const eventsData = await eventsRes.json();
+            const events = eventsData.events || [];
+            
+            // Check each event for brackets
+            for (const event of events) {
+              try {
+                const bracketsRes = await fetch(`api/v1/events/${event.id}/brackets`);
+                if (bracketsRes.ok) {
+                  const bracketsData = await bracketsRes.json();
+                  const brackets = bracketsData.brackets || [];
+                  
+                  // Check each bracket for this archer's assignment
+                  for (const bracket of brackets) {
+                    if (bracket.bracket_type === 'SOLO' && bracket.bracket_format === 'ELIMINATION') {
+                      try {
+                        const assignmentRes = await fetch(`api/v1/brackets/${bracket.id}/archer-assignment/${archerId}`);
+                        if (assignmentRes.ok) {
+                          const assignmentData = await assignmentRes.json();
+                          console.log('[index] Bracket assignment found:', assignmentData);
+                          
+                          if (assignmentData.assignment && assignmentData.assignment.opponent) {
+                            const assignment = assignmentData.assignment;
+                            const opponent = assignment.opponent;
+                            
+                            assignments.push({
+                              type: 'bracket',
+                              title: `${bracket.division} Elimination Bracket`,
+                              subtitle: `${event.name} • ${assignment.round}`,
+                              details: `You (Seed ${assignmentData.archer.seed}) vs ${opponent.name} (Seed ${opponent.seed})`,
+                              link: `solo_card.html?event=${event.id}&bracket=${bracket.id}`,
+                              icon: 'fas fa-trophy',
+                              color: 'bg-yellow-500 hover:bg-yellow-600',
+                              urgent: true,
+                              matchId: assignment.match_id
+                            });
+                          }
+                        }
+                      } catch (e) {
+                        console.log('[index] Could not check bracket assignment:', e.message);
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+                console.log('[index] Could not load brackets for event:', e.message);
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Could not load bracket assignments:', e.message);
         }
         
         // Check for active events (if accessible)
@@ -380,20 +517,47 @@
         assignments.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
         
         // Convert assignments to unified scorecard list format
-        const assignmentItems = assignments.map(assignment => ({
-          event_name: assignment.title,
-          event_date: new Date().toISOString(),
-          round_type: assignment.subtitle.split(' • ')[0] || 'Assignment',
-          division: assignment.subtitle.split(' • ')[1] || '',
-          bale_number: assignment.details.match(/Bale (\d+)/)?.[1] || '',
-          card_status: assignment.urgent ? 'PEND' : 'COMP',
-          final_score: 0,
-          ends_completed: assignment.details.match(/(\d+)\/10 ends/)?.[1] || 0,
-          total_xs: 0,
-          total_tens: 0,
-          link: assignment.link,
-          urgent: assignment.urgent
-        }));
+        const assignmentItems = assignments.map(assignment => {
+          // Handle bracket assignments differently
+          if (assignment.type === 'bracket') {
+            // Extract opponent name from details for shorter display
+            // Details format: "You (Seed 1) vs Caio Lalau (Seed 8)"
+            const detailsMatch = assignment.details.match(/vs (.+?) \(Seed/);
+            const opponentName = detailsMatch ? detailsMatch[1] : assignment.details.split('vs ')[1] || 'Opponent';
+            
+            return {
+              event_name: assignment.title,
+              event_date: new Date().toISOString(),
+              round_type: assignment.matchId || 'Bracket Match', // This goes in "Type" column
+              division: assignment.subtitle.split(' • ')[0] || '',
+              bale_number: '',
+              card_status: 'PEND', // Bracket matches are pending until completed (not started = PEND)
+              final_score: 0,
+              ends_completed: opponentName, // Store opponent name for progress column
+              total_xs: 0,
+              total_tens: 0,
+              link: assignment.link,
+              urgent: assignment.urgent,
+              isBracket: true,
+              matchDetails: assignment.details // Store full details for reference
+            };
+          }
+          // Regular ranking round assignments
+          return {
+            event_name: assignment.title,
+            event_date: new Date().toISOString(),
+            round_type: assignment.subtitle.split(' • ')[0] || 'Assignment',
+            division: assignment.subtitle.split(' • ')[1] || '',
+            bale_number: assignment.details.match(/Bale (\d+)/)?.[1] || '',
+            card_status: assignment.urgent ? 'PEND' : 'COMP',
+            final_score: 0,
+            ends_completed: assignment.details.match(/(\d+)\/10 ends/)?.[1] || 0,
+            total_xs: 0,
+            total_tens: 0,
+            link: assignment.link,
+            urgent: assignment.urgent
+          };
+        });
 
         const options = {
           columns: ['Assignment', 'Status', 'Progress', 'Type', '', ''],
@@ -401,11 +565,26 @@
             window.location.href = item.link;
           },
           getEventName: (item) => item.event_name,
-          getTotal: (item) => `${item.ends_completed}/10`,
-          getAvg: (item) => item.round_type,
-          getXs: (item) => item.urgent ? '!' : '',
-          getTens: (item) => '',
-          getStatus: (item) => item.urgent ? 'URGENT' : 'OPEN'
+          getTotal: (item) => {
+            // Progress column: For brackets, show just "vs Opponent Name"
+            if (item.isBracket) {
+              return `vs ${item.ends_completed}`;
+            }
+            // For ranking rounds, show ends completed
+            return `${item.ends_completed}/10`;
+          },
+          getAvg: (item) => item.round_type, // Type column shows match ID (e.g., BVQ1)
+          getXs: (item) => item.urgent ? '!' : '', // Exclamation point (!) indicates urgent assignment
+          getTens: (item) => '', // Empty column (6th column, not used)
+          getStatus: (item) => {
+            // Status column: PEND for pending/not started, COMP for completed
+            // For bracket matches, always PEND until the match is actually completed
+            if (item.isBracket) {
+              return 'PEND'; // Bracket matches haven't started yet, so PEND
+            }
+            // For ranking rounds, use card_status or default based on urgency
+            return item.card_status || (item.urgent ? 'PEND' : 'COMP');
+          }
         };
 
         const listContainer = UnifiedScorecardList.create(assignmentItems, options);

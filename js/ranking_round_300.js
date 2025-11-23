@@ -16,10 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const API_BASE = getApiBase();
 
-    // Check for URL parameters (event and code for QR code access)
+    // Check for URL parameters (event and code for QR code access, or event/round for direct links)
     const urlParams = new URLSearchParams(window.location.search);
     const urlEventId = urlParams.get('event');
     const urlEntryCode = urlParams.get('code');
+    const urlRoundId = urlParams.get('round');
+    const urlArcherId = urlParams.get('archer');
 
     // --- STATE MANAGEMENT ---
     const state = {
@@ -4235,6 +4237,15 @@ function updateManualLiveControls(summaryOverride) {
                 console.log('[RESUME] Loading existing scores to populate archer data...');
                 await loadExistingScoresForArchers();
                 
+                // CRITICAL: Ensure division is set from archers before Live Updates
+                if (state.archers && state.archers.length > 0 && !state.divisionCode) {
+                    const firstArcher = state.archers[0];
+                    if (firstArcher.division) {
+                        state.divisionCode = firstArcher.division;
+                        console.log('[RESUME] Set division from first archer:', firstArcher.division);
+                    }
+                }
+                
                 // FIX: Initialize LiveUpdates and pre-map archer IDs when resuming
                 if (getLiveEnabled()) {
                     console.log('[RESUME] Initializing Live Updates for resumed session...');
@@ -4250,8 +4261,9 @@ function updateManualLiveControls(summaryOverride) {
         // No in-progress work - show setup
         renderView();
         
-        // Check for URL parameters (QR code access)
+        // Check for URL parameters (QR code access OR direct event/round link)
         if (urlEventId && urlEntryCode && urlEventId.trim() && urlEntryCode.trim()) {
+            // QR code access - requires both event and code
             console.log('QR code detected - verifying entry code...');
             const verified = await verifyAndLoadEventByCode(urlEventId.trim(), urlEntryCode.trim());
             if (verified) {
@@ -4273,8 +4285,68 @@ function updateManualLiveControls(summaryOverride) {
                     codeError.style.display = 'block';
                 }
             }
+        } else if (urlEventId && urlEventId.trim()) {
+            // Direct event link (from home page assignments) - load event directly without code
+            console.log('[init] Event ID in URL - loading event directly:', urlEventId);
+            const success = await loadEventById(urlEventId.trim(), '');
+            if (success) {
+                console.log('[init] Event loaded from URL - bypassing event modal');
+                updateEventHeader();
+                hideEventModal();
+                renderSetupSections();
+                
+                // If round ID is also provided, try to load that specific round
+                if (urlRoundId && urlRoundId.trim()) {
+                    console.log('[init] Round ID in URL - loading round:', urlRoundId);
+                    try {
+                        const roundRes = await fetch(`${API_BASE}/rounds/${urlRoundId.trim()}/snapshot`);
+                        if (roundRes.ok) {
+                            const roundData = await roundRes.json();
+                            console.log('[init] Round data loaded:', roundData);
+                            
+                            // Extract division from round data and set in state (CRITICAL for Live Updates)
+                            if (roundData.round && roundData.round.division) {
+                                state.divisionCode = roundData.round.division;
+                                console.log('[init] Set division from round data:', roundData.round.division);
+                            }
+                            
+                            // Set bale number from round data if available
+                            if (roundData.round && roundData.round.baleNumber) {
+                                state.baleNumber = roundData.round.baleNumber;
+                                if (manualSetupControls.baleInput) {
+                                    manualSetupControls.baleInput.value = state.baleNumber;
+                                }
+                            }
+                            
+                            // Load archers for this round/bale
+                            if (roundData.round && roundData.round.baleNumber) {
+                                await loadPreAssignedBale(urlEventId.trim(), roundData.round.baleNumber);
+                            } else if (roundData.archers && roundData.archers.length > 0) {
+                                // If no bale number but we have archers, try to determine bale
+                                // Note: archers from snapshot don't have baleNumber, so use state
+                                await loadPreAssignedBale(urlEventId.trim(), state.baleNumber);
+                            }
+                            
+                            // Ensure division is set - fallback to archers if not in round data
+                            if (!state.divisionCode && state.archers && state.archers.length > 0) {
+                                const firstArcher = state.archers[0];
+                                if (firstArcher.division) {
+                                    state.divisionCode = firstArcher.division;
+                                    console.log('[init] Set division from first archer:', firstArcher.division);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.log('[init] Could not load round from URL:', e.message);
+                    }
+                }
+            } else {
+                // Failed to load event - show modal
+                console.log('[init] Failed to load event from URL - showing modal');
+                showEventModal();
+            }
         } else if (!state.selectedEventId && !state.activeEventId) {
-            // No QR code, no saved event - show modal only (do not mutate state here)
+            // No URL params, no saved event - show modal only (do not mutate state here)
             console.log('No event connected - showing event modal');
             showEventModal();
         } else {
