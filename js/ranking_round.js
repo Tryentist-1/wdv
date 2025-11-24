@@ -168,6 +168,139 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const TARGET_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
+    // --- ARCHER SELECTOR SETUP ---
+    let archerSelector = null;
+    const RANKING_SELECTOR_GROUPS = [
+        { id: 'A', label: 'Target A', buttonText: 'A', max: 1, accentClass: 'bg-primary text-white' },
+        { id: 'B', label: 'Target B', buttonText: 'B', max: 1, accentClass: 'bg-secondary text-white' },
+        { id: 'C', label: 'Target C', buttonText: 'C', max: 1, accentClass: 'bg-success text-white' },
+        { id: 'D', label: 'Target D', buttonText: 'D', max: 1, accentClass: 'bg-warning text-gray-800' }
+    ];
+
+    function initializeArcherSelector() {
+        if (!setupControls.container || typeof ArcherSelector === 'undefined') {
+            console.warn('ArcherSelector component unavailable.');
+            return;
+        }
+
+        archerSelector = ArcherSelector.init(setupControls.container, {
+            groups: RANKING_SELECTOR_GROUPS,
+            emptyMessage: 'No archers found. Sync your roster to begin.',
+            onSelectionChange: handleSelectorChange,
+            onFavoriteToggle: handleFavoriteToggle,
+            showAvatars: true,
+            showFavoriteToggle: true
+        });
+        
+        refreshArcherRoster();
+        syncSelectorSelection();
+    }
+
+    function refreshArcherRoster() {
+        if (!archerSelector || typeof ArcherModule === 'undefined') return;
+        try {
+            const roster = ArcherModule.loadList() || [];
+            const ctx = getSelectorContext();
+            archerSelector.setContext(ctx);
+            archerSelector.setRoster(roster);
+            const searchInput = setupControls.subheader?.querySelector('input[type="text"]');
+            if (searchInput && searchInput.value) {
+                archerSelector.setFilter(searchInput.value);
+            }
+        } catch (err) {
+            console.warn('Failed to load archer roster for selector:', err);
+            archerSelector.setRoster([]);
+        }
+    }
+
+    function getSelectorContext() {
+        const rosterState = getRosterState();
+        return {
+            favorites: rosterState.friendSet instanceof Set ? rosterState.friendSet : new Set(Array.isArray(rosterState.friendSet) ? rosterState.friendSet : []),
+            selfExtId: rosterState.selfExtId || ''
+        };
+    }
+
+    function handleSelectorChange(groupId, selectedArchers) {
+        // Update state.archers based on selector selection
+        // Remove archers from state that are no longer selected
+        state.archers = state.archers.filter(archer => {
+            const archerExtId = getExtIdFromArcher(archer);
+            const stillSelected = selectedArchers.some(sel => getExtIdFromArcher(sel) === archerExtId);
+            return stillSelected;
+        });
+        
+        // Add or update archers from selector
+        selectedArchers.forEach(selectedArcher => {
+            const archerExtId = getExtIdFromArcher(selectedArcher);
+            const existingIndex = state.archers.findIndex(a => getExtIdFromArcher(a) === archerExtId);
+            
+            const normalizedArcher = buildStateArcherFromRoster(
+                {
+                    first: selectedArcher.first || selectedArcher.firstName,
+                    last: selectedArcher.last || selectedArcher.lastName,
+                    nickname: selectedArcher.nickname,
+                    school: selectedArcher.school,
+                    level: selectedArcher.level,
+                    gender: selectedArcher.gender,
+                    status: selectedArcher.status
+                },
+                groupId // Use groupId (A, B, C, D) as target assignment
+            );
+            
+            if (existingIndex >= 0) {
+                // Update existing archer
+                state.archers[existingIndex] = { ...state.archers[existingIndex], ...normalizedArcher, targetAssignment: groupId };
+            } else {
+                // Add new archer
+                state.archers.push(normalizedArcher);
+            }
+        });
+        
+        updateSelectedChip();
+        saveData();
+    }
+
+    function handleFavoriteToggle(archer, isFavorite) {
+        if (typeof ArcherModule === 'undefined') return;
+        try {
+            const extId = getExtIdFromArcher(archer);
+            if (isFavorite) {
+                ArcherModule.addFriend(extId);
+            } else {
+                ArcherModule.removeFriend(extId);
+            }
+            // Refresh roster to update favorites
+            refreshArcherRoster();
+        } catch (err) {
+            console.error('Failed to toggle favorite:', err);
+        }
+    }
+
+    function syncSelectorSelection() {
+        if (!archerSelector) return;
+        
+        // Map state.archers to selector format
+        const selection = {};
+        RANKING_SELECTOR_GROUPS.forEach(group => {
+            selection[group.id] = [];
+        });
+        
+        state.archers.forEach(archer => {
+            const target = archer.targetAssignment || 'A';
+            if (selection[target]) {
+                // Find archer in roster by extId
+                const rosterState = getRosterState();
+                const rosterArcher = rosterState.list.find(a => getExtIdFromArcher(a) === getExtIdFromArcher(archer));
+                if (rosterArcher) {
+                    selection[target].push(rosterArcher);
+                }
+            }
+        });
+        
+        archerSelector.setSelection(selection);
+    }
+
     // --- LOGIC ---
 
     function inferTargetSize(level = '') {
@@ -267,7 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderSetupForm() {
         if (!setupControls.container) return;
-        setupControls.container.innerHTML = '';
         
         // Pre-assigned mode: show read-only archer list
         if (state.assignmentMode === 'pre-assigned' && state.archers.length > 0) {
@@ -276,10 +408,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Manual mode: show checkbox list
-        const rosterState = getRosterState();
-        const filter = state.rosterFilter || '';
-        renderArcherSelectList(rosterState, filter);
+        // Manual mode: use ArcherSelector component
+        if (!archerSelector) {
+            initializeArcherSelector();
+        } else {
+            // Refresh roster and sync selection
+            refreshArcherRoster();
+            syncSelectorSelection();
+        }
         updateSelectedChip();
     }
 
@@ -1517,7 +1653,11 @@ document.addEventListener('DOMContentLoaded', () => {
             searchInput.value = state.rosterFilter || '';
             searchInput.oninput = () => {
                 state.rosterFilter = searchInput.value;
-                renderSetupForm();
+                if (archerSelector) {
+                    archerSelector.setFilter(searchInput.value);
+                } else {
+                    renderSetupForm();
+                }
             };
             const refreshBtn = document.createElement('button');
             refreshBtn.id = 'refresh-btn';
