@@ -2208,11 +2208,6 @@
     }
   }
   
-  // Expose functions globally
-  window.coach = window.coach || {};
-  window.coach.editBracket = editBracket;
-  window.coach.removeBracketEntry = removeBracketEntry;
-  
   // ==================== Global Functions (for inline onclick) ====================
   
   window.coach = {
