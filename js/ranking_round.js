@@ -121,9 +121,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- VIEW MANAGEMENT ---
 
     function renderView() {
-        Object.values(views).forEach(view => view.style.display = 'none');
+        Object.values(views).forEach(view => {
+            if (view) {
+                view.classList.add('hidden');
+                view.classList.remove('block');
+            }
+        });
         if (views[state.currentView]) {
-            views[state.currentView].style.display = 'block';
+            views[state.currentView].classList.remove('hidden');
+            views[state.currentView].classList.add('block');
         }
         if (state.currentView === 'setup') {
             renderSetupForm();
