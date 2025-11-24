@@ -423,31 +423,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!setupControls.container) return;
         
         const banner = document.createElement('div');
-        banner.className = 'pre-assigned-banner';
-        banner.style.cssText = 'background: #e3f2fd; padding: 12px; margin-bottom: 12px; border-radius: 4px; border-left: 4px solid #2196f3;';
+        banner.className = 'bg-blue-50 dark:bg-blue-900/20 p-3 mb-3 rounded-lg border-l-4 border-blue-500';
         banner.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 4px;">📌 Pre-Assigned Bale</div>
-            <div style="font-size: 0.9em;">Bale ${state.baleNumber} - ${state.divisionName || 'Division'}</div>
-            <div style="font-size: 0.85em; color: #666; margin-top: 4px;">These archers are pre-assigned by your coach</div>
+            <div class="font-bold mb-1 text-gray-800 dark:text-white">📌 Pre-Assigned Bale</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">Bale ${state.baleNumber} - ${state.divisionName || 'Division'}</div>
+            <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">These archers are pre-assigned by your coach</div>
         `;
         setupControls.container.appendChild(banner);
         
         const listDiv = document.createElement('div');
-        listDiv.className = 'archer-select-list';
-        listDiv.style.cssText = 'background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;';
+        listDiv.className = 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 space-y-2';
         
         state.archers.forEach(archer => {
             const row = document.createElement('div');
-            row.className = 'archer-select-row';
-            row.style.cssText = 'padding: 12px; border-bottom: 1px solid #ddd; background: white; margin: 4px; border-radius: 4px;';
+            row.className = 'p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 rounded-lg last:border-b-0';
             
             row.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="flex justify-between items-center">
                     <div>
-                        <div style="font-weight: bold;">${archer.targetAssignment}: ${archer.firstName} ${archer.lastName}</div>
-                        <div style="font-size: 0.85em; color: #666;">${archer.school} • ${archer.level} / ${archer.gender}</div>
+                        <div class="font-bold text-gray-800 dark:text-white">${archer.targetAssignment}: ${archer.firstName} ${archer.lastName}</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">${archer.school} • ${archer.level} / ${archer.gender}</div>
                     </div>
-                    <div style="padding: 4px 8px; background: #4caf50; color: white; border-radius: 12px; font-size: 0.75em; font-weight: bold;">
+                    <div class="px-2 py-1 bg-success text-white rounded-full text-xs font-bold">
                         ASSIGNED
                     </div>
                 </div>
@@ -460,9 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add switch to manual mode button
         const manualBtn = document.createElement('button');
-        manualBtn.className = 'btn btn-secondary';
+        manualBtn.className = 'mt-3 w-full px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
         manualBtn.textContent = 'Switch to Manual Mode';
-        manualBtn.style.cssText = 'margin-top: 12px; width: 100%;';
         manualBtn.onclick = () => {
             if (confirm('Switch to manual mode? This will clear pre-assigned archers.')) {
                 state.assignmentMode = 'manual';
@@ -485,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const { list = [], selfExtId = '', friendSet = new Set() } = rosterState || {};
         if (!Array.isArray(list) || list.length === 0) {
             const emptyState = document.createElement('div');
-            emptyState.style.cssText = 'padding: 16px; text-align: center; color: #666;';
+            emptyState.className = 'p-4 text-center text-gray-600 dark:text-gray-400';
             emptyState.textContent = 'No archers found. Sync your roster from the Archer Management module to get started.';
             listDiv.appendChild(emptyState);
             return;
@@ -574,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!sections.length) {
             const noResults = document.createElement('div');
-            noResults.style.cssText = 'padding: 16px; text-align: center; color: #666;';
+            noResults.className = 'p-4 text-center text-gray-600 dark:text-gray-400';
             noResults.textContent = 'No archers match your search.';
             listDiv.appendChild(noResults);
             return;
@@ -756,7 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         sections.forEach(section => {
             const header = document.createElement('div');
-            header.className = 'list-header';
+            header.className = 'px-3 py-2 font-bold text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 border-t border-gray-200 dark:border-gray-700';
             header.textContent = section.title;
             listDiv.appendChild(header);
             section.items.forEach(item => {
