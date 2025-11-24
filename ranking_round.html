@@ -193,59 +193,61 @@
             </footer>
         </div>
 
-        <div id="reset-modal" class="modal-overlay" style="display: none;">
-            <div class="modal-content">
-              <h2>New R?</h2>
-              <p>Current scores will be deleted.</p>
-              <div class="modal-buttons">
-                <button id="modal-cancel" class="btn btn-secondary">Cancel</button>
-                <button id="modal-reset-confirm" class="btn btn-danger">Reset</button>
-                <button id="modal-load-sample" class="btn btn-secondary">Sample</button>
+        <div id="reset-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 transition-colors duration-200">
+              <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 text-center">New R?</h2>
+              <p class="text-gray-600 dark:text-gray-300 mb-6 text-center">Current scores will be deleted.</p>
+              <div class="flex justify-center gap-2 flex-wrap">
+                <button id="modal-cancel" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Cancel</button>
+                <button id="modal-reset-confirm" class="px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors min-h-[44px]">Reset</button>
+                <button id="modal-load-sample" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Sample</button>
               </div>
             </div>
         </div>
 
-        <div id="verify-totals-modal" class="modal-overlay" style="display: none;">
-            <div class="modal-content">
-              <h2>Verify Bale Totals</h2>
-              <div id="verify-totals-container">
+        <div id="verify-totals-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 transition-colors duration-200">
+              <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 text-center">Verify Bale Totals</h2>
+              <div id="verify-totals-container" class="mb-6">
                 <!-- Totals table will be rendered here -->
               </div>
-              <div class="modal-buttons">
-                <button id="modal-close-verify" class="btn btn-secondary">Close</button>
-                <button id="modal-send-sms" class="btn btn-success">Send SMS</button>
+              <div class="flex justify-center gap-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+                <button id="modal-close-verify" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Close</button>
+                <button id="modal-send-sms" class="px-4 py-2 bg-success text-white rounded-lg hover:bg-success-dark font-semibold transition-colors min-h-[44px]">Send SMS</button>
               </div>
             </div>
         </div>
 
-        <div id="export-modal" class="modal-overlay" style="display: none;">
-            <div class="modal-content">
-              <h2>Export Options</h2>
-              <div class="export-options">
-                <div class="export-option">
-                  <h3>✅ Verify & Send</h3>
-                  <p>Review bale totals and send via SMS</p>
-                  <button id="open-verify-btn" class="btn btn-success">Open Verify</button>
+        <div id="export-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 transition-colors duration-200">
+              <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Export Options</h2>
+              <div class="space-y-4 mb-6">
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">✅ Verify & Send</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Review bale totals and send via SMS</p>
+                  <button id="open-verify-btn" class="px-4 py-2 bg-success text-white rounded-lg hover:bg-success-dark font-semibold transition-colors min-h-[44px]">Open Verify</button>
                 </div>
-                <div class="export-option">
-                  <h3>📸 Screenshot</h3>
-                  <p>Save a visual image of the scorecard to your device</p>
-                  <button id="take-screenshot-btn" class="btn btn-purple">Take Screenshot</button>
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📸 Screenshot</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Save a visual image of the scorecard to your device</p>
+                  <button id="take-screenshot-btn" class="px-4 py-2 bg-purple text-white rounded-lg hover:bg-purple-dark font-semibold transition-colors min-h-[44px]">Take Screenshot</button>
                 </div>
-                <div class="export-option">
-                  <h3>📄 JSON Data</h3>
-                  <p>Export raw score data for coaches or server upload</p>
-                  <button id="download-json-btn" class="btn btn-orange">Download JSON</button>
-                  <button id="copy-json-btn" class="btn btn-secondary">Copy to Clipboard</button>
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📄 JSON Data</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Export raw score data for coaches or server upload</p>
+                  <div class="flex gap-2 flex-wrap">
+                    <button id="download-json-btn" class="px-4 py-2 bg-warning text-gray-800 rounded-lg hover:bg-warning-dark font-semibold transition-colors min-h-[44px]">Download JSON</button>
+                    <button id="copy-json-btn" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Copy to Clipboard</button>
+                  </div>
                 </div>
-                <div class="export-option">
-                  <h3>📧 Send to Coach</h3>
-                  <p>Email the score data directly to coaches</p>
-                  <button id="email-coach-btn" class="btn btn-success">Email Coach</button>
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📧 Send to Coach</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Email the score data directly to coaches</p>
+                  <button id="email-coach-btn" class="px-4 py-2 bg-success text-white rounded-lg hover:bg-success-dark font-semibold transition-colors min-h-[44px]">Email Coach</button>
                 </div>
               </div>
-              <div class="modal-buttons">
-                <button id="modal-close-export" class="btn btn-secondary">Close</button>
+              <div class="flex justify-end border-t border-gray-200 dark:border-gray-700 pt-4">
+                <button id="modal-close-export" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Close</button>
               </div>
             </div>
         </div>

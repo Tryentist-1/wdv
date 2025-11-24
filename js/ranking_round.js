@@ -1013,13 +1013,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderVerifyModal() {
         const totals = getBaleTotals();
-        let tableHTML = `<table class="score-table"><thead><tr><th>Archer</th><th>10s</th><th>Xs</th><th>Total</th><th>Avg</th></tr></thead><tbody>`;
-        totals.forEach(archer => {
-            tableHTML += `<tr><td style="text-align:left; padding-left: 5px;">${archer.name}</td><td>${archer.tens}</td><td>${archer.xs}</td><td>${archer.totalScore}</td><td>${archer.avgArrow}</td></tr>`;
+        let tableHTML = `<table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 mb-4"><thead class="bg-primary dark:bg-primary-dark text-white"><tr><th class="px-2 py-2 text-left font-bold">Archer</th><th class="px-2 py-2 text-center font-bold">10s</th><th class="px-2 py-2 text-center font-bold">Xs</th><th class="px-2 py-2 text-center font-bold">Total</th><th class="px-2 py-2 text-center font-bold">Avg</th></tr></thead><tbody>`;
+        totals.forEach((archer, idx) => {
+            const rowBg = idx % 2 === 0 ? 'bg-white dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-800';
+            tableHTML += `<tr class="${rowBg} border-b border-gray-200 dark:border-gray-600"><td class="px-2 py-1 text-left text-gray-800 dark:text-white">${archer.name}</td><td class="px-2 py-1 text-center text-gray-800 dark:text-white">${archer.tens}</td><td class="px-2 py-1 text-center text-gray-800 dark:text-white">${archer.xs}</td><td class="px-2 py-1 text-center font-bold text-gray-800 dark:text-white">${archer.totalScore}</td><td class="px-2 py-1 text-center text-gray-800 dark:text-white">${archer.avgArrow}</td></tr>`;
         });
         tableHTML += `</tbody></table>`;
         verifyModal.container.innerHTML = tableHTML;
-        verifyModal.element.style.display = 'flex';
+        verifyModal.element.classList.remove('hidden');
     }
 
     function sendBaleSMS() {
@@ -1749,7 +1750,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resetBtn.id = 'reset-btn';
             resetBtn.className = 'px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors min-h-[44px]';
             resetBtn.textContent = 'Reset';
-            resetBtn.onclick = () => resetModal.element.style.display = 'flex';
+            resetBtn.onclick = () => resetModal.element.classList.remove('hidden');
             const scoringBtn = document.createElement('button');
             scoringBtn.id = 'scoring-btn';
             scoringBtn.className = 'px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px] ml-auto';
@@ -1776,20 +1777,20 @@ document.addEventListener('DOMContentLoaded', () => {
         scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
         scoringControls.nextEndBtn.onclick = () => changeEnd(1);
         
-        resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
+        resetModal.cancelBtn.onclick = () => resetModal.element.classList.add('hidden');
         resetModal.resetBtn.onclick = () => {
             resetState();
-            resetModal.element.style.display = 'none';
+            resetModal.element.classList.add('hidden');
         };
         resetModal.sampleBtn.onclick = () => {
             loadSampleData();
-            resetModal.element.style.display = 'none';
+            resetModal.element.classList.add('hidden');
         };
 
-        verifyModal.closeBtn.onclick = () => verifyModal.element.style.display = 'none';
+        verifyModal.closeBtn.onclick = () => verifyModal.element.classList.add('hidden');
         verifyModal.sendBtn.onclick = () => {
             sendBaleSMS();
-            verifyModal.element.style.display = 'none';
+            verifyModal.element.classList.add('hidden');
         };
 
         cardControls.backToScoringBtn.onclick = () => {
@@ -2106,14 +2107,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function showExportModal() {
         const exportModal = document.getElementById('export-modal');
         if (exportModal) {
-            exportModal.style.display = 'flex';
+            exportModal.classList.remove('hidden');
         }
     }
 
     function hideExportModal() {
         const exportModal = document.getElementById('export-modal');
         if (exportModal) {
-            exportModal.style.display = 'none';
+            exportModal.classList.add('hidden');
         }
     }
 
