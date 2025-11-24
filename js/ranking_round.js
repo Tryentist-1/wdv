@@ -80,6 +80,43 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- UTILITY FUNCTIONS ---
+    
+    function parseScoreValue(score) {
+        if (!score || score === '') return 0;
+        const upper = String(score).toUpperCase();
+        if (upper === 'X' || upper === '10') return 10;
+        if (upper === 'M') return 0;
+        const num = parseInt(upper, 10);
+        return isNaN(num) ? 0 : num;
+    }
+    
+    function getScoreColorClass(score) {
+        if (!score || score === '') return 'white';
+        const upper = String(score).toUpperCase();
+        if (upper === 'X' || upper === '10' || upper === '9') return 'gold';
+        if (upper === '8' || upper === '7') return 'red';
+        if (upper === '6' || upper === '5') return 'blue';
+        if (upper === '4' || upper === '3') return 'black';
+        if (upper === '2' || upper === '1') return 'white';
+        return 'white';
+    }
+    
+    function getScoreTextColor(score) {
+        if (!score || score === '') return 'text-gray-500';
+        const upper = String(score).toUpperCase();
+        if (upper === 'X' || upper === '10' || upper === '9') return 'text-black';
+        if (upper === '8' || upper === '7') return 'text-white';
+        if (upper === '6' || upper === '5') return 'text-white';
+        if (upper === '4' || upper === '3') return 'text-white';
+        if (upper === '2' || upper === '1') return 'text-black';
+        if (upper === 'M') return 'text-gray-500';
+        return 'text-gray-500';
+    }
+    
+    function getScoreColor(score) {
+        // Legacy function for card view - returns class name without bg- prefix
+        return getScoreColorClass(score);
+    }
 
     // --- VIEW MANAGEMENT ---
 
@@ -632,15 +669,21 @@ document.addEventListener('DOMContentLoaded', () => {
         try { isLiveEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) {}
         
         let tableHTML = `
-            <table class="score-table">
-                <thead>
-                    <tr>
-                        <th>Archer</th>
-                        <th>A1</th><th>A2</th><th>A3</th>
-                        <th>10s</th><th>X</th><th>End</th><th>Run</th><th>Avg</th>${isLiveEnabled ? '<th style="width: 30px;">⟳</th>' : ''}<th>Card</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+            <div class="overflow-x-auto -mx-6 px-6">
+                <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[600px]">
+                    <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10">Archer</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">A1</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">A2</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">A3</th>
+                            <th class="px-2 py-2 text-center font-bold w-14">End</th>
+                            <th class="px-2 py-2 text-center font-bold w-14">Run</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">X</th>
+                            <th class="px-2 py-2 text-center font-bold w-12">10</th>${isLiveEnabled ? '<th class="px-2 py-2 text-center font-bold w-12">⟳</th>' : ''}<th class="px-2 py-2 text-center font-bold w-16">Card</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
         state.archers.forEach(archer => {
             const archerKey = getArcherKey(archer);
             const endScores = archer.scores[state.currentEnd - 1] || ['', '', ''];
@@ -679,20 +722,28 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const lastInitial = archer.lastName ? `${archer.lastName.charAt(0)}.` : '';
             const nameDisplay = [archer.firstName, lastInitial].filter(Boolean).join(' ');
+            const rowBgClass = state.archers.indexOf(archer) % 2 === 0 ? 'bg-white dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-800';
             tableHTML += `
-                <tr data-archer-id="${archerKey}">
-                    <td>${nameDisplay} (${archer.targetAssignment})</td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[0])}" data-archer-id="${archerKey}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" readonly></td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[1])}" data-archer-id="${archerKey}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" readonly></td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[2])}" data-archer-id="${archerKey}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" readonly></td>
-                    <td class="calculated-cell">${endTens + endXs}</td>
-                    <td class="calculated-cell">${endXs}</td>
-                    <td class="calculated-cell">${endTotal}</td>
-                    <td class="calculated-cell">${runningTotal}</td>
-                    <td class="calculated-cell ${avgClass}">${endAvg}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus}" style="text-align: center;">${syncIcon}</td>` : ''}<td><button class="btn view-card-btn" data-archer-id="${archerKey}">»</button></td>
+                <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600 ${rowBgClass}" data-archer-id="${archerKey}">
+                    <td class="px-3 py-1 text-left font-semibold sticky left-0 ${rowBgClass} dark:text-white z-10">${nameDisplay} (${archer.targetAssignment})</td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                        <input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])}" data-archer-id="${archerKey}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" readonly>
+                    </td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                        <input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[1])} ${getScoreTextColor(safeEndScores[1])}" data-archer-id="${archerKey}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" readonly>
+                    </td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                        <input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])}" data-archer-id="${archerKey}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" readonly>
+                    </td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${endTotal}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600">${runningTotal}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600">${endXs}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600">${endTens + endXs}</td>${isLiveEnabled ? `<td class="px-2 py-1 text-center sync-status-indicator sync-status-${syncStatus}">${syncIcon}</td>` : ''}<td class="px-2 py-1 text-center">
+                        <button class="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark view-card-btn" data-archer-id="${archerKey}">📄</button>
+                    </td>
                 </tr>`;
         });
-        tableHTML += `</tbody></table>`;
+        tableHTML += `</tbody></table></div>`;
         scoringControls.container.innerHTML = tableHTML;
     }
     
@@ -708,9 +759,22 @@ document.addEventListener('DOMContentLoaded', () => {
         detailsDiv.innerHTML = `<span>Bale ${state.baleNumber} - Target ${archer.targetAssignment}</span><span>${archer.school}</span><span>${archer.level} / ${archer.gender}</span>`;
         header.appendChild(detailsDiv);
         const table = document.createElement('table');
-        table.className = 'score-table';
+        table.className = 'w-full border-collapse text-sm bg-white dark:bg-gray-700';
         table.dataset.archerId = archerId;
-        table.innerHTML = `<thead><tr><th>E</th><th>A1</th><th>A2</th><th>A3</th><th>10s</th><th>Xs</th><th>END</th><th>RUN</th><th>AVG</th></tr></thead>`;
+            table.innerHTML = `
+            <thead class="bg-primary dark:bg-primary-dark text-white">
+                <tr>
+                    <th class="px-2 py-2 text-center font-bold w-12">E</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">A1</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">A2</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">A3</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">10s</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">Xs</th>
+                    <th class="px-2 py-2 text-center font-bold w-14">END</th>
+                    <th class="px-2 py-2 text-center font-bold w-14">RUN</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">AVG</th>
+                </tr>
+            </thead>`;
         const tbody = document.createElement('tbody');
         let tableHTML = '';
         let runningTotal = 0, totalTensOverall = 0, totalXsOverall = 0;
@@ -730,33 +794,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalXsOverall += endXs;
             }
             const avg = isComplete ? (runningTotal / (endNum * 3)).toFixed(1) : '';
-            let avgClass = '';
+            let avgBgClass = '';
+            let avgTextClass = '';
             if (isComplete) {
                 const avgNum = parseFloat(avg);
-                if (avgNum >= 9) avgClass = 'score-gold';
-                else if (avgNum >= 7) avgClass = 'score-red';
-                else if (avgNum >= 5) avgClass = 'score-blue';
-                else if (avgNum >= 3) avgClass = 'score-black';
-                else avgClass = 'score-white';
+                if (avgNum >= 9) { avgBgClass = 'bg-score-gold'; avgTextClass = 'text-black dark:text-black'; }
+                else if (avgNum >= 7) { avgBgClass = 'bg-score-red'; avgTextClass = 'text-white dark:text-white'; }
+                else if (avgNum >= 5) { avgBgClass = 'bg-score-blue'; avgTextClass = 'text-white dark:text-white'; }
+                else if (avgNum >= 3) { avgBgClass = 'bg-score-black'; avgTextClass = 'text-white dark:text-white'; }
+                else { avgBgClass = 'bg-score-white'; avgTextClass = 'text-black dark:text-black'; }
             }
-            tableHTML += `<tr><td>${endNum}</td>${endScores.map(s => `<td class="score-cell ${getScoreColor(s)}">${s}</td>`).join('')}<td class="calculated-cell">${isComplete ? (endTens + endXs) : ''}</td><td class="calculated-cell">${isComplete ? endXs : ''}</td><td class="calculated-cell">${isComplete ? endTotal : ''}</td><td class="calculated-cell">${isComplete ? runningTotal : ''}</td><td class="calculated-cell score-cell ${avgClass}">${avg}</td></tr>`;
+            const rowBgClass = i % 2 === 0 ? '' : 'bg-gray-50 dark:bg-gray-800';
+            tableHTML += `
+                <tr class="border-b border-gray-200 dark:border-gray-600 ${rowBgClass}">
+                    <td class="px-2 py-1 text-center font-semibold dark:text-white">${endNum}</td>
+                    ${endScores.map(s => {
+                        const colorClass = getScoreColorClass(s);
+                        const textClass = getScoreTextColor(s);
+                        return `<td class="px-2 py-1 text-center bg-score-${colorClass} ${textClass} font-bold">${s || ''}</td>`;
+                    }).join('')}
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold">${isComplete ? (endTens + endXs) : ''}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white">${isComplete ? endXs : ''}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold">${isComplete ? endTotal : ''}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white">${isComplete ? runningTotal : ''}</td>
+                    <td class="px-2 py-1 text-center ${avgBgClass} ${avgTextClass} font-bold">${avg}</td>
+                </tr>`;
         }
         tbody.innerHTML = tableHTML;
         table.appendChild(tbody);
         const tfoot = table.createTFoot();
+        tfoot.className = 'bg-gray-200 dark:bg-gray-600';
         const footerRow = tfoot.insertRow();
-        let finalAvg = 0, finalAvgClass = '';
+        let finalAvg = 0, finalAvgBgClass = '', finalAvgTextClass = '';
         const completedEnds = archer.scores.filter(s => s.every(val => val !== '')).length;
         if (completedEnds > 0) {
             finalAvg = (runningTotal / (completedEnds * 3)).toFixed(1);
             const avgNum = parseFloat(finalAvg);
-            if (avgNum >= 9) finalAvgClass = 'score-gold';
-            else if (avgNum >= 7) finalAvgClass = 'score-red';
-            else if (avgNum >= 5) finalAvgClass = 'score-blue';
-            else if (avgNum >= 3) finalAvgClass = 'score-black';
-            else finalAvgClass = 'score-white';
+            if (avgNum >= 9) { finalAvgBgClass = 'bg-score-gold'; finalAvgTextClass = 'text-black dark:text-black'; }
+            else if (avgNum >= 7) { finalAvgBgClass = 'bg-score-red'; finalAvgTextClass = 'text-white dark:text-white'; }
+            else if (avgNum >= 5) { finalAvgBgClass = 'bg-score-blue'; finalAvgTextClass = 'text-white dark:text-white'; }
+            else if (avgNum >= 3) { finalAvgBgClass = 'bg-score-black'; finalAvgTextClass = 'text-white dark:text-white'; }
+            else { finalAvgBgClass = 'bg-score-white'; finalAvgTextClass = 'text-black dark:text-black'; }
         }
-        footerRow.innerHTML = `<td colspan="4" style="text-align: right; font-weight: bold;">Round Totals:</td><td class="calculated-cell">${totalTensOverall + totalXsOverall}</td><td class="calculated-cell">${totalXsOverall}</td><td class="calculated-cell"></td><td class="calculated-cell">${runningTotal}</td><td class="calculated-cell score-cell ${finalAvgClass}">${finalAvg > 0 ? finalAvg : ''}</td>`;
+        footerRow.innerHTML = `
+            <td colspan="4" class="px-2 py-2 text-right font-bold dark:text-white">Round Totals:</td>
+            <td class="px-2 py-2 text-center font-bold dark:text-white">${totalTensOverall + totalXsOverall}</td>
+            <td class="px-2 py-2 text-center font-bold dark:text-white">${totalXsOverall}</td>
+            <td class="px-2 py-2 text-center font-bold dark:text-white"></td>
+            <td class="px-2 py-2 text-center font-bold dark:text-white">${runningTotal}</td>
+            <td class="px-2 py-2 text-center font-bold ${finalAvgBgClass} ${finalAvgTextClass}">${finalAvg > 0 ? finalAvg : ''}</td>`;
         cardControls.container.innerHTML = '';
         cardControls.container.appendChild(table);
     }
