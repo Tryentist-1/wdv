@@ -146,8 +146,35 @@ The application now includes reusable UI components for consistent user experien
 - ✅ **Solo Module** - Complete ArcherSelector + Tailwind integration
 - ✅ **Ranking Round 300** - Complete ArcherSelector + Tailwind integration (v1.6.0)
 - ✅ **Ranking Round 360** - Complete Tailwind integration (v1.6.0)
+- ⏳ **Coach Console** - Archer list views need ArcherSelector integration (future work)
 
 **Documentation:** See `docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md#shared-ui-standardization`
+
+### 🎯 Future Work: Coach Console Archer List Updates
+
+**Priority:** High  
+**Status:** Planned
+
+The Coach Console (`coach.html`) currently uses a basic checkbox list for archer selection in event edits and setup. This should be updated to:
+
+1. **Use ArcherSelector Component** - Replace the current checkbox list with the standardized `ArcherSelector` component for consistency across all modules
+   - Avatars and two-line stacked layout (name + school/level)
+   - Search functionality
+   - Consistent styling with other modules
+
+2. **Add "Active" Status Filtering** - Add filtering capability to show only active archers when editing events or setting up bales
+   - Filter by archer status (Active/Inactive)
+   - Default to showing only active archers in event setup
+   - Allow coaches to toggle between "Active Only" and "All Archers"
+
+**Files to Update:**
+- `coach.html` - Update archer list modal structure
+- `js/coach.js` - Replace `renderArcherList()` with ArcherSelector integration
+- Add status filtering logic to archer selection workflow
+
+**Reference Implementation:**
+- See `js/ranking_round_300.js` for ArcherSelector integration example
+- See `js/archer_selector.js` for component API and options
 
 ---
 
