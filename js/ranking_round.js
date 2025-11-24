@@ -184,22 +184,35 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     function initializeArcherSelector() {
-        if (!setupControls.container || typeof ArcherSelector === 'undefined') {
-            console.warn('ArcherSelector component unavailable.');
+        if (!setupControls.container) {
+            console.warn('ArcherSelector: setupControls.container not found');
+            return;
+        }
+        
+        if (typeof ArcherSelector === 'undefined') {
+            console.warn('ArcherSelector component unavailable - using fallback renderer');
             return;
         }
 
-        archerSelector = ArcherSelector.init(setupControls.container, {
-            groups: RANKING_SELECTOR_GROUPS,
-            emptyMessage: 'No archers found. Sync your roster to begin.',
-            onSelectionChange: handleSelectorChange,
-            onFavoriteToggle: handleFavoriteToggle,
-            showAvatars: true,
-            showFavoriteToggle: true
-        });
-        
-        refreshArcherRoster();
-        syncSelectorSelection();
+        try {
+            archerSelector = ArcherSelector.init(setupControls.container, {
+                groups: RANKING_SELECTOR_GROUPS,
+                emptyMessage: 'No archers found. Sync your roster to begin.',
+                onSelectionChange: handleSelectorChange,
+                onFavoriteToggle: handleFavoriteToggle,
+                showAvatars: true,
+                showFavoriteToggle: true
+            });
+            
+            refreshArcherRoster();
+            syncSelectorSelection();
+        } catch (err) {
+            console.error('Failed to initialize ArcherSelector:', err);
+            // Fallback to old renderer on error
+            const rosterState = getRosterState();
+            const filter = state.rosterFilter || '';
+            renderArcherSelectList(rosterState, filter);
+        }
     }
 
     function refreshArcherRoster() {
@@ -415,12 +428,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Manual mode: use ArcherSelector component
-        if (!archerSelector) {
-            initializeArcherSelector();
+        if (typeof ArcherSelector !== 'undefined') {
+            if (!archerSelector) {
+                initializeArcherSelector();
+                // If initialization failed (archerSelector still null), use fallback
+                if (!archerSelector) {
+                    const rosterState = getRosterState();
+                    const filter = state.rosterFilter || '';
+                    renderArcherSelectList(rosterState, filter);
+                }
+            } else {
+                // Refresh roster and sync selection
+                refreshArcherRoster();
+                syncSelectorSelection();
+            }
         } else {
-            // Refresh roster and sync selection
-            refreshArcherRoster();
-            syncSelectorSelection();
+            // Fallback: use old list renderer if ArcherSelector is not available
+            const rosterState = getRosterState();
+            const filter = state.rosterFilter || '';
+            renderArcherSelectList(rosterState, filter);
         }
         updateSelectedChip();
     }
