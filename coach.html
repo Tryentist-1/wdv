@@ -155,9 +155,9 @@
         <button id="select-all-btn" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Select All Filtered</button>
       </div>
       
-      <!-- Archer List -->
-      <div id="archer-list" class="max-h-[200px] md:max-h-[300px] overflow-y-auto border-2 border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 webkit-overflow-scrolling-touch">
-        <!-- Populated dynamically -->
+      <!-- Archer Selector Container -->
+      <div id="archer-selection-container" class="max-h-[200px] md:max-h-[300px] overflow-y-auto border-2 border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 webkit-overflow-scrolling-touch">
+        <!-- ArcherSelector component will be initialized here -->
       </div>
       
       <!-- Selection Summary -->
@@ -463,6 +463,11 @@
 
   <!-- QR Code Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
+  <!-- Archer Management Scripts -->
+  <script src="js/common.js"></script>
+  <script src="js/archer_module.js"></script>
+  <script src="js/archer_selector.js"></script>
   
   <script src="js/coach.js"></script>
   
