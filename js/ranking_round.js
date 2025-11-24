@@ -481,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
         const listDiv = document.createElement('div');
-        listDiv.className = 'archer-select-list';
+        listDiv.className = 'space-y-2';
         setupControls.container.appendChild(listDiv);
 
         const { list = [], selfExtId = '', friendSet = new Set() } = rosterState || {};
@@ -585,16 +585,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const createBadge = (label, background) => {
             const badge = document.createElement('span');
             badge.textContent = label;
-            badge.style.cssText = `display:inline-block;margin-right:6px;padding:2px 8px;border-radius:999px;font-size:0.75em;color:#ffffff;background:${background};`;
+            badge.className = 'inline-block mr-1.5 px-2 py-0.5 rounded-full text-xs text-white';
+            badge.style.backgroundColor = background;
             return badge;
         };
 
         const createRow = (item) => {
             const { original, extId, displayName, nickname, school, grade, level, status, isSelf, isFriend, isSelected } = item;
             const row = document.createElement('div');
-            row.className = 'archer-select-row';
+            row.className = 'flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors bg-white dark:bg-gray-700';
             if (status && status.toLowerCase() !== 'active') {
-                row.style.opacity = '0.75';
+                row.classList.add('opacity-75');
             }
 
             const checkbox = document.createElement('input');
@@ -605,8 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const star = document.createElement('span');
             star.textContent = isFriend ? '★' : '☆';
-            star.className = 'favorite-star';
-            star.style.color = isFriend ? '#ffc107' : '#ccc';
+            star.className = isFriend ? 'favorite-star text-warning' : 'favorite-star text-gray-400';
             star.setAttribute('role', 'button');
             star.setAttribute('tabindex', '0');
             if (isFriend) {
@@ -616,31 +616,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const infoWrapper = document.createElement('div');
-            infoWrapper.style.flex = '1';
-            infoWrapper.style.display = 'flex';
-            infoWrapper.style.flexDirection = 'column';
+            infoWrapper.className = 'flex-1 flex flex-col';
 
             const nameLine = document.createElement('div');
             const nameLabel = document.createElement('span');
-            nameLabel.className = 'archer-name-label';
+            nameLabel.className = 'font-semibold text-gray-800 dark:text-white';
             nameLabel.textContent = displayName;
             nameLine.appendChild(nameLabel);
             if (nickname) {
                 const nicknameSpan = document.createElement('span');
-                nicknameSpan.style.cssText = 'margin-left:6px;font-size:0.9em;color:#888;';
+                nicknameSpan.className = 'ml-1.5 text-sm text-gray-500 dark:text-gray-400';
                 nicknameSpan.textContent = `"${nickname}"`;
                 nameLine.appendChild(nicknameSpan);
             }
             infoWrapper.appendChild(nameLine);
 
             const metaLine = document.createElement('div');
-            metaLine.className = 'archer-details-label';
+            metaLine.className = 'text-sm text-gray-600 dark:text-gray-400';
             const metaParts = [school, level, grade].filter(Boolean);
             metaLine.textContent = metaParts.join(' • ');
             infoWrapper.appendChild(metaLine);
 
             const badgeRow = document.createElement('div');
-            badgeRow.style.cssText = 'margin-top:4px;display:flex;flex-wrap:wrap;';
+            badgeRow.className = 'mt-1 flex flex-wrap gap-1';
             if (isSelf) badgeRow.appendChild(createBadge('Me', '#1976d2'));
             if (isFriend) badgeRow.appendChild(createBadge('Friend', '#ff9800'));
             if (isSelected) badgeRow.appendChild(createBadge('Selected', '#4caf50'));
@@ -652,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const targetSelect = document.createElement('select');
-            targetSelect.className = 'target-assignment-select';
+            targetSelect.className = 'px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm';
             TARGET_LETTERS.forEach(letter => {
                 const option = document.createElement('option');
                 option.value = letter;
@@ -663,7 +661,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selectedArcher) {
                 targetSelect.value = selectedArcher.targetAssignment || pickNextTargetLetter();
             }
-            targetSelect.style.display = isSelected ? 'inline-block' : 'none';
+            if (isSelected) {
+                targetSelect.classList.remove('hidden');
+                targetSelect.classList.add('inline-block');
+            } else {
+                targetSelect.classList.add('hidden');
+                targetSelect.classList.remove('inline-block');
+            }
 
             const handleSelectionChange = () => {
                 const alreadySelected = extId ? getStateArcherByExtId(extId) : null;
@@ -717,7 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert('Set "Who Am I" in the Archer module to manage friends.');
                         return;
                     }
-                    star.style.pointerEvents = 'none';
+                    star.classList.add('pointer-events-none');
                     try {
                         await ArcherModule.toggleFriend(extId);
                         renderSetupForm();
@@ -725,7 +729,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('Friend toggle failed', err);
                         alert(err && err.message ? err.message : 'Could not update friends. Try again.');
                     } finally {
-                        star.style.pointerEvents = '';
+                        star.classList.remove('pointer-events-none');
                     }
                 };
                 star.addEventListener('click', toggleFriendHandler);
@@ -735,7 +739,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             } else {
-                star.style.opacity = '0.4';
+                star.classList.add('opacity-40');
                 star.title = 'Update available soon';
             }
 
@@ -1226,9 +1230,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getSyncStatusIcon(status) {
         const icons = {
-            'synced': '<span style="color: #4caf50; font-size: 0.9em;" title="Synced">✓</span>',
-            'pending': '<span style="color: #ff9800; font-size: 0.9em;" title="Pending">⟳</span>',
-            'failed': '<span style="color: #f44336; font-size: 0.9em;" title="Failed">✗</span>'
+            'synced': '<span class="text-success text-sm" title="Synced">✓</span>',
+            'pending': '<span class="text-warning text-sm" title="Pending">⟳</span>',
+            'failed': '<span class="text-danger text-sm" title="Failed">✗</span>'
         };
         return icons[status] || '';
     }
