@@ -146,10 +146,6 @@
   
   async function loadEvents() {
     const container = document.getElementById('events-list');
-    if (!container) {
-      console.error('events-list container not found');
-      return;
-    }
     container.innerHTML = '<div class="loading">Loading events...</div>';
 
     try {
@@ -1707,10 +1703,7 @@
     console.log('Coach Console initialized');
     
     // Setup event handlers
-    const createEventBtn = document.getElementById('create-event-btn');
-    if (createEventBtn) {
-      createEventBtn.onclick = showCreateEventModal;
-    }
+    document.getElementById('create-event-btn').onclick = showCreateEventModal;
     setupCSVImport();
     
     // Load events
