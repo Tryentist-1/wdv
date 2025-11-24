@@ -1712,7 +1712,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (archerSelector) {
                     archerSelector.setFilter(searchInput.value);
                 } else {
-                    renderSetupForm();
+                    // If ArcherSelector is not initialized, try to initialize it first
+                    if (typeof ArcherSelector !== 'undefined' && typeof ArcherSelector.init === 'function') {
+                        renderSetupForm(); // This will initialize ArcherSelector if available
+                    } else {
+                        renderSetupForm(); // Use fallback renderer
+                    }
                 }
             };
             const refreshBtn = document.createElement('button');
