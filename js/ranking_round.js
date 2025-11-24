@@ -670,17 +670,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let tableHTML = `
             <div class="overflow-x-auto -mx-6 px-6">
-                <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[600px]">
+                <table class="w-full border-collapse text-xs sm:text-sm bg-white dark:bg-gray-700 min-w-[500px]">
                     <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
                         <tr>
-                            <th class="px-3 py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10">Archer</th>
-                            <th class="px-2 py-2 text-center font-bold w-12">A1</th>
-                            <th class="px-2 py-2 text-center font-bold w-12">A2</th>
-                            <th class="px-2 py-2 text-center font-bold w-12">A3</th>
-                            <th class="px-2 py-2 text-center font-bold w-14">End</th>
-                            <th class="px-2 py-2 text-center font-bold w-14">Run</th>
-                            <th class="px-2 py-2 text-center font-bold w-12">X</th>
-                            <th class="px-2 py-2 text-center font-bold w-12">10</th>${isLiveEnabled ? '<th class="px-2 py-2 text-center font-bold w-12">⟳</th>' : ''}<th class="px-2 py-2 text-center font-bold w-16">Card</th>
+                            <th class="px-1.5 sm:px-2 py-1.5 sm:py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10 max-w-[80px] sm:max-w-[100px]">Archer</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">A1</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">A2</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">A3</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">End</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">Run</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-8 sm:w-10">X</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-8 sm:w-10">10</th>${isLiveEnabled ? '<th class="px-1 py-1.5 sm:py-2 text-center font-bold w-8 sm:w-10">⟳</th>' : ''}<th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">Card</th>
                         </tr>
                     </thead>
                     <tbody>`;
@@ -725,7 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const rowBgClass = state.archers.indexOf(archer) % 2 === 0 ? 'bg-white dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-800';
             tableHTML += `
                 <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600 ${rowBgClass}" data-archer-id="${archerKey}">
-                    <td class="px-3 py-1 text-left font-semibold sticky left-0 ${rowBgClass} dark:text-white z-10">${nameDisplay} (${archer.targetAssignment})</td>
+                    <td class="px-1.5 sm:px-2 py-1 text-left font-semibold sticky left-0 ${rowBgClass} dark:text-white z-10 max-w-[80px] sm:max-w-[100px] text-xs sm:text-sm truncate" title="${nameDisplay} (${archer.targetAssignment})">${nameDisplay} (${archer.targetAssignment})</td>
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600">
                         <input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])}" data-archer-id="${archerKey}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" readonly>
                     </td>
@@ -735,11 +735,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600">
                         <input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])}" data-archer-id="${archerKey}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" readonly>
                     </td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${endTotal}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600">${runningTotal}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600">${endXs}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600">${endTens + endXs}</td>${isLiveEnabled ? `<td class="px-2 py-1 text-center sync-status-indicator sync-status-${syncStatus}">${syncIcon}</td>` : ''}<td class="px-2 py-1 text-center">
-                        <button class="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark view-card-btn" data-archer-id="${archerKey}">📄</button>
+                    <td class="px-1 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endTotal}</td>
+                    <td class="px-1 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${runningTotal}</td>
+                    <td class="px-1 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endXs}</td>
+                    <td class="px-1 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endTens + endXs}</td>${isLiveEnabled ? `<td class="px-1 py-1 text-center sync-status-indicator sync-status-${syncStatus}">${syncIcon}</td>` : ''}<td class="px-1 py-1 text-center">
+                        <button class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark view-card-btn" data-archer-id="${archerKey}">📄</button>
                     </td>
                 </tr>`;
         });
