@@ -1776,9 +1776,27 @@
     };
     
     // Add Archers button - opens Add Archers modal
-    document.getElementById('edit-add-archers-btn').onclick = () => {
-      addArchersToEvent(event.id, event.name);
-    };
+    const addArchersBtn = document.getElementById('edit-add-archers-btn');
+    if (addArchersBtn) {
+      // Remove any existing handlers to avoid duplicates
+      addArchersBtn.replaceWith(addArchersBtn.cloneNode(true));
+      const newAddArchersBtn = document.getElementById('edit-add-archers-btn');
+      
+      newAddArchersBtn.onclick = async () => {
+        try {
+          // Close edit event modal before opening add archers modal
+          modal.style.display = 'none';
+          await addArchersToEvent(event.id, event.name);
+        } catch (err) {
+          console.error('Error opening Add Archers modal:', err);
+          alert('Error opening Add Archers: ' + err.message);
+          // Re-open edit modal on error
+          modal.style.display = 'flex';
+        }
+      };
+    } else {
+      console.error('edit-add-archers-btn not found in DOM');
+    }
     
     // Bale Settings button - opens Bale Settings modal
     document.getElementById('edit-bale-settings-btn').onclick = () => {
