@@ -184,13 +184,15 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     function initializeArcherSelector() {
+        // This function is kept for backwards compatibility but initialization
+        // is now handled directly in renderSetupForm() for better error handling
         if (!setupControls.container) {
             console.warn('ArcherSelector: setupControls.container not found');
             return;
         }
         
-        if (typeof ArcherSelector === 'undefined') {
-            console.warn('ArcherSelector component unavailable - using fallback renderer');
+        if (typeof ArcherSelector === 'undefined' || typeof ArcherSelector.init !== 'function') {
+            console.warn('ArcherSelector component unavailable');
             return;
         }
 
@@ -204,14 +206,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 showFavoriteToggle: true
             });
             
-            refreshArcherRoster();
-            syncSelectorSelection();
+            if (archerSelector) {
+                refreshArcherRoster();
+                syncSelectorSelection();
+            }
         } catch (err) {
             console.error('Failed to initialize ArcherSelector:', err);
-            // Fallback to old renderer on error
-            const rosterState = getRosterState();
-            const filter = state.rosterFilter || '';
-            renderArcherSelectList(rosterState, filter);
+            throw err; // Re-throw so caller can handle fallback
         }
     }
 
@@ -427,23 +428,45 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Manual mode: use ArcherSelector component
-        if (typeof ArcherSelector !== 'undefined') {
+        // Manual mode: use ArcherSelector component if available
+        if (typeof ArcherSelector !== 'undefined' && typeof ArcherSelector.init === 'function') {
             if (!archerSelector) {
-                initializeArcherSelector();
-                // If initialization failed (archerSelector still null), use fallback
-                if (!archerSelector) {
+                // Try to initialize ArcherSelector
+                try {
+                    archerSelector = ArcherSelector.init(setupControls.container, {
+                        groups: RANKING_SELECTOR_GROUPS,
+                        emptyMessage: 'No archers found. Sync your roster to begin.',
+                        onSelectionChange: handleSelectorChange,
+                        onFavoriteToggle: handleFavoriteToggle,
+                        showAvatars: true,
+                        showFavoriteToggle: true
+                    });
+                    
+                    if (archerSelector) {
+                        refreshArcherRoster();
+                        syncSelectorSelection();
+                    } else {
+                        // Initialization returned null/undefined, use fallback
+                        console.warn('ArcherSelector.init returned null/undefined, using fallback');
+                        const rosterState = getRosterState();
+                        const filter = state.rosterFilter || '';
+                        renderArcherSelectList(rosterState, filter);
+                    }
+                } catch (err) {
+                    console.error('Failed to initialize ArcherSelector:', err);
+                    // Fallback to old renderer on error
                     const rosterState = getRosterState();
                     const filter = state.rosterFilter || '';
                     renderArcherSelectList(rosterState, filter);
                 }
             } else {
-                // Refresh roster and sync selection
+                // ArcherSelector already initialized, refresh roster and sync selection
                 refreshArcherRoster();
                 syncSelectorSelection();
             }
         } else {
             // Fallback: use old list renderer if ArcherSelector is not available
+            console.warn('ArcherSelector not available, using fallback renderer');
             const rosterState = getRosterState();
             const filter = state.rosterFilter || '';
             renderArcherSelectList(rosterState, filter);
