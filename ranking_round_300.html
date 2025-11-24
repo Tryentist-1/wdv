@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -15,8 +15,45 @@
     <!-- Legacy CSS for backward compatibility during migration -->
     <link rel="stylesheet" href="css/main.css?v=20250922b" onerror="console.error('Failed to load main.css')">
     
+    <!-- Custom Color Utilities (fallback) -->
     <style>
-        /* Custom component styles for scoring */
+        .bg-score-gold { background-color: #FFD700; }
+        .bg-score-red { background-color: #DC143C; }
+        .bg-score-blue { background-color: #4169E1; }
+        .bg-score-black { background-color: #000000; }
+        .bg-score-white { background-color: #FFFFFF; }
+        .text-score-gold { color: #FFD700; }
+        .text-score-red { color: #DC143C; }
+        .text-score-blue { color: #4169E1; }
+        .text-score-black { color: #000000; }
+        .text-score-white { color: #FFFFFF; }
+        .bg-primary { background-color: #2d7dd9; }
+        .bg-primary-dark { background-color: #1b5bbf; }
+        .bg-secondary { background-color: #6c757d; }
+        .bg-secondary-dark { background-color: #5a6268; }
+        .bg-success { background-color: #28a745; }
+        .bg-success-dark { background-color: #1e7e34; }
+        .bg-success-light { background-color: #d1e7dd; }
+        .bg-danger { background-color: #d92d20; }
+        .bg-danger-dark { background-color: #b0241a; }
+        .bg-danger-light { background-color: #f8d7da; }
+        .bg-warning { background-color: #ffc107; }
+        .bg-warning-dark { background-color: #d39e00; }
+        .bg-warning-light { background-color: #fff3cd; }
+        .text-primary { color: #2d7dd9; }
+        .text-secondary { color: #6c757d; }
+        .text-success { color: #28a745; }
+        .text-success-dark { color: #1e7e34; }
+        .text-danger { color: #d92d20; }
+        .text-danger-dark { color: #b0241a; }
+        .text-warning { color: #ffc107; }
+        .text-warning-dark { color: #d39e00; }
+        .text-white { color: #ffffff; }
+    </style>
+    
+    <!-- Score Input Utility & Safe Area Styles -->
+    <style>
+        /* Score input utility class */
         .score-input {
             width: 100%;
             height: 100%;
@@ -32,19 +69,12 @@
             outline-offset: -2px;
         }
         
-        /* Score color classes */
-        .score-gold { background-color: #FFD700; color: #000000; }
-        .score-red { background-color: #DC143C; color: #FFFFFF; }
-        .score-blue { background-color: #4169E1; color: #FFFFFF; }
-        .score-black { background-color: #000000; color: #FFFFFF; }
-        .score-white { background-color: #FFFFFF; color: #000000; }
-        .score-m { background-color: #808080; color: #FFFFFF; }
-        
         /* Safe area insets for iOS */
         .safe-top { padding-top: env(safe-area-inset-top, 0); }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
     </style>
     
+    <!-- Dark Mode Toggle Script -->
     <script>
         // Clear stale production API URL from localStorage when running on localhost
         (function() {
@@ -62,13 +92,38 @@
             }
         })();
         
-        // Initialize dark mode from localStorage (shared across all pages)
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
+        // Dark mode toggle functionality
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.classList.contains('dark');
+            
+            if (isDark) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
             }
-        })();
+        }
+        
+        // Initialize theme from localStorage or system preference
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+            } else {
+                document.documentElement.classList.add('light');
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        
+        // Run on page load
+        initTheme();
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -131,7 +186,7 @@
             </div>
         </div>
 
-        <div id="scoring-view" style="display: none;">
+        <div id="scoring-view" class="hidden">
             <div class="px-4 py-2 bg-white dark:bg-gray-800 shadow-sm flex justify-between items-center sticky top-0 z-20 safe-top transition-colors duration-200">
                 <div class="flex items-center gap-3">
                     <h1 id="scoring-header-title" class="text-2xl font-bold text-gray-800 dark:text-white">Event - Division</h1>
@@ -148,17 +203,17 @@
                     </button>
                 </div>
             </div>
-            <div id="bale-scoring-container" class="overflow-x-auto px-2">
+            <div id="bale-scoring-container" class="flex-1 overflow-auto pb-20">
             </div>
             <div class="px-2 py-2 flex justify-start gap-2 bg-white dark:bg-gray-800 shadow-md sticky bottom-0 z-20 safe-bottom transition-colors duration-200">
                 <button id="prev-end-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold transition-colors h-10">← Back</button>
                 <button id="next-end-btn" class="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded hover:bg-gray-500 dark:hover:bg-gray-500 font-semibold transition-colors h-10">Next →</button>
-                <button id="sync-end-btn" class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark font-semibold transition-colors h-10" style="display: none;">Sync End</button>
-                <button id="complete-round-btn" class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors h-10" style="display: none;">Complete Round</button>
+                <button id="sync-end-btn" class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark font-semibold transition-colors h-10 hidden">Sync End</button>
+                <button id="complete-round-btn" class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors h-10 hidden">Complete Round</button>
             </div>
         </div>
 
-        <div id="card-view" class="flex flex-col min-h-screen" style="display: none;">
+        <div id="card-view" class="flex flex-col min-h-screen hidden">
             <header class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
                 <h2 id="card-view-archer-name" class="text-xl font-bold text-gray-800 dark:text-white mb-2"></h2>
                 <div class="flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-300">
@@ -167,7 +222,7 @@
                 </div>
             </header>
             
-            <div id="individual-card-container" class="flex-1 overflow-auto p-4">
+            <div id="individual-card-container" class="flex-1 overflow-auto p-4 pb-20">
             </div>
 
             <footer class="px-2 py-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-center gap-2 safe-bottom transition-colors duration-200">
@@ -179,7 +234,7 @@
         </div>
 
         <!-- Event Selection Modal -->
-        <div id="event-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto" style="display: none;">
+        <div id="event-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto hidden">
             <div class="bg-white dark:bg-gray-800 p-6 rounded-md shadow-lg w-11/12 max-w-md max-h-[90vh] overflow-y-auto flex flex-col transition-colors duration-200">
                 <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Connect to Event</h2>
                 
@@ -201,11 +256,11 @@
                     <button id="verify-code-btn" class="w-full px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">
                         Connect to Event
                     </button>
-                    <div id="code-error" class="text-danger mt-2" style="display: none;"></div>
+                    <div id="code-error" class="text-danger mt-2 hidden"></div>
                 </div>
                 
                 <!-- Event Selection Tab -->
-                <div id="events-tab" class="tab-content" style="display: none;">
+                <div id="events-tab" class="tab-content hidden">
                     <p class="text-gray-600 dark:text-gray-300 mb-4">Select from active events:</p>
                     <div id="event-list" class="max-h-[300px] overflow-y-auto">
                         <!-- Populated dynamically -->
@@ -218,7 +273,7 @@
             </div>
         </div>
 
-        <div id="reset-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto" style="display: none;">
+        <div id="reset-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto hidden">
             <div class="bg-white dark:bg-gray-800 p-6 rounded-md shadow-lg w-11/12 max-w-md transition-colors duration-200">
               <h2 class="text-xl font-bold text-center text-gray-800 dark:text-white mb-4">Start New Event?</h2>
               <p class="text-gray-600 dark:text-gray-300 text-center mb-4">Current scorecard will be cleared. You'll select a new event.</p>
@@ -230,7 +285,7 @@
             </div>
         </div>
 
-        <div id="verify-totals-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto" style="display: none;">
+        <div id="verify-totals-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto hidden">
             <div class="bg-white dark:bg-gray-800 p-6 rounded-md shadow-lg w-11/12 max-w-md max-h-[90vh] overflow-y-auto flex flex-col transition-colors duration-200">
               <h2 class="text-xl font-bold text-center text-gray-800 dark:text-white mb-4">Verify Bale Totals</h2>
               <div id="verify-totals-container" class="mb-4">
@@ -242,7 +297,7 @@
             </div>
         </div>
 
-        <div id="export-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto" style="display: none;">
+        <div id="export-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto hidden">
             <div class="bg-white dark:bg-gray-800 p-6 rounded-md shadow-lg w-11/12 max-w-md max-h-[90vh] overflow-y-auto flex flex-col transition-colors duration-200">
               <h2 class="text-xl font-bold text-center text-gray-800 dark:text-white mb-4">Export Options</h2>
               <div class="space-y-4">
@@ -276,7 +331,7 @@
             </div>
         </div>
 
-        <div id="keypad" class="fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-bottom overflow-hidden" style="display: none;"></div>
+        <div id="keypad" class="fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-bottom overflow-hidden hidden"></div>
 
         <footer class="fixed bottom-0 left-0 right-0 h-12 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-2 flex justify-center gap-2 z-30 safe-bottom transition-colors duration-200">
             <a href="index.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold transition-colors min-h-[44px] flex items-center">Home</a>
