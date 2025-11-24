@@ -861,7 +861,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const rowBgClass = state.archers.indexOf(archer) % 2 === 0 ? 'bg-white dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-800';
             tableHTML += `
                 <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600 ${rowBgClass}" data-archer-id="${archerKey}">
-                    <td class="px-1.5 sm:px-2 py-1 text-left font-semibold sticky left-0 ${rowBgClass} dark:text-white z-10 max-w-[80px] sm:max-w-[100px] text-xs sm:text-sm truncate" title="${nameDisplay} (${archer.targetAssignment})">${nameDisplay} (${archer.targetAssignment})</td>
+                    <td class="px-1.5 sm:px-2 py-0.5 text-left font-semibold sticky left-0 ${rowBgClass} dark:text-white z-10 max-w-[80px] sm:max-w-[100px] text-xs sm:text-sm truncate" title="${nameDisplay} (${archer.targetAssignment})">${nameDisplay} (${archer.targetAssignment})</td>
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600">
                         <input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])}" data-archer-id="${archerKey}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" readonly>
                     </td>
@@ -871,10 +871,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600">
                         <input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])}" data-archer-id="${archerKey}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" readonly>
                     </td>
-                    <td class="px-1 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endTotal}</td>
-                    <td class="px-1 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${runningTotal}</td>
-                    <td class="px-1 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endXs}</td>
-                    <td class="px-1 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endTens + endXs}</td>${isLiveEnabled ? `<td class="px-1 py-1 text-center sync-status-indicator sync-status-${syncStatus}">${syncIcon}</td>` : ''}<td class="px-1 py-1 text-center">
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endTotal}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${runningTotal}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endXs}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endTens + endXs}</td>${isLiveEnabled ? `<td class="px-1 py-0.5 text-center sync-status-indicator sync-status-${syncStatus}">${syncIcon}</td>` : ''}<td class="px-1 py-0.5 text-center">
                         <button class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark view-card-btn" data-archer-id="${archerKey}">📄</button>
                     </td>
                 </tr>`;
@@ -943,17 +943,17 @@ document.addEventListener('DOMContentLoaded', () => {
             const rowBgClass = i % 2 === 0 ? '' : 'bg-gray-50 dark:bg-gray-800';
             tableHTML += `
                 <tr class="border-b border-gray-200 dark:border-gray-600 ${rowBgClass}">
-                    <td class="px-2 py-1 text-center font-semibold dark:text-white">${endNum}</td>
+                    <td class="px-1 py-0.5 text-center font-semibold dark:text-white">${endNum}</td>
                     ${endScores.map(s => {
                         const colorClass = getScoreColorClass(s);
                         const textClass = getScoreTextColor(s);
-                        return `<td class="px-2 py-1 text-center bg-score-${colorClass} ${textClass} font-bold">${s || ''}</td>`;
+                        return `<td class="px-1 py-0.5 text-center bg-score-${colorClass} ${textClass} font-bold">${s || ''}</td>`;
                     }).join('')}
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold">${isComplete ? (endTens + endXs) : ''}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white">${isComplete ? endXs : ''}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold">${isComplete ? endTotal : ''}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white">${isComplete ? runningTotal : ''}</td>
-                    <td class="px-2 py-1 text-center ${avgBgClass} ${avgTextClass} font-bold">${avg}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold">${isComplete ? (endTens + endXs) : ''}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white">${isComplete ? endXs : ''}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold">${isComplete ? endTotal : ''}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white">${isComplete ? runningTotal : ''}</td>
+                    <td class="px-1 py-0.5 text-center ${avgBgClass} ${avgTextClass} font-bold">${avg}</td>
                 </tr>`;
         }
         tbody.innerHTML = tableHTML;
