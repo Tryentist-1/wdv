@@ -773,7 +773,6 @@
       alert(`Unable to load verification data: ${err.message}`);
     }
 
-    // Clean up existing handlers by cloning elements
     const divisionSelect = document.getElementById('verify-division-select');
     const baleSelect = document.getElementById('verify-bale-select');
     const refreshBtn = document.getElementById('verify-refresh-btn');
@@ -781,68 +780,44 @@
     const lockAllBtn = document.getElementById('verify-lock-all-btn');
     const closeRoundBtn = document.getElementById('verify-close-round-btn');
 
-    // Remove existing handlers by cloning
-    if (divisionSelect) {
-      divisionSelect.replaceWith(divisionSelect.cloneNode(true));
-      const newDivisionSelect = document.getElementById('verify-division-select');
-      newDivisionSelect.onchange = () => {
-        verifyState.division = newDivisionSelect.value;
-        const bales = getBalesForDivision(verifyState.division);
-        if (bales.length > 0) {
-          verifyState.bale = bales.includes(Number(verifyState.bale)) ? verifyState.bale : bales[0];
-        } else {
-          verifyState.bale = null;
-        }
+    divisionSelect.onchange = () => {
+      verifyState.division = divisionSelect.value;
+      const bales = getBalesForDivision(verifyState.division);
+      if (bales.length > 0) {
+        verifyState.bale = bales.includes(Number(verifyState.bale)) ? verifyState.bale : bales[0];
+      } else {
+        verifyState.bale = null;
+      }
+      populateVerifySelectors();
+      renderVerifyTable();
+    };
+
+    baleSelect.onchange = () => {
+      verifyState.bale = baleSelect.value ? Number(baleSelect.value) : null;
+      renderVerifyTable();
+    };
+
+    refreshBtn.onclick = async () => {
+      try {
+        await loadVerifySnapshot();
         populateVerifySelectors();
         renderVerifyTable();
-      };
-    }
+      } catch (err) {
+        alert(`Refresh failed: ${err.message}`);
+      }
+    };
 
-    if (baleSelect) {
-      baleSelect.replaceWith(baleSelect.cloneNode(true));
-      const newBaleSelect = document.getElementById('verify-bale-select');
-      newBaleSelect.onchange = () => {
-        verifyState.bale = newBaleSelect.value ? Number(newBaleSelect.value) : null;
-        renderVerifyTable();
-      };
-    }
+    closeBtn.onclick = () => {
+      modal.style.display = 'none';
+    };
 
-    if (refreshBtn) {
-      refreshBtn.replaceWith(refreshBtn.cloneNode(true));
-      const newRefreshBtn = document.getElementById('verify-refresh-btn');
-      newRefreshBtn.onclick = async () => {
-        try {
-          await loadVerifySnapshot();
-          populateVerifySelectors();
-          renderVerifyTable();
-        } catch (err) {
-          alert(`Refresh failed: ${err.message}`);
-        }
-      };
-    }
-
-    if (closeBtn) {
-      closeBtn.replaceWith(closeBtn.cloneNode(true));
-      const newCloseBtn = document.getElementById('verify-modal-close-btn');
-      newCloseBtn.onclick = () => {
-        modal.style.display = 'none';
-      };
-    }
-
-    if (lockAllBtn) {
-      lockAllBtn.replaceWith(lockAllBtn.cloneNode(true));
-      const newLockAllBtn = document.getElementById('verify-lock-all-btn');
-      newLockAllBtn.onclick = () => {
+    lockAllBtn.onclick = () => {
       handleLockAllForBale();
     };
 
-    if (closeRoundBtn) {
-      closeRoundBtn.replaceWith(closeRoundBtn.cloneNode(true));
-      const newCloseRoundBtn = document.getElementById('verify-close-round-btn');
-      newCloseRoundBtn.onclick = () => {
-        handleVerifyAndCloseRound();
-      };
-    }
+    closeRoundBtn.onclick = () => {
+      handleVerifyAndCloseRound();
+    };
   }
 
   // ==================== PHASE 0: Division Round Management ====================
@@ -1801,27 +1776,9 @@
     };
     
     // Add Archers button - opens Add Archers modal
-    const addArchersBtn = document.getElementById('edit-add-archers-btn');
-    if (addArchersBtn) {
-      // Remove any existing handlers to avoid duplicates
-      addArchersBtn.replaceWith(addArchersBtn.cloneNode(true));
-      const newAddArchersBtn = document.getElementById('edit-add-archers-btn');
-      
-      newAddArchersBtn.onclick = async () => {
-        try {
-          // Close edit event modal before opening add archers modal
-          modal.style.display = 'none';
-          await addArchersToEvent(event.id, event.name);
-        } catch (err) {
-          console.error('Error opening Add Archers modal:', err);
-          alert('Error opening Add Archers: ' + err.message);
-          // Re-open edit modal on error
-          modal.style.display = 'flex';
-        }
-      };
-    } else {
-      console.error('edit-add-archers-btn not found in DOM');
-    }
+    document.getElementById('edit-add-archers-btn').onclick = () => {
+      addArchersToEvent(event.id, event.name);
+    };
     
     // Bale Settings button - opens Bale Settings modal
     document.getElementById('edit-bale-settings-btn').onclick = () => {
