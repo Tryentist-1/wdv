@@ -17,6 +17,7 @@
   let selectedArchers = [];
   let allArchers = [];
   let verifyState = null;
+  let archerSelector = null; // ArcherSelector component instance
   
   // PHASE 0: Division rounds workflow
   let pendingDivisions = []; // Divisions to configure after event creation
@@ -846,6 +847,7 @@
   async function showAddArchersModalForDivision(division, divisionName, eventName) {
     // Reset selection
     selectedArchers = [];
+    archerSelector = null;
 
     // Load master archer list if not already loaded
     if (allArchers.length === 0) {
@@ -864,13 +866,22 @@
     const modal = document.getElementById('add-archers-modal');
     modal.style.display = 'flex';
 
-    // Populate filters and render list
+    // Populate filters
     populateFilters();
-    renderArcherList();
+
+    // Clear search input
+    const searchInput = document.getElementById('archer-search');
+    if (searchInput) {
+      searchInput.value = '';
+    }
+
+    // Initialize ArcherSelector
+    initializeArcherSelector();
 
     // Setup event handlers
     document.getElementById('cancel-add-archers-btn').onclick = () => {
       modal.style.display = 'none';
+      archerSelector = null;
       // Skip this division
       processNextDivision(eventName);
     };
@@ -879,58 +890,63 @@
       if (selectedArchers.length === 0) {
         // Skip this division if no archers selected
         modal.style.display = 'none';
+        archerSelector = null;
         processNextDivision(eventName);
         return;
       }
       modal.style.display = 'none';
+      archerSelector = null;
       showAssignmentModeModalForDivision(division, divisionName, eventName);
     };
 
-    // Filter change handlers
+    // Filter change handlers - update ArcherSelector roster
     ['filter-school', 'filter-gender', 'filter-level'].forEach(id => {
-      document.getElementById(id).onchange = renderArcherList;
+      const element = document.getElementById(id);
+      if (element) {
+        element.onchange = () => {
+          updateArcherSelectorRoster();
+        };
+      }
     });
 
-    // PHASE 0: Search handler
-    const searchInput = document.getElementById('archer-search');
+    // Search handler - ArcherSelector has built-in search, but we can also filter the roster
     if (searchInput) {
-      searchInput.value = ''; // Clear search
-      searchInput.addEventListener('input', renderArcherList);
+      searchInput.addEventListener('input', () => {
+        updateArcherSelectorRoster();
+      });
     }
 
     // Select All button
     const selectAllBtn = document.getElementById('select-all-btn');
-    selectAllBtn.replaceWith(selectAllBtn.cloneNode(true));
-    const newSelectAllBtn = document.getElementById('select-all-btn');
+    if (selectAllBtn) {
+      selectAllBtn.replaceWith(selectAllBtn.cloneNode(true));
+      const newSelectAllBtn = document.getElementById('select-all-btn');
 
-    newSelectAllBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
+      newSelectAllBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
 
-      const container = document.getElementById('archer-list');
-      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-      const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+        if (!archerSelector) return;
 
-      if (allSelected) {
-        // Deselect all
-        checkboxes.forEach(cb => {
-          cb.checked = false;
-          const archerId = cb.id.replace('archer-', '');
-          selectedArchers = selectedArchers.filter(id => id !== archerId);
+        const selection = archerSelector.getSelection();
+        const currentSelected = selection.selected || [];
+        const filteredArchers = applyFiltersToArchers();
+        
+        // Check if all filtered archers are selected
+        const allSelected = filteredArchers.every(archer => {
+          const archerId = archer.id || archer.extId;
+          return currentSelected.some(sel => (sel.id || sel.extId) === archerId);
         });
-      } else {
-        // Select all
-        checkboxes.forEach(cb => {
-          cb.checked = true;
-          const archerId = cb.id.replace('archer-', '');
-          if (!selectedArchers.includes(archerId)) {
-            selectedArchers.push(archerId);
-          }
-        });
-      }
 
-      updateSelectedCount();
-    });
+        if (allSelected) {
+          // Deselect all
+          archerSelector.setSelection({ selected: [] });
+        } else {
+          // Select all filtered archers
+          archerSelector.setSelection({ selected: filteredArchers });
+        }
+      });
+    }
   }
 
   function showAssignmentModeModalForDivision(division, divisionName, eventName) {
@@ -1090,17 +1106,19 @@
     });
   }
 
-  function renderArcherList() {
-    const container = document.getElementById('archer-list');
-    const schoolFilter = document.getElementById('filter-school').value;
-    const genderFilter = document.getElementById('filter-gender').value;
-    const levelFilter = document.getElementById('filter-level').value;
-    
-    // PHASE 0: Get search term
-    const searchInput = document.getElementById('archer-search');
-    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+  // ==================== ArcherSelector Integration ====================
+  
+  /**
+   * Apply filters to archer list and return filtered array
+   * Note: Search filtering is handled by ArcherSelector internally
+   */
+  function applyFiltersToArchers() {
+    const schoolFilter = document.getElementById('filter-school')?.value || '';
+    const genderFilter = document.getElementById('filter-gender')?.value || '';
+    const levelFilter = document.getElementById('filter-level')?.value || '';
 
-    // Filter archers (AND logic - must match all)
+    // Filter archers by school, gender, and level (AND logic - must match all)
+    // Search filtering is handled by ArcherSelector.setFilter()
     const filtered = allArchers.filter(archer => {
       // School filter
       if (schoolFilter && archer.school !== schoolFilter) return false;
@@ -1111,62 +1129,132 @@
       // Level filter
       if (levelFilter && archer.level !== levelFilter) return false;
       
-      // PHASE 0: Search filter (matches first name or last name - support both field naming conventions)
-      if (searchTerm) {
-        const firstName = (archer.firstName || archer.first_name || '').toLowerCase();
-        const lastName = (archer.lastName || archer.last_name || '').toLowerCase();
-        const fullName = `${firstName} ${lastName}`;
-        if (!fullName.includes(searchTerm)) return false;
-      }
-      
       return true;
     });
 
-    // PHASE 0: Sort by firstName (alphabetically)
-    const sorted = filtered.sort((a, b) => {
+    // Sort by firstName (alphabetically)
+    return filtered.sort((a, b) => {
       const nameA = (a.firstName || a.first_name || '').toLowerCase();
       const nameB = (b.firstName || b.first_name || '').toLowerCase();
       return nameA.localeCompare(nameB);
     });
-
-    // Render list
-    container.innerHTML = '';
-    sorted.forEach(archer => {
-      const item = document.createElement('div');
-      item.className = 'archer-item';
-      
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.id = `archer-${archer.id}`;
-      checkbox.checked = selectedArchers.includes(archer.id);
-      checkbox.onchange = () => {
-        if (checkbox.checked) {
-          if (!selectedArchers.includes(archer.id)) {
-            selectedArchers.push(archer.id);
-          }
-        } else {
-          selectedArchers = selectedArchers.filter(id => id !== archer.id);
-        }
-        updateSelectionCount();
-      };
-
-      const label = document.createElement('label');
-      label.htmlFor = `archer-${archer.id}`;
-      label.innerHTML = `
-        <strong>${archer.firstName} ${archer.lastName}</strong>
-        <span class="archer-details">(${archer.school}, ${archer.gender === 'M' ? 'Boys' : 'Girls'}, ${archer.level})</span>
-      `;
-
-      item.appendChild(checkbox);
-      item.appendChild(label);
-      container.appendChild(item);
-    });
-
-    updateSelectionCount();
   }
 
-  function updateSelectionCount() {
-    document.getElementById('selected-count').textContent = selectedArchers.length;
+  /**
+   * Initialize ArcherSelector component
+   */
+  function initializeArcherSelector() {
+    const container = document.getElementById('archer-selection-container');
+    if (!container) {
+      console.warn('ArcherSelector container not found.');
+      return;
+    }
+    if (typeof ArcherSelector === 'undefined' || typeof ArcherSelector.init !== 'function') {
+      console.warn('ArcherSelector component unavailable.');
+      return;
+    }
+
+    // Multi-select configuration for coach module
+    const COACH_SELECTOR_GROUPS = [
+      { 
+        id: 'selected', 
+        label: 'Selected Archers', 
+        buttonText: 'Selected', 
+        max: null, // No limit for multi-select
+        accentClass: 'bg-primary text-white' 
+      }
+    ];
+
+    archerSelector = ArcherSelector.init(container, {
+      groups: COACH_SELECTOR_GROUPS,
+      emptyMessage: 'No archers found. Import archers or sync roster.',
+      onSelectionChange: handleSelectorChange,
+      onFavoriteToggle: handleFavoriteToggle,
+      showAvatars: true,
+      showFavoriteToggle: true
+    });
+
+    // Load context (favorites, etc.)
+    const context = getSelectorContext();
+    archerSelector.setContext(context);
+
+    // Apply filters and set roster
+    updateArcherSelectorRoster();
+  }
+
+  /**
+   * Get selector context (favorites, self archer)
+   */
+  function getSelectorContext() {
+    if (typeof ArcherModule === 'undefined') {
+      return { favorites: new Set(), selfExtId: '' };
+    }
+    const selfArcher = typeof ArcherModule.getSelfArcher === 'function' ? ArcherModule.getSelfArcher() : null;
+    const favorites = new Set((selfArcher?.faves || []).filter(Boolean));
+    const selfExtId = selfArcher?.extId || (typeof ArcherModule.getSelfExtId === 'function' ? ArcherModule.getSelfExtId() : '');
+    return { favorites, selfExtId };
+  }
+
+  /**
+   * Update ArcherSelector roster with filtered archers
+   */
+  function updateArcherSelectorRoster() {
+    if (!archerSelector) return;
+    
+    const filtered = applyFiltersToArchers();
+    archerSelector.setRoster(filtered);
+    
+    // Apply search filter to ArcherSelector (it has built-in search)
+    const searchInput = document.getElementById('archer-search');
+    if (searchInput && searchInput.value) {
+      archerSelector.setFilter(searchInput.value);
+    } else {
+      archerSelector.setFilter('');
+    }
+  }
+
+  /**
+   * Handle ArcherSelector selection change
+   */
+  function handleSelectorChange() {
+    if (!archerSelector) return;
+    
+    const selection = archerSelector.getSelection();
+    // Map to selectedArchers array format (archer IDs)
+    selectedArchers = (selection.selected || []).map(archer => archer.id || archer.extId).filter(Boolean);
+    
+    // Update selection count display
+    const countEl = document.getElementById('selected-count');
+    if (countEl) {
+      countEl.textContent = selectedArchers.length;
+    }
+  }
+
+  /**
+   * Handle favorite toggle
+   */
+  async function handleFavoriteToggle(archer) {
+    if (!archer || typeof ArcherModule === 'undefined' || typeof ArcherModule.toggleFriend !== 'function') {
+      return;
+    }
+    const extId = archer.extId || archer.id;
+    if (!extId) return;
+    const selfExtId = typeof ArcherModule.getSelfExtId === 'function' ? ArcherModule.getSelfExtId() : '';
+    if (!selfExtId) {
+      // For coach, favorites might not be critical, so we can skip the alert
+      console.log('No self archer set - favorite toggle skipped');
+      return;
+    }
+    try {
+      await ArcherModule.toggleFriend(extId);
+      // Refresh context and roster
+      const context = getSelectorContext();
+      if (archerSelector) {
+        archerSelector.setContext(context);
+      }
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+    }
   }
 
   function showAssignmentModeModal(eventName) {
