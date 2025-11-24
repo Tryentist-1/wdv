@@ -106,34 +106,46 @@ npm run serve
 
 ---
 
-## 🧩 Standardized Components (v1.5.0+)
+## 🧩 Standardized Components (v1.6.0+)
 
-The application now includes reusable UI components for consistent user experience:
+The application now includes reusable UI components for consistent user experience across all modules:
 
 ### ArcherSelector Component
 **File:** `js/archer_selector.js`  
-**Status:** ✅ Integrated in Team module  
-**Features:** Search, favorites, avatars, mobile-first design
+**Status:** ✅ Integrated in all modules (v1.6.0)  
+**Features:** Search, favorites, avatars, mobile-first design, two-line stacked layout
 
 **Test it:**
-1. Visit `http://localhost:8001/team_card.html`
-2. See the beautiful archer selection interface
-3. Try search, team assignment (T1/T2), and favorites
+1. Visit `http://localhost:8001/team_card.html` - Team module
+2. Visit `http://localhost:8001/solo_card.html` - Solo module
+3. Visit `http://localhost:8001/ranking_round_300.html` - Ranking Round module
+4. See the beautiful archer selection interface with avatars
+5. Try search, assignment (T1/T2, A1/A2, Target A/B/C/D), and favorites
 
 ### ScoreKeypad Component  
 **File:** `js/score_keypad.js`  
-**Status:** ✅ Available for integration  
-**Features:** Touch-optimized 4×3 layout, score colors, auto-advance
+**Status:** ✅ Integrated in all modules (v1.6.0)  
+**Features:** Touch-optimized 4×3 layout, score colors, auto-advance, no navigation buttons
 
 ### Enhanced ScorecardView
 **File:** `js/scorecard_view.js`  
 **Status:** ✅ Enhanced with `renderArcherTable()`  
 **Features:** Consistent table rendering across modules
 
+### Tailwind CSS Migration (v1.6.0)
+**Status:** ✅ 100% Complete  
+**Features:**
+- All modules use compiled Tailwind CSS exclusively
+- Zero legacy CSS dependencies
+- Complete dark mode support
+- Mobile-first responsive design
+- Unified score color system
+
 ### Integration Status
-- ✅ **Team Module** - Complete ArcherSelector integration
-- ✅ **Solo Module** - Event & bracket selection integrated
-- ⏳ **Ranking Rounds** - Future integration target
+- ✅ **Team Module** - Complete ArcherSelector + Tailwind integration
+- ✅ **Solo Module** - Complete ArcherSelector + Tailwind integration
+- ✅ **Ranking Round 300** - Complete ArcherSelector + Tailwind integration (v1.6.0)
+- ✅ **Ranking Round 360** - Complete Tailwind integration (v1.6.0)
 
 **Documentation:** See `docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md#shared-ui-standardization`
 
