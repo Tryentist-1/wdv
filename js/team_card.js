@@ -421,31 +421,31 @@ document.addEventListener('DOMContentLoaded', () => {
         let tableHTML = `<table class="w-full border-collapse text-sm bg-white dark:bg-gray-700" id="team_round_table">
             <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
                 <tr>
-                    <th rowspan="3" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End</th>
-                    <th colspan="6" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Team 1 (${t1ArcherNames})</th>
-                    <th colspan="6" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Team 2 (${t2ArcherNames})</th>
-                    <th colspan="2" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End Total</th>
-                    <th colspan="2" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Set Points</th>
-                    <th rowspan="3" class="px-2 py-2 text-center font-bold">Sync</th>
+                    <th rowspan="3" class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End</th>
+                    <th colspan="6" class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Team 1 (${t1ArcherNames})</th>
+                    <th colspan="6" class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Team 2 (${t2ArcherNames})</th>
+                    <th colspan="2" class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End Total</th>
+                    <th colspan="2" class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Set Points</th>
+                    <th rowspan="3" class="px-1 py-1.5 sm:py-2 text-center font-bold">Sync</th>
                 </tr>
                 <tr><th colspan="16" class="bg-gray-100 dark:bg-gray-700 h-1 p-0"></th></tr>
                 <tr>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A4</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A5</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A6</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A4</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A5</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A6</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T1</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T2</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T1</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T2</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A4</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A5</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A6</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A4</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A5</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A6</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T1</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T2</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T1</th>
+                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T2</th>
                 </tr>
             </thead><tbody>`;
 
@@ -462,14 +462,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const syncIcon = getSyncStatusIcon(syncStatuses);
             
             tableHTML += `<tr id="end-${i+1}" class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
-                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">End ${i+1}</td>
-                ${state.scores.t1[i].map((s, a) => `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(s)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t1" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`).join('')}
-                ${state.scores.t2[i].map((s, a) => `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(s)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t2" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`).join('')}
-                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-e${i+1}-total"></td>
-                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-e${i+1}-total"></td>
-                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-e${i+1}-setpts"></td>
-                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-e${i+1}-setpts"></td>
-                <td class="px-2 py-1 text-center" id="sync-e${i+1}" data-set="${setNumber}">${syncIcon}</td>
+                <td class="px-1 py-0.5 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">End ${i+1}</td>
+                ${state.scores.t1[i].map((s, a) => {
+                    const scoreColor = getScoreColor(s);
+                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none ${scoreColor}" data-team="t1" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`;
+                }).join('')}
+                ${state.scores.t2[i].map((s, a) => {
+                    const scoreColor = getScoreColor(s);
+                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none ${scoreColor}" data-team="t2" data-end="${i}" data-arrow="${a}" value="${s}" readonly></td>`;
+                }).join('')}
+                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-e${i+1}-total"></td>
+                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-e${i+1}-total"></td>
+                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-e${i+1}-setpts"></td>
+                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-e${i+1}-setpts"></td>
+                <td class="px-1 py-0.5 text-center" id="sync-e${i+1}" data-set="${setNumber}">${syncIcon}</td>
             </tr>`;
         }
 
@@ -484,15 +490,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const soSyncIcon = getSyncStatusIcon(soSyncStatuses);
         
         tableHTML += `<tr id="shoot-off" class="hidden border-b border-gray-200 dark:border-gray-600">
-                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">S.O.</td>
-                ${state.scores.so.t1.map((s,a) => `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(s)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t1" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`).join('')}<td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
-                ${state.scores.so.t2.map((s,a) => `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(s)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t2" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`).join('')}<td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
-                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-so-total"></td>
-                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-so-total"></td>
-                <td colspan="2" id="so-winner-cell" class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">
+                <td class="px-1 py-0.5 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">S.O.</td>
+                ${state.scores.so.t1.map((s,a) => {
+                    const scoreColor = getScoreColor(s);
+                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none ${scoreColor}" data-team="t1" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`;
+                }).join('')}<td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
+                ${state.scores.so.t2.map((s,a) => {
+                    const scoreColor = getScoreColor(s);
+                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none ${scoreColor}" data-team="t2" data-end="so" data-arrow="${a}" value="${s}" readonly></td>`;
+                }).join('')}<td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
+                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-so-total"></td>
+                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-so-total"></td>
+                <td colspan="2" id="so-winner-cell" class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">
                     <span id="so-winner-text"></span>
                 </td>
-                <td class="px-2 py-1 text-center" id="sync-so" data-set="5">${soSyncIcon}</td>
+                <td class="px-1 py-0.5 text-center" id="sync-so" data-set="5">${soSyncIcon}</td>
             </tr></tbody>
             <tfoot class="bg-gray-200 dark:bg-gray-600">
                 <tr><td colspan="15" class="px-2 py-2 text-right font-bold dark:text-white">Match Score:</td>
@@ -621,15 +633,14 @@ document.addEventListener('DOMContentLoaded', () => {
             state.scores[team][parseInt(end, 10)][parseInt(arrow, 10)] = input.value;
         }
 
-        // Update score color classes on the cell (preserve other Tailwind classes)
-        const cell = input.parentElement;
-        if (cell) {
+        // Update score color classes on the input (preserve other Tailwind classes)
+        if (input) {
             // Remove old score color classes
-            cell.classList.remove('bg-score-gold', 'bg-score-red', 'bg-score-blue', 'bg-score-black', 'bg-score-white', 'text-black', 'text-white', 'dark:text-black');
+            input.classList.remove('bg-score-gold', 'bg-score-red', 'bg-score-blue', 'bg-score-black', 'bg-score-white', 'text-black', 'text-white', 'dark:text-black', 'bg-transparent');
             // Add new score color classes
             const scoreClasses = getScoreColor(input.value).split(' ');
             scoreClasses.forEach(cls => {
-                if (cls) cell.classList.add(cls);
+                if (cls) input.classList.add(cls);
             });
         }
         updateScoreHighlightsAndTotals();
@@ -704,7 +715,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Phase 2: Helper function to parse score value
     function parseScoreValue(score) {
         if (!score || score === '') return 0;
-        if (String(score).toUpperCase() === 'X' || String(score).toUpperCase() === 'M') return 0;
+        const upper = String(score).toUpperCase();
+        if (upper === 'X' || upper === '10') return 10;
+        if (upper === 'M') return 0;
         const num = parseInt(score, 10);
         return isNaN(num) ? 0 : num;
     }

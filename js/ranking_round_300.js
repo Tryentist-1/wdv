@@ -112,6 +112,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const TARGET_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
+    // --- ARCHER SELECTOR SETUP ---
+    let archerSelector = null;
+    const RANKING_SELECTOR_GROUPS = [
+        { id: 'A', label: 'Target A', buttonText: 'A', max: 1, accentClass: 'bg-primary text-white' },
+        { id: 'B', label: 'Target B', buttonText: 'B', max: 1, accentClass: 'bg-secondary text-white' },
+        { id: 'C', label: 'Target C', buttonText: 'C', max: 1, accentClass: 'bg-success text-white' },
+        { id: 'D', label: 'Target D', buttonText: 'D', max: 1, accentClass: 'bg-warning text-gray-800' }
+    ];
+
     function inferTargetSize(level = '') {
         const normalized = String(level || '').trim().toUpperCase();
         return (normalized === 'VAR' || normalized === 'V' || normalized === 'VARSITY') ? 122 : 80;
@@ -275,9 +284,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- VIEW MANAGEMENT ---
     function renderView() {
-        Object.values(views).forEach(view => view.style.display = 'none');
+        Object.values(views).forEach(view => {
+            if (view) {
+                view.classList.add('hidden');
+                view.classList.remove('block');
+            }
+        });
         if (views[state.currentView]) {
-            views[state.currentView].style.display = 'block';
+            views[state.currentView].classList.remove('hidden');
+            views[state.currentView].classList.add('block');
         }
         updateEventHeader();
         if (state.currentView === 'scoring') {
@@ -291,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderScoringView();
         } else {
             if (keypad.element) {
-                keypad.element.style.display = 'none';
+                keypad.element.classList.add('hidden');
             }
             document.body.classList.remove('keypad-visible');
         }
@@ -363,17 +378,50 @@ document.addEventListener('DOMContentLoaded', () => {
         // Footer reset button
         const resetEventBtn = document.getElementById('reset-event-btn');
         if (resetEventBtn) {
-            resetEventBtn.onclick = () => resetModal.element.style.display = 'flex';
+            resetEventBtn.onclick = () => {
+                if (resetModal.element) {
+                    resetModal.element.classList.remove('hidden');
+                    resetModal.element.classList.add('flex');
+                }
+            };
         }
 
         // Reset modal
-        if (resetModal.cancelBtn) resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
-        if (resetModal.resetBtn) resetModal.resetBtn.onclick = () => { resetState(); resetModal.element.style.display = 'none'; };
-        if (resetModal.sampleBtn) resetModal.sampleBtn.onclick = () => { loadSampleData(); resetModal.element.style.display = 'none'; };
+        if (resetModal.cancelBtn) resetModal.cancelBtn.onclick = () => {
+            if (resetModal.element) {
+                resetModal.element.classList.add('hidden');
+                resetModal.element.classList.remove('flex');
+            }
+        };
+        if (resetModal.resetBtn) resetModal.resetBtn.onclick = () => {
+            resetState();
+            if (resetModal.element) {
+                resetModal.element.classList.add('hidden');
+                resetModal.element.classList.remove('flex');
+            }
+        };
+        if (resetModal.sampleBtn) resetModal.sampleBtn.onclick = () => {
+            loadSampleData();
+            if (resetModal.element) {
+                resetModal.element.classList.add('hidden');
+                resetModal.element.classList.remove('flex');
+            }
+        };
 
         // Verify modal
-        if (verifyModal.closeBtn) verifyModal.closeBtn.onclick = () => verifyModal.element.style.display = 'none';
-        if (verifyModal.sendBtn) verifyModal.sendBtn.onclick = () => { sendBaleSMS(); verifyModal.element.style.display = 'none'; };
+        if (verifyModal.closeBtn) verifyModal.closeBtn.onclick = () => {
+            if (verifyModal.element) {
+                verifyModal.element.classList.add('hidden');
+                verifyModal.element.classList.remove('flex');
+            }
+        };
+        if (verifyModal.sendBtn) verifyModal.sendBtn.onclick = () => {
+            sendBaleSMS();
+            if (verifyModal.element) {
+                verifyModal.element.classList.add('hidden');
+                verifyModal.element.classList.remove('flex');
+            }
+        };
 
         // Card controls
         if (cardControls.backToScoringBtn) {
@@ -1097,7 +1145,166 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- ARCHER SELECTOR FUNCTIONS ---
+    function refreshArcherRoster() {
+        if (!archerSelector || typeof ArcherModule === 'undefined') return;
+        try {
+            // Load roster: prefer event-scoped cache when connected, fallback to device master list
+            let roster = [];
+            if (state.activeEventId) {
+                try {
+                    roster = JSON.parse(localStorage.getItem(`event:${state.activeEventId}:archers_v2`) || '[]');
+                } catch (_) { roster = []; }
+            }
+            if ((!roster || roster.length === 0) && typeof ArcherModule !== 'undefined') {
+                roster = ArcherModule.loadList() || [];
+            }
+            
+            const ctx = getSelectorContext();
+            archerSelector.setContext(ctx);
+            archerSelector.setRoster(roster);
+            if (manualSetupControls.searchInput && manualSetupControls.searchInput.value) {
+                archerSelector.setFilter(manualSetupControls.searchInput.value);
+            }
+        } catch (err) {
+            console.warn('Failed to load archer roster for selector:', err);
+            archerSelector.setRoster([]);
+        }
+    }
+
+    function getSelectorContext() {
+        const rosterState = getRosterState();
+        return {
+            favorites: rosterState.friendSet instanceof Set ? rosterState.friendSet : new Set(Array.isArray(rosterState.friendSet) ? rosterState.friendSet : []),
+            selfExtId: rosterState.selfExtId || ''
+        };
+    }
+
+    function handleSelectorChange(selectionMap) {
+        // Convert ArcherSelector format (selectionMap) to state.archers format
+        // selectionMap is { A: [archer1], B: [archer2], ... }
+        
+        // Clear existing archers and rebuild from selection map
+        state.archers = [];
+        
+        RANKING_SELECTOR_GROUPS.forEach(group => {
+            const selectedArchers = selectionMap[group.id] || [];
+            selectedArchers.forEach(selectedArcher => {
+                const overrides = {
+                    extId: getExtIdFromArcher(selectedArcher),
+                    targetAssignment: group.id, // Use groupId (A, B, C, D) as target assignment
+                    baleNumber: state.baleNumber,
+                    level: selectedArcher.level,
+                    gender: selectedArcher.gender,
+                    division: selectedArcher.division || deriveDivisionCode(
+                        normalizeGender(selectedArcher.gender),
+                        normalizeLevel(selectedArcher.level)
+                    ),
+                    scores: createEmptyScoreSheet(state.totalEnds)
+                };
+                const stateArcher = buildStateArcherFromRoster(selectedArcher, overrides);
+                state.archers.push(stateArcher);
+            });
+        });
+        
+        updateSelectionCount();
+        saveData();
+    }
+
+    function handleFavoriteToggle(archer, isFavorite) {
+        if (typeof ArcherModule === 'undefined') return;
+        try {
+            const extId = getExtIdFromArcher(archer);
+            if (isFavorite) {
+                ArcherModule.addFriend(extId);
+            } else {
+                ArcherModule.removeFriend(extId);
+            }
+            // Refresh roster to update favorites
+            refreshArcherRoster();
+        } catch (err) {
+            console.error('Failed to toggle favorite:', err);
+        }
+    }
+
+    function syncSelectorSelection() {
+        if (!archerSelector) return;
+        
+        // Map state.archers to selector format
+        const selection = {};
+        RANKING_SELECTOR_GROUPS.forEach(group => {
+            selection[group.id] = [];
+        });
+        
+        // Load roster to match archers
+        let masterList = [];
+        if (state.activeEventId) {
+            try {
+                masterList = JSON.parse(localStorage.getItem(`event:${state.activeEventId}:archers_v2`) || '[]');
+            } catch (_) { masterList = []; }
+        }
+        if ((!masterList || masterList.length === 0) && typeof ArcherModule !== 'undefined') {
+            masterList = ArcherModule.loadList() || [];
+        }
+        
+        state.archers.forEach(archer => {
+            const target = archer.targetAssignment || 'A';
+            if (selection[target]) {
+                // Find archer in roster by extId
+                const extId = getExtIdFromArcher(archer);
+                const rosterArcher = masterList.find(a => getExtIdFromArcher(a) === extId);
+                if (rosterArcher) {
+                    selection[target].push(rosterArcher);
+                }
+            }
+        });
+        
+        archerSelector.setSelection(selection);
+    }
+
     function renderManualArcherList() {
+        if (!setupControls.container) return;
+        
+        // Use ArcherSelector component if available
+        if (typeof ArcherSelector !== 'undefined' && typeof ArcherSelector.init === 'function') {
+            if (!archerSelector) {
+                // Try to initialize ArcherSelector
+                try {
+                    archerSelector = ArcherSelector.init(setupControls.container, {
+                        groups: RANKING_SELECTOR_GROUPS,
+                        emptyMessage: 'No archers found. Sync your roster to begin.',
+                        onSelectionChange: handleSelectorChange,
+                        onFavoriteToggle: handleFavoriteToggle,
+                        showAvatars: true,
+                        showFavoriteToggle: true
+                    });
+                    
+                    if (archerSelector) {
+                        refreshArcherRoster();
+                        syncSelectorSelection();
+                    } else {
+                        // Initialization returned null/undefined, use fallback
+                        console.warn('ArcherSelector.init returned null/undefined, using fallback');
+                        renderManualArcherListFallback();
+                    }
+                } catch (err) {
+                    console.error('Failed to initialize ArcherSelector:', err);
+                    // Fallback to old renderer on error
+                    renderManualArcherListFallback();
+                }
+            } else {
+                // ArcherSelector already initialized, refresh roster and sync selection
+                refreshArcherRoster();
+                syncSelectorSelection();
+            }
+        } else {
+            // Fallback: use old list renderer if ArcherSelector is not available
+            console.warn('ArcherSelector not available, using fallback renderer');
+            renderManualArcherListFallback();
+        }
+    }
+
+    function renderManualArcherListFallback() {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
         
@@ -2508,9 +2715,9 @@ document.addEventListener('DOMContentLoaded', () => {
             tableHTML += `
                 <tr data-archer-id="${archer.id}" ${rowLockAttr} class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
                     <td class="px-2 py-1 text-left text-xs font-semibold sticky left-0 bg-white dark:bg-gray-700 text-gray-800 dark:text-white w-36 truncate">${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input ${getScoreColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[1])} ${getScoreTextColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
                     <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${endTotal}</td>
                     <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">${runningTotal}</td>
                     <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">${endXs}</td>
@@ -2612,13 +2819,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderVerifyModal() {
         const totals = getBaleTotals();
-        let tableHTML = `<table class="score-table"><thead><tr><th>Archer</th><th>10s</th><th>Xs</th><th>Total</th><th>Avg</th></tr></thead><tbody>`;
-        totals.forEach(archer => {
-            tableHTML += `<tr><td style="text-align:left; padding-left: 5px;">${archer.name}</td><td>${archer.tens}</td><td>${archer.xs}</td><td>${archer.totalScore}</td><td>${archer.avgArrow}</td></tr>`;
+        let tableHTML = `<table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 mb-4"><thead class="bg-primary dark:bg-primary-dark text-white"><tr><th class="px-2 py-2 text-left font-bold">Archer</th><th class="px-2 py-2 text-center font-bold">10s</th><th class="px-2 py-2 text-center font-bold">Xs</th><th class="px-2 py-2 text-center font-bold">Total</th><th class="px-2 py-2 text-center font-bold">Avg</th></tr></thead><tbody>`;
+        totals.forEach((archer, idx) => {
+            const rowBg = idx % 2 === 0 ? 'bg-white dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-800';
+            tableHTML += `<tr class="${rowBg} border-b border-gray-200 dark:border-gray-600"><td class="px-2 py-1 text-left text-gray-800 dark:text-white">${archer.name}</td><td class="px-2 py-1 text-center text-gray-800 dark:text-white">${archer.tens}</td><td class="px-2 py-1 text-center text-gray-800 dark:text-white">${archer.xs}</td><td class="px-2 py-1 text-center font-bold text-gray-800 dark:text-white">${archer.totalScore}</td><td class="px-2 py-1 text-center text-gray-800 dark:text-white">${archer.avgArrow}</td></tr>`;
         });
         tableHTML += `</tbody></table>`;
         verifyModal.container.innerHTML = tableHTML;
-        verifyModal.element.style.display = 'flex';
+        if (verifyModal.element) {
+            verifyModal.element.classList.remove('hidden');
+            verifyModal.element.classList.add('flex');
+        }
     }
 
     function sendBaleSMS() {
@@ -2675,7 +2886,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!input) return;
         keypad.currentlyFocusedInput = input;
         if (keypad.element) {
-            keypad.element.style.display = 'grid';
+            keypad.element.classList.remove('hidden');
         }
         document.body.classList.add('keypad-visible');
     }
@@ -4374,7 +4585,11 @@ function updateManualLiveControls(summaryOverride) {
 
         if (manualSetupControls.searchInput) {
             manualSetupControls.searchInput.oninput = () => {
-                renderManualArcherList();
+                if (archerSelector) {
+                    archerSelector.setFilter(manualSetupControls.searchInput.value);
+                } else {
+                    renderManualArcherList();
+                }
             };
         }
 
@@ -5017,14 +5232,16 @@ function updateManualLiveControls(summaryOverride) {
     function showExportModal() {
         const exportModal = document.getElementById('export-modal');
         if (exportModal) {
-            exportModal.style.display = 'flex';
+            exportModal.classList.remove('hidden');
+            exportModal.classList.add('flex');
         }
     }
 
     function hideExportModal() {
         const exportModal = document.getElementById('export-modal');
         if (exportModal) {
-            exportModal.style.display = 'none';
+            exportModal.classList.add('hidden');
+            exportModal.classList.remove('flex');
         }
     }
 
@@ -5201,16 +5418,29 @@ function parseScoreValue(score) {
 }
 
 function getScoreColor(score) {
-    const s = String(score).toUpperCase();
-    // Gold: X, 10, 9
-    if (s === 'X' || s === '10' || s === '9') return 'score-gold';
-    // Red: 8, 7
-    if (s === '8' || s === '7') return 'score-red';
-    // Blue: 6, 5
-    if (s === '6' || s === '5') return 'score-blue';
-    // Black: 4, 3
-    if (s === '4' || s === '3') return 'score-black';
-    // White: 2, 1, M, 0
-    if (s === '2' || s === '1' || s === 'M' || s === '0') return 'score-white';
-    return '';
+    // Legacy function - returns class name without bg- prefix
+    return getScoreColorClass(score);
+}
+
+function getScoreColorClass(score) {
+    if (!score || score === '') return 'white';
+    const upper = String(score).toUpperCase();
+    if (upper === 'X' || upper === '10' || upper === '9') return 'gold';
+    if (upper === '8' || upper === '7') return 'red';
+    if (upper === '6' || upper === '5') return 'blue';
+    if (upper === '4' || upper === '3') return 'black';
+    if (upper === '2' || upper === '1') return 'white';
+    return 'white';
+}
+
+function getScoreTextColor(score) {
+    if (!score || score === '') return 'text-gray-500';
+    const upper = String(score).toUpperCase();
+    if (upper === 'X' || upper === '10' || upper === '9') return 'text-black';
+    if (upper === '8' || upper === '7') return 'text-white';
+    if (upper === '6' || upper === '5') return 'text-white';
+    if (upper === '4' || upper === '3') return 'text-white';
+    if (upper === '2' || upper === '1') return 'text-black';
+    if (upper === 'M') return 'text-gray-500';
+    return 'text-gray-500';
 }

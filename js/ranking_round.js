@@ -80,13 +80,56 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // --- UTILITY FUNCTIONS ---
+    
+    function parseScoreValue(score) {
+        if (!score || score === '') return 0;
+        const upper = String(score).toUpperCase();
+        if (upper === 'X' || upper === '10') return 10;
+        if (upper === 'M') return 0;
+        const num = parseInt(upper, 10);
+        return isNaN(num) ? 0 : num;
+    }
+    
+    function getScoreColorClass(score) {
+        if (!score || score === '') return 'white';
+        const upper = String(score).toUpperCase();
+        if (upper === 'X' || upper === '10' || upper === '9') return 'gold';
+        if (upper === '8' || upper === '7') return 'red';
+        if (upper === '6' || upper === '5') return 'blue';
+        if (upper === '4' || upper === '3') return 'black';
+        if (upper === '2' || upper === '1') return 'white';
+        return 'white';
+    }
+    
+    function getScoreTextColor(score) {
+        if (!score || score === '') return 'text-gray-500';
+        const upper = String(score).toUpperCase();
+        if (upper === 'X' || upper === '10' || upper === '9') return 'text-black';
+        if (upper === '8' || upper === '7') return 'text-white';
+        if (upper === '6' || upper === '5') return 'text-white';
+        if (upper === '4' || upper === '3') return 'text-white';
+        if (upper === '2' || upper === '1') return 'text-black';
+        if (upper === 'M') return 'text-gray-500';
+        return 'text-gray-500';
+    }
+    
+    function getScoreColor(score) {
+        // Legacy function for card view - returns class name without bg- prefix
+        return getScoreColorClass(score);
+    }
 
     // --- VIEW MANAGEMENT ---
 
     function renderView() {
-        Object.values(views).forEach(view => view.style.display = 'none');
+        Object.values(views).forEach(view => {
+            if (view) {
+                view.classList.add('hidden');
+                view.classList.remove('block');
+            }
+        });
         if (views[state.currentView]) {
-            views[state.currentView].style.display = 'block';
+            views[state.currentView].classList.remove('hidden');
+            views[state.currentView].classList.add('block');
         }
         if (state.currentView === 'setup') {
             renderSetupForm();
@@ -130,6 +173,143 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const TARGET_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+
+    // --- ARCHER SELECTOR SETUP ---
+    let archerSelector = null;
+    const RANKING_SELECTOR_GROUPS = [
+        { id: 'A', label: 'Target A', buttonText: 'A', max: 1, accentClass: 'bg-primary text-white' },
+        { id: 'B', label: 'Target B', buttonText: 'B', max: 1, accentClass: 'bg-secondary text-white' },
+        { id: 'C', label: 'Target C', buttonText: 'C', max: 1, accentClass: 'bg-success text-white' },
+        { id: 'D', label: 'Target D', buttonText: 'D', max: 1, accentClass: 'bg-warning text-gray-800' }
+    ];
+
+    function initializeArcherSelector() {
+        // This function is kept for backwards compatibility but initialization
+        // is now handled directly in renderSetupForm() for better error handling
+        if (!setupControls.container) {
+            console.warn('ArcherSelector: setupControls.container not found');
+            return;
+        }
+        
+        if (typeof ArcherSelector === 'undefined' || typeof ArcherSelector.init !== 'function') {
+            console.warn('ArcherSelector component unavailable');
+            return;
+        }
+
+        try {
+            archerSelector = ArcherSelector.init(setupControls.container, {
+                groups: RANKING_SELECTOR_GROUPS,
+                emptyMessage: 'No archers found. Sync your roster to begin.',
+                onSelectionChange: handleSelectorChange,
+                onFavoriteToggle: handleFavoriteToggle,
+                showAvatars: true,
+                showFavoriteToggle: true
+            });
+            
+            if (archerSelector) {
+                refreshArcherRoster();
+                syncSelectorSelection();
+            }
+        } catch (err) {
+            console.error('Failed to initialize ArcherSelector:', err);
+            throw err; // Re-throw so caller can handle fallback
+        }
+    }
+
+    function refreshArcherRoster() {
+        if (!archerSelector || typeof ArcherModule === 'undefined') return;
+        try {
+            const roster = ArcherModule.loadList() || [];
+            const ctx = getSelectorContext();
+            archerSelector.setContext(ctx);
+            archerSelector.setRoster(roster);
+            const searchInput = setupControls.subheader?.querySelector('input[type="text"]');
+            if (searchInput && searchInput.value) {
+                archerSelector.setFilter(searchInput.value);
+            }
+        } catch (err) {
+            console.warn('Failed to load archer roster for selector:', err);
+            archerSelector.setRoster([]);
+        }
+    }
+
+    function getSelectorContext() {
+        const rosterState = getRosterState();
+        return {
+            favorites: rosterState.friendSet instanceof Set ? rosterState.friendSet : new Set(Array.isArray(rosterState.friendSet) ? rosterState.friendSet : []),
+            selfExtId: rosterState.selfExtId || ''
+        };
+    }
+
+    function handleSelectorChange(selectionMap) {
+        // Convert ArcherSelector format (selectionMap) to state.archers format
+        // selectionMap is { A: [archer1], B: [archer2], ... }
+        
+        // Clear existing archers and rebuild from selection map
+        state.archers = [];
+        
+        RANKING_SELECTOR_GROUPS.forEach(group => {
+            const selectedArchers = selectionMap[group.id] || [];
+            selectedArchers.forEach(selectedArcher => {
+                const normalizedArcher = buildStateArcherFromRoster(
+                    {
+                        first: selectedArcher.first || selectedArcher.firstName,
+                        last: selectedArcher.last || selectedArcher.lastName,
+                        nickname: selectedArcher.nickname,
+                        school: selectedArcher.school,
+                        level: selectedArcher.level,
+                        gender: selectedArcher.gender,
+                        status: selectedArcher.status
+                    },
+                    group.id // Use groupId (A, B, C, D) as target assignment
+                );
+                state.archers.push(normalizedArcher);
+            });
+        });
+        
+        updateSelectedChip();
+        saveData();
+    }
+
+    function handleFavoriteToggle(archer, isFavorite) {
+        if (typeof ArcherModule === 'undefined') return;
+        try {
+            const extId = getExtIdFromArcher(archer);
+            if (isFavorite) {
+                ArcherModule.addFriend(extId);
+            } else {
+                ArcherModule.removeFriend(extId);
+            }
+            // Refresh roster to update favorites
+            refreshArcherRoster();
+        } catch (err) {
+            console.error('Failed to toggle favorite:', err);
+        }
+    }
+
+    function syncSelectorSelection() {
+        if (!archerSelector) return;
+        
+        // Map state.archers to selector format
+        const selection = {};
+        RANKING_SELECTOR_GROUPS.forEach(group => {
+            selection[group.id] = [];
+        });
+        
+        state.archers.forEach(archer => {
+            const target = archer.targetAssignment || 'A';
+            if (selection[target]) {
+                // Find archer in roster by extId
+                const rosterState = getRosterState();
+                const rosterArcher = rosterState.list.find(a => getExtIdFromArcher(a) === getExtIdFromArcher(archer));
+                if (rosterArcher) {
+                    selection[target].push(rosterArcher);
+                }
+            }
+        });
+        
+        archerSelector.setSelection(selection);
+    }
 
     // --- LOGIC ---
 
@@ -230,7 +410,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderSetupForm() {
         if (!setupControls.container) return;
-        setupControls.container.innerHTML = '';
         
         // Pre-assigned mode: show read-only archer list
         if (state.assignmentMode === 'pre-assigned' && state.archers.length > 0) {
@@ -239,42 +418,81 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Manual mode: show checkbox list
-        const rosterState = getRosterState();
-        const filter = state.rosterFilter || '';
-        renderArcherSelectList(rosterState, filter);
+        // Manual mode: use ArcherSelector component if available
+        if (typeof ArcherSelector !== 'undefined' && typeof ArcherSelector.init === 'function') {
+            if (!archerSelector) {
+                // Try to initialize ArcherSelector
+                try {
+                    archerSelector = ArcherSelector.init(setupControls.container, {
+                        groups: RANKING_SELECTOR_GROUPS,
+                        emptyMessage: 'No archers found. Sync your roster to begin.',
+                        onSelectionChange: handleSelectorChange,
+                        onFavoriteToggle: handleFavoriteToggle,
+                        showAvatars: true,
+                        showFavoriteToggle: true
+                    });
+                    
+                    if (archerSelector) {
+                        refreshArcherRoster();
+                        syncSelectorSelection();
+                    } else {
+                        // Initialization returned null/undefined, use fallback
+                        console.warn('ArcherSelector.init returned null/undefined, using fallback');
+                        const rosterState = getRosterState();
+                        const filter = state.rosterFilter || '';
+                        renderArcherSelectList(rosterState, filter);
+                    }
+                } catch (err) {
+                    console.error('Failed to initialize ArcherSelector:', err);
+                    // Fallback to old renderer on error
+                    const rosterState = getRosterState();
+                    const filter = state.rosterFilter || '';
+                    renderArcherSelectList(rosterState, filter);
+                }
+            } else {
+                // ArcherSelector already initialized, refresh roster and sync selection
+                refreshArcherRoster();
+                syncSelectorSelection();
+            }
+        } else {
+            // Fallback: use old list renderer if ArcherSelector is not available
+            console.warn('ArcherSelector not available, using fallback renderer');
+            const rosterState = getRosterState();
+            const filter = state.rosterFilter || '';
+            renderArcherSelectList(rosterState, filter);
+        }
         updateSelectedChip();
     }
 
     function renderPreAssignedArchers() {
         if (!setupControls.container) return;
         
+        // Clear container first to remove any ArcherSelector content
+        setupControls.container.innerHTML = '';
+        
         const banner = document.createElement('div');
-        banner.className = 'pre-assigned-banner';
-        banner.style.cssText = 'background: #e3f2fd; padding: 12px; margin-bottom: 12px; border-radius: 4px; border-left: 4px solid #2196f3;';
+        banner.className = 'bg-blue-50 dark:bg-blue-900/20 p-3 mb-3 rounded-lg border-l-4 border-blue-500';
         banner.innerHTML = `
-            <div style="font-weight: bold; margin-bottom: 4px;">📌 Pre-Assigned Bale</div>
-            <div style="font-size: 0.9em;">Bale ${state.baleNumber} - ${state.divisionName || 'Division'}</div>
-            <div style="font-size: 0.85em; color: #666; margin-top: 4px;">These archers are pre-assigned by your coach</div>
+            <div class="font-bold mb-1 text-gray-800 dark:text-white">📌 Pre-Assigned Bale</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">Bale ${state.baleNumber} - ${state.divisionName || 'Division'}</div>
+            <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">These archers are pre-assigned by your coach</div>
         `;
         setupControls.container.appendChild(banner);
         
         const listDiv = document.createElement('div');
-        listDiv.className = 'archer-select-list';
-        listDiv.style.cssText = 'background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px;';
+        listDiv.className = 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 space-y-2';
         
         state.archers.forEach(archer => {
             const row = document.createElement('div');
-            row.className = 'archer-select-row';
-            row.style.cssText = 'padding: 12px; border-bottom: 1px solid #ddd; background: white; margin: 4px; border-radius: 4px;';
+            row.className = 'p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 rounded-lg last:border-b-0';
             
             row.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="flex justify-between items-center">
                     <div>
-                        <div style="font-weight: bold;">${archer.targetAssignment}: ${archer.firstName} ${archer.lastName}</div>
-                        <div style="font-size: 0.85em; color: #666;">${archer.school} • ${archer.level} / ${archer.gender}</div>
+                        <div class="font-bold text-gray-800 dark:text-white">${archer.targetAssignment}: ${archer.firstName} ${archer.lastName}</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">${archer.school} • ${archer.level} / ${archer.gender}</div>
                     </div>
-                    <div style="padding: 4px 8px; background: #4caf50; color: white; border-radius: 12px; font-size: 0.75em; font-weight: bold;">
+                    <div class="px-2 py-1 bg-success text-white rounded-full text-xs font-bold">
                         ASSIGNED
                     </div>
                 </div>
@@ -287,9 +505,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add switch to manual mode button
         const manualBtn = document.createElement('button');
-        manualBtn.className = 'btn btn-secondary';
+        manualBtn.className = 'mt-3 w-full px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
         manualBtn.textContent = 'Switch to Manual Mode';
-        manualBtn.style.cssText = 'margin-top: 12px; width: 100%;';
         manualBtn.onclick = () => {
             if (confirm('Switch to manual mode? This will clear pre-assigned archers.')) {
                 state.assignmentMode = 'manual';
@@ -306,13 +523,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
         const listDiv = document.createElement('div');
-        listDiv.className = 'archer-select-list';
+        listDiv.className = 'space-y-2';
         setupControls.container.appendChild(listDiv);
 
         const { list = [], selfExtId = '', friendSet = new Set() } = rosterState || {};
         if (!Array.isArray(list) || list.length === 0) {
             const emptyState = document.createElement('div');
-            emptyState.style.cssText = 'padding: 16px; text-align: center; color: #666;';
+            emptyState.className = 'p-4 text-center text-gray-600 dark:text-gray-400';
             emptyState.textContent = 'No archers found. Sync your roster from the Archer Management module to get started.';
             listDiv.appendChild(emptyState);
             return;
@@ -401,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!sections.length) {
             const noResults = document.createElement('div');
-            noResults.style.cssText = 'padding: 16px; text-align: center; color: #666;';
+            noResults.className = 'p-4 text-center text-gray-600 dark:text-gray-400';
             noResults.textContent = 'No archers match your search.';
             listDiv.appendChild(noResults);
             return;
@@ -410,16 +627,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const createBadge = (label, background) => {
             const badge = document.createElement('span');
             badge.textContent = label;
-            badge.style.cssText = `display:inline-block;margin-right:6px;padding:2px 8px;border-radius:999px;font-size:0.75em;color:#ffffff;background:${background};`;
+            badge.className = 'inline-block mr-1.5 px-2 py-0.5 rounded-full text-xs text-white';
+            badge.style.backgroundColor = background;
             return badge;
         };
 
         const createRow = (item) => {
             const { original, extId, displayName, nickname, school, grade, level, status, isSelf, isFriend, isSelected } = item;
             const row = document.createElement('div');
-            row.className = 'archer-select-row';
+            row.className = 'flex items-center gap-3 p-3 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors bg-white dark:bg-gray-700';
             if (status && status.toLowerCase() !== 'active') {
-                row.style.opacity = '0.75';
+                row.classList.add('opacity-75');
             }
 
             const checkbox = document.createElement('input');
@@ -430,8 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const star = document.createElement('span');
             star.textContent = isFriend ? '★' : '☆';
-            star.className = 'favorite-star';
-            star.style.color = isFriend ? '#ffc107' : '#ccc';
+            star.className = isFriend ? 'favorite-star text-warning' : 'favorite-star text-gray-400';
             star.setAttribute('role', 'button');
             star.setAttribute('tabindex', '0');
             if (isFriend) {
@@ -441,31 +658,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const infoWrapper = document.createElement('div');
-            infoWrapper.style.flex = '1';
-            infoWrapper.style.display = 'flex';
-            infoWrapper.style.flexDirection = 'column';
+            infoWrapper.className = 'flex-1 flex flex-col';
 
             const nameLine = document.createElement('div');
             const nameLabel = document.createElement('span');
-            nameLabel.className = 'archer-name-label';
+            nameLabel.className = 'font-semibold text-gray-800 dark:text-white';
             nameLabel.textContent = displayName;
             nameLine.appendChild(nameLabel);
             if (nickname) {
                 const nicknameSpan = document.createElement('span');
-                nicknameSpan.style.cssText = 'margin-left:6px;font-size:0.9em;color:#888;';
+                nicknameSpan.className = 'ml-1.5 text-sm text-gray-500 dark:text-gray-400';
                 nicknameSpan.textContent = `"${nickname}"`;
                 nameLine.appendChild(nicknameSpan);
             }
             infoWrapper.appendChild(nameLine);
 
             const metaLine = document.createElement('div');
-            metaLine.className = 'archer-details-label';
+            metaLine.className = 'text-sm text-gray-600 dark:text-gray-400';
             const metaParts = [school, level, grade].filter(Boolean);
             metaLine.textContent = metaParts.join(' • ');
             infoWrapper.appendChild(metaLine);
 
             const badgeRow = document.createElement('div');
-            badgeRow.style.cssText = 'margin-top:4px;display:flex;flex-wrap:wrap;';
+            badgeRow.className = 'mt-1 flex flex-wrap gap-1';
             if (isSelf) badgeRow.appendChild(createBadge('Me', '#1976d2'));
             if (isFriend) badgeRow.appendChild(createBadge('Friend', '#ff9800'));
             if (isSelected) badgeRow.appendChild(createBadge('Selected', '#4caf50'));
@@ -477,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const targetSelect = document.createElement('select');
-            targetSelect.className = 'target-assignment-select';
+            targetSelect.className = 'px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm';
             TARGET_LETTERS.forEach(letter => {
                 const option = document.createElement('option');
                 option.value = letter;
@@ -488,7 +703,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selectedArcher) {
                 targetSelect.value = selectedArcher.targetAssignment || pickNextTargetLetter();
             }
-            targetSelect.style.display = isSelected ? 'inline-block' : 'none';
+            if (isSelected) {
+                targetSelect.classList.remove('hidden');
+                targetSelect.classList.add('inline-block');
+            } else {
+                targetSelect.classList.add('hidden');
+                targetSelect.classList.remove('inline-block');
+            }
 
             const handleSelectionChange = () => {
                 const alreadySelected = extId ? getStateArcherByExtId(extId) : null;
@@ -542,7 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert('Set "Who Am I" in the Archer module to manage friends.');
                         return;
                     }
-                    star.style.pointerEvents = 'none';
+                    star.classList.add('pointer-events-none');
                     try {
                         await ArcherModule.toggleFriend(extId);
                         renderSetupForm();
@@ -550,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('Friend toggle failed', err);
                         alert(err && err.message ? err.message : 'Could not update friends. Try again.');
                     } finally {
-                        star.style.pointerEvents = '';
+                        star.classList.remove('pointer-events-none');
                     }
                 };
                 star.addEventListener('click', toggleFriendHandler);
@@ -560,7 +781,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             } else {
-                star.style.opacity = '0.4';
+                star.classList.add('opacity-40');
                 star.title = 'Update available soon';
             }
 
@@ -583,7 +804,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         sections.forEach(section => {
             const header = document.createElement('div');
-            header.className = 'list-header';
+            header.className = 'px-3 py-2 font-bold text-sm text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 border-t border-gray-200 dark:border-gray-700';
             header.textContent = section.title;
             listDiv.appendChild(header);
             section.items.forEach(item => {
@@ -632,15 +853,21 @@ document.addEventListener('DOMContentLoaded', () => {
         try { isLiveEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) {}
         
         let tableHTML = `
-            <table class="score-table">
-                <thead>
-                    <tr>
-                        <th>Archer</th>
-                        <th>A1</th><th>A2</th><th>A3</th>
-                        <th>10s</th><th>X</th><th>End</th><th>Run</th><th>Avg</th>${isLiveEnabled ? '<th style="width: 30px;">⟳</th>' : ''}<th>Card</th>
-                    </tr>
-                </thead>
-                <tbody>`;
+            <div class="overflow-x-auto -mx-6 px-6">
+                <table class="w-full border-collapse text-xs sm:text-sm bg-white dark:bg-gray-700 min-w-[500px]">
+                    <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
+                        <tr>
+                            <th class="px-1.5 sm:px-2 py-1.5 sm:py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10 max-w-[80px] sm:max-w-[100px]">Archer</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">A1</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">A2</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">A3</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">End</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">Run</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-8 sm:w-10">X</th>
+                            <th class="px-1 py-1.5 sm:py-2 text-center font-bold w-8 sm:w-10">10</th>${isLiveEnabled ? '<th class="px-1 py-1.5 sm:py-2 text-center font-bold w-8 sm:w-10">⟳</th>' : ''}<th class="px-1 py-1.5 sm:py-2 text-center font-bold w-10 sm:w-12">Card</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
         state.archers.forEach(archer => {
             const archerKey = getArcherKey(archer);
             const endScores = archer.scores[state.currentEnd - 1] || ['', '', ''];
@@ -679,20 +906,28 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const lastInitial = archer.lastName ? `${archer.lastName.charAt(0)}.` : '';
             const nameDisplay = [archer.firstName, lastInitial].filter(Boolean).join(' ');
+            const rowBgClass = state.archers.indexOf(archer) % 2 === 0 ? 'bg-white dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-800';
             tableHTML += `
-                <tr data-archer-id="${archerKey}">
-                    <td>${nameDisplay} (${archer.targetAssignment})</td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[0])}" data-archer-id="${archerKey}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" readonly></td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[1])}" data-archer-id="${archerKey}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" readonly></td>
-                    <td><input type="text" class="score-input ${getScoreColor(safeEndScores[2])}" data-archer-id="${archerKey}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" readonly></td>
-                    <td class="calculated-cell">${endTens + endXs}</td>
-                    <td class="calculated-cell">${endXs}</td>
-                    <td class="calculated-cell">${endTotal}</td>
-                    <td class="calculated-cell">${runningTotal}</td>
-                    <td class="calculated-cell ${avgClass}">${endAvg}</td>${isLiveEnabled ? `<td class="sync-status-indicator sync-status-${syncStatus}" style="text-align: center;">${syncIcon}</td>` : ''}<td><button class="btn view-card-btn" data-archer-id="${archerKey}">»</button></td>
+                <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600 ${rowBgClass}" data-archer-id="${archerKey}">
+                    <td class="px-1.5 sm:px-2 py-0.5 text-left font-semibold sticky left-0 ${rowBgClass} dark:text-white z-10 max-w-[80px] sm:max-w-[100px] text-xs sm:text-sm truncate" title="${nameDisplay} (${archer.targetAssignment})">${nameDisplay} (${archer.targetAssignment})</td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                        <input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])}" data-archer-id="${archerKey}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" readonly>
+                    </td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                        <input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[1])} ${getScoreTextColor(safeEndScores[1])}" data-archer-id="${archerKey}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" readonly>
+                    </td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                        <input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])}" data-archer-id="${archerKey}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" readonly>
+                    </td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endTotal}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${runningTotal}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endXs}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs sm:text-sm">${endTens + endXs}</td>${isLiveEnabled ? `<td class="px-1 py-0.5 text-center sync-status-indicator sync-status-${syncStatus}">${syncIcon}</td>` : ''}<td class="px-1 py-0.5 text-center">
+                        <button class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark view-card-btn" data-archer-id="${archerKey}">📄</button>
+                    </td>
                 </tr>`;
         });
-        tableHTML += `</tbody></table>`;
+        tableHTML += `</tbody></table></div>`;
         scoringControls.container.innerHTML = tableHTML;
     }
     
@@ -708,9 +943,22 @@ document.addEventListener('DOMContentLoaded', () => {
         detailsDiv.innerHTML = `<span>Bale ${state.baleNumber} - Target ${archer.targetAssignment}</span><span>${archer.school}</span><span>${archer.level} / ${archer.gender}</span>`;
         header.appendChild(detailsDiv);
         const table = document.createElement('table');
-        table.className = 'score-table';
+        table.className = 'w-full border-collapse text-sm bg-white dark:bg-gray-700';
         table.dataset.archerId = archerId;
-        table.innerHTML = `<thead><tr><th>E</th><th>A1</th><th>A2</th><th>A3</th><th>10s</th><th>Xs</th><th>END</th><th>RUN</th><th>AVG</th></tr></thead>`;
+            table.innerHTML = `
+            <thead class="bg-primary dark:bg-primary-dark text-white">
+                <tr>
+                    <th class="px-2 py-2 text-center font-bold w-12">E</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">A1</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">A2</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">A3</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">10s</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">Xs</th>
+                    <th class="px-2 py-2 text-center font-bold w-14">END</th>
+                    <th class="px-2 py-2 text-center font-bold w-14">RUN</th>
+                    <th class="px-2 py-2 text-center font-bold w-12">AVG</th>
+                </tr>
+            </thead>`;
         const tbody = document.createElement('tbody');
         let tableHTML = '';
         let runningTotal = 0, totalTensOverall = 0, totalXsOverall = 0;
@@ -730,33 +978,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalXsOverall += endXs;
             }
             const avg = isComplete ? (runningTotal / (endNum * 3)).toFixed(1) : '';
-            let avgClass = '';
+            let avgBgClass = '';
+            let avgTextClass = '';
             if (isComplete) {
                 const avgNum = parseFloat(avg);
-                if (avgNum >= 9) avgClass = 'score-gold';
-                else if (avgNum >= 7) avgClass = 'score-red';
-                else if (avgNum >= 5) avgClass = 'score-blue';
-                else if (avgNum >= 3) avgClass = 'score-black';
-                else avgClass = 'score-white';
+                if (avgNum >= 9) { avgBgClass = 'bg-score-gold'; avgTextClass = 'text-black dark:text-black'; }
+                else if (avgNum >= 7) { avgBgClass = 'bg-score-red'; avgTextClass = 'text-white dark:text-white'; }
+                else if (avgNum >= 5) { avgBgClass = 'bg-score-blue'; avgTextClass = 'text-white dark:text-white'; }
+                else if (avgNum >= 3) { avgBgClass = 'bg-score-black'; avgTextClass = 'text-white dark:text-white'; }
+                else { avgBgClass = 'bg-score-white'; avgTextClass = 'text-black dark:text-black'; }
             }
-            tableHTML += `<tr><td>${endNum}</td>${endScores.map(s => `<td class="score-cell ${getScoreColor(s)}">${s}</td>`).join('')}<td class="calculated-cell">${isComplete ? (endTens + endXs) : ''}</td><td class="calculated-cell">${isComplete ? endXs : ''}</td><td class="calculated-cell">${isComplete ? endTotal : ''}</td><td class="calculated-cell">${isComplete ? runningTotal : ''}</td><td class="calculated-cell score-cell ${avgClass}">${avg}</td></tr>`;
+            const rowBgClass = i % 2 === 0 ? '' : 'bg-gray-50 dark:bg-gray-800';
+            tableHTML += `
+                <tr class="border-b border-gray-200 dark:border-gray-600 ${rowBgClass}">
+                    <td class="px-1 py-0.5 text-center font-semibold dark:text-white">${endNum}</td>
+                    ${endScores.map(s => {
+                        const colorClass = getScoreColorClass(s);
+                        const textClass = getScoreTextColor(s);
+                        return `<td class="px-1 py-0.5 text-center bg-score-${colorClass} ${textClass} font-bold">${s || ''}</td>`;
+                    }).join('')}
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold">${isComplete ? (endTens + endXs) : ''}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white">${isComplete ? endXs : ''}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold">${isComplete ? endTotal : ''}</td>
+                    <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white">${isComplete ? runningTotal : ''}</td>
+                    <td class="px-1 py-0.5 text-center ${avgBgClass} ${avgTextClass} font-bold">${avg}</td>
+                </tr>`;
         }
         tbody.innerHTML = tableHTML;
         table.appendChild(tbody);
         const tfoot = table.createTFoot();
+        tfoot.className = 'bg-gray-200 dark:bg-gray-600';
         const footerRow = tfoot.insertRow();
-        let finalAvg = 0, finalAvgClass = '';
+        let finalAvg = 0, finalAvgBgClass = '', finalAvgTextClass = '';
         const completedEnds = archer.scores.filter(s => s.every(val => val !== '')).length;
         if (completedEnds > 0) {
             finalAvg = (runningTotal / (completedEnds * 3)).toFixed(1);
             const avgNum = parseFloat(finalAvg);
-            if (avgNum >= 9) finalAvgClass = 'score-gold';
-            else if (avgNum >= 7) finalAvgClass = 'score-red';
-            else if (avgNum >= 5) finalAvgClass = 'score-blue';
-            else if (avgNum >= 3) finalAvgClass = 'score-black';
-            else finalAvgClass = 'score-white';
+            if (avgNum >= 9) { finalAvgBgClass = 'bg-score-gold'; finalAvgTextClass = 'text-black dark:text-black'; }
+            else if (avgNum >= 7) { finalAvgBgClass = 'bg-score-red'; finalAvgTextClass = 'text-white dark:text-white'; }
+            else if (avgNum >= 5) { finalAvgBgClass = 'bg-score-blue'; finalAvgTextClass = 'text-white dark:text-white'; }
+            else if (avgNum >= 3) { finalAvgBgClass = 'bg-score-black'; finalAvgTextClass = 'text-white dark:text-white'; }
+            else { finalAvgBgClass = 'bg-score-white'; finalAvgTextClass = 'text-black dark:text-black'; }
         }
-        footerRow.innerHTML = `<td colspan="4" style="text-align: right; font-weight: bold;">Round Totals:</td><td class="calculated-cell">${totalTensOverall + totalXsOverall}</td><td class="calculated-cell">${totalXsOverall}</td><td class="calculated-cell"></td><td class="calculated-cell">${runningTotal}</td><td class="calculated-cell score-cell ${finalAvgClass}">${finalAvg > 0 ? finalAvg : ''}</td>`;
+        footerRow.innerHTML = `
+            <td colspan="4" class="px-2 py-2 text-right font-bold dark:text-white">Round Totals:</td>
+            <td class="px-2 py-2 text-center font-bold dark:text-white">${totalTensOverall + totalXsOverall}</td>
+            <td class="px-2 py-2 text-center font-bold dark:text-white">${totalXsOverall}</td>
+            <td class="px-2 py-2 text-center font-bold dark:text-white"></td>
+            <td class="px-2 py-2 text-center font-bold dark:text-white">${runningTotal}</td>
+            <td class="px-2 py-2 text-center font-bold ${finalAvgBgClass} ${finalAvgTextClass}">${finalAvg > 0 ? finalAvg : ''}</td>`;
         cardControls.container.innerHTML = '';
         cardControls.container.appendChild(table);
     }
@@ -791,13 +1061,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderVerifyModal() {
         const totals = getBaleTotals();
-        let tableHTML = `<table class="score-table"><thead><tr><th>Archer</th><th>10s</th><th>Xs</th><th>Total</th><th>Avg</th></tr></thead><tbody>`;
-        totals.forEach(archer => {
-            tableHTML += `<tr><td style="text-align:left; padding-left: 5px;">${archer.name}</td><td>${archer.tens}</td><td>${archer.xs}</td><td>${archer.totalScore}</td><td>${archer.avgArrow}</td></tr>`;
+        let tableHTML = `<table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 mb-4"><thead class="bg-primary dark:bg-primary-dark text-white"><tr><th class="px-2 py-2 text-left font-bold">Archer</th><th class="px-2 py-2 text-center font-bold">10s</th><th class="px-2 py-2 text-center font-bold">Xs</th><th class="px-2 py-2 text-center font-bold">Total</th><th class="px-2 py-2 text-center font-bold">Avg</th></tr></thead><tbody>`;
+        totals.forEach((archer, idx) => {
+            const rowBg = idx % 2 === 0 ? 'bg-white dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-800';
+            tableHTML += `<tr class="${rowBg} border-b border-gray-200 dark:border-gray-600"><td class="px-2 py-1 text-left text-gray-800 dark:text-white">${archer.name}</td><td class="px-2 py-1 text-center text-gray-800 dark:text-white">${archer.tens}</td><td class="px-2 py-1 text-center text-gray-800 dark:text-white">${archer.xs}</td><td class="px-2 py-1 text-center font-bold text-gray-800 dark:text-white">${archer.totalScore}</td><td class="px-2 py-1 text-center text-gray-800 dark:text-white">${archer.avgArrow}</td></tr>`;
         });
         tableHTML += `</tbody></table>`;
         verifyModal.container.innerHTML = tableHTML;
-        verifyModal.element.style.display = 'flex';
+        verifyModal.element.classList.remove('hidden');
     }
 
     function sendBaleSMS() {
@@ -812,7 +1083,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderKeypad() {
         if (!keypad.element) return;
-        keypad.element.innerHTML = `<div class="keypad"><button class="keypad-btn" data-value="X">X</button><button class="keypad-btn" data-value="10">10</button><button class="keypad-btn" data-value="9">9</button><button class="keypad-btn nav-btn" data-action="prev">&larr;</button><button class="keypad-btn" data-value="8">8</button><button class="keypad-btn" data-value="7">7</button><button class="keypad-btn" data-value="6">6</button><button class="keypad-btn nav-btn" data-action="next">&rarr;</button><button class="keypad-btn" data-value="5">5</button><button class="keypad-btn" data-value="4">4</button><button class="keypad-btn" data-value="3">3</button><button class="keypad-btn" data-action="clear">CLR</button><button class="keypad-btn" data-value="2">2</button><button class="keypad-btn" data-value="1">1</button><button class="keypad-btn" data-value="M">M</button><button class="keypad-btn" data-action="close">Close</button></div>`;
+        // New 4x3 layout: Tailwind CSS, no gaps, no navigation buttons, edge-to-edge borders
+        keypad.element.innerHTML = `
+            <div class="grid grid-cols-4 gap-0 w-full">
+                <!-- Row 1: X, 10, 9, M -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="X">X</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="10">10</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="9">9</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-200 text-black dark:text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="M">M</button>
+                
+                <!-- Row 2: 8, 7, 6, 5 -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="8">8</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="7">7</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="6">6</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="5">5</button>
+                
+                <!-- Row 3: 4, 3, 2, 1 -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="4">4</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="3">3</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="2">2</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="1">1</button>
+                
+                <!-- Row 4: CLOSE (left), CLEAR (right) -->
+                <button class="keypad-btn p-4 text-lg font-bold border-r border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2" data-action="close">CLOSE</button>
+                <button class="keypad-btn p-4 text-lg font-bold cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger-light dark:bg-danger-dark text-danger-dark dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2" data-action="clear">CLEAR</button>
+            </div>
+        `;
     }
 
     function handleKeypadClick(e) {
@@ -823,32 +1119,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = keypad.currentlyFocusedInput;
         const allInputs = Array.from(document.querySelectorAll('#scoring-view .score-input'));
         const currentIndex = allInputs.indexOf(input);
-        if (action === 'prev') {
-            if (currentIndex > 0) allInputs[currentIndex - 1].focus();
-            return;
-        }
-        if (action === 'next') {
-            if (currentIndex < allInputs.length - 1) allInputs[currentIndex + 1].focus();
-            return;
-        }
+        
+        // Handle action buttons
         if (action === 'close') {
-            keypad.element.style.display = 'none';
+            keypad.element.classList.add('hidden');
             document.body.classList.remove('keypad-visible');
             return;
         }
-        if (action === 'clear') input.value = '';
-        else if (value) input.value = value;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        if (value && currentIndex < allInputs.length - 1) {
-            const nextInputInOldList = allInputs[currentIndex + 1];
-            const nextInputInNewDom = document.querySelector(`[data-archer-id="${nextInputInOldList.dataset.archerId}"][data-arrow-idx="${nextInputInOldList.dataset.arrowIdx}"]`);
-            if (nextInputInNewDom) nextInputInNewDom.focus();
-        } else if (action === 'clear') {
-             const currentInputInNewDom = document.querySelector(`[data-archer-id="${input.dataset.archerId}"][data-arrow-idx="${input.dataset.arrowIdx}"]`);
+        
+        if (action === 'clear') {
+            input.value = '';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            // Keep focus on current input after clear
+            const currentInputInNewDom = document.querySelector(`[data-archer-id="${input.dataset.archerId}"][data-arrow-idx="${input.dataset.arrowIdx}"]`);
             if (currentInputInNewDom) currentInputInNewDom.focus();
-        } else {
-            keypad.element.style.display = 'none';
-            document.body.classList.remove('keypad-visible');
+            return;
+        }
+        
+        // Handle score value entry
+        if (value) {
+            input.value = value;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // Auto-advance to next input if available
+            if (currentIndex < allInputs.length - 1) {
+                const nextInputInOldList = allInputs[currentIndex + 1];
+                const nextInputInNewDom = document.querySelector(`[data-archer-id="${nextInputInOldList.dataset.archerId}"][data-arrow-idx="${nextInputInOldList.dataset.arrowIdx}"]`);
+                if (nextInputInNewDom) {
+                    nextInputInNewDom.focus();
+                } else {
+                    // If next input not found, hide keypad
+                    keypad.element.classList.add('hidden');
+                    document.body.classList.remove('keypad-visible');
+                }
+            } else {
+                // Last input, hide keypad
+                keypad.element.classList.add('hidden');
+                document.body.classList.remove('keypad-visible');
+            }
         }
     }
 
@@ -922,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', () => {
                           .catch(() => updateSyncStatus(archerKey, state.currentEnd, 'failed'));
                     } else {
                         const badge = document.getElementById('live-status-badge');
-                        if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
+                        if (badge) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
                         LiveUpdates.ensureRound({ roundType: 'R360', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
                           .then(() => LiveUpdates.ensureArcher(archerKey, { ...archer, targetSize: archer.targetSize || ((archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80) }))
                           .then(() => LiveUpdates.postEnd(archerKey, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
@@ -964,9 +1272,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getSyncStatusIcon(status) {
         const icons = {
-            'synced': '<span style="color: #4caf50; font-size: 0.9em;" title="Synced">✓</span>',
-            'pending': '<span style="color: #ff9800; font-size: 0.9em;" title="Pending">⟳</span>',
-            'failed': '<span style="color: #f44336; font-size: 0.9em;" title="Failed">✗</span>'
+            'synced': '<span class="text-success text-sm" title="Synced">✓</span>',
+            'pending': '<span class="text-warning text-sm" title="Pending">⟳</span>',
+            'failed': '<span class="text-danger text-sm" title="Failed">✗</span>'
         };
         return icons[status] || '';
     }
@@ -1390,24 +1698,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.createElement('input');
             searchInput.type = 'text';
             searchInput.placeholder = 'Search archers...';
-            searchInput.className = 'archer-search-bar';
+            searchInput.className = 'flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-colors';
             searchInput.value = state.rosterFilter || '';
             searchInput.oninput = () => {
                 state.rosterFilter = searchInput.value;
-                renderSetupForm();
+                if (archerSelector) {
+                    archerSelector.setFilter(searchInput.value);
+                } else {
+                    // If ArcherSelector is not initialized, try to initialize it first
+                    if (typeof ArcherSelector !== 'undefined' && typeof ArcherSelector.init === 'function') {
+                        renderSetupForm(); // This will initialize ArcherSelector if available
+                    } else {
+                        renderSetupForm(); // Use fallback renderer
+                    }
+                }
             };
             const refreshBtn = document.createElement('button');
             refreshBtn.id = 'refresh-btn';
-            refreshBtn.className = 'btn btn-secondary';
+            refreshBtn.className = 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
             refreshBtn.textContent = 'Refresh';
             refreshBtn.onclick = async () => { await ArcherModule.loadDefaultCSVIfNeeded(true); renderSetupForm(); };
             const selectedChip = document.createElement('span');
-            selectedChip.className = 'btn';
-            selectedChip.style.cursor = 'default';
+            selectedChip.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg font-semibold cursor-default min-h-[44px] flex items-center';
             selectedChip.textContent = `${state.archers.length}/4`;
             const syncBtn = document.createElement('button');
             syncBtn.id = 'sync-db-btn';
-            syncBtn.className = 'btn btn-secondary';
+            syncBtn.className = 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
             syncBtn.textContent = 'Sync to DB';
             syncBtn.onclick = async () => {
                 try {
@@ -1419,17 +1735,22 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             const liveBtn = document.createElement('button');
             liveBtn.id = 'live-toggle-btn';
-            liveBtn.className = 'btn btn-secondary';
+            liveBtn.className = 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
             const getLiveEnabled = () => { try { return !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) { return false; } };
             const setLiveEnabled = (v) => { try { if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ enabled: !!v }); else localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); } catch(_) {} };
-            const renderLiveBtn = () => { const on = getLiveEnabled(); liveBtn.textContent = on ? 'Live: On' : 'Live: Off'; liveBtn.className = on ? 'btn btn-success' : 'btn btn-secondary'; };
+            const renderLiveBtn = () => { 
+                const on = getLiveEnabled(); 
+                liveBtn.textContent = on ? 'Live: On' : 'Live: Off'; 
+                liveBtn.className = on 
+                    ? 'px-4 py-2 bg-success text-white rounded-lg hover:bg-success-dark font-semibold transition-colors min-h-[44px]' 
+                    : 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]'; 
+            };
             renderLiveBtn();
             
             const masterSyncBtn = document.createElement('button');
             masterSyncBtn.id = 'master-sync-btn';
-            masterSyncBtn.className = 'btn btn-warning';
+            masterSyncBtn.className = 'px-4 py-2 bg-warning text-gray-800 rounded-lg hover:bg-warning-dark font-semibold transition-colors min-h-[44px] text-sm';
             masterSyncBtn.textContent = 'Master Sync';
-            masterSyncBtn.style.cssText = 'font-size: 0.9em;';
             masterSyncBtn.onclick = async () => {
                 if (!getLiveEnabled()) {
                     alert('Enable Live Updates first to sync scores.');
@@ -1459,7 +1780,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         state.archers.forEach(ensureArcher);
                     }
                     const badge = document.getElementById('live-status-badge');
-                    if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
+                    if (badge) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
                 } catch(_) {}
             };
             liveBtn.onclick = () => {
@@ -1480,14 +1801,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const resetBtn = document.createElement('button');
             resetBtn.id = 'reset-btn';
-            resetBtn.className = 'btn btn-danger';
+            resetBtn.className = 'px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors min-h-[44px]';
             resetBtn.textContent = 'Reset';
-            resetBtn.onclick = () => resetModal.element.style.display = 'flex';
+            resetBtn.onclick = () => resetModal.element.classList.remove('hidden');
             const scoringBtn = document.createElement('button');
             scoringBtn.id = 'scoring-btn';
-            scoringBtn.className = 'btn btn-primary';
+            scoringBtn.className = 'px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px] ml-auto';
             scoringBtn.textContent = 'Scoring';
-            scoringBtn.style.marginLeft = 'auto';
             scoringBtn.onclick = showScoringView;
             setupControls.subheader.appendChild(searchInput);
             setupControls.subheader.appendChild(refreshBtn);
@@ -1510,20 +1830,20 @@ document.addEventListener('DOMContentLoaded', () => {
         scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
         scoringControls.nextEndBtn.onclick = () => changeEnd(1);
         
-        resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
+        resetModal.cancelBtn.onclick = () => resetModal.element.classList.add('hidden');
         resetModal.resetBtn.onclick = () => {
             resetState();
-            resetModal.element.style.display = 'none';
+            resetModal.element.classList.add('hidden');
         };
         resetModal.sampleBtn.onclick = () => {
             loadSampleData();
-            resetModal.element.style.display = 'none';
+            resetModal.element.classList.add('hidden');
         };
 
-        verifyModal.closeBtn.onclick = () => verifyModal.element.style.display = 'none';
+        verifyModal.closeBtn.onclick = () => verifyModal.element.classList.add('hidden');
         verifyModal.sendBtn.onclick = () => {
             sendBaleSMS();
-            verifyModal.element.style.display = 'none';
+            verifyModal.element.classList.add('hidden');
         };
 
         cardControls.backToScoringBtn.onclick = () => {
@@ -1592,7 +1912,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.addEventListener('focusin', (e) => {
             if (e.target.classList.contains('score-input')) {
                 keypad.currentlyFocusedInput = e.target;
-                keypad.element.style.display = 'grid';
+                keypad.element.classList.remove('hidden');
                 document.body.classList.add('keypad-visible');
             }
         });
@@ -1601,7 +1921,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.classList.contains('view-card-btn')) {
                 const archerId = e.target.dataset.archerId;
                 showArcherScorecardModal(archerId);
-                if (keypad.element) keypad.element.style.display = 'none';
+                if (keypad.element) keypad.element.classList.add('hidden');
             }
         });
         
@@ -1653,22 +1973,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const badge = document.getElementById('live-status-badge');
             const liveOn = !!isEnabled;
             if (badge) {
-                if (liveOn) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
-                else { badge.textContent = 'Not Live Scoring'; badge.className = 'status-badge status-off'; }
+                if (liveOn) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
+                else { badge.textContent = 'Not Live Scoring'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'; }
             }
             window.addEventListener('liveSyncPending', (e) => {
                 const id = e.detail.archerId;
                 const row = document.querySelector(`tr[data-archer-id="${id}"]`);
                 if (row) row.classList.add('sync-pending');
                 const badge = document.getElementById('live-status-badge');
-                if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
+                if (badge) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
             });
             window.addEventListener('liveSyncSuccess', (e) => {
                 const id = e.detail.archerId;
                 const row = document.querySelector(`tr[data-archer-id="${id}"]`);
                 if (row) { row.classList.remove('sync-pending'); row.classList.add('sync-ok'); setTimeout(()=>row.classList.remove('sync-ok'),1200); }
                 const badge = document.getElementById('live-status-badge');
-                if (badge) { badge.textContent = 'Synced'; badge.className = 'status-badge status-ok'; }
+                if (badge) { badge.textContent = 'Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-success-light dark:bg-success-dark text-success-dark dark:text-white'; }
             });
         } catch (e) { /* noop */ }
     }
@@ -1840,14 +2160,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function showExportModal() {
         const exportModal = document.getElementById('export-modal');
         if (exportModal) {
-            exportModal.style.display = 'flex';
+            exportModal.classList.remove('hidden');
         }
     }
 
     function hideExportModal() {
         const exportModal = document.getElementById('export-modal');
         if (exportModal) {
-            exportModal.style.display = 'none';
+            exportModal.classList.add('hidden');
         }
     }
 
