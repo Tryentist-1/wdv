@@ -241,40 +241,30 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function handleSelectorChange(groupId, selectedArchers) {
-        // Update state.archers based on selector selection
-        // Remove archers from state that are no longer selected
-        state.archers = state.archers.filter(archer => {
-            const archerExtId = getExtIdFromArcher(archer);
-            const stillSelected = selectedArchers.some(sel => getExtIdFromArcher(sel) === archerExtId);
-            return stillSelected;
-        });
+    function handleSelectorChange(selectionMap) {
+        // Convert ArcherSelector format (selectionMap) to state.archers format
+        // selectionMap is { A: [archer1], B: [archer2], ... }
         
-        // Add or update archers from selector
-        selectedArchers.forEach(selectedArcher => {
-            const archerExtId = getExtIdFromArcher(selectedArcher);
-            const existingIndex = state.archers.findIndex(a => getExtIdFromArcher(a) === archerExtId);
-            
-            const normalizedArcher = buildStateArcherFromRoster(
-                {
-                    first: selectedArcher.first || selectedArcher.firstName,
-                    last: selectedArcher.last || selectedArcher.lastName,
-                    nickname: selectedArcher.nickname,
-                    school: selectedArcher.school,
-                    level: selectedArcher.level,
-                    gender: selectedArcher.gender,
-                    status: selectedArcher.status
-                },
-                groupId // Use groupId (A, B, C, D) as target assignment
-            );
-            
-            if (existingIndex >= 0) {
-                // Update existing archer
-                state.archers[existingIndex] = { ...state.archers[existingIndex], ...normalizedArcher, targetAssignment: groupId };
-            } else {
-                // Add new archer
+        // Clear existing archers and rebuild from selection map
+        state.archers = [];
+        
+        RANKING_SELECTOR_GROUPS.forEach(group => {
+            const selectedArchers = selectionMap[group.id] || [];
+            selectedArchers.forEach(selectedArcher => {
+                const normalizedArcher = buildStateArcherFromRoster(
+                    {
+                        first: selectedArcher.first || selectedArcher.firstName,
+                        last: selectedArcher.last || selectedArcher.lastName,
+                        nickname: selectedArcher.nickname,
+                        school: selectedArcher.school,
+                        level: selectedArcher.level,
+                        gender: selectedArcher.gender,
+                        status: selectedArcher.status
+                    },
+                    group.id // Use groupId (A, B, C, D) as target assignment
+                );
                 state.archers.push(normalizedArcher);
-            }
+            });
         });
         
         updateSelectedChip();
@@ -476,6 +466,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPreAssignedArchers() {
         if (!setupControls.container) return;
+        
+        // Clear container first to remove any ArcherSelector content
+        setupControls.container.innerHTML = '';
         
         const banner = document.createElement('div');
         banner.className = 'bg-blue-50 dark:bg-blue-900/20 p-3 mb-3 rounded-lg border-l-4 border-blue-500';
