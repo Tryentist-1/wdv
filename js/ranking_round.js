@@ -922,7 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
                           .catch(() => updateSyncStatus(archerKey, state.currentEnd, 'failed'));
                     } else {
                         const badge = document.getElementById('live-status-badge');
-                        if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
+                        if (badge) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
                         LiveUpdates.ensureRound({ roundType: 'R360', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
                           .then(() => LiveUpdates.ensureArcher(archerKey, { ...archer, targetSize: archer.targetSize || ((archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80) }))
                           .then(() => LiveUpdates.postEnd(archerKey, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
@@ -1390,7 +1390,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.createElement('input');
             searchInput.type = 'text';
             searchInput.placeholder = 'Search archers...';
-            searchInput.className = 'archer-search-bar';
+            searchInput.className = 'flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-colors';
             searchInput.value = state.rosterFilter || '';
             searchInput.oninput = () => {
                 state.rosterFilter = searchInput.value;
@@ -1398,16 +1398,15 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             const refreshBtn = document.createElement('button');
             refreshBtn.id = 'refresh-btn';
-            refreshBtn.className = 'btn btn-secondary';
+            refreshBtn.className = 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
             refreshBtn.textContent = 'Refresh';
             refreshBtn.onclick = async () => { await ArcherModule.loadDefaultCSVIfNeeded(true); renderSetupForm(); };
             const selectedChip = document.createElement('span');
-            selectedChip.className = 'btn';
-            selectedChip.style.cursor = 'default';
+            selectedChip.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg font-semibold cursor-default min-h-[44px] flex items-center';
             selectedChip.textContent = `${state.archers.length}/4`;
             const syncBtn = document.createElement('button');
             syncBtn.id = 'sync-db-btn';
-            syncBtn.className = 'btn btn-secondary';
+            syncBtn.className = 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
             syncBtn.textContent = 'Sync to DB';
             syncBtn.onclick = async () => {
                 try {
@@ -1419,17 +1418,22 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             const liveBtn = document.createElement('button');
             liveBtn.id = 'live-toggle-btn';
-            liveBtn.className = 'btn btn-secondary';
+            liveBtn.className = 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
             const getLiveEnabled = () => { try { return !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) { return false; } };
             const setLiveEnabled = (v) => { try { if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ enabled: !!v }); else localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); } catch(_) {} };
-            const renderLiveBtn = () => { const on = getLiveEnabled(); liveBtn.textContent = on ? 'Live: On' : 'Live: Off'; liveBtn.className = on ? 'btn btn-success' : 'btn btn-secondary'; };
+            const renderLiveBtn = () => { 
+                const on = getLiveEnabled(); 
+                liveBtn.textContent = on ? 'Live: On' : 'Live: Off'; 
+                liveBtn.className = on 
+                    ? 'px-4 py-2 bg-success text-white rounded-lg hover:bg-success-dark font-semibold transition-colors min-h-[44px]' 
+                    : 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]'; 
+            };
             renderLiveBtn();
             
             const masterSyncBtn = document.createElement('button');
             masterSyncBtn.id = 'master-sync-btn';
-            masterSyncBtn.className = 'btn btn-warning';
+            masterSyncBtn.className = 'px-4 py-2 bg-warning text-gray-800 rounded-lg hover:bg-warning-dark font-semibold transition-colors min-h-[44px] text-sm';
             masterSyncBtn.textContent = 'Master Sync';
-            masterSyncBtn.style.cssText = 'font-size: 0.9em;';
             masterSyncBtn.onclick = async () => {
                 if (!getLiveEnabled()) {
                     alert('Enable Live Updates first to sync scores.');
@@ -1459,7 +1463,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         state.archers.forEach(ensureArcher);
                     }
                     const badge = document.getElementById('live-status-badge');
-                    if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
+                    if (badge) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
                 } catch(_) {}
             };
             liveBtn.onclick = () => {
@@ -1480,14 +1484,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const resetBtn = document.createElement('button');
             resetBtn.id = 'reset-btn';
-            resetBtn.className = 'btn btn-danger';
+            resetBtn.className = 'px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors min-h-[44px]';
             resetBtn.textContent = 'Reset';
             resetBtn.onclick = () => resetModal.element.style.display = 'flex';
             const scoringBtn = document.createElement('button');
             scoringBtn.id = 'scoring-btn';
-            scoringBtn.className = 'btn btn-primary';
+            scoringBtn.className = 'px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px] ml-auto';
             scoringBtn.textContent = 'Scoring';
-            scoringBtn.style.marginLeft = 'auto';
             scoringBtn.onclick = showScoringView;
             setupControls.subheader.appendChild(searchInput);
             setupControls.subheader.appendChild(refreshBtn);
@@ -1653,22 +1656,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const badge = document.getElementById('live-status-badge');
             const liveOn = !!isEnabled;
             if (badge) {
-                if (liveOn) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
-                else { badge.textContent = 'Not Live Scoring'; badge.className = 'status-badge status-off'; }
+                if (liveOn) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
+                else { badge.textContent = 'Not Live Scoring'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'; }
             }
             window.addEventListener('liveSyncPending', (e) => {
                 const id = e.detail.archerId;
                 const row = document.querySelector(`tr[data-archer-id="${id}"]`);
                 if (row) row.classList.add('sync-pending');
                 const badge = document.getElementById('live-status-badge');
-                if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
+                if (badge) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
             });
             window.addEventListener('liveSyncSuccess', (e) => {
                 const id = e.detail.archerId;
                 const row = document.querySelector(`tr[data-archer-id="${id}"]`);
                 if (row) { row.classList.remove('sync-pending'); row.classList.add('sync-ok'); setTimeout(()=>row.classList.remove('sync-ok'),1200); }
                 const badge = document.getElementById('live-status-badge');
-                if (badge) { badge.textContent = 'Synced'; badge.className = 'status-badge status-ok'; }
+                if (badge) { badge.textContent = 'Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-success-light dark:bg-success-dark text-success-dark dark:text-white'; }
             });
         } catch (e) { /* noop */ }
     }

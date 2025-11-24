@@ -29,10 +29,22 @@
         .text-score-white { color: #FFFFFF; }
         .bg-primary { background-color: #2d7dd9; }
         .bg-primary-dark { background-color: #1b5bbf; }
+        .bg-secondary { background-color: #6c757d; }
+        .bg-secondary-dark { background-color: #5a6268; }
+        .bg-success { background-color: #28a745; }
+        .bg-success-dark { background-color: #1e7e34; }
+        .bg-success-light { background-color: #d1e7dd; }
         .bg-danger { background-color: #d92d20; }
         .bg-danger-dark { background-color: #b0241a; }
+        .bg-danger-light { background-color: #f8d7da; }
+        .bg-warning { background-color: #ffc107; }
+        .bg-warning-dark { background-color: #d39e00; }
+        .bg-warning-light { background-color: #fff3cd; }
         .text-primary { color: #2d7dd9; }
         .text-danger { color: #d92d20; }
+        .text-success-dark { color: #1e7e34; }
+        .text-danger-dark { color: #b0241a; }
+        .text-warning-dark { color: #d39e00; }
         .text-white { color: #ffffff; }
     </style>
     
@@ -58,22 +70,7 @@
         .safe-top { padding-top: env(safe-area-inset-top, 0); }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
         
-        /* Legacy global-footer (will be migrated in Phase 2) */
-        .global-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 50px;
-            background-color: #ffffff !important;
-            border-top: 1px solid #dee2e6;
-            padding: 0.5rem;
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            z-index: 1000;
-            box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
-        }
+        /* Legacy global-footer - migrated to Tailwind, keeping for reference */
     </style>
     
     <!-- Dark Mode Toggle Script -->
@@ -129,8 +126,6 @@
             }
         });
     </script>
-    <!-- html2canvas for screenshot functionality -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
 
@@ -138,14 +133,14 @@
         
         <!-- This view will be shown first to set up the bale -->
         <div id="setup-view" class="flex flex-col flex-1">
-            <div class="page-header">
-                <h1>Setup Bale</h1>
-                <div class="bale-number-setup">
-                    <label for="bale-number-input">Bale:</label>
-                    <input type="number" id="bale-number-input" min="1" max="99" value="1">
+            <div class="page-header px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center transition-colors duration-200">
+                <h1 class="text-xl font-bold text-gray-800 dark:text-white">Setup Bale</h1>
+                <div class="bale-number-setup flex items-center gap-2">
+                    <label for="bale-number-input" class="text-sm text-gray-600 dark:text-gray-300">Bale:</label>
+                    <input type="number" id="bale-number-input" min="1" max="99" value="1" class="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded focus:outline-none focus:ring-2 focus:ring-primary">
                 </div>
             </div>
-            <div class="page-subheader">
+            <div class="page-subheader px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-3 flex-wrap transition-colors duration-200">
                 <!-- Search bar and buttons will be dynamically added here -->
             </div>
             <div id="archer-setup-container" class="flex-1 overflow-auto">
@@ -155,15 +150,15 @@
 
         <!-- This view will be shown after setup for scoring -->
         <div id="scoring-view" class="flex flex-col flex-1" style="display: none;">
-            <div class="page-header">
-                <div class="header-left">
-                    <h1>R Round - E<span id="current-end-display">1</span></h1>
-                    <span id="live-status-badge" class="status-badge status-off" aria-live="polite">Not Live Scoring</span>
+            <div class="page-header px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center transition-colors duration-200">
+                <div class="header-left flex items-center gap-2">
+                    <h1 class="text-xl font-bold text-gray-800 dark:text-white">R Round - E<span id="current-end-display" class="text-primary">1</span></h1>
+                    <span id="live-status-badge" class="inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300" aria-live="polite">Not Live Scoring</span>
                 </div>
-                <div class="header-right">
-                    <div id="event-info" style="font-size: 0.9em; color: #666; text-align: right;">
-                        <div id="event-name">No Event</div>
-                        <div id="bale-info">Bale <span id="current-bale-display">1</span></div>
+                <div class="header-right text-right text-sm text-gray-600 dark:text-gray-300">
+                    <div id="event-info">
+                        <div id="event-name" class="font-semibold">No Event</div>
+                        <div id="bale-info">Bale <span id="current-bale-display" class="font-semibold">1</span></div>
                     </div>
                 </div>
             </div>
@@ -178,9 +173,9 @@
 
         <!-- This view shows a single archer's full card for verification/export -->
         <div id="card-view" class="view flex flex-col flex-1" style="display: none;">
-            <header class="view-header">
-                <h2 id="card-view-archer-name"></h2>
-                <div class="card-details">
+            <header class="view-header px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                <h2 id="card-view-archer-name" class="text-xl font-bold text-gray-800 dark:text-white mb-2"></h2>
+                <div class="card-details flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-300">
                     <span id="card-view-division"></span>
                     <span id="card-view-round"></span>
                 </div>
@@ -190,11 +185,11 @@
                 <!-- Scorecard table will be rendered here -->
             </div>
 
-            <footer class="view-footer">
-                <button id="back-to-scoring-btn" class="btn btn-primary">← Scoring</button>
-                <button id="export-btn" class="btn btn-success">Export</button>
-                <button id="prev-archer-btn" class="btn">← Prev</button>
-                <button id="next-archer-btn" class="btn">Next →</button>
+            <footer class="view-footer px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-center gap-2 safe-bottom transition-colors duration-200">
+                <button id="back-to-scoring-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">← Scoring</button>
+                <button id="export-btn" class="px-4 py-2 bg-success text-white rounded-lg hover:bg-success-dark font-semibold transition-colors min-h-[44px]">Export</button>
+                <button id="prev-archer-btn" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">← Prev</button>
+                <button id="next-archer-btn" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Next →</button>
             </footer>
         </div>
 
@@ -257,9 +252,9 @@
 
         <div id="keypad" class="keypad-container" style="display: none;"></div>
 
-        <footer class="global-footer" style="justify-content: space-between;">
-            <a href="index.html" class="btn btn-secondary">Home</a>
-            <button id="setup-bale-btn" class="btn btn-primary">Setup</button>
+        <footer class="global-footer px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-between gap-2 safe-bottom transition-colors duration-200 fixed bottom-0 left-0 right-0 z-50">
+            <a href="index.html" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px] flex items-center">Home</a>
+            <button id="setup-bale-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">Setup</button>
         </footer>
 
         <!-- Application Scripts -->
