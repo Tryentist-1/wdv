@@ -812,7 +812,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderKeypad() {
         if (!keypad.element) return;
-        keypad.element.innerHTML = `<div class="keypad"><button class="keypad-btn" data-value="X">X</button><button class="keypad-btn" data-value="10">10</button><button class="keypad-btn" data-value="9">9</button><button class="keypad-btn nav-btn" data-action="prev">&larr;</button><button class="keypad-btn" data-value="8">8</button><button class="keypad-btn" data-value="7">7</button><button class="keypad-btn" data-value="6">6</button><button class="keypad-btn nav-btn" data-action="next">&rarr;</button><button class="keypad-btn" data-value="5">5</button><button class="keypad-btn" data-value="4">4</button><button class="keypad-btn" data-value="3">3</button><button class="keypad-btn" data-action="clear">CLR</button><button class="keypad-btn" data-value="2">2</button><button class="keypad-btn" data-value="1">1</button><button class="keypad-btn" data-value="M">M</button><button class="keypad-btn" data-action="close">Close</button></div>`;
+        // New 4x3 layout: Tailwind CSS, no gaps, no navigation buttons, edge-to-edge borders
+        keypad.element.innerHTML = `
+            <div class="grid grid-cols-4 gap-0 w-full">
+                <!-- Row 1: X, 10, 9, M -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="X">X</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="10">10</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="9">9</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-200 text-black dark:text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="M">M</button>
+                
+                <!-- Row 2: 8, 7, 6, 5 -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="8">8</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="7">7</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="6">6</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="5">5</button>
+                
+                <!-- Row 3: 4, 3, 2, 1 -->
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="4">4</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="3">3</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="2">2</button>
+                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98" data-value="1">1</button>
+                
+                <!-- Row 4: CLOSE (left), CLEAR (right) -->
+                <button class="keypad-btn p-4 text-lg font-bold border-r border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2" data-action="close">CLOSE</button>
+                <button class="keypad-btn p-4 text-lg font-bold cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger-light dark:bg-danger-dark text-danger-dark dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2" data-action="clear">CLEAR</button>
+            </div>
+        `;
     }
 
     function handleKeypadClick(e) {
@@ -823,32 +848,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = keypad.currentlyFocusedInput;
         const allInputs = Array.from(document.querySelectorAll('#scoring-view .score-input'));
         const currentIndex = allInputs.indexOf(input);
-        if (action === 'prev') {
-            if (currentIndex > 0) allInputs[currentIndex - 1].focus();
-            return;
-        }
-        if (action === 'next') {
-            if (currentIndex < allInputs.length - 1) allInputs[currentIndex + 1].focus();
-            return;
-        }
+        
+        // Handle action buttons
         if (action === 'close') {
-            keypad.element.style.display = 'none';
+            keypad.element.classList.add('hidden');
             document.body.classList.remove('keypad-visible');
             return;
         }
-        if (action === 'clear') input.value = '';
-        else if (value) input.value = value;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        if (value && currentIndex < allInputs.length - 1) {
-            const nextInputInOldList = allInputs[currentIndex + 1];
-            const nextInputInNewDom = document.querySelector(`[data-archer-id="${nextInputInOldList.dataset.archerId}"][data-arrow-idx="${nextInputInOldList.dataset.arrowIdx}"]`);
-            if (nextInputInNewDom) nextInputInNewDom.focus();
-        } else if (action === 'clear') {
-             const currentInputInNewDom = document.querySelector(`[data-archer-id="${input.dataset.archerId}"][data-arrow-idx="${input.dataset.arrowIdx}"]`);
+        
+        if (action === 'clear') {
+            input.value = '';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            // Keep focus on current input after clear
+            const currentInputInNewDom = document.querySelector(`[data-archer-id="${input.dataset.archerId}"][data-arrow-idx="${input.dataset.arrowIdx}"]`);
             if (currentInputInNewDom) currentInputInNewDom.focus();
-        } else {
-            keypad.element.style.display = 'none';
-            document.body.classList.remove('keypad-visible');
+            return;
+        }
+        
+        // Handle score value entry
+        if (value) {
+            input.value = value;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            
+            // Auto-advance to next input if available
+            if (currentIndex < allInputs.length - 1) {
+                const nextInputInOldList = allInputs[currentIndex + 1];
+                const nextInputInNewDom = document.querySelector(`[data-archer-id="${nextInputInOldList.dataset.archerId}"][data-arrow-idx="${nextInputInOldList.dataset.arrowIdx}"]`);
+                if (nextInputInNewDom) {
+                    nextInputInNewDom.focus();
+                } else {
+                    // If next input not found, hide keypad
+                    keypad.element.classList.add('hidden');
+                    document.body.classList.remove('keypad-visible');
+                }
+            } else {
+                // Last input, hide keypad
+                keypad.element.classList.add('hidden');
+                document.body.classList.remove('keypad-visible');
+            }
         }
     }
 
@@ -1595,7 +1632,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.addEventListener('focusin', (e) => {
             if (e.target.classList.contains('score-input')) {
                 keypad.currentlyFocusedInput = e.target;
-                keypad.element.style.display = 'grid';
+                keypad.element.classList.remove('hidden');
                 document.body.classList.add('keypad-visible');
             }
         });
@@ -1604,7 +1641,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.classList.contains('view-card-btn')) {
                 const archerId = e.target.dataset.archerId;
                 showArcherScorecardModal(archerId);
-                if (keypad.element) keypad.element.style.display = 'none';
+                if (keypad.element) keypad.element.classList.add('hidden');
             }
         });
         
