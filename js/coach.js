@@ -875,6 +875,12 @@
       searchInput.value = '';
     }
 
+    // Set status filter to 'active' by default (if not already set)
+    const statusFilter = document.getElementById('filter-status');
+    if (statusFilter && !statusFilter.value) {
+      statusFilter.value = 'active';
+    }
+
     // Initialize ArcherSelector
     initializeArcherSelector();
 
@@ -900,7 +906,7 @@
     };
 
     // Filter change handlers - update ArcherSelector roster
-    ['filter-school', 'filter-gender', 'filter-level'].forEach(id => {
+    ['filter-status', 'filter-school', 'filter-gender', 'filter-level'].forEach(id => {
       const element = document.getElementById(id);
       if (element) {
         element.onchange = () => {
@@ -1113,13 +1119,20 @@
    * Note: Search filtering is handled by ArcherSelector internally
    */
   function applyFiltersToArchers() {
+    const statusFilter = document.getElementById('filter-status')?.value || '';
     const schoolFilter = document.getElementById('filter-school')?.value || '';
     const genderFilter = document.getElementById('filter-gender')?.value || '';
     const levelFilter = document.getElementById('filter-level')?.value || '';
 
-    // Filter archers by school, gender, and level (AND logic - must match all)
+    // Filter archers by status, school, gender, and level (AND logic - must match all)
     // Search filtering is handled by ArcherSelector.setFilter()
     const filtered = allArchers.filter(archer => {
+      // Status filter (defaults to 'active' if not set)
+      if (statusFilter) {
+        const archerStatus = (archer.status || 'active').toLowerCase();
+        if (archerStatus !== statusFilter.toLowerCase()) return false;
+      }
+      
       // School filter
       if (schoolFilter && archer.school !== schoolFilter) return false;
       

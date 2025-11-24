@@ -136,6 +136,11 @@
       
       <!-- Filters -->
       <div class="flex flex-wrap gap-2 mb-4">
+        <select id="filter-status" class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
+          <option value="active" selected>Active Only</option>
+          <option value="">All Status</option>
+          <option value="inactive">Inactive Only</option>
+        </select>
         <select id="filter-school" class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
           <option value="">All Schools</option>
         </select>
