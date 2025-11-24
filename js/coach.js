@@ -773,6 +773,7 @@
       alert(`Unable to load verification data: ${err.message}`);
     }
 
+    // Clean up existing handlers by cloning elements
     const divisionSelect = document.getElementById('verify-division-select');
     const baleSelect = document.getElementById('verify-bale-select');
     const refreshBtn = document.getElementById('verify-refresh-btn');
@@ -780,44 +781,68 @@
     const lockAllBtn = document.getElementById('verify-lock-all-btn');
     const closeRoundBtn = document.getElementById('verify-close-round-btn');
 
-    divisionSelect.onchange = () => {
-      verifyState.division = divisionSelect.value;
-      const bales = getBalesForDivision(verifyState.division);
-      if (bales.length > 0) {
-        verifyState.bale = bales.includes(Number(verifyState.bale)) ? verifyState.bale : bales[0];
-      } else {
-        verifyState.bale = null;
-      }
-      populateVerifySelectors();
-      renderVerifyTable();
-    };
-
-    baleSelect.onchange = () => {
-      verifyState.bale = baleSelect.value ? Number(baleSelect.value) : null;
-      renderVerifyTable();
-    };
-
-    refreshBtn.onclick = async () => {
-      try {
-        await loadVerifySnapshot();
+    // Remove existing handlers by cloning
+    if (divisionSelect) {
+      divisionSelect.replaceWith(divisionSelect.cloneNode(true));
+      const newDivisionSelect = document.getElementById('verify-division-select');
+      newDivisionSelect.onchange = () => {
+        verifyState.division = newDivisionSelect.value;
+        const bales = getBalesForDivision(verifyState.division);
+        if (bales.length > 0) {
+          verifyState.bale = bales.includes(Number(verifyState.bale)) ? verifyState.bale : bales[0];
+        } else {
+          verifyState.bale = null;
+        }
         populateVerifySelectors();
         renderVerifyTable();
-      } catch (err) {
-        alert(`Refresh failed: ${err.message}`);
-      }
-    };
+      };
+    }
 
-    closeBtn.onclick = () => {
-      modal.style.display = 'none';
-    };
+    if (baleSelect) {
+      baleSelect.replaceWith(baleSelect.cloneNode(true));
+      const newBaleSelect = document.getElementById('verify-bale-select');
+      newBaleSelect.onchange = () => {
+        verifyState.bale = newBaleSelect.value ? Number(newBaleSelect.value) : null;
+        renderVerifyTable();
+      };
+    }
 
-    lockAllBtn.onclick = () => {
+    if (refreshBtn) {
+      refreshBtn.replaceWith(refreshBtn.cloneNode(true));
+      const newRefreshBtn = document.getElementById('verify-refresh-btn');
+      newRefreshBtn.onclick = async () => {
+        try {
+          await loadVerifySnapshot();
+          populateVerifySelectors();
+          renderVerifyTable();
+        } catch (err) {
+          alert(`Refresh failed: ${err.message}`);
+        }
+      };
+    }
+
+    if (closeBtn) {
+      closeBtn.replaceWith(closeBtn.cloneNode(true));
+      const newCloseBtn = document.getElementById('verify-modal-close-btn');
+      newCloseBtn.onclick = () => {
+        modal.style.display = 'none';
+      };
+    }
+
+    if (lockAllBtn) {
+      lockAllBtn.replaceWith(lockAllBtn.cloneNode(true));
+      const newLockAllBtn = document.getElementById('verify-lock-all-btn');
+      newLockAllBtn.onclick = () => {
       handleLockAllForBale();
     };
 
-    closeRoundBtn.onclick = () => {
-      handleVerifyAndCloseRound();
-    };
+    if (closeRoundBtn) {
+      closeRoundBtn.replaceWith(closeRoundBtn.cloneNode(true));
+      const newCloseRoundBtn = document.getElementById('verify-close-round-btn');
+      newCloseRoundBtn.onclick = () => {
+        handleVerifyAndCloseRound();
+      };
+    }
   }
 
   // ==================== PHASE 0: Division Round Management ====================
