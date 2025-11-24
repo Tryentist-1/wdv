@@ -75,9 +75,12 @@ This document outlines the planned phases for developing the Archery Score Manag
    - ✅ Sorted archer selection lists
    - ✅ Sync status UI indicators
    - ✅ Match restoration functionality
-   - ✅ Complete Tailwind CSS migration (Nov 2025)
+   - ✅ Complete Tailwind CSS migration (Dec 2025)
    - ✅ Standardized keypad across all modules
    - ✅ Dark mode support complete
+   - ✅ 100% Tailwind migration across all modules (v1.6.0)
+   - ✅ ArcherSelector integration in all modules
+   - ✅ Zero legacy CSS dependencies
 
 **Actual Effort:** ~40 hours  
 **Completed:** November 2025
@@ -89,7 +92,8 @@ This document outlines the planned phases for developing the Archery Score Manag
 - [PHASE2_TEAM_MIGRATION_PLAN.md](PHASE2_TEAM_MIGRATION_PLAN.md)
 - [TAILWIND_MIGRATION_PLAN.md](TAILWIND_MIGRATION_PLAN.md)
 
-**Production Release:** v1.4.0 (November 2025)
+**Production Release:** v1.4.0 (November 2025)  
+**Tailwind Migration Complete:** v1.6.0 (December 2025)
 
 ## Phase 3: Coach-Athlete Collaboration 📅 PLANNED (2026 Q1)
 
