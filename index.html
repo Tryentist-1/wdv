@@ -399,15 +399,16 @@
             console.log('[index] Open rounds found:', openRounds.length);
             
             openRounds.forEach(round => {
+              const isStarted = (round.ends_completed || 0) > 0;
               assignments.push({
                 type: 'ranking',
-                title: round.event_name || 'Ranking Round',
+                title: isStarted ? 'Resume Ranking Round' : (round.event_name || 'Ranking Round'),
                 subtitle: `${round.round_type || 'R300'} • ${round.division || 'Unknown Division'}`,
                 details: `Bale ${round.bale_number || '?'} • ${round.ends_completed || 0}/10 ends`,
                 link: `ranking_round_300.html?event=${round.event_id}&round=${round.round_id}&archer=${archerId}`,
-                icon: 'fas fa-trophy',
-                color: 'bg-teal-600 hover:bg-teal-700',
-                urgent: (round.ends_completed || 0) > 0 && (round.ends_completed || 0) < 10 // Has started but not finished
+                icon: isStarted ? 'fas fa-play-circle' : 'fas fa-trophy',
+                color: isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-teal-600 hover:bg-teal-700',
+                urgent: isStarted && (round.ends_completed || 0) < 10 // Has started but not finished
               });
             });
           }

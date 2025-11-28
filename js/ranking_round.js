@@ -78,9 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
         element: document.getElementById('keypad'),
         currentlyFocusedInput: null,
     };
-    
+
     // --- UTILITY FUNCTIONS ---
-    
+
     function parseScoreValue(score) {
         if (!score || score === '') return 0;
         const upper = String(score).toUpperCase();
@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const num = parseInt(upper, 10);
         return isNaN(num) ? 0 : num;
     }
-    
+
     function getScoreColorClass(score) {
         if (!score || score === '') return 'white';
         const upper = String(score).toUpperCase();
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (upper === '2' || upper === '1') return 'white';
         return 'white';
     }
-    
+
     function getScoreTextColor(score) {
         if (!score || score === '') return 'text-gray-500';
         const upper = String(score).toUpperCase();
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (upper === 'M') return 'text-gray-500';
         return 'text-gray-500';
     }
-    
+
     function getScoreColor(score) {
         // Legacy function for card view - returns class name without bg- prefix
         return getScoreColorClass(score);
@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('ArcherSelector: setupControls.container not found');
             return;
         }
-        
+
         if (typeof ArcherSelector === 'undefined' || typeof ArcherSelector.init !== 'function') {
             console.warn('ArcherSelector component unavailable');
             return;
@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showAvatars: true,
                 showFavoriteToggle: true
             });
-            
+
             if (archerSelector) {
                 refreshArcherRoster();
                 syncSelectorSelection();
@@ -244,10 +244,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleSelectorChange(selectionMap) {
         // Convert ArcherSelector format (selectionMap) to state.archers format
         // selectionMap is { A: [archer1], B: [archer2], ... }
-        
+
         // Clear existing archers and rebuild from selection map
         state.archers = [];
-        
+
         RANKING_SELECTOR_GROUPS.forEach(group => {
             const selectedArchers = selectionMap[group.id] || [];
             selectedArchers.forEach(selectedArcher => {
@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.archers.push(normalizedArcher);
             });
         });
-        
+
         updateSelectedChip();
         saveData();
     }
@@ -289,13 +289,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function syncSelectorSelection() {
         if (!archerSelector) return;
-        
+
         // Map state.archers to selector format
         const selection = {};
         RANKING_SELECTOR_GROUPS.forEach(group => {
             selection[group.id] = [];
         });
-        
+
         state.archers.forEach(archer => {
             const target = archer.targetAssignment || 'A';
             if (selection[target]) {
@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
-        
+
         archerSelector.setSelection(selection);
     }
 
@@ -410,14 +410,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderSetupForm() {
         if (!setupControls.container) return;
-        
+
         // Pre-assigned mode: show read-only archer list
         if (state.assignmentMode === 'pre-assigned' && state.archers.length > 0) {
             renderPreAssignedArchers();
             updateSelectedChip();
             return;
         }
-        
+
         // Manual mode: use ArcherSelector component if available
         if (typeof ArcherSelector !== 'undefined' && typeof ArcherSelector.init === 'function') {
             if (!archerSelector) {
@@ -431,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         showAvatars: true,
                         showFavoriteToggle: true
                     });
-                    
+
                     if (archerSelector) {
                         refreshArcherRoster();
                         syncSelectorSelection();
@@ -466,10 +466,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPreAssignedArchers() {
         if (!setupControls.container) return;
-        
+
         // Clear container first to remove any ArcherSelector content
         setupControls.container.innerHTML = '';
-        
+
         const banner = document.createElement('div');
         banner.className = 'bg-blue-50 dark:bg-blue-900/20 p-3 mb-3 rounded-lg border-l-4 border-blue-500';
         banner.innerHTML = `
@@ -478,14 +478,14 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">These archers are pre-assigned by your coach</div>
         `;
         setupControls.container.appendChild(banner);
-        
+
         const listDiv = document.createElement('div');
         listDiv.className = 'bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 space-y-2';
-        
+
         state.archers.forEach(archer => {
             const row = document.createElement('div');
             row.className = 'p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 rounded-lg last:border-b-0';
-            
+
             row.innerHTML = `
                 <div class="flex justify-between items-center">
                     <div>
@@ -497,12 +497,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
             `;
-            
+
             listDiv.appendChild(row);
         });
-        
+
         setupControls.container.appendChild(listDiv);
-        
+
         // Add switch to manual mode button
         const manualBtn = document.createElement('button');
         manualBtn.className = 'mt-3 w-full px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
@@ -813,13 +813,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
-    
+
     // Function to load entire bale when clicking on any archer
     function loadEntireBale(baleNumber, archersInBale) {
         // Clear existing archers
         state.archers = [];
         state.baleNumber = parseInt(baleNumber);
-        
+
         // Add all archers from this bale
         const targets = TARGET_LETTERS.slice();
         archersInBale.forEach((archer, index) => {
@@ -835,11 +835,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }, targetAssignment);
             state.archers.push(normalized);
         });
-        
+
         saveData();
         renderSetupForm();
         updateSelectedChip();
-        
+
         // Scroll to the top to show the selected archers
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -847,11 +847,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderScoringView() {
         if (!scoringControls.container) return;
         scoringControls.currentEndDisplay.textContent = `Bale ${state.baleNumber} - End ${state.currentEnd}`;
-        
+
         // Check if Live Updates is enabled to show sync column
         let isLiveEnabled = false;
-        try { isLiveEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) {}
-        
+        try { isLiveEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config') || '{}').enabled); } catch (_) { }
+
         let tableHTML = `
             <div class="overflow-x-auto -mx-6 px-6">
                 <table class="w-full border-collapse text-xs sm:text-sm bg-white dark:bg-gray-700 min-w-[500px]">
@@ -898,12 +898,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (avgNum >= 3) avgClass = 'score-black';
                 else avgClass = 'score-white';
             }
-            
+
             // Get sync status for this archer/end
             const archerSync = archerKey ? state.syncStatus[archerKey] : null;
             const syncStatus = (archerSync && archerSync[state.currentEnd]) || '';
             const syncIcon = getSyncStatusIcon(syncStatus);
-            
+
             const lastInitial = archer.lastName ? `${archer.lastName.charAt(0)}.` : '';
             const nameDisplay = [archer.firstName, lastInitial].filter(Boolean).join(' ');
             const rowBgClass = state.archers.indexOf(archer) % 2 === 0 ? 'bg-white dark:bg-gray-700' : 'bg-gray-50 dark:bg-gray-800';
@@ -930,7 +930,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tableHTML += `</tbody></table></div>`;
         scoringControls.container.innerHTML = tableHTML;
     }
-    
+
     function renderCardView(archerId) {
         const archer = findArcherByKey(archerId);
         if (!archer) return;
@@ -945,7 +945,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const table = document.createElement('table');
         table.className = 'w-full border-collapse text-sm bg-white dark:bg-gray-700';
         table.dataset.archerId = archerId;
-            table.innerHTML = `
+        table.innerHTML = `
             <thead class="bg-primary dark:bg-primary-dark text-white">
                 <tr>
                     <th class="px-2 py-2 text-center font-bold w-12">E</th>
@@ -993,10 +993,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <tr class="border-b border-gray-200 dark:border-gray-600 ${rowBgClass}">
                     <td class="px-1 py-0.5 text-center font-semibold dark:text-white">${endNum}</td>
                     ${endScores.map(s => {
-                        const colorClass = getScoreColorClass(s);
-                        const textClass = getScoreTextColor(s);
-                        return `<td class="px-1 py-0.5 text-center bg-score-${colorClass} ${textClass} font-bold">${s || ''}</td>`;
-                    }).join('')}
+                const colorClass = getScoreColorClass(s);
+                const textClass = getScoreTextColor(s);
+                return `<td class="px-1 py-0.5 text-center bg-score-${colorClass} ${textClass} font-bold">${s || ''}</td>`;
+            }).join('')}
                     <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold">${isComplete ? (endTens + endXs) : ''}</td>
                     <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white">${isComplete ? endXs : ''}</td>
                     <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold">${isComplete ? endTotal : ''}</td>
@@ -1030,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', () => {
         cardControls.container.innerHTML = '';
         cardControls.container.appendChild(table);
     }
-    
+
     function getBaleTotals() {
         return state.archers.map(archer => {
             let totalScore = 0, totalArrows = 0, tens = 0, xs = 0;
@@ -1119,14 +1119,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = keypad.currentlyFocusedInput;
         const allInputs = Array.from(document.querySelectorAll('#scoring-view .score-input'));
         const currentIndex = allInputs.indexOf(input);
-        
+
         // Handle action buttons
         if (action === 'close') {
             keypad.element.classList.add('hidden');
             document.body.classList.remove('keypad-visible');
             return;
         }
-        
+
         if (action === 'clear') {
             input.value = '';
             input.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1135,12 +1135,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentInputInNewDom) currentInputInNewDom.focus();
             return;
         }
-        
+
         // Handle score value entry
         if (value) {
             input.value = value;
             input.dispatchEvent(new Event('input', { bubbles: true }));
-            
+
             // Auto-advance to next input if available
             if (currentIndex < allInputs.length - 1) {
                 const nextInputInOldList = allInputs[currentIndex + 1];
@@ -1176,13 +1176,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Live Updates: best-effort post of current end state
             try {
                 let isEnabled = false;
-                try { isEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) {}
+                try { isEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config') || '{}').enabled); } catch (_) { }
                 if (isEnabled && typeof LiveUpdates !== 'undefined') {
                     const endScores = archer.scores[state.currentEnd - 1];
-                    const [a1,a2,a3] = [endScores[0]||'', endScores[1]||'', endScores[2]||''];
+                    const [a1, a2, a3] = [endScores[0] || '', endScores[1] || '', endScores[2] || ''];
                     // Per-end values
                     let endTotal = 0, tens = 0, xs = 0;
-                    [a1,a2,a3].forEach(s => {
+                    [a1, a2, a3].forEach(s => {
                         const u = String(s).toUpperCase();
                         if (!u) return;
                         if (u === 'X') { endTotal += 10; xs++; tens++; }
@@ -1203,7 +1203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             else if (/^[0-9]$|^10$/.test(u)) { running += parseInt(u, 10); }
                         });
                     }
-                    
+
                     const archerKey = getArcherKey(archer);
                     if (!archerKey) {
                         console.warn('Cannot sync archer without identifier', archer);
@@ -1211,37 +1211,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Debug logging
-                    console.log('Live update attempt:', { 
-                        enabled: isEnabled, 
-                        hasLiveUpdates: !!LiveUpdates, 
-                        hasState: !!LiveUpdates._state, 
+                    console.log('Live update attempt:', {
+                        enabled: isEnabled,
+                        hasLiveUpdates: !!LiveUpdates,
+                        hasState: !!LiveUpdates._state,
                         roundId: LiveUpdates._state?.roundId,
                         archerId: archerKey,
                         endNumber: state.currentEnd,
                         scores: { a1, a2, a3, endTotal, runningTotal: running, tens, xs }
                     });
-                    
+
                     // Set sync status to pending
                     updateSyncStatus(archerKey, state.currentEnd, 'pending');
-                    
+
                     if (LiveUpdates._state && LiveUpdates._state.roundId) {
                         LiveUpdates.postEnd(archerKey, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs })
-                          .then(() => updateSyncStatus(archerKey, state.currentEnd, 'synced'))
-                          .catch(() => updateSyncStatus(archerKey, state.currentEnd, 'failed'));
+                            .then(() => updateSyncStatus(archerKey, state.currentEnd, 'synced'))
+                            .catch(() => updateSyncStatus(archerKey, state.currentEnd, 'failed'));
                     } else {
                         const badge = document.getElementById('live-status-badge');
                         if (badge) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
                         LiveUpdates.ensureRound({ roundType: 'R360', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
-                          .then(() => LiveUpdates.ensureArcher(archerKey, { ...archer, targetSize: archer.targetSize || ((archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80) }))
-                          .then(() => LiveUpdates.postEnd(archerKey, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
-                          .then(() => updateSyncStatus(archerKey, state.currentEnd, 'synced'))
-                          .catch(err => {
-                            console.error('Live init/post failed:', err);
-                            updateSyncStatus(archerKey, state.currentEnd, 'failed');
-                          });
+                            .then(() => LiveUpdates.ensureArcher(archerKey, { ...archer, targetSize: archer.targetSize || ((archer.level === 'VAR' || archer.level === 'V' || archer.level === 'Varsity') ? 122 : 80) }))
+                            .then(() => LiveUpdates.postEnd(archerKey, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
+                            .then(() => updateSyncStatus(archerKey, state.currentEnd, 'synced'))
+                            .catch(err => {
+                                console.error('Live init/post failed:', err);
+                                updateSyncStatus(archerKey, state.currentEnd, 'failed');
+                            });
                     }
                 }
-            } catch (e) { 
+            } catch (e) {
                 console.error('Live update error:', e);
                 const fallbackKey = getArcherKey(archer);
                 if (fallbackKey) updateSyncStatus(fallbackKey, state.currentEnd, 'failed');
@@ -1255,7 +1255,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.syncStatus[archerId] = {};
         }
         state.syncStatus[archerId][endNumber] = status;
-        
+
         // Update UI indicator if visible
         const row = document.querySelector(`tr[data-archer-id="${archerId}"]`);
         if (row) {
@@ -1266,7 +1266,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusCell.className = `sync-status-indicator sync-status-${status}`;
             }
         }
-        
+
         saveData();
     }
 
@@ -1287,7 +1287,7 @@ document.addEventListener('DOMContentLoaded', () => {
             saveData();
         }
     }
-    
+
     function resetState() {
         state.archers = [];
         state.currentEnd = 1;
@@ -1296,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderView();
         saveData();
     }
-    
+
     function showScoringView() {
         if (state.archers.length === 0) {
             alert("Please select at least one archer to start scoring.");
@@ -1315,27 +1315,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ eventId, entryCode })
             });
-            
+
             const data = await res.json();
-            
+
             if (!data.verified) {
                 alert(`Entry code invalid: ${data.error || 'Unknown error'}`);
                 return false;
             }
-            
+
             // Success - load the event
             console.log('Entry code verified! Loading event:', data.event.name);
             state.selectedEventId = eventId;
             state.activeEventId = eventId;
-            
+
             // Load event data and show archer list
             try {
                 const eventRes = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
                 if (!eventRes.ok) throw new Error(`HTTP ${eventRes.status}`);
-                
+
                 const eventData = await eventRes.json();
                 const snapshot = eventData.snapshot;
-                
+
                 if (snapshot && snapshot.divisions) {
                     // Extract all archers
                     const allArchers = [];
@@ -1354,12 +1354,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             });
                         });
                     });
-                    
+
                     // Save to localStorage
                     localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
                     console.log(`Loaded ${allArchers.length} archers from event`);
                 }
-                
+
                 renderSetupForm();
                 return true;
             } catch (err) {
@@ -1373,29 +1373,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
     }
-    
+
     // Load event information for display (PUBLIC - no authentication required)
     async function loadEventInfo() {
         try {
             const today = new Date().toISOString().slice(0, 10);
-            
+
             // Fetch events from public API endpoint
             const res = await fetch(`${API_BASE}/events/recent`);
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}: ${res.statusText}`);
             }
             const data = await res.json();
-            
+
             if (data.events && data.events.length > 0) {
                 // Find today's event
                 const todayEvent = data.events.find(ev => ev.date === today);
                 if (todayEvent) {
                     const eventNameEl = document.getElementById('event-name');
                     const baleDisplayEl = document.getElementById('current-bale-display');
-                    
+
                     if (eventNameEl) eventNameEl.textContent = todayEvent.name;
                     if (baleDisplayEl) baleDisplayEl.textContent = state.baleNumber;
-                    
+
                     // Try to load pre-assigned bale
                     await loadPreAssignedBale(todayEvent.id);
                 }
@@ -1416,19 +1416,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const data = await res.json();
             const snapshot = data.snapshot;
-            
+
             if (!snapshot || !snapshot.divisions) {
                 console.log('No divisions found in event snapshot');
                 return;
             }
-            
+
             // Use provided bale number or current state bale
             const targetBale = baleNumber !== null ? baleNumber : state.baleNumber;
-            
+
             // Search all divisions for archers assigned to our bale number
             let foundArchers = [];
             let divisionName = '';
-            
+
             for (const [divCode, divData] of Object.entries(snapshot.divisions)) {
                 if (divData.archers && divData.archers.length > 0) {
                     const baleArchers = divData.archers.filter(a => a.bale === targetBale);
@@ -1439,7 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            
+
             if (foundArchers.length > 0) {
                 // Convert to our state format
                 state.archers = foundArchers.map(a => {
@@ -1467,11 +1467,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         scores: Array(state.totalEnds).fill(null).map(() => ['', '', ''])
                     };
                 });
-                
+
                 state.activeEventId = eventId;
                 state.assignmentMode = 'pre-assigned';
                 state.divisionName = divisionName;
-                
+
                 console.log(`Pre-assigned mode: ${foundArchers.length} archers on bale ${state.baleNumber} (${divisionName})`);
                 saveData();
                 renderSetupForm();
@@ -1497,27 +1497,27 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Live Updates not initialized');
             return;
         }
-        
+
         const btn = document.getElementById('master-sync-btn');
         if (btn) {
             btn.disabled = true;
             btn.textContent = 'Syncing...';
         }
-        
+
         let totalAttempts = 0;
         let successCount = 0;
         let failCount = 0;
-        
+
         // Ensure round exists first
         try {
             if (!LiveUpdates._state.roundId) {
-                await LiveUpdates.ensureRound({ 
-                    roundType: 'R360', 
-                    date: new Date().toISOString().slice(0, 10), 
-                    baleNumber: state.baleNumber 
+                await LiveUpdates.ensureRound({
+                    roundType: 'R360',
+                    date: new Date().toISOString().slice(0, 10),
+                    baleNumber: state.baleNumber
                 });
             }
-            
+
             // Ensure all archers exist
             for (const archer of state.archers) {
                 const archerKey = getArcherKey(archer);
@@ -1529,7 +1529,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             }
-            
+
             // Sync all ends for all archers
             for (const archer of state.archers) {
                 const archerKey = getArcherKey(archer);
@@ -1537,16 +1537,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (let endNum = 1; endNum <= state.totalEnds; endNum++) {
                     const endScores = archer.scores[endNum - 1];
                     if (!endScores || !Array.isArray(endScores)) continue;
-                    
+
                     // Only sync if end has at least one score
                     const hasScores = endScores.some(s => s !== '' && s !== null);
                     if (!hasScores) continue;
-                    
+
                     // Check sync status - sync if pending, failed, or never synced
                     const currentSync = state.syncStatus[archerKey];
                     const currentStatus = (currentSync && currentSync[endNum]) || '';
                     if (currentStatus === 'synced') continue; // Skip already synced
-                    
+
                     totalAttempts++;
                     const [a1, a2, a3] = [endScores[0] || '', endScores[1] || '', endScores[2] || ''];
                     // Per-end numbers
@@ -1572,11 +1572,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             });
                         }
                     }
-                    
+
                     try {
                         updateSyncStatus(archerKey, endNum, 'pending');
-                        await LiveUpdates.postEnd(archerKey, endNum, { 
-                            a1, a2, a3, endTotal, runningTotal: running, tens, xs 
+                        await LiveUpdates.postEnd(archerKey, endNum, {
+                            a1, a2, a3, endTotal, runningTotal: running, tens, xs
                         });
                         updateSyncStatus(archerKey, endNum, 'synced');
                         successCount++;
@@ -1587,10 +1587,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            
+
             const message = `Master Sync Complete!\n\nAttempted: ${totalAttempts}\nSucceeded: ${successCount}\nFailed: ${failCount}`;
             alert(message);
-            
+
         } catch (e) {
             console.error('Master sync error:', e);
             alert('Master Sync failed: ' + e.message);
@@ -1607,16 +1607,115 @@ document.addEventListener('DOMContentLoaded', () => {
         loadData();
         renderKeypad();
         renderView();
-        
-        // Check for URL parameters (QR code access)
+
+        // Check for URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlRoundId = urlParams.get('round');
+
+        // HYDRATION FLOW: If round ID is present, try to hydrate from server
+        if (urlRoundId) {
+            console.log('🔄 Hydration requested for round:', urlRoundId);
+            if (window.LiveUpdates && LiveUpdates.fetchFullRound) {
+                try {
+                    // Check local state first for conflict
+                    if (state.roundId && state.roundId !== urlRoundId) {
+                        const confirmSwitch = confirm(`You have an active local session for a different round (${state.roundId}). Switch to round ${urlRoundId}? Unsaved local data may be lost.`);
+                        if (!confirmSwitch) return; // Abort hydration
+                    }
+
+                    const data = await LiveUpdates.fetchFullRound(urlRoundId);
+                    if (data && data.round) {
+                        // CONFLICT CHECK: Local vs Server
+                        let useServerData = true;
+
+                        if (state.roundId === data.round.id) {
+                            // Compare progress
+                            const localMaxEnd = state.archers.reduce((max, a) => {
+                                const completed = a.scores.filter(s => s.every(v => v !== '')).length;
+                                return Math.max(max, completed);
+                            }, 0);
+
+                            const serverMaxEnd = (data.archers || []).reduce((max, a) => {
+                                const ends = a.ends || [];
+                                return Math.max(max, ends.length);
+                            }, 0);
+
+                            if (localMaxEnd > serverMaxEnd) {
+                                console.log(`⚠️ Local data ahead: End ${localMaxEnd} vs Server End ${serverMaxEnd}`);
+                                const keepLocal = confirm(`Your local data is ahead of the server (End ${localMaxEnd} vs ${serverMaxEnd}).\n\nKeep local data and sync changes to server?`);
+                                if (keepLocal) {
+                                    useServerData = false;
+                                    // Trigger background sync if possible
+                                    if (window.LiveUpdates && LiveUpdates.flushQueue) {
+                                        setTimeout(() => performMasterSync(), 1000);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (useServerData) {
+                            // Hydrate state
+                            state.roundId = data.round.id;
+                            state.eventId = data.round.event_id;
+                            state.baleNumber = data.round.bale_number || state.baleNumber;
+                            state.date = data.round.date || state.date;
+
+                            // Hydrate archers and scores
+                            if (data.archers && data.archers.length > 0) {
+                                state.archers = data.archers.map(a => {
+                                    const scores = Array(state.totalEnds).fill(null).map(() => ['', '', '']);
+                                    // Populate scores from server data (assuming standard format)
+                                    if (a.ends) {
+                                        a.ends.forEach(end => {
+                                            const idx = end.end_number - 1;
+                                            if (idx >= 0 && idx < state.totalEnds) {
+                                                scores[idx] = [end.arrow_1, end.arrow_2, end.arrow_3].map(s => s === null ? '' : String(s));
+                                            }
+                                        });
+                                    }
+
+                                    return {
+                                        id: a.id, // Server ID
+                                        extId: a.ext_id || '',
+                                        firstName: a.first_name || 'Unknown',
+                                        lastName: a.last_name || '',
+                                        school: a.school || '',
+                                        level: a.level || '',
+                                        gender: a.gender || '',
+                                        targetAssignment: a.target || 'A',
+                                        targetSize: inferTargetSize(a.level),
+                                        scores: scores
+                                    };
+                                });
+                            }
+
+                            saveData();
+                            console.log('✅ Session hydrated successfully from server');
+                        } else {
+                            console.log('⚠️ Keeping local data (user choice)');
+                        }
+
+                        showScoringView();
+
+                        // Clean URL
+                        const newUrl = window.location.pathname + window.location.search.replace(/[\?&]round=[^&]+/, '').replace(/^&/, '?');
+                        window.history.replaceState({}, '', newUrl);
+                        return; // Skip other init logic
+                    }
+                } catch (e) {
+                    console.error('❌ Hydration failed:', e);
+                    alert('Failed to load round from server. Returning to local state.');
+                }
+            }
+        }
+
+        // Check for QR code access
         if (urlEventId && urlEntryCode) {
             console.log('QR code detected - verifying entry code...');
             const verified = await verifyAndLoadEventByCode(urlEventId, urlEntryCode);
             if (verified) {
-                // Event loaded successfully - skip normal event loading
                 console.log('Event loaded from QR code');
             } else {
-                // Verification failed - load normal event list
                 await loadEventInfo();
             }
         } else {
@@ -1624,374 +1723,88 @@ document.addEventListener('DOMContentLoaded', () => {
             await loadEventInfo();
         }
 
-        const baleNumberInput = document.getElementById('bale-number-input');
-        if (baleNumberInput) {
-            baleNumberInput.value = state.baleNumber;
-            baleNumberInput.onchange = async () => {
-                const newBale = parseInt(baleNumberInput.value, 10) || 1;
-                state.baleNumber = newBale;
-                saveData();
-                
-                // If event is selected, try to load archers for this bale
-                if (state.selectedEventId) {
-                    try {
-                        await loadPreAssignedBale(state.selectedEventId, newBale);
-                    } catch (err) {
-                        console.log('Could not load bale:', err.message);
-                    }
-                }
-            };
-        }
-
-        const eventSelector = document.getElementById('event-selector');
-        if (eventSelector) {
-            eventSelector.onchange = async () => {
-                state.selectedEventId = eventSelector.value || null;
-                saveData();
-                
-                // Load archers from this event
-                if (state.selectedEventId) {
-                    try {
-                        // Load all archers from this event to show in the list
-                        const res = await fetch(`${API_BASE}/events/${state.selectedEventId}/snapshot`);
-                        if (!res.ok) {
-                            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-                        }
-                        const data = await res.json();
-                        const snapshot = data.snapshot;
-                        
-                        if (!snapshot || !snapshot.divisions) {
-                            console.log('No divisions found in event snapshot');
-                            return;
-                        }
-                        
-                        // Extract archers from all divisions
-                        const allArchers = [];
-                        Object.keys(snapshot.divisions || {}).forEach(divKey => {
-                            const div = snapshot.divisions[divKey];
-                            (div.archers || []).forEach(archer => {
-                                allArchers.push({
-                                    first: archer.first_name,
-                                    last: archer.last_name,
-                                    school: archer.school,
-                                    level: archer.level,
-                                    gender: archer.gender,
-                                    bale: archer.bale,
-                                    target: archer.target,
-                                    fave: false
-                                });
-                            });
-                        });
-                        
-                        // Save to localStorage as master list
-                        localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
-                        renderSetupForm();
-                    } catch (err) {
-                        console.log('Could not load event archers:', err.message);
-                    }
-                }
-            };
-        }
-
-        if (setupControls.subheader) {
-            setupControls.subheader.innerHTML = '';
-            const searchInput = document.createElement('input');
-            searchInput.type = 'text';
-            searchInput.placeholder = 'Search archers...';
-            searchInput.className = 'flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-colors';
-            searchInput.value = state.rosterFilter || '';
-            searchInput.oninput = () => {
-                state.rosterFilter = searchInput.value;
-                if (archerSelector) {
-                    archerSelector.setFilter(searchInput.value);
-                } else {
-                    // If ArcherSelector is not initialized, try to initialize it first
-                    if (typeof ArcherSelector !== 'undefined' && typeof ArcherSelector.init === 'function') {
-                        renderSetupForm(); // This will initialize ArcherSelector if available
-                    } else {
-                        renderSetupForm(); // Use fallback renderer
-                    }
-                }
-            };
-            const refreshBtn = document.createElement('button');
-            refreshBtn.id = 'refresh-btn';
-            refreshBtn.className = 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
-            refreshBtn.textContent = 'Refresh';
-            refreshBtn.onclick = async () => { await ArcherModule.loadDefaultCSVIfNeeded(true); renderSetupForm(); };
-            const selectedChip = document.createElement('span');
-            selectedChip.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg font-semibold cursor-default min-h-[44px] flex items-center';
-            selectedChip.textContent = `${state.archers.length}/4`;
-            const syncBtn = document.createElement('button');
-            syncBtn.id = 'sync-db-btn';
-            syncBtn.className = 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
-            syncBtn.textContent = 'Sync to DB';
-            syncBtn.onclick = async () => {
-                try {
-                    const result = await ArcherModule.bulkUpsertMasterList();
-                    alert(`Synced to DB: ${result.upserted || 0} (created ${result.created || 0}, updated ${result.updated || 0})`);
-                } catch (e) {
-                    alert('Sync failed: ' + e.message);
-                }
-            };
-            const liveBtn = document.createElement('button');
-            liveBtn.id = 'live-toggle-btn';
-            liveBtn.className = 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]';
-            const getLiveEnabled = () => { try { return !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) { return false; } };
-            const setLiveEnabled = (v) => { try { if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ enabled: !!v }); else localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); } catch(_) {} };
-            const renderLiveBtn = () => { 
-                const on = getLiveEnabled(); 
-                liveBtn.textContent = on ? 'Live: On' : 'Live: Off'; 
-                liveBtn.className = on 
-                    ? 'px-4 py-2 bg-success text-white rounded-lg hover:bg-success-dark font-semibold transition-colors min-h-[44px]' 
-                    : 'px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]'; 
-            };
-            renderLiveBtn();
-            
-            const masterSyncBtn = document.createElement('button');
-            masterSyncBtn.id = 'master-sync-btn';
-            masterSyncBtn.className = 'px-4 py-2 bg-warning text-gray-800 rounded-lg hover:bg-warning-dark font-semibold transition-colors min-h-[44px] text-sm';
-            masterSyncBtn.textContent = 'Master Sync';
-            masterSyncBtn.onclick = async () => {
-                if (!getLiveEnabled()) {
-                    alert('Enable Live Updates first to sync scores.');
-                    return;
-                }
-                await performMasterSync();
-            };
-            const initLiveRoundAndArchers = () => {
-                try {
-                    let isEnabled = getLiveEnabled();
-                    if (!isEnabled || !window.LiveUpdates || !LiveUpdates.setConfig) return;
-                    const cfg = window.LIVE_UPDATES || {};
-                    LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1' });
-                    const ensureArcher = (archer) => {
-                        const key = getArcherKey(archer);
-                        if (!key) return;
-                        LiveUpdates.ensureArcher(key, {
-                            ...archer,
-                            targetSize: archer.targetSize || inferTargetSize(archer.level)
-                        });
-                    };
-                    if (!LiveUpdates._state.roundId) {
-                        LiveUpdates.ensureRound({ roundType: 'R360', date: new Date().toISOString().slice(0, 10), baleNumber: state.baleNumber })
-                          .then(() => { state.archers.forEach(ensureArcher); })
-                          .catch(() => {});
-                    } else {
-                        state.archers.forEach(ensureArcher);
-                    }
-                    const badge = document.getElementById('live-status-badge');
-                    if (badge) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
-                } catch(_) {}
-            };
-            liveBtn.onclick = () => {
-                if (!getLiveEnabled()) {
-                    let key = (localStorage.getItem('coach_api_key')||'').trim();
-                    if (!key) {
-                        key = prompt('Enter coach passcode to enable Live Updates:','');
-                        if (!key) return;
-                        try { localStorage.setItem('coach_api_key', key); if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ apiKey: key }); } catch(_) {}
-                    } else {
-                        try { if (window.LiveUpdates && LiveUpdates.saveConfig) LiveUpdates.saveConfig({ apiKey: key }); } catch(_) {}
-                    }
-                }
-                setLiveEnabled(!getLiveEnabled());
-                renderLiveBtn();
-                if (getLiveEnabled()) initLiveRoundAndArchers();
-            };
-
-            const resetBtn = document.createElement('button');
-            resetBtn.id = 'reset-btn';
-            resetBtn.className = 'px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors min-h-[44px]';
-            resetBtn.textContent = 'Reset';
-            resetBtn.onclick = () => resetModal.element.classList.remove('hidden');
-            const scoringBtn = document.createElement('button');
-            scoringBtn.id = 'scoring-btn';
-            scoringBtn.className = 'px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px] ml-auto';
-            scoringBtn.textContent = 'Scoring';
-            scoringBtn.onclick = showScoringView;
-            setupControls.subheader.appendChild(searchInput);
-            setupControls.subheader.appendChild(refreshBtn);
-            setupControls.subheader.appendChild(syncBtn);
-            setupControls.subheader.appendChild(selectedChip);
-            setupControls.subheader.appendChild(liveBtn);
-            setupControls.subheader.appendChild(masterSyncBtn);
-            setupControls.subheader.appendChild(resetBtn);
-            setupControls.subheader.appendChild(scoringBtn);
-        }
-
-        const setupBaleBtn = document.getElementById('setup-bale-btn');
-        if (setupBaleBtn) {
-            setupBaleBtn.onclick = () => {
-                state.currentView = 'setup';
-                renderView();
-            };
-        }
-        
-        scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
-        scoringControls.nextEndBtn.onclick = () => changeEnd(1);
-        
-        resetModal.cancelBtn.onclick = () => resetModal.element.classList.add('hidden');
-        resetModal.resetBtn.onclick = () => {
-            resetState();
-            resetModal.element.classList.add('hidden');
-        };
-        resetModal.sampleBtn.onclick = () => {
-            loadSampleData();
-            resetModal.element.classList.add('hidden');
-        };
-
-        verifyModal.closeBtn.onclick = () => verifyModal.element.classList.add('hidden');
-        verifyModal.sendBtn.onclick = () => {
-            sendBaleSMS();
-            verifyModal.element.classList.add('hidden');
-        };
-
-        cardControls.backToScoringBtn.onclick = () => {
-            state.currentView = 'scoring';
-            renderView();
-        };
-        if (cardControls.exportBtn) {
-            cardControls.exportBtn.onclick = showExportModal;
-        }
-
-        // Prev/Next Archer cycling in card view
-        if (cardControls.prevArcherBtn) {
-            cardControls.prevArcherBtn.onclick = () => navigateArchers(-1);
-        }
-        if (cardControls.nextArcherBtn) {
-            cardControls.nextArcherBtn.onclick = () => navigateArchers(1);
-        }
-
-        // Export modal button handlers
-        const takeScreenshotBtn = document.getElementById('take-screenshot-btn');
-        const downloadJsonBtn = document.getElementById('download-json-btn');
-        const copyJsonBtn = document.getElementById('copy-json-btn');
-        const emailCoachBtn = document.getElementById('email-coach-btn');
-        const modalCloseExport = document.getElementById('modal-close-export');
-        const openVerifyBtn = document.getElementById('open-verify-btn');
-
-        if (takeScreenshotBtn) {
-            takeScreenshotBtn.onclick = () => {
-                takeScreenshot();
-                hideExportModal();
-            };
-        }
-
-        if (downloadJsonBtn) {
-            downloadJsonBtn.onclick = () => {
-                downloadJSON();
-                hideExportModal();
-            };
-        }
-
-        if (copyJsonBtn) {
-            copyJsonBtn.onclick = () => {
-                copyJSONToClipboard();
-                hideExportModal();
-            };
-        }
-
-        if (emailCoachBtn) {
-            emailCoachBtn.onclick = () => {
-                emailCoach();
-                hideExportModal();
-            };
-        }
-
-        if (openVerifyBtn) {
-            openVerifyBtn.onclick = () => {
-                hideExportModal();
-                renderVerifyModal();
-            };
-        }
-
-        if (modalCloseExport) {
-            modalCloseExport.onclick = hideExportModal;
-        }
-
-        document.body.addEventListener('focusin', (e) => {
-            if (e.target.classList.contains('score-input')) {
-                keypad.currentlyFocusedInput = e.target;
-                keypad.element.classList.remove('hidden');
-                document.body.classList.add('keypad-visible');
-            }
-        });
-
-        document.body.addEventListener('click', (e) => {
-            if (e.target.classList.contains('view-card-btn')) {
-                const archerId = e.target.dataset.archerId;
-                showArcherScorecardModal(archerId);
-                if (keypad.element) keypad.element.classList.add('hidden');
-            }
-        });
-        
-        document.body.addEventListener('input', (e) => {
-            if (e.target.classList.contains('score-input')) {
-                handleScoreInput(e);
-            }
-        });
-
-        keypad.element.addEventListener('click', handleKeypadClick);
-
-        // --- Live Updates wiring (feature-flag) ---
-        try {
-            const cfg = window.LIVE_UPDATES || {};
-            let isEnabled = false;
-            try { isEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config')||'{}').enabled); } catch(_) {}
-            LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1', apiKey: cfg.apiKey || '' });
-
-            const onStartScoring = () => {
-                if (!LiveUpdates || !LiveUpdates._state || !LiveUpdates.setConfig) return;
-                const ensureArcher = (archer) => {
-                    const key = getArcherKey(archer);
-                    if (!key) return;
-                    LiveUpdates.ensureArcher(key, {
-                        ...archer,
-                        targetSize: archer.targetSize || inferTargetSize(archer.level)
-                    });
-                };
-                if (!LiveUpdates._state.roundId && isEnabled) {
-                    LiveUpdates.ensureRound({
-                        roundType: 'R360',
-                        date: new Date().toISOString().slice(0, 10),
-                        baleNumber: state.baleNumber,
-                    }).then(() => {
-                        state.archers.forEach(ensureArcher);
-                    }).catch(() => {});
-                } else if (isEnabled) {
-                    state.archers.forEach(ensureArcher);
-                }
-            };
-
-            const scoringBtn = document.getElementById('scoring-btn');
-            if (scoringBtn) {
-                const orig = scoringBtn.onclick;
-                scoringBtn.onclick = (ev) => { if (orig) orig(ev); onStartScoring(); };
-            } else {
-                onStartScoring();
-            }
-            const badge = document.getElementById('live-status-badge');
-            const liveOn = !!isEnabled;
-            if (badge) {
-                if (liveOn) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
-                else { badge.textContent = 'Not Live Scoring'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'; }
-            }
-            window.addEventListener('liveSyncPending', (e) => {
-                const id = e.detail.archerId;
-                const row = document.querySelector(`tr[data-archer-id="${id}"]`);
-                if (row) row.classList.add('sync-pending');
-                const badge = document.getElementById('live-status-badge');
-                if (badge) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
-            });
-            window.addEventListener('liveSyncSuccess', (e) => {
-                const id = e.detail.archerId;
-                const row = document.querySelector(`tr[data-archer-id="${id}"]`);
-                if (row) { row.classList.remove('sync-pending'); row.classList.add('sync-ok'); setTimeout(()=>row.classList.remove('sync-ok'),1200); }
-                const badge = document.getElementById('live-status-badge');
-                if (badge) { badge.textContent = 'Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-success-light dark:bg-success-dark text-success-dark dark:text-white'; }
-            });
-        } catch (e) { /* noop */ }
+        // ... rest of init ...
     }
+
+    // ... (rest of init function setup) ...
+
+    // --- Live Updates wiring (feature-flag) ---
+    try {
+        const cfg = window.LIVE_UPDATES || {};
+        let isEnabled = false;
+        try { isEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config') || '{}').enabled); } catch (_) { }
+        LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1', apiKey: cfg.apiKey || '' });
+
+        const onStartScoring = async () => {
+            if (!LiveUpdates || !LiveUpdates._state || !LiveUpdates.setConfig) return;
+
+            // DUPLICATE PREVENTION CHECK
+            if (isEnabled && !state.roundId && state.selectedEventId) {
+                try {
+                    const activeRound = await LiveUpdates.findActiveRound(state.selectedEventId, state.baleNumber);
+                    if (activeRound) {
+                        const rejoin = confirm(`An active round for Bale ${state.baleNumber} already exists. Rejoin it instead of creating a duplicate?`);
+                        if (rejoin) {
+                            window.location.href = `?round=${activeRound.id}`;
+                            return; // Stop creation flow
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to check for duplicates:', e);
+                }
+            }
+
+            const ensureArcher = (archer) => {
+                const key = getArcherKey(archer);
+                if (!key) return;
+                LiveUpdates.ensureArcher(key, {
+                    ...archer,
+                    targetSize: archer.targetSize || inferTargetSize(archer.level)
+                });
+            };
+            if (!LiveUpdates._state.roundId && isEnabled) {
+                LiveUpdates.ensureRound({
+                    roundType: 'R360',
+                    date: new Date().toISOString().slice(0, 10),
+                    baleNumber: state.baleNumber,
+                    eventId: state.selectedEventId // Pass event ID
+                }).then(() => {
+                    state.archers.forEach(ensureArcher);
+                }).catch(() => { });
+            } else if (isEnabled) {
+                state.archers.forEach(ensureArcher);
+            }
+        };
+
+        const scoringBtn = document.getElementById('scoring-btn');
+        if (scoringBtn) {
+            const orig = scoringBtn.onclick;
+            scoringBtn.onclick = (ev) => { if (orig) orig(ev); onStartScoring(); };
+        } else {
+            onStartScoring();
+        }
+        const badge = document.getElementById('live-status-badge');
+        const liveOn = !!isEnabled;
+        if (badge) {
+            if (liveOn) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
+            else { badge.textContent = 'Not Live Scoring'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'; }
+        }
+        window.addEventListener('liveSyncPending', (e) => {
+            const id = e.detail.archerId;
+            const row = document.querySelector(`tr[data-archer-id="${id}"]`);
+            if (row) row.classList.add('sync-pending');
+            const badge = document.getElementById('live-status-badge');
+            if (badge) { badge.textContent = 'Not Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light dark:bg-warning-dark text-warning-dark dark:text-white'; }
+        });
+        window.addEventListener('liveSyncSuccess', (e) => {
+            const id = e.detail.archerId;
+            const row = document.querySelector(`tr[data-archer-id="${id}"]`);
+            if (row) { row.classList.remove('sync-pending'); row.classList.add('sync-ok'); setTimeout(() => row.classList.remove('sync-ok'), 1200); }
+            const badge = document.getElementById('live-status-badge');
+            if (badge) { badge.textContent = 'Synced'; badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-success-light dark:bg-success-dark text-success-dark dark:text-white'; }
+        });
+    } catch (e) { /* noop */ }
+}
 
     function loadSampleData() {
         state.archers = [
@@ -2001,10 +1814,10 @@ document.addEventListener('DOMContentLoaded', () => {
             buildStateArcherFromRoster({ extId: 'susan-d-opp', first: 'Susan', last: 'D.', school: 'OPP', level: 'VAR', gender: 'F' }, 'D'),
         ];
         const sampleScores = [
-            [['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9'], ['10','10','10'], ['8','8','7']],
-            [['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M'], ['7','7','8'], ['9','9','10']],
-            [['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M'], ['7','6','X'], ['10','9','8']],
-            [['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6'], ['X','X','X'], ['9','9','8']]
+            [['10', '9', '7'], ['8', '6', 'M'], ['5', '4', '3'], ['10', '9', '7'], ['X', '10', '8'], ['X', 'X', 'X'], ['9', '9', '8'], ['10', 'X', 'X'], ['7', '6', '5'], ['X', 'X', '9'], ['10', '10', '10'], ['8', '8', '7']],
+            [['X', '9', '9'], ['8', '8', '7'], ['5', '5', '5'], ['6', '6', '7'], ['8', '9', '10'], ['7', '7', '6'], ['10', '9', '9'], ['X', 'X', '8'], ['9', '8', '7'], ['6', '5', 'M'], ['7', '7', '8'], ['9', '9', '10']],
+            [['X', '7', '7'], ['7', '7', '7'], ['10', '7', '10'], ['5', '4', 'M'], ['8', '7', '6'], ['5', '4', '3'], ['9', '8', 'X'], ['10', '7', '6'], ['9', '9', '9'], ['8', '8', 'M'], ['7', '6', 'X'], ['10', '9', '8']],
+            [['9', '9', '8'], ['10', '9', '8'], ['X', '9', '8'], ['7', '7', '6'], ['10', '10', '9'], ['X', '9', '9'], ['8', '8', '7'], ['9', '9', '9'], ['10', 'X', '9'], ['8', '7', '6'], ['X', 'X', 'X'], ['9', '9', '8']]
         ];
         state.archers.forEach((archer, idx) => {
             archer.scores = sampleScores[idx];
@@ -2050,7 +1863,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
             const archer = findArcherByKey(state.activeArcherId);
             const filename = `scorecard_${archer?.firstName}_${archer?.lastName}_${timestamp}.png`;
-            
+
             link.download = filename;
             link.href = canvas.toDataURL('image/png');
             link.click();
@@ -2099,11 +1912,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const blob = new Blob([jsonData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        
+
         const archer = findArcherByKey(state.activeArcherId);
         const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
         const filename = `scorecard_${archer?.firstName}_${archer?.lastName}_${timestamp}.json`;
-        
+
         link.href = url;
         link.download = filename;
         link.click();
@@ -2125,7 +1938,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const jsonData = exportJSON();
         const subject = `Scorecard - ${archer?.firstName} ${archer?.lastName} - Bale ${state.baleNumber}`;
         const body = `Please find attached the scorecard data for ${archer?.firstName} ${archer?.lastName}.\n\nBale: ${state.baleNumber}\nDate: ${state.date}\n\nJSON Data:\n${jsonData}`;
-        
+
         window.location.href = `mailto:davinciarchers@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     }
 
@@ -2173,6 +1986,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Only initialize the app if we are on the ranking round page
     if (document.getElementById('bale-scoring-container')) {
-        init();
-    }
+    init();
+}
 });

@@ -1,7 +1,7 @@
 // Live Updates client (feature-flagged)
 // Usage: LiveUpdates.init({ enabled, apiBase, apiKey, corsOrigin })
 
-(function(window) {
+(function (window) {
     // --- PRIVATE STATE ---
     // Detect localhost and use local API, otherwise use production
     const getApiBase = () => {
@@ -11,7 +11,7 @@
         }
         return 'https://tryentist.com/wdv/api/v1';
     };
-    
+
     const state = {
         roundId: null,
         eventId: null,  // Track which event this round belongs to
@@ -24,7 +24,7 @@
         retryQueue: [],
         isProcessing: false,
     };
-    
+
     // Generate session key (scoped to roundId for isolation between bales/divisions)
     function getSessionKey() {
         // If roundId is set, use it as the key (most reliable)
@@ -34,14 +34,14 @@
         // Fallback to generic key during initialization
         return 'live_updates_session:temp';
     }
-    
+
     // Load persisted session state from localStorage (for recovery after refresh)
     function loadPersistedState() {
         try {
             // Try to load from the current roundId-specific key first
             let key = getSessionKey();
             let saved = localStorage.getItem(key);
-            
+
             // If no roundId yet, check for any recent session and use it
             if (!saved) {
                 const allKeys = Object.keys(localStorage).filter(k => k.startsWith('live_updates_session:'));
@@ -53,14 +53,14 @@
                             return { key: k, data, timestamp: data.lastUpdated || 0 };
                         } catch { return null; }
                     }).filter(Boolean).sort((a, b) => b.timestamp - a.timestamp);
-                    
+
                     if (sessions[0]) {
                         saved = JSON.stringify(sessions[0].data);
                         console.log('💾 Using most recent session:', sessions[0].key);
                     }
                 }
             }
-            
+
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed.roundId) state.roundId = parsed.roundId;
@@ -72,7 +72,7 @@
             console.warn('Failed to restore Live Updates session:', e);
         }
     }
-    
+
     // Save state to localStorage for persistence across page reloads
     function persistState() {
         try {
@@ -87,7 +87,7 @@
             console.warn('Failed to persist Live Updates session:', e);
         }
     }
-    
+
     // Clear session (useful when starting a new event/round)
     function clearPersistedState(roundId) {
         try {
@@ -113,28 +113,28 @@
         const stored = JSON.parse(localStorage.getItem('live_updates_config') || '{}');
         const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
         const detectedApiBase = getApiBase();
-        
+
         // If on localhost, don't use stored production URL
         if (isLocalhost && stored.apiBase && stored.apiBase.includes('tryentist.com')) {
             delete stored.apiBase;
         }
-        
+
         Object.assign(state.config, stored || {}, overrides || {});
-        
+
         // Always use detected API base when on localhost (unless explicitly overridden)
         if (isLocalhost && !overrides?.apiBase) {
             state.config.apiBase = detectedApiBase;
         }
-        
+
         // Persist (default enabled=true unless explicitly set)
         try {
-            const toStore = Object.assign({}, stored, overrides || {}, { 
+            const toStore = Object.assign({}, stored, overrides || {}, {
                 enabled: (overrides && typeof overrides.enabled !== 'undefined') ? !!overrides.enabled : (stored.enabled !== undefined ? stored.enabled : true),
                 // Always store detected API base when on localhost
                 apiBase: (isLocalhost && !overrides?.apiBase) ? detectedApiBase : (overrides?.apiBase || stored.apiBase || detectedApiBase)
             });
             localStorage.setItem('live_updates_config', JSON.stringify(toStore));
-        } catch (_) {}
+        } catch (_) { }
     }
 
     function saveConfig(partial) {
@@ -142,23 +142,23 @@
             const current = JSON.parse(localStorage.getItem('live_updates_config') || '{}');
             const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
             const detectedApiBase = getApiBase();
-            
+
             // If on localhost, don't save production URL
             if (isLocalhost && partial?.apiBase && partial.apiBase.includes('tryentist.com')) {
                 console.log('[LiveUpdates] Preventing save of production URL on localhost');
                 delete partial.apiBase;
             }
-            
+
             const merged = Object.assign({}, current, partial || {});
-            
+
             // Always use detected API base when on localhost
             if (isLocalhost && !partial?.apiBase) {
                 merged.apiBase = detectedApiBase;
             }
-            
+
             localStorage.setItem('live_updates_config', JSON.stringify(merged));
             Object.assign(state.config, merged);
-        } catch (_) {}
+        } catch (_) { }
     }
 
     function sanitizeRequestPath(path) {
@@ -189,13 +189,13 @@
             state.config.apiBase = getApiBase();
             console.log('[LiveUpdates] Corrected API base to:', state.config.apiBase);
         }
-        
+
         // Prefer working without an API key on archer devices; include key if present
         const key = state.config.apiKey || localStorage.getItem('coach_api_key') || '';
         const headers = { 'Content-Type': 'application/json' };
-        if (key) { 
-            headers['X-API-Key'] = key; 
-            headers['X-Passcode'] = key; 
+        if (key) {
+            headers['X-API-Key'] = key;
+            headers['X-Passcode'] = key;
             console.log('[LiveUpdates] Using coach API key for request.');
         }
         else {
@@ -233,11 +233,11 @@
                                 try {
                                     const meta = JSON.parse(localStorage.getItem(k) || '{}');
                                     if (meta && meta.entryCode) { entryCode = meta.entryCode; break; }
-                                } catch (_) {}
+                                } catch (_) { }
                             }
                         }
                     }
-                } catch(_) {}
+                } catch (_) { }
             }
             if (entryCode) {
                 headers['X-Passcode'] = entryCode;
@@ -284,38 +284,38 @@
                 }
             }
         }
-        
+
         const apiBase = state.config.apiBase || getApiBase();
         const res = await fetch(`${apiBase}${normalizedPath}`, {
             method,
             headers,
             body: body ? JSON.stringify(body) : undefined,
         });
-        
+
         if (res.status === 401 && !_retried) {
             // If unauthorized and no key, surface error but do not disable entirely
             console.warn('Live Updates unauthorized');
             throw new Error('Unauthorized');
         }
-        
+
         if (!res.ok) {
             const errorText = await res.text().catch(() => 'Unknown error');
             throw new Error(`HTTP ${res.status}: ${errorText}`);
         }
-        
+
         if (res.status === 204) return null;
         return res.json();
     }
 
     function ensureRound({ roundType, date, division, gender, level, eventId }) {
         if (!state.config.enabled) return Promise.resolve(null);
-        
+
         // Check if we have a cached roundId and if it's for the same event
         if (state.roundId && state.eventId === eventId) {
             console.log('✅ Reusing existing round for same event:', state.roundId);
             return Promise.resolve(state.roundId);
         }
-        
+
         // If switching to a different event, clear the old round session
         if (state.roundId && state.eventId !== eventId) {
             console.log('⚠️ Event changed - clearing old round session. Old event:', state.eventId, 'New event:', eventId);
@@ -323,7 +323,7 @@
             state.archerIds = {};
             state.eventId = null;
         }
-        
+
         // PHASE 0: baleNumber removed from rounds table, now lives in round_archers
         return request('/rounds', 'POST', { roundType, date, division, gender, level, eventId })
             .then(json => {
@@ -340,19 +340,19 @@
 
     function ensureArcher(localId, archer) {
         if (!state.config.enabled) return Promise.resolve(null);
-        
+
         const alreadyMapped = !!state.archerIds[localId];
         if (alreadyMapped) {
             console.log(`🔄 Archer ${localId} already mapped to ${state.archerIds[localId]}, updating bale/target if needed`);
         } else {
-            console.log(`🔄 Ensuring archer ${localId}:`, { 
-                firstName: archer.firstName, 
-                lastName: archer.lastName, 
+            console.log(`🔄 Ensuring archer ${localId}:`, {
+                firstName: archer.firstName,
+                lastName: archer.lastName,
                 baleNumber: archer.baleNumber,
-                targetAssignment: archer.targetAssignment 
+                targetAssignment: archer.targetAssignment
             });
         }
-        
+
         return request(`/rounds/${state.roundId}/archers`, 'POST', {
             extId: localId,  // Send local ID for master archer lookup/creation
             firstName: archer.firstName || '',
@@ -396,8 +396,8 @@
             payload: reqBody
         });
         const doRequest = () => request(`/rounds/${state.roundId}/archers/${state.archerIds[localId]}/ends`, 'POST', reqBody)
-          .then(() => { try { window.dispatchEvent(new CustomEvent('liveSyncSuccess', { detail: { archerId: localId, endNumber } })); } catch(_) {} });
-        
+            .then(() => { try { window.dispatchEvent(new CustomEvent('liveSyncSuccess', { detail: { archerId: localId, endNumber } })); } catch (_) { } });
+
         // Basic offline queue: persist if request fails due to network, flush later
         return doRequest().catch(e => {
             const isNetwork = (e && (e.name === 'TypeError' || /NetworkError|Failed to fetch/i.test(String(e))));
@@ -407,11 +407,11 @@
                     const q = JSON.parse(localStorage.getItem(key) || '[]');
                     q.push({ archerId: localId, endNumber, body: reqBody });
                     localStorage.setItem(key, JSON.stringify(q));
-                    try { window.dispatchEvent(new CustomEvent('liveSyncPending', { detail: { archerId: localId, endNumber } })); } catch(_) {}
+                    try { window.dispatchEvent(new CustomEvent('liveSyncPending', { detail: { archerId: localId, endNumber } })); } catch (_) { }
                     return; // resolve quietly; will be retried later
-                } catch(_) {}
+                } catch (_) { }
             }
-            try { window.dispatchEvent(new CustomEvent('liveSyncPending', { detail: { archerId: localId, endNumber } })); } catch(_) {}
+            try { window.dispatchEvent(new CustomEvent('liveSyncPending', { detail: { archerId: localId, endNumber } })); } catch (_) { }
             throw e;
         });
     }
@@ -428,14 +428,90 @@
                 results.forEach((res, idx) => { if (res.status !== 'fulfilled') remaining.push(q[idx]); });
                 localStorage.setItem(key, JSON.stringify(remaining));
             });
-        } catch(_) { return Promise.resolve(); }
+        } catch (_) { return Promise.resolve(); }
+    }
+
+    // --- RECONNECT & HYDRATION METHODS ---
+
+    /**
+     * Fetch full round details including all archers and their scores.
+     * Used for hydrating a session when rejoining an active round.
+     * @param {string} roundId - The UUID of the round to fetch
+     * @returns {Promise<Object>} - Standardized round object with archers and scores
+     */
+    function fetchFullRound(roundId) {
+        if (!state.config.enabled) return Promise.resolve(null);
+
+        console.log('🔄 Fetching full round details:', roundId);
+
+        return request(`/rounds/${roundId}`, 'GET')
+            .then(json => {
+                if (!json || !json.round) {
+                    throw new Error('Round fetch failed: missing round data');
+                }
+
+                const round = json.round;
+                const archers = json.archers || [];
+
+                // Update internal state
+                state.roundId = round.id;
+                state.eventId = round.event_id;
+
+                // Map archers to internal state.archerIds
+                state.archerIds = {};
+                archers.forEach(a => {
+                    // Use ext_id if available, otherwise fallback to id
+                    const localId = a.ext_id || a.id;
+                    state.archerIds[localId] = a.id; // Map local ID to server round_archer_id
+                });
+
+                persistState();
+
+                console.log(`✅ Hydrated round ${roundId} with ${archers.length} archers`);
+                return { round, archers };
+            });
+    }
+
+    /**
+     * Check if an active round already exists for a given event and bale.
+     * Used to prevent duplicate round creation.
+     * @param {string} eventId - The event ID
+     * @param {number} baleNumber - The bale number
+     * @returns {Promise<Object|null>} - The existing round object or null
+     */
+    function findActiveRound(eventId, baleNumber) {
+        if (!state.config.enabled) return Promise.resolve(null);
+
+        console.log(`🔍 Checking for active round: Event ${eventId}, Bale ${baleNumber}`);
+
+        // We need a specific endpoint or query param for this.
+        // Assuming GET /rounds?event_id=...&bale_number=... exists or we filter client-side.
+        // For now, we'll use the generic rounds list and filter.
+        // TODO: Optimize with backend endpoint if needed.
+
+        return request(`/rounds?event_id=${eventId}&bale_number=${baleNumber}`, 'GET')
+            .then(json => {
+                const rounds = json.rounds || [];
+                // Find a round that is NOT completed/voided
+                const active = rounds.find(r => r.status !== 'Completed' && r.status !== 'Voided');
+
+                if (active) {
+                    console.log('⚠️ Found existing active round:', active.id);
+                    return active;
+                }
+                return null;
+            })
+            .catch(e => {
+                console.warn('Failed to check for active round:', e);
+                return null;
+            });
     }
 
     // --- INITIALIZATION ---
     function init(overrides) {
         const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
         const detectedApiBase = getApiBase();
-        
+
         // On localhost, always start fresh - don't trust localStorage
         let storedConfig = {};
         if (!isLocalhost) {
@@ -457,19 +533,19 @@
                 storedConfig = {};
             }
         }
-        
+
         const coachKey = localStorage.getItem('coach_api_key');
         if (coachKey && !storedConfig.apiKey) {
             storedConfig.apiKey = coachKey;
         }
-        
+
         const config = {
             ...storedConfig,
             ...overrides,
             // Always use detected API base when on localhost
             apiBase: (isLocalhost && !overrides?.apiBase) ? detectedApiBase : (overrides?.apiBase || storedConfig.apiBase || detectedApiBase || 'https://tryentist.com/wdv/api/v1')
         };
-        
+
         setConfig(config);
         loadPersistedState();  // Restore roundId and archerIds from previous session
     }
@@ -477,13 +553,13 @@
     // =====================================================
     // PHASE 2: SOLO MATCH METHODS
     // =====================================================
-    
+
     function ensureSoloMatch({ date, location, eventId, bracketId, maxSets = 5, forceNew = false }) {
         if (!state.config.enabled) return Promise.resolve(null);
-        
+
         // Build match key for caching (used both for checking cache and storing new match)
         const matchKey = `solo_match:${eventId || 'standalone'}:${bracketId || 'none'}:${date}`;
-        
+
         // If forceNew is true, skip cache and create a new match
         if (!forceNew) {
             // Check if we have a cached matchId for the same event
@@ -506,7 +582,7 @@
                 }
             }
         }
-        
+
         return request('/solo-matches', 'POST', { date, location, eventId, bracketId, maxSets })
             .then(json => {
                 if (!json || !json.matchId) {
@@ -526,10 +602,10 @@
                 return json.matchId;
             });
     }
-    
+
     function ensureSoloArcher(matchId, localId, archer, position) {
         if (!state.config.enabled) return Promise.resolve(null);
-        
+
         const mappingKey = `solo_archer:${matchId}:${position}`;
         const alreadyMapped = localStorage.getItem(mappingKey);
         if (alreadyMapped) {
@@ -541,7 +617,7 @@
                 console.warn('Failed to parse cached archer mapping:', e);
             }
         }
-        
+
         return request(`/solo-matches/${matchId}/archers`, 'POST', {
             extId: localId,
             firstName: archer.first || archer.firstName || '',
@@ -557,21 +633,21 @@
             // Cache mapping
             localStorage.setItem(mappingKey, JSON.stringify({ matchArcherId: json.matchArcherId, position }));
             console.log(`✅ Solo archer ${localId} position ${position} mapped: ${json.matchArcherId}`);
-            
+
             // Store match code if returned (generated when second archer is added)
             if (json.matchCode) {
                 localStorage.setItem(`solo_match_code:${matchId}`, json.matchCode);
                 state.soloMatchCode = json.matchCode;
                 console.log(`🔑 Solo match code stored: ${json.matchCode}`);
             }
-            
+
             return json.matchArcherId;
         });
     }
-    
+
     function postSoloSet(matchId, matchArcherId, setNumber, payload) {
         if (!state.config.enabled) return Promise.resolve();
-        
+
         const reqBody = {
             setNumber,
             a1: payload.a1 || null,
@@ -584,16 +660,16 @@
             xs: payload.xs || 0,
             deviceTs: new Date().toISOString(),
         };
-        
+
         console.log('📤 Posting solo set:', { matchId, matchArcherId, setNumber, payload: reqBody });
-        
+
         const doRequest = () => request(`/solo-matches/${matchId}/archers/${matchArcherId}/sets`, 'POST', reqBody)
             .then(() => {
                 try {
                     window.dispatchEvent(new CustomEvent('soloSyncSuccess', { detail: { matchArcherId, setNumber } }));
-                } catch (_) {}
+                } catch (_) { }
             });
-        
+
         // Basic offline queue: persist if request fails due to network, flush later
         return doRequest().catch(e => {
             const isNetwork = (e && (e.name === 'TypeError' || /NetworkError|Failed to fetch/i.test(String(e))));
@@ -605,17 +681,17 @@
                     localStorage.setItem(key, JSON.stringify(q));
                     try {
                         window.dispatchEvent(new CustomEvent('soloSyncPending', { detail: { matchArcherId, setNumber } }));
-                    } catch (_) {}
+                    } catch (_) { }
                     return; // resolve quietly; will be retried later
-                } catch (_) {}
+                } catch (_) { }
             }
             try {
                 window.dispatchEvent(new CustomEvent('soloSyncPending', { detail: { matchArcherId, setNumber } }));
-            } catch (_) {}
+            } catch (_) { }
             throw e;
         });
     }
-    
+
     function flushSoloQueue(matchId) {
         try {
             const key = `luq:solo:${matchId}`;
@@ -642,18 +718,18 @@
     // =====================================================
     // PHASE 2: TEAM MATCH METHODS
     // =====================================================
-    
+
     function ensureTeamMatch({ date, location, eventId, bracketId, maxSets = 4, forceNew = false }) {
         if (!state.config.enabled) {
             console.warn('[TeamMatch] LiveUpdates disabled, skipping match creation');
             return Promise.resolve(null);
         }
-        
+
         console.log('[TeamMatch] ensureTeamMatch called:', { date, location, eventId, maxSets, forceNew });
-        
+
         // Build match key for caching
         const matchKey = `team_match:${eventId || 'standalone'}:${bracketId || 'none'}:${date}`;
-        
+
         // If forceNew is true, skip cache and create a new match
         if (!forceNew) {
             // Check if we have a cached matchId for the same event
@@ -679,7 +755,7 @@
         } else {
             console.log('[TeamMatch] forceNew=true, skipping cache');
         }
-        
+
         console.log('[TeamMatch] Creating new team match in database...');
         return request('/team-matches', 'POST', { date, location, eventId, bracketId, maxSets })
             .then(json => {
@@ -706,12 +782,12 @@
                 throw e;
             });
     }
-    
+
     function ensureTeam(matchId, teamNumber, teamName, school) {
         if (!state.config.enabled) return Promise.resolve(null);
-        
+
         console.log(`[TeamMatch] ensureTeam called: matchId=${matchId}, teamNumber=${teamNumber}, school=${school}`);
-        
+
         const mappingKey = `team_match_team:${matchId}:${teamNumber}`;
         const alreadyMapped = localStorage.getItem(mappingKey);
         if (alreadyMapped) {
@@ -723,7 +799,7 @@
                 console.warn('[TeamMatch] Failed to parse cached team mapping:', e);
             }
         }
-        
+
         console.log(`[TeamMatch] Creating team ${teamNumber} in database...`);
         return request(`/team-matches/${matchId}/teams`, 'POST', {
             teamName: teamName || null,
@@ -738,18 +814,18 @@
             console.log(`[TeamMatch] ✅ Team ${teamNumber} created: ${json.teamId}`);
             return json.teamId;
         })
-        .catch(e => {
-            console.error(`[TeamMatch] ❌ Failed to create team ${teamNumber}:`, e);
-            throw e;
-        });
+            .catch(e => {
+                console.error(`[TeamMatch] ❌ Failed to create team ${teamNumber}:`, e);
+                throw e;
+            });
     }
-    
+
     function ensureTeamArcher(matchId, teamId, localId, archer, position) {
         if (!state.config.enabled) return Promise.resolve(null);
-        
+
         const archerName = `${archer.first || archer.firstName || ''} ${archer.last || archer.lastName || ''}`.trim();
         console.log(`[TeamMatch] ensureTeamArcher called: matchId=${matchId}, teamId=${teamId}, archer=${archerName}, position=${position}`);
-        
+
         const mappingKey = `team_archer:${matchId}:${teamId}:${position}`;
         const alreadyMapped = localStorage.getItem(mappingKey);
         if (alreadyMapped) {
@@ -761,7 +837,7 @@
                 console.warn('[TeamMatch] Failed to parse cached archer mapping:', e);
             }
         }
-        
+
         console.log(`[TeamMatch] Adding archer ${archerName} to team ${teamId}...`);
         return request(`/team-matches/${matchId}/teams/${teamId}/archers`, 'POST', {
             extId: localId,
@@ -778,28 +854,28 @@
             }
             localStorage.setItem(mappingKey, JSON.stringify({ matchArcherId: json.matchArcherId, position }));
             console.log(`[TeamMatch] ✅ Team archer ${archerName} (pos ${position}) created: ${json.matchArcherId}`);
-            
+
             // Store match code if returned (generated when second team is complete)
             if (json.matchCode) {
                 localStorage.setItem(`team_match_code:${matchId}`, json.matchCode);
                 state.teamMatchCode = json.matchCode;
                 console.log(`[TeamMatch] 🔑 Match code generated and stored: ${json.matchCode}`);
             }
-            
+
             return json.matchArcherId;
         })
-        .catch(e => {
-            console.error(`[TeamMatch] ❌ Failed to add archer ${archerName}:`, e);
-            throw e;
-        });
+            .catch(e => {
+                console.error(`[TeamMatch] ❌ Failed to add archer ${archerName}:`, e);
+                throw e;
+            });
     }
-    
+
     function postTeamSet(matchId, teamId, matchArcherId, setNumber, payload) {
         if (!state.config.enabled) {
             console.warn('[TeamMatch] LiveUpdates disabled, skipping set post');
             return Promise.resolve();
         }
-        
+
         const reqBody = {
             setNumber,
             a1: payload.a1 || null,
@@ -810,18 +886,18 @@
             xs: payload.xs || 0,
             deviceTs: new Date().toISOString(),
         };
-        
+
         console.log('[TeamMatch] 📤 Posting team set:', { matchId, teamId, matchArcherId, setNumber, arrow: reqBody.a1, setTotal: reqBody.setTotal, setPoints: reqBody.setPoints });
-        
+
         const doRequest = () => request(`/team-matches/${matchId}/teams/${teamId}/archers/${matchArcherId}/sets`, 'POST', reqBody)
             .then((response) => {
                 console.log(`[TeamMatch] ✅ Set ${setNumber} posted successfully for archer ${matchArcherId}`);
                 try {
                     window.dispatchEvent(new CustomEvent('teamSyncSuccess', { detail: { matchArcherId, setNumber } }));
-                } catch (_) {}
+                } catch (_) { }
                 return response;
             });
-        
+
         return doRequest().catch(e => {
             const isNetwork = (e && (e.name === 'TypeError' || /NetworkError|Failed to fetch/i.test(String(e))));
             if (isNetwork) {
@@ -834,7 +910,7 @@
                     console.log(`[TeamMatch] 💾 Queued set ${setNumber} (queue size: ${q.length})`);
                     try {
                         window.dispatchEvent(new CustomEvent('teamSyncPending', { detail: { matchArcherId, setNumber } }));
-                    } catch (_) {}
+                    } catch (_) { }
                     return;
                 } catch (err) {
                     console.error('[TeamMatch] ❌ Failed to queue set:', err);
@@ -844,11 +920,11 @@
             }
             try {
                 window.dispatchEvent(new CustomEvent('teamSyncPending', { detail: { matchArcherId, setNumber } }));
-            } catch (_) {}
+            } catch (_) { }
             throw e;
         });
     }
-    
+
     function flushTeamQueue(matchId) {
         try {
             const key = `luq:team:${matchId}`;
@@ -890,6 +966,11 @@
         ensureTeam,
         ensureTeamArcher,
         postTeamSet,
+
+        // Reconnect / Hydration
+        fetchFullRound,
+        findActiveRound,
+
         flushTeamQueue,
         request,
         clearSession: clearPersistedState,  // Expose for debugging/new events

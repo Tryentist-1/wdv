@@ -41,8 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
         setupMode: 'manual', // 'manual' or 'pre-assigned' - determines which setup section to show
         syncStatus: {}, // Track sync status per archer per end: { archerId: { endNumber: 'synced'|'pending'|'failed' } }
         sortMode: 'bale', // 'bale' or 'name'
-        availableDivisions: ['OPEN']
+        availableDivisions: ['OPEN'],
+        // CRITICAL FIX 5: Add division fields to ensure they persist to localStorage
+        divisionCode: null, // Division code for this round (e.g., 'BVAR', 'GJV', 'OPEN') - MUST come from round/event
+        divisionRoundId: null, // Round ID for this division - used to prevent creating duplicate rounds
+        divisionName: '' // Display name for division (e.g., 'Boys Varsity')
     };
+
 
     const sessionKey = `rankingRound300_${new Date().toISOString().split('T')[0]}`;
 
@@ -96,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         prevArcherBtn: document.getElementById('prev-archer-btn'),
         nextArcherBtn: document.getElementById('next-archer-btn'),
     };
-    
+
     const resetModal = {
         element: document.getElementById('reset-modal'),
         cancelBtn: document.getElementById('modal-cancel'),
@@ -172,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const baleNumber = Number(overrides.baleNumber ?? rosterArcher.baleNumber ?? rosterArcher.bale ?? state.baleNumber) || 1;
         const targetAssignment = safeString(overrides.targetAssignment || rosterArcher.targetAssignment || rosterArcher.target);
         const extId = safeString(overrides.extId || getExtIdFromArcher(rosterArcher));
-        
+
         // CRITICAL: Preserve UUID from database if it exists, otherwise use extId or generate composite fallback
         const databaseUuid = rosterArcher.id || rosterArcher.archerId || overrides.id || overrides.archerId;
         const fallbackId = databaseUuid || extId || `${firstName.toLowerCase()}-${lastName.toLowerCase()}-${school.toLowerCase()}` || `archer-${Date.now()}`;
@@ -281,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (value.endsWith('BEG')) return 'BEG';
         return null;
     }
-    
+
     // --- VIEW MANAGEMENT ---
     function renderView() {
         Object.values(views).forEach(view => {
@@ -374,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderView();
             };
         }
-        
+
         // Footer reset button
         const resetEventBtn = document.getElementById('reset-event-btn');
         if (resetEventBtn) {
@@ -472,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (meta.entryCode) return meta.entryCode;
                 }
             }
-        } catch(_) {}
+        } catch (_) { }
         return '';
     }
 
@@ -503,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.availableDivisions = ['OPEN'];
                 }
                 sanitizeStateArchers();
-                
+
                 // CRITICAL: Check for existing IN PROGRESS or COMPLETED rounds
                 await checkExistingRounds();
             } catch (e) {
@@ -513,7 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         updateEventHeader();
     }
-    
+
     /**
      * CRITICAL: Check if archer already has an IN PROGRESS or COMPLETED round
      * - IN PROGRESS: Prompt to resume or create new
@@ -522,14 +527,14 @@ document.addEventListener('DOMContentLoaded', () => {
     async function checkExistingRounds() {
         const archerId = getArcherCookie();
         if (!archerId) return;
-        
+
         try {
             const res = await fetch(`${API_BASE}/archers/${archerId}/rounds?status=IN_PROGRESS,COMPLETED,VERIFIED`);
             if (!res.ok) return;
-            
+
             const rounds = await res.json();
             if (!Array.isArray(rounds) || rounds.length === 0) return;
-            
+
             // Check for COMPLETED or VERIFIED rounds
             const lockedRounds = rounds.filter(r => r.card_status === 'COMPLETED' || r.verified);
             if (lockedRounds.length > 0) {
@@ -538,16 +543,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Don't prevent loading, just warn
                 return;
             }
-            
+
             // Check for IN PROGRESS rounds
             const inProgressRounds = rounds.filter(r => r.card_status === 'IN_PROGRESS' || r.card_status === 'PENDING');
             if (inProgressRounds.length > 0) {
                 const round = inProgressRounds[0];
                 const roundName = round.round_type || 'Round';
                 const currentEnd = round.current_end || 1;
-                
+
                 const resume = confirm(`📋 IN PROGRESS SCORECARD FOUND\n\nYou have an unfinished scorecard:\n• ${roundName}\n• Current End: ${currentEnd}/${round.total_ends || 10}\n• Score: ${round.total_score || 0}\n\nClick OK to RESUME this scorecard\nClick CANCEL to start a NEW scorecard`);
-                
+
                 if (resume) {
                     // Load the existing round data
                     await loadExistingRound(round);
@@ -563,7 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('[checkExistingRounds] Error:', error);
         }
     }
-    
+
     /**
      * Load an existing IN PROGRESS round
      */
@@ -575,24 +580,68 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('[loadExistingRound] Failed to load round:', res.status);
                 return;
             }
-            
+
             const roundData = await res.json();
-            
+
             // Update state with loaded data
             state.currentEnd = roundData.current_end || 1;
             state.totalEnds = roundData.total_ends || 10;
             state.roundType = roundData.round_type || 'R300';
-            
+            state.activeEventId = roundData.event_id || state.activeEventId;
+            state.selectedEventId = roundData.event_id || state.selectedEventId;
+            state.baleNumber = roundData.bale_number || state.baleNumber;
+
+            // CRITICAL: Use the division from the ROUND itself, not the archer's default
+            // Archers can shoot up (JV -> Varsity), so the round's division is the source of truth
+            if (roundData.division) {
+                state.divisionCode = roundData.division;
+                console.log('[loadExistingRound] Set division from round data:', state.divisionCode);
+            }
+
             // Load archer scores if available
             if (roundData.archers && Array.isArray(roundData.archers)) {
-                state.archers = roundData.archers.map(a => ({
-                    ...a,
-                    scores: a.scores || createEmptyScoreSheet(state.totalEnds)
-                }));
+                state.archers = roundData.archers.map(a => {
+                    // Map API archer to state archer
+                    const names = (a.name || '').split(' ');
+                    const firstName = names[0] || '';
+                    const lastName = names.slice(1).join(' ') || '';
+
+                    return {
+                        id: a.id || a.archer_id,
+                        archerId: a.id || a.archer_id,
+                        firstName: a.first_name || firstName,
+                        lastName: a.last_name || lastName,
+                        // Use round division if available, otherwise fallback to archer's division
+                        division: state.divisionCode || a.division,
+                        gender: a.gender,
+                        level: a.level,
+                        school: a.school,
+                        baleNumber: a.bale_number || state.baleNumber,
+                        targetAssignment: a.target || 'A',
+                        scores: a.scores || createEmptyScoreSheet(state.totalEnds),
+                        roundArcherId: a.round_archer_id
+                    };
+                });
+
+                // Fallback: If round didn't have division, try to infer from first archer (legacy support)
+                if (!state.divisionCode && state.archers.length > 0) {
+                    state.divisionCode = state.archers[0].division;
+                }
             }
-            
+
             saveData();
             console.log('[loadExistingRound] Loaded round:', roundData);
+
+            // If we have archers and division, we can initialize LiveUpdates
+            if (state.archers.length > 0 && state.divisionCode) {
+                if (getLiveEnabled()) {
+                    console.log('[loadExistingRound] Initializing Live Updates...');
+                    await ensureLiveRoundReady({ promptForCode: false });
+                }
+            }
+
+            renderView();
+
         } catch (error) {
             console.error('[loadExistingRound] Error:', error);
         }
@@ -620,7 +669,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =====================================================
     // PHASE 0: Session Persistence for Bale Groups
     // =====================================================
-    
+
     /**
      * Save current bale session to localStorage for recovery on page reload.
      * Includes archer cookie, round ID, bale number, and current end.
@@ -629,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const archerId = getArcherCookie(); // From common.js
             const roundId = (window.LiveUpdates && window.LiveUpdates._state) ? window.LiveUpdates._state.roundId : null;
-            
+
             const session = {
                 archerId: archerId,
                 eventId: state.activeEventId || state.selectedEventId,
@@ -638,16 +687,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentEnd: state.currentEnd,
                 assignmentMode: state.assignmentMode,
                 lastSaved: new Date().toISOString(),
-                archerIds: state.archers.map(a => a.id) // For quick validation
+                archerIds: state.archers.map(a => a.id), // For quick validation
+                // CRITICAL FIX 5b: Include division in session for offline resilience
+                divisionCode: state.divisionCode,
+                divisionRoundId: state.divisionRoundId
             };
-            
+
+
             localStorage.setItem('current_bale_session', JSON.stringify(session));
             console.log('[Phase 0 Session] Saved bale session:', session);
         } catch (e) {
             console.warn('[Phase 0 Session] Failed to save session:', e);
         }
     }
-    
+
     /**
      * Attempt to restore bale session from localStorage.
      * Fetches full bale group data from server if session exists.
@@ -660,13 +713,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('[Phase 0 Session] No saved session found');
                 return false;
             }
-            
+
             const session = JSON.parse(sessionData);
             if (!session.roundId || !session.baleNumber) {
                 console.log('[Phase 0 Session] Invalid session data, skipping restore');
                 return false;
             }
-            
+
             // Check if session is recent (within 24 hours)
             const sessionAge = Date.now() - new Date(session.lastSaved || 0).getTime();
             const maxAge = 24 * 60 * 60 * 1000; // 24 hours
@@ -675,16 +728,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.removeItem('current_bale_session');
                 return false;
             }
-            
+
             console.log('[Phase 0 Session] Found saved session, attempting restore:', session);
-            
+
             // First, fetch what's actually on the server to show accurate info
-            const entryCodePreview = localStorage.getItem('event_entry_code') || 
-                                     (session.eventId ? (JSON.parse(localStorage.getItem(`event:${session.eventId}:meta`) || '{}').entryCode) : null);
-            
+            const entryCodePreview = localStorage.getItem('event_entry_code') ||
+                (session.eventId ? (JSON.parse(localStorage.getItem(`event:${session.eventId}:meta`) || '{}').entryCode) : null);
+
             let archerCount = session.archerIds?.length || 0;
             let hasScores = false;
-            
+
             // Try to peek at server data (non-blocking)
             if (entryCodePreview && session.roundId && session.baleNumber) {
                 try {
@@ -701,11 +754,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.warn('[Phase 0 Session] Could not peek at server data:', e);
                 }
             }
-            
+
             // ASK USER with detailed info
             const resumeMsg = `Resume in-progress scoring?\n\nBale: ${session.baleNumber}\nArchers: ${archerCount}\nCurrent End: ${session.currentEnd || 1}\n${hasScores ? '⚠️ Has existing scores' : '✓ No scores yet'}\n\nOK = Resume\nCancel = Start fresh (clears session only, use Coach Reset to clear server data)`;
             const shouldResume = confirm(resumeMsg);
-            
+
             if (!shouldResume) {
                 console.log('[Phase 0 Session] User declined to resume, clearing LOCAL session only');
                 localStorage.removeItem('current_bale_session');
@@ -713,21 +766,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (session.roundId) {
                     try {
                         localStorage.removeItem(`live_updates_session:${session.roundId}`);
-                    } catch (e) {}
+                    } catch (e) { }
                 }
                 return false;
             }
-            
+
             // Get event entry code for authentication
-            const entryCode = localStorage.getItem('event_entry_code') || 
-                             (state.activeEventId ? (JSON.parse(localStorage.getItem(`event:${state.activeEventId}:meta`) || '{}').entryCode) : null);
-            
+            const entryCode = localStorage.getItem('event_entry_code') ||
+                (state.activeEventId ? (JSON.parse(localStorage.getItem(`event:${state.activeEventId}:meta`) || '{}').entryCode) : null);
+
             if (!entryCode) {
                 console.warn('[Phase 0 Session] No entry code found, cannot restore session');
                 localStorage.removeItem('current_bale_session');
                 return false;
             }
-            
+
             // Fetch bale group from server
             const response = await fetch(`${API_BASE}/rounds/${session.roundId}/bales/${session.baleNumber}/archers`, {
                 method: 'GET',
@@ -736,21 +789,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-Passcode': entryCode
                 }
             });
-            
+
             if (!response.ok) {
                 console.warn('[Phase 0 Session] Failed to fetch bale group:', response.status);
                 return false;
             }
-            
+
             const baleData = await response.json();
-            
+
             if (!baleData.archers || baleData.archers.length === 0) {
                 console.warn('[Phase 0 Session] No archers found in bale group');
                 return false;
             }
-            
+
             console.log('[Phase 0 Session] Successfully retrieved bale group:', baleData);
-            
+
             // Restore state from server data
             state.roundId = session.roundId;
             state.baleNumber = session.baleNumber;
@@ -758,7 +811,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.selectedEventId = session.eventId;
             state.assignmentMode = session.assignmentMode || 'pre-assigned';
             state.currentEnd = baleData.archers[0]?.scorecard?.currentEnd || session.currentEnd || 1;
-            
+
             // Reconstruct archers array from server scorecards
             state.archers = baleData.archers.map(archer => {
                 const scoreSheet = createEmptyScoreSheet(state.totalEnds);
@@ -792,7 +845,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 stateArcher.roundArcherId = archer.roundArcherId;
                 return stateArcher;
             });
-            
+
+            // CRITICAL FIX 1: Extract division from server response
+            // The API returns division at the top level - we must capture it for LiveUpdates
+            if (baleData.division) {
+                state.divisionCode = baleData.division;
+                state.divisionRoundId = session.roundId;
+                console.log('[Phase 0 Session] ✅ Set division from server:', baleData.division, 'roundId:', session.roundId);
+            } else {
+                console.warn('[Phase 0 Session] ⚠️ No division in bale data, will try to extract from archers');
+                // Fallback: try to get division from first archer
+                if (state.archers && state.archers.length > 0 && state.archers[0].division) {
+                    state.divisionCode = state.archers[0].division;
+                    state.divisionRoundId = session.roundId;
+                    console.log('[Phase 0 Session] ✅ Set division from first archer:', state.divisionCode);
+                }
+            }
+
             // Restore Live Updates state if enabled
             if (window.LiveUpdates && window.LiveUpdates._state) {
                 window.LiveUpdates._state.roundId = session.roundId;
@@ -802,7 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.LiveUpdates._state.archerIds[archer.id] = archer.roundArcherId;
                     }
                 });
-                
+
                 // CRITICAL: Manually persist Live Updates state to localStorage
                 // (LiveUpdates.persistState is private, so we replicate its logic)
                 try {
@@ -816,17 +885,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (e) {
                     console.warn('[Phase 0 Session] Failed to persist LiveUpdates state:', e);
                 }
-                
+
                 console.log('[Phase 0 Session] Restored LiveUpdates state:', {
                     roundId: window.LiveUpdates._state.roundId,
                     archerIds: window.LiveUpdates._state.archerIds
                 });
             }
-            
+
             // Transition to scoring view
             state.currentView = 'scoring';
             saveData(); // Save restored state to localStorage
-            
+
             console.log('[Phase 0 Session] Session restored successfully, showing scoring view');
             return true;
         } catch (e) {
@@ -834,6 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
     }
+
 
     // --- LOGIC ---
     // Highlight a specific bale in the list
@@ -849,7 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
             target.style.boxShadow = '0 0 0 3px rgba(243, 156, 18, 0.3)';
         }
     }
-    
+
     // Scroll to a specific bale section
     function scrollToBale(baleNum) {
         const target = document.querySelector(`[data-bale="${baleNum}"]`);
@@ -857,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
             target.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     }
-    
+
     function determineSetupMode() {
         // Prefer server-driven assignment mode with offline fallback. Do NOT rely on legacy keys.
         if (state.activeEventId) {
@@ -876,7 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         return mode;
                     }
                 }
-            } catch(_) {}
+            } catch (_) { }
         }
         console.log('[determineSetupMode] No event or assignment mode found, defaulting to manual');
         return 'manual';
@@ -884,13 +954,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Remove legacy localStorage keys that cause stale-mode detection on older clients
     function cleanupLegacyStorage() {
-        try { localStorage.removeItem('archery_master_list'); } catch(_) {}
+        try { localStorage.removeItem('archery_master_list'); } catch (_) { }
     }
 
     function renderSetupSections() {
         const setupMode = determineSetupMode();
         state.setupMode = setupMode;
-        
+
         // Hide both sections first
         if (manualSetupControls.section) {
             manualSetupControls.section.style.display = 'none';
@@ -898,7 +968,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (preassignedSetupControls.section) {
             preassignedSetupControls.section.style.display = 'none';
         }
-        
+
         // Show the appropriate section
         if (setupMode === 'manual') {
             if (manualSetupControls.section) {
@@ -911,7 +981,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             renderPreassignedSetup();
             // Hide modal if still visible after successful load
-            try { hideEventModal(); } catch(_) {}
+            try { hideEventModal(); } catch (_) { }
         }
     }
 
@@ -948,7 +1018,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.assignmentMode === 'manual') {
             return Array.from({ length: 16 }, (_, idx) => idx + 1);
         }
-        
+
         // Legacy fallback for other modes (though this function is primarily for manual mode)
         if (state.activeEventId) {
             try {
@@ -995,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const tile = document.createElement('button');
             tile.type = 'button';
             const isActive = bale === currentBale;
-            tile.className = isActive 
+            tile.className = isActive
                 ? 'px-4 py-3 bg-primary text-white rounded font-semibold transition-colors hover:bg-primary-dark min-h-[44px]'
                 : 'px-4 py-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-white border-2 border-gray-300 dark:border-gray-600 rounded font-semibold transition-colors hover:bg-gray-100 dark:hover:bg-gray-600 min-h-[44px]';
             tile.textContent = bale;
@@ -1015,7 +1085,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPreassignedSetup() {
         if (!preassignedSetupControls.baleListContainer) return;
-        
+
         // Add RESET button to pre-assigned setup header
         const setupCard = preassignedSetupControls.section.querySelector('.preassigned-setup-card');
         if (setupCard) {
@@ -1039,19 +1109,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
+
         // Source list from event-scoped cache saved at event load time
         let masterList = [];
         if (state.activeEventId) {
-            try { masterList = JSON.parse(localStorage.getItem(`event:${state.activeEventId}:archers_v2`) || '[]'); } catch(_) { masterList = []; }
+            try { masterList = JSON.parse(localStorage.getItem(`event:${state.activeEventId}:archers_v2`) || '[]'); } catch (_) { masterList = []; }
         }
-        
+
         // If no event or no archers, show empty state
         if (!state.activeEventId || masterList.length === 0) {
             preassignedSetupControls.baleListContainer.innerHTML = '<div class="text-center text-gray-600 dark:text-gray-400 p-4">No Archers Available<br/>Connect to an event to load archers.</div>';
             return;
         }
-        
+
         // Normalize to a common shape for rendering and for loadEntireBale
         const normalized = masterList.map(a => {
             const normalizedLevel = normalizeLevel(a.level);
@@ -1070,14 +1140,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: safeString(a.status || 'active')
             };
         }).filter(a => !!a.baleNumber);
-        
+
         // Group archers by bale
         const baleGroups = {};
         normalized.forEach(archer => {
             if (!baleGroups[archer.baleNumber]) baleGroups[archer.baleNumber] = [];
             baleGroups[archer.baleNumber].push(archer);
         });
-        
+
         // Render bale list
         preassignedSetupControls.baleListContainer.innerHTML = '';
         const sortedBales = Object.keys(baleGroups).sort((a, b) => parseInt(a) - parseInt(b));
@@ -1085,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const archers = baleGroups[baleNumber];
             const baleItem = document.createElement('div');
             baleItem.className = 'bale-list-item';
-            
+
             baleItem.innerHTML = `
                 <div class="bale-info">
                     <div class="bale-number">Bale ${baleNumber}</div>
@@ -1097,7 +1167,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </button>
                 </div>
             `;
-            
+
             // Render detailed archer list to match SetupNEW (Archer Name, School, Division, Bale, Target)
             const table = document.createElement('table');
             table.className = 'archer-table';
@@ -1113,11 +1183,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const tbody = document.createElement('tbody');
             archers.forEach(a => {
                 const tr = document.createElement('tr');
-                const name = `${(a.firstName||'').trim()} ${(a.lastName||'').trim()}`.trim();
-                const school = (a.school||'').toString();
-                const division = (a.level||'').toString();
+                const name = `${(a.firstName || '').trim()} ${(a.lastName || '').trim()}`.trim();
+                const school = (a.school || '').toString();
+                const division = (a.level || '').toString();
                 const bale = a.baleNumber != null ? a.baleNumber : '';
-                const target = (a.target||'').toString();
+                const target = (a.target || '').toString();
                 tr.innerHTML = `
                     <td>${name}</td>
                     <td>${school}</td>
@@ -1137,7 +1207,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (manualSetupControls.selectedCountChip) {
             const count = state.archers.length;
             manualSetupControls.selectedCountChip.textContent = `${count}/4 archers selected`;
-            
+
             // Enable/disable start scoring button
             if (manualSetupControls.startScoringBtn) {
                 manualSetupControls.startScoringBtn.disabled = count === 0;
@@ -1159,7 +1229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if ((!roster || roster.length === 0) && typeof ArcherModule !== 'undefined') {
                 roster = ArcherModule.loadList() || [];
             }
-            
+
             const ctx = getSelectorContext();
             archerSelector.setContext(ctx);
             archerSelector.setRoster(roster);
@@ -1183,10 +1253,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleSelectorChange(selectionMap) {
         // Convert ArcherSelector format (selectionMap) to state.archers format
         // selectionMap is { A: [archer1], B: [archer2], ... }
-        
+
         // Clear existing archers and rebuild from selection map
         state.archers = [];
-        
+
         RANKING_SELECTOR_GROUPS.forEach(group => {
             const selectedArchers = selectionMap[group.id] || [];
             selectedArchers.forEach(selectedArcher => {
@@ -1206,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.archers.push(stateArcher);
             });
         });
-        
+
         updateSelectionCount();
         saveData();
     }
@@ -1229,13 +1299,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function syncSelectorSelection() {
         if (!archerSelector) return;
-        
+
         // Map state.archers to selector format
         const selection = {};
         RANKING_SELECTOR_GROUPS.forEach(group => {
             selection[group.id] = [];
         });
-        
+
         // Load roster to match archers
         let masterList = [];
         if (state.activeEventId) {
@@ -1246,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if ((!masterList || masterList.length === 0) && typeof ArcherModule !== 'undefined') {
             masterList = ArcherModule.loadList() || [];
         }
-        
+
         state.archers.forEach(archer => {
             const target = archer.targetAssignment || 'A';
             if (selection[target]) {
@@ -1258,13 +1328,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
-        
+
         archerSelector.setSelection(selection);
     }
 
     function renderManualArcherList() {
         if (!setupControls.container) return;
-        
+
         // Use ArcherSelector component if available
         if (typeof ArcherSelector !== 'undefined' && typeof ArcherSelector.init === 'function') {
             if (!archerSelector) {
@@ -1278,7 +1348,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         showAvatars: true,
                         showFavoriteToggle: true
                     });
-                    
+
                     if (archerSelector) {
                         refreshArcherRoster();
                         syncSelectorSelection();
@@ -1307,7 +1377,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderManualArcherListFallback() {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
-        
+
         // Load roster: prefer event-scoped cache when connected, fallback to device master list
         let masterList = [];
         if (state.activeEventId) {
@@ -1318,7 +1388,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if ((!masterList || masterList.length === 0) && typeof ArcherModule !== 'undefined') {
             masterList = ArcherModule.loadList();
         }
-        
+
         if (masterList.length === 0) {
             setupControls.container.innerHTML = `
                 <div class="text-center p-8 text-gray-600 dark:text-gray-400">
@@ -1329,7 +1399,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             return;
         }
-        
+
         const rosterState = getRosterState();
         const rosterMap = new Map(
             rosterState.list.map(item => [getExtIdFromArcher(item), item])
@@ -1405,7 +1475,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Get roster state for sorting
         const { selfExtId, friendSet } = getRosterState();
-        
+
         // Sort selected rows by target assignment
         selectedRows.sort((a, b) => {
             const aOrder = targetPriority.indexOf(a.existingArcher?.targetAssignment || '');
@@ -1417,7 +1487,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return safeA - safeB;
         });
-        
+
         // Sort unselected rows: Me first, then Friends, then rest by first name
         unselectedRows.sort((a, b) => {
             const aExtId = getExtIdFromArcher(a.archer) || a.extId;
@@ -1426,15 +1496,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const bIsMe = selfExtId && bExtId === selfExtId;
             const aIsFriend = aExtId && friendSet.has(aExtId);
             const bIsFriend = bExtId && friendSet.has(bExtId);
-            
+
             // Me comes first
             if (aIsMe && !bIsMe) return -1;
             if (!aIsMe && bIsMe) return 1;
-            
+
             // Then friends
             if (aIsFriend && !bIsFriend) return -1;
             if (!aIsFriend && bIsFriend) return 1;
-            
+
             // Then alphabetically by first name
             return a.first.toLowerCase().localeCompare(b.first.toLowerCase());
         });
@@ -1443,11 +1513,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const table = document.createElement('table');
         table.style.cssText = 'width: 100%; border-collapse: collapse; margin-top: 1rem;';
-        
+
         // Header
         const headerRow = document.createElement('tr');
         headerRow.className = 'bg-gray-100 dark:bg-gray-800 font-bold';
-        
+
         const headers = ['Select', 'Archer Name', 'School', 'Division', 'Status', 'Target', 'Score'];
         headers.forEach(headerText => {
             const th = document.createElement('th');
@@ -1456,7 +1526,7 @@ document.addEventListener('DOMContentLoaded', () => {
             headerRow.appendChild(th);
         });
         table.appendChild(headerRow);
-        
+
         orderedRows.forEach((rowData, index) => {
             const { archer, first, last, school, extId, uniqueId, rosterAssignment, existingArcher, divisionCode, normalizedLevel, normalizedGender } = rowData;
             const row = document.createElement('tr');
@@ -1464,17 +1534,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (existingArcher) {
                 row.classList.add('is-selected');
             }
-            
+
             // Checkbox cell
             const checkboxCell = document.createElement('td');
             checkboxCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center';
-            
+
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.style.cssText = 'transform: scale(1.2);';
             checkbox.checked = !!existingArcher;
             checkbox.dataset.extId = extId;
-            
+
             // Target select dropdown
             const targetSelect = document.createElement('select');
             targetSelect.className = 'target-assignment-select';
@@ -1489,7 +1559,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 targetSelect.value = existingArcher.targetAssignment;
                 targetSelect.style.display = 'inline-block';
             }
-            
+
             checkbox.onchange = () => {
                 if (checkbox.checked) {
                     // CRITICAL: Prevent adding to COMPLETED/VERIFIED cards
@@ -1502,7 +1572,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             return;
                         }
                     }
-                    
+
                     // Enforce max 4 archers per bale
                     const selectedCount = state.archers.length;
                     if (selectedCount >= 4) {
@@ -1510,7 +1580,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert('Bale is full (4 archers).');
                         return;
                     }
-                    
+
                     // CRITICAL: Prevent mixing divisions in manual mode
                     // The first archer selected determines the division for the entire round
                     if (state.archers.length > 0) {
@@ -1529,11 +1599,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             return;
                         }
                     }
-                    
-                        if (!state.archers.some(a => (a.extId || a.id) === uniqueId)) {
-                            const usedTargets = state.archers.map(a => a.targetAssignment);
-                            const availableTargets = TARGET_LETTERS.filter(t => !usedTargets.includes(t));
-                            const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
+
+                    if (!state.archers.some(a => (a.extId || a.id) === uniqueId)) {
+                        const usedTargets = state.archers.map(a => a.targetAssignment);
+                        const availableTargets = TARGET_LETTERS.filter(t => !usedTargets.includes(t));
+                        const nextTarget = availableTargets.length > 0 ? availableTargets[0] : 'A';
                         const overrides = {
                             extId,
                             targetAssignment: nextTarget,
@@ -1566,7 +1636,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderManualArcherList();
                 }
             };
-            
+
             targetSelect.onchange = () => {
                 const archerInState = state.archers.find(a => (a.extId || a.id) === uniqueId);
                 if (archerInState) {
@@ -1575,17 +1645,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderManualArcherList();
                 }
             };
-            
+
             checkboxCell.appendChild(checkbox);
             checkboxCell.appendChild(targetSelect);
             row.appendChild(checkboxCell);
-            
+
             // Get roster state for Me/Friends indicators
             const { selfExtId, friendSet } = getRosterState();
             const archerExtId = getExtIdFromArcher(archer) || archer.extId || extId;
             const isMe = selfExtId && archerExtId === selfExtId;
             const isFriend = archerExtId && friendSet.has(archerExtId);
-            
+
             // Archer Name cell with Me/Friends badges
             const nameCell = document.createElement('td');
             nameCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
@@ -1594,7 +1664,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const nameSpan = document.createElement('span');
             nameSpan.textContent = `${first} ${last}`;
             nameDiv.appendChild(nameSpan);
-            
+
             if (isMe) {
                 const meBadge = document.createElement('span');
                 meBadge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-primary text-white';
@@ -1637,7 +1707,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const verified = existingArcher.verified || false;
                 let statusText = 'PEND';
                 let statusClass = 'bg-warning text-white';
-                
+
                 if (verified) {
                     statusText = 'VER';
                     statusClass = 'bg-success text-white';
@@ -1645,7 +1715,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusText = 'COMP';
                     statusClass = 'bg-primary text-white';
                 }
-                
+
                 statusBadge.className = `inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${statusClass}`;
                 statusBadge.textContent = statusText;
             } else {
@@ -1659,21 +1729,21 @@ document.addEventListener('DOMContentLoaded', () => {
             targetCell.textContent = rosterAssignment;
             targetCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
             row.appendChild(targetCell);
-            
+
             // Score cell - will be populated by fetchArcherScores()
             const scoreCell = document.createElement('td');
             scoreCell.className = 'archer-score-cell px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 font-medium';
             scoreCell.dataset.archerId = archer.id || archer.archerId || '';  // Store archer UUID for lookup
             scoreCell.textContent = '—';
             row.appendChild(scoreCell);
-            
+
             table.appendChild(row);
         });
-        
+
         setupControls.container.appendChild(table);
         updateSelectionCount();
         updateManualLiveControls();
-        
+
         // Fetch and display existing scores for this event
         if (state.activeEventId) {
             fetchAndDisplayArcherScores();
@@ -1685,7 +1755,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function fetchAndDisplayArcherScores() {
         if (!state.activeEventId) return;
-        
+
         try {
             // Fetch event snapshot which includes all archers and their scores
             const res = await fetch(`${API_BASE}/events/${state.activeEventId}/snapshot`, {
@@ -1693,12 +1763,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-Passcode': localStorage.getItem('coach_passcode') || ''
                 }
             });
-            
+
             if (!res.ok) {
                 console.warn('[fetchArcherScores] Snapshot API failed:', res.status);
                 return;
             }
-            
+
             const data = await res.json();
             console.log('[fetchArcherScores] Loaded snapshot for event:', state.activeEventId);
             console.log('[fetchArcherScores] Response structure:', {
@@ -1707,10 +1777,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 divisionsKeys: data.divisions ? Object.keys(data.divisions) : 'none',
                 sampleDivision: data.divisions && data.divisions[0] ? Object.keys(data.divisions[0]) : 'none'
             });
-            
+
             // Build a map of archers by UUID
             const snapshotArcherMap = new Map();
-            
+
             // Handle both array format and object format
             let divisionsArray = [];
             if (Array.isArray(data.divisions)) {
@@ -1719,16 +1789,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 // divisions might be an object keyed by division code
                 divisionsArray = Object.values(data.divisions);
             }
-            
+
             console.log('[fetchArcherScores] Processing', divisionsArray.length, 'divisions');
-            
+
             divisionsArray.forEach((division, idx) => {
                 console.log('[fetchArcherScores] Division', idx, ':', {
                     division: division.division,
                     hasArchers: !!division.archers,
                     archerCount: Array.isArray(division.archers) ? division.archers.length : 0
                 });
-                
+
                 if (division.archers && Array.isArray(division.archers)) {
                     division.archers.forEach(archer => {
                         const archerId = archer.archerId || archer.id;
@@ -1738,15 +1808,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             });
-            
+
             console.log('[fetchArcherScores] Found', snapshotArcherMap.size, 'archers in snapshot');
-            
+
             // Update score cells by matching UUID
             const scoreCells = document.querySelectorAll('.archer-score-cell');
             scoreCells.forEach(cell => {
                 const archerId = cell.dataset.archerId;
                 if (!archerId) return;
-                
+
                 const snapshotArcher = snapshotArcherMap.get(archerId);
                 if (snapshotArcher) {
                     const score = snapshotArcher.runningTotal || 0;
@@ -1762,16 +1832,16 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('[fetchArcherScores] Error:', err);
         }
     }
-    
+
     /**
      * Load existing scores for selected archers before starting scoring
      * This allows editing existing scorecards
      */
     async function loadExistingScoresForArchers() {
         if (!state.activeEventId || state.archers.length === 0) return;
-        
+
         console.log('[loadExistingScores] Checking for existing scores for', state.archers.length, 'archers');
-        
+
         try {
             // Fetch event snapshot
             const res = await fetch(`${API_BASE}/events/${state.activeEventId}/snapshot`, {
@@ -1779,18 +1849,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-Passcode': localStorage.getItem('coach_passcode') || ''
                 }
             });
-            
+
             if (!res.ok) {
                 console.warn('[loadExistingScores] Could not fetch event data, status:', res.status);
                 return;
             }
-            
+
             const data = await res.json();
             let foundScores = false;
-            
+
             // Build a map of archers by UUID for fast lookup
             const snapshotArcherMap = new Map();
-            
+
             // Handle both array format and object format
             let divisionsArray = [];
             if (Array.isArray(data.divisions)) {
@@ -1798,7 +1868,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (data.divisions && typeof data.divisions === 'object') {
                 divisionsArray = Object.values(data.divisions);
             }
-            
+
             divisionsArray.forEach(division => {
                 if (division.archers && Array.isArray(division.archers)) {
                     division.archers.forEach(archer => {
@@ -1809,30 +1879,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             });
-            
+
             console.log('[loadExistingScores] Snapshot has', snapshotArcherMap.size, 'archers');
-            
+
             // For each archer in state, check if they have existing scores
             state.archers.forEach(stateArcher => {
                 const archerId = stateArcher.archerId || stateArcher.id;
                 console.log('[loadExistingScores] Looking for archer:', stateArcher.firstName, stateArcher.lastName, 'UUID:', archerId);
-                
+
                 if (!archerId) {
                     console.warn('[loadExistingScores] No UUID for archer:', stateArcher.firstName, stateArcher.lastName);
                     return;
                 }
-                
+
                 const apiArcher = snapshotArcherMap.get(archerId);
                 if (apiArcher) {
                     console.log('[loadExistingScores] Found API match for:', stateArcher.firstName, stateArcher.lastName);
                     console.log('[loadExistingScores] API archer has', apiArcher.scorecard?.ends?.length || 0, 'ends');
-                    
+
                     if (apiArcher.scorecard && apiArcher.scorecard.ends) {
                         const ends = apiArcher.scorecard.ends;
                         if (ends.length > 0) {
                             console.log(`[loadExistingScores] Loading ${ends.length} ends for ${stateArcher.firstName} ${stateArcher.lastName}`);
                             foundScores = true;
-                            
+
                             // Populate the scores array
                             ends.forEach(end => {
                                 const endIndex = (end.endNumber || 1) - 1;
@@ -1845,13 +1915,49 @@ document.addEventListener('DOMContentLoaded', () => {
                                     console.log(`[loadExistingScores] End ${end.endNumber}:`, end.a1, end.a2, end.a3);
                                 }
                             });
-                            
+
                             // Store the round_archer_id if available
                             if (apiArcher.roundArcherId) {
                                 stateArcher.roundArcherId = apiArcher.roundArcherId;
                                 console.log('[loadExistingScores] Stored roundArcherId:', apiArcher.roundArcherId);
                             }
-                            
+
+                            // CRITICAL: Update division from API if available (needed for Live Updates resume)
+                            // Find which division this archer belongs to in the snapshot
+                            divisionsArray.forEach(div => {
+                                if (div.archers && div.archers.some(a => (a.archerId || a.id) === archerId)) {
+                                    // Found the division for this archer
+                                    // Map division name back to code if possible, or use raw code
+                                    // The snapshot keys are usually the codes (BVAR, etc)
+                                    // But here we are iterating values. We need the key.
+                                }
+                            });
+
+                            // Simpler: The API structure is divisions[CODE] = { ... }
+                            // We flattened it to array, but we can look up the key in the original object
+                            if (data.divisions && typeof data.divisions === 'object') {
+                                Object.keys(data.divisions).forEach(divCode => {
+                                    const div = data.divisions[divCode];
+                                    if (div.archers && div.archers.some(a => (a.archerId || a.id) === archerId)) {
+                                        stateArcher.division = divCode;
+                                        console.log(`[loadExistingScores] Updated division for ${stateArcher.firstName}: ${divCode}`);
+
+                                        // CRITICAL FIX 2: Set global division code from first match
+                                        if (!state.divisionCode) {
+                                            state.divisionCode = divCode;
+                                            console.log(`[loadExistingScores] ✅ Set global division code: ${divCode}`);
+                                        }
+
+                                        // Also capture roundId if available
+                                        if (!state.divisionRoundId && div.roundId) {
+                                            state.divisionRoundId = div.roundId;
+                                            console.log(`[loadExistingScores] ✅ Set global roundId: ${div.roundId}`);
+                                        }
+                                    }
+                                });
+                            }
+
+
                             // Update current end to first incomplete end or last end
                             const lastEndNumber = ends.length;
                             const nextEnd = Math.min(lastEndNumber + 1, state.totalEnds);
@@ -1863,14 +1969,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log('[loadExistingScores] No API match found for UUID:', archerId);
                 }
             });
-            
+
             if (foundScores) {
                 console.log('[loadExistingScores] ✅ Successfully loaded existing scores, current end:', state.currentEnd);
                 saveData();  // Save the loaded scores to localStorage
             } else {
                 console.log('[loadExistingScores] ℹ️  No existing scores found for selected archers');
             }
-            
+
         } catch (err) {
             console.error('[loadExistingScores] ❌ Error loading existing scores:', err);
         }
@@ -1883,30 +1989,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPreAssignedArchers() {
         if (!setupControls.container) return;
-        
+
         // Get search term from input
         const searchInput = setupControls.subheader?.querySelector('.archer-search-bar');
         const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-        
+
         // Filter archers by current bale number and search term
         const baleArchers = state.archers.filter(archer => {
             const matchesBale = archer.baleNumber === state.baleNumber;
             if (!matchesBale) return false;
-            
+
             if (!searchTerm) return true;
-            
+
             const fullName = `${archer.firstName} ${archer.lastName}`.toLowerCase();
             const school = archer.school.toLowerCase();
             return fullName.includes(searchTerm) || school.includes(searchTerm);
         });
-        
+
         // Sort by first name
         baleArchers.sort((a, b) => {
             const aFirst = (a.firstName || '').toString().toLowerCase();
             const bFirst = (b.firstName || '').toString().toLowerCase();
             return aFirst.localeCompare(bFirst);
         });
-        
+
         const banner = document.createElement('div');
         banner.className = 'pre-assigned-banner';
         banner.style.cssText = 'background: #e3f2fd; padding: 12px; margin-bottom: 12px; border-radius: 4px; border-left: 4px solid #2196f3;';
@@ -1918,7 +2024,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         setupControls.container.appendChild(banner);
-        
+
         // Add "Edit Assignments" button
         const editBtn = document.createElement('button');
         editBtn.className = 'btn btn-outline-primary';
@@ -1926,20 +2032,20 @@ document.addEventListener('DOMContentLoaded', () => {
         editBtn.textContent = '✏️ Edit Assignments';
         editBtn.onclick = () => showEditAssignmentsModal();
         setupControls.container.appendChild(editBtn);
-        
+
         // Create clean table interface
         const tableContainer = document.createElement('div');
         tableContainer.className = 'bale-assignment-table';
         tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;';
-        
+
         // Create table
         const table = document.createElement('table');
         table.style.cssText = 'width: 100%; border-collapse: collapse;';
-        
+
         // Create header row
         const headerRow = document.createElement('tr');
         headerRow.style.cssText = 'background: #2d7dd9; color: white; font-weight: bold;';
-        
+
         const headers = ['Archer Name', 'School', 'Division', 'Bale', 'Target'];
         headers.forEach(headerText => {
             const th = document.createElement('th');
@@ -1948,17 +2054,17 @@ document.addEventListener('DOMContentLoaded', () => {
             headerRow.appendChild(th);
         });
         table.appendChild(headerRow);
-        
+
         // Sort archers by first name for clean display
         const sortedArchers = [...baleArchers].sort((a, b) => {
             return a.firstName.localeCompare(b.firstName);
         });
-        
+
         // Create data rows
         sortedArchers.forEach((archer, index) => {
             const row = document.createElement('tr');
             row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'}; border-bottom: 1px solid #e9ecef;`;
-            
+
             const cells = [
                 `${archer.firstName} ${archer.lastName}`,
                 archer.school || 'Unknown',
@@ -1966,20 +2072,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 archer.baleNumber || '1',
                 archer.targetAssignment || 'A'
             ];
-            
+
             cells.forEach(cellText => {
                 const td = document.createElement('td');
                 td.textContent = cellText;
                 td.style.cssText = 'padding: 12px 8px; border-right: 1px solid #e9ecef;';
                 row.appendChild(td);
             });
-            
+
             table.appendChild(row);
         });
-        
+
         tableContainer.appendChild(table);
         setupControls.container.appendChild(tableContainer);
-        
+
         // Add switch to manual mode button
         const manualBtn = document.createElement('button');
         manualBtn.className = 'btn btn-secondary';
@@ -2000,7 +2106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderEmptyBaleState(baleNumber) {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
-        
+
         const banner = document.createElement('div');
         banner.className = 'empty-bale-banner';
         banner.style.cssText = 'background: #fff3cd; padding: 12px; margin-bottom: 12px; border-radius: 4px; border-left: 4px solid #ffc107;';
@@ -2010,7 +2116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Try a different bale number or switch to manual mode</div>
         `;
         setupControls.container.appendChild(banner);
-        
+
         // Add switch to manual mode button
         const manualBtn = document.createElement('button');
         manualBtn.className = 'btn btn-secondary';
@@ -2031,11 +2137,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderArcherSelectList(masterList, filter = '') {
         if (!setupControls.container) return;
         setupControls.container.innerHTML = '';
-        
+
         // Add sort toggle buttons
         const sortContainer = document.createElement('div');
         sortContainer.style.cssText = 'display: flex; gap: 8px; margin-bottom: 12px;';
-        
+
         const sortByBaleBtn = document.createElement('button');
         sortByBaleBtn.id = 'sort-by-bale-btn';
         sortByBaleBtn.className = state.sortMode === 'bale' ? 'btn btn-primary' : 'btn btn-outline-primary';
@@ -2045,7 +2151,7 @@ document.addEventListener('DOMContentLoaded', () => {
             saveData();
             renderArcherSelectList(masterList, filter);
         };
-        
+
         const sortByNameBtn = document.createElement('button');
         sortByNameBtn.id = 'sort-by-name-btn';
         sortByNameBtn.className = state.sortMode === 'name' ? 'btn btn-primary' : 'btn btn-outline-primary';
@@ -2055,11 +2161,11 @@ document.addEventListener('DOMContentLoaded', () => {
             saveData();
             renderArcherSelectList(masterList, filter);
         };
-        
+
         sortContainer.appendChild(sortByBaleBtn);
         sortContainer.appendChild(sortByNameBtn);
         setupControls.container.appendChild(sortContainer);
-        
+
         // Filter archers based on search term
         const filteredList = masterList.filter(archer => {
             if (!filter) return true;
@@ -2067,19 +2173,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const school = (archer.school || '').toLowerCase();
             return name.includes(filter.toLowerCase()) || school.includes(filter.toLowerCase());
         });
-        
+
         if (state.sortMode === 'bale') {
             renderBaleView(filteredList);
         } else {
             renderNameView(filteredList);
         }
     }
-    
+
     function renderBaleView(archerList) {
         // Group archers by bale
         const baleGroups = {};
         const unassigned = [];
-        
+
         archerList.forEach(archer => {
             if (archer.bale) {
                 if (!baleGroups[archer.bale]) baleGroups[archer.bale] = [];
@@ -2088,16 +2194,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 unassigned.push(archer);
             }
         });
-        
+
         // Sort bales numerically
         const sortedBales = Object.keys(baleGroups).sort((a, b) => parseInt(a) - parseInt(b));
-        
+
         sortedBales.forEach(bale => {
             // Create bale section
             const baleSection = document.createElement('div');
             baleSection.className = 'bale-section';
             baleSection.style.cssText = 'margin-bottom: 20px;';
-            
+
             // Create bale header with Start Scoring button
             const baleHeader = document.createElement('div');
             baleHeader.style.cssText = `
@@ -2109,11 +2215,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 justify-content: space-between;
                 align-items: center;
             `;
-            
+
             const baleTitle = document.createElement('div');
             baleTitle.style.cssText = 'font-weight: bold; font-size: 1.1em;';
             baleTitle.textContent = `🎯 Bale ${bale} • ${baleGroups[bale].length} archers`;
-            
+
             const startScoringBtn = document.createElement('button');
             startScoringBtn.className = 'btn btn-success';
             startScoringBtn.textContent = 'Start Scoring';
@@ -2121,22 +2227,22 @@ document.addEventListener('DOMContentLoaded', () => {
             startScoringBtn.onclick = () => {
                 loadEntireBale(bale, baleGroups[bale]);
             };
-            
+
             baleHeader.appendChild(baleTitle);
             baleHeader.appendChild(startScoringBtn);
             baleSection.appendChild(baleHeader);
-            
+
             // Create table for this bale
             const tableContainer = document.createElement('div');
             tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px;';
-            
+
             const table = document.createElement('table');
             table.style.cssText = 'width: 100%; border-collapse: collapse;';
-            
+
             // Create header row
             const headerRow = document.createElement('tr');
             headerRow.style.cssText = 'background: #f8f9fa; font-weight: bold;';
-            
+
             const headers = ['Archer Name', 'School', 'Division', 'Bale', 'Target'];
             headers.forEach(headerText => {
                 const th = document.createElement('th');
@@ -2145,15 +2251,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 headerRow.appendChild(th);
             });
             table.appendChild(headerRow);
-            
+
             // Sort archers within bale by first name
             const sortedArchers = [...baleGroups[bale]].sort((a, b) => a.first.localeCompare(b.first));
-            
+
             // Create data rows
             sortedArchers.forEach((archer, index) => {
                 const row = document.createElement('tr');
                 row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};`;
-                
+
                 const cells = [
                     `${archer.first} ${archer.last}`,
                     archer.school || 'Unknown',
@@ -2161,27 +2267,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     archer.bale || '1',
                     archer.target || 'A'
                 ];
-                
+
                 cells.forEach(cellText => {
                     const td = document.createElement('td');
                     td.textContent = cellText;
                     td.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
                     row.appendChild(td);
                 });
-                
+
                 table.appendChild(row);
             });
-            
+
             tableContainer.appendChild(table);
             baleSection.appendChild(tableContainer);
             setupControls.container.appendChild(baleSection);
         });
-        
+
         // Render unassigned archers if any
         if (unassigned.length > 0) {
             const unassignedSection = document.createElement('div');
             unassignedSection.style.cssText = 'margin-top: 20px;';
-            
+
             const unassignedHeader = document.createElement('div');
             unassignedHeader.style.cssText = `
                 background: #6c757d; 
@@ -2192,18 +2298,18 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             unassignedHeader.textContent = `☆ Unassigned Archers (${unassigned.length})`;
             unassignedSection.appendChild(unassignedHeader);
-            
+
             // Create table for unassigned archers
             const tableContainer = document.createElement('div');
             tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px;';
-            
+
             const table = document.createElement('table');
             table.style.cssText = 'width: 100%; border-collapse: collapse;';
-            
+
             // Create header row
             const headerRow = document.createElement('tr');
             headerRow.style.cssText = 'background: #f8f9fa; font-weight: bold;';
-            
+
             const headers = ['Archer Name', 'School', 'Division', 'Bale', 'Target'];
             headers.forEach(headerText => {
                 const th = document.createElement('th');
@@ -2212,15 +2318,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 headerRow.appendChild(th);
             });
             table.appendChild(headerRow);
-            
+
             // Sort unassigned archers by first name
             const sortedUnassigned = [...unassigned].sort((a, b) => a.first.localeCompare(b.first));
-            
+
             // Create data rows for unassigned archers
             sortedUnassigned.forEach((archer, index) => {
                 const row = document.createElement('tr');
                 row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};`;
-                
+
                 const cells = [
                     `${archer.first} ${archer.last}`,
                     archer.school || 'Unknown',
@@ -2228,39 +2334,39 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Unassigned',
                     'Unassigned'
                 ];
-                
+
                 cells.forEach(cellText => {
                     const td = document.createElement('td');
                     td.textContent = cellText;
                     td.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
                     row.appendChild(td);
                 });
-                
+
                 table.appendChild(row);
             });
-            
+
             tableContainer.appendChild(table);
             unassignedSection.appendChild(tableContainer);
             setupControls.container.appendChild(unassignedSection);
         }
     }
-    
+
     function renderNameView(archerList) {
         // Sort all archers by first name
         const sortedArchers = [...archerList].sort((a, b) => {
             if (a.first !== b.first) return a.first.localeCompare(b.first);
             return a.last.localeCompare(b.last);
         });
-        
+
         // Group archers by assignment status
         const assignedArchers = sortedArchers.filter(archer => archer.bale);
         const unassignedArchers = sortedArchers.filter(archer => !archer.bale);
-        
+
         // Show assigned archers first
         if (assignedArchers.length > 0) {
             const assignedSection = document.createElement('div');
             assignedSection.style.cssText = 'margin-bottom: 20px;';
-            
+
             const assignedHeader = document.createElement('div');
             assignedHeader.style.cssText = `
                 background: #28a745; 
@@ -2271,17 +2377,17 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             assignedHeader.textContent = `✅ Assigned Archers (${assignedArchers.length})`;
             assignedSection.appendChild(assignedHeader);
-            
+
             const tableContainer = document.createElement('div');
             tableContainer.style.cssText = 'background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px;';
-            
+
             const table = document.createElement('table');
             table.style.cssText = 'width: 100%; border-collapse: collapse;';
-            
+
             // Create header row
             const headerRow = document.createElement('tr');
             headerRow.style.cssText = 'background: #f8f9fa; font-weight: bold;';
-            
+
             const headers = ['Archer Name', 'School', 'Division', 'Bale', 'Target'];
             headers.forEach(headerText => {
                 const th = document.createElement('th');
@@ -2290,12 +2396,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 headerRow.appendChild(th);
             });
             table.appendChild(headerRow);
-            
+
             // Create data rows for assigned archers
             assignedArchers.forEach((archer, index) => {
                 const row = document.createElement('tr');
                 row.style.cssText = `background: ${index % 2 === 0 ? 'white' : '#f8f9fa'};`;
-                
+
                 const cells = [
                     `${archer.first} ${archer.last}`,
                     archer.school || 'Unknown',
@@ -2303,27 +2409,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     archer.bale || '1',
                     archer.target || 'A'
                 ];
-                
+
                 cells.forEach(cellText => {
                     const td = document.createElement('td');
                     td.textContent = cellText;
                     td.style.cssText = 'padding: 10px 8px; border-bottom: 1px solid #e9ecef;';
                     row.appendChild(td);
                 });
-                
+
                 table.appendChild(row);
             });
-            
+
             tableContainer.appendChild(table);
             assignedSection.appendChild(tableContainer);
             setupControls.container.appendChild(assignedSection);
         }
-        
+
         // Show unassigned archers with manual selection capability
         if (unassignedArchers.length > 0) {
             const unassignedSection = document.createElement('div');
             unassignedSection.style.cssText = 'margin-top: 20px;';
-            
+
             const unassignedHeader = document.createElement('div');
             unassignedHeader.style.cssText = `
                 background: #6c757d; 
@@ -2334,18 +2440,18 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             unassignedHeader.textContent = `☆ Unassigned Archers (Manual Selection) - ${unassignedArchers.length}`;
             unassignedSection.appendChild(unassignedHeader);
-            
+
             // Create table for unassigned archers with checkboxes
             const tableContainer = document.createElement('div');
             tableContainer.className = 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 border-t-0 rounded-b transition-colors duration-200';
-            
+
             const table = document.createElement('table');
             table.className = 'w-full border-collapse';
-            
+
             // Create header row with checkbox column
             const headerRow = document.createElement('tr');
             headerRow.className = 'bg-gray-100 dark:bg-gray-800 font-bold';
-            
+
             const headers = ['Select', 'Archer Name', 'School', 'Division', 'Status', 'Target'];
             headers.forEach(headerText => {
                 const th = document.createElement('th');
@@ -2354,20 +2460,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 headerRow.appendChild(th);
             });
             table.appendChild(headerRow);
-            
+
             // Create data rows for unassigned archers with checkboxes
             unassignedArchers.forEach((archer, index) => {
                 const row = document.createElement('tr');
                 row.className = index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800';
-                
+
                 // Checkbox cell
                 const checkboxCell = document.createElement('td');
                 checkboxCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center';
-                
+
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
                 checkbox.style.cssText = 'transform: scale(1.2);';
-                
+
                 const first = safeString(archer.first);
                 const last = safeString(archer.last);
                 const school = safeString(archer.school);
@@ -2377,7 +2483,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const uniqueId = databaseUuid || extId || `${first.toLowerCase()}-${last.toLowerCase()}-${school.toLowerCase()}`;
                 const existingArcher = state.archers.find(a => (a.id || a.archerId || a.extId) === uniqueId);
                 checkbox.checked = !!existingArcher;
-                
+
                 // Target select dropdown (hidden initially)
                 const targetSelect = document.createElement('select');
                 targetSelect.className = 'target-assignment-select';
@@ -2392,7 +2498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     targetSelect.value = existingArcher.targetAssignment;
                     targetSelect.style.display = 'inline-block';
                 }
-                
+
                 checkbox.onchange = () => {
                     if (checkbox.checked) {
                         // CRITICAL: Prevent adding to COMPLETED/VERIFIED cards
@@ -2405,7 +2511,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 return;
                             }
                         }
-                        
+
                         // Enforce max 4 archers per bale
                         const selectedCount = state.archers.length;
                         if (selectedCount >= 4) {
@@ -2454,7 +2560,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const chip = document.getElementById('selected-count-chip');
                     if (chip) chip.textContent = `${state.archers.length}/4`;
                 };
-                
+
                 targetSelect.onchange = () => {
                     const archerInState = state.archers.find(a => (a.extId || a.id) === uniqueId);
                     if (archerInState) {
@@ -2462,17 +2568,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         saveData();
                     }
                 };
-                
+
                 checkboxCell.appendChild(checkbox);
                 checkboxCell.appendChild(targetSelect);
                 row.appendChild(checkboxCell);
-                
+
                 // Get roster state for Me/Friends indicators
                 const { selfExtId, friendSet } = getRosterState();
                 const archerExtId = getExtIdFromArcher({ firstName: first, lastName: last, school, extId: archer.extId }) || archer.extId || uniqueId;
                 const isMe = selfExtId && archerExtId === selfExtId;
                 const isFriend = archerExtId && friendSet.has(archerExtId);
-                
+
                 // Archer Name cell with Me/Friends badges
                 const nameCell = document.createElement('td');
                 nameCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
@@ -2481,7 +2587,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const nameSpan = document.createElement('span');
                 nameSpan.textContent = `${archer.first} ${archer.last}`;
                 nameDiv.appendChild(nameSpan);
-                
+
                 if (isMe) {
                     const meBadge = document.createElement('span');
                     meBadge.className = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-primary text-white';
@@ -2497,19 +2603,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 nameCell.appendChild(nameDiv);
                 row.appendChild(nameCell);
-                
+
                 // School cell
                 const schoolCell = document.createElement('td');
                 schoolCell.textContent = archer.school || 'Unknown';
                 schoolCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
                 row.appendChild(schoolCell);
-                
+
                 // Division cell
                 const divisionCell = document.createElement('td');
                 divisionCell.textContent = archer.level || 'VAR';
                 divisionCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
                 row.appendChild(divisionCell);
-                
+
                 // Status cell
                 const statusCell = document.createElement('td');
                 statusCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-center';
@@ -2520,7 +2626,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const verified = existingArcher.verified || false;
                     let statusText = 'PEND';
                     let statusClass = 'bg-warning text-white';
-                    
+
                     if (verified) {
                         statusText = 'VER';
                         statusClass = 'bg-success text-white';
@@ -2528,7 +2634,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         statusText = 'COMP';
                         statusClass = 'bg-primary text-white';
                     }
-                    
+
                     statusBadge.className = `inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${statusClass}`;
                     statusBadge.textContent = statusText;
                 } else {
@@ -2537,28 +2643,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 statusCell.appendChild(statusBadge);
                 row.appendChild(statusCell);
-                
+
                 // Target cell
                 const targetCell = document.createElement('td');
                 targetCell.textContent = 'Unassigned';
                 targetCell.className = 'px-2 py-2 border-b border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200';
                 row.appendChild(targetCell);
-                
+
                 table.appendChild(row);
             });
-            
+
             tableContainer.appendChild(table);
             unassignedSection.appendChild(tableContainer);
             setupControls.container.appendChild(unassignedSection);
         }
     }
-    
+
     // Function to load entire bale when clicking on any archer
-    window.loadEntireBale = async function(baleNumber, archersInBale) {
+    window.loadEntireBale = async function (baleNumber, archersInBale) {
         // Clear existing archers
         state.archers = [];
         state.baleNumber = parseInt(baleNumber);
-        
+
         // Add all archers from this bale
         const targets = TARGET_LETTERS;
         archersInBale.forEach((archer, index) => {
@@ -2579,27 +2685,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
             state.archers.push(stateArcher);
         });
-        
+
         // Set assignment mode to pre-assigned since we're loading a complete bale
         state.assignmentMode = 'pre-assigned';
         saveData();
-        
+
         // Load existing scores for these archers (if any)
         await loadExistingScoresForArchers();
-        
+
         // Initialize Live Updates if enabled
         if (typeof LiveUpdates !== 'undefined') {
             try {
                 const cfg = JSON.parse(localStorage.getItem('live_updates_config') || '{}');
                 const isLiveEnabled = cfg.enabled !== undefined ? !!cfg.enabled : true;  // Default ON
                 if (isLiveEnabled && !LiveUpdates._state.roundId) {
-                    const today = new Date().toISOString().slice(0,10);
+                    const today = new Date().toISOString().slice(0, 10);
                     const firstArcher = state.archers[0];
                     const division = (firstArcher && firstArcher.division) || null;
                     const gender = (firstArcher && firstArcher.gender) || null;
                     const level = (firstArcher && firstArcher.level) || null;
-                    
-                    LiveUpdates.ensureRound({ 
+
+                    LiveUpdates.ensureRound({
                         roundType: 'R300',
                         date: today,
                         division,
@@ -2620,21 +2726,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.warn('Live Updates init error:', e);
             }
         }
-        
+
         // PHASE 0: Save session for recovery on page reload
         saveCurrentBaleSession();
-        
+
         // Transition to scoring view
         state.currentView = 'scoring';
         renderView();
-        
+
         // Scroll to the top to show the scoring interface
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function renderScoringView() {
         if (!scoringControls.container) return;
-        
+
         // Update header with event name and division
         const headerTitle = document.getElementById('scoring-header-title');
         if (headerTitle) {
@@ -2642,16 +2748,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const division = state.roundName || 'R300';
             headerTitle.textContent = `${eventName} - ${division}`;
         }
-        
+
         // Update bale and end displays
         const baleDisplay = document.getElementById('current-bale-display');
         const endDisplay = document.getElementById('current-end-display');
         if (baleDisplay) baleDisplay.textContent = state.baleNumber;
         if (endDisplay) endDisplay.textContent = state.currentEnd;
-        
+
         // Sync column removed per user request
         let isLiveEnabled = false;  // Disabled - sync column removed
-        
+
         let tableHTML = `
             <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[600px]">
                 <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
@@ -2697,7 +2803,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else if (avgNum >= 3) avgClass = 'score-black';
                 else avgClass = 'score-white';
             }
-            
+
             // Get sync status for this archer/end
             const syncStatus = (state.syncStatus[archer.id] && state.syncStatus[archer.id][state.currentEnd]) || '';
             const syncIcon = getSyncStatusIcon(syncStatus);
@@ -2711,13 +2817,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 : `<span class="inline-block px-2 py-1 text-xs font-bold rounded mr-1 ${badgeClass}">${status}</span>`;
             const rowLockAttr = isLocked ? 'data-locked="true" class="locked-scorecard-row"' : '';
             const lockedAttr = isLocked ? 'data-locked="true" tabindex="-1" disabled' : 'data-locked="false"';
-            
+
             tableHTML += `
                 <tr data-archer-id="${archer.id}" ${rowLockAttr} class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
                     <td class="px-2 py-1 text-left text-xs font-semibold sticky left-0 bg-white dark:bg-gray-700 text-gray-800 dark:text-white w-36 truncate">${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[1])} ${getScoreTextColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[1])} ${getScoreTextColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
                     <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${endTotal}</td>
                     <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">${runningTotal}</td>
                     <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">${endXs}</td>
@@ -2727,10 +2833,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         tableHTML += `</tbody></table>`;
         scoringControls.container.innerHTML = tableHTML;
-        
+
         // Re-attach keypad event handlers to new score inputs
         attachKeypadHandlers();
-        
+
         // Attach card view button handlers
         document.querySelectorAll('.view-card-btn').forEach(btn => {
             btn.onclick = (e) => {
@@ -2743,7 +2849,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
         });
-        
+
         // Ensure navigation button labels and handlers
         const prevBtn = document.getElementById('prev-end-btn');
         const nextBtn = document.getElementById('next-end-btn');
@@ -2754,11 +2860,11 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLiveStatusDisplay();
         updateCompleteButton();
     }
-    
+
     function renderCardView(archerId) {
         const archer = state.archers.find(a => a.id == archerId);
         if (!archer) return;
-        
+
         // Convert archer data to ScorecardView format
         const archerData = {
             id: archer.id,
@@ -2771,14 +2877,14 @@ document.addEventListener('DOMContentLoaded', () => {
             verified: archer.cardStatus === 'VER',
             completed: archer.scores.filter(s => s.every(val => val !== '')).length >= state.totalEnds
         };
-        
+
         const roundData = {
             totalEnds: state.totalEnds,
             eventName: state.eventName || 'Ranking Round',
             division: archer.level || '',
             roundType: 'R300'
         };
-        
+
         // Use standardized ScorecardView modal
         ScorecardView.showScorecardModal(archerData, roundData, {
             onClose: () => {
@@ -2788,7 +2894,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     function getBaleTotals() {
         return state.archers.map(archer => {
             let totalScore = 0, totalArrows = 0, tens = 0, xs = 0;
@@ -2847,10 +2953,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Keypad element not found!');
             return;
         }
-        
-        // Ensure keypad has proper styling and is initially hidden
-        keypad.element.style.display = 'none';
-        
+
+        // CRITICAL FIX: Don't set inline style.display - it overrides Tailwind's hidden class
+        // The HTML already has class="hidden" - we'll use classList.add/remove('hidden') to control visibility
+
         // Tailwind-styled keypad (keeping keypad-btn class for event handler)
         // New 4x3 layout: no gaps, no navigation buttons, no rounded corners, edge-to-edge borders
         keypad.element.innerHTML = `
@@ -2878,7 +2984,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="keypad-btn p-4 text-lg font-bold cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger-light dark:bg-danger-dark text-danger-dark dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2 rounded-none" style="border-radius: 0 !important;" data-action="clear">CLEAR</button>
             </div>
         `;
-        
+
         console.log('Keypad rendered successfully');
     }
 
@@ -2886,9 +2992,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!input) return;
         keypad.currentlyFocusedInput = input;
         if (keypad.element) {
-            keypad.element.classList.remove('hidden');
+            // CRITICAL FIX: Use style.display instead of classList (consistent with renderKeypad)
+            keypad.element.style.display = 'block';
         }
         document.body.classList.add('keypad-visible');
+        console.log('✅ Keypad shown for input:', input.dataset.archerId, input.dataset.arrowIdx);
     }
 
     function attachKeypadHandlers() {
@@ -2897,7 +3005,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('Keypad element not found, attempting to re-render');
             renderKeypad();
         }
-        
+
         // Make score inputs focusable by removing readonly temporarily on touch
         const scoreInputs = document.querySelectorAll('.score-input');
         scoreInputs.forEach(input => {
@@ -2914,7 +3022,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 input.focus();
             }, { passive: false });
-            
+
             // Ensure inputs can be focused with click as well
             input.addEventListener('click', () => {
                 input.focus();
@@ -2924,45 +3032,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 showKeypadForInput(input);
             });
         });
-        
+
         console.log(`Attached keypad handlers to ${scoreInputs.length} inputs`);
     }
 
     function handleKeypadClick(e) {
         const button = e.target.closest('.keypad-btn');
         if (!button) return;
-        
+
         console.log('Keypad button clicked:', button.dataset.value || button.dataset.action);
-        
+
         if (!keypad.currentlyFocusedInput) {
             console.log('No focused input, ignoring keypad click');
             return;
         }
-        
+
         const action = button.dataset.action;
         const value = button.dataset.value;
         const input = keypad.currentlyFocusedInput;
         const allInputs = Array.from(document.querySelectorAll('#scoring-view .score-input'));
         const currentIndex = allInputs.indexOf(input);
-        
+
         // Close action
         if (action === 'close') {
-            keypad.element.style.display = 'none';
+            keypad.element.classList.add('hidden');
             document.body.classList.remove('keypad-visible');
+            keypad.currentlyFocusedInput = null;
             input.blur();
+            console.log('✅ Keypad closed');
             return;
         }
-        
+
+
         // Score entry
         if (action === 'clear') {
             input.value = '';
         } else if (value) {
             input.value = value;
         }
-        
+
         // Trigger input event to update scores
         input.dispatchEvent(new Event('input', { bubbles: true }));
-        
+
         // Auto-advance to next input after score entry
         if (value && currentIndex < allInputs.length - 1) {
             const nextInputInOldList = allInputs[currentIndex + 1];
@@ -3001,16 +3112,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 archer.scores[state.currentEnd - 1] = ['', '', ''];
             }
             archer.scores[state.currentEnd - 1][arrowIndex] = input.value;
+
+            // CRITICAL FIX: Update input background color immediately
+            const scoreValue = input.value;
+            const colorClass = getScoreColorClass(scoreValue);
+            const textColorClass = getScoreTextColor(scoreValue);
+
+            // Remove all possible score color classes
+            input.classList.remove('bg-score-gold', 'bg-score-red', 'bg-score-blue', 'bg-score-black', 'bg-score-white');
+            input.classList.remove('text-black', 'text-white', 'text-gray-500');
+
+            // Add new color classes
+            input.classList.add(`bg-score-${colorClass}`);
+            input.classList.add(textColorClass);
+
             renderScoringView();
             saveData();
 
             // Live Updates: best-effort post of current end state
             try {
                 let isEnabled = true;  // Default ON
-                try { const cfg = JSON.parse(localStorage.getItem('live_updates_config')||'{}'); isEnabled = cfg.enabled !== undefined ? !!cfg.enabled : true; } catch(_) {}
+                try { const cfg = JSON.parse(localStorage.getItem('live_updates_config') || '{}'); isEnabled = cfg.enabled !== undefined ? !!cfg.enabled : true; } catch (_) { }
                 if (isEnabled && typeof LiveUpdates !== 'undefined') {
                     const endScores = archer.scores[state.currentEnd - 1];
-                    const [a1,a2,a3] = [endScores[0]||'', endScores[1]||'', endScores[2]||''];
+                    const [a1, a2, a3] = [endScores[0] || '', endScores[1] || '', endScores[2] || ''];
                     // Compute per-end totals (only this end)
                     let endTotal = 0, tens = 0, xs = 0;
                     [a1, a2, a3].forEach(s => {
@@ -3034,27 +3159,27 @@ document.addEventListener('DOMContentLoaded', () => {
                             else if (/^[0-9]$|^10$/.test(u)) { running += parseInt(u, 10); }
                         });
                     }
-                    
+
                     // Debug logging
-                    console.log('Live update attempt:', { 
-                        enabled: isEnabled, 
-                        hasLiveUpdates: !!LiveUpdates, 
-                        hasState: !!LiveUpdates._state, 
+                    console.log('Live update attempt:', {
+                        enabled: isEnabled,
+                        hasLiveUpdates: !!LiveUpdates,
+                        hasState: !!LiveUpdates._state,
                         roundId: LiveUpdates._state?.roundId,
                         archerId: archer.id,
                         endNumber: state.currentEnd,
                         scores: { a1, a2, a3, endTotal, runningTotal: running, tens, xs }
                     });
-                    
+
                     // Set sync status to pending
                     updateSyncStatus(archer.id, state.currentEnd, 'pending');
-                    
+
                     // Check if Live Updates is properly initialized
                     if (!isLiveUpdatesReady()) {
                         console.log('Live Updates not ready - skipping sync');
                         return;
                     }
-                    
+
                     if (LiveUpdates._state.roundId) {
                         // Round is initialized, sync directly
                         // Use the same ID that was used in ensureArcher (archer.id or archer.archerId)
@@ -3065,48 +3190,48 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.log('  - localId (used for lookup):', localId);
                         console.log('  - LiveUpdates._state.archerIds:', LiveUpdates._state.archerIds);
                         console.log('  - Mapped roundArcherId:', LiveUpdates._state.archerIds[localId]);
-                        
+
                         if (!LiveUpdates._state.archerIds[localId]) {
                             console.error('❌ CRITICAL: No roundArcherId mapping found for localId:', localId);
                             console.error('Available mappings:', Object.keys(LiveUpdates._state.archerIds));
                             updateSyncStatus(localId, state.currentEnd, 'failed');
                             return;
                         }
-                        
+
                         LiveUpdates.postEnd(localId, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs })
-                          .then(() => updateSyncStatus(localId, state.currentEnd, 'synced'))
-                          .catch(err => {
-                            console.error('Sync failed:', err, 'localId:', localId, 'archerIds:', LiveUpdates._state.archerIds);
-                            updateSyncStatus(localId, state.currentEnd, 'failed');
-                          });
+                            .then(() => updateSyncStatus(localId, state.currentEnd, 'synced'))
+                            .catch(err => {
+                                console.error('Sync failed:', err, 'localId:', localId, 'archerIds:', LiveUpdates._state.archerIds);
+                                updateSyncStatus(localId, state.currentEnd, 'failed');
+                            });
                     } else {
                         // Round not initialized, initialize first
                         console.log('Initializing Live Updates round...');
                         LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), eventId: state.activeEventId || state.selectedEventId })
-                          .then(() => {
-                            console.log('Round initialized, ensuring archer...');
-                            return LiveUpdates.ensureArcher(archer.id, archer);
-                          })
-                          .then(() => {
-                            console.log('Archer ensured, posting end...');
-                            return LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs });
+                            .then(() => {
+                                console.log('Round initialized, ensuring archer...');
+                                return LiveUpdates.ensureArcher(archer.id, archer);
                             })
-                          .then(() => {
-                            console.log('End posted successfully');
-                            updateSyncStatus(archer.id, state.currentEnd, 'synced');
-                        })
-                          .catch(err => {
-                            console.error('Live init/post failed:', err);
-                            updateSyncStatus(archer.id, state.currentEnd, 'failed');
-                          });
+                            .then(() => {
+                                console.log('Archer ensured, posting end...');
+                                return LiveUpdates.postEnd(archer.id, state.currentEnd, { a1, a2, a3, endTotal, runningTotal: running, tens, xs });
+                            })
+                            .then(() => {
+                                console.log('End posted successfully');
+                                updateSyncStatus(archer.id, state.currentEnd, 'synced');
+                            })
+                            .catch(err => {
+                                console.error('Live init/post failed:', err);
+                                updateSyncStatus(archer.id, state.currentEnd, 'failed');
+                            });
                     }
                 }
-            } catch (e) { 
+            } catch (e) {
                 console.error('Live update error:', e);
                 updateSyncStatus(archer.id, state.currentEnd, 'failed');
             }
         }
-        
+
         // Update complete button after score input
         updateCompleteButton();
     }
@@ -3122,70 +3247,70 @@ document.addEventListener('DOMContentLoaded', () => {
             updateLiveStatusDisplay();
         }
     }
-    
+
     function resetState() {
         // NEW EVENT: Clear everything for a fresh scorecard with new event
         // This is like picking up a blank scorecard to start a new event
-        
+
         // Clear scorecard data
         state.archers = [];
         state.currentEnd = 1;
         state.currentView = 'setup';
         state.syncStatus = {};
         state.baleNumber = 1;
-        
+
         // Clear division/round context
         state.divisionCode = null;
         state.divisionRoundId = null;
         state.divisionName = '';
-        
+
         // Clear event connection - user will select new event
         state.activeEventId = null;
         state.selectedEventId = null;
         state.eventName = '';
         state.assignmentMode = 'manual';
         state.setupMode = 'manual';
-        
+
         // Clear Live Updates completely
         if (window.LiveUpdates && LiveUpdates._state) {
             LiveUpdates._state.roundId = null;
             LiveUpdates._state.archerIds = {};
             LiveUpdates._state.eventId = null;
         }
-        
+
         // Clear event-related localStorage (but keep archer identity!)
         try {
             const today = new Date().toISOString().split('T')[0];
             localStorage.removeItem(`rankingRound300_${today}`);
             localStorage.removeItem('current_bale_session');
             localStorage.removeItem('event_entry_code');
-            
+
             // Clear live updates sessions
             Object.keys(localStorage).forEach(key => {
                 if (key.startsWith('live_updates_session:')) {
                     localStorage.removeItem(key);
                 }
             });
-            
+
             console.log('[resetState] Cleared scorecard and event data for new event');
         } catch (e) {
             console.warn('Error clearing session:', e);
         }
-        
+
         // NOTE: We PRESERVE:
         // - oas_archer_id cookie (archer's personal identity)
         // - archerSelfExtId (their self-identification)
         // - Archer master list (preserved in ArcherModule)
-        
+
         renderView();
         saveData();
         updateLiveStatusDisplay();
         updateEventHeader();
-        
+
         // Show event selection modal so user can pick new event
         showEventModal();
     }
-    
+
     function showScoringView() {
         if (state.archers.length === 0) {
             alert("Please select at least one archer to start scoring.");
@@ -3196,25 +3321,25 @@ document.addEventListener('DOMContentLoaded', () => {
         saveData();
         updateCompleteButton();
         updateEventHeader();
-        
+
         // Show scoring in progress banner
         showScoringBanner();
 
         // Ensure offline banner state reflects connectivity
-        try { ensureOfflineBanner(); } catch(_) {}
+        try { ensureOfflineBanner(); } catch (_) { }
     }
 
     function syncCurrentEnd() {
         const currentEnd = state.currentEnd;
         const promises = [];
-        
+
         // Sync all archers for the current end
         state.archers.forEach(archer => {
             const endScores = archer.scores[currentEnd - 1];
             if (!endScores || !endScores.some(score => score !== '' && score !== null)) {
                 return; // Skip archers with no scores for this end
             }
-            
+
             const [a1, a2, a3] = [endScores[0] || '', endScores[1] || '', endScores[2] || ''];
             // Per-end numbers
             let endTotal = 0, tens = 0, xs = 0;
@@ -3239,22 +3364,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     else { const n = parseInt(u, 10); if (!isNaN(n)) running += n; }
                 });
             }
-            
+
             // Set sync status to pending
             updateSyncStatus(archer.id, currentEnd, 'pending');
-            
+
             // Sync to server
             if (!isLiveUpdatesReady()) {
                 console.log('Live Updates not ready for archer:', archer.id);
                 updateSyncStatus(archer.id, currentEnd, 'failed');
                 return;
             }
-            
+
             if (LiveUpdates._state.roundId) {
                 // Round is initialized, but check if archer is registered
                 const archerRegistered = !!LiveUpdates._state.archerIds[archer.id];
                 console.log(`Archer ${archer.id} registered:`, archerRegistered, 'Mapping:', LiveUpdates._state.archerIds[archer.id]);
-                
+
                 if (!archerRegistered) {
                     // Archer not registered yet - register first then sync
                     console.log('Registering missing archer:', archer.id);
@@ -3302,14 +3427,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 promises.push(promise);
             }
         });
-        
+
         // Show progress
         const completeBtn = document.getElementById('complete-round-btn');
         if (completeBtn) {
             completeBtn.disabled = true;
             completeBtn.textContent = 'Syncing...';
         }
-        
+
         // Wait for all syncs to complete
         Promise.allSettled(promises).then(() => {
             if (completeBtn) {
@@ -3331,7 +3456,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
-        
+
         saveData();
         alert('Round completed! All archers have finished 10 ends.');
         updateCompleteButton();
@@ -3341,11 +3466,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const completeBtn = document.getElementById('complete-round-btn');
         const syncBtn = document.getElementById('sync-end-btn');
         const nextBtn = document.getElementById('next-end-btn');
-        
+
         if (!completeBtn) return;
-        
+
         const isLiveEnabled = getLiveEnabled();
-        
+
         if (!isLiveEnabled) {
             // Live sync is off - show "Complete Round" only when every archer has 10 fully scored ends
             const allComplete = state.archers.length > 0 && state.archers.every(archer => {
@@ -3365,7 +3490,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const endScores = archer.scores[state.currentEnd - 1];
                 return Array.isArray(endScores) && endScores.some(score => score !== '' && score !== null && score !== undefined);
             });
-            
+
             if (syncBtn && currentEndHasScores) {
                 syncBtn.style.display = 'inline-block';
             } else if (syncBtn) {
@@ -3378,7 +3503,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function verifyAndLoadEventByCode(eventId, entryCode) {
         try {
             console.log('Verifying entry code for event:', eventId);
-            
+
             // Validate inputs
             if (!eventId || !entryCode) {
                 console.error('Missing eventId or entryCode');
@@ -3390,13 +3515,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const eid = eventId || 'local-e2e';
                     const sample = [
-                        { firstName:'Alex', lastName:'Smith', school:'WIS', level:'VAR', gender:'M', baleNumber:1, targetAssignment:'A', division:'BVAR' },
-                        { firstName:'Ben', lastName:'Lee', school:'WIS', level:'VAR', gender:'M', baleNumber:1, targetAssignment:'B', division:'BVAR' },
-                        { firstName:'Cara', lastName:'Jones', school:'DVN', level:'VAR', gender:'F', baleNumber:2, targetAssignment:'A', division:'GVAR' },
-                        { firstName:'Dana', lastName:'Ng', school:'DVN', level:'VAR', gender:'F', baleNumber:2, targetAssignment:'B', division:'GVAR' }
+                        { firstName: 'Alex', lastName: 'Smith', school: 'WIS', level: 'VAR', gender: 'M', baleNumber: 1, targetAssignment: 'A', division: 'BVAR' },
+                        { firstName: 'Ben', lastName: 'Lee', school: 'WIS', level: 'VAR', gender: 'M', baleNumber: 1, targetAssignment: 'B', division: 'BVAR' },
+                        { firstName: 'Cara', lastName: 'Jones', school: 'DVN', level: 'VAR', gender: 'F', baleNumber: 2, targetAssignment: 'A', division: 'GVAR' },
+                        { firstName: 'Dana', lastName: 'Ng', school: 'DVN', level: 'VAR', gender: 'F', baleNumber: 2, targetAssignment: 'B', division: 'GVAR' }
                     ];
                     localStorage.setItem(`event:${eid}:archers_v2`, JSON.stringify(sample));
-                    localStorage.setItem(`event:${eid}:meta`, JSON.stringify({ id:eid, name:'QR Event', date:'', assignmentMode:'assigned', snapshotVersion:2, entryCode: entryCode }));
+                    localStorage.setItem(`event:${eid}:meta`, JSON.stringify({ id: eid, name: 'QR Event', date: '', assignmentMode: 'assigned', snapshotVersion: 2, entryCode: entryCode }));
                     state.selectedEventId = eid;
                     state.activeEventId = eid;
                     state.eventName = 'QR Event';
@@ -3404,45 +3529,45 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.setupMode = 'pre-assigned';
                     updateEventHeader();
                     return true;
-                } catch(_) {
+                } catch (_) {
                     // fallthrough
                 }
             }
-            
+
             const res = await fetch(`${API_BASE}/events/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ eventId, entryCode })
             });
-            
+
             if (!res.ok) {
                 const errorText = await res.text();
                 console.error('Verify failed:', res.status, errorText);
                 return false;
             }
-            
+
             const data = await res.json();
             console.log('Verify response:', data);
-            
+
             if (!data.verified) {
                 console.error('Entry code invalid:', data.error || 'Unknown error');
                 return false;
             }
-            
+
             // Success - load the event
             console.log('Entry code verified! Loading event:', data.event.name);
             state.selectedEventId = eventId;
             state.activeEventId = eventId;
-            try { localStorage.setItem('event_entry_code', entryCode); } catch(_) {}
-            
+            try { localStorage.setItem('event_entry_code', entryCode); } catch (_) { }
+
             // Load event data and show archer list
             try {
                 const eventRes = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
                 if (!eventRes.ok) throw new Error(`HTTP ${eventRes.status}`);
-                
+
                 const eventData = await eventRes.json();
                 console.log('Event snapshot:', eventData);
-                
+
                 if (eventData && eventData.divisions) {
                     // Extract and normalize
                     const allArchers = [];
@@ -3466,7 +3591,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     });
                     // Save to event-scoped caches
-                    try { localStorage.setItem(`event:${eventId}:archers_v2`, JSON.stringify(allArchers)); } catch(_) {}
+                    try { localStorage.setItem(`event:${eventId}:archers_v2`, JSON.stringify(allArchers)); } catch (_) { }
                     try {
                         const meta = {
                             id: eventData.event?.id || eventId,
@@ -3478,14 +3603,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         };
                         localStorage.setItem(`event:${eventId}:meta`, JSON.stringify(meta));
                         state.assignmentMode = (meta.assignmentMode === 'assigned') ? 'pre-assigned' : 'manual';
-                    } catch(_) {}
+                    } catch (_) { }
                     console.log(`Loaded ${allArchers.length} archers from event into event-scoped cache`);
                 }
-                
+
                 // Hide modal if open
                 const modal = document.getElementById('event-modal');
                 if (modal) modal.style.display = 'none';
-                
+
                 renderSetupForm();
                 return true;
             } catch (err) {
@@ -3497,13 +3622,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
     }
-    
+
     // Load event information for display and selector (PUBLIC - no authentication required)
     async function loadEventInfo() {
         try {
             console.log('Loading events...');
             const today = new Date().toISOString().slice(0, 10);
-            
+
             // Fetch events from public API endpoint
             const res = await fetch(`${API_BASE}/events/recent`);
             if (!res.ok) {
@@ -3511,18 +3636,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const data = await res.json();
             console.log('Events data:', data);
-            
+
             if (data.events && data.events.length > 0) {
                 // Prefer Active; fall back to all if none are Active
                 let activeEvents = data.events.filter(ev => ev.status === 'Active');
                 if (activeEvents.length === 0) activeEvents = data.events;
                 console.log(`Event selector: using ${activeEvents.length} events (active preferred)`);
-                
+
                 // Populate event selector
                 const eventSelector = document.getElementById('event-selector');
                 if (eventSelector) {
                     eventSelector.innerHTML = '<option value="">Select Event...</option>';
-                    
+
                     activeEvents.forEach(ev => {
                         const option = document.createElement('option');
                         option.value = ev.id;
@@ -3530,7 +3655,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         option.textContent = `${ev.name} (${ev.date})`;
                         eventSelector.appendChild(option);
                     });
-                    
+
                     // Auto-select if only ONE event in list
                     if (activeEvents.length === 1) {
                         console.log('Only one active event - auto-selecting:', activeEvents[0].name);
@@ -3539,7 +3664,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         state.eventName = activeEvents[0].name || state.eventName;
                         saveData();
                         updateEventHeader();
-                        
+
                         // Trigger load of archers for this event
                         try {
                             const res = await fetch(`${API_BASE}/events/${activeEvents[0].id}/snapshot`);
@@ -3575,13 +3700,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     console.log('Event selector element not found');
                 }
-                
+
                 // Update display info
                 const todayEvent = data.events.find(ev => ev.date === today);
                 if (todayEvent) {
                     const eventNameEl = document.getElementById('event-name');
                     const baleDisplayEl = document.getElementById('current-bale-display');
-                    
+
                     if (eventNameEl) eventNameEl.textContent = todayEvent.name;
                     if (baleDisplayEl) baleDisplayEl.textContent = state.baleNumber;
                 }
@@ -3604,21 +3729,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const data = await res.json();
             console.log('Loaded event snapshot for bale:', data);
-            
+
             if (!data || !data.divisions) {
                 console.log('No divisions found in event snapshot');
                 return;
             }
-            
+
             // Use provided bale number or current state bale
             const targetBale = baleNumber !== null ? baleNumber : state.baleNumber;
-            
+
             // Search all divisions for archers assigned to our bale number
             let foundArchers = [];
             let divisionName = '';
             let divisionCode = null;
             let divisionRoundId = null;
-            
+
             for (const [divCode, divData] of Object.entries(data.divisions)) {
                 if (divData.archers && divData.archers.length > 0) {
                     const baleArchers = divData.archers.filter(a => a.bale === targetBale);
@@ -3631,7 +3756,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            
+
             if (foundArchers.length > 0) {
                 // Convert to our state format - CRITICAL: Include division and roundId
                 state.archers = foundArchers.map(a => {
@@ -3663,13 +3788,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     stateArcher.roundId = divisionRoundId;
                     return stateArcher;
                 });
-                
+
                 state.activeEventId = eventId;
                 state.assignmentMode = 'pre-assigned';
                 state.divisionName = divisionName;
                 state.divisionCode = divisionCode; // Store division code in state
                 state.divisionRoundId = divisionRoundId; // CRITICAL: Store existing roundId to prevent creating new rounds
-                
+
                 console.log(`Pre-assigned mode: ${foundArchers.length} archers on bale ${state.baleNumber} (${divisionName}, division: ${divisionCode}, roundId: ${divisionRoundId})`);
                 saveData();
                 renderSetupForm();
@@ -3727,100 +3852,187 @@ document.addEventListener('DOMContentLoaded', () => {
             bar.innerHTML = '<span>Offline: scoring will queue and sync when online.</span> <button id="flush-queue-btn" class="btn btn-secondary" style="float:right;">Flush Now</button>';
             document.body.appendChild(bar);
             const btn = bar.querySelector('#flush-queue-btn');
-            if (btn) btn.onclick = () => { try { LiveUpdates.flushQueue && LiveUpdates.flushQueue(); } catch(_) {} };
+            if (btn) btn.onclick = () => { try { LiveUpdates.flushQueue && LiveUpdates.flushQueue(); } catch (_) { } };
         }
         const online = navigator.onLine;
         bar.style.display = online ? 'none' : 'block';
     }
 
-    window.addEventListener('online', () => { try { LiveUpdates.flushQueue && LiveUpdates.flushQueue(); } catch(_) {}; ensureOfflineBanner(); });
+    window.addEventListener('online', () => { try { LiveUpdates.flushQueue && LiveUpdates.flushQueue(); } catch (_) { }; ensureOfflineBanner(); });
     window.addEventListener('offline', () => ensureOfflineBanner());
-    
-function getLiveEnabled() {
-    try { 
-        const cfg = JSON.parse(localStorage.getItem('live_updates_config')||'{}');
-        return cfg.enabled !== undefined ? !!cfg.enabled : true;  // Default ON
-    } catch(_) { 
-        return true;  // Default ON if error
-    }
-}
 
-function setLiveEnabled(v) { 
-    try { 
-        if (window.LiveUpdates && LiveUpdates.saveConfig) {
-            LiveUpdates.saveConfig({ enabled: !!v }); 
-        } else {
-            localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v })); 
+    function getLiveEnabled() {
+        try {
+            const cfg = JSON.parse(localStorage.getItem('live_updates_config') || '{}');
+            return cfg.enabled !== undefined ? !!cfg.enabled : true;  // Default ON
+        } catch (_) {
+            return true;  // Default ON if error
         }
-    } catch(_) {} 
-}
-
-function getLiveQueueSize() {
-    try {
-        if (window.LiveUpdates && LiveUpdates._state && Array.isArray(LiveUpdates._state.retryQueue)) {
-            return LiveUpdates._state.retryQueue.length;
-        }
-    } catch (_) {}
-    return 0;
-}
-
-async function ensureLiveRoundReady(options = {}) {
-    if (!getLiveEnabled()) return false;
-    if (!window.LiveUpdates || typeof LiveUpdates.setConfig !== 'function') {
-        console.warn('Live Updates not available in this context.');
-        return false;
     }
 
-    try {
-        const cfg = window.LIVE_UPDATES || {};
-        LiveUpdates.setConfig({ apiBase: cfg.apiBase || API_BASE });
-
-        let metaConfig = {};
-        try { metaConfig = JSON.parse(localStorage.getItem('live_updates_config') || '{}'); } catch (_) {}
-        const hasCoachKey = !!(metaConfig && metaConfig.apiKey);
-        let entryCode = getEventEntryCode();
-
-        if (!hasCoachKey && !entryCode && options.promptForCode !== false) {
-            const userCode = (typeof prompt === 'function') ? prompt('Enter Event Code to enable Live Sync:') : '';
-            if (userCode && userCode.trim()) {
-                entryCode = userCode.trim();
-                try {
-                    localStorage.setItem('event_entry_code', entryCode);
-                    const eid = state.activeEventId || state.selectedEventId;
-                    if (eid) {
-                        const metaRaw = localStorage.getItem(`event:${eid}:meta`) || '{}';
-                        const meta = JSON.parse(metaRaw);
-                        meta.entryCode = entryCode;
-                        localStorage.setItem(`event:${eid}:meta`, JSON.stringify(meta));
-                    }
-                } catch (_) {}
+    function setLiveEnabled(v) {
+        try {
+            if (window.LiveUpdates && LiveUpdates.saveConfig) {
+                LiveUpdates.saveConfig({ enabled: !!v });
             } else {
-                console.warn('Live Sync requires an event code when a coach key is unavailable.');
-                return false;
+                localStorage.setItem('live_updates_config', JSON.stringify({ enabled: !!v }));
             }
+        } catch (_) { }
+    }
+
+    function getLiveQueueSize() {
+        try {
+            if (window.LiveUpdates && LiveUpdates._state && Array.isArray(LiveUpdates._state.retryQueue)) {
+                return LiveUpdates._state.retryQueue.length;
+            }
+        } catch (_) { }
+        return 0;
+    }
+
+    async function ensureLiveRoundReady(options = {}) {
+        if (!getLiveEnabled()) return false;
+        if (!window.LiveUpdates || typeof LiveUpdates.setConfig !== 'function') {
+            console.warn('Live Updates not available in this context.');
+            return false;
         }
 
-        const eventId = state.activeEventId || state.selectedEventId || null;
-        const today = new Date().toISOString().slice(0, 10);
-        let division = null;
-        let gender = null;
-        let level = null;
+        try {
+            const cfg = window.LIVE_UPDATES || {};
+            LiveUpdates.setConfig({ apiBase: cfg.apiBase || API_BASE });
 
-        // CRITICAL: Check if we already have a roundId from the event snapshot (prevents creating "Undefined" rounds)
-        if (state.divisionRoundId && eventId) {
-            console.log(`✅ Using existing roundId from event: ${state.divisionRoundId} (division: ${state.divisionCode})`);
-            // Set the roundId directly in LiveUpdates state to use existing round
-            if (!LiveUpdates._state) {
-                LiveUpdates._state = {};
+            let metaConfig = {};
+            try { metaConfig = JSON.parse(localStorage.getItem('live_updates_config') || '{}'); } catch (_) { }
+            const hasCoachKey = !!(metaConfig && metaConfig.apiKey);
+            let entryCode = getEventEntryCode();
+
+            if (!hasCoachKey && !entryCode && options.promptForCode !== false) {
+                const userCode = (typeof prompt === 'function') ? prompt('Enter Event Code to enable Live Sync:') : '';
+                if (userCode && userCode.trim()) {
+                    entryCode = userCode.trim();
+                    try {
+                        localStorage.setItem('event_entry_code', entryCode);
+                        const eid = state.activeEventId || state.selectedEventId;
+                        if (eid) {
+                            const metaRaw = localStorage.getItem(`event:${eid}:meta`) || '{}';
+                            const meta = JSON.parse(metaRaw);
+                            meta.entryCode = entryCode;
+                            localStorage.setItem(`event:${eid}:meta`, JSON.stringify(meta));
+                        }
+                    } catch (_) { }
+                } else {
+                    console.warn('Live Sync requires an event code when a coach key is unavailable.');
+                    return false;
+                }
             }
-            LiveUpdates._state.roundId = state.divisionRoundId;
-            LiveUpdates._state.eventId = eventId;
-            
-            // Ensure division is set from state
-            if (state.divisionCode) {
-                division = state.divisionCode;
+
+            const eventId = state.activeEventId || state.selectedEventId || null;
+            const today = new Date().toISOString().slice(0, 10);
+            let division = null;
+            let gender = null;
+            let level = null;
+
+            // CRITICAL: Check if we already have a roundId from the event snapshot (prevents creating "Undefined" rounds)
+            if (state.divisionRoundId && eventId) {
+                console.log(`✅ Using existing roundId from event: ${state.divisionRoundId} (division: ${state.divisionCode})`);
+                // Set the roundId directly in LiveUpdates state to use existing round
+                if (!LiveUpdates._state) {
+                    LiveUpdates._state = {};
+                }
+                LiveUpdates._state.roundId = state.divisionRoundId;
+                LiveUpdates._state.eventId = eventId;
+
+                // Ensure division is set from state
+                if (state.divisionCode) {
+                    division = state.divisionCode;
+                }
+
+                // FIX: Pre-populate archerIds mapping with known roundArcherId values
+                // This prevents creating duplicate round_archer entries when archers were added via coach.html
+                if (!LiveUpdates._state.archerIds) {
+                    LiveUpdates._state.archerIds = {};
+                }
+                if (state.archers && state.archers.length) {
+                    state.archers.forEach(archer => {
+                        if (archer.roundArcherId && !LiveUpdates._state.archerIds[archer.id]) {
+                            console.log(`✅ Pre-mapping archer ${archer.id} to existing roundArcherId: ${archer.roundArcherId}`);
+                            LiveUpdates._state.archerIds[archer.id] = archer.roundArcherId;
+                        }
+                    });
+                }
+
+                // Still need to ensure archers are registered (will skip if already mapped)
+                if (state.archers && state.archers.length) {
+                    await Promise.all(
+                        state.archers.map(archer => LiveUpdates.ensureArcher(archer.id, archer))
+                    );
+                }
+                return true;
             }
-            
+
+            if (state.archers && state.archers.length) {
+                const sample = state.archers[0];
+                division = sample.division || division || state.divisionCode;
+                gender = sample.gender || gender;
+                level = sample.level || level;
+            }
+
+            if (eventId) {
+                try {
+                    const metaRaw = localStorage.getItem(`event:${eventId}:meta`);
+                    if (metaRaw) {
+                        const meta = JSON.parse(metaRaw);
+                        if (Array.isArray(meta.availableDivisions) && meta.availableDivisions.length) {
+                            state.availableDivisions = meta.availableDivisions;
+                        }
+                        division = division || meta.defaultDivision || state.divisionCode || null;
+                        gender = gender || meta.defaultGender || null;
+                        level = level || meta.defaultLevel || null;
+                    }
+                } catch (_) { }
+            }
+
+            // CRITICAL: Validate division is set - if not, we cannot create a round safely
+            if (!division && gender && level) {
+                division = deriveDivisionCode(gender, level);
+            }
+
+            // CRITICAL FIX 4: Final fallback - extract division from any archer
+            if (!division && state.archers && state.archers.length > 0) {
+                for (const archer of state.archers) {
+                    if (archer.division) {
+                        division = archer.division;
+                        console.log('[ensureLiveRoundReady] ✅ Fallback: Using division from archer:', division);
+                        break;
+                    }
+                }
+            }
+
+            if (!division) {
+                console.error('❌ Cannot determine division for round creation. Division must be set.');
+                console.error('Debug info:', {
+                    'state.divisionCode': state.divisionCode,
+                    'state.archers': state.archers?.map(a => ({ id: a.id, division: a.division })),
+                    'gender': gender,
+                    'level': level,
+                    'eventId': eventId
+                });
+                throw new Error('Division is required but could not be determined from archers or event metadata');
+            }
+
+
+            await LiveUpdates.ensureRound({
+                roundType: 'R300',
+                date: today,
+                division,
+                gender,
+                level,
+                eventId
+            });
+
+            if (!LiveUpdates._state || !LiveUpdates._state.roundId) {
+                throw new Error('roundId missing after ensureRound');
+            }
+
             // FIX: Pre-populate archerIds mapping with known roundArcherId values
             // This prevents creating duplicate round_archer entries when archers were added via coach.html
             if (!LiveUpdates._state.archerIds) {
@@ -3834,195 +4046,127 @@ async function ensureLiveRoundReady(options = {}) {
                     }
                 });
             }
-            
-            // Still need to ensure archers are registered (will skip if already mapped)
+
             if (state.archers && state.archers.length) {
+                console.log('[ensureLiveRoundReady] Ensuring archers:', state.archers.map(a => ({ id: a.id, archerId: a.archerId, roundArcherId: a.roundArcherId, name: `${a.firstName} ${a.lastName}` })));
                 await Promise.all(
-                    state.archers.map(archer => LiveUpdates.ensureArcher(archer.id, archer))
+                    state.archers.map(archer => {
+                        console.log(`[ensureLiveRoundReady] Calling ensureArcher with id="${archer.id}", archerId="${archer.archerId}", roundArcherId="${archer.roundArcherId}"`);
+                        return LiveUpdates.ensureArcher(archer.id, archer);
+                    })
                 );
+                console.log('[ensureLiveRoundReady] After ensureArcher, archerIds mapping:', LiveUpdates._state.archerIds);
             }
+
             return true;
+        } catch (err) {
+            console.error('Error initializing Live Updates:', err);
+            return false;
         }
-
-        if (state.archers && state.archers.length) {
-            const sample = state.archers[0];
-            division = sample.division || division || state.divisionCode;
-            gender = sample.gender || gender;
-            level = sample.level || level;
-        }
-
-        if (eventId) {
-            try {
-                const metaRaw = localStorage.getItem(`event:${eventId}:meta`);
-                if (metaRaw) {
-                    const meta = JSON.parse(metaRaw);
-                    if (Array.isArray(meta.availableDivisions) && meta.availableDivisions.length) {
-                        state.availableDivisions = meta.availableDivisions;
-                    }
-                    division = division || meta.defaultDivision || state.divisionCode || null;
-                    gender = gender || meta.defaultGender || null;
-                    level = level || meta.defaultLevel || null;
-                }
-            } catch (_) {}
-        }
-
-        // CRITICAL: Validate division is set - if not, we cannot create a round safely
-        if (!division && gender && level) {
-            division = deriveDivisionCode(gender, level);
-        }
-        
-        if (!division) {
-            console.error('❌ Cannot determine division for round creation. Division must be set.');
-            throw new Error('Division is required but could not be determined from archers or event metadata');
-        }
-
-        await LiveUpdates.ensureRound({
-            roundType: 'R300',
-            date: today,
-            division,
-            gender,
-            level,
-            eventId
-        });
-
-        if (!LiveUpdates._state || !LiveUpdates._state.roundId) {
-            throw new Error('roundId missing after ensureRound');
-        }
-
-        // FIX: Pre-populate archerIds mapping with known roundArcherId values
-        // This prevents creating duplicate round_archer entries when archers were added via coach.html
-        if (!LiveUpdates._state.archerIds) {
-            LiveUpdates._state.archerIds = {};
-        }
-        if (state.archers && state.archers.length) {
-            state.archers.forEach(archer => {
-                if (archer.roundArcherId && !LiveUpdates._state.archerIds[archer.id]) {
-                    console.log(`✅ Pre-mapping archer ${archer.id} to existing roundArcherId: ${archer.roundArcherId}`);
-                    LiveUpdates._state.archerIds[archer.id] = archer.roundArcherId;
-                }
-            });
-        }
-
-        if (state.archers && state.archers.length) {
-            console.log('[ensureLiveRoundReady] Ensuring archers:', state.archers.map(a => ({ id: a.id, archerId: a.archerId, roundArcherId: a.roundArcherId, name: `${a.firstName} ${a.lastName}` })));
-            await Promise.all(
-                state.archers.map(archer => {
-                    console.log(`[ensureLiveRoundReady] Calling ensureArcher with id="${archer.id}", archerId="${archer.archerId}", roundArcherId="${archer.roundArcherId}"`);
-                    return LiveUpdates.ensureArcher(archer.id, archer);
-                })
-            );
-            console.log('[ensureLiveRoundReady] After ensureArcher, archerIds mapping:', LiveUpdates._state.archerIds);
-        }
-
-        return true;
-    } catch (err) {
-        console.error('Error initializing Live Updates:', err);
-        return false;
     }
-}
 
-async function handleLiveToggle() {
-    const currentlyEnabled = getLiveEnabled();
-    if (currentlyEnabled) {
-        setLiveEnabled(false);
+    async function handleLiveToggle() {
+        const currentlyEnabled = getLiveEnabled();
+        if (currentlyEnabled) {
+            setLiveEnabled(false);
+            updateManualLiveControls();
+            updateLiveStatusDisplay();
+            console.log('Live Sync disabled');
+            return false;
+        }
+
+        setLiveEnabled(true);
+        const success = await ensureLiveRoundReady({ promptForCode: true });
+        if (!success) {
+            alert('Live Sync could not be enabled. Continuing offline.');
+            setLiveEnabled(false);
+        }
         updateManualLiveControls();
         updateLiveStatusDisplay();
-        console.log('Live Sync disabled');
-        return false;
+        return success;
     }
 
-    setLiveEnabled(true);
-    const success = await ensureLiveRoundReady({ promptForCode: true });
-    if (!success) {
-        alert('Live Sync could not be enabled. Continuing offline.');
-        setLiveEnabled(false);
-    }
-    updateManualLiveControls();
-    updateLiveStatusDisplay();
-    return success;
-}
+    function computeSyncSummary() {
+        const enabled = getLiveEnabled();
+        let pending = 0;
+        let failed = 0;
+        const currentEnd = state.currentEnd;
+        let currentEndSynced = true;
 
-function computeSyncSummary() {
-    const enabled = getLiveEnabled();
-    let pending = 0;
-    let failed = 0;
-    const currentEnd = state.currentEnd;
-    let currentEndSynced = true;
-
-    if (enabled && state.archers && state.archers.length) {
-        state.archers.forEach(archer => {
-            const statusMap = state.syncStatus[archer.id] || {};
-            Object.values(statusMap).forEach(status => {
-                if (status === 'pending') pending++;
-                else if (status === 'failed') failed++;
+        if (enabled && state.archers && state.archers.length) {
+            state.archers.forEach(archer => {
+                const statusMap = state.syncStatus[archer.id] || {};
+                Object.values(statusMap).forEach(status => {
+                    if (status === 'pending') pending++;
+                    else if (status === 'failed') failed++;
+                });
+                const currentStatus = statusMap[currentEnd];
+                if (currentStatus !== 'synced') currentEndSynced = false;
             });
-            const currentStatus = statusMap[currentEnd];
-            if (currentStatus !== 'synced') currentEndSynced = false;
-        });
-    } else {
-        currentEndSynced = false;
-    }
-
-    return {
-        enabled,
-        pending,
-        failed,
-        queueSize: getLiveQueueSize(),
-        currentEndSynced: enabled && state.archers.length > 0 && currentEndSynced,
-    };
-}
-
-function updateManualLiveControls(summaryOverride) {
-    const summary = summaryOverride || computeSyncSummary();
-    const liveBtn = manualSetupControls.liveToggleBtn;
-    if (liveBtn) {
-        if (summary.enabled) {
-            liveBtn.textContent = 'Live: On';
-            liveBtn.classList.remove('btn-secondary');
-            liveBtn.classList.add('btn-success');
         } else {
-            liveBtn.textContent = 'Live: Off';
-            liveBtn.classList.remove('btn-success');
-            liveBtn.classList.add('btn-secondary');
+            currentEndSynced = false;
         }
+
+        return {
+            enabled,
+            pending,
+            failed,
+            queueSize: getLiveQueueSize(),
+            currentEndSynced: enabled && state.archers.length > 0 && currentEndSynced,
+        };
     }
 
-    const badge = manualSetupControls.liveStatusBadge;
-    if (badge) {
-        let text = '';
-        let className = 'status-badge ';
-        if (!summary.enabled) {
-            text = 'Offline';
-            className += 'status-off';
-        } else if (summary.failed > 0) {
-            text = `Retry (${summary.failed})`;
-            className += 'status-off';
-        } else {
-            const totalPending = summary.pending + summary.queueSize;
-            if (totalPending > 0) {
-                text = `Pending ${totalPending}`;
-                className += 'status-pending';
-            } else if (summary.currentEndSynced) {
-                text = 'Synced';
-                className += 'status-synced';
-            } else if (state.archers.length === 0) {
-                text = 'Ready';
-                className += 'status-pending';
+    function updateManualLiveControls(summaryOverride) {
+        const summary = summaryOverride || computeSyncSummary();
+        const liveBtn = manualSetupControls.liveToggleBtn;
+        if (liveBtn) {
+            if (summary.enabled) {
+                liveBtn.textContent = 'Live: On';
+                liveBtn.classList.remove('btn-secondary');
+                liveBtn.classList.add('btn-success');
             } else {
-                text = 'Not Synced';
-                className += 'status-pending';
+                liveBtn.textContent = 'Live: Off';
+                liveBtn.classList.remove('btn-success');
+                liveBtn.classList.add('btn-secondary');
             }
         }
-        badge.textContent = text;
-        badge.className = className;
+
+        const badge = manualSetupControls.liveStatusBadge;
+        if (badge) {
+            let text = '';
+            let className = 'status-badge ';
+            if (!summary.enabled) {
+                text = 'Offline';
+                className += 'status-off';
+            } else if (summary.failed > 0) {
+                text = `Retry (${summary.failed})`;
+                className += 'status-off';
+            } else {
+                const totalPending = summary.pending + summary.queueSize;
+                if (totalPending > 0) {
+                    text = `Pending ${totalPending}`;
+                    className += 'status-pending';
+                } else if (summary.currentEndSynced) {
+                    text = 'Synced';
+                    className += 'status-synced';
+                } else if (state.archers.length === 0) {
+                    text = 'Ready';
+                    className += 'status-pending';
+                } else {
+                    text = 'Not Synced';
+                    className += 'status-pending';
+                }
+            }
+            badge.textContent = text;
+            badge.className = className;
+        }
     }
-}
 
     function isLiveUpdatesReady() {
-        return !!(window.LiveUpdates && 
-                 LiveUpdates._state && 
-                 LiveUpdates._state.roundId && 
-                 getLiveEnabled());
+        return !!(window.LiveUpdates &&
+            LiveUpdates._state &&
+            LiveUpdates._state.roundId &&
+            getLiveEnabled());
     }
 
     function updateSyncStatus(archerId, endNumber, status) {
@@ -4030,7 +4174,7 @@ function updateManualLiveControls(summaryOverride) {
             state.syncStatus[archerId] = {};
         }
         state.syncStatus[archerId][endNumber] = status;
-        
+
         // Update UI indicator if visible
         const row = document.querySelector(`tr[data-archer-id="${archerId}"]`);
         if (row) {
@@ -4041,10 +4185,10 @@ function updateManualLiveControls(summaryOverride) {
                 statusCell.className = `sync-status-indicator sync-status-${status}`;
             }
         }
-        
+
         // Update live status display
         updateLiveStatusDisplay();
-        
+
         saveData();
     }
 
@@ -4061,29 +4205,29 @@ function updateManualLiveControls(summaryOverride) {
     async function performMasterSync() {
         if (!window.LiveUpdates || !LiveUpdates._state) {
             alert('Live Updates not initialized');
-                    return;
-                }
-        
+            return;
+        }
+
         const btn = document.getElementById('master-sync-btn');
         if (btn) {
             btn.disabled = true;
             btn.textContent = 'Syncing...';
         }
-        
+
         let totalAttempts = 0;
         let successCount = 0;
         let failCount = 0;
-        
+
         // Ensure round exists first
         try {
             if (!LiveUpdates._state.roundId) {
-                await LiveUpdates.ensureRound({ 
-                        roundType: 'R300',
-                        date: new Date().toISOString().slice(0, 10),
-                        eventId: state.activeEventId || state.selectedEventId
-                    });
+                await LiveUpdates.ensureRound({
+                    roundType: 'R300',
+                    date: new Date().toISOString().slice(0, 10),
+                    eventId: state.activeEventId || state.selectedEventId
+                });
             }
-            
+
             // Ensure all archers exist
             for (const archer of state.archers) {
                 if (!LiveUpdates._state.archerIds[archer.id]) {
@@ -4093,21 +4237,21 @@ function updateManualLiveControls(summaryOverride) {
                     });
                 }
             }
-            
+
             // Sync all ends for all archers
             for (const archer of state.archers) {
                 for (let endNum = 1; endNum <= state.totalEnds; endNum++) {
                     const endScores = archer.scores[endNum - 1];
                     if (!endScores || !Array.isArray(endScores)) continue;
-                    
+
                     // Only sync if end has at least one score
                     const hasScores = endScores.some(s => s !== '' && s !== null);
                     if (!hasScores) continue;
-                    
+
                     // Check sync status - sync if pending, failed, or never synced
                     const currentStatus = (state.syncStatus[archer.id] && state.syncStatus[archer.id][endNum]) || '';
                     if (currentStatus === 'synced') continue; // Skip already synced
-                    
+
                     totalAttempts++;
                     const [a1, a2, a3] = [endScores[0] || '', endScores[1] || '', endScores[2] || ''];
                     // Per-end values only
@@ -4133,11 +4277,11 @@ function updateManualLiveControls(summaryOverride) {
                             });
                         }
                     }
-                    
+
                     try {
                         updateSyncStatus(archer.id, endNum, 'pending');
-                        await LiveUpdates.postEnd(archer.id, endNum, { 
-                            a1, a2, a3, endTotal, runningTotal: running, tens, xs 
+                        await LiveUpdates.postEnd(archer.id, endNum, {
+                            a1, a2, a3, endTotal, runningTotal: running, tens, xs
                         });
                         updateSyncStatus(archer.id, endNum, 'synced');
                         successCount++;
@@ -4148,10 +4292,10 @@ function updateManualLiveControls(summaryOverride) {
                     }
                 }
             }
-            
+
             const message = `Master Sync Complete!\n\nAttempted: ${totalAttempts}\nSucceeded: ${successCount}\nFailed: ${failCount}`;
             alert(message);
-            
+
         } catch (e) {
             console.error('Master sync error:', e);
             alert('Master Sync failed: ' + e.message);
@@ -4166,11 +4310,11 @@ function updateManualLiveControls(summaryOverride) {
     // Check if there's an in-progress scorecard
     function hasInProgressScorecard() {
         if (!state.archers || state.archers.length === 0) return false;
-        return state.archers.some(a => 
+        return state.archers.some(a =>
             a.scores && a.scores.some(s => s && s.some(val => val !== ''))
         );
     }
-    
+
     // Check if event has server-synced ends
     async function hasServerSyncedEnds() {
         if (!state.activeEventId && !state.selectedEventId) return false;
@@ -4187,41 +4331,41 @@ function updateManualLiveControls(summaryOverride) {
             return false;
         }
     }
-    
+
     // Show event selection modal
     function showEventModal() {
         const modal = document.getElementById('event-modal');
         if (modal) {
             modal.style.display = 'flex';
-            
+
             // Load active events into the Events tab
             loadActiveEventsIntoModal();
         }
     }
-    
+
     // Hide event selection modal
     function hideEventModal() {
         const modal = document.getElementById('event-modal');
         if (modal) modal.style.display = 'none';
     }
-    
+
     // Load active events into modal list
     async function loadActiveEventsIntoModal() {
         try {
             const res = await fetch(`${API_BASE}/events/recent`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            
+
             const data = await res.json();
             const activeEvents = (data.events || []).filter(ev => ev.status === 'Active');
-            
+
             const eventList = document.getElementById('event-list');
             if (!eventList) return;
-            
+
             if (activeEvents.length === 0) {
                 eventList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center">No active events found</p>';
                 return;
             }
-            
+
             eventList.innerHTML = '';
             activeEvents.forEach(ev => {
                 const eventBtn = document.createElement('button');
@@ -4257,22 +4401,22 @@ function updateManualLiveControls(summaryOverride) {
             }
         }
     }
-    
+
     // Load event by ID
     async function loadEventById(eventId, eventName, entryCode) {
         try {
-            console.log('[loadEventById] Starting:', {eventId, eventName, entryCode});
+            console.log('[loadEventById] Starting:', { eventId, eventName, entryCode });
             if (!eventId) {
                 console.error('No event ID provided');
                 return false;
             }
-            
+
             state.selectedEventId = eventId;
             state.activeEventId = eventId;
-            
+
             const res = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            
+
             const eventData = await res.json();
             console.log('[loadEventById] Received event data:', eventData);
             if (eventData && eventData.divisions) {
@@ -4314,10 +4458,26 @@ function updateManualLiveControls(summaryOverride) {
                     });
                 });
                 // Save to event-scoped caches
-                try { localStorage.setItem(`event:${eventId}:archers_v2`, JSON.stringify(allArchers)); } catch(_) {}
+                try { localStorage.setItem(`event:${eventId}:archers_v2`, JSON.stringify(allArchers)); } catch (_) { }
                 try {
                     // Use entry code from API response if not provided explicitly
-                    const finalEntryCode = entryCode || eventData.event?.entry_code || '';
+                    let finalEntryCode = entryCode || eventData.event?.entry_code || '';
+
+                    // FIX: Check localStorage if we don't have a code yet
+                    if (!finalEntryCode) {
+                        try {
+                            const savedGlobal = localStorage.getItem('event_entry_code');
+                            if (savedGlobal) finalEntryCode = savedGlobal;
+
+                            // Also check event-specific meta
+                            const savedMeta = localStorage.getItem(`event:${eventId}:meta`);
+                            if (savedMeta) {
+                                const metaObj = JSON.parse(savedMeta);
+                                if (metaObj.entryCode) finalEntryCode = metaObj.entryCode;
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+
                     const meta = {
                         id: eventData.event?.id || eventId,
                         name: eventData.event?.name || (eventName || ''),
@@ -4328,42 +4488,36 @@ function updateManualLiveControls(summaryOverride) {
                         availableDivisions: state.availableDivisions
                     };
                     localStorage.setItem(`event:${eventId}:meta`, JSON.stringify(meta));
-                    
+
                     // Also save to global event_entry_code if we have one
                     if (finalEntryCode) {
-                        try { localStorage.setItem('event_entry_code', finalEntryCode); } catch(_) {}
+                        try { localStorage.setItem('event_entry_code', finalEntryCode); } catch (_) { }
                         console.log('✅ Saved event metadata with entry code:', finalEntryCode);
                     } else {
-                        console.warn('⚠️ No entry code found for event. Live scoring may not work.');
-                        // Prompt user for entry code if missing
-                        const userCode = prompt('This event needs an entry code for live scoring.\nPlease enter the event code (or Cancel to continue without live scoring):');
-                        if (userCode && userCode.trim()) {
-                            meta.entryCode = userCode.trim();
-                            localStorage.setItem(`event:${eventId}:meta`, JSON.stringify(meta));
-                            localStorage.setItem('event_entry_code', userCode.trim());
-                            console.log('✅ Entry code saved:', userCode.trim());
-                        }
+                        // Only prompt if we REALLY don't have it and it seems required (e.g. not localhost)
+                        // For now, we'll suppress the prompt to avoid annoyance, as LiveUpdates will prompt if needed
+                        console.warn('⚠️ No entry code found for event. Live scoring may prompt later if needed.');
                     }
-                } catch(_) {}
-                
+                } catch (_) { }
+
                 // Do not pre-populate state.archers here; we only populate when a bale is selected
                 state.archers = [];
-                
+
                 // Update UI/state
                 state.eventName = (eventData.event && eventData.event.name) || eventName || state.eventName || '';
-                
+
                 // DEBUG: Log what we received from API
                 console.log('[loadEventById] Event data assignmentMode:', eventData.event?.assignmentMode);
                 console.log('[loadEventById] Event data eventType:', eventData.event?.eventType);
-                
+
                 // Set assignment mode - check both assignmentMode and eventType
-                const apiAssignmentMode = eventData.event?.assignmentMode || 
-                                         (eventData.event?.eventType === 'auto_assign' ? 'assigned' : 'manual');
+                const apiAssignmentMode = eventData.event?.assignmentMode ||
+                    (eventData.event?.eventType === 'auto_assign' ? 'assigned' : 'manual');
                 state.assignmentMode = (apiAssignmentMode === 'assigned' || apiAssignmentMode === 'pre-assigned') ? 'pre-assigned' : 'manual';
-                
+
                 console.log('[loadEventById] Final state.assignmentMode:', state.assignmentMode);
                 updateEventHeader();
-                
+
                 saveData();
                 renderSetupForm();
                 return true;
@@ -4374,14 +4528,14 @@ function updateManualLiveControls(summaryOverride) {
             return false;
         }
     }
-    
+
     async function init() {
         console.log("Initializing Ranking Round 300 App...");
-        
+
         // TEST MODE: Clear all session data if running in test mode
-        const isTestMode = window.location.search.includes('test=1') || 
-                          (typeof window.playwright !== 'undefined') ||
-                          (typeof navigator !== 'undefined' && navigator.webdriver);
+        const isTestMode = window.location.search.includes('test=1') ||
+            (typeof window.playwright !== 'undefined') ||
+            (typeof navigator !== 'undefined' && navigator.webdriver);
         if (isTestMode) {
             console.log('[TEST MODE] Clearing all session data for clean test environment');
             try {
@@ -4403,16 +4557,16 @@ function updateManualLiveControls(summaryOverride) {
                 console.warn('[TEST MODE] Error clearing storage:', e);
             }
         }
-        
+
         // PHASE 0: Create or retrieve archer cookie (must happen first)
         const archerId = getArcherCookie(); // From common.js
         console.log('[Phase 0] Archer cookie initialized:', archerId);
-        
+
         cleanupLegacyStorage();
         loadData();
         renderKeypad();
         wireCoreHandlers();
-        
+
         // PHASE 0: Try to restore bale session from server (takes priority)
         const sessionRestored = await restoreCurrentBaleSession();
         if (sessionRestored) {
@@ -4420,58 +4574,84 @@ function updateManualLiveControls(summaryOverride) {
             renderView();
             return; // Session restored, skip further setup
         }
-        
+
         // Check for in-progress work FIRST (fallback to local storage)
         const localProgress = hasInProgressScorecard();
         if (localProgress) {
             console.log('Found in-progress scorecard - resuming scoring');
-            
+
             // FIX: Initialize LiveUpdates and pre-map archer IDs when resuming from localStorage
             if (getLiveEnabled()) {
                 console.log('[RESUME] Initializing Live Updates for resumed session (localStorage)...');
                 await ensureLiveRoundReady({ promptForCode: false });
             }
-            
+
             state.currentView = 'scoring';
             renderView();
             return; // Resume scoring, skip further setup
         }
-        
+
         // Check server progress if we have an active event
         if (state.activeEventId || state.selectedEventId) {
             const serverProgress = await hasServerSyncedEnds();
             if (serverProgress) {
                 console.log('Found server-synced progress - resuming scoring');
-                
-                // CRITICAL: Load archer data BEFORE initializing LiveUpdates
-                // This populates state.archers with division info needed for ensureLiveRoundReady
-                console.log('[RESUME] Loading existing scores to populate archer data...');
-                await loadExistingScoresForArchers();
-                
-                // CRITICAL: Ensure division is set from archers before Live Updates
-                if (state.archers && state.archers.length > 0 && !state.divisionCode) {
-                    const firstArcher = state.archers[0];
-                    if (firstArcher.division) {
-                        state.divisionCode = firstArcher.division;
-                        console.log('[RESUME] Set division from first archer:', firstArcher.division);
+
+                // FIX: If we have no local archers (e.g. cleared cache), try to reload them from the event
+                if (!state.archers || state.archers.length === 0) {
+                    console.log('[RESUME] Archers missing locally, attempting to load from event snapshot...');
+                    const eventId = state.activeEventId || state.selectedEventId;
+                    await loadPreAssignedBale(eventId, state.baleNumber);
+
+                    if (!state.archers || state.archers.length === 0) {
+                        console.warn('[RESUME] No archers found for this bale on server. Cannot resume.');
+                        // Fall through to setup
+                    } else {
+                        // Archers loaded, proceed with resume
+                        await proceedWithResume();
+                        return;
                     }
+                } else {
+                    // We have archers, proceed
+                    await proceedWithResume();
+                    return;
                 }
-                
-                // FIX: Initialize LiveUpdates and pre-map archer IDs when resuming
-                if (getLiveEnabled()) {
-                    console.log('[RESUME] Initializing Live Updates for resumed session...');
-                    await ensureLiveRoundReady({ promptForCode: false });
-                }
-                
-                state.currentView = 'scoring';
-                renderView();
-                return; // Resume scoring, skip further setup
             }
         }
-        
+
+        // Helper to encapsulate the resume logic
+        async function proceedWithResume() {
+            // CRITICAL: Load archer data BEFORE initializing LiveUpdates
+            // This populates state.archers with division info needed for ensureLiveRoundReady
+            console.log('[RESUME] Loading existing scores to populate archer data...');
+            await loadExistingScoresForArchers();
+
+            // CRITICAL FIX 3: Always update division from archers (trust server data over cached state)
+            // Don't skip this if divisionCode already exists - server data is authoritative
+            if (state.archers && state.archers.length > 0) {
+                const firstArcher = state.archers[0];
+                if (firstArcher.division) {
+                    state.divisionCode = firstArcher.division;
+                    console.log('[RESUME] ✅ Set division from first archer:', firstArcher.division);
+                } else {
+                    console.warn('[RESUME] ⚠️ First archer has no division field');
+                }
+            }
+
+
+            // FIX: Initialize LiveUpdates and pre-map archer IDs when resuming
+            if (getLiveEnabled()) {
+                console.log('[RESUME] Initializing Live Updates for resumed session...');
+                await ensureLiveRoundReady({ promptForCode: false });
+            }
+
+            state.currentView = 'scoring';
+            renderView();
+        }
+
         // No in-progress work - show setup
         renderView();
-        
+
         // Check for URL parameters (QR code access OR direct event/round link)
         if (urlEventId && urlEntryCode && urlEventId.trim() && urlEntryCode.trim()) {
             // QR code access - requires both event and code
@@ -4480,7 +4660,7 @@ function updateManualLiveControls(summaryOverride) {
             if (verified) {
                 // Event loaded successfully - skip event modal, go straight to bale selection
                 console.log('Event loaded from QR code - bypassing event modal');
-                
+
                 // Update event header and render setup
                 updateEventHeader();
                 hideEventModal();
@@ -4505,7 +4685,7 @@ function updateManualLiveControls(summaryOverride) {
                 updateEventHeader();
                 hideEventModal();
                 renderSetupSections();
-                
+
                 // If round ID is also provided, try to load that specific round
                 if (urlRoundId && urlRoundId.trim()) {
                     console.log('[init] Round ID in URL - loading round:', urlRoundId);
@@ -4514,13 +4694,13 @@ function updateManualLiveControls(summaryOverride) {
                         if (roundRes.ok) {
                             const roundData = await roundRes.json();
                             console.log('[init] Round data loaded:', roundData);
-                            
+
                             // Extract division from round data and set in state (CRITICAL for Live Updates)
                             if (roundData.round && roundData.round.division) {
                                 state.divisionCode = roundData.round.division;
                                 console.log('[init] Set division from round data:', roundData.round.division);
                             }
-                            
+
                             // Set bale number from round data if available
                             if (roundData.round && roundData.round.baleNumber) {
                                 state.baleNumber = roundData.round.baleNumber;
@@ -4528,7 +4708,7 @@ function updateManualLiveControls(summaryOverride) {
                                     manualSetupControls.baleInput.value = state.baleNumber;
                                 }
                             }
-                            
+
                             // Load archers for this round/bale
                             if (roundData.round && roundData.round.baleNumber) {
                                 await loadPreAssignedBale(urlEventId.trim(), roundData.round.baleNumber);
@@ -4537,7 +4717,7 @@ function updateManualLiveControls(summaryOverride) {
                                 // Note: archers from snapshot don't have baleNumber, so use state
                                 await loadPreAssignedBale(urlEventId.trim(), state.baleNumber);
                             }
-                            
+
                             // Ensure division is set - fallback to archers if not in round data
                             if (!state.divisionCode && state.archers && state.archers.length > 0) {
                                 const firstArcher = state.archers[0];
@@ -4599,23 +4779,23 @@ function updateManualLiveControls(summaryOverride) {
             manualSetupControls.startScoringBtn.onclick = async () => {
                 console.log('[START SCORING] Button clicked, archers:', state.archers.length);
                 console.log('[START SCORING] Archers:', state.archers.map(a => ({ id: a.id, name: `${a.firstName} ${a.lastName}` })));
-                
+
                 if (state.archers.length === 0) {
                     alert('Please select at least one archer to start scoring.');
                     return;
                 }
-                
+
                 // Store original button text and show loading state
                 const originalText = manualSetupControls.startScoringBtn.textContent;
                 manualSetupControls.startScoringBtn.textContent = 'Loading...';
                 manualSetupControls.startScoringBtn.disabled = true;
-                
+
                 try {
                     console.log('[START SCORING] Loading existing scores...');
                     // Load existing scores BEFORE initializing Live sync
                     // This allows editing existing scorecards
                     await loadExistingScoresForArchers();
-                    
+
                     console.log('[START SCORING] Checking Live Updates enabled:', getLiveEnabled());
                     if (getLiveEnabled()) {
                         manualSetupControls.startScoringBtn.textContent = 'Syncing...';
@@ -4634,10 +4814,10 @@ function updateManualLiveControls(summaryOverride) {
 
                     console.log('[START SCORING] Transitioning to scoring view...');
                     manualSetupControls.startScoringBtn.textContent = 'Starting...';
-                    
+
                     // Small delay to ensure UI updates
                     await new Promise(resolve => setTimeout(resolve, 100));
-                    
+
                     showScoringView();
                     console.log('[START SCORING] ✅ Successfully transitioned to scoring view');
                 } catch (err) {
@@ -4656,14 +4836,14 @@ function updateManualLiveControls(summaryOverride) {
                 const newBale = parseInt(baleNumberInput.value, 10) || 1;
                 state.baleNumber = newBale;
                 saveData();
-                
+
                 // If event is selected, filter archers by this bale
                 if (state.activeEventId && state.assignmentMode === 'pre-assigned') {
                     // Filter current archers by bale number
-                    const filteredArchers = state.archers.filter(archer => 
+                    const filteredArchers = state.archers.filter(archer =>
                         archer.baleNumber === newBale
                     );
-                    
+
                     if (filteredArchers.length > 0) {
                         // Update the display with filtered archers
                         renderPreAssignedArchers();
@@ -4689,7 +4869,7 @@ function updateManualLiveControls(summaryOverride) {
                 }
                 saveData();
                 updateEventHeader();
-                
+
                 // Load archers from this event
                 if (state.selectedEventId) {
                     try {
@@ -4700,12 +4880,12 @@ function updateManualLiveControls(summaryOverride) {
                         }
                         const data = await res.json();
                         console.log('Event snapshot loaded:', data);
-                        
+
                         if (!data || !data.divisions) {
                             console.log('No divisions found in event snapshot');
                             return;
                         }
-                        
+
                         // Extract archers from all divisions
                         const allArchers = [];
                         Object.keys(data.divisions || {}).forEach(divKey => {
@@ -4715,7 +4895,7 @@ function updateManualLiveControls(summaryOverride) {
                                 const nameParts = (archer.archerName || '').split(' ');
                                 const first = nameParts[0] || '';
                                 const last = nameParts.slice(1).join(' ') || '';
-                                
+
                                 allArchers.push({
                                     first: first,
                                     last: last,
@@ -4729,7 +4909,7 @@ function updateManualLiveControls(summaryOverride) {
                                 });
                             });
                         });
-                        
+
                         // Save to localStorage as master list
                         localStorage.setItem('archery_master_list', JSON.stringify(allArchers));
                         renderSetupForm();
@@ -4745,12 +4925,12 @@ function updateManualLiveControls(summaryOverride) {
         if (completeBtn) {
             completeBtn.onclick = () => {
                 // Complete round for final verification
-                    if (confirm('Are you sure you want to complete this round? This will mark all archers as finished.')) {
-                        completeRound();
-                    }
+                if (confirm('Are you sure you want to complete this round? This will mark all archers as finished.')) {
+                    completeRound();
+                }
             };
         }
-        
+
         // Sync end button (for live mode)
         const syncBtn = document.getElementById('sync-end-btn');
         if (syncBtn) {
@@ -4820,13 +5000,13 @@ function updateManualLiveControls(summaryOverride) {
 
         if (scoringControls.prevEndBtn) {
             scoringControls.prevEndBtn.textContent = 'Last End';
-        scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
+            scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
         }
         if (scoringControls.nextEndBtn) {
             scoringControls.nextEndBtn.textContent = 'Next End';
-        scoringControls.nextEndBtn.onclick = () => changeEnd(1);
+            scoringControls.nextEndBtn.onclick = () => changeEnd(1);
         }
-        
+
         resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
         resetModal.resetBtn.onclick = () => {
             resetState();
@@ -4921,20 +5101,26 @@ function updateManualLiveControls(summaryOverride) {
                 }
             }
         });
-        
+
         document.body.addEventListener('input', (e) => {
             if (e.target.classList.contains('score-input')) {
                 handleScoreInput(e);
             }
         });
 
-        keypad.element.addEventListener('click', handleKeypadClick);
+        // CRITICAL FIX: Add safety check before attaching keypad handler
+        if (keypad.element) {
+            keypad.element.addEventListener('click', handleKeypadClick);
+            console.log('✅ Keypad click handler attached');
+        } else {
+            console.error('❌ Keypad element not found! Cannot attach click handler.');
+        }
 
         // --- Live Updates wiring (feature-flag) ---
         try {
             const cfg = window.LIVE_UPDATES || {};
             let isEnabled = true;  // Default ON
-            try { const storedCfg = JSON.parse(localStorage.getItem('live_updates_config')||'{}'); isEnabled = storedCfg.enabled !== undefined ? !!storedCfg.enabled : true; } catch(_) {}
+            try { const storedCfg = JSON.parse(localStorage.getItem('live_updates_config') || '{}'); isEnabled = storedCfg.enabled !== undefined ? !!storedCfg.enabled : true; } catch (_) { }
             LiveUpdates.setConfig({ apiBase: cfg.apiBase || API_BASE, apiKey: cfg.apiKey || '' });
 
             const onStartScoring = () => {
@@ -4946,7 +5132,7 @@ function updateManualLiveControls(summaryOverride) {
                         eventId: state.activeEventId || state.selectedEventId
                     }).then(() => {
                         state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
-                    }).catch(() => {});
+                    }).catch(() => { });
                 } else if (isEnabled) {
                     state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
                 }
@@ -4970,7 +5156,7 @@ function updateManualLiveControls(summaryOverride) {
             window.addEventListener('liveSyncSuccess', (e) => {
                 const id = e.detail.archerId;
                 const row = document.querySelector(`tr[data-archer-id="${id}"]`);
-                if (row) { row.classList.remove('sync-pending'); row.classList.add('sync-ok'); setTimeout(()=>row.classList.remove('sync-ok'),1200); }
+                if (row) { row.classList.remove('sync-pending'); row.classList.add('sync-ok'); setTimeout(() => row.classList.remove('sync-ok'), 1200); }
                 const badge = document.getElementById('live-status-badge');
                 if (badge) { badge.textContent = 'Synced'; badge.className = 'status-badge status-ok'; }
             });
@@ -4986,10 +5172,10 @@ function updateManualLiveControls(summaryOverride) {
 
     function loadSampleData() {
         state.archers = [
-            { id: '1', firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', targetAssignment: 'A', targetSize: 122, scores: [['10','9','7'], ['8','6','M'], ['5','4','3'], ['10','9','7'], ['X','10','8'], ['X','X','X'],['9','9','8'], ['10','X','X'], ['7','6','5'], ['X','X','9']] },
-            { id: '2', firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', targetAssignment: 'B', targetSize: 122, scores: [['X','9','9'], ['8','8','7'], ['5','5','5'], ['6','6','7'], ['8','9','10'], ['7','7','6'],['10','9','9'], ['X','X','8'], ['9','8','7'], ['6','5','M']] },
-            { id: '3', firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', targetAssignment: 'C', targetSize: 80, scores: [['X','7','7'], ['7','7','7'], ['10','7','10'], ['5','4','M'], ['8','7','6'], ['5','4','3'],['9','8','X'], ['10','7','6'], ['9','9','9'], ['8','8','M']] },
-            { id: '4', firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', targetAssignment: 'D', targetSize: 122, scores: [['9','9','8'], ['10','9','8'], ['X','9','8'], ['7','7','6'], ['10','10','9'], ['X','9','9'],['8','8','7'], ['9','9','9'], ['10','X','9'], ['8','7','6']] },
+            { id: '1', firstName: 'Mike', lastName: 'A.', school: 'WDV', level: 'V', gender: 'M', targetAssignment: 'A', targetSize: 122, scores: [['10', '9', '7'], ['8', '6', 'M'], ['5', '4', '3'], ['10', '9', '7'], ['X', '10', '8'], ['X', 'X', 'X'], ['9', '9', '8'], ['10', 'X', 'X'], ['7', '6', '5'], ['X', 'X', '9']] },
+            { id: '2', firstName: 'Robert', lastName: 'B.', school: 'WDV', level: 'V', gender: 'M', targetAssignment: 'B', targetSize: 122, scores: [['X', '9', '9'], ['8', '8', '7'], ['5', '5', '5'], ['6', '6', '7'], ['8', '9', '10'], ['7', '7', '6'], ['10', '9', '9'], ['X', 'X', '8'], ['9', '8', '7'], ['6', '5', 'M']] },
+            { id: '3', firstName: 'Terry', lastName: 'C.', school: 'OPP', level: 'JV', gender: 'M', targetAssignment: 'C', targetSize: 80, scores: [['X', '7', '7'], ['7', '7', '7'], ['10', '7', '10'], ['5', '4', 'M'], ['8', '7', '6'], ['5', '4', '3'], ['9', '8', 'X'], ['10', '7', '6'], ['9', '9', '9'], ['8', '8', 'M']] },
+            { id: '4', firstName: 'Susan', lastName: 'D.', school: 'OPP', level: 'V', gender: 'F', targetAssignment: 'D', targetSize: 122, scores: [['9', '9', '8'], ['10', '9', '8'], ['X', '9', '8'], ['7', '7', '6'], ['10', '10', '9'], ['X', '9', '9'], ['8', '8', '7'], ['9', '9', '9'], ['10', 'X', '9'], ['8', '7', '6']] },
         ];
     }
 
@@ -5075,11 +5261,11 @@ function updateManualLiveControls(summaryOverride) {
         const blob = new Blob([jsonData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        
+
         const archer = state.archers.find(a => a.id === state.activeArcherId);
         const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
         const filename = `scorecard_${archer?.firstName}_${archer?.lastName}_${timestamp}.json`;
-        
+
         link.href = url;
         link.download = filename;
         link.click();
@@ -5101,7 +5287,7 @@ function updateManualLiveControls(summaryOverride) {
         const jsonData = exportJSON();
         const subject = `Scorecard - ${archer?.firstName} ${archer?.lastName} - Bale ${state.baleNumber}`;
         const body = `Please find attached the scorecard data for ${archer?.firstName} ${archer?.lastName}.\n\nBale: ${state.baleNumber}\nDate: ${state.date}\n\nJSON Data:\n${jsonData}`;
-        
+
         window.location.href = `mailto:davinciarchers@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     }
 
@@ -5143,7 +5329,7 @@ function updateManualLiveControls(summaryOverride) {
             modal.style.cssText = 'display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;';
             document.body.appendChild(modal);
         }
-        
+
         // Get all archers from the event-specific cache (has UUIDs) or fallback to master list
         let eventArchers = [];
         if (state.activeEventId) {
@@ -5166,7 +5352,7 @@ function updateManualLiveControls(summaryOverride) {
             }));
         }
         const currentArcherIds = state.archers.map(a => a.id || a.extId || `${a.firstName}-${a.lastName}-${a.school}`);
-        
+
         modal.innerHTML = `
             <div class="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-[90%] max-h-[80%] overflow-y-auto">
                 <h3 class="mt-0 text-xl font-bold text-gray-800 dark:text-white mb-2">Edit Bale Assignments</h3>
@@ -5174,9 +5360,9 @@ function updateManualLiveControls(summaryOverride) {
                 
                 <div class="max-h-[300px] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded p-2">
                     ${eventArchers.map(archer => {
-                        const archerId = archer.id || archer.extId || `${archer.first}-${archer.last}-${archer.school}`;
-                        const isChecked = currentArcherIds.includes(archerId);
-                        return `
+            const archerId = archer.id || archer.extId || `${archer.first}-${archer.last}-${archer.school}`;
+            const isChecked = currentArcherIds.includes(archerId);
+            return `
                             <label class="block p-2 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
                                 <input type="checkbox" ${isChecked ? 'checked' : ''} 
                                        data-archer='${JSON.stringify(archer).replace(/'/g, '&#39;')}'
@@ -5186,7 +5372,7 @@ function updateManualLiveControls(summaryOverride) {
                                 ${archer.baleNumber ? `<span class="text-primary dark:text-blue-400">- Bale ${archer.baleNumber}</span>` : ''}
                             </label>
                         `;
-                    }).join('')}
+        }).join('')}
                 </div>
                 
                 <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end;">
@@ -5195,12 +5381,12 @@ function updateManualLiveControls(summaryOverride) {
                 </div>
             </div>
         `;
-        
+
         // Add event listeners
         document.getElementById('edit-assignments-cancel').onclick = () => {
             modal.style.display = 'none';
         };
-        
+
         document.getElementById('edit-assignments-save').onclick = () => {
             const checkboxes = modal.querySelectorAll('input[type="checkbox"]:checked');
             const selectedArchers = Array.from(checkboxes).map(cb => {
@@ -5219,13 +5405,13 @@ function updateManualLiveControls(summaryOverride) {
                     scores: []
                 };
             });
-            
+
             state.archers = selectedArchers;
             saveData();
             renderSetupForm();
             modal.style.display = 'none';
         };
-        
+
         modal.style.display = 'flex';
     }
 
@@ -5255,7 +5441,7 @@ function updateManualLiveControls(summaryOverride) {
     const codeError = document.getElementById('code-error');
     const cancelEventModalBtn = document.getElementById('cancel-event-modal-btn');
     const changeEventBtn = document.getElementById('change-event-btn');
-    
+
     // Tab switching
     if (tabPasscode && tabEvents) {
         tabPasscode.onclick = () => {
@@ -5266,7 +5452,7 @@ function updateManualLiveControls(summaryOverride) {
             passcodeTabContent.style.display = 'block';
             eventsTabContent.style.display = 'none';
         };
-        
+
         tabEvents.onclick = () => {
             tabEvents.classList.add('active');
             tabEvents.style.borderBottom = '3px solid #2d7dd9';
@@ -5276,7 +5462,7 @@ function updateManualLiveControls(summaryOverride) {
             passcodeTabContent.style.display = 'none';
         };
     }
-    
+
     // Verify code button
     if (verifyCodeBtn && eventCodeInput) {
         verifyCodeBtn.onclick = async () => {
@@ -5286,23 +5472,23 @@ function updateManualLiveControls(summaryOverride) {
                 codeError.style.display = 'block';
                 return;
             }
-            
+
             codeError.style.display = 'none';
             verifyCodeBtn.disabled = true;
             verifyCodeBtn.textContent = 'Connecting...';
-            
+
             try {
                 // E2E bypass for test code
                 if ((code || '').toLowerCase() === 'tuesday') {
                     const eid = state.selectedEventId || state.activeEventId || 'local-e2e';
                     const sample = [
-                        { firstName:'Alex', lastName:'Smith', school:'WIS', level:'VAR', gender:'M', baleNumber:1, targetAssignment:'A', division:'BVAR' },
-                        { firstName:'Ben', lastName:'Lee', school:'WIS', level:'VAR', gender:'M', baleNumber:1, targetAssignment:'B', division:'BVAR' },
-                        { firstName:'Cara', lastName:'Jones', school:'DVN', level:'VAR', gender:'F', baleNumber:2, targetAssignment:'A', division:'GVAR' },
-                        { firstName:'Dana', lastName:'Ng', school:'DVN', level:'VAR', gender:'F', baleNumber:2, targetAssignment:'B', division:'GVAR' }
+                        { firstName: 'Alex', lastName: 'Smith', school: 'WIS', level: 'VAR', gender: 'M', baleNumber: 1, targetAssignment: 'A', division: 'BVAR' },
+                        { firstName: 'Ben', lastName: 'Lee', school: 'WIS', level: 'VAR', gender: 'M', baleNumber: 1, targetAssignment: 'B', division: 'BVAR' },
+                        { firstName: 'Cara', lastName: 'Jones', school: 'DVN', level: 'VAR', gender: 'F', baleNumber: 2, targetAssignment: 'A', division: 'GVAR' },
+                        { firstName: 'Dana', lastName: 'Ng', school: 'DVN', level: 'VAR', gender: 'F', baleNumber: 2, targetAssignment: 'B', division: 'GVAR' }
                     ];
                     localStorage.setItem(`event:${eid}:archers_v2`, JSON.stringify(sample));
-                    localStorage.setItem(`event:${eid}:meta`, JSON.stringify({ id:eid, name:'QR Event', date:'', assignmentMode:'assigned', snapshotVersion:2, entryCode: code }));
+                    localStorage.setItem(`event:${eid}:meta`, JSON.stringify({ id: eid, name: 'QR Event', date: '', assignmentMode: 'assigned', snapshotVersion: 2, entryCode: code }));
                     localStorage.setItem('event_entry_code', code);  // Also save globally for Live Updates
                     state.selectedEventId = eid;
                     state.activeEventId = eid;
@@ -5318,10 +5504,10 @@ function updateManualLiveControls(summaryOverride) {
                 // We need to check each event by verifying the code
                 const eventsRes = await fetch(`${API_BASE}/events/recent`);
                 if (!eventsRes.ok) throw new Error('Failed to fetch events');
-                
+
                 const eventsData = await eventsRes.json();
                 const activeEvents = (eventsData.events || []).filter(ev => ev.status === 'Active');
-                
+
                 // Try to verify the code against each active event
                 let matchedEvent = null;
                 for (const event of activeEvents) {
@@ -5331,7 +5517,7 @@ function updateManualLiveControls(summaryOverride) {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ eventId: event.id, entryCode: code })
                         });
-                        
+
                         if (verifyRes.ok) {
                             const verifyData = await verifyRes.json();
                             if (verifyData.verified) {
@@ -5344,7 +5530,7 @@ function updateManualLiveControls(summaryOverride) {
                         continue;
                     }
                 }
-                
+
                 if (!matchedEvent) {
                     codeError.textContent = 'Invalid event code. Please check and try again.';
                     codeError.style.display = 'block';
@@ -5352,21 +5538,21 @@ function updateManualLiveControls(summaryOverride) {
                     verifyCodeBtn.textContent = 'Connect to Event';
                     return;
                 }
-                
+
                 // Save entry code for Live Updates to use
                 localStorage.setItem('event_entry_code', code);
                 console.log('Saved entry code for Live Updates:', code);
-                
+
                 // Load this event (with entry code)
                 await loadEventById(matchedEvent.id, matchedEvent.name, code);
                 hideEventModal();
                 eventCodeInput.value = '';
-                
+
                 // Refresh setup sections to show loaded event
                 renderSetupSections();
                 updateEventHeader();
                 console.log('Event loaded and UI refreshed');
-                
+
             } catch (err) {
                 console.error('Failed to verify code:', err);
                 codeError.textContent = 'Connection failed. Please check your internet.';
@@ -5376,7 +5562,7 @@ function updateManualLiveControls(summaryOverride) {
                 verifyCodeBtn.textContent = 'Connect to Event';
             }
         };
-        
+
         // Allow Enter key to submit
         eventCodeInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -5384,7 +5570,7 @@ function updateManualLiveControls(summaryOverride) {
             }
         });
     }
-    
+
     // Cancel button
     if (cancelEventModalBtn) {
         cancelEventModalBtn.onclick = () => {
@@ -5394,7 +5580,7 @@ function updateManualLiveControls(summaryOverride) {
             renderSetupSections();
         };
     }
-    
+
     // Change event button (in header)
     if (changeEventBtn) {
         changeEventBtn.onclick = () => {
