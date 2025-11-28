@@ -41,8 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
         setupMode: 'manual', // 'manual' or 'pre-assigned' - determines which setup section to show
         syncStatus: {}, // Track sync status per archer per end: { archerId: { endNumber: 'synced'|'pending'|'failed' } }
         sortMode: 'bale', // 'bale' or 'name'
-        availableDivisions: ['OPEN']
+        availableDivisions: ['OPEN'],
+        // CRITICAL FIX 5: Add division fields to ensure they persist to localStorage
+        divisionCode: null, // Division code for this round (e.g., 'BVAR', 'GJV', 'OPEN') - MUST come from round/event
+        divisionRoundId: null, // Round ID for this division - used to prevent creating duplicate rounds
+        divisionName: '' // Display name for division (e.g., 'Boys Varsity')
     };
+
 
     const sessionKey = `rankingRound300_${new Date().toISOString().split('T')[0]}`;
 
@@ -582,17 +587,61 @@ document.addEventListener('DOMContentLoaded', () => {
             state.currentEnd = roundData.current_end || 1;
             state.totalEnds = roundData.total_ends || 10;
             state.roundType = roundData.round_type || 'R300';
+            state.activeEventId = roundData.event_id || state.activeEventId;
+            state.selectedEventId = roundData.event_id || state.selectedEventId;
+            state.baleNumber = roundData.bale_number || state.baleNumber;
+
+            // CRITICAL: Use the division from the ROUND itself, not the archer's default
+            // Archers can shoot up (JV -> Varsity), so the round's division is the source of truth
+            if (roundData.division) {
+                state.divisionCode = roundData.division;
+                console.log('[loadExistingRound] Set division from round data:', state.divisionCode);
+            }
 
             // Load archer scores if available
             if (roundData.archers && Array.isArray(roundData.archers)) {
-                state.archers = roundData.archers.map(a => ({
-                    ...a,
-                    scores: a.scores || createEmptyScoreSheet(state.totalEnds)
-                }));
+                state.archers = roundData.archers.map(a => {
+                    // Map API archer to state archer
+                    const names = (a.name || '').split(' ');
+                    const firstName = names[0] || '';
+                    const lastName = names.slice(1).join(' ') || '';
+
+                    return {
+                        id: a.id || a.archer_id,
+                        archerId: a.id || a.archer_id,
+                        firstName: a.first_name || firstName,
+                        lastName: a.last_name || lastName,
+                        // Use round division if available, otherwise fallback to archer's division
+                        division: state.divisionCode || a.division,
+                        gender: a.gender,
+                        level: a.level,
+                        school: a.school,
+                        baleNumber: a.bale_number || state.baleNumber,
+                        targetAssignment: a.target || 'A',
+                        scores: a.scores || createEmptyScoreSheet(state.totalEnds),
+                        roundArcherId: a.round_archer_id
+                    };
+                });
+
+                // Fallback: If round didn't have division, try to infer from first archer (legacy support)
+                if (!state.divisionCode && state.archers.length > 0) {
+                    state.divisionCode = state.archers[0].division;
+                }
             }
 
             saveData();
             console.log('[loadExistingRound] Loaded round:', roundData);
+
+            // If we have archers and division, we can initialize LiveUpdates
+            if (state.archers.length > 0 && state.divisionCode) {
+                if (getLiveEnabled()) {
+                    console.log('[loadExistingRound] Initializing Live Updates...');
+                    await ensureLiveRoundReady({ promptForCode: false });
+                }
+            }
+
+            renderView();
+
         } catch (error) {
             console.error('[loadExistingRound] Error:', error);
         }
@@ -638,8 +687,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentEnd: state.currentEnd,
                 assignmentMode: state.assignmentMode,
                 lastSaved: new Date().toISOString(),
-                archerIds: state.archers.map(a => a.id) // For quick validation
+                archerIds: state.archers.map(a => a.id), // For quick validation
+                // CRITICAL FIX 5b: Include division in session for offline resilience
+                divisionCode: state.divisionCode,
+                divisionRoundId: state.divisionRoundId
             };
+
 
             localStorage.setItem('current_bale_session', JSON.stringify(session));
             console.log('[Phase 0 Session] Saved bale session:', session);
@@ -793,6 +846,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 return stateArcher;
             });
 
+            // CRITICAL FIX 1: Extract division from server response
+            // The API returns division at the top level - we must capture it for LiveUpdates
+            if (baleData.division) {
+                state.divisionCode = baleData.division;
+                state.divisionRoundId = session.roundId;
+                console.log('[Phase 0 Session] ✅ Set division from server:', baleData.division, 'roundId:', session.roundId);
+            } else {
+                console.warn('[Phase 0 Session] ⚠️ No division in bale data, will try to extract from archers');
+                // Fallback: try to get division from first archer
+                if (state.archers && state.archers.length > 0 && state.archers[0].division) {
+                    state.divisionCode = state.archers[0].division;
+                    state.divisionRoundId = session.roundId;
+                    console.log('[Phase 0 Session] ✅ Set division from first archer:', state.divisionCode);
+                }
+            }
+
             // Restore Live Updates state if enabled
             if (window.LiveUpdates && window.LiveUpdates._state) {
                 window.LiveUpdates._state.roundId = session.roundId;
@@ -834,6 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
     }
+
 
     // --- LOGIC ---
     // Highlight a specific bale in the list
@@ -1852,6 +1922,42 @@ document.addEventListener('DOMContentLoaded', () => {
                                 console.log('[loadExistingScores] Stored roundArcherId:', apiArcher.roundArcherId);
                             }
 
+                            // CRITICAL: Update division from API if available (needed for Live Updates resume)
+                            // Find which division this archer belongs to in the snapshot
+                            divisionsArray.forEach(div => {
+                                if (div.archers && div.archers.some(a => (a.archerId || a.id) === archerId)) {
+                                    // Found the division for this archer
+                                    // Map division name back to code if possible, or use raw code
+                                    // The snapshot keys are usually the codes (BVAR, etc)
+                                    // But here we are iterating values. We need the key.
+                                }
+                            });
+
+                            // Simpler: The API structure is divisions[CODE] = { ... }
+                            // We flattened it to array, but we can look up the key in the original object
+                            if (data.divisions && typeof data.divisions === 'object') {
+                                Object.keys(data.divisions).forEach(divCode => {
+                                    const div = data.divisions[divCode];
+                                    if (div.archers && div.archers.some(a => (a.archerId || a.id) === archerId)) {
+                                        stateArcher.division = divCode;
+                                        console.log(`[loadExistingScores] Updated division for ${stateArcher.firstName}: ${divCode}`);
+
+                                        // CRITICAL FIX 2: Set global division code from first match
+                                        if (!state.divisionCode) {
+                                            state.divisionCode = divCode;
+                                            console.log(`[loadExistingScores] ✅ Set global division code: ${divCode}`);
+                                        }
+
+                                        // Also capture roundId if available
+                                        if (!state.divisionRoundId && div.roundId) {
+                                            state.divisionRoundId = div.roundId;
+                                            console.log(`[loadExistingScores] ✅ Set global roundId: ${div.roundId}`);
+                                        }
+                                    }
+                                });
+                            }
+
+
                             // Update current end to first incomplete end or last end
                             const lastEndNumber = ends.length;
                             const nextEnd = Math.min(lastEndNumber + 1, state.totalEnds);
@@ -2848,6 +2954,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // CRITICAL FIX: Don't set inline style.display - it overrides Tailwind's hidden class
+        // The HTML already has class="hidden" - we'll use classList.add/remove('hidden') to control visibility
+
         // Tailwind-styled keypad (keeping keypad-btn class for event handler)
         // New 4x3 layout: no gaps, no navigation buttons, no rounded corners, edge-to-edge borders
         keypad.element.innerHTML = `
@@ -2883,9 +2992,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!input) return;
         keypad.currentlyFocusedInput = input;
         if (keypad.element) {
-            keypad.element.classList.remove('hidden');
+            // CRITICAL FIX: Use style.display instead of classList (consistent with renderKeypad)
+            keypad.element.style.display = 'block';
         }
         document.body.classList.add('keypad-visible');
+        console.log('✅ Keypad shown for input:', input.dataset.archerId, input.dataset.arrowIdx);
     }
 
     function attachKeypadHandlers() {
@@ -2944,11 +3055,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Close action
         if (action === 'close') {
-            keypad.element.style.display = 'none';
+            keypad.element.classList.add('hidden');
             document.body.classList.remove('keypad-visible');
+            keypad.currentlyFocusedInput = null;
             input.blur();
+            console.log('✅ Keypad closed');
             return;
         }
+
 
         // Score entry
         if (action === 'clear') {
@@ -2998,6 +3112,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 archer.scores[state.currentEnd - 1] = ['', '', ''];
             }
             archer.scores[state.currentEnd - 1][arrowIndex] = input.value;
+
+            // CRITICAL FIX: Update input background color immediately
+            const scoreValue = input.value;
+            const colorClass = getScoreColorClass(scoreValue);
+            const textColorClass = getScoreTextColor(scoreValue);
+
+            // Remove all possible score color classes
+            input.classList.remove('bg-score-gold', 'bg-score-red', 'bg-score-blue', 'bg-score-black', 'bg-score-white');
+            input.classList.remove('text-black', 'text-white', 'text-gray-500');
+
+            // Add new color classes
+            input.classList.add(`bg-score-${colorClass}`);
+            input.classList.add(textColorClass);
+
             renderScoringView();
             saveData();
 
@@ -3868,10 +3996,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 division = deriveDivisionCode(gender, level);
             }
 
+            // CRITICAL FIX 4: Final fallback - extract division from any archer
+            if (!division && state.archers && state.archers.length > 0) {
+                for (const archer of state.archers) {
+                    if (archer.division) {
+                        division = archer.division;
+                        console.log('[ensureLiveRoundReady] ✅ Fallback: Using division from archer:', division);
+                        break;
+                    }
+                }
+            }
+
             if (!division) {
                 console.error('❌ Cannot determine division for round creation. Division must be set.');
+                console.error('Debug info:', {
+                    'state.divisionCode': state.divisionCode,
+                    'state.archers': state.archers?.map(a => ({ id: a.id, division: a.division })),
+                    'gender': gender,
+                    'level': level,
+                    'eventId': eventId
+                });
                 throw new Error('Division is required but could not be determined from archers or event metadata');
             }
+
 
             await LiveUpdates.ensureRound({
                 roundType: 'R300',
@@ -4314,7 +4461,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 try { localStorage.setItem(`event:${eventId}:archers_v2`, JSON.stringify(allArchers)); } catch (_) { }
                 try {
                     // Use entry code from API response if not provided explicitly
-                    const finalEntryCode = entryCode || eventData.event?.entry_code || '';
+                    let finalEntryCode = entryCode || eventData.event?.entry_code || '';
+
+                    // FIX: Check localStorage if we don't have a code yet
+                    if (!finalEntryCode) {
+                        try {
+                            const savedGlobal = localStorage.getItem('event_entry_code');
+                            if (savedGlobal) finalEntryCode = savedGlobal;
+
+                            // Also check event-specific meta
+                            const savedMeta = localStorage.getItem(`event:${eventId}:meta`);
+                            if (savedMeta) {
+                                const metaObj = JSON.parse(savedMeta);
+                                if (metaObj.entryCode) finalEntryCode = metaObj.entryCode;
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+
                     const meta = {
                         id: eventData.event?.id || eventId,
                         name: eventData.event?.name || (eventName || ''),
@@ -4331,15 +4494,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         try { localStorage.setItem('event_entry_code', finalEntryCode); } catch (_) { }
                         console.log('✅ Saved event metadata with entry code:', finalEntryCode);
                     } else {
-                        console.warn('⚠️ No entry code found for event. Live scoring may not work.');
-                        // Prompt user for entry code if missing
-                        const userCode = prompt('This event needs an entry code for live scoring.\nPlease enter the event code (or Cancel to continue without live scoring):');
-                        if (userCode && userCode.trim()) {
-                            meta.entryCode = userCode.trim();
-                            localStorage.setItem(`event:${eventId}:meta`, JSON.stringify(meta));
-                            localStorage.setItem('event_entry_code', userCode.trim());
-                            console.log('✅ Entry code saved:', userCode.trim());
-                        }
+                        // Only prompt if we REALLY don't have it and it seems required (e.g. not localhost)
+                        // For now, we'll suppress the prompt to avoid annoyance, as LiveUpdates will prompt if needed
+                        console.warn('⚠️ No entry code found for event. Live scoring may prompt later if needed.');
                     }
                 } catch (_) { }
 
@@ -4440,30 +4597,56 @@ document.addEventListener('DOMContentLoaded', () => {
             if (serverProgress) {
                 console.log('Found server-synced progress - resuming scoring');
 
-                // CRITICAL: Load archer data BEFORE initializing LiveUpdates
-                // This populates state.archers with division info needed for ensureLiveRoundReady
-                console.log('[RESUME] Loading existing scores to populate archer data...');
-                await loadExistingScoresForArchers();
+                // FIX: If we have no local archers (e.g. cleared cache), try to reload them from the event
+                if (!state.archers || state.archers.length === 0) {
+                    console.log('[RESUME] Archers missing locally, attempting to load from event snapshot...');
+                    const eventId = state.activeEventId || state.selectedEventId;
+                    await loadPreAssignedBale(eventId, state.baleNumber);
 
-                // CRITICAL: Ensure division is set from archers before Live Updates
-                if (state.archers && state.archers.length > 0 && !state.divisionCode) {
-                    const firstArcher = state.archers[0];
-                    if (firstArcher.division) {
-                        state.divisionCode = firstArcher.division;
-                        console.log('[RESUME] Set division from first archer:', firstArcher.division);
+                    if (!state.archers || state.archers.length === 0) {
+                        console.warn('[RESUME] No archers found for this bale on server. Cannot resume.');
+                        // Fall through to setup
+                    } else {
+                        // Archers loaded, proceed with resume
+                        await proceedWithResume();
+                        return;
                     }
+                } else {
+                    // We have archers, proceed
+                    await proceedWithResume();
+                    return;
                 }
-
-                // FIX: Initialize LiveUpdates and pre-map archer IDs when resuming
-                if (getLiveEnabled()) {
-                    console.log('[RESUME] Initializing Live Updates for resumed session...');
-                    await ensureLiveRoundReady({ promptForCode: false });
-                }
-
-                state.currentView = 'scoring';
-                renderView();
-                return; // Resume scoring, skip further setup
             }
+        }
+
+        // Helper to encapsulate the resume logic
+        async function proceedWithResume() {
+            // CRITICAL: Load archer data BEFORE initializing LiveUpdates
+            // This populates state.archers with division info needed for ensureLiveRoundReady
+            console.log('[RESUME] Loading existing scores to populate archer data...');
+            await loadExistingScoresForArchers();
+
+            // CRITICAL FIX 3: Always update division from archers (trust server data over cached state)
+            // Don't skip this if divisionCode already exists - server data is authoritative
+            if (state.archers && state.archers.length > 0) {
+                const firstArcher = state.archers[0];
+                if (firstArcher.division) {
+                    state.divisionCode = firstArcher.division;
+                    console.log('[RESUME] ✅ Set division from first archer:', firstArcher.division);
+                } else {
+                    console.warn('[RESUME] ⚠️ First archer has no division field');
+                }
+            }
+
+
+            // FIX: Initialize LiveUpdates and pre-map archer IDs when resuming
+            if (getLiveEnabled()) {
+                console.log('[RESUME] Initializing Live Updates for resumed session...');
+                await ensureLiveRoundReady({ promptForCode: false });
+            }
+
+            state.currentView = 'scoring';
+            renderView();
         }
 
         // No in-progress work - show setup
@@ -4925,7 +5108,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        keypad.element.addEventListener('click', handleKeypadClick);
+        // CRITICAL FIX: Add safety check before attaching keypad handler
+        if (keypad.element) {
+            keypad.element.addEventListener('click', handleKeypadClick);
+            console.log('✅ Keypad click handler attached');
+        } else {
+            console.error('❌ Keypad element not found! Cannot attach click handler.');
+        }
 
         // --- Live Updates wiring (feature-flag) ---
         try {

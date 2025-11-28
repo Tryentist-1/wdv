@@ -1397,8 +1397,12 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)$#i', $route, $m) 
     exit;
 }
 
+// POST /v1/rounds/{roundId}/archers/{roundArcherId}/ends - Submit end scores
+// PUBLIC ENDPOINT - Archers can submit scores without authentication
+// Security: Only prevents editing locked scorecards
 if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)/ends$#i', $route, $m) && $method === 'POST') {
-    require_api_key();
+    // REMOVED: require_api_key() - This endpoint is PUBLIC for archers to submit scores
+    // The only security check is that the scorecard is not locked (see line below)
     $roundId = $m[1];
     $roundArcherId = $m[2];
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -1430,6 +1434,7 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)/ends$#i', $route,
         json_response(['error' => 'Scorecard does not belong to this round'], 400);
         exit;
     }
+    // SECURITY CHECK: Prevent editing locked scorecards
     if (!empty($cardData['event_id']) && (bool)$cardData['locked']) {
         json_response(['error' => 'Scorecard is locked'], 423);
         exit;
@@ -1444,6 +1449,7 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers/([0-9a-f-]+)/ends$#i', $route,
     json_response(['ok' => true]);
     exit;
 }
+
 
 // GET /v1/round_archers/{id} - Fetch scorecard details with scores
 if (preg_match('#^/v1/round_archers/([0-9a-f-]+)$#i', $route, $m) && $method === 'GET') {
