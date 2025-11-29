@@ -16,6 +16,42 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const API_BASE = getApiBase();
 
+    /**
+     * Safely set the archer cookie so future flows that rely on the
+     * `oas_archer_id` cookie (index.html, history lookups, etc.) load
+     * the correct archer after a direct-link resume.
+     *
+     * NOTE:
+     * - `setCookie` is defined in common.js for the browser.
+     * - In non-browser/test environments we silently no-op.
+     */
+    function setArcherCookieSafe(archerId) {
+        try {
+            if (!archerId) {
+                console.warn('[setArcherCookieSafe] No archerId provided');
+                return;
+            }
+
+            if (typeof setCookie === 'function') {
+                // 1 year expiry, matches getArcherCookie behaviour
+                setCookie('oas_archer_id', archerId, 365);
+                console.log('[setArcherCookieSafe] ✅ Archer cookie set to:', archerId);
+            } else if (typeof document !== 'undefined') {
+                // Fallback in case setCookie is not on window for any reason
+                const date = new Date();
+                date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
+                const expires = '; expires=' + date.toUTCString();
+                document.cookie = 'oas_archer_id=' + archerId + expires + '; path=/';
+                console.log('[setArcherCookieSafe] ✅ Archer cookie set via fallback:', archerId);
+            } else {
+                // Non-browser / test environment – skip without throwing
+                console.log('[setArcherCookieSafe] Running outside browser context, skipping cookie set');
+            }
+        } catch (err) {
+            console.warn('[setArcherCookieSafe] Failed to set archer cookie:', err && err.message ? err.message : err);
+        }
+    }
+
     // Check for URL parameters (event and code for QR code access, or event/round for direct links)
     const urlParams = new URLSearchParams(window.location.search);
     const urlEventId = urlParams.get('event');
@@ -4955,7 +4991,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const currentCookie = getArcherCookie();
                 if (currentCookie !== archerId) {
                     console.log('[handleDirectLink] 🔄 Updating archer cookie from', currentCookie, 'to', archerId);
-                    setArcherCookie(archerId);
+                    setArcherCookieSafe(archerId);
                 }
                 
                 // Show Setup mode
@@ -5000,7 +5036,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentCookie = getArcherCookie();
             if (currentCookie !== archerId) {
                 console.log('[handleDirectLink] 🔄 Updating archer cookie from', currentCookie, 'to', archerId);
-                setArcherCookie(archerId);
+                setArcherCookieSafe(archerId);
             } else {
                 console.log('[handleDirectLink] ✅ Archer cookie already correct:', archerId);
             }

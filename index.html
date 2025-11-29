@@ -719,13 +719,23 @@
         'coach_api_key',
         'event_entry_code',
         'archery_master_list',
-        'archery_tools_onboarding_complete'
+        'archery_tools_onboarding_complete',
+        // Active in-progress sessions that drive "Resume Round" / reconnect flows
+        // If we leave these behind, the app will try to auto-restore old rounds
+        // immediately after a reset, which is what you are seeing.
+        'current_bale_session'
       ];
       const keyPrefixes = [
         'rankingRound_',
         'rankingRound300_',
         'event:',
         'LiveUpdates:',
+        // LiveUpdates round-scoped sessions (used for resume/reconnect)
+        // Example key: "live_updates_session:<roundId>"
+        'live_updates_session:',
+        // Solo card sessions (daily local solo scorecard state)
+        // Example key: "soloCard_session_2025-11-29"
+        'soloCard_session_',
         'cachedRound:',
         'coachSession:',
         'manualBale:'

@@ -60,7 +60,7 @@
 
 ---
 
-## 🚨 Status Update (Nov 28, 2025)
+## 🚨 Status Update (Nov 29, 2025)
 
 ### ✅ Fixed Issues
 - **Scorecard Colors:** Fixed CSS regression where score colors (Gold, Red, Blue, etc.) were not showing.
@@ -70,10 +70,21 @@
 - **Live Updates Errors:** Clarified that 401 errors on localhost are expected and handled gracefully.
 - **Tailwind System:** Completed integration by adding `tokens.css` (CSS variables) and removing legacy `score-colors.css`.
 
-### ⚠️ Known Issues
-- **Resume Round:** The "Resume Round" feature is currently **not functional**.
-  - **Status:** Needs investigation.
-  - **Workaround:** Start a new round for testing purposes.
+### ⚠️ Known Issues / Recent Fixes
+- **Resume Ranking Round from Open Assignments (index.html):**
+  - **Status:** ✅ **Implemented and working for ranking rounds created via events with entry codes.**
+  - **Flow:**  
+    1. Archer sets themselves via **Archer Details** (archer list).  
+    2. `index.html` loads **Your Open Assignments** by calling `GET /api/v1/archers/{archerId}/history`.  
+    3. The **“Resume Ranking Round”** row links directly to `ranking_round_300.html?event={eventId}&round={roundId}&archer={archerId}`.  
+    4. `handleDirectLink()` in `js/ranking_round_300.js` now:
+       - fetches the event snapshot to get the **entry_code**,  
+       - fetches the round snapshot to find the archer’s **baleNumber**,  
+       - fetches full bale data, reconstructs `state.archers` and scores,  
+       - saves `current_bale_session` + `event_entry_code`,  
+       - and switches `state.currentView` → **`scoring`**.
+  - **Bug fixed:** A `ReferenceError` (`setArcherCookie is not defined`) was causing an alert **“Failed to load round. Please try again.”** and dropping the user back into Setup. This is now fixed by using a safe helper (`setArcherCookieSafe`) and letting `handleDirectLink()` complete the transition to the in‑progress score card.
+  - **Remaining edge cases:** If the server snapshot does **not** contain a bale assignment for the archer, `handleDirectLink()` intentionally routes to **Setup** so the archer can pick bale mates and then continue scoring on the existing round.
 
 ---
 
