@@ -4778,25 +4778,56 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 2. Fetch round data from server
-            console.log('[handleDirectLink] Fetching round data from server');
-
-            // First try to get entry code
+            // 2. Fetch entry code FIRST (before any API calls that require auth)
+            console.log('[handleDirectLink] Fetching entry code from event...');
+            
+            // First try to get entry code from localStorage
             let entryCode = getEventEntryCode();
-            if (!entryCode) {
-                // Try to get from event meta
+            
+            // If no entry code in localStorage, fetch it from the event BEFORE making API calls
+            // Since the archer is already assigned to this round, we should be able to get the event details
+            if (!entryCode && eventId) {
+                console.log('[handleDirectLink] No entry code in localStorage, fetching from event:', eventId);
                 try {
-                    const metaRaw = localStorage.getItem(`event:${eventId}:meta`);
-                    if (metaRaw) {
-                        const meta = JSON.parse(metaRaw);
-                        entryCode = meta.entryCode || '';
+                    const eventResponse = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
+                    if (eventResponse.ok) {
+                        const eventData = await eventResponse.json();
+                        // Event snapshot includes entry_code for client-side auth (since archer is assigned)
+                        entryCode = eventData.event?.entry_code || '';
+                        
+                        if (entryCode) {
+                            console.log('[handleDirectLink] ✅ Retrieved entry code from event snapshot:', entryCode);
+                            // Save it for future use
+                            localStorage.setItem('event_entry_code', entryCode);
+                            try {
+                                const metaKey = `event:${eventId}:meta`;
+                                const existingMeta = JSON.parse(localStorage.getItem(metaKey) || '{}');
+                                existingMeta.entryCode = entryCode;
+                                existingMeta.id = eventId;
+                                existingMeta.name = eventData.event?.name || '';
+                                localStorage.setItem(metaKey, JSON.stringify(existingMeta));
+                            } catch (e) {
+                                console.warn('[handleDirectLink] Could not save entry code to event meta');
+                            }
+                        } else {
+                            console.warn('[handleDirectLink] ⚠️ Event snapshot did not include entry code');
+                        }
+                    } else {
+                        console.warn('[handleDirectLink] Could not fetch event snapshot:', eventResponse.status);
                     }
-                } catch (e) { }
+                } catch (e) {
+                    console.warn('[handleDirectLink] Error fetching event snapshot:', e.message);
+                }
             }
 
-            console.log('[handleDirectLink] Using entry code:', entryCode ? 'Yes' : 'No');
+            console.log('[handleDirectLink] Using entry code:', entryCode ? `Yes (${entryCode})` : 'No');
+            
+            // 3. Fetch round data from server (now with entry code)
+            console.log('[handleDirectLink] Fetching round data from server...');
 
             // Step 1: Get round snapshot to find archer's bale number
-            const snapshotResponse = await fetch(`${API_BASE}/rounds/${roundId}/snapshot`, {
+            let snapshotData = null;
+            let snapshotResponse = await fetch(`${API_BASE}/rounds/${roundId}/snapshot`, {
                 headers: {
                     'X-Passcode': entryCode || ''
                 }
@@ -4808,28 +4839,68 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('[handleDirectLink] ❌ Failed to fetch round snapshot:', snapshotResponse.status);
 
                 if (snapshotResponse.status === 401) {
-                    console.error('[handleDirectLink] 401 Unauthorized - Entry code missing or invalid');
-                    // On localhost, continue anyway (API might not require auth)
-                    // On production, would need to prompt for code
-                    if (window.location.hostname !== 'localhost' && !window.location.hostname.startsWith('127.')) {
-                        alert('Authentication required. Please enter the event code.');
+                    console.error('[handleDirectLink] 401 Unauthorized - Attempting to fetch entry code from event');
+                    
+                    // If we still don't have entry code, try fetching from event one more time
+                    if (!entryCode && eventId) {
+                        try {
+                            const eventResponse = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
+                            if (eventResponse.ok) {
+                                const eventData = await eventResponse.json();
+                                entryCode = eventData.event?.entry_code || '';
+                                
+                                if (entryCode) {
+                                    console.log('[handleDirectLink] ✅ Retrieved entry code from event (401 retry)');
+                                    localStorage.setItem('event_entry_code', entryCode);
+                                    // Retry the snapshot fetch
+                                    snapshotResponse = await fetch(`${API_BASE}/rounds/${roundId}/snapshot`, {
+                                        headers: {
+                                            'X-Passcode': entryCode
+                                        }
+                                    });
+                                    
+                                    if (snapshotResponse.ok) {
+                                        snapshotData = await snapshotResponse.json();
+                                        console.log('[handleDirectLink] ✅ Retry successful with entry code from event');
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('[handleDirectLink] Error fetching event on 401 retry:', e.message);
+                        }
+                    }
+                    
+                    // If still 401 after retry, show error
+                    if (!snapshotResponse.ok && snapshotResponse.status === 401) {
+                        console.error('[handleDirectLink] 401 Unauthorized - Could not retrieve entry code');
+                        alert('Unable to access this round. The event may require an entry code that is not available.\n\nPlease contact the event coordinator or try using the event modal to enter the code manually.');
                         showEventModal();
                         return false;
                     }
-                    console.warn('[handleDirectLink] ⚠️ Continuing without entry code (localhost only)');
-                }
-
-                if (snapshotResponse.status === 404) {
+                } else if (snapshotResponse.status === 404) {
                     console.error('[handleDirectLink] 404 Not Found - Round does not exist');
                     console.error('[handleDirectLink] Round ID:', roundId);
-                    alert('Round not found. It may have been deleted or the link is invalid.');
+                    // Don't show alert - let fallback logic try to recover
+                    // The round might exist but the snapshot endpoint might not be accessible without auth
+                    console.log('[handleDirectLink] 404 error - allowing fallback logic to try alternative approach');
+                    return false;
+                } else {
+                    // Other errors - log but don't throw, let fallback logic handle it
+                    console.error('[handleDirectLink] Non-401/404 error:', snapshotResponse.status);
+                    console.error('[handleDirectLink] Response text:', await snapshotResponse.text().catch(() => 'Unable to read response'));
+                    // Don't throw - return false to allow fallback logic in init()
                     return false;
                 }
-
-                throw new Error(`Failed to fetch round: ${snapshotResponse.status}`);
+            } else {
+                // Success on first try
+                snapshotData = await snapshotResponse.json();
             }
 
-            const snapshotData = await snapshotResponse.json();
+            // If we still don't have snapshotData, we shouldn't continue
+            if (!snapshotData) {
+                console.error('[handleDirectLink] ❌ No snapshot data available');
+                return false;
+            }
             console.log('[handleDirectLink] ✅ Snapshot received:', {
                 division: snapshotData.round?.division,
                 baleNumber: snapshotData.round?.baleNumber,
@@ -4837,27 +4908,66 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Step 2: Find archer in snapshot to get their bale number
-            // Note: snapshot archers don't have full data, just roundArcherId and archerName
+            // Snapshot now includes archerId so we can match by master archer ID
             const snapshotArcher = snapshotData.archers?.find(a =>
-                a.roundArcherId === archerId ||
                 a.archerId === archerId ||
+                a.roundArcherId === archerId ||
                 a.id === archerId
             );
 
             if (!snapshotArcher) {
                 console.error('[handleDirectLink] ❌ Archer not found in round snapshot');
-                console.error('[handleDirectLink] Looking for:', archerId);
+                console.error('[handleDirectLink] Looking for archerId:', archerId);
                 console.error('[handleDirectLink] Available archers:', snapshotData.archers?.map(a => ({
                     roundArcherId: a.roundArcherId,
-                    archerName: a.archerName
+                    archerId: a.archerId,
+                    archerName: a.archerName,
+                    baleNumber: a.baleNumber
                 })));
                 alert('You are not assigned to this round.');
                 return false;
             }
 
-            // Get bale number from round data (all archers on same bale in snapshot)
-            const baleNumber = snapshotData.round?.baleNumber || 1;
-            console.log('[handleDirectLink] ✅ Found archer, bale:', baleNumber);
+            // Get bale number from archer's assignment (baleNumber is now in snapshot archer data)
+            const baleNumber = snapshotArcher.baleNumber || snapshotData.round?.baleNumber;
+            
+            // If no bale number assigned, go to Setup mode to select bale mates
+            if (!baleNumber || baleNumber === null || baleNumber === undefined) {
+                console.log('[handleDirectLink] ⚠️ No bale number assigned - going to Setup mode');
+                console.log('[handleDirectLink] Archer found in round but not assigned to a bale yet');
+                
+                // Load the event so Setup mode can work
+                const eventLoaded = await loadEventById(eventId, '', entryCode);
+                if (!eventLoaded) {
+                    console.error('[handleDirectLink] Failed to load event for Setup mode');
+                    alert('Could not load event. Please try again.');
+                    return false;
+                }
+                
+                // Set up state for Setup mode
+                state.activeEventId = eventId;
+                state.selectedEventId = eventId;
+                state.roundId = roundId; // Keep the round ID so we can update it later
+                state.assignmentMode = 'manual'; // Force manual mode for bale selection
+                state.divisionCode = snapshotData.round?.division || '';
+                
+                // Update archer cookie
+                const currentCookie = getArcherCookie();
+                if (currentCookie !== archerId) {
+                    console.log('[handleDirectLink] 🔄 Updating archer cookie from', currentCookie, 'to', archerId);
+                    setArcherCookie(archerId);
+                }
+                
+                // Show Setup mode
+                updateEventHeader();
+                hideEventModal();
+                renderSetupSections();
+                
+                console.log('[handleDirectLink] ✅ Setup mode ready - archer can select bale mates and start scoring');
+                return true; // Successfully went to Setup mode
+            }
+            
+            console.log('[handleDirectLink] ✅ Found archer, bale:', baleNumber, 'roundArcherId:', snapshotArcher.roundArcherId);
 
             // Step 3: Fetch full bale data with all archer details
             const baleResponse = await fetch(`${API_BASE}/rounds/${roundId}/bales/${baleNumber}/archers`, {
@@ -5003,7 +5113,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error('[handleDirectLink] Error:', error);
-            alert('Failed to load round. Please try again.');
+            // Don't show alert for network errors or recoverable errors
+            // These will be handled by fallback logic in init()
+            const isNetworkError = error.message && (
+                error.message.includes('fetch') ||
+                error.message.includes('network') ||
+                error.message.includes('Failed to fetch')
+            );
+            
+            if (!isNetworkError) {
+                // Only show alert for unexpected errors
+                console.error('[handleDirectLink] Unexpected error - showing alert');
+                alert('Failed to load round. Please try again.');
+            } else {
+                console.log('[handleDirectLink] Network/recoverable error - allowing fallback logic');
+            }
             return false;
         }
     }
@@ -5285,13 +5409,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderSetupSections();
 
                 // If round ID is also provided, try to load that specific round
-                if (urlRoundId && urlRoundId.trim()) {
-                    console.log('[init] Round ID in URL - loading round:', urlRoundId);
+                // NOTE: This is fallback logic - handleDirectLink should handle this, but if it fails, we try here
+                if (urlRoundId && urlRoundId.trim() && urlArcherId && urlArcherId.trim()) {
+                    console.log('[init] Fallback: Round ID in URL - attempting to load round:', urlRoundId);
+                    console.log('[init] This should have been handled by handleDirectLink - checking if we can recover...');
+                    // Only try fallback if handleDirectLink already failed
+                    // Don't duplicate the work - if handleDirectLink succeeded, we wouldn't be here
                     try {
-                        const roundRes = await fetch(`${API_BASE}/rounds/${urlRoundId.trim()}/snapshot`);
+                        // Use entry code if available
+                        const entryCode = getEventEntryCode();
+                        const roundRes = await fetch(`${API_BASE}/rounds/${urlRoundId.trim()}/snapshot`, {
+                            headers: {
+                                'X-Passcode': entryCode || ''
+                            }
+                        });
                         if (roundRes.ok) {
                             const roundData = await roundRes.json();
-                            console.log('[init] Round data loaded:', roundData);
+                            console.log('[init] Fallback: Round data loaded successfully:', roundData);
 
                             // Extract division from round data and set in state (CRITICAL for Live Updates)
                             if (roundData.round && roundData.round.division) {

@@ -1870,7 +1870,8 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
     $pdo = db();
     $round = $pdo->query('SELECT id, round_type as roundType, date, bale_number as baleNumber, division FROM rounds WHERE id=' . $pdo->quote($roundId))->fetch();
     if (!$round) { json_response(['error' => 'round not found'], 404); exit; }
-    $archers = $pdo->prepare('SELECT ra.id as roundArcherId, ra.archer_name as archerName, ra.target_assignment as targetAssignment FROM round_archers ra WHERE ra.round_id=?');
+    // Include archerId so we can match by master archer ID (not just roundArcherId)
+    $archers = $pdo->prepare('SELECT ra.id as roundArcherId, ra.archer_id as archerId, ra.archer_name as archerName, ra.target_assignment as targetAssignment, ra.bale_number as baleNumber FROM round_archers ra WHERE ra.round_id=?');
     $archers->execute([$roundId]);
     $rows = $archers->fetchAll();
     foreach ($rows as &$r) {
@@ -2912,7 +2913,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
             'date' => $eventData['date'],
             'status' => $eventData['status'],
             'eventType' => $eventData['event_type'],
-            'assignmentMode' => ($eventData['event_type'] === 'auto_assign' ? 'assigned' : 'manual')
+            'assignmentMode' => ($eventData['event_type'] === 'auto_assign' ? 'assigned' : 'manual'),
+            'entry_code' => $eventData['entry_code'] ?? null  // Include entry_code for client-side auth (archer is already assigned)
         ],
         'divisions' => $divisions
     ]);

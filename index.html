@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -13,15 +14,20 @@
     .onboarding-step {
       display: none;
     }
+
     .onboarding-step.active {
       display: block;
     }
   </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center p-4 transition-colors duration-200">
+
+<body
+  class="bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center p-4 transition-colors duration-200">
   <!-- Onboarding Modal -->
-  <div id="onboarding-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full max-h-[95vh] overflow-y-auto shadow-2xl transition-colors duration-200">
+  <div id="onboarding-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full max-h-[95vh] overflow-y-auto shadow-2xl transition-colors duration-200">
       <!-- Step 1: Welcome -->
       <div id="step-1" class="onboarding-step active">
         <div class="flex justify-center gap-1 mb-4">
@@ -31,30 +37,42 @@
           <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
         </div>
         <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-3">
-          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">1</span>
+          <span
+            class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">1</span>
           Welcome to Archery Tools!
         </h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">This app helps you score archery rounds and manage your team. Let's get you set up in just a few steps.</p>
-        
+        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">This app helps you score archery rounds
+          and manage your team. Let's get you set up in just a few steps.</p>
+
         <div class="text-center my-4">
-          <img src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='160' viewBox='0 0 250 160'><rect width='250' height='160' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='25' text-anchor='middle' font-family='Arial' font-size='14' fill='%23343a40'>🏹 Archery Tools</text><rect x='15' y='40' width='100' height='30' rx='4' fill='%23198754' stroke='%23fff' stroke-width='1'/><text x='65' y='60' text-anchor='middle' font-family='Arial' font-size='10' fill='%23fff'>👥 Setup</text><rect x='125' y='40' width='100' height='30' rx='4' fill='%232a9d8f' stroke='%23fff' stroke-width='1'/><text x='175' y='60' text-anchor='middle' font-family='Arial' font-size='10' fill='%23fff'>🏆 Rank</text><rect x='15' y='80' width='100' height='30' rx='4' fill='%23e9c46a' stroke='%23fff' stroke-width='1'/><text x='65' y='100' text-anchor='middle' font-family='Arial' font-size='10' fill='%23343a40'>👥 Solo</text><rect x='125' y='80' width='100' height='30' rx='4' fill='%23f4a261' stroke='%23fff' stroke-width='1'/><text x='175' y='100' text-anchor='middle' font-family='Arial' font-size='10' fill='%23343a40'>👥👥 Team</text><rect x='15' y='120' width='100' height='30' rx='4' fill='%23e76f51' stroke='%23fff' stroke-width='1'/><text x='65' y='140' text-anchor='middle' font-family='Arial' font-size='10' fill='%23fff'>🎯 Practice</text><line x1='125' y1='10' x2='125' y2='150' stroke='%23ff6b6b' stroke-width='2'/><text x='145' y='80' font-family='Arial' font-size='8' fill='%23ff6b6b'>Start!</text></svg>" alt="Main app interface" class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <img
+            src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='160' viewBox='0 0 250 160'><rect width='250' height='160' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='25' text-anchor='middle' font-family='Arial' font-size='14' fill='%23343a40'>🏹 Archery Tools</text><rect x='15' y='40' width='100' height='30' rx='4' fill='%23198754' stroke='%23fff' stroke-width='1'/><text x='65' y='60' text-anchor='middle' font-family='Arial' font-size='10' fill='%23fff'>👥 Setup</text><rect x='125' y='40' width='100' height='30' rx='4' fill='%232a9d8f' stroke='%23fff' stroke-width='1'/><text x='175' y='60' text-anchor='middle' font-family='Arial' font-size='10' fill='%23fff'>🏆 Rank</text><rect x='15' y='80' width='100' height='30' rx='4' fill='%23e9c46a' stroke='%23fff' stroke-width='1'/><text x='65' y='100' text-anchor='middle' font-family='Arial' font-size='10' fill='%23343a40'>👥 Solo</text><rect x='125' y='80' width='100' height='30' rx='4' fill='%23f4a261' stroke='%23fff' stroke-width='1'/><text x='175' y='100' text-anchor='middle' font-family='Arial' font-size='10' fill='%23343a40'>👥👥 Team</text><rect x='15' y='120' width='100' height='30' rx='4' fill='%23e76f51' stroke='%23fff' stroke-width='1'/><text x='65' y='140' text-anchor='middle' font-family='Arial' font-size='10' fill='%23fff'>🎯 Practice</text><line x1='125' y1='10' x2='125' y2='150' stroke='%23ff6b6b' stroke-width='2'/><text x='145' y='80' font-family='Arial' font-size='8' fill='%23ff6b6b'>Start!</text></svg>"
+            alt="Main app interface"
+            class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
         </div>
-        
+
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-trophy"></i> Ranking Rounds</h3>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-trophy"></i> Ranking
+            Rounds</h3>
           <p class="text-gray-600 dark:text-gray-300 text-xs">Score competitive ranking rounds with multiple archers</p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-user-friends"></i> Solo & Team Matches</h3>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-user-friends"></i>
+            Solo & Team Matches</h3>
           <p class="text-gray-600 dark:text-gray-300 text-xs">Track head-to-head matches and team competitions</p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-bullseye"></i> Practice Sessions</h3>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-bullseye"></i>
+            Practice Sessions</h3>
           <p class="text-gray-600 dark:text-gray-300 text-xs">Analyze your arrow grouping and improve accuracy</p>
         </div>
         <div class="flex gap-3 justify-center mt-6">
-          <button class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md" onclick="nextStep()">Get Started</button>
-          <button class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md" onclick="skipOnboarding()">Skip Tutorial</button>
+          <button
+            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
+            onclick="nextStep()">Get Started</button>
+          <button
+            class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
+            onclick="skipOnboarding()">Skip Tutorial</button>
         </div>
       </div>
 
@@ -67,30 +85,43 @@
           <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
         </div>
         <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-3">
-          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">2</span>
+          <span
+            class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">2</span>
           Find Yourself & Bale Mates
         </h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">First, let's make sure you and your teammates are in the system. You'll need to:</p>
-        
+        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">First, let's make sure you and your
+          teammates are in the system. You'll need to:</p>
+
         <div class="text-center my-4">
-          <img src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='180' viewBox='0 0 250 180'><rect width='250' height='180' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='20' text-anchor='middle' font-family='Arial' font-size='12' fill='%23343a40'>👥 Archer Setup</text><rect x='10' y='30' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='20' y='45' font-family='Arial' font-size='10' fill='%23343a40'>🔍 Search...</text><rect x='10' y='60' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='72' font-family='Arial' font-size='8' fill='%23ffc107'>⭐</text><text x='25' y='72' font-family='Arial' font-size='8' fill='%23343a40'>Sarah J</text><text x='150' y='72' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 A</text><rect x='10' y='85' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='97' font-family='Arial' font-size='8' fill='%23ccc'>☆</text><text x='25' y='97' font-family='Arial' font-size='8' fill='%23343a40'>Mike C</text><text x='150' y='97' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 B</text><rect x='10' y='110' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='122' font-family='Arial' font-size='8' fill='%23ccc'>☆</text><text x='25' y='122' font-family='Arial' font-size='8' fill='%23343a40'>Alex R</text><text x='150' y='122' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 C</text><rect x='10' y='135' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='147' font-family='Arial' font-size='8' fill='%23ccc'>☆</text><text x='25' y='147' font-family='Arial' font-size='8' fill='%23343a40'>Emma D</text><text x='150' y='147' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 D</text><line x1='40' y1='72' x2='40' y2='72' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='68' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='40' y1='97' x2='40' y2='97' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='93' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='40' y1='122' x2='40' y2='122' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='118' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='40' y1='147' x2='40' y2='147' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='143' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text></svg>" alt="Archer setup interface" class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <img
+            src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='180' viewBox='0 0 250 180'><rect width='250' height='180' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='20' text-anchor='middle' font-family='Arial' font-size='12' fill='%23343a40'>👥 Archer Setup</text><rect x='10' y='30' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='20' y='45' font-family='Arial' font-size='10' fill='%23343a40'>🔍 Search...</text><rect x='10' y='60' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='72' font-family='Arial' font-size='8' fill='%23ffc107'>⭐</text><text x='25' y='72' font-family='Arial' font-size='8' fill='%23343a40'>Sarah J</text><text x='150' y='72' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 A</text><rect x='10' y='85' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='97' font-family='Arial' font-size='8' fill='%23ccc'>☆</text><text x='25' y='97' font-family='Arial' font-size='8' fill='%23343a40'>Mike C</text><text x='150' y='97' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 B</text><rect x='10' y='110' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='122' font-family='Arial' font-size='8' fill='%23ccc'>☆</text><text x='25' y='122' font-family='Arial' font-size='8' fill='%23343a40'>Alex R</text><text x='150' y='122' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 C</text><rect x='10' y='135' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='147' font-family='Arial' font-size='8' fill='%23ccc'>☆</text><text x='25' y='147' font-family='Arial' font-size='8' fill='%23343a40'>Emma D</text><text x='150' y='147' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 D</text><line x1='40' y1='72' x2='40' y2='72' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='68' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='40' y1='97' x2='40' y2='97' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='93' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='40' y1='122' x2='40' y2='122' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='118' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='40' y1='147' x2='40' y2='147' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='143' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text></svg>"
+            alt="Archer setup interface"
+            class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
         </div>
-        
+
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-users"></i> Archer Setup</h3>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-users"></i> Archer
+            Setup</h3>
           <p class="text-gray-600 dark:text-gray-300 text-xs">Add yourself and your teammates to the archer list</p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-star"></i> Mark Favorites</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Star your teammates so they appear at the top of the list</p>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-star"></i> Mark
+            Favorites</h3>
+          <p class="text-gray-600 dark:text-gray-300 text-xs">Star your teammates so they appear at the top of the list
+          </p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-sync-alt"></i> Sync with Master List</h3>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-sync-alt"></i> Sync
+            with Master List</h3>
           <p class="text-gray-600 dark:text-gray-300 text-xs">Import the latest archer list from your coach</p>
         </div>
         <div class="flex gap-3 justify-center mt-6">
-          <button class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md" onclick="prevStep()">Back</button>
-          <button class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md" onclick="nextStep()">Continue</button>
+          <button
+            class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
+            onclick="prevStep()">Back</button>
+          <button
+            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
+            onclick="nextStep()">Continue</button>
         </div>
       </div>
 
@@ -103,30 +134,43 @@
           <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
         </div>
         <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-3">
-          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">3</span>
+          <span
+            class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">3</span>
           Sync Your Archer List
         </h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">Keep your archer list up to date with the latest information from your coach:</p>
-        
+        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">Keep your archer list up to date with
+          the latest information from your coach:</p>
+
         <div class="text-center my-4">
-          <img src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='140' viewBox='0 0 250 140'><rect width='250' height='140' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='20' text-anchor='middle' font-family='Arial' font-size='12' fill='%23343a40'>👥 Archer List</text><rect x='10' y='30' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='20' y='45' font-family='Arial' font-size='10' fill='%23343a40'>🔍 Search...</text><rect x='10' y='60' width='110' height='25' rx='3' fill='%236c757d' stroke='%23fff' stroke-width='1'/><text x='65' y='75' text-anchor='middle' font-family='Arial' font-size='8' fill='%23fff'>Sort Name</text><rect x='130' y='60' width='110' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='185' y='75' text-anchor='middle' font-family='Arial' font-size='8' fill='%23343a40'>Sort Bale</text><rect x='10' y='90' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='102' font-family='Arial' font-size='8' fill='%23ffc107'>⭐</text><text x='25' y='102' font-family='Arial' font-size='8' fill='%23343a40'>Sarah J</text><text x='150' y='102' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 A</text><rect x='10' y='115' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='127' font-family='Arial' font-size='8' fill='%23ffc107'>⭐</text><text x='25' y='127' font-family='Arial' font-size='8' fill='%23343a40'>Mike C</text><text x='150' y='127' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 B</text><rect x='210' y='30' width='30' height='20' rx='3' fill='%230d6efd' stroke='%23fff' stroke-width='1'/><text x='225' y='42' text-anchor='middle' font-family='Arial' font-size='8' fill='%23fff'>🔄</text><line x1='225' y1='55' x2='225' y2='65' stroke='%23ff6b6b' stroke-width='2'/><text x='235' y='75' font-family='Arial' font-size='6' fill='%23ff6b6b'>Refresh</text></svg>" alt="Sync archer list" class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <img
+            src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='140' viewBox='0 0 250 140'><rect width='250' height='140' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='20' text-anchor='middle' font-family='Arial' font-size='12' fill='%23343a40'>👥 Archer List</text><rect x='10' y='30' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='20' y='45' font-family='Arial' font-size='10' fill='%23343a40'>🔍 Search...</text><rect x='10' y='60' width='110' height='25' rx='3' fill='%236c757d' stroke='%23fff' stroke-width='1'/><text x='65' y='75' text-anchor='middle' font-family='Arial' font-size='8' fill='%23fff'>Sort Name</text><rect x='130' y='60' width='110' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='185' y='75' text-anchor='middle' font-family='Arial' font-size='8' fill='%23343a40'>Sort Bale</text><rect x='10' y='90' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='102' font-family='Arial' font-size='8' fill='%23ffc107'>⭐</text><text x='25' y='102' font-family='Arial' font-size='8' fill='%23343a40'>Sarah J</text><text x='150' y='102' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 A</text><rect x='10' y='115' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='127' font-family='Arial' font-size='8' fill='%23ffc107'>⭐</text><text x='25' y='127' font-family='Arial' font-size='8' fill='%23343a40'>Mike C</text><text x='150' y='127' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 B</text><rect x='210' y='30' width='30' height='20' rx='3' fill='%230d6efd' stroke='%23fff' stroke-width='1'/><text x='225' y='42' text-anchor='middle' font-family='Arial' font-size='8' fill='%23fff'>🔄</text><line x1='225' y1='55' x2='225' y2='65' stroke='%23ff6b6b' stroke-width='2'/><text x='235' y='75' font-family='Arial' font-size='6' fill='%23ff6b6b'>Refresh</text></svg>"
+            alt="Sync archer list"
+            class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
         </div>
-        
+
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-download"></i> Import from Master List</h3>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-download"></i> Import
+            from Master List</h3>
           <p class="text-gray-600 dark:text-gray-300 text-xs">Get the latest archer information and assignments</p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-edit"></i> Add Missing Archers</h3>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-edit"></i> Add
+            Missing Archers</h3>
           <p class="text-gray-600 dark:text-gray-300 text-xs">Add any archers who aren't in the master list</p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-check"></i> Verify Information</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Make sure bale assignments and target letters are correct</p>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-check"></i> Verify
+            Information</h3>
+          <p class="text-gray-600 dark:text-gray-300 text-xs">Make sure bale assignments and target letters are correct
+          </p>
         </div>
         <div class="flex gap-3 justify-center mt-6">
-          <button class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md" onclick="prevStep()">Back</button>
-          <button class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md" onclick="nextStep()">Continue</button>
+          <button
+            class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
+            onclick="prevStep()">Back</button>
+          <button
+            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
+            onclick="nextStep()">Continue</button>
         </div>
       </div>
 
@@ -139,30 +183,43 @@
           <div class="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-500"></div>
         </div>
         <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-3">
-          <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">4</span>
+          <span
+            class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">4</span>
           Start Scoring!
         </h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">You're all set! Choose the type of scoring you want to do:</p>
-        
+        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">You're all set! Choose the type of
+          scoring you want to do:</p>
+
         <div class="text-center my-4">
-          <img src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='180' viewBox='0 0 250 180'><rect width='250' height='180' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='20' text-anchor='middle' font-family='Arial' font-size='12' fill='%23343a40'>🏆 Ranking - E1</text><rect x='10' y='35' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='50' font-family='Arial' font-size='8' fill='%23343a40'>Sarah J</text><text x='70' y='50' font-family='Arial' font-size='8' fill='%23ffc107'>X</text><text x='95' y='50' font-family='Arial' font-size='8' fill='%23ffc107'>10</text><text x='120' y='50' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='145' y='50' font-family='Arial' font-size='8' fill='%23dc3545'>29</text><text x='170' y='50' font-family='Arial' font-size='8' fill='%230d6efd'>29</text><rect x='10' y='65' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='80' font-family='Arial' font-size='8' fill='%23343a40'>Mike C</text><text x='70' y='80' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='95' y='80' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='120' y='80' font-family='Arial' font-size='8' fill='%23ffc107'>8</text><text x='145' y='80' font-family='Arial' font-size='8' fill='%23dc3545'>26</text><text x='170' y='80' font-family='Arial' font-size='8' fill='%230d6efd'>26</text><rect x='10' y='95' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='110' font-family='Arial' font-size='8' fill='%23343a40'>Alex R</text><text x='70' y='110' font-family='Arial' font-size='8' fill='%23ffc107'>10</text><text x='95' y='110' font-family='Arial' font-size='8' fill='%23ffc107'>X</text><text x='120' y='110' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='145' y='110' font-family='Arial' font-size='8' fill='%23dc3545'>29</text><text x='170' y='110' font-family='Arial' font-size='8' fill='%230d6efd'>29</text><rect x='10' y='125' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='140' font-family='Arial' font-size='8' fill='%23343a40'>Emma D</text><text x='70' y='140' font-family='Arial' font-size='8' fill='%23ffc107'>8</text><text x='95' y='140' font-family='Arial' font-size='8' fill='%23ffc107'>8</text><text x='120' y='140' font-family='Arial' font-size='8' fill='%23ffc107'>7</text><text x='145' y='140' font-family='Arial' font-size='8' fill='%23dc3545'>23</text><text x='170' y='140' font-family='Arial' font-size='8' fill='%230d6efd'>23</text><rect x='10' y='155' width='110' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='65' y='170' text-anchor='middle' font-family='Arial' font-size='8' fill='%23343a40'>← E</text><rect x='130' y='155' width='110' height='25' rx='3' fill='%23198754' stroke='%23fff' stroke-width='1'/><text x='185' y='170' text-anchor='middle' font-family='Arial' font-size='8' fill='%23fff'>E →</text><line x1='70' y1='50' x2='70' y2='50' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='45' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='70' y1='80' x2='70' y2='80' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='75' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='70' y1='110' x2='70' y2='110' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='105' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='70' y1='140' x2='70' y2='140' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='135' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text></svg>" alt="Scoring interface" class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+          <img
+            src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='180' viewBox='0 0 250 180'><rect width='250' height='180' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='20' text-anchor='middle' font-family='Arial' font-size='12' fill='%23343a40'>🏆 Ranking - E1</text><rect x='10' y='35' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='50' font-family='Arial' font-size='8' fill='%23343a40'>Sarah J</text><text x='70' y='50' font-family='Arial' font-size='8' fill='%23ffc107'>X</text><text x='95' y='50' font-family='Arial' font-size='8' fill='%23ffc107'>10</text><text x='120' y='50' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='145' y='50' font-family='Arial' font-size='8' fill='%23dc3545'>29</text><text x='170' y='50' font-family='Arial' font-size='8' fill='%230d6efd'>29</text><rect x='10' y='65' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='80' font-family='Arial' font-size='8' fill='%23343a40'>Mike C</text><text x='70' y='80' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='95' y='80' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='120' y='80' font-family='Arial' font-size='8' fill='%23ffc107'>8</text><text x='145' y='80' font-family='Arial' font-size='8' fill='%23dc3545'>26</text><text x='170' y='80' font-family='Arial' font-size='8' fill='%230d6efd'>26</text><rect x='10' y='95' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='110' font-family='Arial' font-size='8' fill='%23343a40'>Alex R</text><text x='70' y='110' font-family='Arial' font-size='8' fill='%23ffc107'>10</text><text x='95' y='110' font-family='Arial' font-size='8' fill='%23ffc107'>X</text><text x='120' y='110' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='145' y='110' font-family='Arial' font-size='8' fill='%23dc3545'>29</text><text x='170' y='110' font-family='Arial' font-size='8' fill='%230d6efd'>29</text><rect x='10' y='125' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='140' font-family='Arial' font-size='8' fill='%23343a40'>Emma D</text><text x='70' y='140' font-family='Arial' font-size='8' fill='%23ffc107'>8</text><text x='95' y='140' font-family='Arial' font-size='8' fill='%23ffc107'>8</text><text x='120' y='140' font-family='Arial' font-size='8' fill='%23ffc107'>7</text><text x='145' y='140' font-family='Arial' font-size='8' fill='%23dc3545'>23</text><text x='170' y='140' font-family='Arial' font-size='8' fill='%230d6efd'>23</text><rect x='10' y='155' width='110' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='65' y='170' text-anchor='middle' font-family='Arial' font-size='8' fill='%23343a40'>← E</text><rect x='130' y='155' width='110' height='25' rx='3' fill='%23198754' stroke='%23fff' stroke-width='1'/><text x='185' y='170' text-anchor='middle' font-family='Arial' font-size='8' fill='%23fff'>E →</text><line x1='70' y1='50' x2='70' y2='50' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='45' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='70' y1='80' x2='70' y2='80' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='75' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='70' y1='110' x2='70' y2='110' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='105' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='70' y1='140' x2='70' y2='140' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='135' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text></svg>"
+            alt="Scoring interface"
+            class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
         </div>
-        
+
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-trophy"></i> Ranking Round</h3>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-trophy"></i> Ranking
+            Round</h3>
           <p class="text-gray-600 dark:text-gray-300 text-xs">Score competitive ranking rounds with multiple archers</p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-user-friends"></i> Solo Match</h3>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-user-friends"></i>
+            Solo Match</h3>
           <p class="text-gray-600 dark:text-gray-300 text-xs">Track a 1v1 match (first to 6 set points wins)</p>
         </div>
         <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-users-cog"></i> Team Match</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Score a team vs team match (first to 5 set points wins)</p>
+          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-users-cog"></i> Team
+            Match</h3>
+          <p class="text-gray-600 dark:text-gray-300 text-xs">Score a team vs team match (first to 5 set points wins)
+          </p>
         </div>
         <div class="flex gap-3 justify-center mt-6">
-          <button class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md" onclick="prevStep()">Back</button>
-          <button class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md" onclick="completeOnboarding()">Let's Go!</button>
+          <button
+            class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
+            onclick="prevStep()">Back</button>
+          <button
+            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
+            onclick="completeOnboarding()">Let's Go!</button>
         </div>
       </div>
     </div>
@@ -172,7 +229,9 @@
     <!-- Header with Dark Mode Toggle -->
     <header class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Archery Tools</h1>
-      <button id="dark-mode-toggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200" title="Toggle dark mode">
+      <button id="dark-mode-toggle"
+        class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200"
+        title="Toggle dark mode">
         <i class="fas fa-moon dark:hidden"></i>
         <i class="fas fa-sun hidden dark:inline"></i>
       </button>
@@ -182,12 +241,14 @@
     <div class="flex-grow space-y-6">
       <!-- Archer Details Section -->
       <div class="space-y-3">
-        <a href="archer_list.html" id="archer-details-btn" class="block w-full px-6 py-4 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-lg font-semibold text-lg transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Update your archer profile and details">
+        <a href="archer_list.html" id="archer-details-btn"
+          class="block w-full px-6 py-4 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-lg font-semibold text-lg transition-all hover:-translate-y-0.5 shadow-lg text-center"
+          title="Update your archer profile and details">
           <i class="fas fa-user-circle mr-2"></i>Archer Details
         </a>
         <div id="welcome-self" class="text-center"></div>
       </div>
-      
+
       <!-- Open Assignments Section -->
       <div id="open-assignments" class="hidden space-y-3">
         <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
@@ -198,19 +259,27 @@
           <!-- Assignments will be populated here -->
         </div>
       </div>
-      
+
       <!-- Main Modules -->
       <div class="grid grid-cols-2 gap-4">
-        <a href="ranking_round_300.html" class="block px-4 py-4 bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Score competitive ranking rounds with multiple archers">
+        <a href="ranking_round_300.html"
+          class="block px-4 py-4 bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
+          title="Score competitive ranking rounds with multiple archers">
           <i class="fas fa-trophy block mb-2 text-xl"></i>Ranking
         </a>
-        <a href="solo_card.html" class="block px-4 py-4 bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-400 dark:hover:bg-yellow-500 text-gray-900 rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Track 1v1 matches (first to 6 set points wins)">
+        <a href="solo_card.html"
+          class="block px-4 py-4 bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-400 dark:hover:bg-yellow-500 text-gray-900 rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
+          title="Track 1v1 matches (first to 6 set points wins)">
           <i class="fas fa-user-friends block mb-2 text-xl"></i>Solo
         </a>
-        <a href="team_card.html" class="block px-4 py-4 bg-orange-500 hover:bg-orange-600 dark:bg-orange-400 dark:hover:bg-orange-500 text-gray-900 rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Score team vs team matches (first to 5 set points wins)">
+        <a href="team_card.html"
+          class="block px-4 py-4 bg-orange-500 hover:bg-orange-600 dark:bg-orange-400 dark:hover:bg-orange-500 text-gray-900 rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
+          title="Score team vs team matches (first to 5 set points wins)">
           <i class="fas fa-users-cog block mb-2 text-xl"></i>Team
         </a>
-        <a href="gemini-oneshot.html" class="block px-4 py-4 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center" title="Practice sessions with arrow grouping analysis">
+        <a href="gemini-oneshot.html"
+          class="block px-4 py-4 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
+          title="Practice sessions with arrow grouping analysis">
           <i class="fas fa-bullseye block mb-2 text-xl"></i>Practice
         </a>
       </div>
@@ -219,14 +288,19 @@
     <!-- Footer -->
     <footer class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
       <div class="grid grid-cols-2 gap-3 mb-4">
-        <a href="coach.html" class="block px-3 py-2.5 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md text-center" title="Coach console: events and live scoring">
+        <a href="coach.html"
+          class="block px-3 py-2.5 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md text-center"
+          title="Coach console: events and live scoring">
           <i class="fas fa-chalkboard-teacher block mb-1 text-base"></i>Coaches
         </a>
-        <button id="clear-cache-btn" class="px-3 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md text-center" title="Clear cached archers, events, and scoring data on this device">
+        <button id="clear-cache-btn"
+          class="px-3 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md text-center"
+          title="Clear cached archers, events, and scoring data on this device">
           <i class="fas fa-broom block mb-1 text-base"></i>Reset Data
         </button>
       </div>
-      <p class="text-center text-gray-600 dark:text-gray-400 text-xs">© 2025 OAS Score Sheets & Tools. All rights reserved.</p>
+      <p class="text-center text-gray-600 dark:text-gray-400 text-xs">© 2025 OAS Score Sheets & Tools. All rights
+        reserved.</p>
     </footer>
   </div>
 
@@ -292,28 +366,28 @@
         if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
           archer = window.ArcherModule.getSelfArcher();
         }
-        
+
         if (!archer) {
           console.log('[index] No archer set - cannot load assignments');
           return;
         }
-        
+
         // Get archer ID - need UUID for history endpoint
         // UUID format: 36 chars with dashes (e.g., "3c7533af-eda1-48c7-b688-3279e75cc697")
         // Check multiple possible ID fields
         let archerId = archer.id || archer.archerId || archer.databaseId || null;
         let isUUID = archerId && archerId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-        
-        console.log('[index] Archer object:', { 
-          first: archer.first, 
-          last: archer.last, 
-          id: archer.id, 
+
+        console.log('[index] Archer object:', {
+          first: archer.first,
+          last: archer.last,
+          id: archer.id,
           archerId: archer.archerId,
           databaseId: archer.databaseId,
           extId: archer.extId,
           allKeys: Object.keys(archer)
         });
-        
+
         // If we don't have a UUID, try to find it by searching
         if (!isUUID && archer.first && archer.last) {
           try {
@@ -324,7 +398,7 @@
               console.log('[index] Search results:', searchData);
               // The search API returns results in a different format
               if (searchData.results && searchData.results.length > 0) {
-                const match = searchData.results.find(r => 
+                const match = searchData.results.find(r =>
                   r.archer.firstName.toLowerCase() === archer.first.toLowerCase() &&
                   r.archer.lastName.toLowerCase() === archer.last.toLowerCase()
                 );
@@ -345,16 +419,16 @@
             console.log('[index] Could not search for archer UUID:', e.message);
           }
         }
-        
+
         if (!archerId || !isUUID) {
           console.log('[index] No valid UUID found - cannot load assignments. Final archerId:', archerId, 'isUUID:', isUUID);
           return;
         }
-        
+
         console.log('[index] Loading assignments for archer UUID:', archerId);
-        
+
         const assignments = [];
-        
+
         // Check for open ranking rounds
         try {
           const historyRes = await fetch(`api/v1/archers/${archerId}/history`);
@@ -364,23 +438,23 @@
             console.log('[index] History data:', historyData);
             const rounds = historyData.history || historyData.rounds || [];
             console.log('[index] Total rounds found:', rounds.length);
-            
+
             // Find incomplete rounds
             // Note: History API doesn't return locked/card_status, so we check ends_completed
             const openRounds = rounds.filter(round => {
               const endsCompleted = parseInt(round.ends_completed || 0);
               const hasIncompleteEnds = endsCompleted < 10;
-              const isTestRound = round.event_name?.toLowerCase().includes('test') || 
-                                 round.event_name?.toLowerCase().includes('practice');
+              const isTestRound = round.event_name?.toLowerCase().includes('test') ||
+                round.event_name?.toLowerCase().includes('practice');
               const finalScore = parseInt(round.final_score || 0);
               const hasLowScore = finalScore < 100;
-              
+
               // Show if:
               // 1. Has incomplete ends (not finished) - PRIMARY condition
               // 2. OR is today's round (show active rounds even if complete, for quick access)
               const isToday = round.event_date === new Date().toISOString().slice(0, 10);
               const shouldShow = hasIncompleteEnds || (isToday && endsCompleted > 0);
-              
+
               console.log('[index] Round check:', {
                 event: round.event_name,
                 date: round.event_date,
@@ -392,20 +466,26 @@
                 isToday,
                 shouldShow
               });
-              
+
               return shouldShow;
             });
-            
+
             console.log('[index] Open rounds found:', openRounds.length);
-            
+
+            // Build links - entry code will be fetched automatically from event when needed
+            // Since the archer is already assigned to these rounds, we can get entry code from event
             openRounds.forEach(round => {
               const isStarted = (round.ends_completed || 0) > 0;
+              
+              // Build link - entry code will be fetched from event snapshot in handleDirectLink
+              const link = `ranking_round_300.html?event=${round.event_id}&round=${round.round_id}&archer=${archerId}`;
+              
               assignments.push({
                 type: 'ranking',
                 title: isStarted ? 'Resume Ranking Round' : (round.event_name || 'Ranking Round'),
                 subtitle: `${round.round_type || 'R300'} • ${round.division || 'Unknown Division'}`,
                 details: `Bale ${round.bale_number || '?'} • ${round.ends_completed || 0}/10 ends`,
-                link: `ranking_round_300.html?event=${round.event_id}&round=${round.round_id}&archer=${archerId}`,
+                link: link,
                 icon: isStarted ? 'fas fa-play-circle' : 'fas fa-trophy',
                 color: isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-teal-600 hover:bg-teal-700',
                 urgent: isStarted && (round.ends_completed || 0) < 10 // Has started but not finished
@@ -415,7 +495,7 @@
         } catch (e) {
           console.log('Could not load ranking round history:', e.message);
         }
-        
+
         // Check for bracket assignments
         try {
           console.log('[index] Checking for bracket assignments...');
@@ -424,7 +504,7 @@
           if (eventsRes.ok) {
             const eventsData = await eventsRes.json();
             const events = eventsData.events || [];
-            
+
             // Check each event for brackets
             for (const event of events) {
               try {
@@ -432,7 +512,7 @@
                 if (bracketsRes.ok) {
                   const bracketsData = await bracketsRes.json();
                   const brackets = bracketsData.brackets || [];
-                  
+
                   // Check each bracket for this archer's assignment
                   for (const bracket of brackets) {
                     if (bracket.bracket_type === 'SOLO' && bracket.bracket_format === 'ELIMINATION') {
@@ -441,11 +521,11 @@
                         if (assignmentRes.ok) {
                           const assignmentData = await assignmentRes.json();
                           console.log('[index] Bracket assignment found:', assignmentData);
-                          
+
                           if (assignmentData.assignment && assignmentData.assignment.opponent) {
                             const assignment = assignmentData.assignment;
                             const opponent = assignment.opponent;
-                            
+
                             assignments.push({
                               type: 'bracket',
                               title: `${bracket.division} Elimination Bracket`,
@@ -473,50 +553,24 @@
         } catch (e) {
           console.log('Could not load bracket assignments:', e.message);
         }
-        
-        // Check for active events (if accessible)
-        try {
-          const today = new Date().toISOString().slice(0, 10);
-          const eventsRes = await fetch('api/v1/events/recent');
-          if (eventsRes.ok) {
-            const eventsData = await eventsRes.json();
-            const events = eventsData.events || [];
-            
-            // Find active events for today
-            const activeEvents = events.filter(ev => 
-              ev.date === today && 
-              (ev.status === 'Active' || ev.status === 'Not Started')
-            );
-            
-            activeEvents.forEach(event => {
-              assignments.push({
-                type: 'event',
-                title: event.name,
-                subtitle: `Active Event • Today`,
-                details: `Status: ${event.status}`,
-                link: `ranking_round_300.html?event=${event.id}`,
-                icon: 'fas fa-calendar-check',
-                color: 'bg-blue-600 hover:bg-blue-700',
-                urgent: event.status === 'Active'
-              });
-            });
-          }
-        } catch (e) {
-          console.log('Could not load active events:', e.message);
-        }
-        
+
+        // NOTE: Removed "Active Event" links section
+        // These links only had event ID, missing round and archer parameters
+        // This caused wrong archer to load (used stale cookie instead of URL param)
+        // "Resume Ranking Round" links (above) already show active rounds with complete parameters
+
         // Display assignments
         const assignmentsSection = document.getElementById('open-assignments');
         const assignmentsList = document.getElementById('assignments-list');
-        
+
         if (assignments.length === 0) {
           assignmentsSection.classList.add('hidden');
           return;
         }
-        
+
         // Sort by urgency (urgent first)
         assignments.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
-        
+
         // Convert assignments to unified scorecard list format
         const assignmentItems = assignments.map(assignment => {
           // Handle bracket assignments differently
@@ -525,7 +579,7 @@
             // Details format: "You (Seed 1) vs Caio Lalau (Seed 8)"
             const detailsMatch = assignment.details.match(/vs (.+?) \(Seed/);
             const opponentName = detailsMatch ? detailsMatch[1] : assignment.details.split('vs ')[1] || 'Opponent';
-            
+
             return {
               event_name: assignment.title,
               event_date: new Date().toISOString(),
@@ -591,9 +645,9 @@
         const listContainer = UnifiedScorecardList.create(assignmentItems, options);
         assignmentsList.innerHTML = '';
         assignmentsList.appendChild(listContainer);
-        
+
         assignmentsSection.classList.remove('hidden');
-        
+
       } catch (e) {
         console.log('Could not load open assignments:', e.message);
       }
@@ -604,12 +658,12 @@
       if (!welcomeEl) return;
       try {
         let archer = null;
-        
+
         // Try ArcherModule first
         if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
           archer = window.ArcherModule.getSelfArcher();
         }
-        
+
         // Fallback to localStorage
         if (!archer) {
           const extId = localStorage.getItem('archerSelfExtId') || '';
@@ -622,14 +676,14 @@
             try {
               const list = JSON.parse(listRaw) || [];
               archer = list.find(a => (a.extId || '') === extId || `${(a.first || '').trim()}-${(a.last || '').trim()}` === extId);
-            } catch (_) {}
+            } catch (_) { }
           }
         }
-        
+
         if (archer) {
           const nickname = archer.nickname ? ` "${archer.nickname}"` : '';
           const initials = (archer.first.charAt(0) + archer.last.charAt(0)).toUpperCase();
-          
+
           // Build avatar HTML
           let avatarHTML = '';
           if (archer.photoUrl) {
@@ -637,7 +691,7 @@
           } else {
             avatarHTML = `<div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-4 border-white dark:border-gray-700 shadow-lg"><span class="text-2xl font-bold text-white">${initials}</span></div>`;
           }
-          
+
           welcomeEl.innerHTML = `
             <div class="flex flex-col items-center gap-3">
               ${avatarHTML}
@@ -708,7 +762,7 @@
       const knownCookies = ['oas_archer_id', 'coach_auth'];
       const paths = ['/', '/wdv', '/wdv/'];
       const domains = [window.location.hostname, '.' + window.location.hostname, ''];
-      
+
       try {
         // First, explicitly clear known cookies with all path/domain combinations
         knownCookies.forEach(cookieName => {
@@ -722,7 +776,7 @@
             });
           });
         });
-        
+
         // Then, clear all other cookies visible in document.cookie
         document.cookie.split(';').forEach(cookieStr => {
           const cookie = cookieStr.trim();
@@ -763,16 +817,16 @@
     }
 
     // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
-    (function() {
+    (function () {
       const savedTheme = localStorage.getItem('theme');
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
         document.documentElement.classList.add('dark');
       }
     })();
-    
+
     // Onboarding disabled - outdated tutorial
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       // showOnboarding(); // DISABLED - Tutorial needs updating
       // Note: Active event banner disabled - requires authentication that archers don't have
 
@@ -785,7 +839,7 @@
 
       updateWelcomeMessage();
       loadOpenAssignments();
-      
+
       // Dark mode toggle functionality
       const darkModeToggle = document.getElementById('dark-mode-toggle');
       if (darkModeToggle) {
@@ -798,5 +852,5 @@
     });
   </script>
 </body>
-</html>
 
+</html>
