@@ -12,6 +12,9 @@
     <!-- Tailwind CSS Compiled -->
     <link rel="stylesheet" href="css/tailwind-compiled.css">
 
+    <!-- Unified Scorecard List CSS -->
+    <link rel="stylesheet" href="css/unified-scorecard-list.css">
+
     <style>
         /* Custom component styles that work with Tailwind */
         .score-input {
@@ -21,7 +24,6 @@
             text-align: center;
             font-weight: bold;
             border: none;
-            /* background-color removed - let Tailwind bg-score-* classes work */
         }
 
         .score-input:focus {
@@ -101,6 +103,8 @@
             <a href="#archer-selection"
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Archer
                 Selection</a>
+            <a href="#unified-scorecard-list"
+                class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Scorecard List</a>
         </nav>
     </div>
 
@@ -716,18 +720,118 @@
                 </div>
             </div>
 
-            <!-- Implementation Notes -->
-            <div
-                class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                <h3 class="text-sm font-semibold text-yellow-800 dark:text-yellow-300 mb-2">⚠️ Current Implementation
-                    Status</h3>
-                <div class="text-xs text-yellow-700 dark:text-yellow-400 space-y-1">
-                    <p><strong>Ranking Round 300:</strong> ⚠️ Uses old 4x4 layout with navigation buttons - needs update
-                    </p>
-                    <p><strong>Solo Card:</strong> ❌ Uses legacy CSS (keypad.css) - needs migration</p>
-                    <p><strong>Team Card:</strong> ❌ Uses legacy CSS (keypad.css) - needs migration</p>
-                    <p><strong>Scorecard Editor:</strong> ⚠️ Uses modal with 4x3 layout but different styling - needs
-                        standardization</p>
+        </div>
+    </section>
+
+    <!-- Section: Unified Scorecard List -->
+    <section id="unified-scorecard-list" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Unified Scorecard List</h2>
+
+        <div class="space-y-6">
+            <!-- List Header -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">List Header & Items</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Compact 2-line grid layout for displaying scorecard lists consistently across the application.
+                    Used in Active Rounds (index.html), Results (results.html), and Archer History (archer_history.html).
+                </p>
+
+                <!-- Header Example -->
+                <div class="mb-4 bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                    <div class="scorecard-list-header grid gap-2 items-center bg-gray-200 dark:bg-gray-600 px-3 py-2 rounded font-semibold text-sm text-gray-800 dark:text-white" 
+                         style="grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr);"
+                         data-columns="4">
+                        <div class="text-center">Assignment</div>
+                        <div class="text-center">Status</div>
+                        <div class="text-center">Progress</div>
+                        <div class="text-center">Type</div>
+                    </div>
+
+                    <!-- Item Examples -->
+                    <div class="mt-2 space-y-1">
+                        <!-- Item 1: Active Round -->
+                        <div class="scorecard-list-item grid gap-2 items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 px-3 py-2 min-h-[2.75rem] min-w-0 transition-all duration-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                             style="grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr);"
+                             data-columns="4">
+                            <div class="min-w-0">
+                                <div class="font-semibold text-gray-900 dark:text-white truncate">Practice Meet - Nov 17</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400">Nov 17, 25 • R300 • DVD VAR</div>
+                            </div>
+                            <div class="text-center text-xs font-bold">
+                                <span class="inline-block px-2 py-1 rounded bg-warning-light text-warning-dark">PEND</span>
+                            </div>
+                            <div class="text-center text-sm text-gray-700 dark:text-gray-300">5/10</div>
+                            <div class="text-center text-sm text-gray-700 dark:text-gray-300">R300</div>
+                        </div>
+
+                        <!-- Item 2: Verified Round -->
+                        <div class="scorecard-list-item grid gap-2 items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 px-3 py-2 min-h-[2.75rem] min-w-0 transition-all duration-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+                             style="grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr);"
+                             data-columns="4">
+                            <div class="min-w-0">
+                                <div class="font-semibold text-gray-900 dark:text-white truncate">Tournament - Dec 1</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400">Dec 1, 25 • R300 • DVD VAR</div>
+                            </div>
+                            <div class="text-center text-xs font-bold">
+                                <span class="inline-block px-2 py-1 rounded bg-success-light text-success-dark">VER</span>
+                            </div>
+                            <div class="text-center text-sm text-gray-700 dark:text-gray-300">10/10</div>
+                            <div class="text-center text-sm text-gray-700 dark:text-gray-300">R300</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Features</h3>
+                <div class="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Dynamic Grid Columns:</strong> Automatically adjusts based on column count (4 or 6 columns)
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Responsive Design:</strong> Mobile-optimized spacing for iPhone SE, iPhone XR, Samsung devices
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Tailwind-Aligned:</strong> Uses Tailwind utility classes with minimal custom CSS for dynamic grid
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Status Badges:</strong> PEND, VER, VOID, COMP status indicators
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Hover States:</strong> Interactive hover effects for clickable items
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Dark Mode:</strong> Full dark mode support with Tailwind classes
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CSS File Reference -->
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h3 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">📄 CSS File</h3>
+                <div class="text-xs text-blue-700 dark:text-blue-400">
+                    <p><strong>File:</strong> <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">css/unified-scorecard-list.css</code></p>
+                    <p class="mt-2"><strong>Purpose:</strong> Responsive grid overrides for mobile devices. Dynamic grid-template-columns are set inline in JavaScript, this CSS provides responsive breakpoints.</p>
+                    <p class="mt-2"><strong>Used In:</strong> index.html, results.html, archer_history.html, scorecard_editor.html</p>
                 </div>
             </div>
         </div>
@@ -888,9 +992,9 @@
                                 with ArcherSelector</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <span class="text-warning">⚠️</span>
-                            <strong>Ranking Round 300:</strong> <span class="text-gray-600 dark:text-gray-400">Needs
-                                ArcherSelector integration</span>
+                            <span class="text-success">✅</span>
+                            <strong>Ranking Round 300:</strong> <span class="text-gray-600 dark:text-gray-400">Fully integrated
+                                with ArcherSelector</span>
                         </div>
                     </div>
                 </div>
