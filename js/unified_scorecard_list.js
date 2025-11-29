@@ -77,16 +77,40 @@ const UnifiedScorecardList = (() => {
     } = options;
 
     const container = document.createElement('div');
-    container.className = className;
+    // Use Tailwind classes with safe area insets for iPhone X series
+    container.className = `${className} flex flex-col w-full overflow-x-auto`;
+    // Add safe area insets inline (Tailwind doesn't have env() support in classes)
+    container.style.paddingLeft = 'max(0.75rem, env(safe-area-inset-left))';
+    container.style.paddingRight = 'max(0.75rem, env(safe-area-inset-right))';
 
     // Create header
     const header = document.createElement('div');
-    header.className = 'scorecard-list-header';
+    // Tailwind classes: grid, sticky header, background, border, typography
+    // Responsive: tighter spacing on mobile (gap-1.5, px-2.5, py-2, text-[11px]) then normal (gap-2, px-3, py-2.5, text-xs)
+    header.className = 'grid gap-1.5 px-2.5 py-2 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-[11px] font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide items-center sticky top-0 z-10 min-w-0 sm:gap-2 sm:px-3 sm:py-2.5 sm:text-xs';
     
+    // Filter out empty column names and count actual columns
+    const nonEmptyColumns = columns.filter(col => col && col.trim() !== '');
+    const columnCount = showRank ? nonEmptyColumns.length + 1 : nonEmptyColumns.length;
+    
+    // Set grid template columns based on column count (inline style needed for dynamic columns)
+    // Mobile: tighter minmax values, Desktop: normal values
+    if (columnCount === 4) {
+      header.style.gridTemplateColumns = 'minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr)';
+      // Override for larger screens
+      header.style.setProperty('--grid-cols-4', 'minmax(0, 2fr) minmax(60px, 1fr) minmax(70px, 1fr) minmax(60px, 1fr)');
+    } else if (columnCount === 6) {
+      header.style.gridTemplateColumns = 'minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr)';
+      header.style.setProperty('--grid-cols-6', 'minmax(0, 2fr) minmax(60px, 1fr) minmax(70px, 1fr) minmax(60px, 1fr) minmax(40px, 0.5fr) minmax(40px, 0.5fr)');
+    }
+    // Add data attribute for responsive targeting
+    header.setAttribute('data-columns', columnCount.toString());
+    
+    // Header cells use Tailwind classes for consistent styling
     if (showRank) {
-      header.innerHTML = `<div>Rank</div>` + columns.map(col => `<div>${col}</div>`).join('');
+      header.innerHTML = `<div class="text-center">Rank</div>` + columns.map(col => col && col.trim() !== '' ? `<div class="text-center">${col}</div>` : '<div></div>').join('');
     } else {
-      header.innerHTML = columns.map(col => `<div>${col}</div>`).join('');
+      header.innerHTML = columns.map(col => col && col.trim() !== '' ? `<div class="text-center">${col}</div>` : '<div></div>').join('');
     }
     
     container.appendChild(header);
@@ -119,14 +143,7 @@ const UnifiedScorecardList = (() => {
       getStatus = (item) => item.card_status || item.cardStatus || item.status || 'COMP'
     } = options;
 
-    const listItem = document.createElement('div');
-    listItem.className = 'scorecard-list-item';
-    
-    if (onItemClick) {
-      listItem.style.cursor = 'pointer';
-      listItem.onclick = () => onItemClick(item, index);
-    }
-
+    // Calculate values first (needed for column count determination)
     const eventName = getEventName(item);
     const eventDetails = formatEventDetails(item);
     const statusText = renderStatusText(getStatus(item));
@@ -134,6 +151,30 @@ const UnifiedScorecardList = (() => {
     const avg = getAvg(item);
     const xs = getXs(item);
     const tens = getTens(item);
+    
+    const listItem = document.createElement('div');
+    // Tailwind classes: grid, alignment, background, border, padding, cursor, transitions
+    // Responsive: tighter spacing on mobile (gap-1.5, px-2.5, py-2, min-h-[2.75rem]) then normal
+    listItem.className = 'grid gap-1.5 items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 px-2.5 py-2 min-h-[2.75rem] min-w-0 transition-all duration-200 sm:gap-2 sm:px-3 sm:py-2.5 sm:min-h-[3rem]';
+    
+    // Count actual columns (event-info, status, total, avg, plus optional xs/tens)
+    const hasXs = xs !== '' && xs !== null && xs !== undefined && xs !== 0;
+    const hasTens = tens !== '' && tens !== null && tens !== undefined && tens !== 0;
+    const columnCount = 4 + (hasXs ? 1 : 0) + (hasTens ? 1 : 0);
+    
+    // Set grid template columns to match header (inline style needed for dynamic columns)
+    // Mobile: tighter minmax values, Desktop: normal values (will be overridden by media query if needed)
+    if (columnCount === 4) {
+      listItem.style.gridTemplateColumns = 'minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr)';
+    } else if (columnCount === 6) {
+      listItem.style.gridTemplateColumns = 'minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr)';
+    }
+    listItem.setAttribute('data-columns', columnCount.toString());
+    
+    if (onItemClick) {
+      listItem.className += ' cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600';
+      listItem.onclick = () => onItemClick(item, index);
+    }
 
     let innerHTML = '';
 
@@ -142,29 +183,45 @@ const UnifiedScorecardList = (() => {
       const rankColor = rank === 1 ? 'text-yellow-500' : rank === 2 ? 'text-gray-400' : rank === 3 ? 'text-orange-600' : 'text-gray-600';
       const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
       
+      // Responsive font sizes for rank view
       innerHTML = `
-        <div class="scorecard-stat-value ${rankColor}">${rankIcon}</div>
-        <div class="scorecard-event-info">
-          <div class="scorecard-event-name">${eventName}</div>
-          <div class="scorecard-event-details">${eventDetails}</div>
+        <div class="text-[13px] font-semibold text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm ${rankColor}">${rankIcon}</div>
+        <div class="flex flex-col gap-0.5 min-w-0 overflow-hidden">
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">${eventName}</div>
+          <div class="text-[11px] text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-xs">${eventDetails}</div>
         </div>
-        <div class="scorecard-stat-value">${statusText}</div>
-        <div class="scorecard-stat-value total">${total}</div>
-        <div class="scorecard-stat-value">${avg}</div>
-        <div class="scorecard-stat-value">${xs}</div>
-        <div class="scorecard-stat-value">${tens}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${statusText}</div>
+        <div class="text-[15px] font-bold text-blue-600 dark:text-blue-400 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-base">${total}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${avg}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${xs}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${tens}</div>
       `;
     } else {
+      // Render only the columns that are needed
+      // Standard layout: Assignment, Status, Progress (total), Type (avg)
+      // xs and tens are optional (may be empty)
+      const xsDisplay = xs !== '' && xs !== null && xs !== undefined ? `<div class="scorecard-stat-value">${xs}</div>` : '';
+      const tensDisplay = tens !== '' && tens !== null && tens !== undefined ? `<div class="scorecard-stat-value">${tens}</div>` : '';
+      
+      // Use Tailwind classes for all elements with responsive font sizes
+      const xsDisplayHtml = xs !== '' && xs !== null && xs !== undefined 
+        ? `<div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${xs}</div>` 
+        : '';
+      const tensDisplayHtml = tens !== '' && tens !== null && tens !== undefined 
+        ? `<div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${tens}</div>` 
+        : '';
+      
+      // Responsive font sizes: smaller on mobile, normal on desktop
       innerHTML = `
-        <div class="scorecard-event-info">
-          <div class="scorecard-event-name">${eventName}</div>
-          <div class="scorecard-event-details">${eventDetails}</div>
+        <div class="flex flex-col gap-0.5 min-w-0 overflow-hidden">
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">${eventName}</div>
+          <div class="text-[11px] text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-xs">${eventDetails}</div>
         </div>
-        <div class="scorecard-stat-value">${statusText}</div>
-        <div class="scorecard-stat-value total">${total}</div>
-        <div class="scorecard-stat-value">${avg}</div>
-        <div class="scorecard-stat-value">${xs}</div>
-        <div class="scorecard-stat-value">${tens}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${statusText}</div>
+        <div class="text-[15px] font-bold text-blue-600 dark:text-blue-400 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-base">${total}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${avg}</div>
+        ${xsDisplayHtml}
+        ${tensDisplayHtml}
       `;
     }
 

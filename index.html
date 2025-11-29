@@ -480,15 +480,21 @@
               // Build link - entry code will be fetched from event snapshot in handleDirectLink
               const link = `ranking_round_300.html?event=${round.event_id}&round=${round.round_id}&archer=${archerId}`;
               
+              // Build event name - always show event name, add "Resume" prefix if in progress
+              const eventName = round.event_name || 'Ranking Round';
+              const title = isStarted ? `${eventName} - Resume` : eventName;
+              
               assignments.push({
                 type: 'ranking',
-                title: isStarted ? 'Resume Ranking Round' : (round.event_name || 'Ranking Round'),
+                title: title,
                 subtitle: `${round.round_type || 'R300'} • ${round.division || 'Unknown Division'}`,
                 details: `Bale ${round.bale_number || '?'} • ${round.ends_completed || 0}/10 ends`,
                 link: link,
                 icon: isStarted ? 'fas fa-play-circle' : 'fas fa-trophy',
                 color: isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-teal-600 hover:bg-teal-700',
-                urgent: isStarted && (round.ends_completed || 0) < 10 // Has started but not finished
+                urgent: isStarted && (round.ends_completed || 0) < 10, // Has started but not finished
+                event_date: round.event_date || round.eventDate || null, // Pass through event date if available
+                card_status: round.card_status || round.cardStatus || 'PENDING' // Pass through card_status from round data
               });
             });
           }
@@ -598,13 +604,17 @@
             };
           }
           // Regular ranking round assignments
+          // Note: card_status should come from the round data (PENDING, VER, VOID)
+          // This represents the card lifecycle as defined in results.html
           return {
             event_name: assignment.title,
-            event_date: new Date().toISOString(),
+            event_date: assignment.event_date || new Date().toISOString(), // Use actual event date from round if available
             round_type: assignment.subtitle.split(' • ')[0] || 'Assignment',
             division: assignment.subtitle.split(' • ')[1] || '',
             bale_number: assignment.details.match(/Bale (\d+)/)?.[1] || '',
-            card_status: assignment.urgent ? 'PEND' : 'COMP',
+            // card_status represents card lifecycle: PENDING (in progress), VER (verified), VOID (voided)
+            // Pass through from assignment (which comes from round data)
+            card_status: assignment.card_status || 'PENDING',
             final_score: 0,
             ends_completed: assignment.details.match(/(\d+)\/10 ends/)?.[1] || 0,
             total_xs: 0,
@@ -628,17 +638,21 @@
             // For ranking rounds, show ends completed
             return `${item.ends_completed}/10`;
           },
-          getAvg: (item) => item.round_type, // Type column shows match ID (e.g., BVQ1)
-          getXs: (item) => item.urgent ? '!' : '', // Exclamation point (!) indicates urgent assignment
+          getAvg: (item) => item.round_type, // Type column shows round type (e.g., R300) or match ID
+          getXs: (item) => '', // Empty column (not used)
           getTens: (item) => '', // Empty column (6th column, not used)
           getStatus: (item) => {
-            // Status column: PEND for pending/not started, COMP for completed
-            // For bracket matches, always PEND until the match is actually completed
-            if (item.isBracket) {
-              return 'PEND'; // Bracket matches haven't started yet, so PEND
-            }
-            // For ranking rounds, use card_status or default based on urgency
-            return item.card_status || (item.urgent ? 'PEND' : 'COMP');
+            // Status represents card lifecycle (same logic as results.html):
+            // - PEND: Pending (card in progress, not verified)
+            // - VER: Verified (coach has verified the card)
+            // - VOID: Voided (card was voided)
+            // - COMP: Completed (finished but not verified, or default)
+            // Use the same renderStatusText logic as results.html
+            const status = (item.card_status || item.cardStatus || item.status || 'PENDING').toUpperCase();
+            if (status === 'VER' || status === 'VERIFIED') return 'VER';
+            if (status === 'VOID') return 'VOID';
+            if (status === 'PENDING' || status === 'PEND') return 'PEND';
+            return 'COMP';
           }
         };
 

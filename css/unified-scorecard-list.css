@@ -1,254 +1,47 @@
-/* Unified Scorecard List Design - Compact 2-Line Layout */
-.scorecard-list-container {
-    display: flex;
-    flex-direction: column;
+/* Minimal CSS for unified scorecard list - Tailwind-aligned responsive grid overrides */
+/* Dynamic grid-template-columns are set inline in JS, these are responsive overrides */
+
+/* Mobile: Tighter grid columns (iPhone SE, small devices) */
+@media (max-width: 375px) {
+  .scorecard-list-header[data-columns="4"],
+  .scorecard-list-item[data-columns="4"] {
+    grid-template-columns: minmax(0, 2fr) minmax(50px, 1fr) minmax(60px, 1fr) minmax(50px, 1fr) !important;
+    gap: 0.25rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  .scorecard-list-header[data-columns="6"],
+  .scorecard-list-item[data-columns="6"] {
+    grid-template-columns: minmax(0, 2fr) minmax(50px, 1fr) minmax(60px, 1fr) minmax(50px, 1fr) minmax(30px, 0.5fr) minmax(30px, 0.5fr) !important;
+    gap: 0.25rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
 }
 
-.scorecard-list-header {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background-color: #f3f4f6;
-    border-bottom: 1px solid #e5e7eb;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #374151;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+/* Standard mobile: Slightly larger (iPhone XR, standard phones) */
+@media (min-width: 376px) and (max-width: 640px) {
+  .scorecard-list-header[data-columns="4"],
+  .scorecard-list-item[data-columns="4"] {
+    grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) !important;
+  }
+  
+  .scorecard-list-header[data-columns="6"],
+  .scorecard-list-item[data-columns="6"] {
+    grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr) !important;
+  }
 }
 
-.dark .scorecard-list-header {
-    background-color: #374151;
-    border-bottom-color: #4b5563;
-    color: #d1d5db;
-}
-
-.scorecard-list-item {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
-    gap: 0.5rem;
-    align-items: center;
-    background-color: #ffffff;
-    border-bottom: 1px solid #e5e7eb;
-    padding: 0.5rem 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    min-height: 3rem;
-}
-
-.scorecard-list-item:hover {
-    background-color: #f9fafb;
-    border-left: 3px solid #3b82f6;
-    padding-left: calc(0.75rem - 3px);
-}
-
-.dark .scorecard-list-item {
-    background-color: #1f2937;
-    border-bottom-color: #374151;
-}
-
-.dark .scorecard-list-item:hover {
-    background-color: #111827;
-    border-left-color: #60a5fa;
-}
-
-.scorecard-event-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-    min-width: 0;
-}
-
-.scorecard-event-name {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #111827;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    line-height: 1.2;
-}
-
-.dark .scorecard-event-name {
-    color: #f9fafb;
-}
-
-.scorecard-event-details {
-    font-size: 0.75rem;
-    color: #6b7280;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    line-height: 1.2;
-}
-
-.dark .scorecard-event-details {
-    color: #9ca3af;
-}
-
-.scorecard-stat-value {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #111827;
-    text-align: center;
-    line-height: 1.2;
-}
-
-.dark .scorecard-stat-value {
-    color: #f9fafb;
-}
-
-.scorecard-stat-value.total {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #0d6efd;
-}
-
-.dark .scorecard-stat-value.total {
-    color: #60a5fa;
-}
-
-.scorecard-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-}
-
-.scorecard-action-btn {
-    padding: 0.5rem;
-    border-radius: 9999px;
-    transition: all 0.2s ease-in-out;
-    border: none;
-    background: none;
-    cursor: pointer;
-}
-
-.scorecard-action-btn:hover {
-    background-color: #f3f4f6;
-}
-
-.dark .scorecard-action-btn:hover {
-    background-color: #374151;
-}
-
-.scorecard-action-btn.delete {
-    color: #dc2626;
-}
-
-.scorecard-action-btn.delete:hover {
-    background-color: #fef2f2;
-}
-
-.dark .scorecard-action-btn.delete:hover {
-    background-color: rgba(185, 28, 28, 0.2);
-}
-
-.scorecard-action-btn.view {
-    color: #2563eb;
-}
-
-.scorecard-action-btn.view:hover {
-    background-color: #eff6ff;
-}
-
-.dark .scorecard-action-btn.view:hover {
-    background-color: rgba(37, 99, 235, 0.2);
-}
-
-/* Status badges */
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border-radius: 9999px;
-}
-
-.status-badge.verified {
-    background-color: #dcfce7;
-    color: #166534;
-}
-
-.dark .status-badge.verified {
-    background-color: rgba(34, 197, 94, 0.2);
-    color: #4ade80;
-}
-
-.status-badge.pending {
-    background-color: #fef3c7;
-    color: #92400e;
-}
-
-.dark .status-badge.pending {
-    background-color: rgba(245, 158, 11, 0.2);
-    color: #fbbf24;
-}
-
-.status-badge.completed {
-    background-color: #dbeafe;
-    color: #1e40af;
-}
-
-.dark .status-badge.completed {
-    background-color: rgba(37, 99, 235, 0.2);
-    color: #60a5fa;
-}
-
-.status-badge.void {
-    background-color: #f3f4f6;
-    color: #4b5563;
-}
-
-.dark .status-badge.void {
-    background-color: rgba(107, 114, 128, 0.2);
-    color: #9ca3af;
-}
-
-.status-badge.locked {
-    background-color: #dbeafe;
-    color: #1e40af;
-}
-
-.dark .status-badge.locked {
-    background-color: rgba(37, 99, 235, 0.2);
-    color: #60a5fa;
-}
-
-/* Mobile responsive adjustments */
-@media (max-width: 640px) {
-    .scorecard-list-item {
-        padding: 0.5rem;
-        margin-bottom: 0.375rem;
-    }
-    
-    .scorecard-stats-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.125rem;
-    }
-    
-    .scorecard-event-name {
-        font-size: 0.875rem;
-        margin-bottom: 0.125rem;
-    }
-    
-    .scorecard-event-details {
-        font-size: 0.625rem;
-        margin-bottom: 0.25rem;
-        gap: 0.125rem;
-    }
-    
-    .scorecard-stat-label {
-        font-size: 0.5rem;
-        margin-bottom: 0.0625rem;
-    }
-    
-    .scorecard-stat-value {
-        font-size: 0.875rem;
-    }
-    
-    .scorecard-stat-value.large {
-        font-size: 1rem;
-    }
+/* Desktop: Use default values set inline in JS */
+@media (min-width: 641px) {
+  .scorecard-list-header[data-columns="4"],
+  .scorecard-list-item[data-columns="4"] {
+    grid-template-columns: minmax(0, 2fr) minmax(60px, 1fr) minmax(70px, 1fr) minmax(60px, 1fr) !important;
+  }
+  
+  .scorecard-list-header[data-columns="6"],
+  .scorecard-list-item[data-columns="6"] {
+    grid-template-columns: minmax(0, 2fr) minmax(60px, 1fr) minmax(70px, 1fr) minmax(60px, 1fr) minmax(40px, 0.5fr) minmax(40px, 0.5fr) !important;
+  }
 }
