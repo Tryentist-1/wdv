@@ -486,7 +486,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 handleScoreInput(e);
             }
         });
-        if (keypad.element) keypad.element.addEventListener('click', handleKeypadClick);
+        // Use event delegation on document.body for keypad clicks (more robust than attaching to keypad.element)
+        document.body.addEventListener('click', (e) => {
+            // Only handle clicks inside the keypad
+            if (keypad.element && keypad.element.contains(e.target)) {
+                handleKeypadClick(e);
+            }
+        });
     }
     function getEventEntryCode() {
         try {
@@ -2879,14 +2885,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (upperScore === '10') endTens++;
                 else if (upperScore === 'X') endXs++;
             });
+            // Running total: sum of all ends up to and including current end
             let runningTotal = 0;
-            archer.scores.forEach(end => {
+            for (let i = 0; i < state.currentEnd; i++) {
+                const end = archer.scores[i];
                 if (Array.isArray(end)) {
                     end.forEach(score => {
                         if (score !== null && score !== '') runningTotal += parseScoreValue(score);
                     });
                 }
-            });
+            }
             const arrowsInEnd = safeEndScores.filter(s => s !== '' && s !== null).length;
             const endAvg = arrowsInEnd > 0 ? (endTotal / arrowsInEnd).toFixed(1) : '0.0';
             let avgClass = '';
@@ -2919,10 +2927,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[1])} ${getScoreTextColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
                     <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${endTotal}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">${runningTotal}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">${endXs}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">${endTens + endXs}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" data-archer-id="${archer.id}" data-total-type="end">${endTotal}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600" data-archer-id="${archer.id}" data-total-type="running">${runningTotal}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600" data-archer-id="${archer.id}" data-total-type="xs">${endXs}</td>
+                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600" data-archer-id="${archer.id}" data-total-type="tens">${endTens + endXs}</td>
                     <td class="px-2 py-1 text-center">${statusBadge}<button class="view-card-btn px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark" data-archer-id="${archer.id}">📄</button></td>
                 </tr>`;
         });
@@ -3132,31 +3140,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleKeypadClick(e) {
+        // Only handle clicks on keypad buttons
         const button = e.target.closest('.keypad-btn');
         if (!button) return;
+        
+        // Stop event propagation to prevent other handlers from interfering
+        e.stopPropagation();
 
         console.log('Keypad button clicked:', button.dataset.value || button.dataset.action);
 
+        const action = button.dataset.action;
+        const value = button.dataset.value;
+
+        // Close action - handle BEFORE checking for focused input (close should work even without focus)
+        if (action === 'close') {
+            console.log('🔄 Close button clicked - closing keypad');
+            if (keypad.element) {
+                keypad.element.classList.add('hidden');
+                keypad.element.style.display = 'none'; // Ensure it's hidden
+            }
+            document.body.classList.remove('keypad-visible');
+            if (keypad.currentlyFocusedInput) {
+                keypad.currentlyFocusedInput.blur();
+            }
+            keypad.currentlyFocusedInput = null;
+            console.log('✅ Keypad closed successfully');
+            e.preventDefault(); // Prevent any default behavior
+            return;
+        }
+
+        // For other actions, we need a focused input
         if (!keypad.currentlyFocusedInput) {
             console.log('No focused input, ignoring keypad click');
             return;
         }
 
-        const action = button.dataset.action;
-        const value = button.dataset.value;
         const input = keypad.currentlyFocusedInput;
         const allInputs = Array.from(document.querySelectorAll('#scoring-view .score-input'));
         const currentIndex = allInputs.indexOf(input);
-
-        // Close action
-        if (action === 'close') {
-            keypad.element.classList.add('hidden');
-            document.body.classList.remove('keypad-visible');
-            keypad.currentlyFocusedInput = null;
-            input.blur();
-            console.log('✅ Keypad closed');
-            return;
-        }
 
 
         // Score entry
@@ -3184,6 +3205,56 @@ document.addEventListener('DOMContentLoaded', () => {
                     currentInputInNewDom.select();
                 }, 50);
             }
+        }
+    }
+
+    function updateArcherTotals(archerId) {
+        const archer = state.archers.find(a => a.id === archerId);
+        if (!archer) return;
+
+        const endScores = archer.scores[state.currentEnd - 1] || ['', '', ''];
+        const safeEndScores = Array.isArray(endScores) ? endScores : ['', '', ''];
+
+        // Calculate End Total (sum of current end's arrows)
+        let endTotal = 0, endTens = 0, endXs = 0;
+        safeEndScores.forEach(score => {
+            const upperScore = String(score).toUpperCase();
+            endTotal += parseScoreValue(score);
+            if (upperScore === '10') endTens++;
+            else if (upperScore === 'X') endXs++;
+        });
+
+        // Calculate Running Total (sum of all ends up to and including current end)
+        let runningTotal = 0;
+        for (let i = 0; i < state.currentEnd; i++) {
+            const end = archer.scores[i];
+            if (Array.isArray(end)) {
+                end.forEach(score => {
+                    if (score !== null && score !== '') runningTotal += parseScoreValue(score);
+                });
+            }
+        }
+
+        // Update End Total cell
+        const endTotalCell = document.querySelector(`td[data-archer-id="${archerId}"][data-total-type="end"]`);
+        if (endTotalCell) {
+            endTotalCell.textContent = endTotal;
+        }
+
+        // Update Running Total cell
+        const runningTotalCell = document.querySelector(`td[data-archer-id="${archerId}"][data-total-type="running"]`);
+        if (runningTotalCell) {
+            runningTotalCell.textContent = runningTotal;
+        }
+
+        // Update X and 10 columns
+        const xCell = document.querySelector(`td[data-archer-id="${archerId}"][data-total-type="xs"]`);
+        if (xCell) {
+            xCell.textContent = endXs;
+        }
+        const tensCell = document.querySelector(`td[data-archer-id="${archerId}"][data-total-type="tens"]`);
+        if (tensCell) {
+            tensCell.textContent = endTens + endXs;
         }
     }
 
@@ -3220,6 +3291,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add new color classes
             input.classList.add(`bg-score-${colorClass}`);
             input.classList.add(textColorClass);
+
+            // Update End and Running Total in real-time
+            updateArcherTotals(archerId);
 
             // DON'T re-render the entire view - it will overwrite our class changes!
             // renderScoringView();  // ← REMOVED - causes the classes to be lost
@@ -5876,13 +5950,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // CRITICAL FIX: Add safety check before attaching keypad handler
-        if (keypad.element) {
-            keypad.element.addEventListener('click', handleKeypadClick);
-            console.log('✅ Keypad click handler attached');
-        } else {
-            console.error('❌ Keypad element not found! Cannot attach click handler.');
-        }
+        // Keypad click handler is already attached via event delegation in wireCoreHandlers()
+        // No need to re-attach here - event delegation on document.body is more robust
+        console.log('✅ Keypad click handler uses event delegation (attached in wireCoreHandlers)');
 
         // --- Live Updates wiring (feature-flag) ---
         try {
