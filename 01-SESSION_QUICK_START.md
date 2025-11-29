@@ -60,6 +60,23 @@
 
 ---
 
+## 🚨 Status Update (Nov 28, 2025)
+
+### ✅ Fixed Issues
+- **Scorecard Colors:** Fixed CSS regression where score colors (Gold, Red, Blue, etc.) were not showing.
+  - **Cause:** `.score-input` class had `background-color: transparent` overriding Tailwind classes.
+  - **Fix:** Removed conflicting style and ensured `tokens.css` is loaded.
+- **Localhost "No Event Code" Modal:** Fixed modal appearing on fresh loads in local dev.
+- **Live Updates Errors:** Clarified that 401 errors on localhost are expected and handled gracefully.
+- **Tailwind System:** Completed integration by adding `tokens.css` (CSS variables) and removing legacy `score-colors.css`.
+
+### ⚠️ Known Issues
+- **Resume Round:** The "Resume Round" feature is currently **not functional**.
+  - **Status:** Needs investigation.
+  - **Workaround:** Start a new round for testing purposes.
+
+---
+
 ## 🎯 Current State (November 2025)
 
 ### ✅ What's Live & Working

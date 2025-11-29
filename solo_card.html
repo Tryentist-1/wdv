@@ -1,34 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>OAS Solo Match Card</title>
-    
+
+    <!-- Design Tokens (CSS Variables) -->
+    <link rel="stylesheet" href="css/tokens.css">
+
     <!-- Tailwind CSS Compiled -->
     <link rel="stylesheet" href="css/tailwind-compiled.css">
-    
+
     <!-- Custom Color Utilities (fallback) -->
     <style>
-        .bg-score-gold { background-color: #FFD700; }
-        .bg-score-red { background-color: #DC143C; }
-        .bg-score-blue { background-color: #4169E1; }
-        .bg-score-black { background-color: #000000; }
-        .bg-score-white { background-color: #FFFFFF; }
-        .text-score-gold { color: #FFD700; }
-        .text-score-red { color: #DC143C; }
-        .text-score-blue { color: #4169E1; }
-        .text-score-black { color: #000000; }
-        .text-score-white { color: #FFFFFF; }
-        .bg-primary { background-color: #2d7dd9; }
-        .bg-primary-dark { background-color: #1b5bbf; }
-        .bg-danger { background-color: #d92d20; }
-        .bg-danger-dark { background-color: #b0241a; }
-        .text-primary { color: #2d7dd9; }
-        .text-danger { color: #d92d20; }
-        .text-white { color: #ffffff; }
+        .bg-score-gold {
+            background-color: #FFD700;
+        }
+
+        .bg-score-red {
+            background-color: #DC143C;
+        }
+
+        .bg-score-blue {
+            background-color: #4169E1;
+        }
+
+        .bg-score-black {
+            background-color: #000000;
+        }
+
+        .bg-score-white {
+            background-color: #FFFFFF;
+        }
+
+        .text-score-gold {
+            color: #FFD700;
+        }
+
+        .text-score-red {
+            color: #DC143C;
+        }
+
+        .text-score-blue {
+            color: #4169E1;
+        }
+
+        .text-score-black {
+            color: #000000;
+        }
+
+        .text-score-white {
+            color: #FFFFFF;
+        }
+
+        .bg-primary {
+            background-color: #2d7dd9;
+        }
+
+        .bg-primary-dark {
+            background-color: #1b5bbf;
+        }
+
+        .bg-danger {
+            background-color: #d92d20;
+        }
+
+        .bg-danger-dark {
+            background-color: #b0241a;
+        }
+
+        .text-primary {
+            color: #2d7dd9;
+        }
+
+        .text-danger {
+            color: #d92d20;
+        }
+
+        .text-white {
+            color: #ffffff;
+        }
     </style>
-    
+
     <style>
         /* Score input utility class */
         .score-input {
@@ -38,32 +92,38 @@
             text-align: center;
             font-weight: bold;
             border: none;
-            background-color: transparent;
+            /* background-color removed - let Tailwind bg-score-* classes work */
         }
-        
+
         .score-input:focus {
             outline: 2px solid #2d7dd9;
             outline-offset: -2px;
         }
-        
+
         /* Safe area insets for iOS */
-        .safe-top { padding-top: env(safe-area-inset-top, 0); }
-        .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
+        .safe-top {
+            padding-top: env(safe-area-inset-top, 0);
+        }
+
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
     </style>
-    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- html2canvas for screenshot functionality -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
+
 <body>
     <div id="app-container" class="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-        
+
         <!-- Setup View -->
         <div id="setup-view">
             <header class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                 <h1 class="text-xl font-bold text-gray-800 dark:text-white">Solo Match Setup</h1>
             </header>
-            
+
             <!-- Event/Bracket Selection -->
             <div class="px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700">
                 <div class="space-y-3">
@@ -73,25 +133,28 @@
                             Event (Optional)
                         </label>
                         <div class="flex gap-2">
-                            <select id="event-select" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <select id="event-select"
+                                class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                                 <option value="">Standalone Match (No Event)</option>
                             </select>
-                            <button id="refresh-events-btn" class="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg">
+                            <button id="refresh-events-btn"
+                                class="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
                         </div>
                     </div>
-                    
+
                     <!-- Bracket Selection (shown when event selected) -->
                     <div id="bracket-selection" class="hidden">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Bracket
                         </label>
-                        <select id="bracket-select" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <select id="bracket-select"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                             <option value="">Select Bracket...</option>
                         </select>
                     </div>
-                    
+
                     <!-- Match Type Indicator -->
                     <div id="match-type-indicator" class="text-sm text-gray-600 dark:text-gray-400">
                         <i class="fas fa-info-circle mr-1"></i>
@@ -100,8 +163,12 @@
                 </div>
             </div>
             <div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-3">
-                <input type="text" id="archer-search-input" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Search archers...">
-                <button id="start-scoring-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">Start Scoring</button>
+                <input type="text" id="archer-search-input"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Search archers...">
+                <button id="start-scoring-btn"
+                    class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">Start
+                    Scoring</button>
             </div>
             <div id="archer-selection-container" class="flex-1 overflow-auto p-4">
                 <!-- Archer selection list will be rendered here -->
@@ -110,15 +177,19 @@
 
         <!-- Scoring View -->
         <div id="scoring-view" class="hidden">
-            <header class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <header
+                class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <div>
-                    <h1 id="scoring-header-title" class="text-xl font-bold text-gray-800 dark:text-white">Solo Match</h1>
+                    <h1 id="scoring-header-title" class="text-xl font-bold text-gray-800 dark:text-white">Solo Match
+                    </h1>
                 </div>
                 <div>
-                    <button id="edit-setup-btn" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Edit</button>
+                    <button id="edit-setup-btn"
+                        class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Edit</button>
                 </div>
             </header>
-            <div id="match-summary-display" class="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+            <div id="match-summary-display"
+                class="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <!-- Match summary will be rendered here -->
             </div>
             <div id="score-table-container" class="flex-1 overflow-auto p-4">
@@ -130,43 +201,65 @@
         </div>
 
         <!-- Keypad -->
-        <div id="score-keypad" class="fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-bottom overflow-hidden hidden"></div>
+        <div id="score-keypad"
+            class="fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-bottom overflow-hidden hidden">
+        </div>
 
         <!-- Export Modal -->
-        <div id="export-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden transition-colors duration-200">
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 transition-colors duration-200">
-              <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Export Options</h2>
-              <div class="space-y-4 mb-6">
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📸 Screenshot</h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Save a visual image of the scorecard to your device</p>
-                  <button id="take-screenshot-btn" class="px-4 py-2 bg-purple text-white rounded hover:bg-purple-dark font-semibold transition-colors min-h-[44px]">Take Screenshot</button>
+        <div id="export-modal"
+            class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden transition-colors duration-200">
+            <div
+                class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 transition-colors duration-200">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Export Options</h2>
+                <div class="space-y-4 mb-6">
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📸 Screenshot</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Save a visual image of the scorecard to
+                            your device</p>
+                        <button id="take-screenshot-btn"
+                            class="px-4 py-2 bg-purple text-white rounded hover:bg-purple-dark font-semibold transition-colors min-h-[44px]">Take
+                            Screenshot</button>
+                    </div>
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📄 JSON Data</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Export raw score data for coaches or
+                            server upload</p>
+                        <div class="flex gap-2">
+                            <button id="download-json-btn"
+                                class="px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark font-semibold transition-colors min-h-[44px]">Download
+                                JSON</button>
+                            <button id="copy-json-btn"
+                                class="px-4 py-2 bg-secondary text-white rounded hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Copy
+                                to Clipboard</button>
+                        </div>
+                    </div>
+                    <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📧 Send to Coach</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Email the score data directly to
+                            coaches</p>
+                        <button id="email-coach-btn"
+                            class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark font-semibold transition-colors min-h-[44px]">Email
+                            Coach</button>
+                    </div>
                 </div>
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📄 JSON Data</h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Export raw score data for coaches or server upload</p>
-                  <div class="flex gap-2">
-                    <button id="download-json-btn" class="px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark font-semibold transition-colors min-h-[44px]">Download JSON</button>
-                    <button id="copy-json-btn" class="px-4 py-2 bg-secondary text-white rounded hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Copy to Clipboard</button>
-                  </div>
+                <div class="flex justify-end">
+                    <button id="modal-close-export"
+                        class="px-4 py-2 bg-secondary text-white rounded hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Close</button>
                 </div>
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">📧 Send to Coach</h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Email the score data directly to coaches</p>
-                  <button id="email-coach-btn" class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark font-semibold transition-colors min-h-[44px]">Email Coach</button>
-                </div>
-              </div>
-              <div class="flex justify-end">
-                <button id="modal-close-export" class="px-4 py-2 bg-secondary text-white rounded hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Close</button>
-              </div>
             </div>
         </div>
 
         <!-- Global Footer -->
-        <footer class="px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-between gap-2 safe-bottom">
-            <a href="index.html" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px] flex items-center">Home</a>
-            <button id="new-match-btn" class="px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors min-h-[44px]">New Match</button>
-            <button id="export-btn" class="px-4 py-2 bg-purple text-white rounded-lg hover:bg-purple-dark font-semibold transition-colors min-h-[44px]">📤 Export</button>
+        <footer
+            class="px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-between gap-2 safe-bottom">
+            <a href="index.html"
+                class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px] flex items-center">Home</a>
+            <button id="new-match-btn"
+                class="px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors min-h-[44px]">New
+                Match</button>
+            <button id="export-btn"
+                class="px-4 py-2 bg-purple text-white rounded-lg hover:bg-purple-dark font-semibold transition-colors min-h-[44px]">📤
+                Export</button>
         </footer>
 
     </div>
@@ -179,4 +272,5 @@
     <script src="js/score_keypad.js"></script>
     <script src="js/solo_card.js"></script>
 </body>
+
 </html>
