@@ -150,15 +150,33 @@
 
         <!-- This view will be shown after setup for scoring -->
         <div id="scoring-view" class="flex flex-col flex-1 hidden">
-            <div class="page-header px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center transition-colors duration-200">
-                <div class="header-left flex items-center gap-2">
-                    <h1 class="text-xl font-bold text-gray-800 dark:text-white">R Round - E<span id="current-end-display" class="text-primary">1</span></h1>
-                    <span id="live-status-badge" class="inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300" aria-live="polite">Not Live Scoring</span>
-                </div>
-                <div class="header-right text-right text-sm text-gray-600 dark:text-gray-300">
-                    <div id="event-info">
-                        <div id="event-name" class="font-semibold">No Event</div>
-                        <div id="bale-info">Bale <span id="current-bale-display" class="font-semibold">1</span></div>
+            <div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20 safe-top transition-colors duration-200">
+                <div class="flex justify-between items-start">
+                    <!-- Left: Event Name & Division Info -->
+                    <div class="flex-1 min-w-0">
+                        <!-- Line 1: Event Name + Sync Status -->
+                        <div class="flex items-center gap-2 mb-1">
+                            <div id="scoring-header-event" class="text-lg font-bold text-gray-800 dark:text-white truncate">
+                                Event Name
+                            </div>
+                            <span id="live-status-badge" class="inline-block px-2 py-0.5 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0" aria-live="polite">Not Live Scoring</span>
+                        </div>
+                        <!-- Line 2: Division + Round Type -->
+                        <div class="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
+                            <span class="font-semibold">Div</span>
+                            <span id="scoring-header-division" class="font-semibold">Division</span>
+                            <span class="text-gray-500 dark:text-gray-400">•</span>
+                            <span id="scoring-header-round-type" class="text-gray-500 dark:text-gray-400">R360</span>
+                        </div>
+                    </div>
+                    <!-- Right: Bale & End -->
+                    <div class="flex items-start gap-4 ml-3 flex-shrink-0 text-sm text-gray-600 dark:text-gray-300">
+                        <div class="text-right">
+                            <div>Bale <span id="current-bale-display" class="font-semibold">1</span></div>
+                        </div>
+                        <div class="text-right">
+                            <div>End <span id="current-end-display" class="font-semibold">1</span></div>
+                        </div>
                     </div>
                 </div>
             </div>

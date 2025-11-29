@@ -303,25 +303,36 @@
 
         <div id="scoring-view" class="hidden">
             <div
-                class="px-4 py-2 bg-white dark:bg-gray-800 shadow-sm flex justify-between items-center sticky top-0 z-20 safe-top transition-colors duration-200">
-                <div class="flex items-center gap-3">
-                    <h1 id="scoring-header-title" class="text-2xl font-bold text-gray-800 dark:text-white">Event -
-                        Division</h1>
-                    <span id="live-status-badge"
-                        class="inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
-                        aria-live="polite">Pending Sync</span>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="text-right text-sm text-gray-600 dark:text-gray-300">
-                        <div id="bale-info">Bale: <span id="current-bale-display" class="font-semibold">1</span></div>
-                        <div id="end-info">End: <span id="current-end-display" class="font-semibold">1</span></div>
+                class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20 safe-top transition-colors duration-200">
+                <div class="flex justify-between items-start">
+                    <!-- Left: Event Name & Division Info -->
+                    <div class="flex-1 min-w-0">
+                        <!-- Line 1: Event Name + Sync Status -->
+                        <div class="flex items-center gap-2 mb-1">
+                            <div id="scoring-header-event" class="text-lg font-bold text-gray-800 dark:text-white truncate">
+                                Event Name
+                            </div>
+                            <span id="live-status-badge"
+                                class="inline-block px-2 py-0.5 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0"
+                                aria-live="polite">Pending</span>
+                        </div>
+                        <!-- Line 2: Division + Round Type -->
+                        <div class="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
+                            <span class="font-semibold">Div</span>
+                            <span id="scoring-header-division" class="font-semibold">Division</span>
+                            <span class="text-gray-500 dark:text-gray-400">•</span>
+                            <span id="scoring-header-round-type" class="text-gray-500 dark:text-gray-400">R300</span>
+                        </div>
                     </div>
-                    <button id="dark-mode-toggle"
-                        class="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-lg"
-                        title="Toggle dark mode">
-                        <span class="dark:hidden">🌙</span>
-                        <span class="hidden dark:inline">☀️</span>
-                    </button>
+                    <!-- Right: Bale & End -->
+                    <div class="flex items-start gap-4 ml-3 flex-shrink-0 text-sm text-gray-600 dark:text-gray-300">
+                        <div class="text-right">
+                            <div>Bale <span id="current-bale-display" class="font-semibold">1</span></div>
+                        </div>
+                        <div class="text-right">
+                            <div>End <span id="current-end-display" class="font-semibold">1</span></div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div id="bale-scoring-container" class="flex-1 overflow-auto pb-20">

@@ -19,8 +19,7 @@
         /* Custom component styles that work with Tailwind */
         .score-input {
             width: 100%;
-            height: 100%;
-            min-height: 44px;
+            height: 44px;
             text-align: center;
             font-weight: bold;
             border: none;
@@ -219,112 +218,118 @@
         <div class="mb-8">
             <h3 class="text-sm font-semibold text-gray-600 mb-3">Scoring Table (Bale View)</h3>
             <div class="overflow-x-auto -mx-6 px-6">
-                <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[600px]">
+                <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[450px]">
                     <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
                         <tr>
-                            <th class="px-3 py-2 text-left font-bold sticky left-0 bg-primary z-10">Archer</th>
-                            <th class="px-2 py-2 text-center font-bold w-12">A1</th>
-                            <th class="px-2 py-2 text-center font-bold w-12">A2</th>
-                            <th class="px-2 py-2 text-center font-bold w-12">A3</th>
-                            <th class="px-2 py-2 text-center font-bold w-14">End</th>
-                            <th class="px-2 py-2 text-center font-bold w-14">Run</th>
-                            <th class="px-2 py-2 text-center font-bold w-12">X</th>
-                            <th class="px-2 py-2 text-center font-bold w-12">10</th>
-                            <th class="px-2 py-2 text-center font-bold w-16">Card</th>
+                            <th class="px-1.5 py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10 max-w-[85px]">Archer</th>
+                            <th class="px-0.5 py-2 text-center font-bold w-8">A1</th>
+                            <th class="px-0.5 py-2 text-center font-bold w-8">A2</th>
+                            <th class="px-0.5 py-2 text-center font-bold w-8">A3</th>
+                            <th class="px-0.5 py-2 text-center font-bold w-10">End</th>
+                            <th class="px-0.5 py-2 text-center font-bold w-12">Run</th>
+                            <th class="px-0.5 py-2 text-center font-bold w-6">X</th>
+                            <th class="px-0.5 py-2 text-center font-bold w-6">10</th>
+                            <th class="px-0.5 py-2 text-center font-bold w-8">Card</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr
                             class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
                             <td
-                                class="px-3 py-1 text-left font-semibold sticky left-0 bg-white dark:bg-gray-700 dark:text-white">
+                                class="px-1.5 py-0 text-left text-xs font-semibold sticky left-0 bg-white dark:bg-gray-700 text-gray-800 dark:text-white truncate max-w-[85px] h-[44px] align-middle">
                                 Adjani D. (A)</td>
-                            <td class="p-0 border-r border-gray-200">
-                                <input type="text" class="score-input bg-score-gold text-black" value="10" readonly>
+                            <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                                <input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-gold text-black" value="10" readonly>
                             </td>
-                            <td class="p-0 border-r border-gray-200">
-                                <input type="text" class="score-input bg-score-gold text-black" value="10" readonly>
+                            <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                                <input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-gold text-black" value="10" readonly>
                             </td>
-                            <td class="p-0 border-r border-gray-200">
-                                <input type="text" class="score-input bg-score-gold text-black" value="10" readonly>
+                            <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                                <input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-gold text-black" value="10" readonly>
                             </td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600 text-xs">
                                 30</td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs">
                                 30</td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs">
                                 0</td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs">
                                 3</td>
-                            <td class="px-2 py-1 text-center">
-                                <button
-                                    class="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark">📄</button>
+                            <td class="px-0.5 py-0 text-center h-[44px] align-middle">
+                                <span class="inline-flex items-center gap-1">
+                                    <button
+                                        class="view-card-btn w-8 h-[44px] bg-primary text-white rounded text-xs hover:bg-primary-dark flex items-center justify-center">📄</button>
+                                </span>
                             </td>
                         </tr>
                         <tr
                             class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600 bg-gray-50 dark:bg-gray-800">
                             <td
-                                class="px-3 py-1 text-left font-semibold sticky left-0 bg-gray-50 dark:bg-gray-800 dark:text-white">
+                                class="px-1.5 py-0 text-left text-xs font-semibold sticky left-0 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white truncate max-w-[85px] h-[44px] align-middle">
                                 Alina V. (B)</td>
-                            <td class="p-0 border-r border-gray-200">
-                                <input type="text" class="score-input bg-score-gold text-black" value="9" readonly>
+                            <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                                <input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-gold text-black" value="9" readonly>
                             </td>
-                            <td class="p-0 border-r border-gray-200">
-                                <input type="text" class="score-input bg-score-red text-white" value="8" readonly>
+                            <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                                <input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-red text-white" value="8" readonly>
                             </td>
-                            <td class="p-0 border-r border-gray-200">
-                                <input type="text" class="score-input bg-score-red text-white" value="7" readonly>
+                            <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                                <input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-red text-white" value="7" readonly>
                             </td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600 text-xs">
                                 24</td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs">
                                 24</td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs">
                                 0</td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs">
                                 0</td>
-                            <td class="px-2 py-1 text-center">
-                                <button
-                                    class="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark">📄</button>
+                            <td class="px-0.5 py-0 text-center h-[44px] align-middle">
+                                <span class="inline-flex items-center gap-1">
+                                    <button
+                                        class="view-card-btn w-8 h-[44px] bg-primary text-white rounded text-xs hover:bg-primary-dark flex items-center justify-center">📄</button>
+                                </span>
                             </td>
                         </tr>
                         <tr
                             class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
                             <td
-                                class="px-3 py-1 text-left font-semibold sticky left-0 bg-white dark:bg-gray-700 dark:text-white">
+                                class="px-1.5 py-0 text-left text-xs font-semibold sticky left-0 bg-white dark:bg-gray-700 text-gray-800 dark:text-white truncate max-w-[85px] h-[44px] align-middle">
                                 Alan L. (C)</td>
-                            <td class="p-0 border-r border-gray-200">
-                                <input type="text" class="score-input bg-score-red text-white" value="8" readonly>
+                            <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                                <input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-red text-white" value="8" readonly>
                             </td>
-                            <td class="p-0 border-r border-gray-200">
-                                <input type="text" class="score-input bg-score-black text-white" value="4" readonly>
+                            <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                                <input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-black text-white" value="4" readonly>
                             </td>
-                            <td class="p-0 border-r border-gray-200">
-                                <input type="text" class="score-input bg-score-black text-white" value="3" readonly>
+                            <td class="p-0 border-r border-gray-200 dark:border-gray-600">
+                                <input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-black text-white" value="3" readonly>
                             </td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600 text-xs">
                                 15</td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs">
                                 15</td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs">
                                 0</td>
                             <td
-                                class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white border-r border-gray-200">
+                                class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs">
                                 0</td>
-                            <td class="px-2 py-1 text-center">
-                                <button
-                                    class="px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark">📄</button>
+                            <td class="px-0.5 py-0 text-center h-[44px] align-middle">
+                                <span class="inline-flex items-center gap-1">
+                                    <button
+                                        class="view-card-btn w-8 h-[44px] bg-primary text-white rounded text-xs hover:bg-primary-dark flex items-center justify-center">📄</button>
+                                </span>
                             </td>
                         </tr>
                     </tbody>
@@ -558,6 +563,92 @@
                             class="inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark">PENDING</span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Scoring Header (Ranking Round Standard) -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Scoring Header (Ranking Round Standard)</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    Standard header for ranking round scoring view. Two-line layout with Event Name + Sync Status on left, Division + Round Type below. Bale and End on right.
+                </p>
+                <!-- Header Example -->
+                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-colors duration-200">
+                    <div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 safe-top transition-colors duration-200">
+                        <div class="flex justify-between items-start">
+                            <!-- Left: Event Name & Division Info -->
+                            <div class="flex-1 min-w-0">
+                                <!-- Line 1: Event Name + Sync Status -->
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="text-lg font-bold text-gray-800 dark:text-white truncate">
+                                        Practice Meet - Nov 17
+                                    </div>
+                                    <span class="inline-block px-2 py-0.5 text-xs font-bold rounded bg-success text-white flex-shrink-0"
+                                        aria-live="polite">Live</span>
+                                </div>
+                                <!-- Line 2: Division + Round Type -->
+                                <div class="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
+                                    <span class="font-semibold">Div</span>
+                                    <span class="font-semibold">BVAR</span>
+                                    <span class="text-gray-500 dark:text-gray-400">•</span>
+                                    <span class="text-gray-500 dark:text-gray-400">R300</span>
+                                </div>
+                            </div>
+                            <!-- Right: Bale & End -->
+                            <div class="flex items-start gap-4 ml-3 flex-shrink-0 text-sm text-gray-600 dark:text-gray-300">
+                                <div class="text-right">
+                                    <div>Bale <span class="font-semibold">2</span></div>
+                                </div>
+                                <div class="text-right">
+                                    <div>End <span class="font-semibold">5</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    ✨ Two-line layout • Event name + sync status (line 1) • Division + round type (line 2) • Bale and End on right • Mobile-first with truncation
+                </p>
+            </div>
+
+            <!-- Scoring Header Variant (Pending Status) -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Scoring Header (Pending Status)</h3>
+                <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-colors duration-200">
+                    <div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 safe-top transition-colors duration-200">
+                        <div class="flex justify-between items-start">
+                            <!-- Left: Event Name & Division Info -->
+                            <div class="flex-1 min-w-0">
+                                <!-- Line 1: Event Name + Sync Status -->
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="text-lg font-bold text-gray-800 dark:text-white truncate">
+                                        Tournament Championship
+                                    </div>
+                                    <span class="inline-block px-2 py-0.5 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0"
+                                        aria-live="polite">Pending</span>
+                                </div>
+                                <!-- Line 2: Division + Round Type -->
+                                <div class="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
+                                    <span class="font-semibold">Div</span>
+                                    <span class="font-semibold">GVAR</span>
+                                    <span class="text-gray-500 dark:text-gray-400">•</span>
+                                    <span class="text-gray-500 dark:text-gray-400">R360</span>
+                                </div>
+                            </div>
+                            <!-- Right: Bale & End -->
+                            <div class="flex items-start gap-4 ml-3 flex-shrink-0 text-sm text-gray-600 dark:text-gray-300">
+                                <div class="text-right">
+                                    <div>Bale <span class="font-semibold">1</span></div>
+                                </div>
+                                <div class="text-right">
+                                    <div>End <span class="font-semibold">8</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    ✨ Status badge colors: Live (green), Pending (gray), Off (gray)
+                </p>
             </div>
         </div>
     </section>

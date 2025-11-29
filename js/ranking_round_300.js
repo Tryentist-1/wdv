@@ -2842,12 +2842,43 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderScoringView() {
         if (!scoringControls.container) return;
 
-        // Update header with event name and division
-        const headerTitle = document.getElementById('scoring-header-title');
-        if (headerTitle) {
-            const eventName = state.eventName || 'Event';
-            const division = state.roundName || 'R300';
-            headerTitle.textContent = `${eventName} - ${division}`;
+        // Update header with event name, division, and round type
+        const eventEl = document.getElementById('scoring-header-event');
+        const divisionEl = document.getElementById('scoring-header-division');
+        const roundTypeEl = document.getElementById('scoring-header-round-type');
+        
+        // Get event name from state, or try to load from localStorage/event metadata
+        let displayEventName = state.eventName;
+        if (!displayEventName && state.activeEventId) {
+            try {
+                const eventMeta = localStorage.getItem(`event:${state.activeEventId}:meta`);
+                if (eventMeta) {
+                    const meta = JSON.parse(eventMeta);
+                    displayEventName = meta.name || '';
+                }
+            } catch (_) {}
+        }
+        if (!displayEventName && state.selectedEventId) {
+            try {
+                const eventMeta = localStorage.getItem(`event:${state.selectedEventId}:meta`);
+                if (eventMeta) {
+                    const meta = JSON.parse(eventMeta);
+                    displayEventName = meta.name || '';
+                }
+            } catch (_) {}
+        }
+        
+        if (eventEl) {
+            eventEl.textContent = displayEventName || 'Event Name';
+        }
+        
+        if (divisionEl) {
+            // Use divisionCode (e.g., "BVAR") or fallback to divisionName or "Division"
+            divisionEl.textContent = state.divisionCode || state.divisionName || 'Division';
+        }
+        
+        if (roundTypeEl) {
+            roundTypeEl.textContent = 'R300'; // Round type is always R300 for this module
         }
 
         // Update bale and end displays
@@ -2860,18 +2891,18 @@ document.addEventListener('DOMContentLoaded', () => {
         let isLiveEnabled = false;  // Disabled - sync column removed
 
         let tableHTML = `
-            <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[600px]">
+            <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700 min-w-[450px]">
                 <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
                     <tr>
-                        <th class="px-2 py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10 w-36">Archer</th>
-                        <th class="px-2 py-2 text-center font-bold w-12">A1</th>
-                        <th class="px-2 py-2 text-center font-bold w-12">A2</th>
-                        <th class="px-2 py-2 text-center font-bold w-12">A3</th>
-                        <th class="px-2 py-2 text-center font-bold w-14">End</th>
-                        <th class="px-2 py-2 text-center font-bold w-14">Run</th>
-                        <th class="px-2 py-2 text-center font-bold w-6">X</th>
-                        <th class="px-2 py-2 text-center font-bold w-6">10</th>
-                        <th class="px-2 py-2 text-center font-bold w-16">Card</th>
+                        <th class="px-1.5 py-2 text-left font-bold sticky left-0 bg-primary dark:bg-primary-dark z-10 max-w-[85px]">Archer</th>
+                        <th class="px-0.5 py-2 text-center font-bold w-8">A1</th>
+                        <th class="px-0.5 py-2 text-center font-bold w-8">A2</th>
+                        <th class="px-0.5 py-2 text-center font-bold w-8">A3</th>
+                        <th class="px-0.5 py-2 text-center font-bold w-10">End</th>
+                        <th class="px-0.5 py-2 text-center font-bold w-12">Run</th>
+                        <th class="px-0.5 py-2 text-center font-bold w-6">X</th>
+                        <th class="px-0.5 py-2 text-center font-bold w-6">10</th>
+                        <th class="px-0.5 py-2 text-center font-bold w-8">Card</th>
                     </tr>
                 </thead>
                 <tbody>`;
@@ -2923,15 +2954,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             tableHTML += `
                 <tr data-archer-id="${archer.id}" ${rowLockAttr} class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
-                    <td class="px-2 py-1 text-left text-xs font-semibold sticky left-0 bg-white dark:bg-gray-700 text-gray-800 dark:text-white w-36 truncate">${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[1])} ${getScoreTextColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" data-archer-id="${archer.id}" data-total-type="end">${endTotal}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600" data-archer-id="${archer.id}" data-total-type="running">${runningTotal}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600" data-archer-id="${archer.id}" data-total-type="xs">${endXs}</td>
-                    <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600" data-archer-id="${archer.id}" data-total-type="tens">${endTens + endXs}</td>
-                    <td class="px-2 py-1 text-center">${statusBadge}<button class="view-card-btn px-2 py-1 bg-primary text-white rounded text-xs hover:bg-primary-dark" data-archer-id="${archer.id}">📄</button></td>
+                    <td class="px-1.5 py-0 text-left text-xs font-semibold sticky left-0 bg-white dark:bg-gray-700 text-gray-800 dark:text-white truncate max-w-[85px] h-[44px] align-middle">${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[1])} ${getScoreTextColor(safeEndScores[1])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600"><input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" ${lockedAttr} readonly></td>
+                    <td class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600 text-xs" data-archer-id="${archer.id}" data-total-type="end">${endTotal}</td>
+                    <td class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs" data-archer-id="${archer.id}" data-total-type="running">${runningTotal}</td>
+                    <td class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs" data-archer-id="${archer.id}" data-total-type="xs">${endXs}</td>
+                    <td class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs" data-archer-id="${archer.id}" data-total-type="tens">${endTens + endXs}</td>
+                    <td class="px-0.5 py-0 text-center h-[44px] align-middle"><span class="inline-flex items-center gap-1">${statusBadge}<button class="view-card-btn w-8 h-[44px] bg-primary text-white rounded text-xs hover:bg-primary-dark flex items-center justify-center" data-archer-id="${archer.id}">📄</button></span></td>
                 </tr>`;
         });
         tableHTML += `</tbody></table>`;
@@ -4755,6 +4786,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Update UI/state
                 state.eventName = (eventData.event && eventData.event.name) || eventName || state.eventName || '';
+                
+                // Update header if we're in scoring view
+                if (state.currentView === 'scoring') {
+                    const eventEl = document.getElementById('scoring-header-event');
+                    if (eventEl && state.eventName) {
+                        eventEl.textContent = state.eventName;
+                    }
+                }
 
                 // DEBUG: Log what we received from API
                 console.log('[loadEventById] Event data assignmentMode:', eventData.event?.assignmentMode);

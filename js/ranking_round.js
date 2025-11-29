@@ -846,7 +846,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderScoringView() {
         if (!scoringControls.container) return;
-        scoringControls.currentEndDisplay.textContent = `Bale ${state.baleNumber} - End ${state.currentEnd}`;
+        
+        // Update header with event name, division, and round type
+        const eventEl = document.getElementById('scoring-header-event');
+        const divisionEl = document.getElementById('scoring-header-division');
+        const roundTypeEl = document.getElementById('scoring-header-round-type');
+        
+        // Get event name from existing element or state
+        const eventNameEl = document.getElementById('event-name');
+        const eventName = eventNameEl ? eventNameEl.textContent : (state.eventName || 'Event Name');
+        
+        if (eventEl) {
+            eventEl.textContent = eventName === 'No Event' ? 'Event Name' : eventName;
+        }
+        
+        // Get division from first archer (all archers in bale should have same division)
+        const division = state.archers && state.archers.length > 0 
+            ? (state.archers[0].division || state.archers[0].level || 'Division')
+            : 'Division';
+        
+        if (divisionEl) {
+            divisionEl.textContent = division;
+        }
+        
+        if (roundTypeEl) {
+            roundTypeEl.textContent = 'R360'; // Round type is always R360 for this module
+        }
+        
+        // Update bale and end displays
+        const baleDisplay = document.getElementById('current-bale-display');
+        const endDisplay = document.getElementById('current-end-display');
+        if (baleDisplay) baleDisplay.textContent = state.baleNumber;
+        if (endDisplay) endDisplay.textContent = state.currentEnd;
 
         // Check if Live Updates is enabled to show sync column
         let isLiveEnabled = false;
@@ -1391,9 +1422,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const todayEvent = data.events.find(ev => ev.date === today);
                 if (todayEvent) {
                     const eventNameEl = document.getElementById('event-name');
+                    const scoringHeaderEventEl = document.getElementById('scoring-header-event');
                     const baleDisplayEl = document.getElementById('current-bale-display');
 
                     if (eventNameEl) eventNameEl.textContent = todayEvent.name;
+                    if (scoringHeaderEventEl) scoringHeaderEventEl.textContent = todayEvent.name;
                     if (baleDisplayEl) baleDisplayEl.textContent = state.baleNumber;
 
                     // Try to load pre-assigned bale
