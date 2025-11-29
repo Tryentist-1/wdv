@@ -14,8 +14,8 @@ module.exports = {
         'score-blue': '#4169E1',
         'score-black': '#000000',
         'score-white': '#FFFFFF',
-        'score-miss': '#FF0000',
-        
+        'score-miss': '#e9ecef',
+
         // Brand Colors (from your tokens)
         'primary': {
           DEFAULT: '#2d7dd9',

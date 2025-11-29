@@ -14,183 +14,184 @@
   --color-score-blue: #4169E1;
   --color-score-black: #000000;
   --color-score-white: #FFFFFF;
-  --color-score-miss: #FF0000;
-  
+  --color-score-miss: #e9ecef;
+
   /* Brand Colors */
   --color-primary: #2d7dd9;
   --color-primary-dark: #1b5bbf;
   --color-primary-light: #e7f1ff;
-  
+
   --color-secondary: #6c757d;
   --color-secondary-dark: #5a6268;
   --color-secondary-light: #e9ecef;
-  
+
   --color-success: #28a745;
   --color-success-dark: #1e7e34;
   --color-success-light: #d1e7dd;
-  
+
   --color-danger: #d92d20;
   --color-danger-dark: #b0241a;
   --color-danger-light: #f8d7da;
-  
+
   --color-warning: #ffc107;
   --color-warning-dark: #d39e00;
   --color-warning-light: #fff3cd;
-  
+
   --color-info: #0dcaf0;
   --color-info-dark: #0a98b0;
   --color-info-light: #d0f7fa;
-  
+
   --color-purple: #6f42c1;
   --color-purple-dark: #563d7c;
   --color-purple-light: #efebf5;
-  
+
   --color-orange: #f28c18;
   --color-orange-dark: #e8690b;
   --color-orange-light: #fff4e8;
-  
+
   /* Touch Targets */
   --size-touch: 44px;
 }
 
 /* Custom Component Classes */
-.score-input {
-  @apply w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent;
-  @apply focus:outline-2 focus:outline-[--color-primary] focus:outline-offset-[-2px];
-}
+@layer components {
+  .score-input {
+    @apply w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent;
+    @apply focus:outline-2 focus:outline-[--color-primary] focus:outline-offset-[-2px];
+  }
 
-.score-input.is-locked {
-  @apply bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed;
-}
+  .score-input.is-locked {
+    @apply bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed;
+  }
 
-/* Score Color Backgrounds */
-.score-input-gold {
-  background-color: var(--color-score-gold);
-  color: black;
-}
+  /* Score Color Backgrounds */
+  .score-input-gold {
+    background-color: var(--color-score-gold);
+    color: black;
+  }
 
-.score-input-red {
-  background-color: var(--color-score-red);
-  color: white;
-}
+  .score-input-red {
+    background-color: var(--color-score-red);
+    color: white;
+  }
 
-.score-input-blue {
-  background-color: var(--color-score-blue);
-  color: white;
-}
+  .score-input-blue {
+    background-color: var(--color-score-blue);
+    color: white;
+  }
 
-.score-input-black {
-  background-color: var(--color-score-black);
-  color: white;
-}
+  .score-input-black {
+    background-color: var(--color-score-black);
+    color: white;
+  }
 
-.score-input-white {
-  background-color: var(--color-score-white);
-  color: black;
-  border: 1px solid #d1d5db;
-}
+  .score-input-white {
+    background-color: var(--color-score-white);
+    color: black;
+    border: 1px solid #d1d5db;
+  }
 
-.dark .score-input-white {
-  border-color: #4b5563;
-}
+  .dark .score-input-white {
+    border-color: #4b5563;
+  }
 
-.score-input-miss {
-  background-color: var(--color-score-miss);
-  color: white;
-}
+  .score-input-miss {
+    background-color: var(--color-score-miss);
+    color: black;
+  }
 
-/* Tables */
-.table-scoring {
-  @apply w-full border-collapse text-sm bg-white dark:bg-gray-800;
-}
+  /* Tables */
+  .table-scoring {
+    @apply w-full border-collapse text-sm bg-white dark:bg-gray-800;
+  }
 
-.table-scoring thead {
-  background-color: var(--color-primary);
-  @apply text-white sticky top-0 z-10;
-}
+  .table-scoring thead {
+    background-color: var(--color-primary);
+    @apply text-white sticky top-0 z-10;
+  }
 
-.table-scoring th {
-  @apply px-2 py-3 text-center font-bold border border-white/20;
-}
+  .table-scoring th {
+    @apply px-2 py-3 text-center font-bold border border-white/20;
+  }
 
-.table-scoring td {
-  @apply px-2 py-1 text-center border border-gray-300 dark:border-gray-600;
-}
+  .table-scoring td {
+    @apply px-2 py-1 text-center border border-gray-300 dark:border-gray-600;
+  }
 
-.table-scoring tbody tr:nth-child(even) {
-  @apply bg-gray-50 dark:bg-gray-700/50;
-}
+  .table-scoring tbody tr:nth-child(even) {
+    @apply bg-gray-50 dark:bg-gray-700/50;
+  }
 
-.table-scoring tbody tr:hover {
-  @apply bg-blue-50 dark:bg-gray-600;
-}
+  .table-scoring tbody tr:hover {
+    @apply bg-blue-50 dark:bg-gray-600;
+  }
 
-/* Calculated Cells */
-.cell-calculated {
-  @apply bg-gray-100 dark:bg-gray-700 font-normal;
-}
+  /* Calculated Cells */
+  .cell-calculated {
+    @apply bg-gray-100 dark:bg-gray-700 font-normal;
+  }
 
-.cell-bold {
-  @apply font-bold;
-}
+  .cell-bold {
+    @apply font-bold;
+  }
 
-/* Sticky First Column */
-.cell-sticky {
-  @apply sticky left-0 bg-white dark:bg-gray-800 z-[5];
-}
+  /* Sticky First Column */
+  .cell-sticky {
+    @apply sticky left-0 bg-white dark:bg-gray-800 z-[5];
+  }
 
-.table-scoring tbody tr:nth-child(even) .cell-sticky {
-  @apply bg-gray-50 dark:bg-gray-700/50;
-}
+  .table-scoring tbody tr:nth-child(even) .cell-sticky {
+    @apply bg-gray-50 dark:bg-gray-700/50;
+  }
 
-.table-scoring tbody tr:hover .cell-sticky {
-  @apply bg-blue-50 dark:bg-gray-600;
-}
+  .table-scoring tbody tr:hover .cell-sticky {
+    @apply bg-blue-50 dark:bg-gray-600;
+  }
 
-/* Status Badges */
-.status-badge {
-  @apply inline-block px-2 py-1 text-xs font-bold rounded;
-}
+  /* Status Badges */
+  .status-badge {
+    @apply inline-block px-2 py-1 text-xs font-bold rounded;
+  }
 
-.status-verified {
-  background-color: var(--color-success-light);
-  color: var(--color-success-dark);
-}
+  .status-verified {
+    background-color: var(--color-success-light);
+    color: var(--color-success-dark);
+  }
 
-.status-void {
-  background-color: var(--color-danger-light);
-  color: var(--color-danger-dark);
-}
+  .status-void {
+    background-color: var(--color-danger-light);
+    color: var(--color-danger-dark);
+  }
 
-.status-pending {
-  background-color: var(--color-warning-light);
-  color: var(--color-warning-dark);
-}
+  .status-pending {
+    background-color: var(--color-warning-light);
+    color: var(--color-warning-dark);
+  }
 
-.status-off {
-  @apply bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300;
-}
+  .status-off {
+    @apply bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300;
+  }
 
-/* Touch Targets */
-.touch-target {
-  min-width: var(--size-touch);
-  min-height: var(--size-touch);
-}
+  /* Touch Targets */
+  .touch-target {
+    min-width: var(--size-touch);
+    min-height: var(--size-touch);
+  }
 
-/* Safe Area Insets */
-.safe-area-top {
-  padding-top: env(safe-area-inset-top, 0);
-}
+  /* Safe Area Insets */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
 
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
 
-.safe-area-left {
-  padding-left: env(safe-area-inset-left, 0);
-}
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left, 0);
+  }
 
-.safe-area-right {
-  padding-right: env(safe-area-inset-right, 0);
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right, 0);
+  }
 }
-
