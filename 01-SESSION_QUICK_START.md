@@ -2,7 +2,7 @@
 
 **Purpose:** Rapidly onboard into development session without derailing  
 **Use Case:** Start of every AI-assisted session or new developer onboarding  
-**Last Updated:** November 20, 2025
+**Last Updated:** December 2025
 
 ---
 
@@ -60,9 +60,21 @@
 
 ---
 
-## 🚨 Status Update (Nov 29, 2025)
+## 🚨 Status Update (December 2025)
 
-### ✅ Fixed Issues
+### ✅ Recent Fixes (v1.6.1)
+- **Active Rounds List Display:** Fixed critical bug where "Active Rounds" list was not displaying on home screen.
+  - **Cause:** Variable scope error in `unified_scorecard_list.js` - `xs` and `tens` used before initialization.
+  - **Fix:** Reordered variable declarations to calculate values before use in column count determination.
+- **Active Rounds Layout Improvements:** Enhanced "Active Rounds" display on home screen (`index.html`).
+  - **Event Name Display:** Now shows actual event/round information instead of generic "Resume Ranking..." text.
+  - **Status Field:** Clarified status calculation (PEND, VER, VOID, COMP) matching results.html logic.
+  - **Column Alignment:** Fixed header-to-row alignment with dynamic grid template columns.
+  - **Mobile Responsive:** Optimized spacing and layout for iPhone XR, iPhone SE, Samsung, Safari mobile.
+  - **Tailwind Alignment:** Removed exclamation point indicator, ensured all styling uses Tailwind utilities.
+  - **Column Configuration:** Updated from 6 columns to 4 columns (Assignment, Status, Progress, Type).
+
+### ✅ Previous Fixes (Nov 29, 2025)
 - **Scorecard Colors:** Fixed CSS regression where score colors (Gold, Red, Blue, etc.) were not showing.
   - **Cause:** `.score-input` class had `background-color: transparent` overriding Tailwind classes.
   - **Fix:** Removed conflicting style and ensured `tokens.css` is loaded.
@@ -88,7 +100,7 @@
 
 ---
 
-## 🎯 Current State (November 2025)
+## 🎯 Current State (December 2025)
 
 ### ✅ What's Live & Working
 - **Ranking Round 360/300** - Full database integration, live sync

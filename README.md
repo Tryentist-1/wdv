@@ -510,6 +510,16 @@ Copyright © 2025 WDV Archery
 
 ## 📋 Recent Updates
 
+### v1.6.1 - Active Rounds Display Improvements (December 2025)
+- ✅ **Fixed List Display Bug** – Resolved critical issue where "Active Rounds" list was not showing on home screen
+- ✅ **Enhanced Event Information** – Now displays actual event/round information instead of generic "Resume Ranking..." text
+- ✅ **Status Field Clarification** – Status field now clearly shows card lifecycle (PEND, VER, VOID, COMP)
+- ✅ **Improved Layout** – Better spacing, alignment, and mobile responsiveness
+- ✅ **Tailwind Alignment** – Removed custom CSS, ensured all styling uses Tailwind utilities
+- ✅ **Mobile Optimization** – Optimized for iPhone XR, iPhone SE, Samsung, Safari mobile
+
+**Full Release Notes:** [RELEASE_NOTES_v1.6.1.md](RELEASE_NOTES_v1.6.1.md)
+
 ### v1.6.0 - Complete Tailwind CSS Migration (December 2025)
 - ✅ **100% Tailwind Migration** – All major modules now use Tailwind CSS exclusively
 - ✅ **Ranking Round Migration** – Complete 9-phase migration for both 300 and 360 round modules
@@ -560,5 +570,5 @@ Copyright © 2025 WDV Archery
 ---
 
 **Last Updated:** December 2025  
-**Version:** 1.6.0  
+**Version:** 1.6.1  
 **Status:** Production + 100% Tailwind Migration Complete
