@@ -100,6 +100,17 @@
 
 ---
 
+## 🎯 Next Steps (Upcoming Work)
+
+### 📋 Planned Improvements
+- **Headers and Footers:** Update headers and footers in scoring modules (Ranking Round 300, Ranking Round 360, Solo Card, Team Card) for consistency and improved UX
+- **Complete Checkbox:** Add "Complete" checkbox to scorecards so archers can mark in-progress cards as complete
+  - This will help archers signal when they've finished scoring a round/match
+  - Should integrate with existing status system (PEND → COMP transition)
+  - UI placement: Consider adding to card view header or footer area
+
+---
+
 ## 🎯 Current State (December 2025)
 
 ### ✅ What's Live & Working
