@@ -3902,6 +3902,7 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers$#i', $route, $m) && $met
                 // Update match with code
                 $updateStmt = $pdo->prepare('UPDATE solo_matches SET match_code = ? WHERE id = ?');
                 $updateStmt->execute([$matchCode, $matchId]);
+                error_log("[SoloMatch] Generated match code: $matchCode for match: $matchId");
             }
         }
         
@@ -4524,6 +4525,7 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers$#i', 
                 $team1Count = (int)($teamRows[0]['archer_count'] ?? 0);
                 $team2Count = (int)($teamRows[1]['archer_count'] ?? 0);
                 
+                // Both teams have 3 archers - generate match code
                 if ($team1Count === 3 && $team2Count === 3) {
                     // Get all archers for both teams
                     $team1Archers = $pdo->prepare('SELECT archer_name FROM team_match_archers tma 
@@ -4617,6 +4619,7 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers$#i', 
                     // Update match with code
                     $updateStmt = $pdo->prepare('UPDATE team_matches SET match_code = ? WHERE id = ?');
                     $updateStmt->execute([$matchCode, $matchId]);
+                    error_log("[TeamMatch] Generated match code: $matchCode for match: $matchId");
                 }
             }
         }

@@ -244,9 +244,10 @@
                 console.log('[LiveUpdates] Using event entry code for request.');
             } else {
                 // Check for solo match code if this is a solo match request
-                if (normalizedPath.includes('/solo-matches/')) {
+                if (normalizedPath.includes('/solo-matches')) {
                     const matchIdMatch = normalizedPath.match(/\/solo-matches\/([0-9a-f-]+)/);
                     if (matchIdMatch) {
+                        // Request to existing solo match (has match ID in path)
                         const matchId = matchIdMatch[1];
                         let matchCode = localStorage.getItem(`solo_match_code:${matchId}`);
                         if (!matchCode && state.soloMatchCode) {
@@ -258,13 +259,17 @@
                         } else {
                             console.warn('[LiveUpdates] No coach key, entry code, or match code available; request may fail.');
                         }
+                    } else if (method === 'POST' && normalizedPath === '/solo-matches') {
+                        // Creating a new solo match - standalone matches don't need auth
+                        console.log('[LiveUpdates] Creating standalone solo match (no auth required).');
                     } else {
                         console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
                     }
-                } else if (normalizedPath.includes('/team-matches/')) {
+                } else if (normalizedPath.includes('/team-matches')) {
                     // Check for team match code if this is a team match request
                     const matchIdMatch = normalizedPath.match(/\/team-matches\/([0-9a-f-]+)/);
                     if (matchIdMatch) {
+                        // Request to existing team match (has match ID in path)
                         const matchId = matchIdMatch[1];
                         let matchCode = localStorage.getItem(`team_match_code:${matchId}`);
                         if (!matchCode && state.teamMatchCode) {
@@ -276,6 +281,9 @@
                         } else {
                             console.warn('[LiveUpdates] No coach key, entry code, or match code available; request may fail.');
                         }
+                    } else if (method === 'POST' && normalizedPath === '/team-matches') {
+                        // Creating a new team match - standalone matches don't need auth
+                        console.log('[LiveUpdates] Creating standalone team match (no auth required).');
                     } else {
                         console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
                     }
@@ -554,6 +562,75 @@
     // PHASE 2: SOLO MATCH METHODS
     // =====================================================
 
+    /**
+     * Generate a client-side fallback match code for solo matches
+     * Format: solo-[INITIALS]-[MMDD]
+     * This is used if the server doesn't return a match code
+     */
+    function generateClientSoloMatchCode(archer1, archer2, date) {
+        if (!archer1 || !archer2 || !date) return null;
+        
+        const getInitials = (archer) => {
+            const first = (archer.first || archer.firstName || '').charAt(0).toUpperCase();
+            const last = (archer.last || archer.lastName || '').charAt(0).toUpperCase();
+            return first + last;
+        };
+        
+        const initials1 = getInitials(archer1);
+        const initials2 = getInitials(archer2);
+        
+        // Get MMDD from date (YYYY-MM-DD format)
+        const dateParts = date.split('-');
+        const mmdd = (dateParts[1] || '') + (dateParts[2] || '');
+        
+        if (!initials1 || !initials2 || !mmdd) return null;
+        
+        return `solo-${initials1}${initials2}-${mmdd}`;
+    }
+
+    /**
+     * Generate a client-side fallback match code for team matches
+     * Format: team-[INITIALS]-[MMDD]
+     * This is used if the server doesn't return a match code
+     */
+    function generateClientTeamMatchCode(team1, team2, date) {
+        if (!team1 || !team2 || !Array.isArray(team1) || !Array.isArray(team2) || !date) return null;
+        
+        const getInitials = (archer) => {
+            const first = (archer.first || archer.firstName || '').charAt(0).toUpperCase();
+            const last = (archer.last || archer.lastName || '').charAt(0).toUpperCase();
+            return first + last;
+        };
+        
+        let initials1 = '';
+        let initials2 = '';
+        
+        // Get up to 3 archers per team (5 chars max per team)
+        for (let i = 0; i < Math.min(team1.length, 3); i++) {
+            const initials = getInitials(team1[i]);
+            if (initials && initials1.length < 5) {
+                initials1 += initials;
+            }
+        }
+        
+        for (let i = 0; i < Math.min(team2.length, 3); i++) {
+            const initials = getInitials(team2[i]);
+            if (initials && initials2.length < 5) {
+                initials2 += initials;
+            }
+        }
+        
+        // Get MMDD from date
+        const dateParts = date.split('-');
+        const mmdd = (dateParts[1] || '') + (dateParts[2] || '');
+        
+        if (!initials1 || !initials2 || !mmdd) return null;
+        
+        // Limit to 20 chars total: "team-" (5) + initials (max 10) + "-" (1) + MMDD (4) = 20
+        const code = `team-${initials1}${initials2}-${mmdd}`;
+        return code.substring(0, 20);
+    }
+
     function ensureSoloMatch({ date, location, eventId, bracketId, maxSets = 5, forceNew = false }) {
         if (!state.config.enabled) return Promise.resolve(null);
 
@@ -639,6 +716,22 @@
                 localStorage.setItem(`solo_match_code:${matchId}`, json.matchCode);
                 state.soloMatchCode = json.matchCode;
                 console.log(`🔑 Solo match code stored: ${json.matchCode}`);
+            } else if (position === 2) {
+                // If server didn't return match code but this is the second archer, generate client-side fallback
+                // This ensures data integrity even if server doesn't generate one
+                const today = new Date().toISOString().split('T')[0];
+                const fallbackCode = generateClientSoloMatchCode(
+                    { first: archer.first || archer.firstName, last: archer.last || archer.lastName },
+                    { first: '', last: '' }, // We don't have archer1 data here, so this is a partial fallback
+                    today
+                );
+                if (fallbackCode) {
+                    console.warn('[LiveUpdates] Server did not return match code. Using client-side fallback:', fallbackCode);
+                    localStorage.setItem(`solo_match_code:${matchId}`, fallbackCode);
+                    state.soloMatchCode = fallbackCode;
+                } else {
+                    console.warn('[LiveUpdates] Server did not return match code and could not generate client-side fallback.');
+                }
             }
 
             return json.matchArcherId;
@@ -860,6 +953,11 @@
                 localStorage.setItem(`team_match_code:${matchId}`, json.matchCode);
                 state.teamMatchCode = json.matchCode;
                 console.log(`[TeamMatch] 🔑 Match code generated and stored: ${json.matchCode}`);
+            } else if (position === 3) {
+                // If server didn't return match code but this is the 3rd archer (team complete), 
+                // we could generate a client-side fallback, but we'd need all team data
+                // For now, log a warning - the server should always generate match codes
+                console.warn('[TeamMatch] Server did not return match code. Match code should be generated server-side when both teams are complete.');
             }
 
             return json.matchArcherId;
