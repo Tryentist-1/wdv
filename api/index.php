@@ -2938,7 +2938,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/overview$#i', $route, $m) && $method =
             exit;
         }
         
-        // Get rounds with progress
+        // Get rounds with progress - including started scorecards count
         $roundsStmt = $pdo->prepare('
             SELECT 
                 r.id,
@@ -2947,14 +2947,16 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/overview$#i', $route, $m) && $method =
                 r.status,
                 COUNT(DISTINCT ra.id) as total_scorecards,
                 SUM(CASE WHEN ra.completed = TRUE THEN 1 ELSE 0 END) as completed_scorecards,
+                COUNT(DISTINCT CASE WHEN ee.id IS NOT NULL THEN ra.id END) as started_scorecards,
                 COUNT(DISTINCT ra.bale_number) as bale_count,
                 AVG(
-                    (SELECT MAX(ee.running_total) 
-                     FROM end_events ee 
-                     WHERE ee.round_archer_id = ra.id)
+                    (SELECT MAX(ee2.running_total) 
+                     FROM end_events ee2 
+                     WHERE ee2.round_archer_id = ra.id)
                 ) as avg_score
             FROM rounds r
             LEFT JOIN round_archers ra ON ra.round_id = r.id
+            LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
             WHERE r.event_id = ?
             GROUP BY r.id, r.division, r.round_type, r.status
             ORDER BY 
@@ -2969,20 +2971,36 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/overview$#i', $route, $m) && $method =
         $roundsStmt->execute([$eventId]);
         $rounds = $roundsStmt->fetchAll();
         
-        // Calculate round progress
+        // Calculate round progress and status
         $roundsData = [];
         foreach ($rounds as $r) {
             $total = (int)$r['total_scorecards'];
             $completed = (int)$r['completed_scorecards'];
+            $started = (int)$r['started_scorecards'];
+            $notStarted = $total - $started;
             $progress = $total > 0 ? round(($completed / $total) * 100, 1) : 0;
+            
+            // Calculate round status dynamically
+            $calculatedRoundStatus = 'Not Started';
+            if ($total === 0) {
+                $calculatedRoundStatus = 'Not Started';
+            } elseif ($completed === $total && $total > 0) {
+                $calculatedRoundStatus = 'Completed';
+            } elseif ($started > 0) {
+                $calculatedRoundStatus = 'In Progress';
+            } else {
+                $calculatedRoundStatus = 'Not Started';
+            }
             
             $roundsData[] = [
                 'id' => $r['id'],
                 'division' => $r['division'],
                 'round_type' => $r['round_type'],
-                'status' => $r['status'],
+                'status' => $calculatedRoundStatus, // Use calculated status instead of stored
                 'archer_count' => $total,
                 'completed_scorecards' => $completed,
+                'started_scorecards' => $started,
+                'not_started_scorecards' => $notStarted,
                 'total_scorecards' => $total,
                 'progress_percentage' => $progress,
                 'bale_count' => (int)$r['bale_count'],
@@ -3086,12 +3104,71 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/overview$#i', $route, $m) && $method =
         $archersData = $archersStmt->fetch();
         $totalArchers = (int)($archersData['total_archers'] ?? 0);
         
+        // Calculate event status dynamically based on round activity
+        // Event is "Active" if any scorecards (round_archers) exist, even without scores yet
+        // Event is "Completed" if all rounds are completed
+        $hasActiveRounds = false;
+        $hasCompletedRounds = false;
+        $hasAnyRounds = $totalRounds > 0;
+        $scorecardCount = 0;
+        
+        if ($hasAnyRounds) {
+            // Check if any round has scorecards created (round_archers exist)
+            // This indicates the event has been started, even if no scores entered yet
+            // Use the same data we already fetched from rounds query to avoid extra query
+            // The $roundsData already has total_scorecards, so we can use that
+            $scorecardCount = $totalScorecards; // Already calculated above
+            $hasActiveRounds = $scorecardCount > 0;
+            
+            // Also double-check with a direct query to be sure
+            if (!$hasActiveRounds) {
+                $activeCheckStmt = $pdo->prepare('
+                    SELECT COUNT(DISTINCT ra.id) as scorecard_count
+                    FROM rounds r
+                    LEFT JOIN round_archers ra ON ra.round_id = r.id
+                    WHERE r.event_id = ? AND ra.id IS NOT NULL
+                ');
+                $activeCheckStmt->execute([$eventId]);
+                $activeCheck = $activeCheckStmt->fetch();
+                $directCount = (int)($activeCheck['scorecard_count'] ?? 0);
+                if ($directCount > 0) {
+                    $scorecardCount = $directCount;
+                    $hasActiveRounds = true;
+                }
+            }
+            
+            // Check if all rounds are completed
+            $hasCompletedRounds = $completedRounds === $totalRounds && $totalRounds > 0;
+        }
+        
+        // Determine event status
+        // Normalize stored status first (handle case variations)
+        $storedStatus = ucfirst(strtolower(trim($eventData['status'] ?? 'Planned')));
+        if (!in_array($storedStatus, ['Planned', 'Active', 'Completed'])) {
+            $storedStatus = 'Planned'; // Default to Planned if invalid
+        }
+        
+        $calculatedStatus = $storedStatus; // Default to normalized stored status
+        if ($hasCompletedRounds && $totalRounds > 0) {
+            $calculatedStatus = 'Completed';
+        } elseif ($hasActiveRounds) {
+            // Any scorecards created means event is active
+            $calculatedStatus = 'Active';
+        } elseif ($hasAnyRounds) {
+            // Has rounds but no scorecards created yet
+            $calculatedStatus = 'Planned';
+        }
+        // If no rounds exist, keep the normalized stored status (likely 'Planned')
+        
+        // Debug logging (remove in production if needed)
+        error_log("Event status calculation for {$eventId}: stored={$eventData['status']}, normalized={$storedStatus}, calculated={$calculatedStatus}, rounds={$totalRounds}, scorecards={$scorecardCount}, hasActive={$hasActiveRounds}, hasCompleted={$hasCompletedRounds}");
+        
         json_response([
             'event' => [
                 'id' => $eventData['id'],
                 'name' => $eventData['name'],
                 'date' => $eventData['date'],
-                'status' => $eventData['status'],
+                'status' => $calculatedStatus,
                 'entry_code' => $eventData['entry_code'] ?? null
             ],
             'summary' => [

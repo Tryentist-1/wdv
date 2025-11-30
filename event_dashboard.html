@@ -181,6 +181,9 @@
       
       try {
         const data = await apiRequest(`/events/${eventId}/overview`);
+        console.log('[Dashboard] API Response:', data);
+        console.log('[Dashboard] Event Status:', data.event?.status);
+        console.log('[Dashboard] Total Scorecards:', data.summary?.total_scorecards);
         overviewData = data;
         renderDashboard(data);
         updateLastUpdated();
@@ -294,6 +297,8 @@
                   </div>
                   <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                     ${round.completed_scorecards}/${round.total_scorecards} scorecards completed
+                    ${round.started_scorecards !== undefined ? ` • ${round.started_scorecards} of ${round.total_scorecards} started` : ''}
+                    ${round.not_started_scorecards !== undefined && round.not_started_scorecards > 0 ? ` • ${round.not_started_scorecards} not started` : ''}
                     ${round.bale_count > 0 ? ` • ${round.bale_count} bales` : ''}
                     ${round.average_score ? ` • Avg: ${round.average_score}` : ''}
                   </div>
@@ -320,11 +325,19 @@
                   <span class="ml-2 font-semibold text-gray-800 dark:text-white">${round.archer_count}</span>
                 </div>
                 <div>
+                  <span class="text-gray-600 dark:text-gray-400">Started:</span>
+                  <span class="ml-2 font-semibold text-gray-800 dark:text-white">${round.started_scorecards !== undefined ? `${round.started_scorecards} of ${round.total_scorecards}` : '0'}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-gray-400">Not Started:</span>
+                  <span class="ml-2 font-semibold text-gray-800 dark:text-white">${round.not_started_scorecards !== undefined ? round.not_started_scorecards : round.total_scorecards}</span>
+                </div>
+                <div>
                   <span class="text-gray-600 dark:text-gray-400">Bales:</span>
                   <span class="ml-2 font-semibold text-gray-800 dark:text-white">${round.bale_count}</span>
                 </div>
                 <div>
-                  <span class="text-gray-600 dark:text-gray-400">Progress:</span>
+                  <span class="text-gray-600 dark:text-gray-400">Completed:</span>
                   <span class="ml-2 font-semibold text-gray-800 dark:text-white">${round.completed_scorecards}/${round.total_scorecards}</span>
                 </div>
               </div>

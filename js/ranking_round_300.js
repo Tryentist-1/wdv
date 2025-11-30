@@ -4695,10 +4695,41 @@ document.addEventListener('DOMContentLoaded', () => {
             state.selectedEventId = eventId;
             state.activeEventId = eventId;
 
-            const res = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            // Use entry code if provided (for authenticated event snapshots)
+            // Note: Event snapshot is typically public, but we include entry code if available
+            const headers = {};
+            if (entryCode) {
+                headers['X-Passcode'] = entryCode;
+            }
 
-            const eventData = await res.json();
+            const res = await fetch(`${API_BASE}/events/${eventId}/snapshot`, {
+                headers: headers
+            });
+            
+            let eventData;
+            if (!res.ok) {
+                // If 401 and we have an entry code, try without it (event snapshot might be public)
+                if (res.status === 401 && entryCode) {
+                    console.warn('[loadEventById] 401 with entry code, trying without authentication');
+                    const retryRes = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
+                    if (retryRes.ok) {
+                        eventData = await retryRes.json();
+                        // Extract entry code from response if available
+                        if (eventData.event?.entry_code) {
+                            entryCode = eventData.event.entry_code;
+                            localStorage.setItem('event_entry_code', entryCode);
+                        }
+                    } else {
+                        throw new Error(`HTTP ${retryRes.status}`);
+                    }
+                } else {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+            } else {
+                // Success on first try
+                eventData = await res.json();
+            }
+            
             console.log('[loadEventById] Received event data:', eventData);
             if (eventData && eventData.divisions) {
                 const divisionKeys = Object.keys(eventData.divisions || {});
@@ -4926,26 +4957,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // 2. Fetch round data from server
             // 2. Fetch entry code FIRST (before any API calls that require auth)
             console.log('[handleDirectLink] Fetching entry code from event...');
             
             // First try to get entry code from localStorage
             let entryCode = getEventEntryCode();
             
-            // If no entry code in localStorage, fetch it from the event BEFORE making API calls
-            // Since the archer is already assigned to this round, we should be able to get the event details
-            if (!entryCode && eventId) {
-                console.log('[handleDirectLink] No entry code in localStorage, fetching from event:', eventId);
+            // ALWAYS fetch event snapshot to get entry code (even if we have one in localStorage, refresh it)
+            // This ensures we have the latest entry code and event data
+            if (eventId) {
+                console.log('[handleDirectLink] Fetching event snapshot to get entry code:', eventId);
                 try {
                     const eventResponse = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
                     if (eventResponse.ok) {
                         const eventData = await eventResponse.json();
                         // Event snapshot includes entry_code for client-side auth (since archer is assigned)
-                        entryCode = eventData.event?.entry_code || '';
+                        const fetchedEntryCode = eventData.event?.entry_code || '';
                         
-                        if (entryCode) {
-                            console.log('[handleDirectLink] ✅ Retrieved entry code from event snapshot:', entryCode);
+                        if (fetchedEntryCode) {
+                            console.log('[handleDirectLink] ✅ Retrieved entry code from event snapshot:', fetchedEntryCode);
+                            entryCode = fetchedEntryCode; // Use the fetched code (overrides localStorage)
+                            
                             // Save it for future use
                             localStorage.setItem('event_entry_code', entryCode);
                             try {
@@ -4960,16 +4992,50 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         } else {
                             console.warn('[handleDirectLink] ⚠️ Event snapshot did not include entry code');
+                            if (!entryCode) {
+                                console.error('[handleDirectLink] ❌ No entry code available from event snapshot and none in localStorage');
+                                alert('Unable to access this event. The event entry code is required but was not found.\n\nPlease contact the event coordinator or try using the event modal to enter the code manually.');
+                                showEventModal();
+                                return false;
+                            }
                         }
                     } else {
                         console.warn('[handleDirectLink] Could not fetch event snapshot:', eventResponse.status);
+                        if (!entryCode) {
+                            console.error('[handleDirectLink] ❌ Failed to fetch event snapshot and no entry code in localStorage');
+                            if (eventResponse.status === 401) {
+                                alert('Unable to access this event. Authentication required.\n\nPlease contact the event coordinator or try using the event modal to enter the code manually.');
+                            } else {
+                                alert('Unable to load event information. Please check your connection and try again.');
+                            }
+                            showEventModal();
+                            return false;
+                        }
                     }
                 } catch (e) {
                     console.warn('[handleDirectLink] Error fetching event snapshot:', e.message);
+                    if (!entryCode) {
+                        console.error('[handleDirectLink] ❌ Error fetching event snapshot and no entry code in localStorage');
+                        alert('Unable to load event information. Please check your connection and try again.');
+                        showEventModal();
+                        return false;
+                    }
                 }
+            } else if (!entryCode) {
+                console.error('[handleDirectLink] ❌ No event ID provided and no entry code in localStorage');
+                alert('Unable to access this round. Event information is required.\n\nPlease contact the event coordinator or try using the event modal to enter the code manually.');
+                showEventModal();
+                return false;
             }
 
             console.log('[handleDirectLink] Using entry code:', entryCode ? `Yes (${entryCode})` : 'No');
+            
+            if (!entryCode) {
+                console.error('[handleDirectLink] ❌ No entry code available - cannot proceed');
+                alert('Unable to access this event. The event entry code is required.\n\nPlease contact the event coordinator or try using the event modal to enter the code manually.');
+                showEventModal();
+                return false;
+            }
             
             // 3. Fetch round data from server (now with entry code)
             console.log('[handleDirectLink] Fetching round data from server...');

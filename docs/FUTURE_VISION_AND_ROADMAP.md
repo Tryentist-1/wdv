@@ -171,6 +171,11 @@ CREATE TABLE archer_stats (
 - Technique observations
 - Goals & action items
 - Milestone celebrations
+- **📸 Media Integration (Future Enhancement):**
+  - Google Photos link integration for visual feedback
+  - YouTube video embedding for technique analysis
+  - Media previews with responsive display
+  - See: [COACH_COMMENTARY_MEDIA_INTEGRATION_EVALUATION.md](COACH_COMMENTARY_MEDIA_INTEGRATION_EVALUATION.md)
 
 **Database Extensions:**
 ```sql
