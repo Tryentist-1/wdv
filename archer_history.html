@@ -30,7 +30,7 @@
   <script src="js/unified_scorecard_list.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
-  <div class="max-w-6xl mx-auto px-4 py-6">
+  <div class="max-w-6xl mx-auto px-4 py-6 pb-[30px]">
     <!-- Header -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200 flex justify-between items-center">
       <h1 id="page-title" class="text-3xl font-bold text-gray-800 dark:text-white">Archer History</h1>
@@ -175,25 +175,15 @@
         'GJV': 'Girls JV'
       };
 
-      history.forEach(round => {
-        const item = document.createElement('div');
-        item.className = 'scorecard-list-item grid gap-1.5 items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 px-2.5 py-2 min-h-[2.75rem] min-w-0 transition-all duration-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 sm:gap-2 sm:px-3 sm:py-2.5 sm:min-h-[3rem]';
-        item.style.gridTemplateColumns = 'minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr)';
-        item.setAttribute('data-columns', '6');
-        
-        const isLocked = round.locked || round.card_status === 'VER';
-        const canDelete = !isLocked && (
-          round.ends_completed === 0 || 
-          round.final_score === 0 || 
-          (round.ends_completed <= 3 && round.final_score < 100) ||
-          round.event_name?.toLowerCase().includes('test') || 
-          round.event_name?.toLowerCase().includes('practice')
-        );
+      history.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'scorecard-list-item grid gap-1.5 items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 px-2.5 py-2 min-h-[2.75rem] min-w-0 transition-all duration-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 sm:gap-2 sm:px-3 sm:py-2.5 sm:min-h-[3rem]';
+        row.style.gridTemplateColumns = 'minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr)';
+        row.setAttribute('data-columns', '6');
         
         // Status text - prioritize card_status from database
-        // Follows master document: PENDING → COMP → VER → VOID
         let statusText = '';
-        const cardStatus = (round.card_status || '').toUpperCase();
+        const cardStatus = (item.card_status || '').toUpperCase();
         
         if (cardStatus === 'VER' || cardStatus === 'VERIFIED') {
           statusText = 'VER';
@@ -201,46 +191,85 @@
           statusText = 'VOID';
         } else if (cardStatus === 'COMP' || cardStatus === 'COMPLETED') {
           statusText = 'COMP';
-        } else if (round.ends_completed >= 10 || round.final_score > 0) {
-          // Fallback: if no explicit status but all ends completed, show COMP
+        } else if (item.type === 'ranking' && (item.ends_completed >= 10 || item.final_score > 0)) {
           statusText = 'COMP';
         } else {
           statusText = 'PEND';
         }
         
-        // Calculate average arrow score
-        const avgArrow = round.final_score && round.ends_completed ? 
-          (round.final_score / (round.ends_completed * 3)).toFixed(1) : '0.0';
-        
         // Format date
-        const eventDate = round.event_date ? new Date(round.event_date).toLocaleDateString('en-US', { 
+        const eventDate = item.event_date ? new Date(item.event_date).toLocaleDateString('en-US', { 
           month: 'short', day: 'numeric', year: '2-digit' 
         }) : 'N/A';
         
-        // Format round type for display
-        const roundTypeDisplay = round.round_type === 'PRACTICE' ? 'Practice' : (round.round_type || 'R300');
-        const eventName = round.event_name || (round.round_type === 'PRACTICE' ? 'Practice Round' : 'Unknown Event');
-        const baleInfo = round.bale_number ? ` • Bale ${round.bale_number}` : '';
+        let eventName, subtitle, totalScore, avgScore, xs, tens;
         
-        item.innerHTML = `
+        if (item.type === 'ranking') {
+          // Ranking round display
+          const roundTypeDisplay = item.round_type === 'PRACTICE' ? 'Practice' : (item.round_type || 'R300');
+          eventName = item.event_name || (item.round_type === 'PRACTICE' ? 'Practice Round' : 'Unknown Event');
+          const baleInfo = item.bale_number ? ` • Bale ${item.bale_number}` : '';
+          subtitle = `${eventDate} • ${roundTypeDisplay} • ${divisionNames[item.division] || item.division || 'Open'}${baleInfo}`;
+          totalScore = item.final_score || 0;
+          avgScore = item.final_score && item.ends_completed ? 
+            (item.final_score / (item.ends_completed * 3)).toFixed(1) : '0.0';
+          xs = item.total_xs || 0;
+          tens = item.total_tens || 0;
+        } else if (item.type === 'solo') {
+          // Solo match display
+          eventName = item.event_name || 'Solo Match';
+          const winIndicator = item.is_winner ? ' 🏆' : '';
+          subtitle = `${eventDate} • Solo Match vs ${item.opponent_name}${winIndicator}`;
+          totalScore = `${item.sets_won}-${item.opponent_sets_won}`;
+          avgScore = item.final_score || 0; // Show total score in avg column
+          xs = '-';
+          tens = '-';
+        } else if (item.type === 'team') {
+          // Team match display
+          eventName = item.event_name || 'Team Match';
+          const winIndicator = item.is_winner ? ' 🏆' : '';
+          subtitle = `${eventDate} • Team: ${item.team_name} vs ${item.opponent_team}${winIndicator}`;
+          totalScore = `${item.sets_won}-${item.opponent_sets_won}`;
+          avgScore = '-';
+          xs = '-';
+          tens = '-';
+        } else {
+          // Fallback for unknown types
+          eventName = item.event_name || 'Unknown';
+          subtitle = eventDate;
+          totalScore = item.final_score || 0;
+          avgScore = '0.0';
+          xs = item.total_xs || 0;
+          tens = item.total_tens || 0;
+        }
+        
+        row.innerHTML = `
           <div class="flex flex-col gap-0.5 min-w-0 overflow-hidden">
             <div class="text-[13px] font-semibold text-gray-900 dark:text-white overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">${eventName}</div>
-            <div class="text-[11px] text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-xs">${eventDate} • ${roundTypeDisplay} • ${divisionNames[round.division] || round.division || 'Open'}${baleInfo}</div>
+            <div class="text-[11px] text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-xs">${subtitle}</div>
           </div>
           <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${statusText}</div>
-          <div class="text-[15px] font-bold text-blue-600 dark:text-blue-400 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-base">${round.final_score || 0}</div>
-          <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${avgArrow}</div>
-          <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${round.total_xs || 0}</div>
-          <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${round.total_tens || 0}</div>
+          <div class="text-[15px] font-bold text-blue-600 dark:text-blue-400 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-base">${totalScore}</div>
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${avgScore}</div>
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${xs}</div>
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${tens}</div>
         `;
 
         // Make the whole item clickable except for action buttons
-        item.onclick = (e) => {
+        row.onclick = (e) => {
           if (e.target.closest('.scorecard-actions')) return;
-          showRoundScorecard(round);
+          if (item.type === 'ranking') {
+            showRoundScorecard(item);
+          } else if (item.type === 'solo') {
+            // TODO: Show solo match scorecard
+            console.log('Solo match clicked:', item);
+          } else if (item.type === 'team') {
+            // TODO: Show team match scorecard
+            console.log('Team match clicked:', item);
+          }
         };
 
-        container.appendChild(item);
+        container.appendChild(row);
       });
     }
 

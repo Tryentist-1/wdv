@@ -1419,10 +1419,28 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Check for URL parameters (for QR code access or bracket assignments)
         const urlParams = new URLSearchParams(window.location.search);
+        const matchId = urlParams.get('match');
         const eventId = urlParams.get('event');
         const bracketId = urlParams.get('bracket');
         
-        if (eventId) {
+        // If match ID is in URL, load that match
+        if (matchId) {
+            state.matchId = matchId;
+            const restored = await restoreMatchFromDatabase();
+            if (restored) {
+                console.log('✅ Match loaded from URL parameter:', matchId);
+                renderScoringView();
+                // Flush any pending queue
+                if (window.LiveUpdates && window.LiveUpdates.flushSoloQueue) {
+                    window.LiveUpdates.flushSoloQueue(state.matchId).catch(e => 
+                        console.warn('Queue flush failed:', e)
+                    );
+                }
+            } else {
+                console.warn('⚠️ Match not found in database:', matchId);
+                alert('Match not found. Please check the match ID.');
+            }
+        } else if (eventId) {
             state.eventId = eventId;
             // Re-render selects with URL parameters
             renderEventSelect();

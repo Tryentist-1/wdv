@@ -459,19 +459,15 @@
             const rounds = historyData.history || historyData.rounds || [];
             console.log('[index] Total rounds found:', rounds.length);
 
-            // Find incomplete rounds
-            // Note: History API doesn't return locked/card_status, so we check ends_completed
-            const openRounds = rounds.filter(round => {
+            // Separate ranking rounds and solo/team matches
+            const rankingRounds = rounds.filter(r => r.type === 'ranking' || !r.type);
+            const soloMatches = rounds.filter(r => r.type === 'solo');
+            const teamMatches = rounds.filter(r => r.type === 'team');
+
+            // Find incomplete ranking rounds
+            const openRounds = rankingRounds.filter(round => {
               const endsCompleted = parseInt(round.ends_completed || 0);
               const hasIncompleteEnds = endsCompleted < 10;
-              const isTestRound = round.event_name?.toLowerCase().includes('test') ||
-                round.event_name?.toLowerCase().includes('practice');
-              const finalScore = parseInt(round.final_score || 0);
-              const hasLowScore = finalScore < 100;
-
-              // Show if:
-              // 1. Has incomplete ends (not finished) - PRIMARY condition
-              // 2. OR is today's round (show active rounds even if complete, for quick access)
               const isToday = round.event_date === new Date().toISOString().slice(0, 10);
               const shouldShow = hasIncompleteEnds || (isToday && endsCompleted > 0);
 
@@ -479,10 +475,7 @@
                 event: round.event_name,
                 date: round.event_date,
                 endsCompleted,
-                finalScore,
                 hasIncompleteEnds,
-                isTestRound,
-                hasLowScore,
                 isToday,
                 shouldShow
               });
@@ -490,10 +483,22 @@
               return shouldShow;
             });
 
-            console.log('[index] Open rounds found:', openRounds.length);
+            // Find incomplete solo matches (not completed or today's matches)
+            const openSoloMatches = soloMatches.filter(match => {
+              const setsWon = parseInt(match.sets_won || 0);
+              const opponentSetsWon = parseInt(match.opponent_sets_won || 0);
+              const isComplete = setsWon >= 6 || opponentSetsWon >= 6;
+              const isToday = match.event_date === new Date().toISOString().slice(0, 10);
+              const hasStarted = setsWon > 0 || opponentSetsWon > 0;
+              
+              // Show if not complete, or if it's today's match (for quick access)
+              return !isComplete || (isToday && hasStarted);
+            });
 
-            // Build links - entry code will be fetched automatically from event when needed
-            // Since the archer is already assigned to these rounds, we can get entry code from event
+            console.log('[index] Open rounds found:', openRounds.length);
+            console.log('[index] Open solo matches found:', openSoloMatches.length);
+
+            // Build links for ranking rounds
             openRounds.forEach(round => {
               const isStarted = (round.ends_completed || 0) > 0;
               
@@ -513,8 +518,43 @@
                 icon: isStarted ? 'fas fa-play-circle' : 'fas fa-trophy',
                 color: isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-teal-600 hover:bg-teal-700',
                 urgent: isStarted && (round.ends_completed || 0) < 10, // Has started but not finished
-                event_date: round.event_date || round.eventDate || null, // Pass through event date if available
-                card_status: round.card_status || round.cardStatus || 'PENDING' // Pass through card_status from round data
+                event_date: round.event_date || round.eventDate || null,
+                card_status: round.card_status || round.cardStatus || 'PENDING',
+                ends_completed: round.ends_completed || 0,
+                round_type: round.round_type || 'R300'
+              });
+            });
+
+            // Build links for solo matches
+            openSoloMatches.forEach(match => {
+              const setsWon = parseInt(match.sets_won || 0);
+              const opponentSetsWon = parseInt(match.opponent_sets_won || 0);
+              const isStarted = setsWon > 0 || opponentSetsWon > 0;
+              const isComplete = setsWon >= 6 || opponentSetsWon >= 6;
+              
+              // Build link to solo card with match ID
+              const link = `solo_card.html?match=${match.match_id}`;
+              
+              // Build event name
+              const eventName = match.event_name || 'Solo Match';
+              const title = isStarted ? (isComplete ? `${eventName} - View` : `${eventName} - Resume`) : eventName;
+              
+              assignments.push({
+                type: 'solo',
+                title: title,
+                subtitle: `Solo Match vs ${match.opponent_name || 'Opponent'}`,
+                details: `Sets: ${setsWon}-${opponentSetsWon}${match.is_winner ? ' 🏆' : ''}`,
+                link: link,
+                icon: isComplete ? 'fas fa-trophy' : (isStarted ? 'fas fa-play-circle' : 'fas fa-user-friends'),
+                color: isComplete ? 'bg-yellow-500 hover:bg-yellow-600' : (isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-500 hover:bg-yellow-600'),
+                urgent: isStarted && !isComplete,
+                event_date: match.event_date || null,
+                card_status: match.card_status || 'PENDING',
+                match_id: match.match_id,
+                opponent_name: match.opponent_name,
+                sets_won: setsWon,
+                opponent_sets_won: opponentSetsWon,
+                is_winner: match.is_winner
               });
             });
           }
@@ -623,20 +663,42 @@
               matchDetails: assignment.details // Store full details for reference
             };
           }
+          
+          // Handle solo matches
+          if (assignment.type === 'solo') {
+            return {
+              event_name: assignment.title,
+              event_date: assignment.event_date || new Date().toISOString(),
+              round_type: 'Solo Match', // Type column
+              division: assignment.subtitle || '', // "Solo Match vs Opponent"
+              bale_number: '',
+              card_status: assignment.card_status || 'PENDING',
+              final_score: 0,
+              ends_completed: assignment.details || `Sets: ${assignment.sets_won || 0}-${assignment.opponent_sets_won || 0}`, // Progress column shows sets
+              total_xs: 0,
+              total_tens: 0,
+              link: assignment.link,
+              urgent: assignment.urgent,
+              isSolo: true,
+              match_id: assignment.match_id,
+              opponent_name: assignment.opponent_name
+            };
+          }
+          
           // Regular ranking round assignments
           // Note: card_status should come from the round data (PENDING, VER, VOID)
           // This represents the card lifecycle as defined in results.html
           return {
             event_name: assignment.title,
             event_date: assignment.event_date || new Date().toISOString(), // Use actual event date from round if available
-            round_type: assignment.subtitle.split(' • ')[0] || 'Assignment',
+            round_type: assignment.round_type || assignment.subtitle.split(' • ')[0] || 'Assignment',
             division: assignment.subtitle.split(' • ')[1] || '',
             bale_number: assignment.details.match(/Bale (\d+)/)?.[1] || '',
             // card_status represents card lifecycle: PENDING (in progress), VER (verified), VOID (voided)
             // Pass through from assignment (which comes from round data)
             card_status: assignment.card_status || 'PENDING',
             final_score: 0,
-            ends_completed: assignment.details.match(/(\d+)\/10 ends/)?.[1] || 0,
+            ends_completed: assignment.ends_completed || assignment.details.match(/(\d+)\/10 ends/)?.[1] || 0,
             total_xs: 0,
             total_tens: 0,
             link: assignment.link,
@@ -654,6 +716,10 @@
             // Progress column: For brackets, show just "vs Opponent Name"
             if (item.isBracket) {
               return `vs ${item.ends_completed}`;
+            }
+            // For solo matches, show sets score
+            if (item.isSolo) {
+              return item.ends_completed || '0-0';
             }
             // For ranking rounds, show ends completed
             return `${item.ends_completed}/10`;

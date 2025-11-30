@@ -131,7 +131,9 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         exit;
     }
     
-    // Get all rounds this archer participated in
+    $history = [];
+    
+    // Get all ranking rounds this archer participated in
     $rounds = $pdo->prepare('
         SELECT 
             e.id AS event_id,
@@ -144,6 +146,8 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             ra.archer_id,
             ra.bale_number,
             ra.target_assignment,
+            ra.card_status,
+            ra.locked,
             MAX(ee.running_total) AS final_score,
             COUNT(DISTINCT ee.end_number) AS ends_completed,
             SUM(ee.tens) AS total_tens,
@@ -153,11 +157,184 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         LEFT JOIN events e ON e.id = r.event_id
         LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
         WHERE ra.archer_id = ?
-        GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, ra.archer_id, ra.bale_number, ra.target_assignment
+        GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, ra.archer_id, ra.bale_number, ra.target_assignment, ra.card_status, ra.locked
         ORDER BY e.date DESC, e.name
     ');
     $rounds->execute([$archerData['id']]);
-    $history = $rounds->fetchAll();
+    $rankingRounds = $rounds->fetchAll();
+    
+    // Add type field and add to history
+    foreach ($rankingRounds as $round) {
+        $round['type'] = 'ranking';
+        $history[] = $round;
+    }
+    
+    // Get all solo matches this archer participated in
+    // Calculate sets_won from set_points in solo_match_sets (more accurate than denormalized field)
+    $soloMatches = $pdo->prepare('
+        SELECT 
+            sm.id AS match_id,
+            sm.event_id,
+            sm.date AS event_date,
+            sm.status,
+            sm.card_status,
+            sm.locked,
+            sm.winner_archer_id,
+            e.name AS event_name,
+            sma1.id AS archer1_match_archer_id,
+            sma1.archer_id AS archer1_id,
+            sma1.archer_name AS archer1_name,
+            sma1.winner AS archer1_winner,
+            sma2.id AS archer2_match_archer_id,
+            sma2.archer_id AS archer2_id,
+            sma2.archer_name AS archer2_name,
+            sma2.winner AS archer2_winner
+        FROM solo_matches sm
+        JOIN solo_match_archers sma1 ON sma1.match_id = sm.id AND sma1.position = 1
+        JOIN solo_match_archers sma2 ON sma2.match_id = sm.id AND sma2.position = 2
+        LEFT JOIN events e ON e.id = sm.event_id
+        WHERE sma1.archer_id = ? OR sma2.archer_id = ?
+        ORDER BY sm.date DESC, sm.created_at DESC
+    ');
+    $soloMatches->execute([$archerData['id'], $archerData['id']]);
+    $soloResults = $soloMatches->fetchAll();
+    
+    // Format solo matches for history and calculate accurate totals
+    foreach ($soloResults as $match) {
+        $isArcher1 = $match['archer1_id'] === $archerData['id'];
+        $opponentName = $isArcher1 ? $match['archer2_name'] : $match['archer1_name'];
+        $myMatchArcherId = $isArcher1 ? $match['archer1_match_archer_id'] : $match['archer2_match_archer_id'];
+        $opponentMatchArcherId = $isArcher1 ? $match['archer2_match_archer_id'] : $match['archer1_match_archer_id'];
+        $isWinner = $isArcher1 ? $match['archer1_winner'] : $match['archer2_winner'];
+        
+        // Calculate sets_won from set_points (count sets where set_points = 2)
+        $setsStmt = $pdo->prepare('
+            SELECT 
+                COUNT(CASE WHEN set_points = 2 THEN 1 END) as sets_won,
+                SUM(set_total) as total_score
+            FROM solo_match_sets
+            WHERE match_archer_id = ? AND set_number <= 5
+        ');
+        $setsStmt->execute([$myMatchArcherId]);
+        $myStats = $setsStmt->fetch(PDO::FETCH_ASSOC);
+        $setsWon = (int)($myStats['sets_won'] ?? 0);
+        $totalScore = (int)($myStats['total_score'] ?? 0);
+        
+        $setsStmt->execute([$opponentMatchArcherId]);
+        $opponentStats = $setsStmt->fetch(PDO::FETCH_ASSOC);
+        $opponentSetsWon = (int)($opponentStats['sets_won'] ?? 0);
+        
+        $history[] = [
+            'type' => 'solo',
+            'match_id' => $match['match_id'],
+            'event_id' => $match['event_id'],
+            'event_name' => $match['event_name'] ?: 'Solo Match',
+            'event_date' => $match['event_date'],
+            'card_status' => $match['card_status'],
+            'locked' => $match['locked'],
+            'opponent_name' => $opponentName,
+            'sets_won' => $setsWon,
+            'opponent_sets_won' => $opponentSetsWon,
+            'final_score' => $totalScore,
+            'is_winner' => $isWinner,
+            'ends_completed' => 0, // Not applicable for matches
+            'total_tens' => 0, // Could be calculated from sets if needed
+            'total_xs' => 0 // Could be calculated from sets if needed
+        ];
+    }
+    
+    // Get all team matches this archer participated in
+    $teamMatches = $pdo->prepare('
+        SELECT 
+            tm.id AS match_id,
+            tm.event_id,
+            tm.date AS event_date,
+            tm.status,
+            tm.card_status,
+            tm.locked,
+            tm.winner_team_id,
+            e.name AS event_name,
+            tmt1.id AS team1_id,
+            tmt1.team_name AS team1_name,
+            tmt1.school AS team1_school,
+            tmt1.sets_won AS team1_sets_won,
+            tmt1.winner AS team1_winner,
+            tmt2.id AS team2_id,
+            tmt2.team_name AS team2_name,
+            tmt2.school AS team2_school,
+            tmt2.sets_won AS team2_sets_won,
+            tmt2.winner AS team2_winner,
+            tma.team_id AS archer_team_id,
+            tma.position AS archer_position
+        FROM team_matches tm
+        JOIN team_match_archers tma ON tma.match_id = tm.id
+        JOIN team_match_teams tmt1 ON tmt1.match_id = tm.id AND tmt1.position = 1
+        JOIN team_match_teams tmt2 ON tmt2.match_id = tm.id AND tmt2.position = 2
+        LEFT JOIN events e ON e.id = tm.event_id
+        WHERE tma.archer_id = ?
+        GROUP BY tm.id, tm.event_id, tm.date, tm.status, tm.card_status, tm.locked, tm.winner_team_id, e.name, 
+                 tmt1.id, tmt1.team_name, tmt1.school, tmt1.sets_won, tmt1.winner,
+                 tmt2.id, tmt2.team_name, tmt2.school, tmt2.sets_won, tmt2.winner, tma.team_id, tma.position
+        ORDER BY tm.date DESC, tm.created_at DESC
+    ');
+    $teamMatches->execute([$archerData['id']]);
+    $teamResults = $teamMatches->fetchAll();
+    
+    // Format team matches for history
+    foreach ($teamResults as $match) {
+        $isTeam1 = $match['team1_id'] === $match['archer_team_id'];
+        $myTeam = $isTeam1 ? [
+            'id' => $match['team1_id'],
+            'name' => $match['team1_name'],
+            'school' => $match['team1_school'],
+            'sets_won' => $match['team1_sets_won'],
+            'winner' => $match['team1_winner']
+        ] : [
+            'id' => $match['team2_id'],
+            'name' => $match['team2_name'],
+            'school' => $match['team2_school'],
+            'sets_won' => $match['team2_sets_won'],
+            'winner' => $match['team2_winner']
+        ];
+        $opponentTeam = $isTeam1 ? [
+            'name' => $match['team2_name'],
+            'school' => $match['team2_school'],
+            'sets_won' => $match['team2_sets_won']
+        ] : [
+            'name' => $match['team1_name'],
+            'school' => $match['team1_school'],
+            'sets_won' => $match['team1_sets_won']
+        ];
+        
+        $opponentDisplay = $opponentTeam['name'] ?: $opponentTeam['school'] ?: 'Opponent Team';
+        
+        $history[] = [
+            'type' => 'team',
+            'match_id' => $match['match_id'],
+            'event_id' => $match['event_id'],
+            'event_name' => $match['event_name'] ?: 'Team Match',
+            'event_date' => $match['event_date'],
+            'card_status' => $match['card_status'],
+            'locked' => $match['locked'],
+            'team_name' => $myTeam['name'] ?: $myTeam['school'] ?: 'My Team',
+            'opponent_team' => $opponentDisplay,
+            'sets_won' => $myTeam['sets_won'],
+            'opponent_sets_won' => $opponentTeam['sets_won'],
+            'final_score' => 0, // Team matches don't have individual scores
+            'is_winner' => $myTeam['winner'],
+            'ends_completed' => 0, // Not applicable for matches
+            'total_tens' => 0,
+            'total_xs' => 0
+        ];
+    }
+    
+    // Sort all history by date (most recent first)
+    usort($history, function($a, $b) {
+        $dateA = $a['event_date'] ?? '';
+        $dateB = $b['event_date'] ?? '';
+        if ($dateA === $dateB) return 0;
+        return $dateA > $dateB ? -1 : 1;
+    });
     
     json_response([
         'archer' => [

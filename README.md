@@ -510,6 +510,16 @@ Copyright © 2025 WDV Archery
 
 ## 📋 Recent Updates
 
+### v1.8.0 - Solo & Team Match History Integration (December 2025)
+- ✅ **Unified History Display** – Ranking rounds, solo matches, and team matches now shown together in archer history
+- ✅ **Accurate Totals** – Sets won and total scores calculated from database set records
+- ✅ **Proper Navigation** – Solo matches route to solo_card.html with match loaded from URL
+- ✅ **Open Rounds Integration** – Incomplete solo matches appear in "Active Rounds" on home page
+- ✅ **Winner Indicators** – Trophy emoji shown for match winners
+- ✅ **Type-Specific Display** – Clear visual distinction between ranking rounds, solo matches, and team matches
+
+**Full Release Notes:** [RELEASE_NOTES_v1.8.0.md](RELEASE_NOTES_v1.8.0.md)
+
 ### v1.6.1 - Active Rounds Display Improvements (December 2025)
 - ✅ **Fixed List Display Bug** – Resolved critical issue where "Active Rounds" list was not showing on home screen
 - ✅ **Enhanced Event Information** – Now displays actual event/round information instead of generic "Resume Ranking..." text
