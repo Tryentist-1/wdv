@@ -70,7 +70,20 @@
 
 ## 🚨 Status Update (December 2025)
 
-### ✅ Latest Release (v1.6.6)
+### ✅ Latest Release (v1.6.7)
+
+- **Dark Mode Text Visibility Fixes:** Fixed dark mode text color issues across all modules
+  - **Unified Scorecard Lists:** Updated all scorecard lists to use `dark:text-white` instead of `dark:text-gray-100` for better visibility
+  - **Solo Card:** Fixed dark text in table header and match summary display
+  - **Team Card:** Fixed score color styling (moved color classes from input to td elements)
+  - **Results & History:** Fixed dark mode text in scorecard lists
+  - **Test Components:** Fixed dark text in 6-column layout section
+- **Syntax Error Fixes:** Removed unclosed DOMContentLoaded listeners in event_dashboard.html and archer_history.html
+- **Team Match Code Generation:** Fixed condition check in api/index.php to ensure match codes are generated correctly
+- **Standalone Match Warnings:** Improved warning messages in live_updates.js for standalone matches (suppressed warnings for match creation)
+- **Match Code Logging:** Added error_log statements to track match code generation for debugging
+
+### ✅ Previous Release (v1.6.6)
 
 - **Practice Target Database Integration:** Practice rounds now save to database and appear in archer history
   - **Database Save:** Practice rounds saved with `round_type: 'PRACTICE'` and all end-by-end scoring data
