@@ -2921,6 +2921,183 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
     exit;
 }
 
+// GET /v1/events/:id/overview - Get comprehensive event overview with progress tracking
+if (preg_match('#^/v1/events/([0-9a-f-]+)/overview$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $eventId = $m[1];
+    $pdo = db();
+    
+    try {
+        // Get event info
+        $event = $pdo->prepare('SELECT id, name, date, status, event_type, entry_code FROM events WHERE id=? LIMIT 1');
+        $event->execute([$eventId]);
+        $eventData = $event->fetch();
+        
+        if (!$eventData) {
+            json_response(['error' => 'Event not found'], 404);
+            exit;
+        }
+        
+        // Get rounds with progress
+        $roundsStmt = $pdo->prepare('
+            SELECT 
+                r.id,
+                r.division,
+                r.round_type,
+                r.status,
+                COUNT(DISTINCT ra.id) as total_scorecards,
+                SUM(CASE WHEN ra.completed = TRUE THEN 1 ELSE 0 END) as completed_scorecards,
+                COUNT(DISTINCT ra.bale_number) as bale_count,
+                AVG(
+                    (SELECT MAX(ee.running_total) 
+                     FROM end_events ee 
+                     WHERE ee.round_archer_id = ra.id)
+                ) as avg_score
+            FROM rounds r
+            LEFT JOIN round_archers ra ON ra.round_id = r.id
+            WHERE r.event_id = ?
+            GROUP BY r.id, r.division, r.round_type, r.status
+            ORDER BY 
+                CASE r.division 
+                    WHEN \'BVAR\' THEN 1 
+                    WHEN \'GVAR\' THEN 2 
+                    WHEN \'BJV\' THEN 3 
+                    WHEN \'GJV\' THEN 4 
+                    ELSE 5 
+                END
+        ');
+        $roundsStmt->execute([$eventId]);
+        $rounds = $roundsStmt->fetchAll();
+        
+        // Calculate round progress
+        $roundsData = [];
+        foreach ($rounds as $r) {
+            $total = (int)$r['total_scorecards'];
+            $completed = (int)$r['completed_scorecards'];
+            $progress = $total > 0 ? round(($completed / $total) * 100, 1) : 0;
+            
+            $roundsData[] = [
+                'id' => $r['id'],
+                'division' => $r['division'],
+                'round_type' => $r['round_type'],
+                'status' => $r['status'],
+                'archer_count' => $total,
+                'completed_scorecards' => $completed,
+                'total_scorecards' => $total,
+                'progress_percentage' => $progress,
+                'bale_count' => (int)$r['bale_count'],
+                'average_score' => $r['avg_score'] ? round((float)$r['avg_score'], 1) : null
+            ];
+        }
+        
+        // Get brackets with match progress
+        $bracketsStmt = $pdo->prepare('
+            SELECT 
+                b.id,
+                b.bracket_type,
+                b.bracket_format,
+                b.division,
+                b.status,
+                COUNT(DISTINCT be.id) as entry_count,
+                COUNT(DISTINCT CASE WHEN b.bracket_type = \'SOLO\' THEN sm.id ELSE tm.id END) as total_matches,
+                SUM(CASE 
+                    WHEN b.bracket_type = \'SOLO\' AND sm.status = \'COMPLETED\' THEN 1
+                    WHEN b.bracket_type = \'TEAM\' AND tm.status = \'COMPLETED\' THEN 1
+                    ELSE 0
+                END) as completed_matches
+            FROM brackets b
+            LEFT JOIN bracket_entries be ON be.bracket_id = b.id
+            LEFT JOIN solo_matches sm ON sm.bracket_id = b.id AND sm.event_id = ?
+            LEFT JOIN team_matches tm ON tm.bracket_id = b.id AND tm.event_id = ?
+            WHERE b.event_id = ?
+            GROUP BY b.id, b.bracket_type, b.bracket_format, b.division, b.status
+            ORDER BY b.bracket_type, b.division, b.created_at
+        ');
+        $bracketsStmt->execute([$eventId, $eventId, $eventId]);
+        $brackets = $bracketsStmt->fetchAll();
+        
+        // Calculate bracket progress
+        $bracketsData = [];
+        foreach ($brackets as $b) {
+            $totalMatches = (int)$b['total_matches'];
+            $completedMatches = (int)$b['completed_matches'];
+            $progress = $totalMatches > 0 ? round(($completedMatches / $totalMatches) * 100, 1) : 0;
+            
+            $bracketsData[] = [
+                'id' => $b['id'],
+                'bracket_type' => $b['bracket_type'],
+                'format' => $b['bracket_format'],
+                'division' => $b['division'],
+                'status' => $b['status'],
+                'entry_count' => (int)$b['entry_count'],
+                'total_matches' => $totalMatches,
+                'completed_matches' => $completedMatches,
+                'progress_percentage' => $progress
+            ];
+        }
+        
+        // Calculate summary statistics
+        $totalRounds = count($roundsData);
+        $completedRounds = count(array_filter($roundsData, fn($r) => $r['status'] === 'Completed'));
+        $totalBrackets = count($bracketsData);
+        $completedBrackets = count(array_filter($bracketsData, fn($b) => $b['status'] === 'COMPLETED'));
+        
+        $totalScorecards = array_sum(array_column($roundsData, 'total_scorecards'));
+        $completedScorecards = array_sum(array_column($roundsData, 'completed_scorecards'));
+        
+        // Count matches from brackets
+        $totalMatches = array_sum(array_column($bracketsData, 'total_matches'));
+        $completedMatches = array_sum(array_column($bracketsData, 'completed_matches'));
+        
+        // Calculate overall progress (weighted average of rounds and brackets)
+        $roundProgress = $totalRounds > 0 ? ($completedRounds / $totalRounds) * 100 : 0;
+        $bracketProgress = $totalBrackets > 0 ? ($completedBrackets / $totalBrackets) * 100 : 0;
+        $overallProgress = $totalRounds + $totalBrackets > 0 
+            ? round((($completedRounds + $completedBrackets) / ($totalRounds + $totalBrackets)) * 100, 1)
+            : 0;
+        
+        // Count unique archers across all rounds
+        $archersStmt = $pdo->prepare('
+            SELECT COUNT(DISTINCT ra.archer_id) as total_archers
+            FROM rounds r
+            JOIN round_archers ra ON ra.round_id = r.id
+            WHERE r.event_id = ? AND ra.archer_id IS NOT NULL
+        ');
+        $archersStmt->execute([$eventId]);
+        $archersData = $archersStmt->fetch();
+        $totalArchers = (int)($archersData['total_archers'] ?? 0);
+        
+        json_response([
+            'event' => [
+                'id' => $eventData['id'],
+                'name' => $eventData['name'],
+                'date' => $eventData['date'],
+                'status' => $eventData['status'],
+                'entry_code' => $eventData['entry_code'] ?? null
+            ],
+            'summary' => [
+                'total_rounds' => $totalRounds,
+                'completed_rounds' => $completedRounds,
+                'total_brackets' => $totalBrackets,
+                'completed_brackets' => $completedBrackets,
+                'total_archers' => $totalArchers,
+                'total_scorecards' => $totalScorecards,
+                'completed_scorecards' => $completedScorecards,
+                'total_matches' => $totalMatches,
+                'completed_matches' => $completedMatches,
+                'overall_progress' => $overallProgress
+            ],
+            'rounds' => $roundsData,
+            'brackets' => $bracketsData,
+            'last_updated' => date('c') // ISO 8601 format
+        ], 200);
+    } catch (Exception $e) {
+        error_log("Event overview failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // Upsert a master archer by extId (or derived composite)
 if (preg_match('#^/v1/archers/upsert$#', $route) && $method === 'POST') {
     require_api_key();

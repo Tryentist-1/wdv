@@ -193,6 +193,7 @@
             <td class="px-4 py-3 whitespace-nowrap">${shortDate}</td>
             <td class="px-4 py-3"><span class="px-2 py-1 rounded text-xs font-semibold ${statusClass}">${ev.status}</span></td>
             <td class="px-4 py-3 whitespace-nowrap">
+              <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.viewDashboard('${ev.id}')" title="Event Dashboard">📊 Dashboard</button>
               <button class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors" onclick="coach.showQRCode('${eventData}')" title="QR Code">QR</button>
               <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.viewResults('${ev.id}')" title="View Results">📊 Results</button>
               <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.verifyEvent('${eventData}')" title="Verify Scorecards">🛡️ Validate</button>
@@ -465,6 +466,10 @@
 
   function viewResults(eventId) {
     window.location.href = `results.html?event=${eventId}`;
+  }
+
+  function viewDashboard(eventId) {
+    window.location.href = `event_dashboard.html?event=${eventId}`;
   }
 
   // ==================== Verification Workflow ====================
@@ -2186,6 +2191,7 @@
   
   window.coach = {
     viewResults,
+    viewDashboard,
     addArchersToEvent,
     deleteEvent,
     editEvent,
