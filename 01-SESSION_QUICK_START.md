@@ -173,6 +173,14 @@
   - This will help archers signal when they've finished scoring a round/match
   - Should integrate with existing status system (PEND → COMP transition)
   - UI placement: Consider adding to card view header or footer area
+- **Bracket Generation Bug:** Fix bracket generation from Top 8 ranking results
+  - Issue: Bracket generation endpoint (`POST /v1/brackets/{id}/generate`) does not properly generate brackets from Top 8 archers/teams
+  - Location: `api/index.php` - `/v1/brackets/:id/generate` endpoint
+  - Priority: High (blocks tournament progression from ranking rounds to elimination brackets)
+- **Results Dark Mode Bug:** Fix dark mode display issues in results view
+  - Issue: Dark mode styling not working correctly in results page
+  - Location: `results.html` or related CSS/JS
+  - Priority: Medium (affects user experience in dark mode)
 
 ---
 

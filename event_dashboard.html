@@ -419,6 +419,11 @@
                 <a href="bracket_results.html?bracket=${bracket.id}" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors">
                   📊 View Bracket
                 </a>
+                ${bracket.format === 'ELIMINATION' && (bracket.status === 'OPEN' || bracket.entry_count === 0) ? `
+                <button onclick="generateBracket('${bracket.id}')" id="generate-btn-${bracket.id}" class="px-4 py-2 bg-success hover:bg-success-dark text-white rounded font-semibold text-sm transition-colors">
+                  🎯 Generate from Top 8
+                </button>
+                ` : ''}
                 <a href="coach.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
                   ✏️ Edit
                 </a>
@@ -497,6 +502,32 @@
       if (autoRefreshInterval) {
         clearInterval(autoRefreshInterval);
         autoRefreshInterval = null;
+      }
+    }
+    
+    // Generate bracket from Top 8
+    async function generateBracket(bracketId) {
+      if (!confirm('This will generate bracket entries from Top 8 ranking scores. Continue?')) {
+        return;
+      }
+      
+      const btn = document.getElementById(`generate-btn-${bracketId}`);
+      if (!btn) return;
+      
+      try {
+        btn.disabled = true;
+        btn.textContent = 'Generating...';
+        
+        await apiRequest(`/brackets/${bracketId}/generate`, 'POST');
+        
+        alert('Bracket generated successfully!');
+        
+        // Refresh dashboard data
+        await loadOverview();
+      } catch (err) {
+        alert('Error generating bracket: ' + (err.message || 'Unknown error'));
+        btn.disabled = false;
+        btn.textContent = '🎯 Generate from Top 8';
       }
     }
     
