@@ -943,11 +943,28 @@
         
         // Complete button handler
         document.getElementById('complete-btn')?.addEventListener('click', async () => {
-            if (!confirm('Mark this scorecard as Complete?\n\nThis indicates the scorer has verified the digital card matches the paper card.')) {
+            if (!confirm('Mark this scorecard as Complete?\n\nThis will save all current scores and mark the card as complete.')) {
                 return;
             }
             
             try {
+                // First, save the scores (like Verify button does)
+                console.log('[complete-btn] Saving scores:', currentScorecard.scores);
+                
+                const saveRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/scores`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scores: currentScorecard.scores
+                    })
+                });
+                
+                if (!saveRes.ok) {
+                    const errorData = await saveRes.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `Failed to save scores: ${saveRes.status}`);
+                }
+                
+                // Then set status to COMP
                 const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/status`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
@@ -962,10 +979,10 @@
                 }
                 
                 await loadScorecard();
-                alert('✓ Scorecard marked as Complete.');
+                alert('✓ Scores saved and scorecard marked as Complete.');
             } catch (error) {
                 console.error('[complete] Error:', error);
-                alert('Failed to mark scorecard as complete: ' + error.message);
+                alert('Failed to save and mark scorecard as complete: ' + error.message);
             }
         });
         
@@ -1188,34 +1205,6 @@
             } catch (error) {
                 console.error('[lock] Error:', error);
                 alert('Failed to save and verify scorecard: ' + error.message);
-            }
-        });
-        
-        // Complete button handler
-        document.getElementById('complete-btn')?.addEventListener('click', async () => {
-            if (!confirm('Mark this scorecard as Complete?\n\nThis indicates the scorer has verified the digital card matches the paper card.')) {
-                return;
-            }
-            
-            try {
-                const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/status`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        cardStatus: 'COMP'
-                    })
-                });
-                
-                if (!res.ok) {
-                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
-                    throw new Error(errorData.error || `Failed to set status to COMP: ${res.status}`);
-                }
-                
-                await loadScorecard();
-                alert('✓ Scorecard marked as Complete.');
-            } catch (error) {
-                console.error('[complete] Error:', error);
-                alert('Failed to mark scorecard as complete: ' + error.message);
             }
         });
         
