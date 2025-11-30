@@ -509,6 +509,13 @@ Add to the top of each document:
 
 ## Version History
 
+- **v1.1** (December 2025) - Status Display Standardization
+  - Fixed all status displays to use short codes (PEND/COMP/VER/VOID)
+  - Removed invalid "LOCK" status from all modules
+  - Standardized status logic across archer_history.html, results.html, index.html, scorecard_editor.html
+  - Fixed cardStatus passing to ScorecardView in all modules
+  - Ensured status consistency between list views and card views
+
 - **v1.0** (December 2025) - Initial authoritative document
   - Consolidated status workflows from multiple documents
   - Added ScorecardEditor workflow
