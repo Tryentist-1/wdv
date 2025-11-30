@@ -146,7 +146,10 @@
                             🔓 Unlock
                         </button>
                         <button id="lock-btn" class="hidden px-4 py-2 bg-success text-white rounded hover:bg-success-dark transition font-semibold min-h-[44px]">
-                            🔒 Lock & Save
+                            ✓ Verify
+                        </button>
+                        <button id="complete-btn" class="hidden px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition font-semibold min-h-[44px]">
+                            ✓ Complete
                         </button>
                         <button id="void-btn" class="px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark transition font-semibold min-h-[44px]">
                             ✗ Void
@@ -225,14 +228,27 @@
                 <!-- Lock Option (shown when unlocked) -->
                 <div id="lock-option" class="hidden">
                     <div class="bg-success/10 border border-success rounded-lg p-4">
-                        <h4 class="font-semibold text-success-dark dark:text-success mb-2">🔒 Lock & Save</h4>
+                        <h4 class="font-semibold text-success-dark dark:text-success mb-2">✓ Verify</h4>
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                            Lock this scorecard and save all changes. This will verify the scorecard with updated scores.
+                            Verify this scorecard and save all changes. This will lock the scorecard and mark it as verified.
                         </p>
                         <input type="text" id="modal-edit-reason" placeholder="Reason for edit (required)" 
                                class="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
                         <button id="modal-lock-btn" class="w-full px-4 py-2 bg-success text-white rounded hover:bg-success-dark transition font-semibold min-h-[44px]">
-                            Lock & Save Card
+                            Verify Card
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Complete Option (shown when unlocked) -->
+                <div id="complete-option" class="hidden">
+                    <div class="bg-primary/10 border border-primary rounded-lg p-4">
+                        <h4 class="font-semibold text-primary-dark dark:text-primary mb-2">✓ Complete</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            Mark this scorecard as complete. This indicates the scorer has verified the digital card matches the paper card.
+                        </p>
+                        <button id="modal-complete-btn" class="w-full px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition font-semibold min-h-[44px]">
+                            Mark as Complete
                         </button>
                     </div>
                 </div>
@@ -554,10 +570,12 @@
                 if (isLocked) {
                     document.getElementById('unlock-btn').classList.remove('hidden');
                     document.getElementById('lock-btn').classList.add('hidden');
+                    document.getElementById('complete-btn').classList.add('hidden');
                     document.getElementById('edit-reason').classList.add('hidden');
                 } else {
                     document.getElementById('unlock-btn').classList.add('hidden');
                     document.getElementById('lock-btn').classList.remove('hidden');
+                    document.getElementById('complete-btn').classList.remove('hidden');
                     document.getElementById('edit-reason').classList.remove('hidden');
                 }
                 
@@ -916,10 +934,38 @@
                 
                 isLocked = true;
                 await loadScorecard();
-                alert('✓ Scorecard locked and saved.');
+                alert('✓ Scorecard verified and saved.');
             } catch (error) {
                 console.error('[lock] Error:', error);
-                alert('Failed to save and lock scorecard: ' + error.message);
+                alert('Failed to save and verify scorecard: ' + error.message);
+            }
+        });
+        
+        // Complete button handler
+        document.getElementById('complete-btn')?.addEventListener('click', async () => {
+            if (!confirm('Mark this scorecard as Complete?\n\nThis indicates the scorer has verified the digital card matches the paper card.')) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cardStatus: 'COMP'
+                    })
+                });
+                
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `Failed to set status to COMP: ${res.status}`);
+                }
+                
+                await loadScorecard();
+                alert('✓ Scorecard marked as Complete.');
+            } catch (error) {
+                console.error('[complete] Error:', error);
+                alert('Failed to mark scorecard as complete: ' + error.message);
             }
         });
         
@@ -1138,10 +1184,39 @@
                 isLocked = true;
                 closeModifyCardModal();
                 await loadScorecard();
-                alert('✓ Scorecard locked and saved.');
+                alert('✓ Scorecard verified and saved.');
             } catch (error) {
                 console.error('[lock] Error:', error);
                 alert('Failed to save and lock scorecard: ' + error.message);
+            }
+        });
+        
+        // Modal Complete button handler
+        document.getElementById('modal-complete-btn')?.addEventListener('click', async () => {
+            if (!confirm('Mark this scorecard as Complete?\n\nThis indicates the scorer has verified the digital card matches the paper card.')) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cardStatus: 'COMP'
+                    })
+                });
+                
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `Failed to set status to COMP: ${res.status}`);
+                }
+                
+                closeModifyCardModal();
+                await loadScorecard();
+                alert('✓ Scorecard marked as Complete.');
+            } catch (error) {
+                console.error('[complete] Error:', error);
+                alert('Failed to mark scorecard as complete: ' + error.message);
             }
         });
         
