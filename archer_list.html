@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="css/tailwind-compiled.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     <style>
-        /* Archer row styling for list items */
+        /* Legacy archer row styling - kept for backward compatibility */
+        /* TODO: Convert to pure Tailwind classes in renderList() function */
         .archer-select-row {
             display: flex;
             align-items: center;
@@ -51,6 +52,15 @@
             text-align: center;
             cursor: pointer;
         }
+        /* Success feedback animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translate(-50%, 0); }
+            to { opacity: 0; transform: translate(-50%, -10px); }
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
@@ -60,14 +70,70 @@
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Archer List</h1>
         </header>
 
+        <!-- Prominent Banner when "You: Not set" -->
+        <div id="select-yourself-banner" class="hidden px-4 py-4 bg-gradient-to-r from-primary to-primary-dark dark:from-primary dark:to-primary-dark text-white shadow-lg">
+            <div class="flex items-center gap-3">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-user-circle text-3xl"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-lg mb-1">Select Yourself to Get Started</h3>
+                    <p class="text-sm text-white/90">Tap your avatar or name in the list below to set yourself as the archer using this device.</p>
+                </div>
+                <button id="dismiss-banner-btn" class="flex-shrink-0 px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Dismiss">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
         <div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-2 transition-colors duration-200">
-            <input class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary transition-colors" type="text" id="search-input" placeholder="Search archers...">
+            <div class="flex-1 relative">
+                <input class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary transition-colors" type="text" id="search-input" placeholder="Find an Archer">
+                <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors w-6 h-6 flex items-center justify-center hidden z-10" title="Clear search">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
             <button id="add-archer-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]"><i class="fas fa-plus"></i> Add</button>
         </div>
         
-        <div id="self-summary-container" class="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 transition-colors duration-200">
-            <span id="self-summary">You: Not set</span>
-            <button id="clear-self-btn" class="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors hidden">Clear</button>
+        <!-- Enhanced Summary Bar -->
+        <div id="self-summary-container" class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
+            <div id="self-summary-not-set" class="hidden">
+                <div class="flex items-center gap-3">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            <i class="fas fa-user text-gray-400 dark:text-gray-500 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300">You: Not set</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Select yourself from the list below</p>
+                    </div>
+                    <button id="select-yourself-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold text-sm transition-colors min-h-[44px] flex items-center gap-2">
+                        <i class="fas fa-user-check"></i>
+                        <span class="hidden sm:inline">Select Yourself</span>
+                        <span class="sm:hidden">Select</span>
+                    </button>
+                </div>
+            </div>
+            <div id="self-summary-set" class="hidden">
+                <div class="flex items-center gap-3">
+                    <div id="self-avatar-container" class="flex-shrink-0">
+                        <!-- Avatar will be injected here -->
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <p id="self-name-text" class="text-base font-semibold text-gray-900 dark:text-white"></p>
+                            <span class="px-2 py-0.5 bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary-light text-xs font-semibold rounded-full uppercase tracking-wide">You</span>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Tap your avatar in the list to change</p>
+                    </div>
+                    <button id="clear-self-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">
+                        <i class="fas fa-times mr-1"></i>
+                        <span class="hidden sm:inline">Clear</span>
+                    </button>
+                </div>
+            </div>
         </div>
         
         <div class="px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-2 flex-wrap transition-colors duration-200">
@@ -80,20 +146,23 @@
             </select>
         </div>
 
-        <div id="sync-status" class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 transition-colors duration-200"></div>
-
-        <div id="archer-list-container" class="flex-1 px-2 pb-[30px] overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
+        <div id="archer-list-container" class="flex-1 px-2 pb-[80px] overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
             <!-- Archer list will be rendered here -->
         </div>
 
-        <footer class="fixed bottom-0 left-0 right-0 h-[30px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10">
-            <a href="index.html" class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                <i class="fas fa-home text-lg"></i>
-            </a>
-            <div class="flex-1"></div>
-            <button id="load-from-mysql-btn" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">
-                <i class="fas fa-sync-alt mr-2"></i>Refresh
-            </button>
+        <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-10">
+            <div class="px-4 py-2 text-xs text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                <div id="sync-status"></div>
+            </div>
+            <div class="flex items-center px-4 py-2">
+                <a href="index.html" class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    <i class="fas fa-home text-lg"></i>
+                </a>
+                <div class="flex-1"></div>
+                <button id="load-from-mysql-btn" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">
+                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                </button>
+            </div>
         </footer>
 
     </div>
@@ -118,6 +187,30 @@
             <form id="archer-form" class="p-6">
                 <!-- Form content will be injected by JS -->
             </form>
+        </div>
+    </div>
+
+    <!-- Warning Modal for Changing "You" Setting -->
+    <div id="change-self-warning-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[70] hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-colors duration-200">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+                    Change "Who am I"?
+                </h3>
+            </div>
+            <div class="px-6 py-4">
+                <p class="text-gray-700 dark:text-gray-300 mb-4">
+                    You already have yourself set as <strong id="current-self-name" class="text-gray-900 dark:text-white"></strong>.
+                </p>
+                <p class="text-gray-700 dark:text-gray-300 mb-4">
+                    Are you sure you want to change this to a different archer?
+                </p>
+            </div>
+            <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <button id="cancel-change-self-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+                <button id="confirm-change-self-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Yes, Change It</button>
+            </div>
         </div>
     </div>
 
@@ -159,7 +252,6 @@
             const loadFromMySQLBtn = document.getElementById('load-from-mysql-btn');
             const sortByNameBtn = document.getElementById('sort-by-name-btn');
             const sortByLevelBtn = document.getElementById('sort-by-level-btn');
-            const selfSummaryEl = document.getElementById('self-summary');
             const clearSelfBtn = document.getElementById('clear-self-btn');
 
             let editingIndex = null;
@@ -230,14 +322,52 @@
 
             function refreshSelfSummary(stateOverride) {
                 const state = stateOverride || getRosterState();
-                if (!selfSummaryEl) return;
+                const banner = document.getElementById('select-yourself-banner');
+                const summaryNotSet = document.getElementById('self-summary-not-set');
+                const summarySet = document.getElementById('self-summary-set');
+                const selfNameText = document.getElementById('self-name-text');
+                const selfAvatarContainer = document.getElementById('self-avatar-container');
+                
                 if (state.selfArcher) {
-                    const nickname = state.selfArcher.nickname ? ` (${state.selfArcher.nickname})` : '';
-                    selfSummaryEl.textContent = `You: ${state.selfArcher.first} ${state.selfArcher.last}${nickname}`;
-                    clearSelfBtn.classList.remove('hidden');
+                    // Hide banner, show "set" summary
+                    if (banner) banner.classList.add('hidden');
+                    if (summaryNotSet) summaryNotSet.classList.add('hidden');
+                    if (summarySet) summarySet.classList.remove('hidden');
+                    
+                    // Update name
+                    const nickname = state.selfArcher.nickname ? ` "${state.selfArcher.nickname}"` : '';
+                    if (selfNameText) {
+                        selfNameText.textContent = `${state.selfArcher.first} ${state.selfArcher.last}${nickname}`;
+                    }
+                    
+                    // Update avatar
+                    if (selfAvatarContainer) {
+                        selfAvatarContainer.innerHTML = '';
+                        const avatarDiv = document.createElement('div');
+                        avatarDiv.className = 'w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center';
+                        
+                        if (state.selfArcher.photoUrl) {
+                            const img = document.createElement('img');
+                            img.src = state.selfArcher.photoUrl;
+                            img.alt = `${state.selfArcher.first} ${state.selfArcher.last}`;
+                            img.className = 'w-full h-full object-cover';
+                            avatarDiv.appendChild(img);
+                        } else {
+                            const initials = `${(state.selfArcher.first || '?').charAt(0)}${(state.selfArcher.last || '').charAt(0)}`.toUpperCase();
+                            avatarDiv.innerHTML = `<span class="text-gray-600 dark:text-gray-300 font-bold text-sm">${initials}</span>`;
+                        }
+                        selfAvatarContainer.appendChild(avatarDiv);
+                    }
                 } else {
-                    selfSummaryEl.textContent = 'You: Not set';
-                    clearSelfBtn.classList.add('hidden');
+                    // Show banner, show "not set" summary
+                    const bannerDismissed = localStorage.getItem('select-yourself-banner-dismissed') === 'true';
+                    if (banner && !bannerDismissed) {
+                        banner.classList.remove('hidden');
+                    } else if (banner) {
+                        banner.classList.add('hidden');
+                    }
+                    if (summaryNotSet) summaryNotSet.classList.remove('hidden');
+                    if (summarySet) summarySet.classList.add('hidden');
                 }
             }
 
@@ -304,10 +434,13 @@
 
                     const isSelf = !!selfExtId && archer.extId === selfExtId;
                     const isFriend = friendSet.has(archer.extId);
+                    
+                    // Only show plus badges if NO self is selected at all
+                    const showPlusBadge = !selfExtId && !isSelf;
 
                     // Avatar OR Icon (show avatar if photo exists, otherwise show icon)
                     const avatarOrIcon = document.createElement('div');
-                    avatarOrIcon.className = 'w-10 h-10 rounded-full overflow-hidden flex items-center justify-center mr-3 flex-shrink-0';
+                    avatarOrIcon.className = 'relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center mr-3 flex-shrink-0';
                     
                     if (archer.photoUrl) {
                         // Show photo avatar
@@ -318,43 +451,63 @@
                         avatarImg.className = 'w-full h-full object-cover';
                         avatarOrIcon.appendChild(avatarImg);
                         
+                        // Add visual cue badge ONLY when no self is selected at all
+                        if (showPlusBadge) {
+                            const badge = document.createElement('div');
+                            badge.className = 'absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-gray-800 z-10';
+                            badge.innerHTML = '<i class="fas fa-plus text-white text-xs"></i>';
+                            badge.title = 'Tap to set as me';
+                            avatarOrIcon.appendChild(badge);
+                        }
+                        
                         // Make it clickable to set as "me"
                         avatarOrIcon.style.cursor = 'pointer';
                         avatarOrIcon.title = isSelf ? 'This is you (tap to clear)' : 'Tap to set as me';
+                        avatarOrIcon.classList.add('hover:ring-2', 'hover:ring-primary', 'hover:ring-offset-2', 'transition-all');
                         avatarOrIcon.onclick = async (e) => {
                             e.stopPropagation();
-                    if (isSelf) {
+                            if (isSelf) {
                                 if (confirm('Clear "Who am I"?')) {
                                     if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
                                     renderList();
                                 }
                             } else {
-                                await ArcherModule.setSelf(archer.extId);
-                                renderList();
+                                await handleSetSelf(archer);
                             }
                         };
                     } else {
                         // Show person icon
                         if (isSelf) {
-                            avatarOrIcon.innerHTML = '<i class="fas fa-user-check" style="color: #0d6efd; font-size: 1.5rem;"></i>';
+                            avatarOrIcon.innerHTML = '<i class="fas fa-user-check text-primary dark:text-primary-light" style="font-size: 1.5rem;"></i>';
                             avatarOrIcon.title = 'This is you (tap to clear)';
                             avatarOrIcon.style.cursor = 'pointer';
+                            avatarOrIcon.classList.add('hover:ring-2', 'hover:ring-primary', 'hover:ring-offset-2', 'transition-all');
                             avatarOrIcon.onclick = (e) => {
-                            e.stopPropagation();
-                            if (confirm('Clear "Who am I"?')) {
-                                if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
-                                renderList();
-                            }
-                        };
-                    } else {
-                            avatarOrIcon.innerHTML = '<i class="far fa-user" style="color: #bbb; font-size: 1.5rem;"></i>';
+                                e.stopPropagation();
+                                if (confirm('Clear "Who am I"?')) {
+                                    if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
+                                    renderList();
+                                }
+                            };
+                        } else {
+                            avatarOrIcon.innerHTML = '<i class="far fa-user text-gray-400 dark:text-gray-500" style="font-size: 1.5rem;"></i>';
                             avatarOrIcon.title = 'Tap to set as me';
                             avatarOrIcon.style.cursor = 'pointer';
+                            avatarOrIcon.classList.add('hover:ring-2', 'hover:ring-primary', 'hover:ring-offset-2', 'transition-all');
+                            
+                            // Add visual cue badge ONLY when no self is selected at all
+                            if (showPlusBadge) {
+                                const badge = document.createElement('div');
+                                badge.className = 'absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-gray-800 z-10';
+                                badge.innerHTML = '<i class="fas fa-plus text-white text-xs"></i>';
+                                badge.title = 'Tap to set as me';
+                                avatarOrIcon.appendChild(badge);
+                            }
+                            
                             avatarOrIcon.onclick = async (e) => {
-                            e.stopPropagation();
-                            await ArcherModule.setSelf(archer.extId);
-                            renderList();
-                        };
+                                e.stopPropagation();
+                                await handleSetSelf(archer);
+                            };
                         }
                     }
 
@@ -1175,6 +1328,103 @@
 
             addArcherBtn.onclick = () => openModal();
 
+            // Handle setting self with success feedback and warning modal
+            let pendingSelfChange = null;
+            
+            async function handleSetSelf(archer) {
+                // Check if there's already a self selected
+                const currentState = getRosterState();
+                if (currentState.selfArcher && currentState.selfArcher.extId !== archer.extId) {
+                    // Show warning modal
+                    pendingSelfChange = archer;
+                    const modal = document.getElementById('change-self-warning-modal');
+                    const currentNameEl = document.getElementById('current-self-name');
+                    if (modal && currentNameEl) {
+                        currentNameEl.textContent = `${currentState.selfArcher.first} ${currentState.selfArcher.last}`;
+                        modal.classList.remove('hidden');
+                    }
+                    return;
+                }
+                
+                // No existing self or same archer, proceed directly
+                await confirmSetSelf(archer);
+            }
+            
+            async function confirmSetSelf(archer) {
+                await ArcherModule.setSelf(archer.extId);
+                
+                // Show success feedback
+                showSuccessFeedback(archer);
+                
+                // Hide banner if shown
+                const banner = document.getElementById('select-yourself-banner');
+                if (banner) banner.classList.add('hidden');
+                
+                // Force refresh state and re-render to ensure badges are updated
+                const freshState = getRosterState();
+                refreshSelfSummary(freshState);
+                renderList(freshState);
+                
+                // Clear pending change
+                pendingSelfChange = null;
+            }
+            
+            // Show success feedback when user sets themselves
+            function showSuccessFeedback(archer) {
+                // Create temporary success message
+                const successMsg = document.createElement('div');
+                successMsg.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 bg-success text-white rounded-lg shadow-xl flex items-center gap-3 animate-bounce';
+                successMsg.style.animation = 'fadeIn 0.3s ease-in';
+                successMsg.innerHTML = `
+                    <i class="fas fa-check-circle text-2xl"></i>
+                    <div>
+                        <p class="font-semibold">You've selected yourself!</p>
+                        <p class="text-sm text-white/90">${archer.first} ${archer.last}</p>
+                    </div>
+                `;
+                document.body.appendChild(successMsg);
+                
+                // Remove after 3 seconds with fade out
+                setTimeout(() => {
+                    successMsg.style.animation = 'fadeOut 0.3s ease-out';
+                    successMsg.style.opacity = '0';
+                    setTimeout(() => {
+                        if (successMsg.parentNode) {
+                            successMsg.parentNode.removeChild(successMsg);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+            
+            // Banner dismiss handler
+            const dismissBannerBtn = document.getElementById('dismiss-banner-btn');
+            if (dismissBannerBtn) {
+                dismissBannerBtn.onclick = () => {
+                    const banner = document.getElementById('select-yourself-banner');
+                    if (banner) {
+                        banner.classList.add('hidden');
+                        localStorage.setItem('select-yourself-banner-dismissed', 'true');
+                    }
+                };
+            }
+            
+            // Select yourself button handler
+            const selectYourselfBtn = document.getElementById('select-yourself-btn');
+            if (selectYourselfBtn) {
+                selectYourselfBtn.onclick = () => {
+                    // Scroll to first archer in list and highlight
+                    const container = document.getElementById('archer-list-container');
+                    if (container && container.firstChild) {
+                        container.firstChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Add temporary highlight
+                        container.firstChild.classList.add('ring-4', 'ring-primary', 'ring-offset-2');
+                        setTimeout(() => {
+                            container.firstChild.classList.remove('ring-4', 'ring-primary', 'ring-offset-2');
+                        }, 2000);
+                    }
+                };
+            }
+            
             clearSelfBtn.onclick = () => {
                 const current = (typeof ArcherModule.getSelfExtId === 'function') ? ArcherModule.getSelfExtId() : '';
                 if (!current) {
@@ -1183,6 +1433,8 @@
                 }
                 if (confirm('Clear "Who am I" for this device?')) {
                     if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
+                    // Reset banner dismissal when clearing
+                    localStorage.removeItem('select-yourself-banner-dismissed');
                     renderList();
                 }
             };
@@ -1259,7 +1511,60 @@
                 closeModal();
             };
 
-            searchInput.oninput = () => renderList();
+            // Search input handlers
+            const clearSearchBtn = document.getElementById('clear-search-btn');
+            
+            searchInput.oninput = () => {
+                renderList();
+                // Show/hide clear button based on input
+                if (clearSearchBtn) {
+                    if (searchInput.value.trim()) {
+                        clearSearchBtn.classList.remove('hidden');
+                    } else {
+                        clearSearchBtn.classList.add('hidden');
+                    }
+                }
+            };
+            
+            if (clearSearchBtn) {
+                clearSearchBtn.onclick = () => {
+                    searchInput.value = '';
+                    clearSearchBtn.classList.add('hidden');
+                    renderList();
+                    searchInput.focus();
+                };
+            }
+            
+            // Warning modal handlers
+            const changeSelfModal = document.getElementById('change-self-warning-modal');
+            const cancelChangeSelfBtn = document.getElementById('cancel-change-self-btn');
+            const confirmChangeSelfBtn = document.getElementById('confirm-change-self-btn');
+            
+            if (cancelChangeSelfBtn) {
+                cancelChangeSelfBtn.onclick = () => {
+                    if (changeSelfModal) changeSelfModal.classList.add('hidden');
+                    pendingSelfChange = null;
+                };
+            }
+            
+            if (confirmChangeSelfBtn) {
+                confirmChangeSelfBtn.onclick = async () => {
+                    if (changeSelfModal) changeSelfModal.classList.add('hidden');
+                    if (pendingSelfChange) {
+                        await confirmSetSelf(pendingSelfChange);
+                    }
+                };
+            }
+            
+            // Close modal on backdrop click
+            if (changeSelfModal) {
+                changeSelfModal.onclick = (e) => {
+                    if (e.target === changeSelfModal) {
+                        changeSelfModal.classList.add('hidden');
+                        pendingSelfChange = null;
+                    }
+                };
+            }
             statusFilter.onchange = () => renderList();
 
             // Load/Refresh from MySQL

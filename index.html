@@ -265,7 +265,23 @@
           title="Update your archer profile and details">
           <i class="fas fa-user-circle mr-2"></i>Archer Details
         </a>
+        <!-- Arrow pointing up to Archer Details button (shown when no self selected) -->
         <div id="welcome-self" class="text-center"></div>
+        <!-- Prominent banner when user hasn't selected themselves -->
+        <div id="select-yourself-prompt" class="hidden px-4 py-4 bg-gradient-to-r from-primary to-primary-dark dark:from-primary dark:to-primary-dark text-white rounded-lg shadow-lg">
+          <div class="flex items-start gap-3">
+            <div class="flex-shrink-0 pt-1">
+              <i class="fas fa-user-circle text-2xl"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold text-lg mb-1">Select Yourself First</h3>
+              <p class="text-sm text-white/90">Before you can start scoring, you need to select your archer profile from the list.</p>
+            </div>
+            <button id="dismiss-select-prompt" class="flex-shrink-0 px-2 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Dismiss">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Open Assignments Section -->
@@ -752,6 +768,7 @@
 
     function updateWelcomeMessage() {
       const welcomeEl = document.getElementById('welcome-self');
+      const selectPrompt = document.getElementById('select-yourself-prompt');
       if (!welcomeEl) return;
       try {
         let archer = null;
@@ -765,7 +782,27 @@
         if (!archer) {
           const extId = localStorage.getItem('archerSelfExtId') || '';
           if (!extId) {
-            welcomeEl.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 italic animate-pulse">👆 Tap above to update your details</div>`;
+          // Show arrow pointing UP to Archer Details button (above the banner)
+          const archerDetailsBtn = document.getElementById('archer-details-btn');
+          if (archerDetailsBtn) {
+            welcomeEl.innerHTML = `
+              <div class="flex flex-col items-center justify-center gap-1 text-white py-2">
+                <i class="fas fa-angles-up animate-bounce text-3xl"></i>
+                <span class="text-sm font-semibold">Tap "Archer Details" above</span>
+              </div>
+            `;
+          } else {
+            welcomeEl.innerHTML = '';
+          }
+          // Show prominent prompt to select yourself (below the arrow)
+          if (selectPrompt) {
+            const dismissed = localStorage.getItem('select-yourself-prompt-dismissed') === 'true';
+            if (!dismissed) {
+              selectPrompt.classList.remove('hidden');
+            } else {
+              selectPrompt.classList.add('hidden');
+            }
+          }
             return;
           }
           const listRaw = localStorage.getItem('archerList');
@@ -778,6 +815,11 @@
         }
 
         if (archer) {
+          // Hide the select yourself prompt
+          if (selectPrompt) {
+            selectPrompt.classList.add('hidden');
+          }
+          
           const nickname = archer.nickname ? ` "${archer.nickname}"` : '';
           const initials = (archer.first.charAt(0) + archer.last.charAt(0)).toUpperCase();
 
@@ -796,12 +838,49 @@
             </div>
           `;
         } else {
-          welcomeEl.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 italic animate-pulse">👆 Tap above to update your details</div>`;
+          // Show prominent prompt to select yourself
+          if (selectPrompt) {
+            const dismissed = localStorage.getItem('select-yourself-prompt-dismissed') === 'true';
+            if (!dismissed) {
+              selectPrompt.classList.remove('hidden');
+            } else {
+              selectPrompt.classList.add('hidden');
+            }
+          }
+          // Show arrow pointing to Archer Details button
+          const archerDetailsBtn = document.getElementById('archer-details-btn');
+          if (archerDetailsBtn) {
+            welcomeEl.innerHTML = `
+              <div class="relative">
+                <div class="text-sm text-gray-500 dark:text-gray-400 italic animate-pulse mb-2">👆 Select yourself to get started</div>
+                <div class="flex items-center justify-center gap-2 text-primary dark:text-primary-light">
+                  <i class="fas fa-arrow-down animate-bounce text-xl"></i>
+                  <span class="text-sm font-semibold">Tap "Archer Details" above</span>
+                </div>
+              </div>
+            `;
+          } else {
+            welcomeEl.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 italic animate-pulse">👆 Tap above to update your details</div>`;
+          }
         }
       } catch (e) {
         console.warn('Unable to render welcome message:', e);
       }
     }
+    
+    // Handle dismiss button for select yourself prompt
+    document.addEventListener('DOMContentLoaded', () => {
+      const dismissBtn = document.getElementById('dismiss-select-prompt');
+      if (dismissBtn) {
+        dismissBtn.onclick = () => {
+          const prompt = document.getElementById('select-yourself-prompt');
+          if (prompt) {
+            prompt.classList.add('hidden');
+            localStorage.setItem('select-yourself-prompt-dismissed', 'true');
+          }
+        };
+      }
+    });
 
     async function clearAppData() {
       const confirmed = confirm('Reset local app data? This clears cached archers, events, and scoring sessions stored on this device.');
