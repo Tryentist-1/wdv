@@ -716,6 +716,13 @@ Response:
 
 ## 14. Status Workflow & Completion Logic
 
+> **⚠️ Status Workflow Reference:**  
+> For the authoritative status workflow documentation, see:  
+> **[SCORECARD_STATUS_WORKFLOW.md](SCORECARD_STATUS_WORKFLOW.md)**
+> 
+> This section contains historical implementation details.  
+> The master reference should be consulted for current status definitions.
+
 ### 14.1 Scorecard Status Flow
 ```
 Created → Active (first score entered) → Completed (Verify & Submit clicked)

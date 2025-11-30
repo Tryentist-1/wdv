@@ -1,5 +1,12 @@
 # Bale Group Scoring Workflow - Complete Process
 
+> **⚠️ Status Workflow Reference:**  
+> For the authoritative status workflow documentation, see:  
+> **[SCORECARD_STATUS_WORKFLOW.md](SCORECARD_STATUS_WORKFLOW.md)**
+> 
+> This document describes the real-world bale group workflow.  
+> The master reference should be consulted for status definitions and transitions.
+
 **Date:** November 17, 2025  
 **Status:** Critical Reference Document  
 **Audience:** Developers, Coaches, Refs

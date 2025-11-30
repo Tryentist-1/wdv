@@ -62,6 +62,13 @@ Before the event, coaches submit their rosters. This populates the system's "Mas
 
 ## Phase 3: Running the Ranking Round (Live Event)
 
+> **⚠️ Status Workflow Reference:**  
+> For the authoritative status workflow documentation, see:  
+> **[SCORECARD_STATUS_WORKFLOW.md](SCORECARD_STATUS_WORKFLOW.md)**
+> 
+> This document contains an older design with different status values.  
+> The master reference should be consulted for current status definitions.
+
 This is the first competition phase.
 
 ### Data Model: `Ranking_Scorecard`
@@ -72,7 +79,7 @@ This is the first competition phase.
 * `Total_Score`: (Number, calculated)
 * `Total_10s`: (Number, calculated, includes X's)
 * `Total_Xs`: (Number, calculated)
-* `Status`: (String: `Pending`, `Archer_Verified`, `Coach_Verified`, `Final`)
+* `Status`: (String: `Pending`, `Archer_Verified`, `Coach_Verified`, `Final`) ⚠️ **Note: This is an older design. Current system uses: `PENDING`, `COMP`, `VER`, `VOID`**
 * `Paper_Card_Match_Confirmed`: (Boolean, default `false`)
 
 ### Scoring & Verification Flow (Digital + Paper)

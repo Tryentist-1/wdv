@@ -1,5 +1,12 @@
 ## Sprint: Verify Scorecards (Branch: `feature/verify-scorecards`)
 
+> **⚠️ Status Workflow Reference:**  
+> For the authoritative status workflow documentation, see:  
+> **[SCORECARD_STATUS_WORKFLOW.md](SCORECARD_STATUS_WORKFLOW.md)**
+> 
+> This document contains sprint-specific implementation details.  
+> The master reference should be consulted for current status definitions.
+
 ### Overview
 Goal: provide coaches/refs a structured workflow to verify paper scorecards against digital records, lock cards, and mark rounds as complete or voided. Work builds on the new data hygiene tooling and keeps production results clean.
 
