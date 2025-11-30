@@ -560,12 +560,21 @@ git push origin feature/your-feature
 
 ### Deployment
 
-```bash
-# Deploy to production (requires FTP credentials)
-./DeployFTP.sh
+**IMPORTANT FOR LLMs:** When asked to "promote to prod", "deploy to production", or "FTP deploy", use the deployment script:
 
-# Purge Cloudflare cache
-./test_cloudflare.sh
+```bash
+# Deploy to production via FTP (requires FTP credentials)
+# Primary deployment script location: scripts/deploy/DeployFTP.sh
+./scripts/deploy/DeployFTP.sh
+
+# Available flags:
+#   --dry-run          Preview changes without deploying
+#   --reset            Reset remote files before deployment
+#   --no-local-backup  Skip local backup creation
+#   --remote-backup    Create backup on remote server
+
+# Purge Cloudflare cache after deployment
+./tests/scripts/test_cloudflare.sh
 ```
 
 ### Database

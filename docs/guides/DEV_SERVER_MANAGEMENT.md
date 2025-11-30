@@ -8,7 +8,7 @@ This directory contains scripts to easily manage your local development servers 
 
 Simply run:
 ```bash
-./start-dev.sh
+./scripts/dev/start-dev.sh
 ```
 
 This will:
@@ -26,7 +26,7 @@ If you want the dev servers to start automatically every time you log in:
 
 ### Install Auto-Start
 ```bash
-./setup-autostart.sh install
+./scripts/dev/setup-autostart.sh install
 ```
 
 This creates a macOS LaunchAgent that will:
@@ -35,12 +35,12 @@ This creates a macOS LaunchAgent that will:
 
 ### Check Status
 ```bash
-./setup-autostart.sh status
+./scripts/dev/setup-autostart.sh status
 ```
 
 ### Remove Auto-Start
 ```bash
-./setup-autostart.sh uninstall
+./scripts/dev/setup-autostart.sh uninstall
 ```
 
 ---
@@ -60,7 +60,7 @@ This creates a macOS LaunchAgent that will:
 ### 2. PHP Development Server
 - **Port:** 8001
 - **Managed by:** npm script (`npm run serve`)
-- **Auto-start:** Optional (via `setup-autostart.sh install`)
+- **Auto-start:** Optional (via `scripts/dev/setup-autostart.sh install`)
 
 ---
 
@@ -109,11 +109,11 @@ kill -9 <PID>
 ### Auto-start not working
 ```bash
 # Check status
-./setup-autostart.sh status
+./scripts/dev/setup-autostart.sh status
 
 # Reinstall
-./setup-autostart.sh uninstall
-./setup-autostart.sh install
+./scripts/dev/setup-autostart.sh uninstall
+./scripts/dev/setup-autostart.sh install
 
 # Check LaunchAgent logs
 cat dev-server.log
@@ -157,6 +157,6 @@ kill <PID>
 
 ## ⚙️ Configuration Files
 
-- `start-dev.sh` - Main startup script
-- `setup-autostart.sh` - Auto-start configuration manager
+- `scripts/dev/start-dev.sh` - Main startup script
+- `scripts/dev/setup-autostart.sh` - Auto-start configuration manager
 - `~/Library/LaunchAgents/com.wdv.devserver.plist` - LaunchAgent config (created by setup-autostart.sh)

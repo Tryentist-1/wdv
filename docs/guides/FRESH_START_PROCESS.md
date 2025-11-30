@@ -23,7 +23,7 @@ We have a lot of bad and orphaned data in dev that makes it difficult to:
 
 ```bash
 # Run the cleanup script
-./cleanup-dev-db.sh
+./scripts/dev/cleanup-dev-db.sh
 
 # Follow the prompts:
 # 1. Review preview of data to be deleted

@@ -108,7 +108,7 @@ npm install
 npm run build:css
 
 # 4. Run setup script
-./setup_local.sh
+./scripts/dev/setup_local.sh
 
 # 5. Start PHP server
 npm run serve
@@ -286,13 +286,17 @@ cat tests/manual_sanity_check.md
 
 ## 🚢 Deployment
 
-### Production Deployment
+### Production Deployment (FTP)
+
+**Primary Deployment Script:** `scripts/deploy/DeployFTP.sh`
+
+This is the main script for deploying to production via FTP. When asked to "promote to prod" or "deploy to production", use this script.
 ```bash
 # 1. Test locally
 npm run test:e2e
 
 # 2. Deploy to production
-./DeployFTP.sh
+./scripts/deploy/DeployFTP.sh
 
 # 3. Purge Cloudflare cache
 ./test_cloudflare.sh

@@ -30,10 +30,10 @@
     "test:api:all": "jest tests/api --verbose",
     "test:api:coverage": "jest tests/api --coverage --verbose",
     "serve": "php -S localhost:8001",
-    "deploy": "bash ./DeployFTP.sh",
-    "deploy:dry": "bash ./DeployFTP.sh --dry-run",
-    "deploy:reset": "bash ./DeployFTP.sh --reset",
-    "deploy:fast": "bash ./DeployFTP.sh --no-local-backup"
+    "deploy": "bash ./scripts/deploy/DeployFTP.sh",
+    "deploy:dry": "bash ./scripts/deploy/DeployFTP.sh --dry-run",
+    "deploy:reset": "bash ./scripts/deploy/DeployFTP.sh --reset",
+    "deploy:fast": "bash ./scripts/deploy/DeployFTP.sh --no-local-backup"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",

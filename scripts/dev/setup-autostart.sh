@@ -44,7 +44,7 @@ install_autostart() {
     
     <key>ProgramArguments</key>
     <array>
-        <string>${SCRIPT_DIR}/start-dev.sh</string>
+        <string>${SCRIPT_DIR}/scripts/dev/start-dev.sh</string>
     </array>
     
     <key>RunAtLoad</key>
