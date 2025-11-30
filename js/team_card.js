@@ -464,14 +464,12 @@ document.addEventListener('DOMContentLoaded', () => {
             tableHTML += `<tr id="end-${i+1}" class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
                 <td class="px-1 py-0.5 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">End ${i+1}</td>
                 ${state.scores.t1[i].map((s, a) => {
-                    const scoreColor = getScoreColor(s);
-                    const colorClass = scoreColor ? ` ${scoreColor}` : '';
-                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600${colorClass}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t1" data-end="${i}" data-arrow="${a}" value="${s || ''}" readonly></td>`;
+                    const scoreColor = typeof getScoreColor === 'function' ? getScoreColor(s) : '';
+                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${scoreColor}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t1" data-end="${i}" data-arrow="${a}" value="${s || ''}" readonly></td>`;
                 }).join('')}
                 ${state.scores.t2[i].map((s, a) => {
-                    const scoreColor = getScoreColor(s);
-                    const colorClass = scoreColor ? ` ${scoreColor}` : '';
-                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600${colorClass}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t2" data-end="${i}" data-arrow="${a}" value="${s || ''}" readonly></td>`;
+                    const scoreColor = typeof getScoreColor === 'function' ? getScoreColor(s) : '';
+                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${scoreColor}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t2" data-end="${i}" data-arrow="${a}" value="${s || ''}" readonly></td>`;
                 }).join('')}
                 <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-e${i+1}-total"></td>
                 <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-e${i+1}-total"></td>
@@ -494,14 +492,12 @@ document.addEventListener('DOMContentLoaded', () => {
         tableHTML += `<tr id="shoot-off" class="hidden border-b border-gray-200 dark:border-gray-600">
                 <td class="px-1 py-0.5 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">S.O.</td>
                 ${state.scores.so.t1.map((s,a) => {
-                    const scoreColor = getScoreColor(s);
-                    const colorClass = scoreColor ? ` ${scoreColor}` : '';
-                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600${colorClass}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t1" data-end="so" data-arrow="${a}" value="${s || ''}" readonly></td>`;
+                    const scoreColor = typeof getScoreColor === 'function' ? getScoreColor(s) : '';
+                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${scoreColor}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t1" data-end="so" data-arrow="${a}" value="${s || ''}" readonly></td>`;
                 }).join('')}<td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
                 ${state.scores.so.t2.map((s,a) => {
-                    const scoreColor = getScoreColor(s);
-                    const colorClass = scoreColor ? ` ${scoreColor}` : '';
-                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600${colorClass}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t2" data-end="so" data-arrow="${a}" value="${s || ''}" readonly></td>`;
+                    const scoreColor = typeof getScoreColor === 'function' ? getScoreColor(s) : '';
+                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${scoreColor}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t2" data-end="so" data-arrow="${a}" value="${s || ''}" readonly></td>`;
                 }).join('')}<td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
                 <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-so-total"></td>
                 <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-so-total"></td>
@@ -637,15 +633,15 @@ document.addEventListener('DOMContentLoaded', () => {
             state.scores[team][parseInt(end, 10)][parseInt(arrow, 10)] = input.value;
         }
 
-        // Update score color classes on the parent td element (preserve other Tailwind classes)
-        if (input && input.parentElement) {
-            const td = input.parentElement;
+        // Update score color classes on the cell (td element) - matching cf3a8cb approach
+        if (input && input.parentElement && typeof getScoreColor === 'function') {
+            const cell = input.parentElement;
             // Remove old score color classes
-            td.classList.remove('bg-score-gold', 'bg-score-red', 'bg-score-blue', 'bg-score-black', 'bg-score-white', 'text-black', 'text-white', 'dark:text-black');
+            cell.classList.remove('bg-score-gold', 'bg-score-red', 'bg-score-blue', 'bg-score-black', 'bg-score-white', 'text-black', 'text-white', 'dark:text-black');
             // Add new score color classes
             const scoreClasses = getScoreColor(input.value).split(' ');
             scoreClasses.forEach(cls => {
-                if (cls) td.classList.add(cls);
+                if (cls) cell.classList.add(cls);
             });
         }
         updateScoreHighlightsAndTotals();
@@ -1162,6 +1158,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.shootOffWinner = e.target.dataset.winner;
                 updateScoreHighlightsAndTotals();
                 saveData();
+            }
+        });
+        
+        // Use event delegation for score input changes (works with dynamically generated table)
+        scoreTableContainer.addEventListener('input', (e) => {
+            if (e.target.matches('input.score-input')) {
+                handleScoreInput(e);
+            }
+        });
+        
+        scoreTableContainer.addEventListener('change', (e) => {
+            if (e.target.matches('input.score-input')) {
+                handleScoreInput(e);
             }
         });
     }
