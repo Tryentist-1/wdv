@@ -8,6 +8,7 @@
 ## The Problem
 
 We have a lot of bad and orphaned data in dev that makes it difficult to:
+
 - Test resume round functionality reliably
 - Identify real bugs vs data issues
 - Verify the process is working correctly
@@ -46,6 +47,7 @@ source api/sql/cleanup_dev_database_fresh_start.sql
 ## What Gets Deleted vs Preserved
 
 ### ✅ Deleted (All Competition Data)
+
 - Events
 - Rounds
 - Round Archers (scorecards)
@@ -55,6 +57,7 @@ source api/sql/cleanup_dev_database_fresh_start.sql
 - Brackets & Bracket Entries
 
 ### ✅ Preserved (Master Data)
+
 - **Archers** - Complete master list with all archer profiles
 
 ---
@@ -64,6 +67,7 @@ source api/sql/cleanup_dev_database_fresh_start.sql
 ### Step 1: Create Fresh Test Event
 
 1. **Open coach console:**
+
    ```
    http://localhost:8001/coach.html
    ```
@@ -106,6 +110,7 @@ source api/sql/cleanup_dev_database_fresh_start.sql
    - Open browser console (F12)
    - Look for round ID in console logs
    - Or check database:
+
      ```sql
      SELECT id, event_id FROM rounds ORDER BY created_at DESC LIMIT 1;
      ```
@@ -113,9 +118,11 @@ source api/sql/cleanup_dev_database_fresh_start.sql
 2. **Test direct link:**
    - Get your archer ID from cookies or console
    - Navigate to:
+
      ```
      ranking_round_300.html?event=EVENT_ID&round=ROUND_ID&archer=ARCHER_ID
      ```
+
    - **Verify:** Goes directly to scoring view (no modal)
    - **Verify:** Scores loaded correctly
 
@@ -154,6 +161,7 @@ source api/sql/cleanup_dev_database_fresh_start.sql
 After completing a round:
 
 1. **Check database:**
+
    ```sql
    -- Should see your round
    SELECT * FROM rounds ORDER BY created_at DESC LIMIT 1;
@@ -178,16 +186,19 @@ After completing a round:
 ### Issue: Resume Not Working
 
 **Check 1: Entry Code**
+
 - Open console and check for entry code errors
 - Verify entry code is saved in localStorage
 - Try re-entering event code manually
 
 **Check 2: Session Data**
+
 - Check `localStorage.getItem('current_bale_session')`
 - Should have `roundId`, `baleNumber`, `entryCode`
 - If missing, session wasn't saved
 
 **Check 3: Database**
+
 - Verify round exists in database
 - Verify round_archers exist for the round
 - Verify end_events exist for the archers
@@ -195,10 +206,12 @@ After completing a round:
 ### Issue: Direct Link Not Working
 
 **Check 1: URL Parameters**
+
 - Verify event ID, round ID, and archer ID are correct
 - Check console for errors fetching round data
 
 **Check 2: Entry Code**
+
 - Direct links need entry code for authentication
 - Check if entry code is in localStorage
 - May need to enter code first
@@ -206,11 +219,13 @@ After completing a round:
 ### Issue: Event Modal Not Showing Rounds
 
 **Check 1: Archer History**
+
 - Event modal fetches archer history from API
 - Verify: `GET /v1/archers/{archerId}/history`
 - Should return rounds for the event
 
 **Check 2: Event Status**
+
 - Event must be "Active" to show in modal
 - Check event status in database or coach console
 
@@ -219,21 +234,25 @@ After completing a round:
 ## Success Criteria
 
 ✅ **Resume works after page reload**
+
 - All scores preserved
 - Can continue scoring
 - Entry code persists
 
 ✅ **Direct links work**
+
 - Goes straight to scoring (no modal)
 - Scores loaded correctly
 - Entry code available
 
 ✅ **Event modal shows progress**
+
 - In-progress rounds shown
 - Status badges displayed
 - One-click resume works
 
 ✅ **Entry code persists everywhere**
+
 - Works after clearing global storage
 - Works across browser restarts
 - No 401 errors
@@ -262,4 +281,3 @@ Once resume round is working:
 
 **Last Updated:** December 2025  
 **Status:** Ready for testing
-

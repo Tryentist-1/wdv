@@ -9,9 +9,11 @@
 ## 📋 Read These First (In Order)
 
 ### 1. **Critical Context** (2 min read)
+
 **[docs/BALE_GROUP_SCORING_WORKFLOW.md](docs/BALE_GROUP_SCORING_WORKFLOW.md)**
 
 **Why:** Understand how scoring actually works in real competitions
+
 - Bale groups (4 archers, 1 digital scorer)
 - Verification process (coach locks entire bale)
 - Event closure (permanent, no edits)
@@ -21,9 +23,11 @@
 ---
 
 ### 1.5. **Tournament Rules** (3 min read)
+
 **[docs/OAS_RULES.md](docs/OAS_RULES.md)**
 
 **Why:** Understand tournament structure and formats
+
 - Ranking rounds determine seeding
 - Solo elimination brackets (Top 8)
 - Team elimination brackets (Top 8 schools)
@@ -35,9 +39,11 @@
 ---
 
 ### 2. **System Architecture** (5 min scan)
+
 **[docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md)**
 
 **Why:** Master reference for entire system
+
 - 5 modules: status & integration state
 - Storage strategy (DB + localStorage + cookies)
 - Phase 2 integration plan (Solo/Team)
@@ -48,9 +54,11 @@
 ---
 
 ### 3. **Project Overview** (3 min scan)
+
 **[README.md](README.md)**
 
 **Why:** Quick project orientation
+
 - Module status table
 - Development workflow
 - Testing & deployment
@@ -62,7 +70,18 @@
 
 ## 🚨 Status Update (December 2025)
 
-### ✅ Recent Fixes (v1.6.5)
+### ✅ Latest Release (v1.6.6)
+
+- **Practice Target Database Integration:** Practice rounds now save to database and appear in archer history
+  - **Database Save:** Practice rounds saved with `round_type: 'PRACTICE'` and all end-by-end scoring data
+  - **Archer Selection:** Automatic prompt for archer selection if no "Me" archer is set
+  - **History Integration:** Practice rounds display in archer history alongside competition rounds
+  - **Mobile UI Improvements:** Better touch targets, responsive design, dark mode support
+  - **Button Handler Fixes:** Fixed non-responsive buttons with proper event handler initialization
+  - **Separate Save Options:** "Save" button for database, "Image" button for PNG download
+
+### ✅ Previous Fixes (v1.6.5)
+
 - **Ranking Round Grid Tuning:** Optimized scoring table for better mobile display
   - **Column Widths:** Reduced widths to fit 450px minimum (Archer: 85px, A1/A2/A3: 32px, End: 40px, Run: 48px, X/10: 24px, Card: 32px)
   - **Padding:** Tighter padding (px-0.5 for most cells, px-1.5 for Archer)
@@ -82,6 +101,7 @@
   - All 6 columns always rendered for consistent layout
 
 ### ✅ Previous Fixes (v1.6.1)
+
 - **Active Rounds List Display:** Fixed critical bug where "Active Rounds" list was not displaying on home screen.
   - **Cause:** Variable scope error in `unified_scorecard_list.js` - `xs` and `tens` used before initialization.
   - **Fix:** Reordered variable declarations to calculate values before use in column count determination.
@@ -94,6 +114,7 @@
   - **Column Configuration:** Updated from 6 columns to 4 columns (Assignment, Status, Progress, Type).
 
 ### ✅ Previous Fixes (Nov 29, 2025)
+
 - **Scorecard Colors:** Fixed CSS regression where score colors (Gold, Red, Blue, etc.) were not showing.
   - **Cause:** `.score-input` class had `background-color: transparent` overriding Tailwind classes.
   - **Fix:** Removed conflicting style and ensured `tokens.css` is loaded.
@@ -102,6 +123,7 @@
 - **Tailwind System:** Completed integration by adding `tokens.css` (CSS variables) and removing legacy `score-colors.css`.
 
 ### ⚠️ Known Issues / Recent Fixes
+
 - **Resume Ranking Round from Open Assignments (index.html):**
   - **Status:** ✅ **Implemented and working for ranking rounds created via events with entry codes.**
   - **Flow:**  
@@ -122,6 +144,7 @@
 ## 🎯 Next Steps (Upcoming Work)
 
 ### 📋 Planned Improvements
+
 - **Headers and Footers:** Update headers and footers in scoring modules (Ranking Round 300, Ranking Round 360, Solo Card, Team Card) for consistency and improved UX
 - **Complete Checkbox:** Add "Complete" checkbox to scorecards so archers can mark in-progress cards as complete
   - This will help archers signal when they've finished scoring a round/match
@@ -133,6 +156,7 @@
 ## 🎯 Current State (December 2025)
 
 ### ✅ What's Live & Working
+
 - **Ranking Round 360/300** - Full database integration, live sync
 - **Coach Console** - Event management, verification
 - **Live Results** - Real-time leaderboard
@@ -142,6 +166,7 @@
 - **Solo Olympic Matches** - ✅ Full database integration with match code authentication (Nov 2025)
 
 ### ✅ What's Recently Completed (Phase 2) - COMPLETED ✅
+
 - **Bracket Management System** - ✅ Full implementation complete (Nov 2025)
   - Database schema (brackets, bracket_entries tables)
   - Complete API endpoints for bracket CRUD operations
@@ -159,7 +184,9 @@
   - Updated setup screens with consistent styling
 
 ### 📅 What's Planned (Phase 3-6)
+
 See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
+
 - Phase 3: Coach-Athlete collaboration (progress tracking, notes, goals)
 - Phase 4: Tournament brackets (auto-generation, live updates)
 - Phase 5: Team season management (dual meets, standings)
@@ -170,6 +197,7 @@ See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 ## 🗂️ File Organization
 
 ### Entry Points
+
 ```
 /
 ├── SESSION_QUICK_START.md          ← You are here! Start every session here
@@ -181,33 +209,40 @@ See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
     └── MODULE_COMPARISON_SUMMARY.md                ← Quick visual reference
 ```
 
-### When Working On...
+### When Working On
 
 **Authentication/Storage:**
+
 - [docs/AUTHENTICATION_ANALYSIS.md](docs/AUTHENTICATION_ANALYSIS.md)
 - [docs/STORAGE_TIER_AUDIT.md](docs/STORAGE_TIER_AUDIT.md)
 - [docs/PHASE2_AUTH_IMPLEMENTATION.md](docs/PHASE2_AUTH_IMPLEMENTATION.md) - Match code authentication
 - [docs/CLEANUP_ACTION_PLAN.md](docs/CLEANUP_ACTION_PLAN.md)
 
 **Ranking Rounds:**
+
 - [docs/ARCHER_SCORING_WORKFLOW.md](docs/ARCHER_SCORING_WORKFLOW.md)
 - [docs/LIVE_SCORING_IMPLEMENTATION.md](docs/LIVE_SCORING_IMPLEMENTATION.md)
 
 **Verification/Locking:**
+
 - [docs/SPRINT_VERIFY_SCORECARDS.md](docs/SPRINT_VERIFY_SCORECARDS.md)
 - [docs/BALE_GROUP_SCORING_WORKFLOW.md](docs/BALE_GROUP_SCORING_WORKFLOW.md)
 
 **Event Management:**
+
 - [docs/Feature_EventPlanning_Product.md](docs/Feature_EventPlanning_Product.md) - Event creation and tournament flow (Phase 3+)
 
 **Archer Management:**
+
 - [docs/Feature_ArcherProfile.md](docs/Feature_ArcherProfile.md) - Archer profile and career stats (Phase 3+)
 
 **Testing:**
+
 - [docs/AUTOMATED_TESTING.md](docs/AUTOMATED_TESTING.md)
 - [docs/MANUAL_TESTING_CHECKLIST.md](docs/MANUAL_TESTING_CHECKLIST.md)
 
 **Deployment:**
+
 - [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
 - [docs/CLOUDFLARE_CACHE_PURGE_SETUP.md](docs/CLOUDFLARE_CACHE_PURGE_SETUP.md)
 
@@ -216,16 +251,19 @@ See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 ## 🏗️ Tech Stack at a Glance
 
 ### Frontend
+
 - **Vanilla JS** (no framework - intentional)
 - **Tailwind CSS** (utility-first styling) - ✅ 100% migrated (Nov 2025)
 - **Mobile-first** (99% phone usage [[memory:10705663]])
 - **No legacy CSS** - All modules use Tailwind exclusively
 
 ### Backend
+
 - **PHP 8.0+** (RESTful API)
 - **MySQL 8.0+** (primary database)
 
 ### Key Modules
+
 - `js/live_updates.js` - API client + offline queue
 - `js/common.js` - Shared utilities (cookies, etc)
 - `js/archer_module.js` - Roster management
@@ -234,6 +272,7 @@ See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 - `api/db.php` - Database + auth layer
 
 ### Storage Pattern
+
 ```javascript
 DATABASE (MySQL)
   └─ Source of truth for all competition data
@@ -250,29 +289,34 @@ Cookies
 ## 🔑 Key Principles (Do NOT Violate)
 
 ### 1. Mobile-First Always
+
 - 99% usage on phones [[memory:10705663]]
 - Test on small screens (iPhone SE)
 - Touch-friendly targets
 - Simple, fast UX
 
 ### 2. Database is Source of Truth
+
 - All competition scores → MySQL
 - localStorage = cache only
 - Offline queue for sync
 - Never rely on localStorage for permanent data
 
 ### 3. Verification Workflow is Sacred
+
 - Coach must verify before finalization
 - Locking prevents tampering
 - Event closure is permanent
 - Full audit trail required
 
 ### 4. IDs Use GUIDs (Not Sequential Numbers)
+
 - Use UUIDs for all IDs [[memory:10706370]]
 - No sequential numbering in IDs
 - Prevents guessing/enumeration
 
 ### 5. Coach is Gatekeeper
+
 - Coach controls events
 - Coach verifies scores
 - Coach closes events
@@ -285,9 +329,11 @@ Cookies
 **When working in Cursor/IDE, focus on two mindsets:**
 
 ### 🔧 Dev Lead Mindset (Implementation)
+
 **Apply when:** Building features, refactoring, architecting
 
 **Key Focus:**
+
 - **Technical Feasibility** - Can this be built? What's the complexity?
 - **Follow Proven Patterns** - Ranking Round is your template, copy that approach
 - **Modular & Maintainable** - Break into components, keep DRY
@@ -295,6 +341,7 @@ Cookies
 - **Translate Requirements → Code** - Turn user needs into technical specs
 
 **Questions to Ask:**
+
 - "How does this integrate with existing systems?"
 - "What's the data model?"
 - "Are there edge cases I'm missing?"
@@ -303,9 +350,11 @@ Cookies
 ---
 
 ### 🧪 QA Lead Mindset (Quality & Testing)
+
 **Apply when:** Reviewing code, before commits, planning features
 
 **Key Focus:**
+
 - **Test Before Production** - All changes reviewed with testing in mind
 - **Incremental & Safe** - Break big changes into small, testable pieces
 - **Edge Cases & Errors** - What can go wrong? What if inputs are invalid?
@@ -313,6 +362,7 @@ Cookies
 - **Validate Against Requirements** - Does this meet acceptance criteria?
 
 **Questions to Ask:**
+
 - "What's the test plan for this?"
 - "How do we verify this works?"
 - "What happens if this fails?"
@@ -335,6 +385,7 @@ Cookies
 ```
 
 **Before every commit:**
+
 - ✅ Dev: "Is this well-architected?"
 - ✅ QA: "Is this tested/testable?"
 - ✅ Both: "Does this solve the user problem?"
@@ -344,6 +395,7 @@ Cookies
 ## ⚡ Quick Commands
 
 ### Local Development
+
 ```bash
 # Start PHP server
 npm run serve
@@ -357,6 +409,7 @@ npm run lint
 ```
 
 ### Git Workflow
+
 ```bash
 # Create feature branch
 git checkout -b feature/your-feature
@@ -371,6 +424,7 @@ git push origin feature/your-feature
 ```
 
 ### Deployment
+
 ```bash
 # Deploy to production (requires FTP credentials)
 ./DeployFTP.sh
@@ -380,6 +434,7 @@ git push origin feature/your-feature
 ```
 
 ### Database
+
 ```bash
 # Connect to local MySQL
 mysql -u root -p wdv_local
@@ -393,9 +448,11 @@ mysql -h tryentist.com -u USERNAME -p wdv_production
 ## 🎯 Current Priorities (Phase 2)
 
 ### ✅ Sprint 2: Backend Foundation (COMPLETE)
+
 **Goal:** Create database & API for Solo/Team matches
 
 **Completed:**
+
 1. ✅ Created `solo_matches` table schema
 2. ✅ Created `team_matches` table schema
 3. ✅ Added verification fields (locked, card_status, etc)
@@ -404,14 +461,17 @@ mysql -h tryentist.com -u USERNAME -p wdv_production
 6. ✅ Added match code authentication for standalone matches
 7. ✅ Tested all endpoints
 
-**Documentation:** 
+**Documentation:**
+
 - [PHASE2_SPRINT2_COMPLETE.md](docs/PHASE2_SPRINT2_COMPLETE.md)
 - [PHASE2_API_ENDPOINTS.md](docs/PHASE2_API_ENDPOINTS.md)
 
 ### ✅ Sprint 3: Solo Match Frontend Integration (COMPLETE)
+
 **Goal:** Integrate Solo matches with database
 
 **Completed:**
+
 1. ✅ Updated `solo_card.js` to use database API
 2. ✅ Implemented match code generation and storage
 3. ✅ Added offline queue support
@@ -419,12 +479,15 @@ mysql -h tryentist.com -u USERNAME -p wdv_production
 5. ✅ Deployed to production (Nov 2025)
 
 **Documentation:**
+
 - [PHASE2_AUTH_IMPLEMENTATION.md](docs/PHASE2_AUTH_IMPLEMENTATION.md)
 
 ### ✅ Sprint 4: Team Match Frontend Integration (COMPLETE)
+
 **Goal:** Integrate Team matches with database
 
 **Completed:**
+
 1. ✅ Added team match methods to `live_updates.js`
 2. ✅ Updated `team_card.js` to use database API
 3. ✅ Implemented match code generation (when 6th archer added)
@@ -436,9 +499,11 @@ mysql -h tryentist.com -u USERNAME -p wdv_production
 **Documentation:** [PHASE2_TEAM_MIGRATION_PLAN.md](docs/PHASE2_TEAM_MIGRATION_PLAN.md)
 
 ### ✅ Recent Enhancements (Feature Branch)
+
 **Goal:** UX improvements and bug fixes
 
 **Completed:**
+
 1. ✅ Sort archer selection lists (selected first, then alphabetical)
 2. ✅ Sync status UI indicators (✓ synced, ⟳ pending, ✗ failed)
 3. ✅ Fixed verification field in scorecard API endpoint
@@ -449,11 +514,13 @@ mysql -h tryentist.com -u USERNAME -p wdv_production
 ---
 
 ### ✅ Sprint 3: Solo Module Integration (COMPLETE)
+
 **Goal:** Refactor Solo module to use database
 
 **Status:** ✅ Complete - See Sprint 3 section above
 
 **Tasks:**
+
 1. [ ] Refactor `js/solo_card.js` to use API
 2. [ ] Add event code authentication
 3. [ ] Add offline sync queue
@@ -466,6 +533,7 @@ mysql -h tryentist.com -u USERNAME -p wdv_production
 ---
 
 ### Sprint 4: Team Module Integration (AFTER Sprint 3)
+
 **Goal:** Refactor Team module to use database
 
 **Tasks:** (Same pattern as Solo)
@@ -477,6 +545,7 @@ mysql -h tryentist.com -u USERNAME -p wdv_production
 ## 🚫 Common Pitfalls to Avoid
 
 ### ❌ Don't Do This
+
 1. **Sequential IDs** - Use GUIDs/UUIDs [[memory:10706370]]
 2. **Skip Verification** - Every module needs verification workflow
 3. **localStorage as Primary** - Database is source of truth
@@ -486,6 +555,7 @@ mysql -h tryentist.com -u USERNAME -p wdv_production
 7. **Ignore Locking** - Security through lock mechanism is critical
 
 ### ✅ Do This Instead
+
 1. **UUIDs everywhere** - Archer IDs, Event IDs, Round IDs
 2. **Follow Ranking Round pattern** - It's proven and working
 3. **Database first, cache second** - localStorage is temporary
@@ -518,6 +588,7 @@ When Terry says... | He means...
 ## 📊 Health Checks
 
 ### Is System Working?
+
 ```bash
 # 1. Check API health
 curl https://tryentist.com/wdv/api/health
@@ -530,6 +601,7 @@ curl -H "X-Passcode: wdva26" https://tryentist.com/wdv/api/v1/events | jq '.even
 ```
 
 ### Expected Results
+
 - Health: `{"status":"ok"}`
 - Archers: Number > 0
 - Events: Number >= 0
@@ -539,6 +611,7 @@ curl -H "X-Passcode: wdva26" https://tryentist.com/wdv/api/v1/events | jq '.even
 ## 🎓 Onboarding Checklist
 
 **For AI Session Start:**
+
 - [ ] Read SESSION_QUICK_START.md (this file)
 - [ ] Scan BALE_GROUP_SCORING_WORKFLOW.md
 - [ ] Review current phase/sprint
@@ -546,6 +619,7 @@ curl -H "X-Passcode: wdva26" https://tryentist.com/wdv/api/v1/events | jq '.even
 - [ ] Ready to code!
 
 **For New Developer:**
+
 - [ ] Read SESSION_QUICK_START.md
 - [ ] Read BALE_GROUP_SCORING_WORKFLOW.md completely
 - [ ] Scan APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md
@@ -560,7 +634,7 @@ curl -H "X-Passcode: wdva26" https://tryentist.com/wdv/api/v1/events | jq '.even
 
 ## 🆘 When You're Stuck
 
-### Questions About...
+### Questions About
 
 **"How does scoring work?"**  
 → [docs/BALE_GROUP_SCORING_WORKFLOW.md](docs/BALE_GROUP_SCORING_WORKFLOW.md)
@@ -615,6 +689,7 @@ CONTEXT: [Any additional context specific to today's work]
 ## 📈 Progress Tracking
 
 ### Phase 1 ✅ COMPLETE
+
 - Ranking Rounds (360 & 300)
 - Live score sync
 - Coach console
@@ -627,11 +702,14 @@ CONTEXT: [Any additional context specific to today's work]
 ---
 
 ### Phase 2 ✅ COMPLETE
+
 **Sprint 1:** Documentation ✅ COMPLETE (Nov 17, 2025)
+
 - Created architecture docs
 - Captured critical workflow
 
 **Sprint 2-4:** Solo/Team Integration ✅ COMPLETE (Nov 20, 2025)
+
 - Database schema implementation
 - API endpoints for Solo/Team matches
 - Frontend integration with event/bracket selection
@@ -640,11 +718,13 @@ CONTEXT: [Any additional context specific to today's work]
 - Defined integration requirements
 
 **Sprint 2:** Backend Foundation ⏳ NEXT UP
+
 - Database schema for Solo/Team
 - API endpoints
 - Testing
 
 **Sprint 3-4:** Frontend Integration ⏳ PLANNED
+
 - Refactor Solo module
 - Refactor Team module
 - Coach console integration
@@ -654,6 +734,7 @@ CONTEXT: [Any additional context specific to today's work]
 ---
 
 ### Phase 3-6 📅 PLANNED
+
 **Target:** Q1-Q4 2026
 
 See [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
@@ -663,6 +744,7 @@ See [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 ## 🎯 Success Criteria
 
 **You know you're on track if:**
+
 - ✅ Following the bale group workflow
 - ✅ Using database as source of truth
 - ✅ Implementing verification for all modules
@@ -674,6 +756,7 @@ See [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 - ✅ Event closure works correctly
 
 **Red flags to watch for:**
+
 - ❌ localStorage as primary storage
 - ❌ Skipping verification workflow
 - ❌ Sequential numeric IDs
@@ -687,12 +770,14 @@ See [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 ## 📝 Quick Reference
 
 ### Important URLs
-- **Production:** https://tryentist.com/wdv/
-- **Coach Console:** https://tryentist.com/wdv/coach.html
-- **Results:** https://tryentist.com/wdv/results.html
-- **Local:** http://localhost:3000
+
+- **Production:** <https://tryentist.com/wdv/>
+- **Coach Console:** <https://tryentist.com/wdv/coach.html>
+- **Results:** <https://tryentist.com/wdv/results.html>
+- **Local:** <http://localhost:3000>
 
 ### Important Files
+
 - **API Router:** `api/index.php`
 - **Database:** `api/db.php`
 - **Config:** `api/config.php`
@@ -701,6 +786,7 @@ See [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 - **Ranking Round:** `js/ranking_round_300.js`
 
 ### Important Values
+
 - **Coach Passcode:** `wdva26` (or from config)
 - **Cookie Names:** `oas_archer_id`, `coach_auth`
 - **localStorage Keys:** `rankingRound300_<date>`, `event_entry_code`, `master_archer_list`
@@ -710,6 +796,7 @@ See [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 ## 🚀 Ready to Code?
 
 **You're now equipped to:**
+
 - Understand the complete scoring workflow ✅
 - Know the system architecture ✅
 - See what's done and what's next ✅
@@ -727,9 +814,9 @@ Need more detail on anything? Check the linked docs above.
 **Maintainer:** Development Team
 
 **Recent Updates:**
+
 - ✅ Tailwind CSS migration complete (Nov 17, 2025)
 - ✅ Keypad standardization across all modules
 - ✅ Dark mode support complete
 
 **Keep this file updated as phases progress!**
-

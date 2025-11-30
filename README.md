@@ -2,7 +2,7 @@
 
 > **Mobile-first web applications for Olympic Archery in Schools (OAS) scoring**
 
-[![Version](https://img.shields.io/badge/version-1.5.1-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-1.6.6-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-production-green.svg)]()
 [![Database](https://img.shields.io/badge/database-MySQL-orange.svg)]()
 [![Components](https://img.shields.io/badge/components-50%25_integrated-purple.svg)]()

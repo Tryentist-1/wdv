@@ -3,37 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Interactive Practice Target</title>
+    <title>Practice Target</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"></script>
     
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/tailwind-compiled.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="js/archer_module.js"></script>
 </head>
-<body class="practice-target-page">
+<body class="practice-target-page bg-gray-50 dark:bg-gray-900">
 
-    <div id="app-container" class="main-container">
-        <header class="page-header">
-            <h1>Practice Target</h1>
+    <div id="app-container" class="main-container flex flex-col h-screen">
+        <header class="page-header bg-white dark:bg-gray-800 shadow-sm p-3">
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl font-bold text-gray-800 dark:text-white">Practice Target</h1>
+                <div id="archer-info" class="text-sm text-gray-600 dark:text-gray-400 hidden">
+                    <span id="archer-name-display">-</span>
+                </div>
+            </div>
         </header>
 
-        <div class="page-controls">
-            <button id="correct-btn" class="btn btn-secondary"><i class="fas fa-edit"></i> Correct</button>
-            <button id="rescore-btn" class="btn btn-secondary"><i class="fas fa-bullseye"></i> Rescore Centered</button>
-            <button id="save-btn" class="btn btn-secondary"><i class="fas fa-save"></i> Save</button>
+        <div class="page-controls bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-2 flex gap-2 flex-wrap justify-center" style="position: relative; z-index: 10;">
+            <button id="correct-btn" class="btn btn-secondary text-xs sm:text-sm px-3 py-2 min-h-[44px]" style="pointer-events: auto; position: relative; z-index: 11;"><i class="fas fa-edit"></i> <span class="hidden sm:inline">Correct</span></button>
+            <button id="rescore-btn" class="btn btn-secondary text-xs sm:text-sm px-3 py-2 min-h-[44px] hidden" style="pointer-events: auto; position: relative; z-index: 11;"><i class="fas fa-bullseye"></i> <span class="hidden sm:inline">Rescore</span></button>
+            <button id="save-btn" class="btn btn-primary text-xs sm:text-sm px-3 py-2 min-h-[44px] hidden" style="pointer-events: auto; position: relative; z-index: 11;"><i class="fas fa-save"></i> <span class="hidden sm:inline">Save</span></button>
+            <button id="save-image-btn" class="btn btn-secondary text-xs sm:text-sm px-3 py-2 min-h-[44px] hidden" style="pointer-events: auto; position: relative; z-index: 11;"><i class="fas fa-download"></i> <span class="hidden sm:inline">Image</span></button>
         </div>
 
-        <div id="canvas-container" style="line-height: 0; flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+        <div id="canvas-container" style="line-height: 0; flex-grow: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
             <!-- p5.js canvas will be inserted here -->
         </div>
         
-        <footer class="global-footer">
-            <a href="index.html" class="btn btn-secondary">Home</a>
-            <button id="setup-btn" class="btn btn-primary"><i class="fas fa-cog"></i> Setup</button>
+        <footer class="global-footer bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-3 flex gap-2 justify-center" style="position: relative; z-index: 10;">
+            <a href="index.html" class="btn btn-secondary text-xs sm:text-sm px-4 py-2 min-h-[44px]" style="pointer-events: auto; position: relative; z-index: 11;"><i class="fas fa-home"></i> <span class="hidden sm:inline">Home</span></a>
+            <button id="setup-btn" class="btn btn-primary text-xs sm:text-sm px-4 py-2 min-h-[44px]" style="pointer-events: auto; position: relative; z-index: 11;"><i class="fas fa-cog"></i> <span class="hidden sm:inline">Setup</span></button>
         </footer>
     </div>
 
      <script>   
+    // --- API Configuration ---
+    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || 8001}/api/index.php/v1`
+        : 'https://tryentist.com/wdv/api/v1';
+
     // --- Configuration ---
     let arrowsPerEnd = 3;
     let numEnds = 6;
@@ -69,28 +82,36 @@
     let biasDescription = "";
     let hypotheticalScore = null;
     
+    // --- Archer State ---
+    let selectedArcher = null;
+    
     // --- UI Elements (now references to DOM elements) ---
-    let setupButton, correctButton, rescoreButton, saveButton;
+    let setupButton, correctButton, rescoreButton, saveButton, saveImageButton;
     let canvasContainer;
 
     // =================== SETUP ===================
     function setup() {
         canvasContainer = document.getElementById('canvas-container');
-        let cnv = createCanvas(canvasContainer.offsetWidth, canvasContainer.offsetHeight);
+        if (!canvasContainer) {
+            console.error('Canvas container not found');
+            return;
+        }
+        
+        // Get initial dimensions
+        const initialWidth = canvasContainer.offsetWidth || window.innerWidth;
+        const initialHeight = canvasContainer.offsetHeight || window.innerHeight;
+        
+        let cnv = createCanvas(initialWidth, initialHeight);
         cnv.parent('canvas-container');
         
-        // New UI element listeners
-        setupButton = document.getElementById('setup-btn');
-        correctButton = document.getElementById('correct-btn');
-        rescoreButton = document.getElementById('rescore-btn');
-        saveButton = document.getElementById('save-btn');
-
-        setupButton.onclick = configureAndResetMatch;
-        correctButton.onclick = startCorrection;
-        rescoreButton.onclick = toggleCenteredView;
-        saveButton.onclick = saveScorecard;
+        // Initialize button handlers after DOM is ready
+        initializeButtonHandlers();
         
-        handleResize(); // Initial sizing
+        // Add resize listener now that setup is complete
+        addResizeListener();
+        
+        // Initial sizing
+        handleResize();
         
         textAlign(LEFT, TOP);
         textSize(16);
@@ -98,8 +119,109 @@
         
         initializeMatchData(false);
     }
+
+    // Track if handlers are already initialized to prevent duplicates
+    let handlersInitialized = false;
+
+    // Initialize button handlers separately to ensure DOM is ready
+    function initializeButtonHandlers() {
+        // Prevent duplicate initialization
+        if (handlersInitialized) {
+            console.log('Button handlers already initialized, skipping...');
+            return;
+        }
+
+        // Get UI elements
+        setupButton = document.getElementById('setup-btn');
+        correctButton = document.getElementById('correct-btn');
+        rescoreButton = document.getElementById('rescore-btn');
+        saveButton = document.getElementById('save-btn');
+        saveImageButton = document.getElementById('save-image-btn');
+
+        console.log('Initializing button handlers...', {
+            setupButton: !!setupButton,
+            correctButton: !!correctButton,
+            saveButton: !!saveButton
+        });
+
+        // Test: Add a simple click listener to see if ANY clicks are detected
+        document.body.addEventListener('click', (e) => {
+            if (e.target.closest('button')) {
+                console.log('Button clicked detected on body:', e.target.id || e.target.className);
+            }
+        }, true); // Use capture phase
+
+        // Set up event handlers with null checks using addEventListener for better reliability
+        if (setupButton) {
+            setupButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Setup button clicked - handler fired!');
+                configureAndResetMatch();
+            }, { once: false, passive: false });
+            console.log('Setup button handler attached, element:', setupButton);
+        } else {
+            console.warn('Setup button not found');
+        }
+
+        if (correctButton) {
+            correctButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Correct button clicked - handler fired!');
+                startCorrection();
+            }, { once: false, passive: false });
+            console.log('Correct button handler attached, element:', correctButton);
+        }
+
+        if (rescoreButton) {
+            rescoreButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Rescore button clicked - handler fired!');
+                toggleCenteredView();
+            }, { once: false, passive: false });
+            console.log('Rescore button handler attached, element:', rescoreButton);
+        }
+
+        if (saveButton) {
+            saveButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Save button clicked - handler fired!');
+                saveToDatabase();
+            }, { once: false, passive: false });
+            console.log('Save button handler attached, element:', saveButton);
+        }
+
+        if (saveImageButton) {
+            saveImageButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Save image button clicked - handler fired!');
+                saveScorecardImage();
+            }, { once: false, passive: false });
+            console.log('Save image button handler attached, element:', saveImageButton);
+        }
+
+        
+        // Load archer selection
+        loadArcherSelection();
+        
+        handlersInitialized = true;
+        console.log('All button handlers initialized successfully');
+    }
     
     function handleResize() {
+        // Ensure canvasContainer is available
+        if (!canvasContainer) {
+            canvasContainer = document.getElementById('canvas-container');
+            if (!canvasContainer) {
+                console.warn('Canvas container not found in handleResize');
+                return;
+            }
+        }
+
         const header = document.querySelector('.page-header');
         const controls = document.querySelector('.page-controls');
         const footer = document.querySelector('.global-footer');
@@ -112,21 +234,50 @@
         console.log(`Header: ${headerHeight}, Controls: ${controlsHeight}, Footer: ${footerHeight}`);
 
         const availableHeight = window.innerHeight - headerHeight - controlsHeight - footerHeight; // Use all available vertical space
-        const availableWidth = canvasContainer.offsetWidth;
+        const availableWidth = canvasContainer ? canvasContainer.offsetWidth : window.innerWidth;
+        
+        if (availableWidth <= 0 || availableHeight <= 0) {
+            console.warn('Invalid canvas dimensions:', availableWidth, availableHeight);
+            return;
+        }
         
         console.log(`Available WxH: ${availableWidth} x ${availableHeight}`);
         
-        resizeCanvas(availableWidth, availableHeight);
+        // Only resize if canvas exists
+        if (typeof resizeCanvas === 'function') {
+            resizeCanvas(availableWidth, availableHeight);
+        }
 
-        targetRadius = min(width, height) * 0.4; // Reduced to give more top/bottom margin
-        targetX = width / 2; // Center horizontally
-        targetY = height / 2; // Center vertically
+        // Only update target if width/height are available
+        if (typeof width !== 'undefined' && typeof height !== 'undefined') {
+            targetRadius = min(width, height) * 0.4; // Reduced to give more top/bottom margin
+            targetX = width / 2; // Center horizontally
+            targetY = height / 2; // Center vertically
 
-        calculateRadii();
-        if(!isLooping()) redraw();
+            calculateRadii();
+            if(!isLooping() && typeof redraw === 'function') redraw();
+        }
     }
     
-    window.addEventListener('resize', handleResize);
+    // Only add resize listener after setup is complete
+    let resizeListenerAdded = false;
+    function addResizeListener() {
+        if (!resizeListenerAdded) {
+            window.addEventListener('resize', handleResize);
+            resizeListenerAdded = true;
+        }
+    }
+    
+    // Ensure button handlers are initialized when DOM is ready
+    // p5.js setup() runs automatically, but we also want to ensure handlers are set
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initializeButtonHandlers, 200);
+        });
+    } else {
+        // DOM already loaded, initialize after a short delay to ensure p5.js is ready
+        setTimeout(initializeButtonHandlers, 200);
+    }
 
     // =================== CONFIG, RESET, CORRECTION ===================
     function configureAndResetMatch() {
@@ -157,10 +308,11 @@
         hypotheticalScore = null; 
         displayMode = 'actual';
         
-        if (saveButton) saveButton.style.display = 'none';
+        if (saveButton) saveButton.classList.add('hidden');
+        if (saveImageButton) saveImageButton.classList.add('hidden');
         if (rescoreButton) { 
-            rescoreButton.style.display = 'none'; 
-            rescoreButton.innerHTML = '<i class="fas fa-bullseye"></i> Rescore Centered';
+            rescoreButton.classList.add('hidden'); 
+            rescoreButton.innerHTML = '<i class="fas fa-bullseye"></i> <span class="hidden sm:inline">Rescore Centered</span>';
         }
         if (correctButton) correctButton.classList.remove('btn-danger');
 
@@ -311,8 +463,9 @@
                         matchOver = true; 
                         console.log("Match Over. Calculating final stats..."); 
                         recalculateAllStats();
-                        if (saveButton) saveButton.style.display = 'inline-flex'; 
-                        if (rescoreButton) rescoreButton.style.display = 'inline-flex';
+                        if (saveButton) saveButton.classList.remove('hidden'); 
+                        if (saveImageButton) saveImageButton.classList.remove('hidden');
+                        if (rescoreButton) rescoreButton.classList.remove('hidden');
                         noLoop(); 
                         redraw();
                     }
@@ -593,8 +746,231 @@
         pop();
     }
 
-    // =================== UTILITIES ===================
-    function saveScorecard() {
+    // =================== ARCHER MANAGEMENT ===================
+    function loadArcherSelection() {
+        if (typeof ArcherModule === 'undefined') {
+            console.warn('ArcherModule not available');
+            return;
+        }
+        
+        const selfArcher = ArcherModule.getSelfArcher();
+        if (selfArcher) {
+            selectedArcher = selfArcher;
+            updateArcherDisplay();
+        } else {
+            // Prompt user to select their archer record
+            promptArcherSelection();
+        }
+    }
+
+    function promptArcherSelection() {
+        if (typeof ArcherModule === 'undefined') {
+            console.warn('ArcherModule not available for selection');
+            return;
+        }
+        
+        const roster = ArcherModule.loadList() || [];
+        if (roster.length === 0) {
+            console.warn('No archers in roster to select from');
+            return;
+        }
+        
+        // Build a list of archers for the prompt
+        const archerList = roster.map((archer, index) => {
+            const name = `${archer.first || ''} ${archer.last || ''}`.trim() || 'Unknown';
+            const school = archer.school || '';
+            const level = archer.level || '';
+            return `${index + 1}. ${name} (${school} ${level})`;
+        }).join('\n');
+        
+        const promptText = `Please select which archer you are:\n\n${archerList}\n\nEnter the number (1-${roster.length}):`;
+        const selection = prompt(promptText);
+        
+        if (selection === null) {
+            // User cancelled
+            return;
+        }
+        
+        const index = parseInt(selection) - 1;
+        if (isNaN(index) || index < 0 || index >= roster.length) {
+            alert('Invalid selection. Please refresh the page to try again.');
+            return;
+        }
+        
+        const selectedArcherFromList = roster[index];
+        if (selectedArcherFromList) {
+            selectedArcher = selectedArcherFromList;
+            if (typeof ArcherModule !== 'undefined') {
+                ArcherModule.setSelfArcher(selectedArcherFromList.extId);
+            }
+            updateArcherDisplay();
+            console.log('Archer selected:', selectedArcherFromList.first, selectedArcherFromList.last);
+        }
+    }
+
+    function updateArcherDisplay() {
+        const archerInfo = document.getElementById('archer-info');
+        const archerNameDisplay = document.getElementById('archer-name-display');
+        
+        if (selectedArcher) {
+            const name = `${selectedArcher.first || ''} ${selectedArcher.last || ''}`.trim() || 'Unknown';
+            archerNameDisplay.textContent = name;
+            archerInfo.classList.remove('hidden');
+        } else {
+            archerInfo.classList.add('hidden');
+        }
+    }
+
+    // =================== DATABASE SAVE ===================
+    async function saveToDatabase() {
+        if (!matchOver || totalArrowsShot === 0) {
+            alert('No practice data to save. Complete the practice round first.');
+            return;
+        }
+
+        if (!selectedArcher) {
+            const proceed = confirm('No archer selected. Would you like to select one now?');
+            if (proceed) {
+                promptArcherSelection();
+            }
+            if (!selectedArcher) {
+                alert('Archer selection is required to save practice rounds.');
+                return;
+            }
+        }
+
+        // Disable save button during save
+        const originalText = saveButton.innerHTML;
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="hidden sm:inline">Saving...</span>';
+
+        try {
+            // Get API key/passcode for practice rounds (use default passcode)
+            const headers = { 'Content-Type': 'application/json' };
+            const passcode = localStorage.getItem('coach_passcode') || localStorage.getItem('coach_api_key') || 'wdva26';
+            headers['X-Passcode'] = passcode;
+
+            // Create practice round
+            const roundDate = new Date().toISOString().split('T')[0];
+            const roundResponse = await fetch(`${API_BASE}/rounds`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    roundType: 'PRACTICE',
+                    date: roundDate,
+                    division: 'OPEN'
+                })
+            });
+
+            if (!roundResponse.ok) {
+                throw new Error(`Failed to create practice round: ${roundResponse.status}`);
+            }
+
+            const roundData = await roundResponse.json();
+            const roundId = roundData.roundId;
+
+            // Add archer to round
+            const archerResponse = await fetch(`${API_BASE}/rounds/${roundId}/archers`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    archerId: selectedArcher.id || selectedArcher.extId,
+                    archerName: `${selectedArcher.first || ''} ${selectedArcher.last || ''}`.trim(),
+                    school: selectedArcher.school || 'UNK',
+                    level: selectedArcher.level || 'VAR',
+                    gender: selectedArcher.gender || 'M',
+                    targetAssignment: 'A'
+                })
+            });
+
+            if (!archerResponse.ok) {
+                throw new Error(`Failed to add archer to round: ${archerResponse.status}`);
+            }
+
+            const archerData = await archerResponse.json();
+            const roundArcherId = archerData.roundArcherId;
+
+            // Save each end
+            let runningTotal = 0;
+            for (let endIndex = 0; endIndex < matchData.length; endIndex++) {
+                const endArrows = matchData[endIndex] || [];
+                if (endArrows.length === 0) continue;
+
+                // Convert arrows to a1, a2, a3 format
+                const a1 = endArrows[0] ? (endArrows[0].score === 'X' ? 'X' : String(endArrows[0].score)) : null;
+                const a2 = endArrows[1] ? (endArrows[1].score === 'X' ? 'X' : String(endArrows[1].score)) : null;
+                const a3 = endArrows[2] ? (endArrows[2].score === 'X' ? 'X' : String(endArrows[2].score)) : null;
+
+                // Calculate end totals
+                let endTotal = 0;
+                let tens = 0;
+                let xs = 0;
+                [a1, a2, a3].forEach(arrow => {
+                    if (!arrow) return;
+                    const upper = String(arrow).toUpperCase();
+                    if (upper === 'X') {
+                        endTotal += 10;
+                        xs++;
+                        tens++;
+                    } else if (upper === '10') {
+                        endTotal += 10;
+                        tens++;
+                    } else {
+                        const val = parseInt(arrow);
+                        if (!isNaN(val)) endTotal += Math.max(0, Math.min(10, val));
+                    }
+                });
+
+                runningTotal += endTotal;
+
+                // Save end (this endpoint is public, no auth needed)
+                const endResponse = await fetch(`${API_BASE}/rounds/${roundId}/archers/${roundArcherId}/ends`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        endNumber: endIndex + 1,
+                        a1: a1,
+                        a2: a2,
+                        a3: a3,
+                        endTotal: endTotal,
+                        runningTotal: runningTotal,
+                        tens: tens,
+                        xs: xs
+                    })
+                });
+
+                if (!endResponse.ok) {
+                    throw new Error(`Failed to save end ${endIndex + 1}: ${endResponse.status}`);
+                }
+            }
+
+            alert(`Practice round saved successfully!\n\nScore: ${totalScore}\nXs: ${numXs}\n10s: ${numTens}\n\nView your history to see this practice round.`);
+            
+            // Optionally redirect to archer history
+            if (selectedArcher.id || selectedArcher.extId) {
+                const archerId = selectedArcher.id || selectedArcher.extId;
+                const viewHistory = confirm('Would you like to view your archer history?');
+                if (viewHistory) {
+                    window.location.href = `archer_history.html?archer=${encodeURIComponent(archerId)}`;
+                }
+            }
+
+        } catch (error) {
+            console.error('Error saving practice round:', error);
+            const errorMsg = error.message || 'Unknown error';
+            if (errorMsg.includes('401') || errorMsg.includes('Unauthorized')) {
+                alert(`Authentication required to save practice rounds.\n\nPlease contact your coach for access, or save as image instead.`);
+            } else {
+                alert(`Failed to save practice round: ${errorMsg}\n\nPlease try again or save as image instead.`);
+            }
+        } finally {
+            saveButton.disabled = false;
+            saveButton.innerHTML = originalText;
+        }
+    }
+
+    // =================== IMAGE SAVE ===================
+    function saveScorecardImage() {
         let d = new Date(); 
         let timestamp = `${d.getFullYear()}${nf(d.getMonth() + 1, 2)}${nf(d.getDate(), 2)}_${nf(d.getHours(), 2)}${nf(d.getMinutes(), 2)}${nf(d.getSeconds(), 2)}`; 
         let filename = `PracticeTarget_${timestamp}.png`; 
