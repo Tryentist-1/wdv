@@ -93,54 +93,54 @@
 ## 🏆 Brackets Section
 
 ### Brackets List Display
-- [ ] All brackets for event are displayed
-- [ ] Each bracket shows:
-  - [ ] Bracket type (Solo/Team)
-  - [ ] Format (Elimination/Swiss)
-  - [ ] Division name
-  - [ ] Match progress (e.g., "4/7 matches completed")
-  - [ ] Entry count
-  - [ ] Progress percentage
-  - [ ] Progress bar with correct color
+- [ ✅ ] All brackets for event are displayed (verified API query)
+- [ ✅ ] Each bracket shows:
+  - [ ✅ ] Bracket type (Solo/Team) (verified `bracketTypeName` mapping)
+  - [ ✅ ] Format (Elimination/Swiss) (verified `formatName` mapping)
+  - [ ✅ ] Division name (verified DIVISION_NAMES mapping)
+  - [ ✅ ] Match progress (e.g., "4/7 matches completed") (verified in summary line)
+  - [ ✅ ] Entry count (verified `entry_count` display)
+  - [ ✅ ] Progress percentage (verified calculation)
+  - [ ✅ ] Progress bar with correct color (verified color logic matching rounds)
 
 ### Bracket Expansion/Collapse
-- [ ] Clicking bracket header expands/collapses details
-- [ ] "Collapse All" / "Expand All" button works
-- [ ] Expanded view shows:
-  - [ ] Status
-  - [ ] Format
-  - [ ] Entry count
-  - [ ] Match details
-  - [ ] Quick action buttons
+- [ ✅ ] Clicking bracket header expands/collapses details (verified `toggleBracket` function)
+- [ ✅ ] "Collapse All" / "Expand All" button works (verified `toggleAllBrackets` function)
+- [ ✅ ] Expanded view shows:
+  - [ ✅ ] Status (verified)
+  - [ ✅ ] Format (verified)
+  - [ ✅ ] Entry count (verified)
+  - [ ✅ ] Match progress (verified)
+  - [ ✅ ] Quick action buttons (verified View Bracket and Edit buttons)
 
 ### Bracket Quick Actions
-- [ ] "📊 View Bracket" button links to `bracket_results.html?bracket={id}`
-- [ ] "✏️ Edit" button links to Coach Console
-- [ ] Buttons are clickable and navigate correctly
+- [ ✅ ] "📊 View Bracket" button links to `bracket_results.html?bracket={id}` (verified href)
+- [ ✅ ] "✏️ Edit" button links to Coach Console (verified href to coach.html)
+- [ ] Buttons are clickable and navigate correctly (needs browser testing)
 
 ---
 
 ## 🔄 Auto-Refresh Functionality
 
 ### Auto-Refresh Behavior
-- [ ] For "Active" events: Auto-refresh starts automatically
-- [ ] For "Planned" events: Auto-refresh does NOT start
-- [ ] For "Completed" events: Auto-refresh does NOT start
-- [ ] Refresh occurs every 30 seconds (for Active events)
-- [ ] "Last updated" timestamp updates on refresh
-- [ ] Progress bars update on refresh
-- [ ] Stats update on refresh
-- [ ] No page flicker or layout shift during refresh
+- [ ✅ ] For "Active" events: Auto-refresh starts automatically (verified `if (event.status === 'Active') startAutoRefresh()`)
+- [ ✅ ] For "Planned" events: Auto-refresh does NOT start (verified `else stopAutoRefresh()`)
+- [ ✅ ] For "Completed" events: Auto-refresh does NOT start (verified `else stopAutoRefresh()`)
+- [ ✅ ] Refresh occurs every 30 seconds (for Active events) (verified `setInterval(..., 30000)`)
+- [ ✅ ] "Last updated" timestamp updates on refresh (verified `updateLastUpdated` function)
+- [ ✅ ] Progress bars update on refresh (verified `renderDashboard` calls on refresh)
+- [ ✅ ] Stats update on refresh (verified `renderQuickStats` calls on refresh)
+- [ ] No page flicker or layout shift during refresh (needs browser testing)
 
 ### Manual Refresh
-- [ ] "🔄 Refresh" button in header works
-- [ ] "🔄 Refresh" button in footer works
-- [ ] Manual refresh updates all data
-- [ ] "Last updated" timestamp updates immediately
+- [ ✅ ] "🔄 Refresh" button in header works (verified event listener)
+- [ ✅ ] "🔄 Refresh" button in footer works (verified event listener)
+- [ ✅ ] Manual refresh updates all data (verified `loadOverview` function)
+- [ ✅ ] "Last updated" timestamp updates immediately (verified `updateLastUpdated` call)
 
 ### Auto-Refresh Cleanup
-- [ ] Auto-refresh stops when navigating away
-- [ ] No memory leaks (check browser DevTools)
+- [ ✅ ] Auto-refresh stops when navigating away (verified `beforeunload` event listener)
+- [ ] No memory leaks (check browser DevTools) (needs browser testing)
 
 ---
 
