@@ -11,7 +11,7 @@ The WDV testing suite provides comprehensive testing coverage for the Archery Sc
 npm run serve
 
 # Component library (visual testing)
-open http://localhost:8001/test-components.html
+open http://localhost:8001/style-guide.html
 
 # Run all E2E tests
 npm test
@@ -20,7 +20,7 @@ npm test
 npm run test:ui
 
 # Test workflow (comprehensive)
-./test-workflow.sh development
+./scripts/test-workflow.sh development
 ```
 
 ### Testing Workflows
@@ -44,7 +44,7 @@ npm run test:ui            # Interactive test interface
 npm run test:headed        # Visible browser testing
 
 # Component Tests
-open http://localhost:8001/test-components.html  # Visual component library
+open http://localhost:8001/style-guide.html  # Visual component library
 
 # API Tests
 ./test_api.sh              # Production API health check
@@ -69,7 +69,7 @@ cat tests/manual_sanity_check.md  # Pre-deployment checklist
 - `diagnostic-ranking-round.spec.js` - System diagnostics
 
 ### Component Tests
-**Location:** `test-components.html`  
+**Location:** `style-guide.html`  
 **Purpose:** Visual component library and manual testing  
 **Coverage:** All UI components, responsive design, mobile usability
 
@@ -221,7 +221,7 @@ All tests are designed to work with the new UI/UX design and validate:
 ### Quick Reference
 - **📋 [TESTING_STRATEGY.md](../TESTING_STRATEGY.md)** - Complete testing overview
 - **📁 [TEST_ORGANIZATION.md](TEST_ORGANIZATION.md)** - Test structure and organization
-- **🎨 [test-components.html](../test-components.html)** - Visual component library
+- **🎨 [style-guide.html](../style-guide.html)** - Visual component library
 
 ### Detailed Documentation
 - **[AUTOMATED_TESTING.md](../docs/AUTOMATED_TESTING.md)** - Playwright E2E testing

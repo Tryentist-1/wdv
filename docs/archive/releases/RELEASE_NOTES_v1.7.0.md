@@ -74,11 +74,11 @@ This release introduces the **Event Dashboard Phase 1**, a comprehensive event m
 
 - ✅ **Start Scoring Button** – Fixed visibility and positioning
   - Moved button to be adjacent to archer search input
-  - Updated styling to match `test-components.html` standards
+  - Updated styling to match `style-guide.html` standards
   - Button disabled when no archers selected
   - Proper rounded-lg styling
 
-- ✅ **Search Input Styling** – Matched test-components standard
+- ✅ **Search Input Styling** – Matched style-guide standard
   - Updated border from `border-2` to `border`
   - Updated padding from `py-3` to `py-2`
   - Adjusted focus styles for consistency
@@ -166,7 +166,7 @@ This release introduces the **Event Dashboard Phase 1**, a comprehensive event m
 
 ### **Ranking Round 300 (`ranking_round_300.html` / `js/ranking_round_300.js`)**
 - ✅ Fixed Start Scoring button visibility and positioning
-- ✅ Updated styling to match test-components standards
+- ✅ Updated styling to match style-guide standards
 - ✅ Enhanced event entry code retrieval
 - ✅ Improved error handling for 401 errors
 - ✅ Button disabled state when no archers selected
@@ -193,7 +193,7 @@ This release introduces the **Event Dashboard Phase 1**, a comprehensive event m
 - ✅ **Start Scoring Button Not Visible** – Fixed positioning and styling
   - **Root Cause:** Button in wrong location, styling didn't match standards
   - **Impact:** Button not visible, users couldn't start scoring
-  - **Resolution:** Moved button, updated styling to match test-components
+  - **Resolution:** Moved button, updated styling to match style-guide
 
 - ✅ **Completed Scorecards Count Exceeded Total** – Fixed SQL query
   - **Root Cause:** LEFT JOIN with `end_events` created multiple rows per scorecard
@@ -211,7 +211,7 @@ This release introduces the **Event Dashboard Phase 1**, a comprehensive event m
   - **Resolution:** Prioritize event snapshot fetch, retry on 401 errors
 
 ### **UI/UX**
-- ✅ **Ranking Round Styling Inconsistency** – Matched test-components standards
+- ✅ **Ranking Round Styling Inconsistency** – Matched style-guide standards
 - ✅ **Dashboard Status Not Accurate** – Fixed dynamic calculation
 - ✅ **No Progress Details** – Added "X of Y started" display
 - ✅ **Bracket Generation Buried** – Moved to dashboard for easy access

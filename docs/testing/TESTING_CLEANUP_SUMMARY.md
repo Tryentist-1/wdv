@@ -30,7 +30,7 @@
 - **Updated:** `package.json` - Added workflow commands
 
 ### ✅ 5. Component Library Integration
-- **Integrated:** `test-components.html` into testing workflow
+- **Integrated:** `style-guide.html` into testing workflow
 - **Purpose:** Visual component testing and UI consistency verification
 - **Coverage:** All UI components, mobile responsiveness, dark mode
 
@@ -85,7 +85,7 @@
 - Cross-referenced documentation structure
 
 ### 5. **Component Library Integration**
-- `test-components.html` as part of testing workflow
+- `style-guide.html` as part of testing workflow
 - Visual verification of UI consistency
 - Mobile responsiveness validation
 - Dark mode testing integration
@@ -141,7 +141,7 @@
 ```
 TESTING_STRATEGY.md          # Complete testing overview
 test-workflow.sh             # Automated testing workflows
-test-components.html         # Visual component library
+style-guide.html         # Visual component library
 ```
 
 ### Tests Directory
@@ -157,7 +157,7 @@ tests/
 - **Primary:** `TESTING_STRATEGY.md` - Complete overview
 - **Structure:** `tests/TEST_ORGANIZATION.md` - Detailed organization
 - **Commands:** `tests/README.md` - Quick reference
-- **Components:** `test-components.html` - Visual library
+- **Components:** `style-guide.html` - Visual library
 
 ---
 

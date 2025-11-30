@@ -321,7 +321,7 @@ document.body.classList.remove('keypad-visible');
 ## 📚 Reference Files
 
 - **Tailwind Config:** Already in all HTML files (Tailwind CDN with config)
-- **Component Reference:** `test-components.html` (shows all Tailwind components)
+- **Component Reference:** `style-guide.html` (shows all Tailwind components)
 - **Legacy CSS:** `css/main.css` (to be removed after migration)
 
 ---

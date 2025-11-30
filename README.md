@@ -116,15 +116,15 @@ npm run serve
 # 6. Open browser
 open http://localhost:8001
 
-# 7. View Component Library (UI Templates)
-open http://localhost:8001/test-components.html
+# 7. View Style Guide (UI Components)
+open http://localhost:8001/tests/components/style-guide.html
 ```
 
 ### Detailed Setup
 See [QUICK_START_LOCAL.md](QUICK_START_LOCAL.md) for full instructions.
 
-### 🎨 Component Library
-**`test-components.html`** - Complete UI template library with:
+### 🎨 Style Guide
+**`style-guide.html`** - Complete UI style guide and component library with:
 - All button styles and states
 - Scoring table layouts (bale view + individual scorecard)
 - Score input colors and styling
@@ -262,8 +262,8 @@ npm test
 # Interactive test UI
 npm run test:ui
 
-# Component library (visual testing)
-open http://localhost:8001/test-components.html
+# Style guide (visual testing)
+open http://localhost:8001/tests/components/style-guide.html
 
 # Local development tests
 npm run test:local
@@ -274,7 +274,7 @@ cat tests/manual_sanity_check.md
 
 ### Testing Strategy
 - **📋 [TESTING_STRATEGY.md](TESTING_STRATEGY.md)** - Complete testing overview and workflow
-- **🎨 [test-components.html](test-components.html)** - Visual component library for UI testing
+- **🎨 [style-guide.html](tests/components/style-guide.html)** - UI style guide and component library for visual testing
 - **📁 [tests/TEST_ORGANIZATION.md](tests/TEST_ORGANIZATION.md)** - Test structure and organization
 
 ### Test Documentation

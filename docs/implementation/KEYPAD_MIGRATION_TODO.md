@@ -377,7 +377,7 @@ tar -xzf remote_backup_YYYYMMDD_HHMMSS.tar.gz
 
 ## 📚 Reference Files
 
-- **Standard Implementation:** `test-components.html` (keypad section)
+- **Standard Implementation:** `style-guide.html` (keypad section)
 - **Ranking Round:** `js/ranking_round_300.js` (lines ~2672-2811)
 - **Solo Card:** `js/solo_card.js` (lines ~535-596)
 - **Team Card:** `js/team_card.js` (lines ~487-505)

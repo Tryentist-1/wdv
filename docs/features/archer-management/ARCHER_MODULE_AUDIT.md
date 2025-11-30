@@ -168,7 +168,7 @@ The Archer module consists of three interconnected pages that manage archer prof
 ## Opportunities for Tailwind Migration
 
 ### 1. **Unified Component Library**
-- Reuse button styles from `test-components.html`
+- Reuse button styles from `style-guide.html`
 - Reuse modal patterns from `ranking_round_300.html`
 - Reuse table styles from `ranking_round_300.html`
 - Reuse form input styles from component library

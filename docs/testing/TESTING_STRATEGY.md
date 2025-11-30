@@ -47,7 +47,7 @@ Unit Tests (QUnit)
 - `verification.spec.js` - Data validation
 
 ### 2. **Component Tests** - UI Library
-**Location:** `test-components.html`  
+**Location:** `style-guide.html`  
 **Purpose:** Visual component library and manual testing  
 **Coverage:** All UI components, dark mode, responsive design
 
@@ -90,7 +90,7 @@ Unit Tests (QUnit)
 npm run serve
 
 # 2. Run component library check
-open http://localhost:8001/test-components.html
+open http://localhost:8001/style-guide.html
 
 # 3. Run local tests
 npm run test:local
@@ -102,7 +102,7 @@ npm run test:local
 npm run test:unit
 
 # 2. Component testing (visual verification)
-open http://localhost:8001/test-components.html
+open http://localhost:8001/style-guide.html
 
 # 3. API testing (backend validation)
 ./test_phase1_local.sh
@@ -129,7 +129,7 @@ npm run test:remote
 ./test_api.sh
 
 # 3. Component library verification
-open https://tryentist.com/wdv/test-components.html
+open https://tryentist.com/wdv/style-guide.html
 ```
 
 ---
@@ -183,7 +183,7 @@ npm run build:css
 ## 🎨 Component Library Integration
 
 ### Purpose
-`test-components.html` serves as:
+`style-guide.html` serves as:
 1. **UI Reference** - Complete component showcase
 2. **Manual Testing** - Visual verification of components
 3. **Design System** - Consistent styling reference

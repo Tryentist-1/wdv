@@ -251,7 +251,7 @@
         createAvatar(archer, isSelf) {
             if (!this.options.showAvatars) return null;
             const wrapper = document.createElement('div');
-            // Match test-components.html: bg-primary text-white for initials fallback
+            // Match style-guide.html: bg-primary text-white for initials fallback
             wrapper.className = 'w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold overflow-hidden';
             if (archer.photoUrl) {
                 const img = document.createElement('img');
@@ -308,7 +308,7 @@
             if (!this.options.showFavoriteToggle || !this.options.onFavoriteToggle) return null;
             const btn = document.createElement('button');
             btn.type = 'button';
-            // Match test-components.html: text-gray-400 hover:text-red-500, ensure 44px touch target
+            // Match style-guide.html: text-gray-400 hover:text-red-500, ensure 44px touch target
             btn.className = 'px-2 text-lg min-h-[44px] min-w-[44px] flex items-center justify-center';
             if (isSelf) {
                 btn.innerHTML = '<i class="fas fa-user-check text-primary"></i>';
@@ -354,12 +354,12 @@
             const sorted = this.getSortedRoster();
             sorted.forEach(archer => {
                 const row = document.createElement('div');
-                // Match test-components.html standards: bg-gray-50 for normal, primary-light for selected
+                // Match style-guide.html standards: bg-gray-50 for normal, primary-light for selected
                 const baseClasses = 'flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors';
                 row.className = baseClasses;
                 const selectedAnywhere = this.isSelectedAnywhere(archer.id);
                 if (selectedAnywhere) {
-                    // Match test-components.html selected state: bg-primary-light dark:bg-primary/20 border-2 border-primary
+                    // Match style-guide.html selected state: bg-primary-light dark:bg-primary/20 border-2 border-primary
                     row.classList.remove('bg-gray-50', 'dark:bg-gray-700');
                     row.classList.add('bg-primary-light', 'dark:bg-primary/20', 'border-2', 'border-primary');
                 }

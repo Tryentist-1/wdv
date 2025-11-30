@@ -24,7 +24,7 @@ const ScorecardView = (() => {
   }
 
   /**
-   * Get CSS class for score value (for coloring cells) - MATCHES test-components.html
+   * Get CSS class for score value (for coloring cells) - MATCHES style-guide.html
    */
   function getScoreColor(score) {
     if (score === null || score === '' || score === undefined) return '';
@@ -65,7 +65,7 @@ const ScorecardView = (() => {
     
     let html = '<div class="scorecard-view">';
     
-    // Header with archer info and status - MATCHES test-components.html
+    // Header with archer info and status - MATCHES style-guide.html
     if (showHeader) {
       // Determine status badge based on cardStatus (prioritize cardStatus over verified flag)
       let statusBadge = '';
@@ -101,7 +101,7 @@ const ScorecardView = (() => {
       `;
     }
     
-    // Scorecard table - EXACTLY matching test-components.html template
+    // Scorecard table - EXACTLY matching style-guide.html template
     html += `
       <div class="overflow-x-auto">
         <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700">
@@ -153,7 +153,7 @@ const ScorecardView = (() => {
         else avgClass = 'bg-score-white text-black dark:text-black';
       }
       
-      // Alternate row colors - EXACTLY matching test-components.html
+      // Alternate row colors - EXACTLY matching style-guide.html
       const rowClass = i % 2 === 0 
         ? 'border-b border-gray-200 dark:border-gray-600' 
         : 'border-b border-gray-200 bg-gray-50 dark:bg-gray-800';
@@ -173,7 +173,7 @@ const ScorecardView = (() => {
     
     html += '</tbody>';
     
-    // Footer with totals - EXACTLY matching test-components.html
+    // Footer with totals - EXACTLY matching style-guide.html
     if (showFooter) {
       const completedEnds = scores.filter(end => end.every(s => s !== '' && s !== null && s !== undefined)).length;
       const finalAvg = completedEnds > 0 ? (runningTotal / (completedEnds * 3)).toFixed(1) : '';

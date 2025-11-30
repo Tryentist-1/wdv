@@ -58,7 +58,7 @@ This release focuses on UI polish and usability improvements across the applicat
 - ✅ **Standardized Implementation** – Matching layout across modules
   - `ranking_round_300.html` updated
   - `ranking_round.html` (360) updated
-  - `test-components.html` updated with standard template
+  - `style-guide.html` updated with standard template
 
 ### 🔧 **Scorecard Editor Improvements**
 **Enhanced usability and functionality for critical coach tool**
@@ -116,7 +116,7 @@ This release focuses on UI polish and usability improvements across the applicat
 - Status badges properly aligned within card cell
 
 ### **Component Standardization**
-- `test-components.html` updated to reflect all UI standards
+- `style-guide.html` updated to reflect all UI standards
 - Scoring table template with optimized widths
 - Header template with two-line layout
 - Unified scorecard list with 6-column example
@@ -156,7 +156,7 @@ This release focuses on UI polish and usability improvements across the applicat
 - ✅ Prevents dynamic column hiding that caused misalignment
 - ✅ Proper X/10 field mapping from API response
 
-### **Test Components (`test-components.html`)**
+### **Test Components (`style-guide.html`)**
 - ✅ Added "Scoring Header (Ranking Round Standard)" section
 - ✅ Updated scoring table with optimized column widths
 - ✅ Added 6-column unified scorecard list example
@@ -210,7 +210,7 @@ This release focuses on UI polish and usability improvements across the applicat
 - `scorecard_editor.html` – Bottom sheet keypad, subheader, column fixes
 - `results.html` – Formatting restoration
 - `archer_history.html` – Formatting restoration
-- `test-components.html` – Standard updates
+- `style-guide.html` – Standard updates
 
 ### **JavaScript Files**
 - `js/ranking_round_300.js` – Column widths, padding, alignment, header updates
@@ -243,7 +243,7 @@ This release focuses on UI polish and usability improvements across the applicat
 ## 📚 Documentation Updates
 
 - **01-SESSION_QUICK_START.md** – Updated with v1.6.5 status
-- **test-components.html** – Component library updated with all standards
+- **style-guide.html** – Component library updated with all standards
 
 ## 🎯 Next Steps
 

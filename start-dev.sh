@@ -53,8 +53,8 @@ echo ""
 echo -e "${GREEN}📍 Access points:${NC}"
 echo "   • Main app:        http://localhost:8001/index.html"
 echo "   • Coach console:   http://localhost:8001/coach.html"
-echo "   • Components:      http://localhost:8001/test-components.html"
-echo "   • API test:        http://localhost:8001/api/test_harness.html"
+echo "   • Style guide:     http://localhost:8001/tests/components/style-guide.html"
+echo "   • API test:        http://localhost:8001/tests/api/harness/test_harness.html"
 echo ""
 
 # Start the PHP server (this will run in foreground)

@@ -25,16 +25,16 @@ npm install --save-dev jest supertest node-fetch
 ### Run Tests
 ```bash
 # Run all API tests
-./test-api-suite.sh all
+./scripts/test-api-suite.sh all
 
 # Run specific test categories
-./test-api-suite.sh core      # Health & authentication
-./test-api-suite.sh archers   # Archer management
-./test-api-suite.sh rounds    # Round management
-./test-api-suite.sh events    # Event management
+./scripts/test-api-suite.sh core      # Health & authentication
+./scripts/test-api-suite.sh archers   # Archer management
+./scripts/test-api-suite.sh rounds    # Round management
+./scripts/test-api-suite.sh events    # Event management
 
 # Run with coverage report
-./test-api-suite.sh coverage
+./scripts/test-api-suite.sh coverage
 ```
 
 ## Test Structure

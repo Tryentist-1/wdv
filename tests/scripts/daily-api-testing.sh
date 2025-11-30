@@ -58,7 +58,8 @@ check_prerequisites() {
     
     # Verify existing tests still pass
     print_info "Verifying existing tests..."
-    if ./test-api-suite.sh core > /dev/null 2>&1; then
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    if "$SCRIPT_DIR/test-api-suite.sh" core > /dev/null 2>&1; then
         print_success "Existing tests pass"
     else
         print_error "Existing tests failing. Please fix before continuing."

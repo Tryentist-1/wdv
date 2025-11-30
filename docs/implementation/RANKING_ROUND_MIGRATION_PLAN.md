@@ -13,7 +13,7 @@ The Ranking Round module is the most complex and frequently used part of the app
 - **Headers/Footers**: Custom CSS instead of Tailwind layout classes
 - **Dark Mode**: Not implemented
 
-### Target State (from test-components.html)
+### Target State (from style-guide.html)
 - Tailwind CSS compiled stylesheet
 - 4x3 keypad layout (no navigation buttons)
 - ArcherSelector component integration
@@ -30,9 +30,9 @@ The Ranking Round module is the most complex and frequently used part of the app
 
 ### Step 1.1: Add Tailwind CSS to HTML
 - [ ] Add `<link rel="stylesheet" href="css/tailwind-compiled.css">` to `ranking_round.html`
-- [ ] Add dark mode script (from test-components.html)
+- [ ] Add dark mode script (from style-guide.html)
 - [ ] Add score color utility classes (from solo_card.html)
-- [ ] Add `.score-input` utility class (from test-components.html)
+- [ ] Add `.score-input` utility class (from style-guide.html)
 - [ ] Keep `main.css` link temporarily (for gradual migration)
 
 **Files**: `ranking_round.html`
@@ -66,14 +66,14 @@ The Ranking Round module is the most complex and frequently used part of the app
 
 **Files**: `ranking_round.html`, `js/ranking_round.js` (if header is dynamically generated)
 
-**Testing**: Header should match test-components.html design, dark mode should work
+**Testing**: Header should match style-guide.html design, dark mode should work
 
 ---
 
 ### Step 2.2: Migrate Page Subheader (Setup Controls)
 - [ ] Replace `.page-subheader` with Tailwind classes:
   - `px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-3 flex-wrap`
-- [ ] Update search input to match test-components.html:
+- [ ] Update search input to match style-guide.html:
   - `flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary`
 - [ ] Migrate all buttons to Tailwind button classes:
   - Primary: `px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]`
@@ -117,7 +117,7 @@ The Ranking Round module is the most complex and frequently used part of the app
 - [ ] Replace `renderKeypad()` function to use new 4x3 layout
 - [ ] Use `ScoreKeypad` component OR copy layout from `js/score_keypad.js`
 - [ ] Remove navigation buttons (prev/next arrows)
-- [ ] Update button classes to match test-components.html:
+- [ ] Update button classes to match style-guide.html:
   - Score buttons: `p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center [score-color-classes] min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98`
   - Action buttons: CLOSE and CLEAR (full width, col-span-2)
 
@@ -152,7 +152,7 @@ The Ranking Round module is the most complex and frequently used part of the app
 
 **Files**: `js/ranking_round.js` (renderScoringView function, ~line 626)
 
-**Testing**: Table should match test-components.html design, sticky columns should work
+**Testing**: Table should match style-guide.html design, sticky columns should work
 
 ---
 
@@ -160,7 +160,7 @@ The Ranking Round module is the most complex and frequently used part of the app
 - [ ] Replace score input classes with Tailwind:
   - Container: `p-0 border-r border-gray-200 dark:border-gray-600`
   - Input: `score-input [bg-score-color] [text-color]` (from utility classes)
-- [ ] Ensure score colors match test-components.html
+- [ ] Ensure score colors match style-guide.html
 - [ ] Update calculated cells: `px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200`
 
 **Files**: `js/ranking_round.js` (renderScoringView function)
@@ -171,7 +171,7 @@ The Ranking Round module is the most complex and frequently used part of the app
 
 ### Step 4.3: Update Card View Table
 - [ ] Migrate `renderCardView()` table to Tailwind classes
-- [ ] Match card view table design from test-components.html
+- [ ] Match card view table design from style-guide.html
 - [ ] Update footer row styling
 - [ ] Ensure score colors work in card view
 
@@ -245,7 +245,7 @@ The Ranking Round module is the most complex and frequently used part of the app
 
 **Files**: `ranking_round.html` (reset-modal, ~line 119)
 
-**Testing**: Modal should match test-components.html design, dark mode should work
+**Testing**: Modal should match style-guide.html design, dark mode should work
 
 ---
 
@@ -262,7 +262,7 @@ The Ranking Round module is the most complex and frequently used part of the app
 
 ### Step 6.3: Migrate Export Modal
 - [ ] Update export modal structure to Tailwind
-- [ ] Update export option cards to match test-components.html
+- [ ] Update export option cards to match style-guide.html
 - [ ] Migrate all buttons to Tailwind classes
 
 **Files**: `ranking_round.html` (export-modal, ~line 144)
@@ -324,7 +324,7 @@ The Ranking Round module is the most complex and frequently used part of the app
 
 ### Step 8.2: Update Controls Container
 - [ ] Migrate prev/next end buttons to Tailwind classes
-- [ ] Ensure buttons match test-components.html button design
+- [ ] Ensure buttons match style-guide.html button design
 - [ ] Update spacing and layout
 
 **Files**: `ranking_round.html` (controls-container, ~line 91)
@@ -413,7 +413,7 @@ The Ranking Round module is the most complex and frequently used part of the app
 ---
 
 ## Success Criteria
-- [ ] All components match test-components.html design
+- [ ] All components match style-guide.html design
 - [ ] Dark mode works throughout
 - [ ] Mobile-first responsive design
 - [ ] All functionality preserved

@@ -70,7 +70,7 @@ development_workflow() {
     # 2. Component library verification
     print_info "Step 2: Component library verification"
     echo "Opening component library for visual verification..."
-    echo "URL: http://localhost:8001/test-components.html"
+    echo "URL: http://localhost:8001/style-guide.html"
     echo "Please verify:"
     echo "  - All components render correctly"
     echo "  - Dark/light mode toggle works"
@@ -166,7 +166,7 @@ pre_deployment_workflow() {
     # 5. Component library production check
     print_info "Step 5: Component library production verification"
     echo "Please verify component library on production:"
-    echo "URL: https://tryentist.com/wdv/test-components.html"
+    echo "URL: https://tryentist.com/wdv/style-guide.html"
     read -p "Press Enter when production component library is verified..."
     print_success "Production component library verified"
     
@@ -208,7 +208,7 @@ post_deployment_workflow() {
     # 3. Production component library
     print_info "Step 3: Production component library verification"
     echo "Verifying production component library..."
-    echo "URL: https://tryentist.com/wdv/test-components.html"
+    echo "URL: https://tryentist.com/wdv/style-guide.html"
     echo "Please verify:"
     echo "  - All components load correctly"
     echo "  - Styling is consistent"
@@ -231,7 +231,8 @@ post_deployment_workflow() {
     
     # 5. Generate test summary
     print_info "Step 5: Generating test summary"
-    if ./test-summary.sh; then
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    if "$SCRIPT_DIR/test-summary.sh"; then
         print_success "Test summary generated"
     else
         print_warning "Test summary generation failed"
@@ -244,7 +245,7 @@ post_deployment_workflow() {
     echo "Production URLs:"
     echo "  - Main app: https://tryentist.com/wdv/"
     echo "  - Coach console: https://tryentist.com/wdv/coach.html"
-    echo "  - Component library: https://tryentist.com/wdv/test-components.html"
+    echo "  - Component library: https://tryentist.com/wdv/style-guide.html"
     echo "  - Live results: https://tryentist.com/wdv/results.html"
 }
 

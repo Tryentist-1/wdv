@@ -544,7 +544,7 @@ if (!$authorized && strlen($pass) > 0) {
 ### Testing
 - **Automated:** Playwright E2E tests (`npm test`)
 - **Manual:** See `docs/MANUAL_TESTING_CHECKLIST.md`
-- **Component Library:** `test-components.html` for UI testing
+- **Component Library:** `style-guide.html` for UI testing
 
 ---
 

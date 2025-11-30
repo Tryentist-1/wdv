@@ -55,7 +55,7 @@ define('CORS_ORIGIN', '*');  // Or 'http://localhost:8001'
 
 ### 5. Test Connection
 ```bash
-php api/test_db_connection.php
+php tests/api/harness/test_db_connection.php
 ```
 
 Should show: ✅ Connection successful!
@@ -78,8 +78,8 @@ npm run serve
 ### 8. Open Browser
 - **Main app:** http://localhost:8001/index.html
 - **Coach console:** http://localhost:8001/coach.html
-- **Component library:** http://localhost:8001/test-components.html
-- **API test harness:** http://localhost:8001/api/test_harness.html
+- **Style guide:** http://localhost:8001/tests/components/style-guide.html
+- **API test harness:** http://localhost:8001/tests/api/harness/test_harness.html
 
 ---
 
@@ -225,7 +225,7 @@ The application now supports tournament bracket management for Solo and Team mat
 ### Verify Everything Works
 ```bash
 # 1. Test component library (visual verification)
-open http://localhost:8001/test-components.html
+open http://localhost:8001/tests/components/style-guide.html
 
 # 2. Run local E2E tests
 npm run test:local
@@ -239,7 +239,7 @@ cat tests/manual_sanity_check.md
 
 ### Testing Resources
 - **📋 [TESTING_STRATEGY.md](TESTING_STRATEGY.md)** - Complete testing overview
-- **🎨 Component Library** - http://localhost:8001/test-components.html
+- **🎨 Style Guide** - http://localhost:8001/tests/components/style-guide.html
 - **📁 Test Organization** - [tests/TEST_ORGANIZATION.md](tests/TEST_ORGANIZATION.md)
 
 ---

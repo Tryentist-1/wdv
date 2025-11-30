@@ -195,7 +195,7 @@ This release completes the comprehensive Tailwind CSS migration across all major
 ## 📚 Documentation Updates
 
 - **Migration Plan** – `RANKING_ROUND_MIGRATION_PLAN.md` documents all 9 phases
-- **Component Library** – `test-components.html` serves as reference for all UI patterns
+- **Component Library** – `style-guide.html` serves as reference for all UI patterns
 - **README** – Updated to reflect 100% Tailwind migration status
 
 ## 🎯 Next Steps

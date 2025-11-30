@@ -23,7 +23,7 @@ Padding follows the same scale:
 - `py-2` = 8px vertical padding
 - `pl-2 pr-1` = 8px left, 4px right (asymmetric padding)
 
-## Standard Scoring Table Layout (from test-components.html)
+## Standard Scoring Table Layout (from style-guide.html)
 
 ### Column Widths:
 - **Archer**: No fixed width (`px-3` padding only) - auto-sizes based on content
@@ -43,7 +43,7 @@ Padding follows the same scale:
 
 ## Current Implementation
 
-The scoring table in `ranking_round_300.js` now matches the standard from `test-components.html`:
+The scoring table in `ranking_round_300.js` now matches the standard from `style-guide.html`:
 
 ```html
 <th class="px-3 py-2 ...">Archer</th>  <!-- No fixed width -->

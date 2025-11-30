@@ -70,7 +70,7 @@ Once the servers are running:
 
 - **Main Application:** http://localhost:8001/index.html
 - **Coach Console:** http://localhost:8001/coach.html
-- **Component Library:** http://localhost:8001/test-components.html
+- **Component Library:** http://localhost:8001/style-guide.html
 - **API Test Harness:** http://localhost:8001/api/test_harness.html
 
 ---

@@ -64,7 +64,7 @@ CLOSE    CLEAR
 - `js/solo_card.js` - Updated `renderKeypad()`
 - `js/team_card.js` - Updated `renderKeypad()`
 - `scorecard_editor.html` - Updated keypad modal
-- `test-components.html` - Reference implementation
+- `style-guide.html` - Reference implementation
 
 ---
 
@@ -150,7 +150,7 @@ Dark mode had black text on dark backgrounds, making content unreadable.
 > "Dark Mode should have white text on any background darker than 300"
 
 **Files Changed:**
-- `test-components.html` - Reference implementation
+- `style-guide.html` - Reference implementation
 - `js/solo_card.js` - Table rendering
 - `js/team_card.js` - Table rendering
 
@@ -169,7 +169,7 @@ Dark mode had black text on dark backgrounds, making content unreadable.
 - `solo_card.html` - Removed legacy CSS, added Tailwind
 - `team_card.html` - Removed legacy CSS, added Tailwind
 - `scorecard_editor.html` - Keypad modal
-- `test-components.html` - Reference components
+- `style-guide.html` - Reference components
 
 **Lines Added:** 1,814 lines
 **Lines Removed:** 295 lines
@@ -351,7 +351,7 @@ None identified at this time.
 - **Migration Plan:** `docs/TAILWIND_MIGRATION_PLAN.md`
 - **Keypad Migration:** `docs/KEYPAD_MIGRATION_TODO.md`
 - **Rollback Plan:** `docs/KEYPAD_ROLLBACK_PLAN.md`
-- **Component Reference:** `test-components.html`
+- **Component Reference:** `style-guide.html`
 
 ---
 

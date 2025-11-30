@@ -32,7 +32,7 @@ tests/
 │   └── endpoints/               # Individual endpoint tests
 │
 ├── components/                   # Component Testing
-│   ├── test-components.html     # Visual component library
+│   ├── style-guide.html     # Visual component library
 │   ├── component-tests.md       # Component testing checklist
 │   └── mobile-testing.md        # Mobile-specific component tests
 │
@@ -111,7 +111,7 @@ tests/
 **Scope:** Visual consistency and mobile usability
 
 **Files:**
-- `test-components.html` - Complete component showcase
+- `style-guide.html` - Complete component showcase
 - `component-tests.md` - Component testing checklist
 - `mobile-testing.md` - Mobile-specific testing guide
 
@@ -132,7 +132,7 @@ tests/
 npm run serve
 
 # 2. Component library check
-open http://localhost:8001/test-components.html
+open http://localhost:8001/tests/components/style-guide.html
 
 # 3. Unit tests (fast feedback)
 open http://localhost:8001/tests/unit/index.html
@@ -156,7 +156,7 @@ npm test
 cat tests/manual_sanity_check.md
 
 # 4. Component library verification
-open http://localhost:8001/test-components.html
+open http://localhost:8001/tests/components/style-guide.html
 ```
 
 ### Post-Deployment Workflow
@@ -168,10 +168,10 @@ npm run test:remote
 ./test_api.sh
 
 # 3. Production component library
-open https://tryentist.com/wdv/test-components.html
+open https://tryentist.com/wdv/style-guide.html
 
 # 4. Test report generation
-./test-summary.sh
+./scripts/test-summary.sh
 ```
 
 ---
@@ -213,7 +213,7 @@ open https://tryentist.com/wdv/test-components.html
 ## 🎨 Component Library Integration
 
 ### Component Testing Approach
-The `test-components.html` file serves multiple purposes:
+The `style-guide.html` file serves multiple purposes:
 
 1. **Visual Reference** - Complete UI component showcase
 2. **Manual Testing** - Interactive component validation
@@ -234,13 +234,13 @@ The `test-components.html` file serves multiple purposes:
 ```bash
 # Component library as part of test workflow
 npm run serve
-open http://localhost:8001/test-components.html
+open http://localhost:8001/tests/components/style-guide.html
 
 # Verify components before E2E tests
 npm test
 
 # Production component verification
-open https://tryentist.com/wdv/test-components.html
+open https://tryentist.com/wdv/style-guide.html
 ```
 
 ---
@@ -278,10 +278,10 @@ reports/
 npx playwright show-report
 
 # Generate test summary
-./test-summary.sh
+./scripts/test-summary.sh
 
 # View component library
-open http://localhost:8001/test-components.html
+open http://localhost:8001/tests/components/style-guide.html
 ```
 
 ---
@@ -375,7 +375,7 @@ npm run test:headed        # See tests execute
 npm run serve
 
 # Component library
-open http://localhost:8001/test-components.html
+open http://localhost:8001/tests/components/style-guide.html
 
 # Run all tests
 npm test
@@ -384,13 +384,13 @@ npm test
 npm run test:ui
 
 # Test summary
-./test-summary.sh
+./scripts/test-summary.sh
 ```
 
 ### Key Files
 - `TESTING_STRATEGY.md` - Complete testing overview
 - `tests/manual_sanity_check.md` - Pre-deployment checklist
-- `test-components.html` - Component library
+- `style-guide.html` - Component library
 - `tests/README.md` - Test suite documentation
 
 ---

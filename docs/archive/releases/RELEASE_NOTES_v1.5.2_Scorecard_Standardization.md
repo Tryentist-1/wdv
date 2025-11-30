@@ -63,7 +63,7 @@ This release achieves complete **scorecard standardization** across all modules 
 ### **ScorecardView Component (`js/scorecard_view.js`)**
 - **Unified API**: Single component handles all scorecard display needs
 - **Flexible Configuration**: Supports both full-page and modal display modes
-- **Consistent Styling**: Matches `test-components.html` template exactly
+- **Consistent Styling**: Matches `style-guide.html` template exactly
 - **Mobile Optimized**: Touch-friendly interface with proper responsive design
 
 ### **Color System Integration**
@@ -112,7 +112,7 @@ This release achieves complete **scorecard standardization** across all modules 
 
 ### **Component Library**
 - `js/scorecard_view.js` - Standardized scorecard rendering component
-- `test-components.html` - Reference template for consistent styling
+- `style-guide.html` - Reference template for consistent styling
 
 ## 🎯 User Experience Impact
 
