@@ -155,3 +155,4 @@ This release integrates solo and team Olympic match results into the archer hist
 
 **Previous Release:** [v1.7.1](RELEASE_NOTES_v1.7.1.md) - Scorecard Status Standardization
 
+

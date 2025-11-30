@@ -383,7 +383,7 @@ tr.sync-ok td { outline: 2px solid #28a745; outline-offset: -2px; }
   padding: 0;
   border: none;
   text-align: center;
-  background-color: transparent;
+  /* background-color removed - let Tailwind bg-score-* classes work */
   font-weight: bold;
   color: inherit;
   font-family: inherit;

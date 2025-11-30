@@ -1228,7 +1228,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!preassignedSetupControls.baleListContainer) return;
 
         // Add RESET button to pre-assigned setup header
-        const setupCard = preassignedSetupControls.section.querySelector('.preassigned-setup-card');
+        const setupCard = preassignedSetupControls.section.querySelector('#preassigned-setup-section > div > div');
         if (setupCard) {
             // Check if reset button already exists
             let existingResetBtn = setupCard.querySelector('#preassigned-reset-btn');
@@ -1295,15 +1295,15 @@ document.addEventListener('DOMContentLoaded', () => {
         sortedBales.forEach(baleNumber => {
             const archers = baleGroups[baleNumber];
             const baleItem = document.createElement('div');
-            baleItem.className = 'bale-list-item';
+            baleItem.className = 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 md:p-4 mb-3 shadow-sm hover:shadow-md hover:border-primary dark:hover:border-blue-400 transition-all duration-200 flex flex-col md:flex-row md:items-center gap-3';
 
             baleItem.innerHTML = `
-                <div class="bale-info">
-                    <div class="bale-number">Bale ${baleNumber}</div>
-                    <div class="bale-archers">${archers.length} archers</div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-lg font-bold text-primary dark:text-blue-400 mb-1">Bale ${baleNumber}</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">${archers.length} archers</div>
                 </div>
-                <div class="bale-actions">
-                    <button class="btn btn-primary" onclick="loadEntireBale(${baleNumber}, ${JSON.stringify(archers).replace(/\"/g, '&quot;')})">
+                <div class="md:ml-4 ml-0 flex-shrink-0 md:w-auto w-full">
+                    <button class="w-full md:w-auto whitespace-nowrap px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors min-h-[44px] min-w-[120px]" onclick="loadEntireBale(${baleNumber}, ${JSON.stringify(archers).replace(/\"/g, '&quot;')})">
                         Start Scoring
                     </button>
                 </div>
@@ -1311,30 +1311,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Render detailed archer list to match SetupNEW (Archer Name, School, Division, Bale, Target)
             const table = document.createElement('table');
-            table.className = 'archer-table';
+            table.className = 'w-full mt-3 md:mt-4 border-collapse text-sm md:text-base';
             const thead = document.createElement('thead');
+            thead.className = 'bg-gray-100 dark:bg-gray-700 border-b-2 border-gray-200 dark:border-gray-600';
             thead.innerHTML = `
                 <tr>
-                    <th>Archer Name</th>
-                    <th>School</th>
-                    <th>Division</th>
-                    <th>Bale</th>
-                    <th>Target</th>
+                    <th class="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wide">Archer Name</th>
+                    <th class="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wide">School</th>
+                    <th class="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wide">Division</th>
+                    <th class="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wide">Bale</th>
+                    <th class="px-2 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-wide">Target</th>
                 </tr>`;
             const tbody = document.createElement('tbody');
-            archers.forEach(a => {
+            archers.forEach((a, index) => {
                 const tr = document.createElement('tr');
+                const isLast = index === archers.length - 1;
+                tr.className = isLast ? 'hover:bg-gray-50 dark:hover:bg-gray-700' : 'border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700';
                 const name = `${(a.firstName || '').trim()} ${(a.lastName || '').trim()}`.trim();
                 const school = (a.school || '').toString();
                 const division = (a.level || '').toString();
                 const bale = a.baleNumber != null ? a.baleNumber : '';
                 const target = (a.target || '').toString();
                 tr.innerHTML = `
-                    <td>${name}</td>
-                    <td>${school}</td>
-                    <td>${division}</td>
-                    <td>${bale}</td>
-                    <td>${target}</td>`;
+                    <td class="px-2 py-2 text-gray-900 dark:text-gray-100">${name}</td>
+                    <td class="px-2 py-2 text-gray-900 dark:text-gray-100">${school}</td>
+                    <td class="px-2 py-2 text-gray-900 dark:text-gray-100">${division}</td>
+                    <td class="px-2 py-2 text-gray-900 dark:text-gray-100">${bale}</td>
+                    <td class="px-2 py-2 text-gray-900 dark:text-gray-100">${target}</td>`;
                 tbody.appendChild(tr);
             });
             table.appendChild(thead);
