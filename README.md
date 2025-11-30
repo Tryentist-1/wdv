@@ -2,7 +2,7 @@
 
 > **Mobile-first web applications for Olympic Archery in Schools (OAS) scoring**
 
-[![Version](https://img.shields.io/badge/version-1.8.0-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-1.8.1-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-production-green.svg)]()
 [![Database](https://img.shields.io/badge/database-MySQL-orange.svg)]()
 [![Components](https://img.shields.io/badge/components-50%25_integrated-purple.svg)]()
@@ -527,7 +527,16 @@ Copyright © 2025 WDV Archery
 
 ## 📋 Recent Updates
 
-### v1.8.0 - Solo & Team Match History Integration (December 2025)
+### v1.8.1 - Match Tracking Release (December 1, 2025)
+- ✅ **Match Tracking** – Win/loss ratio display in archer history
+- ✅ **Solo Match Modal** – Quick view of complete match details without navigation
+- ✅ **Reusable Component** – SoloMatchView component for consistent match display
+- ✅ **Enhanced Authentication** – Support for match codes in standalone matches
+- ✅ **Complete Match Info** – Shows all sets, scores, set points, and match totals
+
+**Full Release Notes:** [RELEASE_NOTES_v1.8.1.md](RELEASE_NOTES_v1.8.1.md)
+
+### v1.8.0 - Solo & Team Match History Integration (November 30, 2025)
 - ✅ **Unified History Display** – Ranking rounds, solo matches, and team matches now shown together in archer history
 - ✅ **Accurate Totals** – Sets won and total scores calculated from database set records
 - ✅ **Proper Navigation** – Solo matches route to solo_card.html with match loaded from URL
@@ -596,6 +605,6 @@ Copyright © 2025 WDV Archery
 
 ---
 
-**Last Updated:** December 2025  
-**Version:** 1.8.0  
+**Last Updated:** December 1, 2025  
+**Version:** 1.8.1  
 **Status:** Production + 100% Tailwind Migration Complete

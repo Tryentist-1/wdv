@@ -75,19 +75,34 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Improved "Select Your Self" UX in archer module with prominent banners, enhanced summary bar, visual cues, and warning modals  
-**Current Priority:** Match Tracking Feature - Solo match history with win/loss ratio and match restoration  
-**Active Branch:** feature/match-tracking  
+**Last Session Focus:** Match Tracking Feature - Solo match history with win/loss ratio, modal view, and match restoration  
+**Current Priority:** Solo Match Verification - Adding Solo Matches to Verify step in coach module or Event Dashboard  
+**Active Branch:** main  
 **Blockers:** None
 
 **Quick Context for This Session:**
-- ✅ What are we working on today? Add Match Tracking feature showing solo match history, win/loss ratio, opponent info, complete match scores, and ability to restore/view matches (similar to showcard for rounds)
-- ✅ What files/modules are we touching? archer_history.html, js/solo_card.js, api/index.php (potentially)
-- ✅ Any specific constraints or requirements? Pure Tailwind only, mobile-first design, follow existing patterns from ranking round showcard functionality
+- ✅ What are we working on today? Add Solo Matches to the Verify step in coach module or Event Dashboard
+- ✅ What files/modules are we touching? TBD - coach.html, event_dashboard.html, api/index.php (potentially)
+- ✅ Any specific constraints or requirements? Follow existing verification workflow patterns from ranking rounds
 
 ---
 
-### ✅ Latest Release (v1.8.0)
+### ✅ Latest Release (v1.8.1)
+
+**Release Date:** December 1, 2025  
+**Status:** Production
+
+- **Match Tracking:** Win/loss ratio display in archer history (e.g., "5-3")
+- **Solo Match Modal:** Click any solo match to view complete details in modal overlay
+- **Reusable Component:** SoloMatchView component for consistent match display
+- **Enhanced Authentication:** Support for match codes in standalone matches
+- **Complete Match Info:** Shows all sets, scores, set points, and match totals
+- **Remake Match:** Button to navigate to solo card for full editing/review
+
+**Full Release Notes:** [RELEASE_NOTES_v1.8.1.md](RELEASE_NOTES_v1.8.1.md)  
+**Why Release Notes Matter:** See [RELEASE_NOTES_FOR_LLMS.md](docs/RELEASE_NOTES_FOR_LLMS.md) for how release notes help LLMs understand context better than git commits alone.
+
+### ✅ Previous Release (v1.8.0)
 
 **Release Date:** November 30 2025  
 **Status:** Production
@@ -99,8 +114,7 @@
 - **Winner Indicators:** Trophy emoji shown for match winners
 - **Type-Specific Display:** Clear visual distinction between ranking rounds, solo matches, and team matches
 
-**Full Release Notes:** [RELEASE_NOTES_v1.8.0.md](RELEASE_NOTES_v1.8.0.md)  
-**Why Release Notes Matter:** See [RELEASE_NOTES_FOR_LLMS.md](docs/RELEASE_NOTES_FOR_LLMS.md) for how release notes help LLMs understand context better than git commits alone.
+**Full Release Notes:** [RELEASE_NOTES_v1.8.0.md](RELEASE_NOTES_v1.8.0.md)
 
 ### ✅ Previous Release (v1.7.1)
 
@@ -202,17 +216,17 @@
 
 ### Recent Changes
 - ✅ **Session Date:** December 1, 2025
-- ✅ **What We Did:** Improved "Select Your Self" UX in archer module:
-  - Added prominent banner when "You: Not set" with dismissible option
-  - Enhanced summary bar with two states (not set / set) and action buttons
-  - Added visual cues (plus badges) that only appear when no self is selected
-  - Improved search placeholder to "Find an Archer" with clear (X) button
-  - Added warning modal before changing "You" setting
-  - Added animated arrow on index.html pointing to Archer Details button
-  - Moved sync status to footer for better space utilization
-- ✅ **Files Changed:** `archer_list.html`, `index.html`, `css/tailwind-compiled.css`
-- ✅ **Status:** Completed
-- ✅ **Next Steps:** Continue UX improvements and testing
+- ✅ **What We Did:** Implemented Match Tracking feature for solo matches:
+  - Created SoloMatchView component (`js/solo_match_view.js`) for reusable match display
+  - Added win/loss ratio calculation and display in archer history
+  - Implemented modal view for solo match details (all sets, scores, totals)
+  - Enhanced authentication to support match codes for standalone matches
+  - Added match code to history API response
+  - Fixed 401 Unauthorized error for standalone matches
+  - Added "Remake Match" button in modal for navigation to solo card
+- ✅ **Files Changed:** `archer_history.html`, `api/index.php`, `js/solo_match_view.js` (new), `docs/features/solo-matches/MATCH_TRACKING_FEATURE_ANALYSIS.md` (new)
+- ✅ **Status:** Completed and released (v1.8.1)
+- ✅ **Next Steps:** Add Solo Matches to Verify step in coach module or Event Dashboard
 - ✅ **Blockers:** None
 
 ### Quick Wrap-Up Template (Copy-Paste)
