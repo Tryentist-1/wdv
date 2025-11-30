@@ -2939,6 +2939,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/overview$#i', $route, $m) && $method =
         }
         
         // Get rounds with progress - including started scorecards count
+        // NOTE: Use COUNT(DISTINCT) for completed to avoid double-counting when LEFT JOIN creates multiple rows
         $roundsStmt = $pdo->prepare('
             SELECT 
                 r.id,
@@ -2946,7 +2947,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/overview$#i', $route, $m) && $method =
                 r.round_type,
                 r.status,
                 COUNT(DISTINCT ra.id) as total_scorecards,
-                SUM(CASE WHEN ra.completed = TRUE THEN 1 ELSE 0 END) as completed_scorecards,
+                COUNT(DISTINCT CASE WHEN ra.completed = TRUE THEN ra.id END) as completed_scorecards,
                 COUNT(DISTINCT CASE WHEN ee.id IS NOT NULL THEN ra.id END) as started_scorecards,
                 COUNT(DISTINCT ra.bale_number) as bale_count,
                 AVG(
