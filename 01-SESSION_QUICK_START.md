@@ -76,14 +76,14 @@
 ### 🎯 Current Sprint / Active Work
 
 **Last Session Focus:** Improved "Select Your Self" UX in archer module with prominent banners, enhanced summary bar, visual cues, and warning modals  
-**Current Priority:** UX improvements for archer selection and onboarding flow  
-**Active Branch:** feature/improve-select-yourself-ux  
+**Current Priority:** Match Tracking Feature - Solo match history with win/loss ratio and match restoration  
+**Active Branch:** feature/match-tracking  
 **Blockers:** None
 
 **Quick Context for This Session:**
-- ✅ What are we working on today? Improved "Select Your Self" experience with banners, visual cues, search improvements, and warning modals
-- ✅ What files/modules are we touching? archer_list.html, index.html, css/tailwind-compiled.css
-- ✅ Any specific constraints or requirements? Pure Tailwind only, mobile-first design
+- ✅ What are we working on today? Add Match Tracking feature showing solo match history, win/loss ratio, opponent info, complete match scores, and ability to restore/view matches (similar to showcard for rounds)
+- ✅ What files/modules are we touching? archer_history.html, js/solo_card.js, api/index.php (potentially)
+- ✅ Any specific constraints or requirements? Pure Tailwind only, mobile-first design, follow existing patterns from ranking round showcard functionality
 
 ---
 

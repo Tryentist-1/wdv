@@ -175,6 +175,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         SELECT 
             sm.id AS match_id,
             sm.event_id,
+            sm.match_code,
             sm.date AS event_date,
             sm.status,
             sm.card_status,
@@ -228,6 +229,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             'type' => 'solo',
             'match_id' => $match['match_id'],
             'event_id' => $match['event_id'],
+            'match_code' => $match['match_code'], // Include match code for authentication
             'event_name' => $match['event_name'] ?: 'Solo Match',
             'event_date' => $match['event_date'],
             'card_status' => $match['card_status'],

@@ -27,6 +27,7 @@
     }
   </script>
   <script src="js/scorecard_view.js"></script>
+  <script src="js/solo_match_view.js"></script>
   <script src="js/unified_scorecard_list.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
@@ -44,6 +45,7 @@
         <span>📊 Level: <strong id="archer-level" class="text-gray-800 dark:text-white">-</strong></span>
         <span>👤 Gender: <strong id="archer-gender" class="text-gray-800 dark:text-white">-</strong></span>
         <span>🎯 Total Rounds: <strong id="total-rounds" class="text-gray-800 dark:text-white">0</strong></span>
+        <span>🎯 Solo Record: <strong id="solo-record" class="text-gray-800 dark:text-white">-</strong></span>
       </div>
     </div>
 
@@ -92,6 +94,24 @@
     
     // Store archer data globally so it can be accessed when viewing scorecards
     let currentArcherData = null;
+    let historyData = []; // Store history for win/loss calculation
+
+    /**
+     * Calculate win/loss ratio from history
+     */
+    function calculateWinLossRatio(history) {
+      const soloMatches = history.filter(item => item.type === 'solo');
+      const wins = soloMatches.filter(m => m.is_winner === true).length;
+      const losses = soloMatches.filter(m => m.is_winner === false).length;
+      const total = soloMatches.length;
+      
+      return {
+        wins,
+        losses,
+        total,
+        ratio: `${wins}-${losses}`
+      };
+    }
 
     async function loadHistory() {
       if (!archerId) {
@@ -142,6 +162,14 @@
         document.getElementById('archer-level').textContent = data.archer.level || 'N/A';
         document.getElementById('archer-gender').textContent = data.archer.gender === 'M' ? 'Male' : data.archer.gender === 'F' ? 'Female' : 'N/A';
         document.getElementById('total-rounds').textContent = data.totalRounds;
+        
+        // Store history for win/loss calculation
+        historyData = data.history || [];
+        
+        // Calculate and display win/loss ratio
+        const { wins, losses, ratio } = calculateWinLossRatio(historyData);
+        document.getElementById('solo-record').textContent = ratio || '0-0';
+        
         document.getElementById('archer-info').classList.remove('hidden');
 
         // Render history
@@ -261,8 +289,7 @@
           if (item.type === 'ranking') {
             showRoundScorecard(item);
           } else if (item.type === 'solo') {
-            // TODO: Show solo match scorecard
-            console.log('Solo match clicked:', item);
+            showSoloMatchScorecard(item);
           } else if (item.type === 'team') {
             // TODO: Show team match scorecard
             console.log('Team match clicked:', item);
@@ -279,6 +306,113 @@
       document.getElementById('error').classList.remove('hidden');
     }
     
+    /**
+     * Get authentication headers for API requests
+     * Tries coach API key first, then event entry code, then match code
+     */
+    function getAuthHeaders(matchId = null, matchCode = null) {
+      const headers = { 'Content-Type': 'application/json' };
+      
+      // Try coach API key first
+      const coachKey = localStorage.getItem('coach_api_key') || localStorage.getItem('coach_passcode') || '';
+      if (coachKey) {
+        headers['X-API-Key'] = coachKey;
+        headers['X-Passcode'] = coachKey;
+        return headers;
+      }
+      
+      // Fall back to event entry code
+      const entryCode = localStorage.getItem('event_entry_code') || '';
+      if (entryCode) {
+        headers['X-Passcode'] = entryCode;
+        return headers;
+      }
+      
+      // Try match code (for standalone matches)
+      if (matchCode) {
+        headers['X-Passcode'] = matchCode;
+        return headers;
+      }
+      
+      // Try to get match code from localStorage if matchId provided
+      if (matchId) {
+        const storedMatchCode = localStorage.getItem(`solo_match_code:${matchId}`);
+        if (storedMatchCode) {
+          headers['X-Passcode'] = storedMatchCode;
+          return headers;
+        }
+      }
+      
+      // No auth available - return headers without auth (may fail for protected endpoints)
+      return headers;
+    }
+
+    /**
+     * Show solo match scorecard in modal
+     */
+    async function showSoloMatchScorecard(match) {
+      if (!match || !match.match_id) {
+        console.error('Invalid match data:', match);
+        alert('Unable to load match. Missing match ID.');
+        return;
+      }
+
+      try {
+        if (typeof SoloMatchView === 'undefined') {
+          alert('Solo match viewer is not loaded. Please refresh the page.');
+          return;
+        }
+
+        console.log('Loading solo match:', match.match_id);
+
+        // Get match code from history data or localStorage
+        const matchCode = match.match_code || localStorage.getItem(`solo_match_code:${match.match_id}`);
+        
+        // Store match code in localStorage if we got it from history (for future use)
+        if (match.match_code && !localStorage.getItem(`solo_match_code:${match.match_id}`)) {
+          localStorage.setItem(`solo_match_code:${match.match_id}`, match.match_code);
+        }
+
+        // Get authentication headers (includes match code if available)
+        const headers = getAuthHeaders(match.match_id, matchCode);
+
+        // Fetch complete match details from API
+        const response = await fetch(`${API_BASE}/solo-matches/${match.match_id}`, {
+          headers: headers
+        });
+        if (!response.ok) {
+          if (response.status === 404) {
+            alert('Match not found. This match may have been deleted.');
+          } else if (response.status === 401) {
+            alert('Authentication required. Please ensure you are logged in as a coach or have an event code.');
+          } else {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return;
+        }
+
+        const data = await response.json();
+        const matchData = data.match;
+
+        if (!matchData) {
+          throw new Error('Invalid match data received');
+        }
+
+        console.log('Match data loaded:', matchData);
+
+        // Show modal with match details
+        SoloMatchView.showMatchModal(matchData, {
+          onRemake: () => {
+            // Navigate to solo card for remake
+            window.location.href = `solo_card.html?match=${match.match_id}`;
+          }
+        });
+      } catch (error) {
+        console.error('Error loading solo match:', error);
+        alert('Unable to load match details: ' + error.message + '\n\nCheck console for details.');
+      }
+    }
+
     async function showRoundScorecard(round) {
       // Fetch detailed scorecard data from API
       try {
