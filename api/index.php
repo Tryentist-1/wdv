@@ -1609,12 +1609,13 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/scores$#i', $route, $m) && $met
             
             // Insert new scores with calculated totals
             $insertStmt = $pdo->prepare('
-                INSERT INTO end_events (round_id, round_archer_id, end_number, a1, a2, a3, end_total, running_total, tens, xs)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO end_events (id, round_id, round_archer_id, end_number, a1, a2, a3, end_total, running_total, tens, xs, server_ts)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ');
             
             foreach ($validatedEnds as $end) {
                 $insertStmt->execute([
+                    $genUuid(), // Generate UUID for each end_event
                     $card['round_id'],
                     $roundArcherId,
                     $end['end_number'],
