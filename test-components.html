@@ -104,6 +104,8 @@
                 Selection</a>
             <a href="#unified-scorecard-list"
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Scorecard List</a>
+            <a href="#preassigned-setup"
+                class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Pre-assigned Setup</a>
         </nav>
     </div>
 
@@ -1169,6 +1171,194 @@
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 ✨ Real-time search filtering • Start button enables when archers selected • Empty state messaging
             </p>
+        </div>
+    </section>
+
+    <!-- Section: Pre-assigned Setup -->
+    <section id="preassigned-setup" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Pre-assigned Setup</h2>
+
+        <div class="space-y-6">
+            <!-- Setup Card Example -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Pre-assigned Bale List</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Clean, mobile-first list view for displaying pre-assigned bales with archer details. Used in ranking_round_300.html.
+                </p>
+
+                <!-- Pre-assigned Setup Card -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div class="preassigned-setup-card">
+                        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Pre-assigned Bales</h3>
+                        <div id="bale-list-container" class="space-y-2">
+                            <!-- Bale Item 1 -->
+                            <div class="bale-list-item">
+                                <div class="bale-info">
+                                    <div class="bale-number">Bale 1</div>
+                                    <div class="bale-archers">4 archers</div>
+                                </div>
+                                <div class="bale-actions">
+                                    <button class="btn btn-primary px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">
+                                        Start Scoring
+                                    </button>
+                                </div>
+                                <table class="archer-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Archer Name</th>
+                                            <th>School</th>
+                                            <th>Division</th>
+                                            <th>Bale</th>
+                                            <th>Target</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Adjani De La Riva</td>
+                                            <td>Lincoln High</td>
+                                            <td>VAR</td>
+                                            <td>1</td>
+                                            <td>A</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Alina Vizcarra</td>
+                                            <td>Lincoln High</td>
+                                            <td>VAR</td>
+                                            <td>1</td>
+                                            <td>B</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Alan Lopez</td>
+                                            <td>Lincoln High</td>
+                                            <td>JV</td>
+                                            <td>1</td>
+                                            <td>C</td>
+                                        </tr>
+                                        <tr>
+                                            <td>John Doe</td>
+                                            <td>Lincoln High</td>
+                                            <td>VAR</td>
+                                            <td>1</td>
+                                            <td>D</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Bale Item 2 -->
+                            <div class="bale-list-item">
+                                <div class="bale-info">
+                                    <div class="bale-number">Bale 2</div>
+                                    <div class="bale-archers">3 archers</div>
+                                </div>
+                                <div class="bale-actions">
+                                    <button class="btn btn-primary px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">
+                                        Start Scoring
+                                    </button>
+                                </div>
+                                <table class="archer-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Archer Name</th>
+                                            <th>School</th>
+                                            <th>Division</th>
+                                            <th>Bale</th>
+                                            <th>Target</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Jane Smith</td>
+                                            <td>Roosevelt High</td>
+                                            <td>VAR</td>
+                                            <td>2</td>
+                                            <td>A</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Bob Johnson</td>
+                                            <td>Roosevelt High</td>
+                                            <td>JV</td>
+                                            <td>2</td>
+                                            <td>B</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Sarah Williams</td>
+                                            <td>Roosevelt High</td>
+                                            <td>VAR</td>
+                                            <td>2</td>
+                                            <td>C</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Features</h3>
+                <div class="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Mobile-First Design:</strong> Responsive layout that stacks vertically on mobile devices
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Bale Information:</strong> Clear display of bale number and archer count
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Archer Details Table:</strong> Expandable table showing all archers assigned to each bale
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Hover States:</strong> Visual feedback on bale list items
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Touch-Friendly:</strong> Minimum 44px button heights for mobile interaction
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Dark Mode:</strong> Full dark mode support with Tailwind classes
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-success">✓</span>
+                        <div>
+                            <strong>Compact Table:</strong> Responsive table design that adapts to screen size
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State Example -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">Empty State</h3>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div class="preassigned-setup-card">
+                        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Pre-assigned Bales</h3>
+                        <div id="bale-list-container" class="space-y-2">
+                            <div class="text-center text-gray-600 dark:text-gray-400 p-4">
+                                No Archers Available<br/>Connect to an event to load archers.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
