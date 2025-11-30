@@ -288,9 +288,15 @@ cat tests/manual_sanity_check.md
 
 ### Production Deployment (FTP)
 
+**IMPORTANT FOR LLMs:** When asked to "promote to prod", "deploy to production", or "FTP deploy", use this script:
+
 **Primary Deployment Script:** `scripts/deploy/DeployFTP.sh`
 
-This is the main script for deploying to production via FTP. When asked to "promote to prod" or "deploy to production", use this script.
+This is the main script for deploying to production via FTP. It supports several flags:
+- `--dry-run` - Preview changes without deploying
+- `--reset` - Reset remote files before deployment  
+- `--no-local-backup` - Skip local backup creation
+- `--remote-backup` - Create backup on remote server
 ```bash
 # 1. Test locally
 npm run test:e2e
@@ -299,7 +305,7 @@ npm run test:e2e
 ./scripts/deploy/DeployFTP.sh
 
 # 3. Purge Cloudflare cache
-./test_cloudflare.sh
+./tests/scripts/test_cloudflare.sh
 
 # 4. Verify deployment
 open https://tryentist.com/wdv/
