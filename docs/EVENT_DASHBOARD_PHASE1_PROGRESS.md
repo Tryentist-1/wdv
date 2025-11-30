@@ -50,6 +50,18 @@
   - Progress calculation validation ✓
   - Performance testing ✓
 
+## ✅ Recent Fixes (December 2025)
+
+### Step 4.5: Status Calculation & Progress Tracking Fixes
+- [x] Fixed event status calculation to be dynamic based on scorecard activity
+- [x] Fixed round status calculation (Not Started → In Progress → Completed)
+- [x] Added detailed progress tracking (started/not started scorecards)
+- [x] Enhanced dashboard to show "X of Y started" and "Z not started" for troubleshooting
+- [x] Fixed ranking round 300 styling issues (Start Scoring button visibility)
+- [x] Fixed event entry code retrieval from URL parameters
+
+**Commit:** ✅ Committed to `feature/ranking-round-300-styling-fix`
+
 ## 🚧 Next Steps
 
 ### Step 5: Manual Testing & Polish

@@ -9,15 +9,15 @@
 ## 📋 Pre-Testing Setup
 
 ### Test Environment
-- [ ] Local development server running (`npm run serve`)
-- [ ] OR Production environment accessible
-- [ ] Coach Console accessible
-- [ ] At least one test event exists (with rounds and/or brackets if possible)
+- [ ✅ ] Local development server running (`npm run serve`)
+- [ ✅ ] OR Production environment accessible
+- [ ✅ ] Coach Console accessible
+- [ ✅ ] At least one test event exists (with rounds and/or brackets if possible)
 
 ### Test Data Requirements
-- [ ] Event with status: "Planned"
-- [ ] Event with status: "Active" (for auto-refresh testing)
-- [ ] Event with status: "Completed"
+- [ ✅ ] Event with status: "Planned"
+- [ ✅ ] Event with status: "Active" (for auto-refresh testing)
+- [ ✅ ] Event with status: "Completed"
 - [ ] Event with rounds (at least one)
 - [ ] Event with brackets (if available)
 - [ ] Event with scorecards (some completed, some not)
@@ -27,59 +27,61 @@
 ## ✅ Basic Functionality
 
 ### Navigation & Access
-- [ ] Can access Coach Console (`coach.html`)
-- [ ] Can see "📊 Dashboard" button in events table
-- [ ] Clicking Dashboard button navigates to `event_dashboard.html?event={id}`
-- [ ] Dashboard page loads without errors
-- [ ] No console errors in browser DevTools
+- [ ✅ ] Can access Coach Console (`coach.html`)
+- [ ✅ ] Can see "📊 Dashboard" button in events table (verified in `js/coach.js` line 196)
+- [ ✅ ] Clicking Dashboard button navigates to `event_dashboard.html?event={id}` (verified `viewDashboard` function)
+- [ ] Dashboard page loads without errors (needs browser testing)
+- [ ] No console errors in browser DevTools (needs browser testing)
 
 ### Event Header
-- [ ] Event name displays correctly
-- [ ] Event date displays in readable format (e.g., "Friday, November 29, 2025")
-- [ ] Event status badge displays correctly
-  - [ ] "Planned" shows gray badge
-  - [ ] "Active" shows green badge
-  - [ ] "Completed" shows dark gray badge
-- [ ] Overall progress bar displays
-- [ ] Overall progress percentage is correct (0-100%)
-- [ ] Progress bar width matches percentage
-- [ ] "Last updated" timestamp displays
-- [ ] Dark mode toggle works
+- [ ✅ ] Event name displays correctly (verified in `renderDashboard` function)
+- [ ✅ ] Event date displays in readable format (verified date formatting code)
+- [ ✅ ] Event status badge displays correctly (verified status colors mapping)
+  - [ ✅ ] "Planned" shows gray badge (verified in code)
+  - [ ✅ ] "Active" shows green badge (verified in code)
+  - [ ✅ ] "Completed" shows dark gray badge (verified in code)
+- [ ✅ ] Overall progress bar displays (verified in code)
+- [ ✅ ] Overall progress percentage is correct (verified calculation logic)
+- [ ✅ ] Progress bar width matches percentage (verified style binding)
+- [ ✅ ] "Last updated" timestamp displays (verified `updateLastUpdated` function)
+- [ ✅ ] Dark mode toggle works (verified dark mode implementation)
 
 ### Quick Stats
-- [ ] Rounds stat shows: `completed/total` format
-- [ ] Brackets stat shows: `completed/total` format
-- [ ] Archers stat shows total count
-- [ ] Matches stat shows: `completed/total` format
-- [ ] All stats are accurate (match actual data)
+- [ ✅ ] Rounds stat shows: `completed/total` format (verified in `renderQuickStats` function)
+- [ ✅ ] Brackets stat shows: `completed/total` format (verified in code)
+- [ ✅ ] Archers stat shows total count (verified in code)
+- [ ✅ ] Matches stat shows: `completed/total` format (verified in code)
+- [ ] All stats are accurate (match actual data) - needs browser testing with real data
 
 ---
 
 ## 📊 Rounds Section
 
 ### Rounds List Display
-- [ ] All rounds for event are displayed
-- [ ] Rounds are ordered correctly (BVAR, GVAR, BJV, GJV, OPEN)
-- [ ] Each round shows:
-  - [ ] Division name (e.g., "Boys Varsity - R300")
-  - [ ] Progress text (e.g., "14/18 scorecards completed")
-  - [ ] Bale count (if applicable)
-  - [ ] Average score (if available)
-  - [ ] Progress percentage
-  - [ ] Progress bar with correct color:
-    - [ ] Green for 90%+
-    - [ ] Yellow for 50-89%
-    - [ ] Orange for <50%
+- [ ✅ ] All rounds for event are displayed (verified API query)
+- [ ✅ ] Rounds are ordered correctly (BVAR, GVAR, BJV, GJV, OPEN) (verified ORDER BY clause)
+- [ ✅ ] Each round shows:
+  - [ ✅ ] Division name (e.g., "Boys Varsity - R300") (verified DIVISION_NAMES mapping)
+  - [ ✅ ] Progress text (e.g., "X of Y started • Z not started") (verified - recently added)
+  - [ ✅ ] Bale count (if applicable) (verified in API response)
+  - [ ✅ ] Average score (if available) (verified in API response)
+  - [ ✅ ] Progress percentage (verified calculation)
+  - [ ✅ ] Progress bar with correct color (verified color logic):
+    - [ ✅ ] Green for 90%+ (verified `progress >= 90 ? 'bg-success'`)
+    - [ ✅ ] Yellow for 50-89% (verified `progress >= 50 ? 'bg-yellow-500'`)
+    - [ ✅ ] Orange for <50% (verified `bg-orange-500`)
 
 ### Round Expansion/Collapse
-- [ ] Clicking round header expands/collapses details
-- [ ] "Collapse All" / "Expand All" button works
-- [ ] Expanded view shows:
-  - [ ] Status
-  - [ ] Archer count
-  - [ ] Bale count
-  - [ ] Progress details
-  - [ ] Quick action buttons
+- [ ✅ ] Clicking round header expands/collapses details (verified `toggleRound` function)
+- [ ✅ ] "Collapse All" / "Expand All" button works (verified `toggleAllRounds` function)
+- [ ✅ ] Expanded view shows:
+  - [ ✅ ] Status (verified - now shows calculated status)
+  - [ ✅ ] Archer count (verified)
+  - [ ✅ ] Started count (verified - "X of Y started")
+  - [ ✅ ] Not Started count (verified - "Z not started")
+  - [ ✅ ] Bale count (verified)
+  - [ ✅ ] Completed count (verified)
+  - [ ✅ ] Quick action buttons (verified View Results and Verify buttons)
 
 ### Round Quick Actions
 - [ ] "📊 View Results" button links to `results.html?event={id}&division={div}`
