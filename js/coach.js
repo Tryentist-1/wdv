@@ -543,10 +543,23 @@
 
   function formatStatusBadge(status) {
     const normalized = (status || 'PENDING').toUpperCase();
-    let color = '#f1c40f';
-    if (normalized === 'VER') color = '#2ecc71';
-    if (normalized === 'VOID') color = '#e74c3c';
-    return `<span class="status-badge" style="background:${color};color:#fff;">${normalized}</span>`;
+    let color = '#f1c40f'; // Yellow for PENDING
+    let displayText = normalized;
+    
+    if (normalized === 'VER' || normalized === 'VERIFIED') {
+      color = '#2ecc71'; // Green
+      displayText = 'VER';
+    } else if (normalized === 'VOID') {
+      color = '#e74c3c'; // Red
+      displayText = 'VOID';
+    } else if (normalized === 'COMP' || normalized === 'COMPLETED') {
+      color = '#3498db'; // Blue/Primary
+      displayText = 'COMP';
+    } else {
+      displayText = 'PEND';
+    }
+    
+    return `<span class="status-badge" style="background:${color};color:#fff;">${displayText}</span>`;
   }
 
   function formatTimestamp(ts) {

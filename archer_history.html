@@ -190,15 +190,20 @@
           round.event_name?.toLowerCase().includes('practice')
         );
         
-        // Status text
+        // Status text - prioritize card_status from database
         let statusText = '';
-        if (round.card_status === 'VER') {
+        const cardStatus = (round.card_status || '').toUpperCase();
+        
+        if (cardStatus === 'VER' || cardStatus === 'VERIFIED') {
           statusText = 'VER';
-        } else if (round.card_status === 'VOID') {
+        } else if (cardStatus === 'VOID') {
           statusText = 'VOID';
+        } else if (cardStatus === 'COMP' || cardStatus === 'COMPLETED') {
+          statusText = 'COMP';
         } else if (isLocked) {
           statusText = 'LOCK';
         } else if (round.ends_completed >= 10 || round.final_score > 0) {
+          // Fallback: if no explicit status but all ends completed, show COMP
           statusText = 'COMP';
         } else {
           statusText = 'PEND';

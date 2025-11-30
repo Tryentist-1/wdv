@@ -180,14 +180,17 @@
     }
 
     function renderStatusText(status) {
-      if (status === 'VER') {
+      const normalized = (status || '').toUpperCase();
+      if (normalized === 'VER' || normalized === 'VERIFIED') {
         return 'VER';
-      } else if (status === 'VOID') {
+      } else if (normalized === 'VOID') {
         return 'VOID';
-      } else if (status === 'PENDING' || status === 'PEND') {
+      } else if (normalized === 'COMP' || normalized === 'COMPLETED') {
+        return 'COMP';
+      } else if (normalized === 'PENDING' || normalized === 'PEND') {
         return 'PEND';
       } else {
-        return 'COMP';
+        return 'PEND'; // Default to PEND for unknown statuses
       }
     }
 
