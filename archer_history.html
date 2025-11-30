@@ -293,6 +293,8 @@
         ]);
         
         // Use globally stored archer data for name and details
+        // Pass cardStatus from round data (history API) or scorecardData (scorecard API)
+        // This ensures the status badge matches what's shown in the list
         const archerData = {
           id: round.archer_id,
           firstName: currentArcherData ? currentArcherData.firstName : '',
@@ -301,6 +303,7 @@
           level: currentArcherData ? currentArcherData.level : '',
           gender: currentArcherData ? currentArcherData.gender : '',
           scores: scores,
+          cardStatus: round.card_status || scorecardData.card_status || (scorecardData.verified ? 'VER' : (scorecardData.ends_completed >= 10 ? 'COMP' : 'PENDING')),
           verified: scorecardData.verified || false,
           completed: (scorecardData.ends_completed >= 10)
         };
