@@ -1187,7 +1187,35 @@
                 alert('✓ Scorecard verified and saved.');
             } catch (error) {
                 console.error('[lock] Error:', error);
-                alert('Failed to save and lock scorecard: ' + error.message);
+                alert('Failed to save and verify scorecard: ' + error.message);
+            }
+        });
+        
+        // Complete button handler
+        document.getElementById('complete-btn')?.addEventListener('click', async () => {
+            if (!confirm('Mark this scorecard as Complete?\n\nThis indicates the scorer has verified the digital card matches the paper card.')) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/status`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        cardStatus: 'COMP'
+                    })
+                });
+                
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `Failed to set status to COMP: ${res.status}`);
+                }
+                
+                await loadScorecard();
+                alert('✓ Scorecard marked as Complete.');
+            } catch (error) {
+                console.error('[complete] Error:', error);
+                alert('Failed to mark scorecard as complete: ' + error.message);
             }
         });
         
