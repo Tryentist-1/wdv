@@ -118,6 +118,59 @@ function getArcherCookie() {
     return archerId;
 }
 
+/**
+ * Initializes dark mode from localStorage or system preference.
+ * Should be called immediately (before DOMContentLoaded) to prevent flash.
+ */
+function initDarkMode() {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+}
+
+/**
+ * Toggles dark mode and saves preference to localStorage and cookie.
+ * @param {boolean} forceDark Optional. If provided, sets dark mode to this value instead of toggling.
+ */
+function toggleDarkMode(forceDark) {
+    const htmlElement = document.documentElement;
+    const isCurrentlyDark = htmlElement.classList.contains('dark');
+    const shouldBeDark = forceDark !== undefined ? forceDark : !isCurrentlyDark;
+    
+    if (shouldBeDark) {
+        htmlElement.classList.add('dark');
+    } else {
+        htmlElement.classList.remove('dark');
+    }
+    
+    const theme = shouldBeDark ? 'dark' : 'light';
+    localStorage.setItem('theme', theme);
+    // Also save to cookie as backup (365 days expiry)
+    setCookie('theme', theme, 365);
+}
+
+/**
+ * Gets the current dark mode preference.
+ * @returns {string} 'dark' or 'light'
+ */
+function getDarkModePreference() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+        return savedTheme;
+    }
+    // Fallback to cookie if localStorage not available
+    const cookieTheme = getCookie('theme');
+    if (cookieTheme === 'dark' || cookieTheme === 'light') {
+        return cookieTheme;
+    }
+    // Fallback to system preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 // Export for Node.js environment (for testing)
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -126,6 +179,9 @@ if (typeof module !== 'undefined' && module.exports) {
         generateUUID,
         getCookie,
         setCookie,
-        getArcherCookie
+        getArcherCookie,
+        initDarkMode,
+        toggleDarkMode,
+        getDarkModePreference
     };
 } 

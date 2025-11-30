@@ -718,10 +718,20 @@ body {
     color: var(--primary-blue);
 }
 
+.dark #match-summary-display .a1-summary,
+.dark .match-info-display .a1-summary {
+    color: #60a5fa; /* Lighter blue for dark mode */
+}
+
 #match-summary-display .a2-summary,
 .match-info-display .a2-summary {
     font-weight: bold;
     color: var(--primary-red);
+}
+
+.dark #match-summary-display .a2-summary,
+.dark .match-info-display .a2-summary {
+    color: #f87171; /* Lighter red for dark mode */
 }
 
 /* Archer Selection in Setup for Team Card */

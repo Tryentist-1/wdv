@@ -195,14 +195,14 @@ const UnifiedScorecardList = (() => {
       innerHTML = `
         <div class="text-[13px] font-semibold text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm ${rankColor}">${rankIcon}</div>
         <div class="flex flex-col gap-0.5 min-w-0 overflow-hidden">
-          <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">${eventName}</div>
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-white overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">${eventName}</div>
           <div class="text-[11px] text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-xs">${eventDetails}</div>
         </div>
-        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${statusText}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${statusText}</div>
         <div class="text-[15px] font-bold text-blue-600 dark:text-blue-400 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-base">${total}</div>
-        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${avg}</div>
-        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${xs}</div>
-        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${tens}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${avg}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${xs}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${tens}</div>
       `;
     } else {
       // Render columns based on columnCount - always show all columns when specified
@@ -211,21 +211,21 @@ const UnifiedScorecardList = (() => {
       const shouldShowTens = columnCount >= 6;
       
       const xsDisplayHtml = shouldShowXs 
-        ? `<div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${xs || 0}</div>` 
+        ? `<div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${xs || 0}</div>` 
         : '';
       const tensDisplayHtml = shouldShowTens 
-        ? `<div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${tens || 0}</div>` 
+        ? `<div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${tens || 0}</div>` 
         : '';
       
       // Responsive font sizes: smaller on mobile, normal on desktop
       innerHTML = `
         <div class="flex flex-col gap-0.5 min-w-0 overflow-hidden">
-          <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">${eventName}</div>
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-white overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">${eventName}</div>
           <div class="text-[11px] text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-xs">${eventDetails}</div>
         </div>
-        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${statusText}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${statusText}</div>
         <div class="text-[15px] font-bold text-blue-600 dark:text-blue-400 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-base">${total}</div>
-        <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${avg}</div>
+        <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${avg}</div>
         ${xsDisplayHtml}
         ${tensDisplayHtml}
       `;

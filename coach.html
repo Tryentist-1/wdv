@@ -7,6 +7,25 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <!-- Use compiled Tailwind CSS file (works offline, no CDN dependency) -->
   <link rel="stylesheet" href="css/tailwind-compiled.css">
+  <script src="js/common.js"></script>
+  <script>
+    // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
+    // Dark mode preference is set from the home screen (index.html)
+    if (typeof initDarkMode === 'function') {
+      initDarkMode();
+    } else {
+      // Fallback if common.js not loaded yet
+      (function() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    }
+  </script>
   <style>
     /* Score color classes */
     .score-gold { background-color: #FFD700 !important; color: #000 !important; }
@@ -439,13 +458,9 @@
 
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-4 py-6">
-    <!-- Header with Dark Mode Toggle -->
+    <!-- Header -->
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Coach Console</h1>
-      <button id="dark-mode-toggle" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Toggle dark mode">
-        <span class="dark:hidden">🌙</span>
-        <span class="hidden dark:inline">☀️</span>
-      </button>
     </div>
     
     <!-- Action Buttons -->
@@ -486,27 +501,6 @@
   </footer>
   
   <script>
-    // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
-    (function() {
-      const savedTheme = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-    
-    // Dark mode toggle - wait for DOM
     document.addEventListener('DOMContentLoaded', () => {
-      const darkModeToggle = document.getElementById('dark-mode-toggle');
-      if (darkModeToggle) {
-        darkModeToggle.addEventListener('click', () => {
-          const htmlElement = document.documentElement;
-          htmlElement.classList.toggle('dark');
-          const newTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
-          localStorage.setItem('theme', newTheme);
-        });
-      }
-    });
-  </script>
 </body>
 </html>

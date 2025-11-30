@@ -5,15 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>My Matches</title>
   <link rel="stylesheet" href="css/tailwind-compiled.css">
+  <script src="js/common.js"></script>
   <script>
-    // Initialize dark mode immediately
-    (function() {
-      const savedTheme = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
+    // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
+    // Dark mode preference is set from the home screen (index.html)
+    if (typeof initDarkMode === 'function') {
+      initDarkMode();
+    } else {
+      // Fallback if common.js not loaded yet
+      (function() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    }
   </script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-200">
@@ -22,11 +31,6 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 transition-colors duration-200">
       <div class="flex justify-between items-center mb-2">
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white">My Matches</h1>
-        <button id="dark-mode-toggle" 
-                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2 min-w-[44px] min-h-[44px]">
-          <span class="dark:hidden">🌙 Dark</span>
-          <span class="hidden dark:inline">☀️ Light</span>
-        </button>
       </div>
       <div id="archer-info" class="text-gray-600 dark:text-gray-400">
         Loading...
@@ -65,13 +69,6 @@
   </footer>
 
   <script>
-    // Dark mode toggle
-    document.getElementById('dark-mode-toggle')?.addEventListener('click', () => {
-      const html = document.documentElement;
-      html.classList.toggle('dark');
-      const newTheme = html.classList.contains('dark') ? 'dark' : 'light';
-      localStorage.setItem('theme', newTheme);
-    });
 
     const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || 8001}/api/index.php/v1`

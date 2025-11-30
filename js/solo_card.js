@@ -442,9 +442,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const a1Name = `${state.archer1.first} ${state.archer1.last}`;
         const a2Name = `${state.archer2.first} ${state.archer2.last}`;
         matchSummaryDisplay.innerHTML = `
-            <span class="team-summary a1-summary">${a1Name}</span>
-            <span style="margin: 0 10px;">vs</span>
-            <span class="team-summary a2-summary">${a2Name}</span>
+            <span class="team-summary a1-summary text-blue-600 dark:text-blue-400 font-bold">${a1Name}</span>
+            <span style="margin: 0 10px;" class="text-gray-800 dark:text-white">vs</span>
+            <span class="team-summary a2-summary text-red-600 dark:text-red-400 font-bold">${a2Name}</span>
         `;
     }
 
@@ -469,24 +469,24 @@ document.addEventListener('DOMContentLoaded', () => {
         let tableHTML = `<table class="w-full border-collapse text-sm bg-white dark:bg-gray-700" id="solo_round_table">
             <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
                 <tr>
-                    <th rowspan="2" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End</th>
-                    <th colspan="3" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Archer 1</th>
-                    <th colspan="3" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Archer 2</th>
-                    <th colspan="2" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End Total</th>
-                    <th colspan="2" class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Set Points</th>
-                    <th rowspan="2" class="px-2 py-2 text-center font-bold">Sync</th>
+                    <th rowspan="2" class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">End</th>
+                    <th colspan="3" class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">Archer 1</th>
+                    <th colspan="3" class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">Archer 2</th>
+                    <th colspan="2" class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">End Total</th>
+                    <th colspan="2" class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">Set Points</th>
+                    <th rowspan="2" class="px-2 py-2 text-center font-bold text-white">Sync</th>
                 </tr>
                 <tr>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
-                    <th class="px-2 py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
+                    <th class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">A2</th>
+                    <th class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">A3</th>
+                    <th class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">A2</th>
+                    <th class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">A3</th>
+                    <th class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">A2</th>
+                    <th class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">A1</th>
+                    <th class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">A2</th>
                 </tr>
             </thead>
             <tbody>`;

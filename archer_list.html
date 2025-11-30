@@ -58,10 +58,6 @@
 
         <header class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200 flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Archer List</h1>
-            <button id="dark-mode-toggle" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Toggle dark mode">
-                <span class="dark:hidden">🌙</span>
-                <span class="hidden dark:inline">☀️</span>
-            </button>
         </header>
 
         <div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-2 transition-colors duration-200">
@@ -145,30 +141,15 @@
         </div>
     </div>
 
+    <script src="js/common.js"></script>
     <script src="js/live_updates.js"></script>
     <script src="js/archer_module.js"></script>
     <script>
         // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                document.documentElement.classList.add('dark');
-            }
-        })();
+        // Dark mode preference is set from the home screen (index.html)
+        initDarkMode();
         
         document.addEventListener('DOMContentLoaded', () => {
-            // Dark mode toggle
-            const darkModeToggle = document.getElementById('dark-mode-toggle');
-            if (darkModeToggle) {
-                darkModeToggle.addEventListener('click', () => {
-                    const htmlElement = document.documentElement;
-                    htmlElement.classList.toggle('dark');
-                    const newTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
-                    localStorage.setItem('theme', newTheme);
-                });
-            }
-            
             const SCHOOL_EMAIL_DOMAIN = '@student.davincischools.org';
             const modal = document.getElementById('archer-modal');
             const addArcherBtn = document.getElementById('add-archer-btn');

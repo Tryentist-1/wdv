@@ -9,6 +9,25 @@
   <link rel="stylesheet" href="css/tailwind-compiled.css">
   <link rel="stylesheet" href="css/unified-scorecard-list.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="js/common.js"></script>
+  <script>
+    // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
+    // Dark mode preference is set from the home screen (index.html)
+    if (typeof initDarkMode === 'function') {
+      initDarkMode();
+    } else {
+      // Fallback if common.js not loaded yet
+      (function() {
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    }
+  </script>
   <style>
     /* Minimal custom CSS - onboarding modal step visibility */
     .onboarding-step {
@@ -304,6 +323,7 @@
     </footer>
   </div>
 
+  <script src="js/common.js"></script>
   <script src="js/archer_module.js"></script>
   <script src="js/unified_scorecard_list.js"></script>
   <script>
@@ -841,13 +861,7 @@
     }
 
     // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
-    (function () {
-      const savedTheme = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
+    initDarkMode();
 
     // Onboarding disabled - outdated tutorial
     document.addEventListener('DOMContentLoaded', function () {
@@ -864,13 +878,11 @@
       updateWelcomeMessage();
       loadOpenAssignments();
 
-      // Dark mode toggle functionality
+      // Dark mode toggle functionality (only on home screen)
       const darkModeToggle = document.getElementById('dark-mode-toggle');
       if (darkModeToggle) {
         darkModeToggle.addEventListener('click', () => {
-          document.documentElement.classList.toggle('dark');
-          const isDark = document.documentElement.classList.contains('dark');
-          localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          toggleDarkMode();
         });
       }
     });
