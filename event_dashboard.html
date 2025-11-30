@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Event Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="css/tailwind-compiled.css">
+  <style>
+    /* Custom color utilities */
+    .bg-primary { background-color: #0d6efd !important; }
+    .bg-primary-dark { background-color: #0a58ca !important; }
+    .bg-success { background-color: #198754 !important; }
+    .bg-success-dark { background-color: #157347 !important; }
+    .bg-danger { background-color: #dc3545 !important; }
+    .text-primary { color: #0d6efd !important; }
+    .text-success { color: #198754 !important; }
+    .text-danger { color: #dc3545 !important; }
+    .hover\:bg-primary-dark:hover { background-color: #0a58ca !important; }
+    .hover\:bg-success-dark:hover { background-color: #157347 !important; }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 py-6 pb-24">
+    <!-- Event Header -->
+    <div id="event-header" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <h1 id="event-name" class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Loading...</h1>
+          <div class="flex gap-4 text-gray-600 dark:text-gray-400 text-sm">
+            <span>📅 <span id="event-date">-</span></span>
+            <span>📊 Status: <span id="event-status" class="font-semibold">-</span></span>
+            <span id="last-updated" class="text-xs">Last updated: -</span>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button id="dark-mode-toggle" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Toggle dark mode">
+            <span class="dark:hidden">🌙</span>
+            <span class="hidden dark:inline">☀️</span>
+          </button>
+          <button id="refresh-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors">🔄 Refresh</button>
+        </div>
+      </div>
+      
+      <!-- Overall Progress Bar -->
+      <div class="mb-4">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Progress</span>
+          <span id="overall-progress-text" class="text-sm font-semibold text-gray-800 dark:text-white">0%</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
+          <div id="overall-progress-bar" class="bg-primary h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+      
+      <!-- Quick Stats -->
+      <div id="quick-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Rounds Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Ranking Rounds</h2>
+        <button id="toggle-rounds" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+          <span id="rounds-toggle-text">Collapse All</span>
+        </button>
+      </div>
+      <div id="rounds-list" class="space-y-3">
+        <div class="text-center text-gray-500 dark:text-gray-400 py-8">Loading rounds...</div>
+      </div>
+    </div>
+
+    <!-- Brackets Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Brackets</h2>
+        <button id="toggle-brackets" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+          <span id="brackets-toggle-text">Collapse All</span>
+        </button>
+      </div>
+      <div id="brackets-list" class="space-y-3">
+        <div class="text-center text-gray-500 dark:text-gray-400 py-8">Loading brackets...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200">
+    <div class="max-w-7xl mx-auto flex gap-2 justify-center flex-wrap">
+      <a href="coach.html" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center">← Back to Coach Console</a>
+      <button id="footer-refresh-btn" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">🔄 Refresh</button>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+    
+    // Dark mode toggle - wait for DOM
+    document.addEventListener('DOMContentLoaded', () => {
+      const darkModeToggle = document.getElementById('dark-mode-toggle');
+      if (darkModeToggle) {
+        darkModeToggle.addEventListener('click', () => {
+          const htmlElement = document.documentElement;
+          htmlElement.classList.toggle('dark');
+          const newTheme = htmlElement.classList.contains('dark') ? 'dark' : 'light';
+          localStorage.setItem('theme', newTheme);
+        });
+      }
+    });
+    
+    // API Base URL detection
+    function getApiBase() {
+      const { protocol, hostname, port } = window.location;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        const resolvedPort = port || '8001';
+        return `${protocol}//${hostname}:${resolvedPort}/api/index.php/v1`;
+      }
+      return 'https://tryentist.com/wdv/api/v1';
+    }
+
+    const API_BASE = getApiBase();
+    const COACH_PASSCODE = 'wdva26'; // Coach passcode for API authentication
+    
+    // Get event ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventId = urlParams.get('event');
+    
+    // State
+    let overviewData = null;
+    let autoRefreshInterval = null;
+    let roundsExpanded = true;
+    let bracketsExpanded = true;
+    
+    // Division names mapping
+    const DIVISION_NAMES = {
+      'OPEN': 'Open (Mixed)',
+      'BVAR': 'Boys Varsity',
+      'GVAR': 'Girls Varsity',
+      'BJV': 'Boys JV',
+      'GJV': 'Girls JV'
+    };
+    
+    // API request helper
+    async function apiRequest(path, method = 'GET') {
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Passcode': COACH_PASSCODE,
+        'X-API-Key': COACH_PASSCODE
+      };
+      
+      const res = await fetch(`${API_BASE}${path}`, {
+        method,
+        headers
+      });
+      
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`HTTP ${res.status}: ${text}`);
+      }
+      
+      return res.json();
+    }
+    
+    // Load event overview
+    async function loadOverview() {
+      if (!eventId) {
+        alert('No event ID provided');
+        window.location.href = 'coach.html';
+        return;
+      }
+      
+      try {
+        const data = await apiRequest(`/events/${eventId}/overview`);
+        overviewData = data;
+        renderDashboard(data);
+        updateLastUpdated();
+      } catch (err) {
+        console.error('Error loading overview:', err);
+        document.getElementById('event-name').textContent = 'Error Loading Event';
+        document.getElementById('rounds-list').innerHTML = `<div class="text-center text-red-500 py-8">Error: ${err.message}</div>`;
+        document.getElementById('brackets-list').innerHTML = `<div class="text-center text-red-500 py-8">Error: ${err.message}</div>`;
+      }
+    }
+    
+    // Render dashboard
+    function renderDashboard(data) {
+      const { event, summary, rounds, brackets } = data;
+      
+      // Update event header
+      document.getElementById('event-name').textContent = event.name;
+      document.getElementById('event-date').textContent = new Date(event.date + 'T00:00:00').toLocaleDateString('en-US', { 
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+      });
+      
+      // Status badge
+      const statusColors = {
+        'Planned': 'bg-gray-400 dark:bg-gray-500',
+        'Active': 'bg-success',
+        'Completed': 'bg-gray-600 dark:bg-gray-700'
+      };
+      const statusEl = document.getElementById('event-status');
+      statusEl.textContent = event.status;
+      statusEl.className = `font-semibold px-2 py-1 rounded text-xs text-white ${statusColors[event.status] || 'bg-gray-400'}`;
+      
+      // Overall progress
+      const progress = summary.overall_progress || 0;
+      document.getElementById('overall-progress-text').textContent = `${progress}%`;
+      document.getElementById('overall-progress-bar').style.width = `${progress}%`;
+      
+      // Quick stats
+      renderQuickStats(summary);
+      
+      // Rounds
+      renderRounds(rounds);
+      
+      // Brackets
+      renderBrackets(brackets);
+      
+      // Setup auto-refresh if event is Active
+      if (event.status === 'Active') {
+        startAutoRefresh();
+      } else {
+        stopAutoRefresh();
+      }
+    }
+    
+    // Render quick stats
+    function renderQuickStats(summary) {
+      const container = document.getElementById('quick-stats');
+      container.innerHTML = `
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Rounds</div>
+          <div class="text-2xl font-bold text-gray-800 dark:text-white">
+            ${summary.completed_rounds}/${summary.total_rounds}
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">completed</div>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Brackets</div>
+          <div class="text-2xl font-bold text-gray-800 dark:text-white">
+            ${summary.completed_brackets}/${summary.total_brackets}
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">completed</div>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Archers</div>
+          <div class="text-2xl font-bold text-gray-800 dark:text-white">
+            ${summary.total_archers}
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">participating</div>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">Matches</div>
+          <div class="text-2xl font-bold text-gray-800 dark:text-white">
+            ${summary.completed_matches}/${summary.total_matches}
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">completed</div>
+        </div>
+      `;
+    }
+    
+    // Render rounds
+    function renderRounds(rounds) {
+      const container = document.getElementById('rounds-list');
+      
+      if (!rounds || rounds.length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8">No rounds configured for this event yet.</div>';
+        return;
+      }
+      
+      container.innerHTML = rounds.map(round => {
+        const divisionName = DIVISION_NAMES[round.division] || round.division;
+        const progress = round.progress_percentage || 0;
+        const progressColor = progress >= 90 ? 'bg-success' : progress >= 50 ? 'bg-yellow-500' : 'bg-orange-500';
+        const isExpanded = roundsExpanded;
+        
+        return `
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors" onclick="toggleRound('${round.id}')">
+              <div class="flex justify-between items-center">
+                <div class="flex-1">
+                  <div class="font-semibold text-gray-800 dark:text-white">
+                    ${divisionName} - ${round.round_type}
+                  </div>
+                  <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    ${round.completed_scorecards}/${round.total_scorecards} scorecards completed
+                    ${round.bale_count > 0 ? ` • ${round.bale_count} bales` : ''}
+                    ${round.average_score ? ` • Avg: ${round.average_score}` : ''}
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="text-right">
+                    <div class="text-sm font-semibold text-gray-800 dark:text-white">${progress}%</div>
+                    <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2 mt-1">
+                      <div class="${progressColor} h-2 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+                    </div>
+                  </div>
+                  <span class="text-gray-400">${isExpanded ? '▼' : '▶'}</span>
+                </div>
+              </div>
+            </div>
+            <div id="round-${round.id}" class="${isExpanded ? '' : 'hidden'} px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span class="text-gray-600 dark:text-gray-400">Status:</span>
+                  <span class="ml-2 font-semibold text-gray-800 dark:text-white">${round.status}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-gray-400">Archers:</span>
+                  <span class="ml-2 font-semibold text-gray-800 dark:text-white">${round.archer_count}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-gray-400">Bales:</span>
+                  <span class="ml-2 font-semibold text-gray-800 dark:text-white">${round.bale_count}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-gray-400">Progress:</span>
+                  <span class="ml-2 font-semibold text-gray-800 dark:text-white">${round.completed_scorecards}/${round.total_scorecards}</span>
+                </div>
+              </div>
+              <div class="flex gap-2 mt-4">
+                <a href="results.html?event=${eventId}&division=${round.division}" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors">
+                  📊 View Results
+                </a>
+                <a href="coach.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                  🛡️ Verify
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Render brackets
+    function renderBrackets(brackets) {
+      const container = document.getElementById('brackets-list');
+      
+      if (!brackets || brackets.length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8">No brackets created for this event yet.</div>';
+        return;
+      }
+      
+      container.innerHTML = brackets.map(bracket => {
+        const progress = bracket.progress_percentage || 0;
+        const progressColor = progress >= 90 ? 'bg-success' : progress >= 50 ? 'bg-yellow-500' : 'bg-orange-500';
+        const isExpanded = bracketsExpanded;
+        const bracketTypeName = bracket.bracket_type === 'SOLO' ? 'Solo' : 'Team';
+        const formatName = bracket.format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+        const divisionName = DIVISION_NAMES[bracket.division] || bracket.division;
+        
+        return `
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors" onclick="toggleBracket('${bracket.id}')">
+              <div class="flex justify-between items-center">
+                <div class="flex-1">
+                  <div class="font-semibold text-gray-800 dark:text-white">
+                    ${bracketTypeName} ${formatName} - ${divisionName}
+                  </div>
+                  <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    ${bracket.completed_matches}/${bracket.total_matches} matches completed
+                    ${bracket.entry_count > 0 ? ` • ${bracket.entry_count} entries` : ''}
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <div class="text-right">
+                    <div class="text-sm font-semibold text-gray-800 dark:text-white">${progress}%</div>
+                    <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2 mt-1">
+                      <div class="${progressColor} h-2 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+                    </div>
+                  </div>
+                  <span class="text-gray-400">${isExpanded ? '▼' : '▶'}</span>
+                </div>
+              </div>
+            </div>
+            <div id="bracket-${bracket.id}" class="${isExpanded ? '' : 'hidden'} px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span class="text-gray-600 dark:text-gray-400">Status:</span>
+                  <span class="ml-2 font-semibold text-gray-800 dark:text-white">${bracket.status}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-gray-400">Format:</span>
+                  <span class="ml-2 font-semibold text-gray-800 dark:text-white">${formatName}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-gray-400">Entries:</span>
+                  <span class="ml-2 font-semibold text-gray-800 dark:text-white">${bracket.entry_count}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-gray-400">Matches:</span>
+                  <span class="ml-2 font-semibold text-gray-800 dark:text-white">${bracket.completed_matches}/${bracket.total_matches}</span>
+                </div>
+              </div>
+              <div class="flex gap-2 mt-4">
+                <a href="bracket_results.html?bracket=${bracket.id}" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors">
+                  📊 View Bracket
+                </a>
+                <a href="coach.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                  ✏️ Edit
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Toggle round expansion
+    function toggleRound(roundId) {
+      const element = document.getElementById(`round-${roundId}`);
+      if (element) {
+        element.classList.toggle('hidden');
+      }
+    }
+    
+    // Toggle bracket expansion
+    function toggleBracket(bracketId) {
+      const element = document.getElementById(`bracket-${bracketId}`);
+      if (element) {
+        element.classList.toggle('hidden');
+      }
+    }
+    
+    // Toggle all rounds
+    function toggleAllRounds() {
+      roundsExpanded = !roundsExpanded;
+      document.getElementById('rounds-toggle-text').textContent = roundsExpanded ? 'Collapse All' : 'Expand All';
+      overviewData?.rounds?.forEach(round => {
+        const element = document.getElementById(`round-${round.id}`);
+        if (element) {
+          if (roundsExpanded) {
+            element.classList.remove('hidden');
+          } else {
+            element.classList.add('hidden');
+          }
+        }
+      });
+    }
+    
+    // Toggle all brackets
+    function toggleAllBrackets() {
+      bracketsExpanded = !bracketsExpanded;
+      document.getElementById('brackets-toggle-text').textContent = bracketsExpanded ? 'Collapse All' : 'Expand All';
+      overviewData?.brackets?.forEach(bracket => {
+        const element = document.getElementById(`bracket-${bracket.id}`);
+        if (element) {
+          if (bracketsExpanded) {
+            element.classList.remove('hidden');
+          } else {
+            element.classList.add('hidden');
+          }
+        }
+      });
+    }
+    
+    // Update last updated timestamp
+    function updateLastUpdated() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      document.getElementById('last-updated').textContent = `Last updated: ${timeStr}`;
+    }
+    
+    // Start auto-refresh
+    function startAutoRefresh() {
+      stopAutoRefresh(); // Clear any existing interval
+      autoRefreshInterval = setInterval(() => {
+        loadOverview();
+      }, 30000); // 30 seconds
+    }
+    
+    // Stop auto-refresh
+    function stopAutoRefresh() {
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+      }
+    }
+    
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      // Refresh buttons
+      document.getElementById('refresh-btn').addEventListener('click', loadOverview);
+      document.getElementById('footer-refresh-btn').addEventListener('click', loadOverview);
+      
+      // Toggle buttons
+      document.getElementById('toggle-rounds').addEventListener('click', toggleAllRounds);
+      document.getElementById('toggle-brackets').addEventListener('click', toggleAllBrackets);
+      
+      // Initial load
+      loadOverview();
+    });
+    
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      stopAutoRefresh();
+    });
+  </script>
+</body>
+</html>
+
