@@ -67,11 +67,19 @@ const ScorecardView = (() => {
     
     // Header with archer info and status - MATCHES test-components.html
     if (showHeader) {
-      const statusBadge = archerData.verified 
-        ? '<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-success-light text-success-dark">VER</span>'
-        : archerData.cardStatus === 'VOID' 
-          ? '<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-danger-light text-danger-dark">VOID</span>'
-          : '<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark">PENDING</span>';
+      // Determine status badge based on cardStatus (prioritize cardStatus over verified flag)
+      let statusBadge = '';
+      const cardStatus = (archerData.cardStatus || '').toUpperCase();
+      
+      if (cardStatus === 'VER' || cardStatus === 'VERIFIED' || archerData.verified) {
+        statusBadge = '<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-success-light text-success-dark">VER</span>';
+      } else if (cardStatus === 'VOID') {
+        statusBadge = '<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-danger-light text-danger-dark">VOID</span>';
+      } else if (cardStatus === 'COMP' || cardStatus === 'COMPLETED') {
+        statusBadge = '<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-primary-light text-primary-dark">COMP</span>';
+      } else {
+        statusBadge = '<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark">PENDING</span>';
+      }
       
       html += `
         <div class="scorecard-header mb-6">

@@ -1704,6 +1704,73 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/verification$#i', $route, $m) &
     exit;
 }
 
+// PATCH /v1/round_archers/{id}/status - Update card status (for COMP status from scorer)
+if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/status$#i', $route, $m) && $method === 'PATCH') {
+    $roundArcherId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $newStatus = strtoupper(trim($input['cardStatus'] ?? ''));
+    
+    // Validate status value
+    $allowedStatuses = ['PENDING', 'COMP', 'COMPLETED', 'VER', 'VERIFIED', 'VOID'];
+    if (!in_array($newStatus, $allowedStatuses, true)) {
+        json_response(['error' => 'Invalid status. Allowed: ' . implode(', ', $allowedStatuses)], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Check if scorecard exists and get current state
+        $checkStmt = $pdo->prepare('SELECT locked, card_status, round_id FROM round_archers WHERE id = ? LIMIT 1');
+        $checkStmt->execute([$roundArcherId]);
+        $card = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$card) {
+            json_response(['error' => 'Scorecard not found'], 404);
+            exit;
+        }
+        
+        // Normalize status (COMP/COMPLETED -> COMPLETED, VER/VERIFIED -> VERIFIED)
+        $normalizedStatus = $newStatus;
+        if ($newStatus === 'COMP') $normalizedStatus = 'COMPLETED';
+        if ($newStatus === 'VER') $normalizedStatus = 'VERIFIED';
+        
+        // Prevent status changes on locked cards (except unlocking via verification endpoint)
+        if ((bool)$card['locked'] && $normalizedStatus !== 'VERIFIED' && $normalizedStatus !== 'VOID') {
+            json_response(['error' => 'Cannot change status of locked scorecard'], 403);
+            exit;
+        }
+        
+        // Update status
+        $updateStmt = $pdo->prepare('UPDATE round_archers SET card_status = ? WHERE id = ?');
+        $updateStmt->execute([$normalizedStatus, $roundArcherId]);
+        
+        // If setting to COMPLETED, also set completed flag
+        if ($normalizedStatus === 'COMPLETED') {
+            $completedStmt = $pdo->prepare('UPDATE round_archers SET completed = 1 WHERE id = ?');
+            $completedStmt->execute([$roundArcherId]);
+        }
+        
+        // Return updated card
+        $refetch = $pdo->prepare('SELECT id, round_id, locked, card_status, completed FROM round_archers WHERE id = ? LIMIT 1');
+        $refetch->execute([$roundArcherId]);
+        $updated = $refetch->fetch(PDO::FETCH_ASSOC);
+        
+        json_response([
+            'roundArcherId' => $updated['id'],
+            'roundId' => $updated['round_id'],
+            'locked' => (bool)$updated['locked'],
+            'cardStatus' => $updated['card_status'],
+            'completed' => (bool)$updated['completed']
+        ]);
+    } catch (Exception $e) {
+        $status = (int)$e->getCode();
+        if ($status < 100 || $status > 599) $status = 500;
+        json_response(['error' => $e->getMessage()], $status);
+    }
+    exit;
+}
+
 if (preg_match('#^/v1/rounds/([0-9a-f-]+)/verification/bale$#i', $route, $m) && $method === 'POST') {
     require_api_key();
     $roundId = $m[1];

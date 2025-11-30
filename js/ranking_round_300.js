@@ -345,7 +345,15 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSetupForm();
         } else if (state.currentView === 'scoring') {
             renderScoringView();
-        } else {
+        } else if (state.currentView === 'card') {
+            // Render card view if we have an active archer
+            if (state.activeArcherId) {
+                renderCardView(state.activeArcherId);
+            }
+            if (keypad.element) {
+                keypad.element.classList.add('hidden');
+            }
+            document.body.classList.remove('keypad-visible');
             if (keypad.element) {
                 keypad.element.classList.add('hidden');
             }
@@ -466,18 +474,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Card controls
         if (cardControls.backToScoringBtn) {
-            cardControls.backToScoringBtn.textContent = 'Start Scoring';
+            cardControls.backToScoringBtn.textContent = '← Scoring';
             cardControls.backToScoringBtn.onclick = () => { state.currentView = 'scoring'; renderView(); };
         }
         if (cardControls.exportBtn) cardControls.exportBtn.onclick = showExportModal;
         if (cardControls.prevArcherBtn) cardControls.prevArcherBtn.onclick = () => navigateArchers(-1);
         if (cardControls.nextArcherBtn) cardControls.nextArcherBtn.onclick = () => navigateArchers(1);
+        
+        // Complete card button
+        const completeCardBtn = document.getElementById('complete-card-btn');
+        if (completeCardBtn) {
+            completeCardBtn.onclick = async () => {
+                const archer = state.archers.find(a => a.id === state.activeArcherId);
+                if (!archer) return;
+                
+                // Check if all ends are complete
+                const allEndsComplete = archer.scores.filter(s => s.every(val => val !== '' && val !== null)).length >= state.totalEnds;
+                if (!allEndsComplete) {
+                    alert('Please complete all 10 ends before marking card as complete.');
+                    return;
+                }
+                
+                // Confirm action
+                if (!confirm('Mark this scorecard as Complete?\n\nThis indicates you have verified the digital card matches the paper card. Coaches can then verify it.')) {
+                    return;
+                }
+                
+                // Update card status to COMP
+                const success = await updateCardStatus(archer.id, 'COMP');
+                if (success) {
+                    // Refresh card view
+                    renderCardView(archer.id);
+                }
+            };
+        }
 
         // Delegated handlers (robust across rerenders)
         document.body.addEventListener('click', (e) => {
             if (e.target.classList && e.target.classList.contains('view-card-btn')) {
                 const archerId = e.target.dataset.archerId;
-                renderCardView(archerId);
+                if (archerId) {
+                    state.currentView = 'card';
+                    state.activeArcherId = archerId;
+                    renderView();
+                }
                 if (keypad.element) keypad.element.style.display = 'none';
             }
         });
@@ -2942,13 +2982,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const syncStatus = (state.syncStatus[archer.id] && state.syncStatus[archer.id][state.currentEnd]) || '';
             const syncIcon = getSyncStatusIcon(syncStatus);
             const status = (archer.cardStatus || 'PENDING').toUpperCase();
-            const isLocked = !!state.activeEventId && (archer.locked || status === 'VER' || status === 'VOID');
-            let badgeClass = 'bg-warning text-white';
-            if (status === 'VER') badgeClass = 'bg-success text-white';
-            if (status === 'VOID') badgeClass = 'bg-danger text-white';
-            const statusBadge = (status === 'PENDING' && !isLocked)
-                ? ''
-                : `<span class="inline-block px-2 py-1 text-xs font-bold rounded mr-1 ${badgeClass}">${status}</span>`;
+            const isLocked = !!state.activeEventId && (archer.locked || status === 'VER' || status === 'VERIFIED' || status === 'VOID');
             const rowLockAttr = isLocked ? 'data-locked="true" class="locked-scorecard-row"' : '';
             const lockedAttr = isLocked ? 'data-locked="true" tabindex="-1" disabled' : 'data-locked="false"';
 
@@ -2962,7 +2996,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs" data-archer-id="${archer.id}" data-total-type="running">${runningTotal}</td>
                     <td class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs" data-archer-id="${archer.id}" data-total-type="xs">${endXs}</td>
                     <td class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs" data-archer-id="${archer.id}" data-total-type="tens">${endTens + endXs}</td>
-                    <td class="px-0.5 py-0 text-center h-[44px] align-middle"><span class="inline-flex items-center gap-1">${statusBadge}<button class="view-card-btn w-8 h-[44px] bg-primary text-white rounded text-xs hover:bg-primary-dark flex items-center justify-center" data-archer-id="${archer.id}">📄</button></span></td>
+                    <td class="px-0.5 py-0 text-center h-[44px] align-middle"><button class="view-card-btn w-8 h-[44px] bg-primary text-white rounded text-xs hover:bg-primary-dark flex items-center justify-center" data-archer-id="${archer.id}">📄</button></td>
                 </tr>`;
         });
         tableHTML += `</tbody></table>`;
@@ -2978,7 +3012,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const archerId = btn.dataset.archerId;
                 if (archerId) {
                     state.currentView = 'card';
-                    state.currentArcherId = archerId;
+                    state.activeArcherId = archerId;
                     renderView();
                 }
             };
@@ -2999,6 +3033,41 @@ document.addEventListener('DOMContentLoaded', () => {
         const archer = state.archers.find(a => a.id == archerId);
         if (!archer) return;
 
+        // Set active archer ID for navigation
+        state.activeArcherId = archerId;
+
+        // Update card view header
+        const archerNameEl = cardControls.archerNameDisplay;
+        if (archerNameEl) {
+            archerNameEl.textContent = `${archer.firstName} ${archer.lastName}`;
+        }
+
+        const divisionEl = document.getElementById('card-view-division');
+        const roundEl = document.getElementById('card-view-round');
+        if (divisionEl) {
+            divisionEl.textContent = archer.level || '';
+        }
+        if (roundEl) {
+            roundEl.textContent = `R300`;
+        }
+
+        // Update status badge in header
+        const statusBadgeEl = document.getElementById('card-view-status-badge');
+        if (statusBadgeEl) {
+            const cardStatus = (archer.cardStatus || 'PENDING').toUpperCase();
+            let statusBadge = '';
+            if (cardStatus === 'VER' || cardStatus === 'VERIFIED') {
+                statusBadge = '<span class="inline-block px-3 py-1 text-sm font-bold rounded bg-success text-white">✓ VER</span>';
+            } else if (cardStatus === 'COMP' || cardStatus === 'COMPLETED') {
+                statusBadge = '<span class="inline-block px-3 py-1 text-sm font-bold rounded bg-primary text-white">COMP</span>';
+            } else if (cardStatus === 'VOID') {
+                statusBadge = '<span class="inline-block px-3 py-1 text-sm font-bold rounded bg-danger text-white">✗ VOID</span>';
+            } else {
+                statusBadge = '<span class="inline-block px-3 py-1 text-sm font-bold rounded bg-warning text-white">PEND</span>';
+            }
+            statusBadgeEl.innerHTML = statusBadge;
+        }
+
         // Convert archer data to ScorecardView format
         const archerData = {
             id: archer.id,
@@ -3007,7 +3076,9 @@ document.addEventListener('DOMContentLoaded', () => {
             school: archer.school,
             level: archer.level,
             gender: archer.gender,
+            targetAssignment: archer.targetAssignment || '',
             scores: archer.scores,
+            cardStatus: archer.cardStatus || 'PENDING',
             verified: archer.cardStatus === 'VER',
             completed: archer.scores.filter(s => s.every(val => val !== '')).length >= state.totalEnds
         };
@@ -3019,14 +3090,138 @@ document.addEventListener('DOMContentLoaded', () => {
             roundType: 'R300'
         };
 
-        // Use standardized ScorecardView modal
-        ScorecardView.showScorecardModal(archerData, roundData, {
-            onClose: () => {
-                // Return to scoring view when modal closes
-                state.currentView = 'scoring';
-                renderView();
+        // Render scorecard into card view container (not modal)
+        const container = cardControls.container;
+        if (container && typeof ScorecardView !== 'undefined' && ScorecardView.renderScorecard) {
+            const scorecardHTML = ScorecardView.renderScorecard(archerData, roundData, {
+                showHeader: false, // We have our own header
+                showFooter: true,
+                showStatus: false // Status badge will be in our header
+            });
+            container.innerHTML = scorecardHTML;
+        } else {
+            console.error('ScorecardView not available or container not found');
+            container.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400 py-8">Unable to render scorecard</p>';
+        }
+
+        // Update Complete button visibility
+        updateCompleteCardButton(archer);
+        
+        // Ensure button handlers are attached (in case they weren't wired up yet)
+        ensureCardViewHandlers();
+    }
+    
+    function ensureCardViewHandlers() {
+        // Re-attach handlers to ensure they work
+        if (cardControls.backToScoringBtn) {
+            cardControls.backToScoringBtn.onclick = () => { 
+                state.currentView = 'scoring'; 
+                renderView(); 
+            };
+        }
+        if (cardControls.exportBtn) {
+            cardControls.exportBtn.onclick = showExportModal;
+        }
+        if (cardControls.prevArcherBtn) {
+            cardControls.prevArcherBtn.onclick = () => navigateArchers(-1);
+        }
+        if (cardControls.nextArcherBtn) {
+            cardControls.nextArcherBtn.onclick = () => navigateArchers(1);
+        }
+        
+        // Complete card button
+        const completeCardBtn = document.getElementById('complete-card-btn');
+        if (completeCardBtn) {
+            completeCardBtn.onclick = async () => {
+                const archer = state.archers.find(a => a.id === state.activeArcherId);
+                if (!archer) return;
+                
+                // Check if all ends are complete
+                const allEndsComplete = archer.scores.filter(s => s.every(val => val !== '' && val !== null)).length >= state.totalEnds;
+                if (!allEndsComplete) {
+                    alert('Please complete all 10 ends before marking card as complete.');
+                    return;
+                }
+                
+                // Confirm action
+                if (!confirm('Mark this scorecard as Complete?\n\nThis indicates you have verified the digital card matches the paper card. Coaches can then verify it.')) {
+                    return;
+                }
+                
+                // Update card status to COMP
+                const success = await updateCardStatus(archer.id, 'COMP');
+                if (success) {
+                    // Refresh card view
+                    renderCardView(archer.id);
+                }
+            };
+        }
+    }
+
+    async function updateCardStatus(archerId, newStatus) {
+        const archer = state.archers.find(a => a.id === archerId);
+        if (!archer) {
+            console.warn('[updateCardStatus] Archer not found:', archerId);
+            return false;
+        }
+
+        // Check if we have roundArcherId
+        if (!archer.roundArcherId) {
+            console.warn('[updateCardStatus] No roundArcherId for archer:', archerId);
+            alert('Unable to update status: Scorecard not yet saved to database. Please ensure all scores are synced.');
+            return false;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/round_archers/${archer.roundArcherId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Event-Code': state.eventEntryCode || ''
+                },
+                body: JSON.stringify({
+                    cardStatus: newStatus
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+                throw new Error(errorData.error || `HTTP ${response.status}`);
             }
-        });
+
+            const result = await response.json();
+            
+            // Update local state
+            archer.cardStatus = result.cardStatus || newStatus;
+            if (result.completed !== undefined) {
+                archer.completed = result.completed;
+            }
+            
+            console.log('[updateCardStatus] Status updated:', result);
+            return true;
+        } catch (err) {
+            console.error('[updateCardStatus] Failed:', err);
+            alert('Failed to update card status: ' + err.message);
+            return false;
+        }
+    }
+
+    function updateCompleteCardButton(archer) {
+        const completeBtn = document.getElementById('complete-card-btn');
+        if (!completeBtn) return;
+
+        // Check if all ends are complete
+        const allEndsComplete = archer.scores.filter(s => s.every(val => val !== '' && val !== null)).length >= state.totalEnds;
+        const currentStatus = (archer.cardStatus || 'PENDING').toUpperCase();
+        
+        // Show button only if:
+        // 1. All ends are complete
+        // 2. Status is not already COMP, VER, or VOID
+        if (allEndsComplete && currentStatus !== 'COMP' && currentStatus !== 'COMPLETED' && currentStatus !== 'VER' && currentStatus !== 'VERIFIED' && currentStatus !== 'VOID') {
+            completeBtn.classList.remove('hidden');
+        } else {
+            completeBtn.classList.add('hidden');
+        }
     }
 
     function getBaleTotals() {
@@ -6042,7 +6237,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.addEventListener('click', (e) => {
             if (e.target.classList.contains('view-card-btn')) {
                 const archerId = e.target.dataset.archerId;
-                renderCardView(archerId);
+                if (archerId) {
+                    state.currentView = 'card';
+                    state.activeArcherId = archerId;
+                    renderView();
+                }
                 if (keypad.element) {
                     keypad.element.style.display = 'none';
                 }

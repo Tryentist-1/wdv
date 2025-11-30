@@ -336,28 +336,36 @@
         <div id="card-view" class="flex flex-col min-h-screen hidden">
             <header
                 class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
-                <h2 id="card-view-archer-name" class="text-xl font-bold text-gray-800 dark:text-white mb-2"></h2>
-                <div class="flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-300">
-                    <span id="card-view-division"></span>
-                    <span id="card-view-round"></span>
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h2 id="card-view-archer-name" class="text-xl font-bold text-gray-800 dark:text-white mb-2"></h2>
+                        <div class="flex flex-wrap gap-2 text-sm text-gray-600 dark:text-gray-300">
+                            <span id="card-view-division"></span>
+                            <span id="card-view-round"></span>
+                        </div>
+                    </div>
+                    <div id="card-view-status-badge"></div>
                 </div>
             </header>
 
-            <div id="individual-card-container" class="flex-1 overflow-auto p-4 pb-20">
+            <div id="individual-card-container" class="flex-1 overflow-auto p-4 pb-24">
             </div>
 
             <footer
-                class="px-2 py-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-center gap-2 safe-bottom transition-colors duration-200">
+                class="px-1 py-1.5 sm:px-2 sm:py-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-center gap-1 sm:gap-2 safe-bottom fixed bottom-0 left-0 right-0 z-40 transition-colors duration-200">
                 <button id="back-to-scoring-btn"
-                    class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">←
+                    class="px-2 py-1.5 sm:px-4 sm:py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px]">←
                     Scoring</button>
+                <button id="complete-card-btn"
+                    class="px-2 py-1.5 sm:px-4 sm:py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px] hidden">✓
+                    Complete</button>
                 <button id="export-btn"
-                    class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark font-semibold transition-colors min-h-[44px]">Export</button>
+                    class="px-2 py-1.5 sm:px-4 sm:py-2 bg-success text-white rounded hover:bg-success-dark font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px]">Export</button>
                 <button id="prev-archer-btn"
-                    class="px-4 py-2 bg-secondary-light dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold transition-colors min-h-[44px]">←
+                    class="px-2 py-1.5 sm:px-4 sm:py-2 bg-secondary-light dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px]">←
                     Prev</button>
                 <button id="next-archer-btn"
-                    class="px-4 py-2 bg-secondary-light dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold transition-colors min-h-[44px]">Next
+                    class="px-2 py-1.5 sm:px-4 sm:py-2 bg-secondary-light dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px]">Next
                     →</button>
             </footer>
         </div>
