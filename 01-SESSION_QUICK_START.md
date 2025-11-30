@@ -10,7 +10,7 @@
 
 ### 1. **Critical Context** (2 min read)
 
-**[docs/BALE_GROUP_SCORING_WORKFLOW.md](docs/BALE_GROUP_SCORING_WORKFLOW.md)**
+**[docs/core/BALE_GROUP_SCORING_WORKFLOW.md](docs/core/BALE_GROUP_SCORING_WORKFLOW.md)**
 
 **Why:** Understand how scoring actually works in real competitions
 
@@ -24,7 +24,7 @@
 
 ### 1.5. **Tournament Rules** (3 min read)
 
-**[docs/OAS_RULES.md](docs/OAS_RULES.md)**
+**[docs/core/OAS_RULES.md](docs/core/OAS_RULES.md)**
 
 **Why:** Understand tournament structure and formats
 
@@ -40,7 +40,7 @@
 
 ### 2. **System Architecture** (5 min scan)
 
-**[docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md)**
+**[docs/core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](docs/core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md)**
 
 **Why:** Master reference for entire system
 
@@ -70,7 +70,47 @@
 
 ## 🚨 Status Update (December 2025)
 
-### ✅ Latest Release (v1.6.7)
+> **💡 Pro Tip:** For detailed change history, see [RELEASE_NOTES_FOR_LLMS.md](docs/RELEASE_NOTES_FOR_LLMS.md)  
+> Release notes provide context and "why" - much better for LLM onboarding than git commits alone!
+
+### 🎯 Current Sprint / Active Work
+
+**Last Session Focus:** [Update this after each session]  
+**Current Priority:** Event Tracking Dashboard (Planning & Implementation)  
+**Active Branch:** [If working on a feature branch, note it here]  
+**Blockers:** [Any blockers or dependencies]
+
+**Quick Context for This Session:**
+- [ ] What are we working on today?
+- [ ] What files/modules are we touching?
+- [ ] Any specific constraints or requirements?
+
+---
+
+### ✅ Latest Release (v1.8.0)
+
+**Release Date:** December 2025  
+**Status:** Production
+
+- **Unified History Display:** Ranking rounds, solo matches, and team matches now shown together in archer history
+- **Accurate Totals:** Sets won and total scores calculated from database set records
+- **Proper Navigation:** Solo matches route to solo_card.html with match loaded from URL
+- **Open Rounds Integration:** Incomplete solo matches appear in "Active Rounds" on home page
+- **Winner Indicators:** Trophy emoji shown for match winners
+- **Type-Specific Display:** Clear visual distinction between ranking rounds, solo matches, and team matches
+
+**Full Release Notes:** [RELEASE_NOTES_v1.8.0.md](RELEASE_NOTES_v1.8.0.md)  
+**Why Release Notes Matter:** See [RELEASE_NOTES_FOR_LLMS.md](docs/RELEASE_NOTES_FOR_LLMS.md) for how release notes help LLMs understand context better than git commits alone.
+
+### ✅ Previous Release (v1.7.1)
+
+[Add release notes when available]
+
+### ✅ Previous Release (v1.7.0)
+
+[Add release notes when available]
+
+### ✅ Previous Release (v1.6.7)
 
 - **Dark Mode Text Visibility Fixes:** Fixed dark mode text color issues across all modules
   - **Unified Scorecard Lists:** Updated all scorecard lists to use `dark:text-white` instead of `dark:text-gray-100` for better visibility
@@ -154,11 +194,53 @@
 
 ---
 
+## 📝 What Changed Since Last Session
+
+> **💡 Pro Tip:** See [SESSION_WRAP_UP_BEST_PRACTICES.md](docs/SESSION_WRAP_UP_BEST_PRACTICES.md) for quick wrap-up process (5 minutes)
+
+**Last Updated:** [Update this date after each session]
+
+### Recent Changes
+- [ ] **Session Date:** [Date]
+- [ ] **What We Did:** [Brief summary - 1-2 sentences]
+- [ ] **Files Changed:** [Key files only, not exhaustive]
+- [ ] **Status:** [Completed / In Progress / Blocked]
+- [ ] **Next Steps:** [If work is incomplete]
+- [ ] **Blockers:** [If any dependencies or blockers]
+
+### Quick Wrap-Up Template (Copy-Paste)
+```markdown
+**Last Updated:** [Date]
+
+### Recent Changes
+- ✅ **Session Date:** [Date]
+- ✅ **What We Did:** [Summary]
+- ✅ **Files Changed:** [Key files]
+- ✅ **Status:** [Completed / In Progress / Blocked]
+- ✅ **Next Steps:** [If applicable]
+- ✅ **Blockers:** [If applicable]
+```
+
+### Current Session Context
+**If this is a continuation session, note:**
+- What was left incomplete?
+- What needs testing?
+- What's the next step?
+
+**If this is a new focus, note:**
+- What are we switching to?
+- Why the change in focus?
+
+---
+
 ## 🎯 Next Steps (Upcoming Work)
 
-### 📋 Current Priority: Event Tracking Dashboard
+### 🔥 ACTIVE WORK (Current Sprint)
+
+#### 📋 Event Tracking Dashboard
 
 **Status:** Planning & Implementation  
+**Priority:** High  
 **Goal:** Create holistic event overview for day-of-event management
 
 **Features:**
@@ -179,7 +261,11 @@
 
 **Estimated Effort:** 6-10 weeks (phased approach)
 
-### 📋 Other Planned Improvements
+---
+
+### 📋 BACKLOG (Planned but Not Active)
+
+**Note:** These are planned improvements but not currently being worked on. Prioritize based on user needs and sprint goals.
 
 - **Headers and Footers:** Update headers and footers in scoring modules (Ranking Round 300, Ranking Round 360, Solo Card, Team Card) for consistency and improved UX
 - **Complete Checkbox:** Add "Complete" checkbox to scorecards so archers can mark in-progress cards as complete
@@ -704,7 +790,13 @@ curl -H "X-Passcode: wdva26" https://tryentist.com/wdv/api/v1/events | jq '.even
 → [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
 
 **"What's the status of X?"**  
-→ Search in `/docs` folder (57 documents!)
+→ Search in `/docs` folder or check [docs/README.md](docs/README.md) for organized index
+
+**"How do I wrap up a session?"**  
+→ [SESSION_WRAP_UP_BEST_PRACTICES.md](docs/SESSION_WRAP_UP_BEST_PRACTICES.md) - 5-minute wrap-up process
+
+**"Where should I put this doc?"**  
+→ [guides/DOCS_FOLDER_ORGANIZATION.md](docs/guides/DOCS_FOLDER_ORGANIZATION.md) - Docs organization guide
 
 ---
 
@@ -715,23 +807,73 @@ curl -H "X-Passcode: wdva26" https://tryentist.com/wdv/api/v1/events | jq '.even
 ```
 Hi! I'm working on the WDV Archery Suite. Quick context:
 
-CURRENT PHASE: Phase 2 - Solo/Team Integration ✅ COMPLETED
-CURRENT STATUS: All features implemented and tested
-LAST SESSION: [brief summary if applicable]
+📋 CURRENT STATE:
+- Version: v1.8.0 (December 2025)
+- Phase: Phase 2.5 - Event Tracking Dashboard (Planning)
+- Status: [In Progress / Planning / Testing]
 
-I've read:
-- SESSION_QUICK_START.md
-- BALE_GROUP_SCORING_WORKFLOW.md  
-- APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md (relevant sections)
+🎯 TODAY'S GOAL:
+[What you want to accomplish in this session]
 
-TODAY'S GOAL: [What you want to accomplish]
+📝 WHAT CHANGED SINCE LAST SESSION:
+[Brief summary of what was done last time, or "First session"]
 
-QUESTION/TASK: [Your specific question or task]
+📂 FILES/MODULES WE'RE WORKING ON:
+- [List specific files or modules]
 
-CONTEXT: [Any additional context specific to today's work]
+❓ QUESTION/TASK:
+[Your specific question or task]
+
+🔧 CONTEXT:
+[Any additional context: constraints, requirements, edge cases, etc.]
+
+📚 I'VE READ:
+- ✅ SESSION_QUICK_START.md
+- ✅ BALE_GROUP_SCORING_WORKFLOW.md
+- [ ] APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md (relevant sections)
+- [ ] [Other relevant docs]
 ```
 
-**This gives AI perfect context without re-explaining the entire system!**
+**Why This Works:**
+- ✅ Gives LLM immediate context about current state
+- ✅ Clearly states what you want to accomplish
+- ✅ Highlights what changed (helps LLM understand recent work)
+- ✅ Lists files/modules (helps LLM focus on relevant code)
+- ✅ Separates question from context (clearer structure)
+
+**Pro Tip:** Copy this template into a note file and update it after each session. Then paste it at the start of the next session!
+
+---
+
+## 🏁 Session Wrap-Up (End of Session)
+
+> **💡 Quick Reference:** [SESSION_WRAP_UP_BEST_PRACTICES.md](docs/SESSION_WRAP_UP_BEST_PRACTICES.md) - Complete guide
+
+**Before ending your session, spend 5 minutes:**
+
+1. ✅ **Update "What Changed Since Last Session"** (2 min)
+   - What was accomplished?
+   - Key files changed?
+   - Status (Completed/In Progress/Blocked)?
+
+2. ✅ **Update "Current Sprint / Active Work"** (1 min)
+   - Last session focus
+   - Current priority
+   - Blockers (if any)
+
+3. ✅ **Commit changes** (1 min)
+   - Documentation updates
+   - Code changes (if any)
+
+**Result:** Next session starts with full context in seconds!
+
+### Quick Wrap-Up Checklist
+
+- [ ] Updated "What Changed Since Last Session"
+- [ ] Updated "Current Sprint / Active Work"  
+- [ ] Noted any blockers/dependencies
+- [ ] Committed changes
+- [ ] Ready for next session!
 
 ---
 

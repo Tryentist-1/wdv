@@ -2,10 +2,17 @@
 
 > **Mobile-first web applications for Olympic Archery in Schools (OAS) scoring**
 
-[![Version](https://img.shields.io/badge/version-1.6.6-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-1.8.0-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-production-green.svg)]()
 [![Database](https://img.shields.io/badge/database-MySQL-orange.svg)]()
 [![Components](https://img.shields.io/badge/components-50%25_integrated-purple.svg)]()
+
+---
+
+## 🚀 For Developers
+
+> **Starting a development session?**  
+> → See **[01-SESSION_QUICK_START.md](01-SESSION_QUICK_START.md)** for current state, active work, and session onboarding
 
 ---
 
@@ -580,5 +587,5 @@ Copyright © 2025 WDV Archery
 ---
 
 **Last Updated:** December 2025  
-**Version:** 1.6.1  
+**Version:** 1.8.0  
 **Status:** Production + 100% Tailwind Migration Complete
