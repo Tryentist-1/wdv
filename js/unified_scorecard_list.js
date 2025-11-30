@@ -14,13 +14,15 @@ const UnifiedScorecardList = (() => {
 
   /**
    * Render status text (no pill styling)
+   * Follows master document: PENDING → COMP → VER → VOID
    */
   function renderStatusText(status) {
-    if (status === 'VER' || status === 'VERIFIED') return 'VER';
-    if (status === 'VOID') return 'VOID';
-    if (status === 'LOCKED' || status === 'LOCK') return 'LOCK';
-    if (status === 'PENDING' || status === 'PEND') return 'PEND';
-    return 'COMP';
+    const normalized = (status || '').toUpperCase();
+    if (normalized === 'VER' || normalized === 'VERIFIED') return 'VER';
+    if (normalized === 'VOID') return 'VOID';
+    if (normalized === 'COMP' || normalized === 'COMPLETED') return 'COMP';
+    if (normalized === 'PENDING' || normalized === 'PEND') return 'PEND';
+    return 'PEND'; // Default to PEND for unknown statuses
   }
 
   /**

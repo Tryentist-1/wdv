@@ -554,9 +554,9 @@
             } else if (cardStatus === 'VOID') {
                 statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-gray-500 text-white rounded-full text-sm font-bold">✗ VOID</span>';
             } else if (cardStatus === 'COMP' || cardStatus === 'COMPLETED' || card.completed) {
-                statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-primary text-white rounded-full text-sm font-bold">COMPLETED</span>';
+                statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-primary text-white rounded-full text-sm font-bold">COMP</span>';
             } else {
-                statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-warning text-white rounded-full text-sm font-bold">PENDING</span>';
+                statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-warning text-white rounded-full text-sm font-bold">PEND</span>';
             }
             
             // Lock Controls (Coach only) - Inline buttons

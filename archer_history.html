@@ -191,6 +191,7 @@
         );
         
         // Status text - prioritize card_status from database
+        // Follows master document: PENDING → COMP → VER → VOID
         let statusText = '';
         const cardStatus = (round.card_status || '').toUpperCase();
         
@@ -200,8 +201,6 @@
           statusText = 'VOID';
         } else if (cardStatus === 'COMP' || cardStatus === 'COMPLETED') {
           statusText = 'COMP';
-        } else if (isLocked) {
-          statusText = 'LOCK';
         } else if (round.ends_completed >= 10 || round.final_score > 0) {
           // Fallback: if no explicit status but all ends completed, show COMP
           statusText = 'COMP';

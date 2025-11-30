@@ -78,7 +78,7 @@ const ScorecardView = (() => {
       } else if (cardStatus === 'COMP' || cardStatus === 'COMPLETED') {
         statusBadge = '<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-primary-light text-primary-dark">COMP</span>';
       } else {
-        statusBadge = '<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark">PENDING</span>';
+        statusBadge = '<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark">PEND</span>';
       }
       
       html += `
