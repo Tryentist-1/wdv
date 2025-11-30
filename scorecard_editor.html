@@ -1135,9 +1135,26 @@
             if (isLocked) {
                 document.getElementById('unlock-option').classList.remove('hidden');
                 document.getElementById('lock-option').classList.add('hidden');
+                document.getElementById('complete-option').classList.add('hidden');
             } else {
                 document.getElementById('unlock-option').classList.add('hidden');
-                document.getElementById('lock-option').classList.remove('hidden');
+                
+                // Show/hide options based on current status
+                const currentStatus = (card.card_status || '').toUpperCase();
+                const canComplete = currentStatus !== 'COMP' && currentStatus !== 'COMPLETED' && currentStatus !== 'VER' && currentStatus !== 'VERIFIED';
+                const canVerify = currentStatus === 'COMP' || currentStatus === 'COMPLETED' || currentStatus === 'PENDING' || currentStatus === 'PEND';
+                
+                if (canVerify) {
+                    document.getElementById('lock-option').classList.remove('hidden');
+                } else {
+                    document.getElementById('lock-option').classList.add('hidden');
+                }
+                
+                if (canComplete) {
+                    document.getElementById('complete-option').classList.remove('hidden');
+                } else {
+                    document.getElementById('complete-option').classList.add('hidden');
+                }
             }
             
             // Void option - hide if already voided
