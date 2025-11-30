@@ -143,7 +143,30 @@
 
 ## 🎯 Next Steps (Upcoming Work)
 
-### 📋 Planned Improvements
+### 📋 Current Priority: Event Tracking Dashboard
+
+**Status:** Planning & Implementation  
+**Goal:** Create holistic event overview for day-of-event management
+
+**Features:**
+- Real-time progress tracking across all rounds and brackets
+- Visual hierarchy: Event → Rounds → Brackets
+- Completion percentages and status indicators
+- Quick access to critical actions (Verify, View Results, Create Brackets)
+- Timeline/schedule view for multi-day events
+- Mobile-optimized for on-the-go event management
+
+**Implementation Approach:**
+- **Additive only** - New page (`event_dashboard.html`) and API endpoint
+- **No impact on existing features** - Standalone dashboard
+- **Follows existing patterns** - Uses same API structure, Tailwind CSS, mobile-first
+
+**Documentation:**
+- [EVENT_TRACKING_DETAILS_ENHANCEMENT_EVALUATION.md](docs/EVENT_TRACKING_DETAILS_ENHANCEMENT_EVALUATION.md)
+
+**Estimated Effort:** 6-10 weeks (phased approach)
+
+### 📋 Other Planned Improvements
 
 - **Headers and Footers:** Update headers and footers in scoring modules (Ranking Round 300, Ranking Round 360, Solo Card, Team Card) for consistency and improved UX
 - **Complete Checkbox:** Add "Complete" checkbox to scorecards so archers can mark in-progress cards as complete
@@ -183,8 +206,13 @@
   - Fixed score colors in tables
   - Updated setup screens with consistent styling
 
-### 📅 What's Planned (Phase 3-6)
+### 📅 What's Planned (Phase 2.5 & 3-6)
 
+**Phase 2.5: Event Tracking Dashboard** (Current Priority)
+- Holistic event overview with real-time progress tracking
+- See: [docs/EVENT_TRACKING_DETAILS_ENHANCEMENT_EVALUATION.md](docs/EVENT_TRACKING_DETAILS_ENHANCEMENT_EVALUATION.md)
+
+**Phase 3-6:**
 See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 
 - Phase 3: Coach-Athlete collaboration (progress tracking, notes, goals)

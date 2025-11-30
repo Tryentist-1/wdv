@@ -95,7 +95,54 @@ This document outlines the planned phases for developing the Archery Score Manag
 **Production Release:** v1.4.0 (November 2025)  
 **Tailwind Migration Complete:** v1.6.0 (December 2025)
 
-## Phase 3: Coach-Athlete Collaboration 📅 PLANNED (2026 Q1)
+## Phase 2.5: Event Tracking Dashboard 🚧 IN PLANNING (2026 Q1)
+
+**Goal:** Provide coaches with a holistic, real-time overview of event progress across all rounds and brackets for day-of-event management.
+
+**Status:** 🚧 Planning & Evaluation Complete
+
+**Key Features:**
+1. **Event Overview Dashboard**
+   - Real-time progress tracking (rounds, brackets, scorecards, matches)
+   - Visual hierarchy: Event → Rounds → Brackets
+   - Completion percentages and status indicators
+   - Quick action buttons (Verify, View Results, Create Brackets)
+
+2. **Real-Time Updates**
+   - Auto-refresh every 30 seconds for active events
+   - Live progress indicators
+   - Status change notifications
+   - Completion alerts
+
+3. **Timeline/Schedule View**
+   - Event phase visualization (Ranking → Brackets → Awards)
+   - Schedule tracking for single or multi-day events
+   - Estimated completion times
+
+4. **Mobile-Optimized Interface**
+   - Collapsible sections (summary-first approach)
+   - Swipeable tabs for different views
+   - Quick action buttons always accessible
+   - Touch-friendly design
+
+**Implementation Approach:**
+- **Additive only** - New page (`event_dashboard.html`) and API endpoint
+- **No impact on existing features** - Standalone dashboard
+- **Follows existing patterns** - Uses same API structure, Tailwind CSS, mobile-first
+
+**Phased Implementation:**
+- **Phase 1 (2-3 weeks):** Core dashboard with overview and progress
+- **Phase 2 (1-2 weeks):** Real-time updates and auto-refresh
+- **Phase 3 (1-2 weeks):** Timeline view and alerts system
+- **Phase 4 (2-3 weeks):** Advanced analytics and reporting
+
+**Estimated Effort:** 6-10 weeks (phased approach)  
+**Target:** Q1 2026
+
+**Documentation:**
+- [EVENT_TRACKING_DETAILS_ENHANCEMENT_EVALUATION.md](EVENT_TRACKING_DETAILS_ENHANCEMENT_EVALUATION.md)
+
+## Phase 3: Coach-Athlete Collaboration 📅 PLANNED (2026 Q1-Q2)
 
 **Goal:** Enable coaches to work directly with individual archers on progress tracking and improvement.
 
@@ -115,6 +162,11 @@ This document outlines the planned phases for developing the Archery Score Manag
    - Technique observations
    - Goals & action items
    - Milestone celebrations
+   - **📸 Media Integration (Future Enhancement)**
+     - Google Photos link integration for visual feedback
+     - YouTube video embedding for technique analysis
+     - Media previews and responsive display
+     - See: [COACH_COMMENTARY_MEDIA_INTEGRATION_EVALUATION.md](COACH_COMMENTARY_MEDIA_INTEGRATION_EVALUATION.md)
 
 3. **Goal Setting & Achievement Tracking**
    - SMART goal creation
@@ -275,5 +327,5 @@ This document outlines the planned phases for developing the Archery Score Manag
 
 ---
 
-**Last Updated:** November 17, 2025  
+**Last Updated:** December 2025  
 **Next Review:** After Phase 3 planning
