@@ -82,7 +82,7 @@
                            class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
                 </div>
                 
-                <div id="search-results" class="space-y-2">
+                <div id="search-results">
                     <!-- Results will be populated here -->
                 </div>
             </div>
@@ -129,30 +129,29 @@
                             <span id="round-type" class="ml-2 text-sm text-gray-600 dark:text-gray-400"></span>
                         </div>
                     </div>
-                    <div id="status-badge"></div>
+                    <div class="flex items-center gap-3">
+                        <div id="status-badge"></div>
+                    </div>
                 </div>
                 
-                <!-- Lock/Unlock Controls (Coach only) -->
-                <div id="lock-controls" class="hidden mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div class="flex gap-3 items-center flex-wrap">
-                        <button id="unlock-btn" class="px-4 py-2 bg-warning text-white rounded hover:bg-warning-dark transition font-semibold">
-                            🔓 Unlock for Editing
+                <!-- Edit Controls Subheader (Coach only) -->
+                <div id="lock-controls" class="hidden border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <button id="unlock-btn" class="px-4 py-2 bg-warning text-white rounded hover:bg-warning-dark transition font-semibold min-h-[44px]">
+                            🔓 Unlock
                         </button>
-                        <button id="lock-btn" class="hidden px-4 py-2 bg-success text-white rounded hover:bg-success-dark transition font-semibold">
+                        <button id="lock-btn" class="hidden px-4 py-2 bg-success text-white rounded hover:bg-success-dark transition font-semibold min-h-[44px]">
                             🔒 Lock & Save
                         </button>
-                        <button id="void-btn" class="px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark transition font-semibold">
-                            ✗ Void Card
+                        <button id="void-btn" class="px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark transition font-semibold min-h-[44px]">
+                            ✗ Void
                         </button>
-                        <button id="delete-btn" class="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded transition font-semibold">
-                            <i class="fas fa-trash-alt mr-2"></i>Delete Card
+                        <button id="delete-btn" class="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded transition font-semibold min-h-[44px]">
+                            🗑️ Delete
                         </button>
                         <input type="text" id="edit-reason" placeholder="Reason for edit (required)" 
-                               class="hidden flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                               class="hidden px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white flex-1 min-w-[200px] max-w-[400px]">
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        ⚠️ Unlocking will allow score corrections. All changes are logged in verification history.
-                    </p>
                 </div>
             </div>
             
@@ -196,9 +195,85 @@
         </div>
     </main>
     
-    <!-- Score Input Modal -->
-    <div id="score-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <!-- Modify Card Modal -->
+    <div id="modify-card-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Modify Scorecard</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Choose an action to modify this scorecard. All actions are logged in verification history.
+            </p>
+            
+            <div id="modify-modal-content" class="space-y-3">
+                <!-- Unlock Option (shown when locked) -->
+                <div id="unlock-option" class="hidden">
+                    <div class="bg-warning/10 border border-warning rounded-lg p-4">
+                        <h4 class="font-semibold text-warning-dark dark:text-warning mb-2">🔓 Unlock for Editing</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            Unlock this scorecard to allow score corrections. You'll be able to edit individual scores.
+                        </p>
+                        <button id="modal-unlock-btn" class="w-full px-4 py-2 bg-warning text-white rounded hover:bg-warning-dark transition font-semibold min-h-[44px]">
+                            Unlock Card
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Lock Option (shown when unlocked) -->
+                <div id="lock-option" class="hidden">
+                    <div class="bg-success/10 border border-success rounded-lg p-4">
+                        <h4 class="font-semibold text-success-dark dark:text-success mb-2">🔒 Lock & Save</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            Lock this scorecard and save all changes. This will verify the scorecard with updated scores.
+                        </p>
+                        <input type="text" id="modal-edit-reason" placeholder="Reason for edit (required)" 
+                               class="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                        <button id="modal-lock-btn" class="w-full px-4 py-2 bg-success text-white rounded hover:bg-success-dark transition font-semibold min-h-[44px]">
+                            Lock & Save Card
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Void Option -->
+                <div id="void-option" class="hidden">
+                    <div class="bg-danger/10 border border-danger rounded-lg p-4">
+                        <h4 class="font-semibold text-danger-dark dark:text-danger mb-2">✗ Void Card</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            Mark this scorecard as voided. This action cannot be undone.
+                        </p>
+                        <input type="text" id="modal-void-reason" placeholder="Reason for voiding (required)" 
+                               class="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                        <button id="modal-void-btn" class="w-full px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark transition font-semibold min-h-[44px]">
+                            Void Card
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Delete Option -->
+                <div id="delete-option" class="hidden">
+                    <div class="bg-red-700/10 border border-red-700 rounded-lg p-4">
+                        <h4 class="font-semibold text-red-800 dark:text-red-400 mb-2">
+                            <i class="fas fa-trash-alt mr-2"></i>Delete Card
+                        </h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            Permanently delete this scorecard. Only unlocked, abandoned, or test scorecards can be deleted. This action cannot be undone.
+                        </p>
+                        <button id="modal-delete-btn" class="w-full px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded transition font-semibold min-h-[44px]">
+                            Delete Card
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeModifyCardModal()" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition font-semibold min-h-[44px]">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Score Input Keypad - Bottom Sheet -->
+    <div id="score-modal" class="hidden fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-bottom">
+        <div class="bg-white dark:bg-gray-800 rounded-t-lg shadow-xl p-4">
             <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Edit Score</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 End <span id="modal-end"></span>, Arrow <span id="modal-arrow"></span>
@@ -324,9 +399,6 @@
                     return;
                 }
                 
-                // Render results
-                let html = '';
-                
                 // Flatten all cards from all archers into a single list
                 const allCards = [];
                 results.forEach(result => {
@@ -342,63 +414,74 @@
                 });
 
                 if (allCards.length === 0) {
-                    html = '<p class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No scorecards found</p>';
-                } else {
-                    // Create unified scorecard list
-                    const options = {
-                        columns: ['Scorecard', 'Status', 'Total', 'Avg', 'Xs', '10s'],
-                        onItemClick: (card) => {
-                            window.location.href = `?id=${card.roundArcherId}&mode=${mode}`;
-                        },
-                        getEventName: (card) => card.eventName || 'Event',
-                        getTotal: (card) => card.totalScore || 0,
-                        getAvg: (card) => {
-                            const total = card.totalScore || 0;
-                            const ends = card.endsCompleted || 10;
-                            return ends > 0 ? (total / (ends * 3)).toFixed(1) : '0.0';
-                        },
-                        getXs: (card) => card.xs || 0,
-                        getTens: (card) => card.tens || 0,
-                        getStatus: (card) => card.cardStatus || 'PEND'
-                    };
-
-                    // Override formatEventDetails to include archer name
-                    const originalFormatEventDetails = UnifiedScorecardList.formatEventDetails;
-                    UnifiedScorecardList.formatEventDetails = function(card) {
-                        const parts = [];
-                        
-                        // Archer name and school
-                        let archerInfo = card.archerName || 'Unknown Archer';
-                        if (card.archerSchool) {
-                            archerInfo += ` (${card.archerSchool})`;
-                        }
-                        parts.push(archerInfo);
-                        
-                        // Round type and division
-                        if (card.roundType || card.division) {
-                            parts.push(card.roundType || card.division);
-                        }
-                        
-                        // Date
-                        if (card.eventDate || card.date) {
-                            const date = new Date(card.eventDate || card.date);
-                            if (!isNaN(date.getTime())) {
-                                parts.push(date.toLocaleDateString('en-US', { 
-                                    month: 'short', day: 'numeric', year: '2-digit' 
-                                }));
-                            }
-                        }
-                        
-                        return parts.join(' • ');
-                    };
-
-                    html = UnifiedScorecardList.render(allCards, options);
-                    
-                    // Restore original function
-                    UnifiedScorecardList.formatEventDetails = originalFormatEventDetails;
+                    resultsDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No scorecards found</p>';
+                    return;
                 }
                 
-                resultsDiv.innerHTML = html;
+                // Create unified scorecard list using DOM elements (not HTML string)
+                // Override formatEventDetails to include archer name
+                const originalFormatEventDetails = UnifiedScorecardList.formatEventDetails;
+                UnifiedScorecardList.formatEventDetails = function(card) {
+                    const parts = [];
+                    
+                    // Archer name and school
+                    let archerInfo = card.archerName || 'Unknown Archer';
+                    if (card.archerSchool) {
+                        archerInfo += ` (${card.archerSchool})`;
+                    }
+                    parts.push(archerInfo);
+                    
+                    // Round type and division
+                    if (card.roundType || card.division) {
+                        parts.push(card.roundType || card.division);
+                    }
+                    
+                    // Date
+                    if (card.eventDate || card.date) {
+                        const date = new Date(card.eventDate || card.date);
+                        if (!isNaN(date.getTime())) {
+                            parts.push(date.toLocaleDateString('en-US', { 
+                                month: 'short', day: 'numeric', year: '2-digit' 
+                            }));
+                        }
+                    }
+                    
+                    return parts.join(' • ');
+                };
+                
+                const options = {
+                    columns: ['Scorecard', 'Status', 'Total', 'Avg', 'Xs', '10s'],
+                    onItemClick: (card) => {
+                        window.location.href = `?id=${card.roundArcherId}&mode=${mode}`;
+                    },
+                    getEventName: (card) => card.eventName || 'Event',
+                    getTotal: (card) => card.totalScore || 0,
+                    getAvg: (card) => {
+                        const total = card.totalScore || 0;
+                        const ends = card.endsCompleted || 10;
+                        return ends > 0 ? (total / (ends * 3)).toFixed(1) : '0.0';
+                    },
+                    getXs: (card) => {
+                        // API doesn't return xs/tens in search, show 0 for now
+                        // Will need to be fetched separately or added to search API
+                        return 0;
+                    },
+                    getTens: (card) => {
+                        // API doesn't return xs/tens in search, show 0 for now
+                        return 0;
+                    },
+                    getStatus: (card) => card.cardStatus || 'PEND'
+                };
+                
+                // Use create() to get DOM elements with working event handlers
+                const listContainer = UnifiedScorecardList.create(allCards, options);
+                
+                // Restore original function
+                UnifiedScorecardList.formatEventDetails = originalFormatEventDetails;
+                
+                // Clear and append the DOM element (not innerHTML)
+                resultsDiv.innerHTML = '';
+                resultsDiv.appendChild(listContainer);
                 
             } catch (error) {
                 console.error('[searchArchers] Error:', error);
@@ -462,18 +545,14 @@
                 statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-warning text-white rounded-full text-sm font-bold">PENDING</span>';
             }
             
-            // Lock Controls (Coach only)
+            // Lock Controls (Coach only) - Inline buttons
             if (isCoach) {
-                document.getElementById('lock-controls').classList.remove('hidden');
+                const lockControls = document.getElementById('lock-controls');
+                lockControls.classList.remove('hidden');
+                
                 const isVoided = card.card_status === 'VOID';
                 
-                // Void button: show unless already voided
-                if (isVoided) {
-                    document.getElementById('void-btn').classList.add('hidden');
-                } else {
-                    document.getElementById('void-btn').classList.remove('hidden');
-                }
-                
+                // Show/hide buttons based on locked state
                 if (isLocked) {
                     document.getElementById('unlock-btn').classList.remove('hidden');
                     document.getElementById('lock-btn').classList.add('hidden');
@@ -482,6 +561,13 @@
                     document.getElementById('unlock-btn').classList.add('hidden');
                     document.getElementById('lock-btn').classList.remove('hidden');
                     document.getElementById('edit-reason').classList.remove('hidden');
+                }
+                
+                // Void button: hide if already voided
+                if (isVoided) {
+                    document.getElementById('void-btn').classList.add('hidden');
+                } else {
+                    document.getElementById('void-btn').classList.remove('hidden');
                 }
             }
             
@@ -764,8 +850,9 @@
             historyDiv.innerHTML = html;
         }
         
-        // Unlock button handler
-        document.getElementById('unlock-btn').addEventListener('click', async () => {
+        // Modify Card button - opens modal
+        // Inline button handlers (replacing modal approach)
+        document.getElementById('unlock-btn')?.addEventListener('click', async () => {
             if (!confirm('Unlock this scorecard for editing?\n\nThis action will be logged in the verification history.')) {
                 return;
             }
@@ -791,9 +878,226 @@
             }
         });
         
-        // Lock button handler
-        document.getElementById('lock-btn').addEventListener('click', async () => {
+        document.getElementById('lock-btn')?.addEventListener('click', async () => {
             const reason = document.getElementById('edit-reason').value.trim();
+            if (!reason) {
+                alert('Please provide a reason for the edit.');
+                return;
+            }
+            
+            if (!confirm('Lock and save changes?\n\nThis will verify the scorecard with the updated scores.')) {
+                return;
+            }
+            
+            try {
+                console.log('[lock-btn] Saving scores:', currentScorecard.scores);
+                
+                const saveRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/scores`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        scores: currentScorecard.scores
+                    })
+                });
+                
+                if (!saveRes.ok) {
+                    const errorData = await saveRes.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `Failed to save scores: ${saveRes.status}`);
+                }
+                
+                const lockRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'lock',
+                        notes: `Score correction: ${reason}`
+                    })
+                });
+                
+                if (!lockRes.ok) throw new Error('Failed to lock scorecard');
+                
+                isLocked = true;
+                await loadScorecard();
+                alert('✓ Scorecard locked and saved.');
+            } catch (error) {
+                console.error('[lock] Error:', error);
+                alert('Failed to save and lock scorecard: ' + error.message);
+            }
+        });
+        
+        document.getElementById('void-btn')?.addEventListener('click', async () => {
+            const reason = prompt('Reason for voiding this scorecard:');
+            if (!reason || !reason.trim()) {
+                return;
+            }
+            
+            if (!confirm('⚠️ VOID this scorecard?\n\nThis action cannot be undone. The scorecard will be marked as VOID and locked.\n\nReason: ' + reason)) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'void',
+                        notes: reason.trim()
+                    })
+                });
+                
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `Failed to void scorecard: ${res.status}`);
+                }
+                
+                isLocked = true;
+                await loadScorecard();
+                alert('✓ Scorecard voided successfully.');
+            } catch (error) {
+                console.error('[void] Error:', error);
+                alert('Failed to void scorecard: ' + error.message);
+            }
+        });
+        
+        document.getElementById('delete-btn')?.addEventListener('click', async () => {
+            const card = currentScorecard;
+            const isLocked = card.locked || card.card_status === 'VER';
+            const canDelete = !isLocked && (
+                card.ends_completed === 0 || 
+                card.final_score === 0 || 
+                (card.ends_completed <= 3 && card.final_score < 100) ||
+                card.event_name?.toLowerCase().includes('test') || 
+                card.event_name?.toLowerCase().includes('practice')
+            );
+            
+            if (!canDelete) {
+                alert('This scorecard cannot be deleted. Only unlocked, abandoned, or test scorecards can be deleted.');
+                return;
+            }
+            
+            if (!confirm(`Delete this scorecard from "${card.event_name}"?\n\nThis action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const coachApiKey = localStorage.getItem('coach_api_key') || 
+                                   localStorage.getItem('coach_passcode') || 
+                                   getCookie('coach_auth') || 
+                                   'wdva26';
+                
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'X-Passcode': coachApiKey,
+                    'X-API-Key': coachApiKey
+                };
+                
+                const currentArcherId = card.archer_id;
+                const selfArcherId = localStorage.getItem('archerSelfExtId');
+                if (currentArcherId && selfArcherId && currentArcherId === selfArcherId) {
+                    headers['X-Archer-ID'] = currentArcherId;
+                    headers['X-Archer-Self'] = 'true';
+                }
+                
+                const response = await fetch(`${API_BASE}/rounds/${card.round_id}/archers/${roundArcherId}`, {
+                    method: 'DELETE',
+                    headers: headers
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error('Authentication required. Please visit the Coach Console to authenticate first, then try again.');
+                    }
+                    const errorText = await response.text().catch(() => 'Unknown error');
+                    throw new Error(`Failed to delete scorecard (HTTP ${response.status}): ${errorText}`);
+                }
+                
+                const result = await response.json();
+                if (result.ok) {
+                    alert('Scorecard deleted successfully!');
+                    window.history.back();
+                } else {
+                    throw new Error(result.error || 'Delete failed');
+                }
+            } catch (error) {
+                console.error('Delete scorecard error:', error);
+                alert('Failed to delete scorecard: ' + error.message);
+            }
+        });
+        
+        function openModifyCardModal() {
+            const card = currentScorecard;
+            const isVoided = card.card_status === 'VOID';
+            const canDelete = !isLocked && (
+                card.ends_completed === 0 || 
+                card.final_score === 0 || 
+                (card.ends_completed <= 3 && card.final_score < 100) ||
+                card.event_name?.toLowerCase().includes('test') || 
+                card.event_name?.toLowerCase().includes('practice')
+            );
+            
+            // Show/hide options based on state
+            if (isLocked) {
+                document.getElementById('unlock-option').classList.remove('hidden');
+                document.getElementById('lock-option').classList.add('hidden');
+            } else {
+                document.getElementById('unlock-option').classList.add('hidden');
+                document.getElementById('lock-option').classList.remove('hidden');
+            }
+            
+            // Void option - hide if already voided
+            if (isVoided) {
+                document.getElementById('void-option').classList.add('hidden');
+            } else {
+                document.getElementById('void-option').classList.remove('hidden');
+            }
+            
+            // Delete option - show if can delete
+            if (canDelete) {
+                document.getElementById('delete-option').classList.remove('hidden');
+            } else {
+                document.getElementById('delete-option').classList.add('hidden');
+            }
+            
+            document.getElementById('modify-card-modal').classList.remove('hidden');
+        }
+        
+        function closeModifyCardModal() {
+            document.getElementById('modify-card-modal').classList.add('hidden');
+            document.getElementById('modal-edit-reason').value = '';
+            document.getElementById('modal-void-reason').value = '';
+        }
+        
+        // Modal Unlock button handler
+        document.getElementById('modal-unlock-btn').addEventListener('click', async () => {
+            if (!confirm('Unlock this scorecard for editing?\n\nThis action will be logged in the verification history.')) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'unlock',
+                        notes: 'Unlocked for score corrections'
+                    })
+                });
+                
+                if (!res.ok) throw new Error('Failed to unlock scorecard');
+                
+                isLocked = false;
+                closeModifyCardModal();
+                await loadScorecard();
+                alert('✓ Scorecard unlocked. You can now edit scores.');
+            } catch (error) {
+                console.error('[unlock] Error:', error);
+                alert('Failed to unlock scorecard: ' + error.message);
+            }
+        });
+        
+        // Modal Lock button handler
+        document.getElementById('modal-lock-btn').addEventListener('click', async () => {
+            const reason = document.getElementById('modal-edit-reason').value.trim();
             if (!reason) {
                 alert('Please provide a reason for the edit.');
                 return;
@@ -834,6 +1138,7 @@
                 if (!lockRes.ok) throw new Error('Failed to lock scorecard');
                 
                 isLocked = true;
+                closeModifyCardModal();
                 await loadScorecard();
                 alert('✓ Scorecard locked and saved.');
             } catch (error) {
@@ -842,8 +1147,45 @@
             }
         });
         
-        // Delete button handler
-        document.getElementById('delete-btn').addEventListener('click', async () => {
+        // Modal Void button handler
+        document.getElementById('modal-void-btn').addEventListener('click', async () => {
+            const reason = document.getElementById('modal-void-reason').value.trim();
+            if (!reason) {
+                alert('Please provide a reason for voiding this scorecard.');
+                return;
+            }
+            
+            if (!confirm('⚠️ VOID this scorecard?\n\nThis action cannot be undone. The scorecard will be marked as VOID and locked.\n\nReason: ' + reason)) {
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'void',
+                        notes: reason
+                    })
+                });
+                
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `Failed to void scorecard: ${res.status}`);
+                }
+                
+                isLocked = true;
+                closeModifyCardModal();
+                await loadScorecard();
+                alert('✓ Scorecard voided successfully.');
+            } catch (error) {
+                console.error('[void] Error:', error);
+                alert('Failed to void scorecard: ' + error.message);
+            }
+        });
+        
+        // Modal Delete button handler
+        document.getElementById('modal-delete-btn').addEventListener('click', async () => {
             // Check if this scorecard can be deleted
             const card = currentScorecard;
             const isLocked = card.locked || card.card_status === 'VER';
@@ -900,6 +1242,7 @@
                 
                 const result = await response.json();
                 if (result.ok) {
+                    closeModifyCardModal();
                     alert('Scorecard deleted successfully!');
                     // Go back to previous page or archer history
                     window.history.back();
@@ -924,41 +1267,6 @@
             return null;
         }
         
-        // Void button handler
-        document.getElementById('void-btn').addEventListener('click', async () => {
-            const reason = prompt('Enter reason for voiding this scorecard (required):');
-            if (!reason || reason.trim() === '') {
-                alert('Void cancelled. Reason is required.');
-                return;
-            }
-            
-            if (!confirm('⚠️ VOID this scorecard?\n\nThis action cannot be undone. The scorecard will be marked as VOID and locked.\n\nReason: ' + reason.trim())) {
-                return;
-            }
-            
-            try {
-                const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'void',
-                        notes: reason.trim()
-                    })
-                });
-                
-                if (!res.ok) {
-                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
-                    throw new Error(errorData.error || `Failed to void scorecard: ${res.status}`);
-                }
-                
-                isLocked = true;
-                await loadScorecard();
-                alert('✓ Scorecard voided successfully.');
-            } catch (error) {
-                console.error('[void] Error:', error);
-                alert('Failed to void scorecard: ' + error.message);
-            }
-        });
         
         function showError(message) {
             document.getElementById('loading').classList.add('hidden');

@@ -39,13 +39,15 @@
     <!-- History List -->
     <div id="history-container" class="mb-6 hidden">
       <div class="scorecard-list-container">
-        <div class="scorecard-list-header">
-          <div>Event</div>
-          <div>Status</div>
-          <div>Total</div>
-          <div>Avg</div>
-          <div>Xs</div>
-          <div>10s</div>
+        <div class="scorecard-list-header grid gap-1.5 px-2.5 py-2 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-[11px] font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide items-center sticky top-0 z-10 min-w-0 sm:gap-2 sm:px-3 sm:py-2.5 sm:text-xs"
+             style="grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr);"
+             data-columns="6">
+          <div class="text-center">Event</div>
+          <div class="text-center">Status</div>
+          <div class="text-center">Total</div>
+          <div class="text-center">Avg</div>
+          <div class="text-center">Xs</div>
+          <div class="text-center">10s</div>
         </div>
         <div id="history-body">
           <!-- Populated dynamically with unified scorecard list items -->
@@ -182,7 +184,9 @@
 
       history.forEach(round => {
         const item = document.createElement('div');
-        item.className = 'scorecard-list-item';
+        item.className = 'scorecard-list-item grid gap-1.5 items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 px-2.5 py-2 min-h-[2.75rem] min-w-0 transition-all duration-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 sm:gap-2 sm:px-3 sm:py-2.5 sm:min-h-[3rem]';
+        item.style.gridTemplateColumns = 'minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr)';
+        item.setAttribute('data-columns', '6');
         
         const isLocked = round.locked || round.card_status === 'VER';
         const canDelete = !isLocked && (
@@ -217,15 +221,15 @@
         }) : 'N/A';
         
         item.innerHTML = `
-          <div class="scorecard-event-info">
-            <div class="scorecard-event-name">${round.event_name || 'Unknown Event'}</div>
-            <div class="scorecard-event-details">${eventDate} • ${round.round_type || 'R300'} • ${divisionNames[round.division] || round.division || 'Open'} • Bale ${round.bale_number || '?'}</div>
+          <div class="flex flex-col gap-0.5 min-w-0 overflow-hidden">
+            <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">${round.event_name || 'Unknown Event'}</div>
+            <div class="text-[11px] text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-xs">${eventDate} • ${round.round_type || 'R300'} • ${divisionNames[round.division] || round.division || 'Open'} • Bale ${round.bale_number || '?'}</div>
           </div>
-          <div class="scorecard-stat-value">${statusText}</div>
-          <div class="scorecard-stat-value total">${round.final_score || 0}</div>
-          <div class="scorecard-stat-value">${avgArrow}</div>
-          <div class="scorecard-stat-value">${round.total_xs || 0}</div>
-          <div class="scorecard-stat-value">${round.total_tens || 0}</div>
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${statusText}</div>
+          <div class="text-[15px] font-bold text-blue-600 dark:text-blue-400 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-base">${round.final_score || 0}</div>
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${avgArrow}</div>
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${round.total_xs || 0}</div>
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${round.total_tens || 0}</div>
         `;
 
         // Make the whole item clickable except for action buttons

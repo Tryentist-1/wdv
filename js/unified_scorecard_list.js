@@ -115,9 +115,9 @@ const UnifiedScorecardList = (() => {
     
     container.appendChild(header);
 
-    // Create items
+    // Create items - pass columnCount to ensure items match header
     items.forEach((item, index) => {
-      const listItem = createItem(item, index, options);
+      const listItem = createItem(item, index, { ...options, forceColumnCount: columnCount });
       container.appendChild(listItem);
     });
 
@@ -157,10 +157,18 @@ const UnifiedScorecardList = (() => {
     // Responsive: tighter spacing on mobile (gap-1.5, px-2.5, py-2, min-h-[2.75rem]) then normal
     listItem.className = 'grid gap-1.5 items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 px-2.5 py-2 min-h-[2.75rem] min-w-0 transition-all duration-200 sm:gap-2 sm:px-3 sm:py-2.5 sm:min-h-[3rem]';
     
-    // Count actual columns (event-info, status, total, avg, plus optional xs/tens)
-    const hasXs = xs !== '' && xs !== null && xs !== undefined && xs !== 0;
-    const hasTens = tens !== '' && tens !== null && tens !== undefined && tens !== 0;
-    const columnCount = 4 + (hasXs ? 1 : 0) + (hasTens ? 1 : 0);
+    // Use forced column count if provided, otherwise calculate dynamically
+    const forceColumnCount = options.forceColumnCount;
+    let columnCount;
+    if (forceColumnCount) {
+      // Use the forced column count from header
+      columnCount = forceColumnCount;
+    } else {
+      // Count actual columns (event-info, status, total, avg, plus optional xs/tens)
+      const hasXs = xs !== '' && xs !== null && xs !== undefined && xs !== 0;
+      const hasTens = tens !== '' && tens !== null && tens !== undefined && tens !== 0;
+      columnCount = 4 + (hasXs ? 1 : 0) + (hasTens ? 1 : 0);
+    }
     
     // Set grid template columns to match header (inline style needed for dynamic columns)
     // Mobile: tighter minmax values, Desktop: normal values (will be overridden by media query if needed)
@@ -197,18 +205,16 @@ const UnifiedScorecardList = (() => {
         <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${tens}</div>
       `;
     } else {
-      // Render only the columns that are needed
-      // Standard layout: Assignment, Status, Progress (total), Type (avg)
-      // xs and tens are optional (may be empty)
-      const xsDisplay = xs !== '' && xs !== null && xs !== undefined ? `<div class="scorecard-stat-value">${xs}</div>` : '';
-      const tensDisplay = tens !== '' && tens !== null && tens !== undefined ? `<div class="scorecard-stat-value">${tens}</div>` : '';
+      // Render columns based on columnCount - always show all columns when specified
+      // If 6 columns are specified, always render xs and tens (even if 0)
+      const shouldShowXs = columnCount >= 5;
+      const shouldShowTens = columnCount >= 6;
       
-      // Use Tailwind classes for all elements with responsive font sizes
-      const xsDisplayHtml = xs !== '' && xs !== null && xs !== undefined 
-        ? `<div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${xs}</div>` 
+      const xsDisplayHtml = shouldShowXs 
+        ? `<div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${xs || 0}</div>` 
         : '';
-      const tensDisplayHtml = tens !== '' && tens !== null && tens !== undefined 
-        ? `<div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${tens}</div>` 
+      const tensDisplayHtml = shouldShowTens 
+        ? `<div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${tens || 0}</div>` 
         : '';
       
       // Responsive font sizes: smaller on mobile, normal on desktop

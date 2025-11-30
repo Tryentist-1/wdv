@@ -62,7 +62,26 @@
 
 ## 🚨 Status Update (December 2025)
 
-### ✅ Recent Fixes (v1.6.1)
+### ✅ Recent Fixes (v1.6.5)
+- **Ranking Round Grid Tuning:** Optimized scoring table for better mobile display
+  - **Column Widths:** Reduced widths to fit 450px minimum (Archer: 85px, A1/A2/A3: 32px, End: 40px, Run: 48px, X/10: 24px, Card: 32px)
+  - **Padding:** Tighter padding (px-0.5 for most cells, px-1.5 for Archer)
+  - **Row Height:** Consistent 44px height with proper vertical alignment
+  - **Table Width:** Reduced minimum width from 600px to 450px for better mobile fit
+- **Ranking Round Header Standardization:** Two-line header layout across all modules
+  - **Line 1:** Event Name + Sync Status | Bale Number
+  - **Line 2:** Division + Round Type | End Number
+  - Shows actual event name from database
+- **Scorecard Editor Improvements:** Enhanced usability for critical coach tool
+  - **X/10 Calculation:** Fixed calculation and display in search results and scorecard table
+  - **Bottom Sheet Keypad:** Converted intrusive modal to bottom sheet for score input
+  - **Subheader for Edit Functions:** Moved action buttons to dedicated subheader below main card
+  - **Column Alignment:** Fixed X/10 columns breaking onto separate line
+- **Results & History Formatting:** Fixed regression in scorecard list display
+  - Restored proper Tailwind grid classes and column alignment
+  - All 6 columns always rendered for consistent layout
+
+### ✅ Previous Fixes (v1.6.1)
 - **Active Rounds List Display:** Fixed critical bug where "Active Rounds" list was not displaying on home screen.
   - **Cause:** Variable scope error in `unified_scorecard_list.js` - `xs` and `tens` used before initialization.
   - **Fix:** Reordered variable declarations to calculate values before use in column count determination.

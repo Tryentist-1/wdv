@@ -873,6 +873,63 @@
                 </div>
             </div>
 
+            <!-- 6-Column Example (Results/History) -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">6-Column Layout (Results & History)</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Used for Results (results.html) and Archer History (archer_history.html) with Event/Archer, Status, Total, Avg, Xs, and 10s columns.
+                </p>
+
+                <!-- Header Example -->
+                <div class="mb-4 bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                    <div class="scorecard-list-header grid gap-1.5 px-2.5 py-2 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-[11px] font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide items-center sticky top-0 z-10 min-w-0 sm:gap-2 sm:px-3 sm:py-2.5 sm:text-xs"
+                         style="grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr);"
+                         data-columns="6">
+                        <div class="text-center">Event</div>
+                        <div class="text-center">Status</div>
+                        <div class="text-center">Total</div>
+                        <div class="text-center">Avg</div>
+                        <div class="text-center">Xs</div>
+                        <div class="text-center">10s</div>
+                    </div>
+
+                    <!-- Item Examples -->
+                    <div class="mt-2 space-y-1">
+                        <!-- Item 1: Results Row -->
+                        <div class="scorecard-list-item grid gap-1.5 items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 px-2.5 py-2 min-h-[2.75rem] min-w-0 transition-all duration-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 sm:gap-2 sm:px-3 sm:py-2.5 sm:min-h-[3rem]"
+                             style="grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr);"
+                             data-columns="6">
+                            <div class="flex flex-col gap-0.5 min-w-0 overflow-hidden">
+                                <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">
+                                    <span class="text-yellow-500 font-bold mr-2">🥇</span>John Doe
+                                </div>
+                                <div class="text-[11px] text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-xs">Lincoln High • Bale 2 • Target A</div>
+                            </div>
+                            <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">VER</div>
+                            <div class="text-[15px] font-bold text-blue-600 dark:text-blue-400 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-base">285</div>
+                            <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">9.5</div>
+                            <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">12</div>
+                            <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">28</div>
+                        </div>
+
+                        <!-- Item 2: History Row -->
+                        <div class="scorecard-list-item grid gap-1.5 items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 px-2.5 py-2 min-h-[2.75rem] min-w-0 transition-all duration-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 sm:gap-2 sm:px-3 sm:py-2.5 sm:min-h-[3rem]"
+                             style="grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr);"
+                             data-columns="6">
+                            <div class="flex flex-col gap-0.5 min-w-0 overflow-hidden">
+                                <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">Tournament - Dec 1</div>
+                                <div class="text-[11px] text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-xs">Dec 1, 25 • R300 • Boys Varsity • Bale 3</div>
+                            </div>
+                            <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">COMP</div>
+                            <div class="text-[15px] font-bold text-blue-600 dark:text-blue-400 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-base">270</div>
+                            <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">9.0</div>
+                            <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">8</div>
+                            <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">24</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Features -->
             <div>
                 <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Features</h3>
