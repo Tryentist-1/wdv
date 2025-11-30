@@ -662,17 +662,14 @@
           getXs: (item) => '', // Empty column (not used)
           getTens: (item) => '', // Empty column (6th column, not used)
           getStatus: (item) => {
-            // Status represents card lifecycle (same logic as results.html):
-            // - PEND: Pending (card in progress, not verified)
-            // - VER: Verified (coach has verified the card)
-            // - VOID: Voided (card was voided)
-            // - COMP: Completed (finished but not verified, or default)
-            // Use the same renderStatusText logic as results.html
+            // Status represents card lifecycle - follows master document: PENDING → COMP → VER → VOID
+            // Use the same renderStatusText logic as results.html and other modules
             const status = (item.card_status || item.cardStatus || item.status || 'PENDING').toUpperCase();
             if (status === 'VER' || status === 'VERIFIED') return 'VER';
             if (status === 'VOID') return 'VOID';
+            if (status === 'COMP' || status === 'COMPLETED') return 'COMP';
             if (status === 'PENDING' || status === 'PEND') return 'PEND';
-            return 'COMP';
+            return 'PEND'; // Default to PEND for unknown statuses
           }
         };
 
