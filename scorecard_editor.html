@@ -566,7 +566,11 @@
                 
                 const isVoided = card.card_status === 'VOID';
                 
-                // Show/hide buttons based on locked state
+                // Show/hide buttons based on locked state and current status
+                const currentStatus = (card.card_status || '').toUpperCase();
+                const canComplete = !isLocked && currentStatus !== 'COMP' && currentStatus !== 'COMPLETED' && currentStatus !== 'VER' && currentStatus !== 'VERIFIED';
+                const canVerify = !isLocked && (currentStatus === 'COMP' || currentStatus === 'COMPLETED' || currentStatus === 'PENDING' || currentStatus === 'PEND');
+                
                 if (isLocked) {
                     document.getElementById('unlock-btn').classList.remove('hidden');
                     document.getElementById('lock-btn').classList.add('hidden');
@@ -574,8 +578,18 @@
                     document.getElementById('edit-reason').classList.add('hidden');
                 } else {
                     document.getElementById('unlock-btn').classList.add('hidden');
-                    document.getElementById('lock-btn').classList.remove('hidden');
-                    document.getElementById('complete-btn').classList.remove('hidden');
+                    // Show Verify button only if status allows (COMP or PENDING)
+                    if (canVerify) {
+                        document.getElementById('lock-btn').classList.remove('hidden');
+                    } else {
+                        document.getElementById('lock-btn').classList.add('hidden');
+                    }
+                    // Show Complete button only if status allows (not already COMP or VER)
+                    if (canComplete) {
+                        document.getElementById('complete-btn').classList.remove('hidden');
+                    } else {
+                        document.getElementById('complete-btn').classList.add('hidden');
+                    }
                     document.getElementById('edit-reason').classList.remove('hidden');
                 }
                 
@@ -901,6 +915,12 @@
                 return;
             }
             
+            // Check if already locked
+            if (isLocked) {
+                alert('This scorecard is already locked. Unlock it first to make changes.');
+                return;
+            }
+            
             if (!confirm('Verify this scorecard?\n\nThis will lock the scorecard and mark it as verified with the updated scores.')) {
                 return;
             }
@@ -930,7 +950,10 @@
                     })
                 });
                 
-                if (!lockRes.ok) throw new Error('Failed to lock scorecard');
+                if (!lockRes.ok) {
+                    const errorData = await lockRes.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `Failed to lock scorecard: ${lockRes.status}`);
+                }
                 
                 isLocked = true;
                 await loadScorecard();
@@ -943,6 +966,18 @@
         
         // Complete button handler
         document.getElementById('complete-btn')?.addEventListener('click', async () => {
+            // Check if already locked
+            if (isLocked) {
+                alert('This scorecard is locked. Unlock it first to mark as complete.');
+                return;
+            }
+            
+            const currentStatus = (currentScorecard?.card_status || '').toUpperCase();
+            if (currentStatus === 'COMP' || currentStatus === 'COMPLETED') {
+                alert('This scorecard is already marked as Complete.');
+                return;
+            }
+            
             if (!confirm('Mark this scorecard as Complete?\n\nThis will save all current scores and mark the card as complete.')) {
                 return;
             }
@@ -1210,6 +1245,20 @@
         
         // Modal Complete button handler
         document.getElementById('modal-complete-btn')?.addEventListener('click', async () => {
+            // Check if already locked
+            if (isLocked) {
+                alert('This scorecard is locked. Unlock it first to mark as complete.');
+                closeModifyCardModal();
+                return;
+            }
+            
+            const currentStatus = (currentScorecard?.card_status || '').toUpperCase();
+            if (currentStatus === 'COMP' || currentStatus === 'COMPLETED') {
+                alert('This scorecard is already marked as Complete.');
+                closeModifyCardModal();
+                return;
+            }
+            
             if (!confirm('Mark this scorecard as Complete?\n\nThis will save all current scores and mark the card as complete.')) {
                 return;
             }
