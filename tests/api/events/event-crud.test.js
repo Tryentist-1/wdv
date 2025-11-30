@@ -131,4 +131,136 @@ describe('Event CRUD API', () => {
             expect(response.status).toBe(404);
         });
     });
+
+    describe('GET /v1/events/{id}/overview', () => {
+        test('should require authentication', async () => {
+            const response = await client.get('/events/test-event-id/overview');
+            
+            // May return 401 (auth required) or 404 (route not found/event not found)
+            expect([401, 404]).toContain(response.status);
+        });
+
+        test('should return 404 for non-existent event', async () => {
+            const response = await authClient.get('/events/non-existent-event/overview');
+            
+            expect(response.status).toBe(404);
+        });
+
+        test('should return overview data structure for valid event', async () => {
+            // First create an event
+            const eventData = {
+                name: `Overview Test Event ${Date.now()}`,
+                date: '2025-12-15',
+                status: 'Planned'
+            };
+            
+            const createResponse = await authClient.post('/events', eventData);
+            expect([200, 201]).toContain(createResponse.status);
+            
+            const eventId = createResponse.data.eventId;
+            if (!eventId) {
+                // Skip if event creation failed
+                return;
+            }
+            
+            testData.trackResource('events', eventId);
+            
+            // Get overview
+            const response = await authClient.get(`/events/${eventId}/overview`);
+            
+            TestAssertions.expectSuccess(response);
+            expect(response.data).toHaveProperty('event');
+            expect(response.data).toHaveProperty('summary');
+            expect(response.data).toHaveProperty('rounds');
+            expect(response.data).toHaveProperty('brackets');
+            expect(response.data).toHaveProperty('last_updated');
+            
+            // Validate event structure
+            expect(response.data.event).toHaveProperty('id');
+            expect(response.data.event).toHaveProperty('name');
+            expect(response.data.event).toHaveProperty('date');
+            expect(response.data.event).toHaveProperty('status');
+            
+            // Validate summary structure
+            expect(response.data.summary).toHaveProperty('total_rounds');
+            expect(response.data.summary).toHaveProperty('completed_rounds');
+            expect(response.data.summary).toHaveProperty('total_brackets');
+            expect(response.data.summary).toHaveProperty('completed_brackets');
+            expect(response.data.summary).toHaveProperty('total_archers');
+            expect(response.data.summary).toHaveProperty('overall_progress');
+            
+            // Validate arrays
+            expect(Array.isArray(response.data.rounds)).toBe(true);
+            expect(Array.isArray(response.data.brackets)).toBe(true);
+        });
+
+        test('should calculate progress percentages correctly', async () => {
+            // Create event with rounds
+            const eventData = {
+                name: `Progress Test Event ${Date.now()}`,
+                date: '2025-12-15',
+                status: 'Planned'
+            };
+            
+            const createResponse = await authClient.post('/events', eventData);
+            expect([200, 201]).toContain(createResponse.status);
+            
+            const eventId = createResponse.data.eventId;
+            if (!eventId) {
+                return;
+            }
+            
+            testData.trackResource('events', eventId);
+            
+            // Get overview
+            const response = await authClient.get(`/events/${eventId}/overview`);
+            
+            TestAssertions.expectSuccess(response);
+            
+            // Check that progress is a number between 0 and 100
+            expect(typeof response.data.summary.overall_progress).toBe('number');
+            expect(response.data.summary.overall_progress).toBeGreaterThanOrEqual(0);
+            expect(response.data.summary.overall_progress).toBeLessThanOrEqual(100);
+            
+            // Check rounds have progress_percentage
+            response.data.rounds.forEach(round => {
+                expect(typeof round.progress_percentage).toBe('number');
+                expect(round.progress_percentage).toBeGreaterThanOrEqual(0);
+                expect(round.progress_percentage).toBeLessThanOrEqual(100);
+            });
+            
+            // Check brackets have progress_percentage
+            response.data.brackets.forEach(bracket => {
+                expect(typeof bracket.progress_percentage).toBe('number');
+                expect(bracket.progress_percentage).toBeGreaterThanOrEqual(0);
+                expect(bracket.progress_percentage).toBeLessThanOrEqual(100);
+            });
+        });
+
+        test('should have reasonable response time', async () => {
+            // Create event
+            const eventData = {
+                name: `Performance Test Event ${Date.now()}`,
+                date: '2025-12-15'
+            };
+            
+            const createResponse = await authClient.post('/events', eventData);
+            expect([200, 201]).toContain(createResponse.status);
+            
+            const eventId = createResponse.data.eventId;
+            if (!eventId) {
+                return;
+            }
+            
+            testData.trackResource('events', eventId);
+            
+            // Measure response time
+            const startTime = Date.now();
+            const response = await authClient.get(`/events/${eventId}/overview`);
+            const responseTime = Date.now() - startTime;
+            
+            TestAssertions.expectSuccess(response);
+            expect(responseTime).toBeLessThan(3000); // Should respond within 3 seconds
+        });
+    });
 });

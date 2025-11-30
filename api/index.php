@@ -2998,23 +2998,42 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/overview$#i', $route, $m) && $method =
                 b.bracket_format,
                 b.division,
                 b.status,
-                COUNT(DISTINCT be.id) as entry_count,
-                COUNT(DISTINCT CASE WHEN b.bracket_type = \'SOLO\' THEN sm.id ELSE tm.id END) as total_matches,
-                SUM(CASE 
-                    WHEN b.bracket_type = \'SOLO\' AND sm.status = \'COMPLETED\' THEN 1
-                    WHEN b.bracket_type = \'TEAM\' AND tm.status = \'COMPLETED\' THEN 1
-                    ELSE 0
-                END) as completed_matches
+                COUNT(DISTINCT be.id) as entry_count
             FROM brackets b
             LEFT JOIN bracket_entries be ON be.bracket_id = b.id
-            LEFT JOIN solo_matches sm ON sm.bracket_id = b.id AND sm.event_id = ?
-            LEFT JOIN team_matches tm ON tm.bracket_id = b.id AND tm.event_id = ?
             WHERE b.event_id = ?
             GROUP BY b.id, b.bracket_type, b.bracket_format, b.division, b.status
             ORDER BY b.bracket_type, b.division, b.created_at
         ');
-        $bracketsStmt->execute([$eventId, $eventId, $eventId]);
+        $bracketsStmt->execute([$eventId]);
         $brackets = $bracketsStmt->fetchAll();
+        
+        // Get match counts separately for each bracket
+        foreach ($brackets as &$bracket) {
+            if ($bracket['bracket_type'] === 'SOLO') {
+                $matchesStmt = $pdo->prepare('
+                    SELECT 
+                        COUNT(*) as total_matches,
+                        SUM(CASE WHEN status = \'COMPLETED\' THEN 1 ELSE 0 END) as completed_matches
+                    FROM solo_matches
+                    WHERE bracket_id = ? AND event_id = ?
+                ');
+                $matchesStmt->execute([$bracket['id'], $eventId]);
+            } else {
+                $matchesStmt = $pdo->prepare('
+                    SELECT 
+                        COUNT(*) as total_matches,
+                        SUM(CASE WHEN status = \'COMPLETED\' THEN 1 ELSE 0 END) as completed_matches
+                    FROM team_matches
+                    WHERE bracket_id = ? AND event_id = ?
+                ');
+                $matchesStmt->execute([$bracket['id'], $eventId]);
+            }
+            $matchData = $matchesStmt->fetch();
+            $bracket['total_matches'] = (int)($matchData['total_matches'] ?? 0);
+            $bracket['completed_matches'] = (int)($matchData['completed_matches'] ?? 0);
+        }
+        unset($bracket); // Break reference
         
         // Calculate bracket progress
         $bracketsData = [];
