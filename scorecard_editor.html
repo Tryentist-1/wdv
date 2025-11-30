@@ -1216,6 +1216,13 @@
                 return;
             }
             
+            // Check if already locked
+            if (isLocked) {
+                alert('This scorecard is already locked. Unlock it first to make changes.');
+                closeModifyCardModal();
+                return;
+            }
+            
             if (!confirm('Verify this scorecard?\n\nThis will lock the scorecard and mark it as verified with the updated scores.')) {
                 return;
             }
@@ -1248,7 +1255,10 @@
                     })
                 });
                 
-                if (!lockRes.ok) throw new Error('Failed to lock scorecard');
+                if (!lockRes.ok) {
+                    const errorData = await lockRes.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || `Failed to lock scorecard: ${lockRes.status}`);
+                }
                 
                 isLocked = true;
                 closeModifyCardModal();
