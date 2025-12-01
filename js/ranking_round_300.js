@@ -1127,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const handleNewRound = () => {
                 modal.classList.add('hidden');
                 modal.classList.remove('flex');
-                console.log('[Resume Dialog] User chose New Round - clearing local session');
+                console.log('[Resume Dialog] User chose New Round - clearing local session and showing event selection');
                 localStorage.removeItem('current_bale_session');
                 if (session.roundId) {
                     try { localStorage.removeItem(`live_updates_session:${session.roundId}`); } catch (e) { }
@@ -1141,7 +1141,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.activeEventId = null;
                 state.isStandalone = false;
                 state.selectedDivision = null;
-                renderView();
+                
+                // Show event selection modal instead of setup
+                showEventModal();
                 resolve(false);
             };
             
