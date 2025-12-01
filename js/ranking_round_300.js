@@ -6115,14 +6115,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 5. Reconstruct archers for this bale (same logic as restoreCurrentBaleSession)
-            const baleDivision = baleData.division || null;
+            const baleDivision = baleData?.division || snapshotData.round?.division || null;
             if (baleDivision) {
                 state.divisionCode = baleDivision;
                 state.divisionRoundId = roundId;
                 console.log('[handleDirectLink] ✅ Set division from bale data:', baleDivision);
             }
 
-            state.archers = baleData.archers.map(archer => {
+            state.archers = allArchers.map(archer => {
                 const scoreSheet = createEmptyScoreSheet(state.totalEnds);
                 const endsList = Array.isArray(archer.scorecard?.ends) ? archer.scorecard.ends : [];
                 endsList.forEach(end => {
