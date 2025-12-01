@@ -6303,7 +6303,9 @@ document.addEventListener('DOMContentLoaded', () => {
             renderView();
         }
 
-        // No in-progress work - show setup
+        // No in-progress work - show event selection modal
+        console.log('[init] No in-progress work - showing event selection modal');
+        showEventModal();
         renderView();
 
         // Check for URL parameters (QR code access OR direct event/round link OR standalone round)
@@ -7315,13 +7317,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Cancel button
+    // Cancel button - navigate back to index.html
     if (cancelEventModalBtn) {
         cancelEventModalBtn.onclick = () => {
-            hideEventModal();
-            // Render manual setup when canceling modal (no event selected)
-            state.assignmentMode = 'manual';
-            renderSetupSections();
+            console.log('[Event Modal] Cancel clicked - navigating to index.html');
+            window.location.href = 'index.html';
         };
     }
 
