@@ -4267,18 +4267,52 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
 }
 
 // GET /v1/events/:id/solo-matches - Get all solo matches for an event
+// Query params: bracket_id (optional), status (optional), locked (optional), card_status (optional)
 if (preg_match('#^/v1/events/([0-9a-f-]+)/solo-matches$#i', $route, $m) && $method === 'GET') {
     require_api_key();
     $eventId = $m[1];
     
+    // Parse query parameters
+    $bracketId = $_GET['bracket_id'] ?? null;
+    $statusFilter = $_GET['status'] ?? null;
+    $lockedFilter = $_GET['locked'] ?? null;
+    $cardStatusFilter = $_GET['card_status'] ?? null;
+    
     try {
         $pdo = db();
         
-        // Get all matches for this event
-        $matchesStmt = $pdo->prepare('
+        // Build WHERE clause with filters
+        $whereConditions = ['sm.event_id = ?'];
+        $params = [$eventId];
+        
+        if ($bracketId) {
+            $whereConditions[] = 'sm.bracket_id = ?';
+            $params[] = $bracketId;
+        }
+        
+        if ($statusFilter) {
+            $whereConditions[] = 'sm.status = ?';
+            $params[] = $statusFilter;
+        }
+        
+        if ($lockedFilter !== null) {
+            $whereConditions[] = 'sm.locked = ?';
+            $params[] = $lockedFilter === 'true' ? 1 : 0;
+        }
+        
+        if ($cardStatusFilter) {
+            $whereConditions[] = 'sm.card_status = ?';
+            $params[] = $cardStatusFilter;
+        }
+        
+        $whereClause = implode(' AND ', $whereConditions);
+        
+        // Get all matches for this event with filters
+        $matchesStmt = $pdo->prepare("
             SELECT 
                 sm.id,
                 sm.event_id,
+                sm.bracket_id,
                 sm.date,
                 sm.location,
                 sm.status,
@@ -4290,35 +4324,71 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/solo-matches$#i', $route, $m) && $meth
                 sm.match_code,
                 sm.created_at
             FROM solo_matches sm
-            WHERE sm.event_id = ?
+            WHERE {$whereClause}
             ORDER BY sm.date DESC, sm.created_at DESC
-        ');
-        $matchesStmt->execute([$eventId]);
+        ");
+        $matchesStmt->execute($params);
         $matches = $matchesStmt->fetchAll();
+        
+        // Calculate summary statistics
+        $summary = [
+            'total' => count($matches),
+            'pending' => 0,
+            'completed' => 0,
+            'verified' => 0,
+            'voided' => 0
+        ];
         
         // For each match, get archers and their scores
         foreach ($matches as &$match) {
+            // Update summary counts
+            $cardStatus = strtoupper($match['card_status'] ?? 'PENDING');
+            if ($cardStatus === 'VER' || $cardStatus === 'VERIFIED') {
+                $summary['verified']++;
+            } elseif ($cardStatus === 'VOID') {
+                $summary['voided']++;
+            } elseif ($cardStatus === 'COMP' || $cardStatus === 'COMPLETED') {
+                $summary['completed']++;
+            } else {
+                $summary['pending']++;
+            }
+            
             $archersStmt = $pdo->prepare('
                 SELECT 
                     sma.id,
                     sma.position,
                     sma.archer_name,
                     sma.school,
-                    sma.archer_id,
-                    COALESCE(SUM(sms.set_points), 0) as total_set_points,
-                    COUNT(sms.id) as sets_completed
+                    sma.archer_id
                 FROM solo_match_archers sma
-                LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id
                 WHERE sma.match_id = ?
-                GROUP BY sma.id, sma.position, sma.archer_name, sma.school, sma.archer_id
                 ORDER BY sma.position
             ');
             $archersStmt->execute([$match['id']]);
             $archers = $archersStmt->fetchAll();
             
+            // Calculate sets_won for each archer (count sets where set_points = 2)
+            foreach ($archers as &$archer) {
+                $setsWonStmt = $pdo->prepare('
+                    SELECT 
+                        COUNT(CASE WHEN set_points = 2 THEN 1 END) as sets_won,
+                        SUM(set_total) as total_score
+                    FROM solo_match_sets
+                    WHERE match_archer_id = ? AND set_number <= 5
+                ');
+                $setsWonStmt->execute([$archer['id']]);
+                $stats = $setsWonStmt->fetch(PDO::FETCH_ASSOC);
+                $archer['sets_won'] = (int)($stats['sets_won'] ?? 0);
+                $archer['total_score'] = (int)($stats['total_score'] ?? 0);
+            }
+            
             // Determine winner name
             $match['archer1'] = $archers[0] ?? null;
             $match['archer2'] = $archers[1] ?? null;
+            
+            // Add sets_won to match for easy access
+            $match['archer1_sets_won'] = $match['archer1']['sets_won'] ?? 0;
+            $match['archer2_sets_won'] = $match['archer2']['sets_won'] ?? 0;
             
             if ($match['winner_archer_id']) {
                 foreach ($archers as $archer) {
@@ -4333,9 +4403,21 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/solo-matches$#i', $route, $m) && $meth
             if ($match['archer1'] && $match['archer2']) {
                 $match['match_display'] = $match['archer1']['archer_name'] . ' vs ' . $match['archer2']['archer_name'];
             }
+            
+            // Add bracket name if bracket_id exists
+            if ($match['bracket_id']) {
+                $bracketStmt = $pdo->prepare('SELECT id, division, bracket_format, bracket_type FROM brackets WHERE id = ? LIMIT 1');
+                $bracketStmt->execute([$match['bracket_id']]);
+                $bracket = $bracketStmt->fetch(PDO::FETCH_ASSOC);
+                if ($bracket) {
+                    $match['bracket_name'] = ($bracket['bracket_type'] === 'SOLO' ? 'Solo ' : 'Team ') . 
+                                             ($bracket['bracket_format'] === 'ELIMINATION' ? 'Elimination' : 'Swiss') . 
+                                             ' - ' . $bracket['division'];
+                }
+            }
         }
         
-        json_response(['matches' => $matches], 200);
+        json_response(['matches' => $matches, 'summary' => $summary], 200);
     } catch (Exception $e) {
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
