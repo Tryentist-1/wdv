@@ -5707,10 +5707,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('[handleDirectLink] Standalone round - fetching round entry code...');
                 
                 // Try to get from localStorage first (saved when round was created)
-                const savedRoundEntryCode = localStorage.getItem(`round:${roundId}:entry_code`);
+                // Check both round-specific key and global key
+                let savedRoundEntryCode = localStorage.getItem(`round:${roundId}:entry_code`);
+                if (!savedRoundEntryCode) {
+                    // Also check global key (saved by live_updates.js)
+                    savedRoundEntryCode = localStorage.getItem('round_entry_code');
+                }
                 if (savedRoundEntryCode) {
                     entryCode = savedRoundEntryCode;
                     console.log('[handleDirectLink] ✅ Found round entry code in localStorage:', entryCode);
+                    // Save it with roundId key for future lookups
+                    localStorage.setItem(`round:${roundId}:entry_code`, entryCode);
                 } else {
                     // Try to get from archer history (which includes entry_code for standalone rounds)
                     try {
