@@ -610,14 +610,6 @@
                         if (assignmentRes.ok) {
                           const assignmentData = await assignmentRes.json();
                           console.log('[index] Bracket assignment found:', assignmentData);
-                        } else if (assignmentRes.status === 404) {
-                          // Archer not in this bracket - this is normal, skip silently
-                          continue;
-                        } else {
-                          // Other error - log but continue
-                          console.warn(`[index] Error checking bracket ${bracket.id}:`, assignmentRes.status);
-                          continue;
-                        }
 
                           if (assignmentData.assignment && assignmentData.assignment.opponent) {
                             const assignment = assignmentData.assignment;
@@ -635,6 +627,13 @@
                               matchId: assignment.match_id
                             });
                           }
+                        } else if (assignmentRes.status === 404) {
+                          // Archer not in this bracket - this is normal, skip silently
+                          continue;
+                        } else {
+                          // Other error - log but continue
+                          console.warn(`[index] Error checking bracket ${bracket.id}:`, assignmentRes.status);
+                          continue;
                         }
                       } catch (e) {
                         console.log('[index] Could not check bracket assignment:', e.message);
