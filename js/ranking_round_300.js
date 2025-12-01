@@ -5329,6 +5329,146 @@ document.addEventListener('DOMContentLoaded', () => {
      * Handle direct link from index.html
      * URL format: ?event=X&round=Y&archer=Z
      */
+    /**
+     * Handle standalone round link (no event)
+     * URL format: ?round={id}&archer={id} or ?code={entry_code}&archer={id}
+     */
+    async function handleStandaloneRoundLink(roundIdOrCode, archerId, isEntryCode = false) {
+        try {
+            console.log('[handleStandaloneRoundLink] Loading standalone round:', { roundIdOrCode, archerId, isEntryCode });
+            
+            let roundId = roundIdOrCode;
+            let roundData = null;
+            
+            // If entry code, look up round first
+            if (isEntryCode) {
+                const response = await fetch(`${API_BASE}/rounds?entry_code=${encodeURIComponent(roundIdOrCode)}`);
+                if (!response.ok) {
+                    throw new Error(`Round not found for entry code: ${roundIdOrCode}`);
+                }
+                const data = await response.json();
+                roundId = data.roundId;
+                roundData = data;
+                console.log('[handleStandaloneRoundLink] Found round by entry code:', roundId);
+            }
+            
+            // Fetch round snapshot
+            const snapshotResponse = await fetch(`${API_BASE}/rounds/${roundId}/snapshot`);
+            if (!snapshotResponse.ok) {
+                throw new Error(`Failed to load round: ${snapshotResponse.status}`);
+            }
+            
+            const snapshotData = await snapshotResponse.json();
+            console.log('[handleStandaloneRoundLink] Round snapshot loaded:', snapshotData);
+            
+            // Find archer in snapshot
+            const snapshotArcher = snapshotData.archers?.find(a =>
+                a.archerId === archerId ||
+                a.roundArcherId === archerId ||
+                a.id === archerId
+            );
+            
+            if (!snapshotArcher) {
+                alert('You are not assigned to this round.');
+                return false;
+            }
+            
+            const baleNumber = snapshotArcher.baleNumber || snapshotData.round?.baleNumber;
+            
+            // Set up state for standalone round
+            state.isStandalone = true;
+            state.selectedEventId = null;
+            state.activeEventId = null;
+            state.roundId = roundId;
+            state.roundEntryCode = isEntryCode ? roundIdOrCode : (roundData?.entryCode || null);
+            state.baleNumber = baleNumber;
+            state.divisionCode = snapshotData.round?.division || null;
+            state.selectedDivision = snapshotData.round?.division || null;
+            state.divisionRoundId = roundId;
+            state.assignmentMode = 'pre-assigned';
+            
+            // Update archer cookie
+            const currentCookie = getArcherCookie();
+            if (currentCookie !== archerId) {
+                setArcherCookieSafe(archerId);
+            }
+            
+            // If no bale number, go to Setup mode
+            if (!baleNumber) {
+                console.log('[handleStandaloneRoundLink] No bale number - going to Setup mode');
+                state.assignmentMode = 'manual';
+                updateRoundTypeIndicator();
+                renderSetupSections();
+                return true;
+            }
+            
+            // Fetch full bale data
+            const baleResponse = await fetch(`${API_BASE}/rounds/${roundId}/bales/${baleNumber}/archers`);
+            if (!baleResponse.ok) {
+                throw new Error(`Failed to fetch bale data: ${baleResponse.status}`);
+            }
+            
+            const baleData = await baleResponse.json();
+            
+            // Reconstruct archers
+            state.archers = baleData.archers.map(archer => {
+                const scoreSheet = createEmptyScoreSheet(state.totalEnds);
+                const endsList = Array.isArray(archer.scorecard?.ends) ? archer.scorecard.ends : [];
+                endsList.forEach(end => {
+                    const idx = Math.max(0, Math.min(state.totalEnds - 1, (end.endNumber || 1) - 1));
+                    scoreSheet[idx] = [end.a1 || '', end.a2 || '', end.a3 || ''];
+                });
+                const provisional = {
+                    extId: archer.extId,
+                    firstName: archer.firstName,
+                    lastName: archer.lastName,
+                    school: archer.school
+                };
+                const extId = getExtIdFromArcher(provisional);
+                const overrides = {
+                    extId,
+                    targetAssignment: archer.targetAssignment || archer.target,
+                    baleNumber: archer.baleNumber || baleNumber,
+                    level: archer.level,
+                    gender: archer.gender,
+                    division: state.divisionCode || archer.division,
+                    scores: scoreSheet
+                };
+                const rosterPayload = Object.assign({}, provisional, {
+                    level: archer.level,
+                    gender: archer.gender,
+                    division: state.divisionCode || archer.division
+                });
+                const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
+                stateArcher.roundArcherId = archer.roundArcherId;
+                return stateArcher;
+            });
+            
+            // Load existing scores
+            await loadExistingScoresForArchers();
+            
+            // Initialize LiveUpdates if enabled
+            if (getLiveEnabled()) {
+                await ensureLiveRoundReady({ promptForCode: false });
+            }
+            
+            // Save session
+            saveCurrentBaleSession();
+            saveData();
+            
+            // Go to scoring view
+            state.currentView = 'scoring';
+            updateRoundTypeIndicator();
+            renderView();
+            return true;
+            
+        } catch (error) {
+            console.error('[handleStandaloneRoundLink] Error:', error);
+            alert('Failed to load standalone round. Please try again.');
+            return false;
+        }
+    }
+
     async function handleDirectLink(eventId, roundId, archerId) {
         try {
             console.log('[handleDirectLink] Loading round:', { eventId, roundId, archerId });
@@ -5983,7 +6123,30 @@ document.addEventListener('DOMContentLoaded', () => {
         // No in-progress work - show setup
         renderView();
 
-        // Check for URL parameters (QR code access OR direct event/round link)
+        // Check for URL parameters (QR code access OR direct event/round link OR standalone round)
+        
+        // Scenario 1: Standalone round by entry code: ?code={entry_code}&archer={id}
+        if (urlEntryCode && urlArcherId && !urlEventId) {
+            console.log('[init] Standalone round by entry code detected');
+            const handled = await handleStandaloneRoundLink(urlEntryCode.trim(), urlArcherId.trim(), true);
+            if (handled) return;
+        }
+        
+        // Scenario 2: Standalone round by round ID: ?round={id}&archer={id} (no event)
+        if (urlRoundId && urlArcherId && !urlEventId) {
+            console.log('[init] Standalone round by ID detected');
+            const handled = await handleStandaloneRoundLink(urlRoundId.trim(), urlArcherId.trim(), false);
+            if (handled) return;
+        }
+        
+        // Scenario 3: Event-linked round: ?event={id}&round={id}&archer={id}
+        if (urlEventId && urlRoundId && urlArcherId) {
+            console.log('[init] Event-linked round detected');
+            const handled = await handleDirectLink(urlEventId.trim(), urlRoundId.trim(), urlArcherId.trim());
+            if (handled) return;
+        }
+        
+        // Scenario 4: QR code with event and entry code
         if (urlEventId && urlEntryCode && urlEventId.trim() && urlEntryCode.trim()) {
             // QR code access - requires both event and code
             console.log('QR code detected - verifying entry code...');
