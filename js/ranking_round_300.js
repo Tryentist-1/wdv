@@ -5966,29 +5966,98 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('[handleDirectLink] ✅ Found archer, bale:', baleNumber, 'roundArcherId:', snapshotArcher.roundArcherId);
 
-            // Step 3: Fetch full bale data with all archer details
+            // Step 3: Use snapshot data to get ALL archers, then filter to same bale or NULL bale_number
+            // This ensures we don't miss archers that might be on different bales or have NULL bale_number
+            console.log('[handleDirectLink] Processing snapshot archers:', snapshotData.archers?.length || 0);
+            
+            // Filter archers: same bale OR NULL bale_number (unassigned)
+            const relevantArchers = snapshotData.archers.filter(a => 
+                a.baleNumber === baleNumber || 
+                a.baleNumber === null || 
+                a.baleNumber === undefined
+            );
+            
+            console.log('[handleDirectLink] Filtered to', relevantArchers.length, 'archers (bale', baleNumber, 'or NULL)');
+            
+            // Step 4: Fetch full bale data for detailed archer info (firstName, lastName, etc.)
+            // This gives us the full archer details we need
             const baleResponse = await fetch(`${API_BASE}/rounds/${roundId}/bales/${baleNumber}/archers`, {
                 headers: {
                     'X-Passcode': entryCode || ''
                 }
             });
 
-            if (!baleResponse.ok) {
-                console.error('[handleDirectLink] ❌ Failed to fetch bale data:', baleResponse.status);
-                throw new Error(`Failed to fetch bale data: ${baleResponse.status}`);
+            let baleData = null;
+            if (baleResponse.ok) {
+                baleData = await baleResponse.json();
+                console.log('[handleDirectLink] ✅ Bale data received:', {
+                    division: baleData.division,
+                    archerCount: baleData.archers?.length || 0
+                });
+            } else {
+                console.warn('[handleDirectLink] ⚠️ Could not fetch bale data, using snapshot data only');
+                // Create bale data structure from snapshot
+                baleData = {
+                    division: snapshotData.round?.division,
+                    archers: []
+                };
             }
 
-            const baleData = await baleResponse.json();
-            console.log('[handleDirectLink] ✅ Bale data received:', {
-                division: baleData.division,
-                archerCount: baleData.archers?.length || 0
+            // Merge snapshot archers with bale data archers
+            // Use bale data for full details, but include snapshot archers that might be missing
+            const archerMap = new Map();
+            
+            // First, add archers from bale data (full details)
+            if (baleData.archers && Array.isArray(baleData.archers)) {
+                baleData.archers.forEach(archer => {
+                    const key = archer.archerId || archer.id || archer.roundArcherId;
+                    if (key) {
+                        archerMap.set(key, archer);
+                    }
+                });
+            }
+            
+            // Then, add missing archers from snapshot (might have NULL bale_number or be on different bale)
+            relevantArchers.forEach(snapshotArcher => {
+                const key = snapshotArcher.archerId || snapshotArcher.roundArcherId;
+                if (key && !archerMap.has(key)) {
+                    // Convert snapshot archer to bale data format
+                    const archerName = snapshotArcher.archerName || 'Unknown';
+                    const nameParts = archerName.split(' ');
+                    const firstName = nameParts[0] || '';
+                    const lastName = nameParts.slice(1).join(' ') || '';
+                    
+                    archerMap.set(key, {
+                        roundArcherId: snapshotArcher.roundArcherId,
+                        archerId: snapshotArcher.archerId,
+                        firstName: firstName,
+                        lastName: lastName,
+                        school: '',
+                        level: '',
+                        gender: '',
+                        targetAssignment: snapshotArcher.targetAssignment,
+                        baleNumber: snapshotArcher.baleNumber || baleNumber,
+                        scorecard: {
+                            ends: snapshotArcher.scores ? snapshotArcher.scores.map((score, idx) => ({
+                                endNumber: idx + 1,
+                                a1: score[0] || '',
+                                a2: score[1] || '',
+                                a3: score[2] || ''
+                            })) : []
+                        }
+                    });
+                    console.log('[handleDirectLink] ✅ Added missing archer from snapshot:', archerName);
+                }
             });
-
-            // Validate bale data structure
-            if (!baleData.archers || !Array.isArray(baleData.archers)) {
-                console.error('[handleDirectLink] ❌ Invalid bale data structure - missing archers array');
-                console.error('[handleDirectLink] Bale data:', baleData);
-                alert('Invalid round data received from server. Please contact support.');
+            
+            // Convert map to array
+            const allArchers = Array.from(archerMap.values());
+            console.log('[handleDirectLink] ✅ Total archers after merge:', allArchers.length);
+            
+            // Validate we have archers
+            if (allArchers.length === 0) {
+                console.error('[handleDirectLink] ❌ No archers found after merge');
+                alert('No archers found for this round. Please contact support.');
                 return false;
             }
 
@@ -6002,19 +6071,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('[handleDirectLink] ✅ Archer cookie already correct:', archerId);
             }
 
-            // 3. Find archer in full bale data
-            console.log('[handleDirectLink] Looking for archer:', archerId, 'in', baleData.archers.length, 'archers');
+            // 3. Find archer in merged archer list
+            console.log('[handleDirectLink] Looking for archer:', archerId, 'in', allArchers.length, 'archers');
 
-            const archerData = baleData.archers.find(a =>
+            const archerData = allArchers.find(a =>
                 a.archerId === archerId ||
                 a.id === archerId ||
                 a.archer_id === archerId
             );
 
             if (!archerData) {
-                console.error('[handleDirectLink] ❌ Archer not found in bale data');
+                console.error('[handleDirectLink] ❌ Archer not found in merged archer list');
                 console.error('[handleDirectLink] Looking for:', archerId);
-                console.error('[handleDirectLink] Available archers:', baleData.archers.map(a => ({
+                console.error('[handleDirectLink] Available archers:', allArchers.map(a => ({
                     archerId: a.archerId,
                     id: a.id,
                     name: `${a.firstName} ${a.lastName}`
