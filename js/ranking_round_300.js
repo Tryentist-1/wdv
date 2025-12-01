@@ -5119,7 +5119,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide event selection modal
     function hideEventModal() {
         const modal = document.getElementById('event-modal');
-        if (modal) modal.style.display = 'none';
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
     }
 
     // Load active events into modal list
@@ -5225,16 +5228,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         const url = `ranking_round_300.html?event=${ev.id}&round=${round.round_id}&archer=${archerId}`;
                         window.location.href = url;
                     } else {
-                        // Start new round - load event
+                        // Start new round - load event and go to setup
                         const entryCode = ev.entryCode || ev.entry_code || '';
                         console.log('[Event Selected] Starting new round, entryCode:', entryCode);
 
                         const success = await loadEventById(ev.id, ev.name, entryCode);
                         if (success) {
                             hideEventModal();
+                            // Set event selection in state
+                            state.selectedEventId = ev.id;
+                            state.activeEventId = ev.id;
+                            state.isStandalone = false;
+                            // Load divisions for this event
+                            await loadDivisionsForEvent(ev.id);
+                            // Update event/division selectors
+                            if (eventDivisionControls.eventSelect) {
+                                eventDivisionControls.eventSelect.value = ev.id;
+                            }
+                            updateRoundTypeIndicator();
                             renderSetupSections();
                             updateEventHeader();
-                            console.log('[Event Selected] Event loaded successfully');
+                            console.log('[Event Selected] Event loaded successfully, showing setup with division selector');
                         } else {
                             alert('Failed to load event. Please try again.');
                         }
@@ -7132,39 +7146,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Event Modal Handlers
-    const tabPasscode = document.getElementById('tab-passcode');
-    const tabEvents = document.getElementById('tab-events');
-    const passcodeTabContent = document.getElementById('passcode-tab');
-    const eventsTabContent = document.getElementById('events-tab');
-    const verifyCodeBtn = document.getElementById('verify-code-btn');
-    const eventCodeInput = document.getElementById('event-code-input');
-    const codeError = document.getElementById('code-error');
     const cancelEventModalBtn = document.getElementById('cancel-event-modal-btn');
-    const changeEventBtn = document.getElementById('change-event-btn');
+    const standaloneRoundBtn = document.getElementById('standalone-round-btn');
 
-    // Tab switching
-    if (tabPasscode && tabEvents) {
-        tabPasscode.onclick = () => {
-            tabPasscode.classList.add('active');
-            tabPasscode.style.borderBottom = '3px solid #2d7dd9';
-            tabEvents.classList.remove('active');
-            tabEvents.style.borderBottom = '3px solid transparent';
-            passcodeTabContent.style.display = 'block';
-            eventsTabContent.style.display = 'none';
-        };
-
-        tabEvents.onclick = () => {
-            tabEvents.classList.add('active');
-            tabEvents.style.borderBottom = '3px solid #2d7dd9';
-            tabPasscode.classList.remove('active');
-            tabPasscode.style.borderBottom = '3px solid transparent';
-            eventsTabContent.style.display = 'block';
-            passcodeTabContent.style.display = 'none';
+    // Standalone Round button
+    if (standaloneRoundBtn) {
+        standaloneRoundBtn.onclick = () => {
+            console.log('[Event Modal] Standalone round selected');
+            hideEventModal();
+            
+            // Set standalone mode
+            state.selectedEventId = null;
+            state.activeEventId = null;
+            state.isStandalone = true;
+            state.eventName = '';
+            
+            // Load default divisions for standalone
+            loadDefaultDivisions();
+            
+            // Update event/division selectors
+            if (eventDivisionControls.eventSelect) {
+                eventDivisionControls.eventSelect.value = '';
+            }
+            
+            updateRoundTypeIndicator();
+            renderSetupSections();
+            console.log('[Event Modal] Standalone mode activated, showing setup with division selector');
         };
     }
 
-    // Verify code button
-    if (verifyCodeBtn && eventCodeInput) {
+    // Removed: Tab switching and Enter Code functionality (no longer needed)
         verifyCodeBtn.onclick = async () => {
             const code = eventCodeInput.value.trim();
 
@@ -7310,14 +7321,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 eventCodeInput.disabled = false;
             }
         };
-
-        // Allow Enter key to submit
-        eventCodeInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                verifyCodeBtn.click();
-            }
-        });
-    }
 
     // Cancel button - navigate back to index.html
     if (cancelEventModalBtn) {
