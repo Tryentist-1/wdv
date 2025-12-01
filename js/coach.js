@@ -575,12 +575,20 @@
 
   function renderVerifyTable() {
     const container = document.getElementById('verify-table-container');
+    
+    // Handle solo/team matches
+    if (verifyState?.matchType === 'solo-matches' || verifyState?.matchType === 'team-matches') {
+      renderMatchesVerifyTable(container);
+      return;
+    }
+    
+    // Handle ranking rounds (original logic)
     if (!verifyState || !verifyState.snapshot) {
-      container.innerHTML = '<p style="padding:1rem;color:#7f8c8d;">No data loaded.</p>';
+      container.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">No data loaded.</p>';
       return;
     }
     if (!verifyState.division) {
-      container.innerHTML = '<p style="padding:1rem;color:#7f8c8d;">Select a division to begin verification.</p>';
+      container.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">Select a division to begin verification.</p>';
       return;
     }
     const division = verifyState.snapshot.divisions?.[verifyState.division];
@@ -701,6 +709,138 @@
     });
   }
 
+  function renderMatchesVerifyTable(container) {
+    if (!verifyState || !verifyState.matches) {
+      container.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">Select an event and bracket to view matches.</p>';
+      return;
+    }
+    
+    const matches = verifyState.matches || [];
+    if (matches.length === 0) {
+      container.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">No matches found for the selected filters.</p>';
+      return;
+    }
+    
+    // Sort matches by status: PENDING/COMP first, then VER, then VOID
+    const statusOrder = { 'PENDING': 0, 'COMP': 0, 'COMPLETED': 0, 'VER': 1, 'VERIFIED': 1, 'VOID': 2 };
+    matches.sort((a, b) => {
+      const statusA = (a.card_status || 'PENDING').toUpperCase();
+      const statusB = (b.card_status || 'PENDING').toUpperCase();
+      if (statusOrder[statusA] !== statusOrder[statusB]) {
+        return (statusOrder[statusA] ?? 0) - (statusOrder[statusB] ?? 0);
+      }
+      return (a.match_display || '').localeCompare(b.match_display || '');
+    });
+    
+    const matchType = verifyState.matchType === 'solo-matches' ? 'solo' : 'team';
+    
+    let html = `
+      <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700">
+        <thead class="bg-primary text-white sticky top-0 z-10">
+          <tr>
+            <th class="px-3 py-2 text-left font-bold border border-white/20">Match</th>
+            <th class="px-3 py-2 text-center font-bold border border-white/20">Sets Score</th>
+            <th class="px-3 py-2 text-center font-bold border border-white/20">Status</th>
+            <th class="px-3 py-2 text-center font-bold border border-white/20">Card Status</th>
+            <th class="px-3 py-2 text-center font-bold border border-white/20">Verified</th>
+            <th class="px-3 py-2 text-center font-bold border border-white/20">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    matches.forEach(match => {
+      const cardStatus = (match.card_status || 'PENDING').toUpperCase();
+      const locked = !!match.locked;
+      const setsScore = match.archer1_sets_won !== undefined && match.archer2_sets_won !== undefined
+        ? `${match.archer1_sets_won}-${match.archer2_sets_won}`
+        : '—';
+      
+      let actions = '';
+      if (cardStatus === 'VER' || cardStatus === 'VERIFIED') {
+        actions = `<button class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">Unlock</button>`;
+      } else if (cardStatus === 'VOID') {
+        actions = `<button class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">Reopen</button>`;
+      } else {
+        actions = `
+          <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm font-semibold transition-colors min-h-[44px]" data-action="lock" data-match-id="${match.id}" data-match-type="${matchType}">Verify</button>
+          <button class="px-3 py-1 bg-danger hover:bg-red-700 text-white rounded text-sm font-semibold transition-colors min-h-[44px]" data-action="void" data-match-id="${match.id}" data-match-type="${matchType}">Void</button>
+        `;
+      }
+      
+      const verifiedInfo = match.verified_by
+        ? `${match.verified_by}<br><span class="text-xs text-gray-500 dark:text-gray-400">${formatTimestamp(match.verified_at)}</span>`
+        : '—';
+      
+      html += `
+        <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
+          <td class="px-3 py-2">
+            <strong class="text-gray-800 dark:text-white">${match.match_display || 'Match'}</strong><br>
+            ${match.bracket_name ? `<span class="text-xs text-gray-600 dark:text-gray-400">${match.bracket_name}</span>` : ''}
+          </td>
+          <td class="px-3 py-2 text-center text-gray-800 dark:text-white font-semibold">${setsScore}</td>
+          <td class="px-3 py-2 text-center">${formatMatchStatus(match.status || 'Not Started')}</td>
+          <td class="px-3 py-2 text-center">${formatStatusBadge(cardStatus)}</td>
+          <td class="px-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400">${verifiedInfo}</td>
+          <td class="px-3 py-2 text-center">
+            <div class="flex gap-2 justify-center flex-wrap">
+              ${actions}
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    
+    // Add action handlers for match verification
+    container.querySelectorAll('[data-action]').forEach(btn => {
+      btn.onclick = async (e) => {
+        const action = e.currentTarget.dataset.action;
+        const matchId = e.currentTarget.dataset.matchId;
+        const matchType = e.currentTarget.dataset.matchType;
+        if (!matchId) return;
+        
+        if (action === 'void') {
+          const confirmVoid = confirm('Mark this match as VOID? This hides it from results until reopened.');
+          if (!confirmVoid) return;
+        }
+        if (action === 'unlock') {
+          const confirmUnlock = confirm('Unlock this match for edits? Verification status will reset.');
+          if (!confirmUnlock) return;
+        }
+        
+        try {
+          const { verifiedBy, notes } = getVerifyInputs();
+          if (!verifiedBy && action !== 'unlock') {
+            alert('Enter who is verifying the match before proceeding.');
+            return;
+          }
+          await req(`/${matchType}-matches/${matchId}/verify`, 'POST', {
+            action,
+            verifiedBy,
+            notes
+          });
+          await loadMatchesForVerification();
+          renderVerifyTable();
+        } catch (err) {
+          alert(`Verification error: ${err.message}`);
+        }
+      };
+    });
+  }
+  
+  function formatMatchStatus(status) {
+    const statusMap = {
+      'Not Started': '<span class="px-2 py-1 bg-gray-400 text-white rounded text-xs font-semibold">Not Started</span>',
+      'In Progress': '<span class="px-2 py-1 bg-yellow-500 text-white rounded text-xs font-semibold">In Progress</span>',
+      'Completed': '<span class="px-2 py-1 bg-primary text-white rounded text-xs font-semibold">Completed</span>',
+      'Voided': '<span class="px-2 py-1 bg-gray-500 text-white rounded text-xs font-semibold">Voided</span>'
+    };
+    return statusMap[status] || `<span class="px-2 py-1 bg-gray-400 text-white rounded text-xs font-semibold">${status}</span>`;
+  }
+
   function getVerifyInputs() {
     const verifiedBy = document.getElementById('verify-actor-input').value.trim();
     const notes = document.getElementById('verify-notes-input').value.trim();
@@ -775,12 +915,22 @@
       eventName: event.name,
       division: null,
       bale: null,
-      snapshot: null
+      snapshot: null,
+      matchType: 'ranking-rounds', // 'ranking-rounds', 'solo-matches', 'team-matches'
+      eventIdForMatches: event.id, // Pre-select current event for solo/team matches
+      bracketId: null, // For solo/team matches
+      eventsWithBrackets: [],
+      matches: [],
+      matchesSummary: {}
     };
     const modal = document.getElementById('verify-modal');
     document.getElementById('verify-modal-title').textContent = `Verify Scorecards — ${event.name}`;
     document.getElementById('verify-actor-input').value = '';
     document.getElementById('verify-notes-input').value = '';
+
+    // Set default match type to ranking-rounds
+    document.querySelector('input[name="verify-match-type"][value="ranking-rounds"]').checked = true;
+    updateVerifyMatchType('ranking-rounds');
 
     try {
       await loadVerifySnapshot();
@@ -791,8 +941,19 @@
       alert(`Unable to load verification data: ${err.message}`);
     }
 
+    // Radio button handlers for match type switching
+    document.querySelectorAll('input[name="verify-match-type"]').forEach(radio => {
+      radio.onchange = () => {
+        if (radio.checked) {
+          updateVerifyMatchType(radio.value);
+        }
+      };
+    });
+
     const divisionSelect = document.getElementById('verify-division-select');
     const baleSelect = document.getElementById('verify-bale-select');
+    const eventSelect = document.getElementById('verify-event-select');
+    const bracketSelect = document.getElementById('verify-bracket-select');
     const refreshBtn = document.getElementById('verify-refresh-btn');
     const closeBtn = document.getElementById('verify-modal-close-btn');
     const lockAllBtn = document.getElementById('verify-lock-all-btn');
@@ -815,10 +976,36 @@
       renderVerifyTable();
     };
 
+    // Event selector handler for solo/team matches
+    if (eventSelect) {
+      eventSelect.onchange = async () => {
+        verifyState.eventIdForMatches = eventSelect.value || null;
+        verifyState.bracketId = null;
+        populateBracketSelector();
+        await loadMatchesForVerification();
+        renderVerifyTable();
+      };
+    }
+
+    // Bracket selector handler for solo/team matches
+    if (bracketSelect) {
+      bracketSelect.onchange = async () => {
+        verifyState.bracketId = bracketSelect.value || null;
+        await loadMatchesForVerification();
+        renderVerifyTable();
+      };
+    }
+
     refreshBtn.onclick = async () => {
       try {
-        await loadVerifySnapshot();
-        populateVerifySelectors();
+        if (verifyState.matchType === 'ranking-rounds') {
+          await loadVerifySnapshot();
+          populateVerifySelectors();
+        } else {
+          await loadEventsWithBrackets();
+          populateMatchSelectors();
+          await loadMatchesForVerification();
+        }
         renderVerifyTable();
       } catch (err) {
         alert(`Refresh failed: ${err.message}`);
@@ -836,6 +1023,173 @@
     closeRoundBtn.onclick = () => {
       handleVerifyAndCloseRound();
     };
+  }
+
+  // Update verification UI based on match type selection
+  async function updateVerifyMatchType(matchType) {
+    if (!verifyState) return;
+    
+    verifyState.matchType = matchType;
+    const rankingSelectors = document.getElementById('verify-ranking-selectors');
+    const matchSelectors = document.getElementById('verify-match-selectors');
+    
+    if (matchType === 'ranking-rounds') {
+      rankingSelectors.classList.remove('hidden');
+      matchSelectors.classList.add('hidden');
+      document.getElementById('verify-lock-all-btn').textContent = 'Lock All On Bale';
+      document.getElementById('verify-close-round-btn').textContent = 'Verify & Close Round';
+      document.getElementById('verify-close-round-btn').classList.remove('hidden'); // Show close round button for ranking rounds
+      
+      // Load ranking round data
+      try {
+        await loadVerifySnapshot();
+        populateVerifySelectors();
+        renderVerifyTable();
+      } catch (err) {
+        console.error('Error loading ranking round snapshot:', err);
+      }
+    } else {
+      // Solo or Team matches
+      rankingSelectors.classList.add('hidden');
+      matchSelectors.classList.remove('hidden');
+      document.getElementById('verify-lock-all-btn').textContent = 'Verify Selected Matches';
+      document.getElementById('verify-close-round-btn').classList.add('hidden'); // Hide close round button for matches
+      
+      // Load events with brackets
+      await loadEventsWithBrackets();
+      populateMatchSelectors();
+      
+      // Load matches for current event/bracket
+      if (verifyState.eventIdForMatches) {
+        await loadMatchesForVerification();
+      }
+      renderVerifyTable();
+    }
+  }
+
+  // Load events that have brackets
+  async function loadEventsWithBrackets() {
+    try {
+      const eventsRes = await req('/events/recent', 'GET');
+      const events = eventsRes.events || [];
+      
+      // Filter to only events with brackets
+      const eventsWithBrackets = [];
+      for (const event of events) {
+        try {
+          const bracketsRes = await fetch(`${API_BASE}/events/${event.id}/brackets`);
+          if (bracketsRes.ok) {
+            const bracketsData = await bracketsRes.json();
+            const brackets = bracketsData.brackets || [];
+            const matchType = verifyState.matchType === 'solo-matches' ? 'SOLO' : 'TEAM';
+            const hasBrackets = brackets.some(b => b.bracket_type === matchType);
+            if (hasBrackets) {
+              eventsWithBrackets.push({ ...event, brackets });
+            }
+          }
+        } catch (err) {
+          console.error(`Error loading brackets for event ${event.id}:`, err);
+        }
+      }
+      
+      verifyState.eventsWithBrackets = eventsWithBrackets;
+      
+      // Set default event if not set
+      if (!verifyState.eventIdForMatches && eventsWithBrackets.length > 0) {
+        verifyState.eventIdForMatches = eventsWithBrackets[0].id;
+      }
+    } catch (err) {
+      console.error('Error loading events with brackets:', err);
+      verifyState.eventsWithBrackets = [];
+    }
+  }
+
+  // Populate event and bracket selectors for solo/team matches
+  function populateMatchSelectors() {
+    const eventSelect = document.getElementById('verify-event-select');
+    const bracketSelect = document.getElementById('verify-bracket-select');
+    
+    if (!eventSelect || !bracketSelect) return;
+    
+    // Populate event selector
+    eventSelect.innerHTML = '<option value="">Select Event...</option>';
+    const events = verifyState.eventsWithBrackets || [];
+    events.forEach(event => {
+      const option = document.createElement('option');
+      option.value = event.id;
+      option.textContent = `${event.name} (${event.date})`;
+      if (event.id === verifyState.eventIdForMatches) {
+        option.selected = true;
+      }
+      eventSelect.appendChild(option);
+    });
+    
+    // Populate bracket selector
+    populateBracketSelector();
+  }
+
+  // Populate bracket selector based on selected event
+  function populateBracketSelector() {
+    const bracketSelect = document.getElementById('verify-bracket-select');
+    if (!bracketSelect || !verifyState.eventIdForMatches) {
+      if (bracketSelect) bracketSelect.innerHTML = '<option value="">Select Event First</option>';
+      return;
+    }
+    
+    const event = verifyState.eventsWithBrackets?.find(e => e.id === verifyState.eventIdForMatches);
+    if (!event || !event.brackets) {
+      bracketSelect.innerHTML = '<option value="">No Brackets Found</option>';
+      return;
+    }
+    
+    const matchType = verifyState.matchType === 'solo-matches' ? 'SOLO' : 'TEAM';
+    const brackets = event.brackets.filter(b => b.bracket_type === matchType);
+    
+    bracketSelect.innerHTML = '<option value="">All Brackets</option>';
+    brackets.forEach(bracket => {
+      const option = document.createElement('option');
+      option.value = bracket.id;
+      const formatName = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+      option.textContent = `${formatName} - ${bracket.division || 'N/A'}`;
+      if (bracket.id === verifyState.bracketId) {
+        option.selected = true;
+      }
+      bracketSelect.appendChild(option);
+    });
+    
+    // Set default bracket if not set
+    if (!verifyState.bracketId && brackets.length > 0) {
+      verifyState.bracketId = brackets[0].id;
+      bracketSelect.value = brackets[0].id;
+    }
+  }
+
+  // Load solo or team matches for verification
+  async function loadMatchesForVerification() {
+    if (!verifyState.eventIdForMatches) {
+      verifyState.matches = [];
+      return;
+    }
+    
+    try {
+      const matchType = verifyState.matchType === 'solo-matches' ? 'solo' : 'team';
+      const url = `/events/${verifyState.eventIdForMatches}/${matchType}-matches`;
+      const params = new URLSearchParams();
+      if (verifyState.bracketId) {
+        params.append('bracket_id', verifyState.bracketId);
+      }
+      params.append('status', 'Completed'); // Only show completed matches for verification
+      
+      const queryString = params.toString();
+      const fullUrl = queryString ? `${url}?${queryString}` : url;
+      const matchesRes = await req(fullUrl, 'GET');
+      verifyState.matches = matchesRes.matches || [];
+      verifyState.matchesSummary = matchesRes.summary || {};
+    } catch (err) {
+      console.error('Error loading matches for verification:', err);
+      verifyState.matches = [];
+      verifyState.matchesSummary = {};
+    }
   }
 
   // ==================== PHASE 0: Division Round Management ====================
