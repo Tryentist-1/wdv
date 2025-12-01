@@ -377,15 +377,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateEventHeader() {
         const eventNameEl = document.getElementById('event-name');
-        const currentEventNameEl = document.getElementById('current-event-name');
         const baleDisplayEl = document.getElementById('current-bale-display');
 
         const eventLabel = state.eventName || (state.activeEventId ? 'Loading...' : 'No Event');
         if (eventNameEl) {
             eventNameEl.textContent = eventLabel;
-        }
-        if (currentEventNameEl) {
-            currentEventNameEl.textContent = eventLabel;
         }
 
         if (baleDisplayEl) {
@@ -1049,21 +1045,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // ASK USER with detailed info
-            const resumeMsg = `Resume in-progress scoring?\n\nBale: ${session.baleNumber}\nArchers: ${archerCount}\nCurrent End: ${session.currentEnd || 1}\n${hasScores ? '⚠️ Has existing scores' : '✓ No scores yet'}\n\nOK = Resume\nCancel = Start fresh (clears session only, use Coach Reset to clear server data)`;
-            const shouldResume = confirm(resumeMsg);
-
-            if (!shouldResume) {
-                console.log('[Phase 0 Session] User declined to resume, clearing LOCAL session only');
-                localStorage.removeItem('current_bale_session');
-                // Clear Live Updates session too
-                if (session.roundId) {
-                    try {
-                        localStorage.removeItem(`live_updates_session:${session.roundId}`);
-                    } catch (e) { }
+            // Verify session is still current on server
+            let isCurrent = false;
+            let serverRoundStatus = null;
+            let serverLastModified = null;
+            
+            if (session.roundId && entryCodePreview) {
+                try {
+                    const verifyResponse = await fetch(`${API_BASE}/rounds/${session.roundId}/snapshot`, {
+                        headers: { 'X-Passcode': entryCodePreview }
+                    });
+                    if (verifyResponse.ok) {
+                        const verifyData = await verifyResponse.json();
+                        serverRoundStatus = verifyData.round?.status || null;
+                        // Check if round is still active and matches our session
+                        isCurrent = serverRoundStatus === 'In Progress' || serverRoundStatus === 'Not Started';
+                        if (verifyData.round?.updated_at) {
+                            serverLastModified = new Date(verifyData.round.updated_at);
+                        }
+                        console.log('[Phase 0 Session] Server verification:', { isCurrent, serverRoundStatus });
+                    }
+                } catch (e) {
+                    console.warn('[Phase 0 Session] Could not verify with server:', e);
+                    // If we can't verify, assume it's current (better to let user decide)
+                    isCurrent = true;
                 }
-                return false;
+            } else {
+                // No round ID or entry code - can't verify, assume current
+                isCurrent = true;
             }
+            
+            // Show resume dialog
+            return await showResumeDialog({
+                session,
+                archerCount,
+                hasScores,
+                isCurrent,
+                serverRoundStatus
+            });
 
             // Get event entry code for authentication
             // Priority: 1) Saved in session, 2) Global storage, 3) Event meta
@@ -7163,11 +7182,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadEventsIntoSelect();
 
     // Change event button (in header)
-    if (changeEventBtn) {
-        changeEventBtn.onclick = () => {
-            showEventModal();
-        };
-    }
+    // Deprecated: change-event-btn removed from header (Event/Division selection now in setup section)
+    // Event modal still used for QR code entry and other flows
 
     // Only initialize the app if we are on the ranking round page
     if (document.getElementById('bale-scoring-container')) {
