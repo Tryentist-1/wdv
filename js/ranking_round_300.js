@@ -1059,23 +1059,99 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 localStorage.setItem('event_entry_code', entryCode);
                 
+                // Fetch snapshot first to get ALL archers for the round
+                const snapshotResponse = await fetch(`${API_BASE}/rounds/${session.roundId}/snapshot`, {
+                    headers: { 'X-Passcode': entryCode }
+                });
+                
+                let snapshotData = null;
+                if (snapshotResponse.ok) {
+                    snapshotData = await snapshotResponse.json();
+                    console.log('[Resume Dialog] ✅ Snapshot retrieved:', snapshotData.archers?.length || 0, 'archers');
+                } else {
+                    console.warn('[Resume Dialog] Could not fetch snapshot, using bale data only');
+                }
+                
                 const response = await fetch(`${API_BASE}/rounds/${session.roundId}/bales/${session.baleNumber}/archers`, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json', 'X-Passcode': entryCode }
                 });
                 
-                if (!response.ok) {
+                let baleData = null;
+                if (response.ok) {
+                    baleData = await response.json();
+                    console.log('[Resume Dialog] ✅ Bale data retrieved:', baleData.archers?.length || 0, 'archers');
+                } else {
                     console.warn('[Resume Dialog] Failed to fetch bale group:', response.status);
+                    baleData = { division: null, archers: [] };
+                }
+                
+                // Merge snapshot archers with bale data (same logic as handleDirectLink)
+                const archerMap = new Map();
+                
+                // First, add archers from bale data (full details)
+                if (baleData.archers && Array.isArray(baleData.archers)) {
+                    baleData.archers.forEach(archer => {
+                        const key = archer.archerId || archer.id || archer.roundArcherId;
+                        if (key) {
+                            archerMap.set(key, archer);
+                        }
+                    });
+                }
+                
+                // Then, add missing archers from snapshot (same bale or NULL bale_number)
+                if (snapshotData && snapshotData.archers) {
+                    const relevantArchers = snapshotData.archers.filter(a => 
+                        a.baleNumber === session.baleNumber || 
+                        a.baleNumber === null || 
+                        a.baleNumber === undefined
+                    );
+                    
+                    relevantArchers.forEach(snapshotArcher => {
+                        const key = snapshotArcher.archerId || snapshotArcher.roundArcherId;
+                        if (key && !archerMap.has(key)) {
+                            // Convert snapshot archer to bale data format
+                            const archerName = snapshotArcher.archerName || 'Unknown';
+                            const nameParts = archerName.split(' ');
+                            const firstName = nameParts[0] || '';
+                            const lastName = nameParts.slice(1).join(' ') || '';
+                            
+                            archerMap.set(key, {
+                                roundArcherId: snapshotArcher.roundArcherId,
+                                archerId: snapshotArcher.archerId,
+                                firstName: firstName,
+                                lastName: lastName,
+                                school: '',
+                                level: '',
+                                gender: '',
+                                targetAssignment: snapshotArcher.targetAssignment,
+                                baleNumber: snapshotArcher.baleNumber || session.baleNumber,
+                                scorecard: {
+                                    ends: snapshotArcher.scores ? snapshotArcher.scores.map((score, idx) => ({
+                                        endNumber: idx + 1,
+                                        a1: score[0] || '',
+                                        a2: score[1] || '',
+                                        a3: score[2] || ''
+                                    })) : []
+                                }
+                            });
+                            console.log('[Resume Dialog] ✅ Added missing archer from snapshot:', archerName);
+                        }
+                    });
+                }
+                
+                // Convert map to array
+                const allArchers = Array.from(archerMap.values());
+                
+                if (allArchers.length === 0) {
+                    console.warn('[Resume Dialog] No archers found after merge');
                     resolve(false);
                     return;
                 }
                 
-                const baleData = await response.json();
-                if (!baleData.archers || baleData.archers.length === 0) {
-                    console.warn('[Resume Dialog] No archers found');
-                    resolve(false);
-                    return;
-                }
+                // Replace baleData.archers with merged list
+                baleData.archers = allArchers;
+                console.log('[Resume Dialog] ✅ Total archers after merge:', allArchers.length);
                 
                 // Restore state (same logic as original restoreCurrentBaleSession)
                 state.roundId = session.roundId;
@@ -1272,7 +1348,20 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('event_entry_code', entryCode);
             console.log('[Phase 0 Session] ✅ Using entry code for authentication');
 
-            // Fetch bale group from server
+            // Fetch snapshot first to get ALL archers for the round
+            const snapshotResponse = await fetch(`${API_BASE}/rounds/${session.roundId}/snapshot`, {
+                headers: { 'X-Passcode': entryCode }
+            });
+            
+            let snapshotData = null;
+            if (snapshotResponse.ok) {
+                snapshotData = await snapshotResponse.json();
+                console.log('[Phase 0 Session] ✅ Snapshot retrieved:', snapshotData.archers?.length || 0, 'archers');
+            } else {
+                console.warn('[Phase 0 Session] Could not fetch snapshot, using bale data only');
+            }
+
+            // Fetch bale group from server for full archer details
             const response = await fetch(`${API_BASE}/rounds/${session.roundId}/bales/${session.baleNumber}/archers`, {
                 method: 'GET',
                 headers: {
@@ -1281,19 +1370,81 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            if (!response.ok) {
+            let baleData = null;
+            if (response.ok) {
+                baleData = await response.json();
+                console.log('[Phase 0 Session] ✅ Bale data retrieved:', baleData.archers?.length || 0, 'archers');
+            } else {
                 console.warn('[Phase 0 Session] Failed to fetch bale group:', response.status);
-                return false;
+                // Create empty bale data structure
+                baleData = { division: null, archers: [] };
             }
 
-            const baleData = await response.json();
-
-            if (!baleData.archers || baleData.archers.length === 0) {
-                console.warn('[Phase 0 Session] No archers found in bale group');
+            // Merge snapshot archers with bale data (same logic as handleDirectLink)
+            const archerMap = new Map();
+            
+            // First, add archers from bale data (full details)
+            if (baleData.archers && Array.isArray(baleData.archers)) {
+                baleData.archers.forEach(archer => {
+                    const key = archer.archerId || archer.id || archer.roundArcherId;
+                    if (key) {
+                        archerMap.set(key, archer);
+                    }
+                });
+            }
+            
+            // Then, add missing archers from snapshot (same bale or NULL bale_number)
+            if (snapshotData && snapshotData.archers) {
+                const relevantArchers = snapshotData.archers.filter(a => 
+                    a.baleNumber === session.baleNumber || 
+                    a.baleNumber === null || 
+                    a.baleNumber === undefined
+                );
+                
+                relevantArchers.forEach(snapshotArcher => {
+                    const key = snapshotArcher.archerId || snapshotArcher.roundArcherId;
+                    if (key && !archerMap.has(key)) {
+                        // Convert snapshot archer to bale data format
+                        const archerName = snapshotArcher.archerName || 'Unknown';
+                        const nameParts = archerName.split(' ');
+                        const firstName = nameParts[0] || '';
+                        const lastName = nameParts.slice(1).join(' ') || '';
+                        
+                        archerMap.set(key, {
+                            roundArcherId: snapshotArcher.roundArcherId,
+                            archerId: snapshotArcher.archerId,
+                            firstName: firstName,
+                            lastName: lastName,
+                            school: '',
+                            level: '',
+                            gender: '',
+                            targetAssignment: snapshotArcher.targetAssignment,
+                            baleNumber: snapshotArcher.baleNumber || session.baleNumber,
+                            scorecard: {
+                                ends: snapshotArcher.scores ? snapshotArcher.scores.map((score, idx) => ({
+                                    endNumber: idx + 1,
+                                    a1: score[0] || '',
+                                    a2: score[1] || '',
+                                    a3: score[2] || ''
+                                })) : []
+                            }
+                        });
+                        console.log('[Phase 0 Session] ✅ Added missing archer from snapshot:', archerName);
+                    }
+                });
+            }
+            
+            // Convert map to array
+            const allArchers = Array.from(archerMap.values());
+            
+            if (allArchers.length === 0) {
+                console.warn('[Phase 0 Session] No archers found after merge');
                 return false;
             }
-
-            console.log('[Phase 0 Session] Successfully retrieved bale group:', baleData);
+            
+            // Replace baleData.archers with merged list
+            baleData.archers = allArchers;
+            console.log('[Phase 0 Session] ✅ Total archers after merge:', allArchers.length);
 
             // Restore state from server data
             state.roundId = session.roundId;
