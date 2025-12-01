@@ -75,19 +75,35 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Match Tracking Feature - Solo match history with win/loss ratio, modal view, and match restoration  
-**Current Priority:** Solo Match Verification - Adding Solo Matches to Verify step in coach module or Event Dashboard  
+**Last Session Focus:** Solo Match Verification - Complete integration of solo matches into coach verification workflow and ScoreCard Editor  
+**Current Priority:** Team Match Verification - Apply same verification patterns to team matches  
 **Active Branch:** main  
 **Blockers:** None
 
 **Quick Context for This Session:**
-- ✅ What are we working on today? Add Solo Matches to the Verify step in coach module or Event Dashboard
-- ✅ What files/modules are we touching? TBD - coach.html, event_dashboard.html, api/index.php (potentially)
-- ✅ Any specific constraints or requirements? Follow existing verification workflow patterns from ranking rounds
+- ✅ What are we working on today? Team Match Verification integration (following solo match patterns)
+- ✅ What files/modules are we touching? coach.html, js/coach.js, scorecard_editor.html, api/index.php
+- ✅ Any specific constraints or requirements? Follow existing solo match verification patterns
 
 ---
 
-### ✅ Latest Release (v1.8.1)
+### ✅ Latest Release (v1.8.2)
+
+**Release Date:** December 1, 2025  
+**Status:** Production
+
+- **Solo Match Verification:** Complete integration into coach verification workflow
+- **Match Type Selector:** Radio buttons to switch between Ranking Rounds, Solo Matches, and Team Matches
+- **Enhanced API:** GET `/v1/events/{id}/solo-matches` with filtering and summary statistics
+- **ScoreCard Editor Support:** View and verify solo matches with sets-based display
+- **Verification Actions:** Lock, unlock, and void solo matches with full audit trail
+- **Smoke Tests:** 16 comprehensive tests for verification workflow
+- **Style Guide Updates:** New component documentation for solo match tables and verification UI
+
+**Full Release Notes:** [RELEASE_NOTES_v1.8.2.md](RELEASE_NOTES_v1.8.2.md)  
+**Why Release Notes Matter:** See [RELEASE_NOTES_FOR_LLMS.md](docs/guides/RELEASE_NOTES_FOR_LLMS.md) for how release notes help LLMs understand context better than git commits alone.
+
+### ✅ Previous Release (v1.8.1)
 
 **Release Date:** December 1, 2025  
 **Status:** Production
@@ -99,8 +115,7 @@
 - **Complete Match Info:** Shows all sets, scores, set points, and match totals
 - **Remake Match:** Button to navigate to solo card for full editing/review
 
-**Full Release Notes:** [RELEASE_NOTES_v1.8.1.md](RELEASE_NOTES_v1.8.1.md)  
-**Why Release Notes Matter:** See [RELEASE_NOTES_FOR_LLMS.md](docs/RELEASE_NOTES_FOR_LLMS.md) for how release notes help LLMs understand context better than git commits alone.
+**Full Release Notes:** [RELEASE_NOTES_v1.8.1.md](RELEASE_NOTES_v1.8.1.md)
 
 ### ✅ Previous Release (v1.8.0)
 
