@@ -75,19 +75,24 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Solo Match Verification - Complete integration of solo matches into coach verification workflow and ScoreCard Editor  
-**Current Priority:** Team Match Verification - Apply same verification patterns to team matches  
-**Active Branch:** main  
+**Last Session Focus:** Ranking Round Event/Division Refactor - Simplified event modal, added standalone round support, implemented resume dialog with server verification  
+**Current Priority:** Troubleshoot logic to resume and start new ranking rounds - Fix bugs in resume flow and standalone round handling  
+**Active Branch:** feature/ranking-round-event-division-refactor  
 **Blockers:** None
 
 **Quick Context for This Session:**
-- ✅ What are we working on today? Team Match Verification integration (following solo match patterns)
-- ✅ What files/modules are we touching? coach.html, js/coach.js, scorecard_editor.html, api/index.php
-- ✅ Any specific constraints or requirements? Follow existing solo match verification patterns
+- ✅ What are we working on today? Troubleshooting resume flow bugs and standalone round design issues
+- ✅ What files/modules are we touching? `ranking_round_300.html`, `js/ranking_round_300.js`, `index.html`, `api/index.php`
+- ✅ Bugs identified:
+  - "Open Assignments" embed shows incorrect data (should only show pending rounds for archer's UUID)
+  - Resume not selecting correct archers from unique score card group
+- ✅ Design flaws identified:
+  - Standalone rounds often default to Bale 1, making restoration difficult
+  - Standalone rounds should have EventCode value "Standalone" instead of null 
 
 ---
 
-### ✅ Latest Release (v1.8.2)
+### ✅ Latest Release (v1.8.3)
 
 **Release Date:** December 1, 2025  
 **Status:** Production
@@ -207,19 +212,35 @@
 ### ⚠️ Known Issues / Recent Fixes
 
 - **Resume Ranking Round from Open Assignments (index.html):**
-  - **Status:** ✅ **Implemented and working for ranking rounds created via events with entry codes.**
-  - **Flow:**  
-    1. Archer sets themselves via **Archer Details** (archer list).  
-    2. `index.html` loads **Your Open Assignments** by calling `GET /api/v1/archers/{archerId}/history`.  
-    3. The **“Resume Ranking Round”** row links directly to `ranking_round_300.html?event={eventId}&round={roundId}&archer={archerId}`.  
-    4. `handleDirectLink()` in `js/ranking_round_300.js` now:
-       - fetches the event snapshot to get the **entry_code**,  
-       - fetches the round snapshot to find the archer’s **baleNumber**,  
-       - fetches full bale data, reconstructs `state.archers` and scores,  
-       - saves `current_bale_session` + `event_entry_code`,  
-       - and switches `state.currentView` → **`scoring`**.
-  - **Bug fixed:** A `ReferenceError` (`setArcherCookie is not defined`) was causing an alert **“Failed to load round. Please try again.”** and dropping the user back into Setup. This is now fixed by using a safe helper (`setArcherCookieSafe`) and letting `handleDirectLink()` complete the transition to the in‑progress score card.
-  - **Remaining edge cases:** If the server snapshot does **not** contain a bale assignment for the archer, `handleDirectLink()` intentionally routes to **Setup** so the archer can pick bale mates and then continue scoring on the existing round.
+  - **Status:** 🔧 **In Progress - Debugging resume flow bugs**
+  - **Current Issues:**
+    1. **"Open Assignments" showing incorrect data:**
+       - **Bug:** Shows rounds for all archers instead of only pending rounds for the selected archer's UUID
+       - **Expected:** Only show rounds where `round_archers.archer_id` matches the selected archer
+       - **Root Cause:** History API query may not be filtering correctly, or frontend not filtering by archer
+    2. **Resume not selecting correct archers:**
+       - **Bug:** Clicking resume on different rounds shows the same set of archers
+       - **Expected:** Each round should load its own unique set of archers from that round's score card group
+       - **Root Cause:** Possible state pollution or wrong roundId being used when fetching archers
+    3. **Standalone rounds defaulting to Bale 1:**
+       - **Design Flaw:** When creating standalone rounds, archers often leave bale as Bale 1, making restoration difficult
+       - **Impact:** Multiple standalone rounds all on Bale 1 makes it impossible to distinguish which archers belong to which round
+       - **Potential Fix:** Require bale selection or auto-assign unique bale numbers for standalone rounds
+    4. **Standalone rounds with null event_id:**
+       - **Design Flaw:** Standalone rounds have `event_id = NULL`, which can cause dirty data and filtering issues
+       - **Expected:** Standalone rounds should have a special event code value (e.g., "Standalone") instead of null
+       - **Impact:** Makes it difficult to filter and display standalone rounds correctly
+  - **Recent Fixes:**
+    - ✅ Added comprehensive logging throughout resume flow
+    - ✅ Fixed state clearing to prevent pollution between rounds
+    - ✅ Implemented snapshot merge logic to include all archers (not just bale-specific)
+    - ✅ Added roundId verification to ensure correct round is loaded
+    - ✅ Created cleanup scripts for orphaned `round_archers` entries
+  - **Next Steps:**
+    - Fix history API filtering to only return rounds for selected archer
+    - Verify roundId is correctly used throughout resume flow
+    - Address standalone round bale assignment design
+    - Update standalone rounds to use "Standalone" event code
 
 ---
 
@@ -227,21 +248,42 @@
 
 > **💡 Pro Tip:** See [SESSION_WRAP_UP_BEST_PRACTICES.md](docs/SESSION_WRAP_UP_BEST_PRACTICES.md) for quick wrap-up process (5 minutes)
 
-**Last Updated:** December 1, 2025
+**Last Updated:** January 21, 2025
 
 ### Recent Changes
-- ✅ **Session Date:** December 1, 2025
-- ✅ **What We Did:** Implemented Match Tracking feature for solo matches:
-  - Created SoloMatchView component (`js/solo_match_view.js`) for reusable match display
-  - Added win/loss ratio calculation and display in archer history
-  - Implemented modal view for solo match details (all sets, scores, totals)
-  - Enhanced authentication to support match codes for standalone matches
-  - Added match code to history API response
-  - Fixed 401 Unauthorized error for standalone matches
-  - Added "Remake Match" button in modal for navigation to solo card
-- ✅ **Files Changed:** `archer_history.html`, `api/index.php`, `js/solo_match_view.js` (new), `docs/features/solo-matches/MATCH_TRACKING_FEATURE_ANALYSIS.md` (new)
-- ✅ **Status:** Completed and released (v1.8.1)
-- ✅ **Next Steps:** Add Solo Matches to Verify step in coach module or Event Dashboard
+- ✅ **Session Date:** January 21, 2025
+- ✅ **What We Did:** Ranking Round Event/Division Refactor and Resume Flow Debugging:
+  - **Event Modal Refactor:** Simplified event selection modal - removed "Enter Code" tab, added "New Round (Standalone)" option
+  - **Standalone Round Support:** Added `entry_code` column to `rounds` table, implemented round entry code generation and authentication
+  - **Resume Dialog Enhancement:** Added server-side verification, improved UI with "Resume" and "New Round" buttons
+  - **Snapshot Merge Logic:** Fixed resume flow to include all archers from round snapshot, not just bale-specific ones
+  - **Comprehensive Logging:** Added detailed console logging throughout resume flow for debugging
+  - **Automated Tests:** Created Playwright tests for resume flow issues (`tests/resume_round_standalone_flow.spec.js`)
+  - **Cleanup Scripts:** Created SQL and PHP scripts to clean up orphaned `round_archers` entries
+  - **Debug Documentation:** Added debug guides for troubleshooting resume flow issues
+- ✅ **Files Changed:** 
+  - `ranking_round_300.html` - Simplified event modal, added resume dialog
+  - `js/ranking_round_300.js` - Event/division selection, standalone round support, resume flow fixes
+  - `index.html` - Resume link handling, logging improvements
+  - `api/index.php` - Round entry code generation, standalone round support
+  - `api/db.php` - Round entry code authentication
+  - `api/sql/migration_add_round_entry_codes.sql` - Database migration
+  - `tests/resume_round_standalone_flow.spec.js` - Automated tests (new)
+  - `api/cleanup_orphaned_round_archers.php` - Cleanup script (new)
+  - `docs/debug/RESUME_ROUND_DEBUG_GUIDE.md` - Debug guide (new)
+  - `docs/debug/RESUME_ROUND_TESTING_AND_CLEANUP.md` - Testing guide (new)
+- ✅ **Status:** In Progress - Debugging resume flow bugs
+- ✅ **Bugs Identified:**
+  - "Open Assignments" showing incorrect data (should only show pending rounds for archer's UUID)
+  - Resume not selecting correct archers from unique score card group
+- ✅ **Design Flaws Identified:**
+  - Standalone rounds defaulting to Bale 1, making restoration difficult
+  - Standalone rounds should have EventCode value "Standalone" instead of null
+- ✅ **Next Steps:** 
+  - Fix "Open Assignments" filtering to only show rounds for selected archer
+  - Fix resume flow to correctly load archers for each unique round
+  - Address standalone round bale assignment design flaw
+  - Update standalone rounds to use "Standalone" event code instead of null
 - ✅ **Blockers:** None
 
 ### Quick Wrap-Up Template (Copy-Paste)
@@ -427,6 +469,7 @@ See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 - **Tailwind CSS** (utility-first styling) - ✅ 100% migrated (Nov 2025)
 - **Mobile-first** (99% phone usage [[memory:10705663]])
 - **No legacy CSS** - All modules use Tailwind exclusively
+- **Progressive Web App (PWA)** - Installable, offline-capable (v1.8.3+)
 
 ### Backend
 
@@ -441,6 +484,8 @@ See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 - `js/coach.js` - Coach console
 - `api/index.php` - API router
 - `api/db.php` - Database + auth layer
+- `sw.js` - Service worker for PWA caching (v1.8.3+)
+- `manifest.json` - Web app manifest for PWA (v1.8.3+)
 
 ### Storage Pattern
 
@@ -833,6 +878,9 @@ curl -H "X-Passcode: wdva26" https://tryentist.com/wdv/api/v1/events | jq '.even
 
 **"How do I deploy?"**  
 → [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
+
+**"How does PWA work?"**  
+→ [docs/PWA_SETUP_GUIDE.md](docs/PWA_SETUP_GUIDE.md) and [docs/PWA_OFFLINE_QUEUE_INTEGRATION.md](docs/PWA_OFFLINE_QUEUE_INTEGRATION.md)
 
 **"What's the status of X?"**  
 → Search in `/docs` folder or check [docs/README.md](docs/README.md) for organized index
