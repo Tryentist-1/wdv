@@ -4504,9 +4504,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            const eventId = state.activeEventId || state.selectedEventId || null;
+            const eventId = state.isStandalone ? null : (state.activeEventId || state.selectedEventId || null);
             const today = new Date().toISOString().slice(0, 10);
-            let division = null;
+            
+            // Use selected division (required)
+            let division = state.selectedDivision || state.divisionCode || null;
             let gender = null;
             let level = null;
 
@@ -4605,11 +4607,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 division,
                 gender,
                 level,
-                eventId
+                eventId: eventId || null  // null for standalone rounds
             });
 
             if (!LiveUpdates._state || !LiveUpdates._state.roundId) {
                 throw new Error('roundId missing after ensureRound');
+            }
+            
+            // Store roundId and entryCode in state
+            state.roundId = LiveUpdates._state.roundId;
+            if (LiveUpdates._state.roundEntryCode) {
+                state.roundEntryCode = LiveUpdates._state.roundEntryCode;
+                console.log('[ensureLiveRoundReady] ✅ Standalone round entry code:', state.roundEntryCode);
             }
 
             // FIX: Pre-populate archerIds mapping with known roundArcherId values
@@ -5072,6 +5081,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             state.selectedEventId = eventId;
             state.activeEventId = eventId;
+            state.isStandalone = false; // Event-linked round
 
             // Use entry code if provided (for authenticated event snapshots)
             // Note: Event snapshot is typically public, but we include entry code if available
@@ -5112,6 +5122,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (eventData && eventData.divisions) {
                 const divisionKeys = Object.keys(eventData.divisions || {});
                 state.availableDivisions = divisionKeys.length ? divisionKeys : ['OPEN'];
+                
+                // Update division select dropdown with available divisions
+                await loadDivisionsForEvent(eventId);
                 const rosterState = getRosterState();
                 const rosterMap = new Map(
                     rosterState.list.map(item => [getExtIdFromArcher(item), item])
@@ -5188,6 +5201,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         // For now, we'll suppress the prompt to avoid annoyance, as LiveUpdates will prompt if needed
                         console.warn('⚠️ No entry code found for event. Live scoring may prompt later if needed.');
                     }
+                    
+                    // Update round type indicator
+                    updateRoundTypeIndicator();
                 } catch (_) { }
 
                 // Do not pre-populate state.archers here; we only populate when a bale is selected
@@ -6107,6 +6123,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (state.archers.length === 0) {
                     alert('Please select at least one archer to start scoring.');
+                    return;
+                }
+                
+                // Validate division is selected (required for both event-linked and standalone)
+                if (!state.selectedDivision) {
+                    alert('Please select a division before starting scoring.');
+                    if (eventDivisionControls.divisionSelect) {
+                        eventDivisionControls.divisionSelect.focus();
+                    }
                     return;
                 }
 
