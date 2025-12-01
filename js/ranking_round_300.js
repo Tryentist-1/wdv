@@ -992,6 +992,170 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
+     * Show resume dialog with server verification
+     * Returns a promise that resolves to true if user wants to resume, false otherwise
+     */
+    async function showResumeDialog({ session, archerCount, hasScores, isCurrent, serverRoundStatus }) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('resume-session-modal');
+            const detailsEl = document.getElementById('resume-session-details');
+            const resumeBtn = document.getElementById('resume-session-btn');
+            const newRoundBtn = document.getElementById('new-round-btn');
+            
+            if (!modal || !detailsEl || !resumeBtn || !newRoundBtn) {
+                console.error('[Resume Dialog] Missing dialog elements');
+                resolve(false);
+                return;
+            }
+            
+            // Build details HTML
+            const statusIcon = isCurrent ? '✅' : '⚠️';
+            const statusText = isCurrent ? 'Current' : 'May be outdated';
+            const serverStatus = serverRoundStatus ? `Server: ${serverRoundStatus}` : 'Server: Unknown';
+            
+            detailsEl.innerHTML = `
+                <div class="space-y-2 text-sm">
+                    <div><strong>Bale:</strong> ${session.baleNumber}</div>
+                    <div><strong>Archers:</strong> ${archerCount}</div>
+                    <div><strong>Current End:</strong> ${session.currentEnd || 1} of ${state.totalEnds}</div>
+                    <div><strong>Scores:</strong> ${hasScores ? '⚠️ Has existing scores' : '✓ No scores yet'}</div>
+                    <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
+                        <div><strong>Status:</strong> ${statusIcon} ${statusText}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">${serverStatus}</div>
+                    </div>
+                </div>
+            `;
+            
+            // Enable/disable resume button based on verification
+            if (!isCurrent) {
+                resumeBtn.disabled = false;
+                resumeBtn.classList.add('opacity-75');
+                resumeBtn.title = 'Round may have been updated on server';
+            } else {
+                resumeBtn.disabled = false;
+                resumeBtn.classList.remove('opacity-75');
+                resumeBtn.title = '';
+            }
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Handle Resume button
+            const handleResume = async () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                
+                const entryCode = session.entryCode ||
+                    localStorage.getItem('event_entry_code') ||
+                    (session.eventId ? (JSON.parse(localStorage.getItem(`event:${session.eventId}:meta`) || '{}').entryCode) : null);
+                
+                if (!entryCode) {
+                    console.error('[Resume Dialog] ❌ No entry code found');
+                    localStorage.removeItem('current_bale_session');
+                    resolve(false);
+                    return;
+                }
+                
+                localStorage.setItem('event_entry_code', entryCode);
+                
+                const response = await fetch(`${API_BASE}/rounds/${session.roundId}/bales/${session.baleNumber}/archers`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json', 'X-Passcode': entryCode }
+                });
+                
+                if (!response.ok) {
+                    console.warn('[Resume Dialog] Failed to fetch bale group:', response.status);
+                    resolve(false);
+                    return;
+                }
+                
+                const baleData = await response.json();
+                if (!baleData.archers || baleData.archers.length === 0) {
+                    console.warn('[Resume Dialog] No archers found');
+                    resolve(false);
+                    return;
+                }
+                
+                // Restore state (same logic as original restoreCurrentBaleSession)
+                state.roundId = session.roundId;
+                state.baleNumber = session.baleNumber;
+                state.activeEventId = session.eventId;
+                state.selectedEventId = session.eventId;
+                state.assignmentMode = session.assignmentMode || 'pre-assigned';
+                state.currentEnd = baleData.archers[0]?.scorecard?.currentEnd || session.currentEnd || 1;
+                
+                const baleDivision = baleData.division || null;
+                if (baleDivision) {
+                    state.divisionCode = baleDivision;
+                    state.divisionRoundId = session.roundId;
+                }
+                
+                state.archers = baleData.archers.map(archer => {
+                    const scoreSheet = createEmptyScoreSheet(state.totalEnds);
+                    const endsList = Array.isArray(archer.scorecard?.ends) ? archer.scorecard.ends : [];
+                    endsList.forEach(end => {
+                        const idx = Math.max(0, Math.min(state.totalEnds - 1, (end.endNumber || 1) - 1));
+                        scoreSheet[idx] = [end.a1 || '', end.a2 || '', end.a3 || ''];
+                    });
+                    const provisional = { extId: archer.extId, firstName: archer.firstName, lastName: archer.lastName, school: archer.school };
+                    const extId = getExtIdFromArcher(provisional);
+                    const overrides = {
+                        extId, targetAssignment: archer.targetAssignment || archer.target,
+                        baleNumber: archer.baleNumber || session.baleNumber,
+                        level: archer.level, gender: archer.gender,
+                        division: baleDivision || archer.division, scores: scoreSheet
+                    };
+                    const rosterPayload = Object.assign({}, provisional, { level: archer.level, gender: archer.gender, division: baleDivision || archer.division });
+                    const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
+                    stateArcher.roundArcherId = archer.roundArcherId;
+                    return stateArcher;
+                });
+                
+                await loadExistingScoresForArchers();
+                if (getLiveEnabled()) {
+                    await ensureLiveRoundReady({ promptForCode: false });
+                }
+                saveCurrentBaleSession();
+                saveData();
+                state.currentView = 'scoring';
+                renderView();
+                resolve(true);
+            };
+            
+            // Handle New Round button
+            const handleNewRound = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                console.log('[Resume Dialog] User chose New Round - clearing local session');
+                localStorage.removeItem('current_bale_session');
+                if (session.roundId) {
+                    try { localStorage.removeItem(`live_updates_session:${session.roundId}`); } catch (e) { }
+                }
+                state.archers = [];
+                state.roundId = null;
+                state.baleNumber = 1;
+                state.currentEnd = 1;
+                state.currentView = 'setup';
+                state.selectedEventId = null;
+                state.activeEventId = null;
+                state.isStandalone = false;
+                state.selectedDivision = null;
+                renderView();
+                resolve(false);
+            };
+            
+            // Remove old listeners and add new ones
+            resumeBtn.replaceWith(resumeBtn.cloneNode(true));
+            newRoundBtn.replaceWith(newRoundBtn.cloneNode(true));
+            const newResumeBtn = document.getElementById('resume-session-btn');
+            const newNewRoundBtn = document.getElementById('new-round-btn');
+            newResumeBtn.addEventListener('click', handleResume);
+            newNewRoundBtn.addEventListener('click', handleNewRound);
+        });
+    }
+    
+    /**
      * Attempt to restore bale session from localStorage.
      * Fetches full bale group data from server if session exists.
      * Returns true if session was restored, false otherwise.
@@ -1075,7 +1239,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 isCurrent = true;
             }
             
-            // Show resume dialog
+            // Show resume dialog (function defined below)
             return await showResumeDialog({
                 session,
                 archerCount,
