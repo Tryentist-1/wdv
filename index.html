@@ -4,7 +4,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="description" content="Archery scoring and team management tools for OAS">
   <title>OAS Score & Tools</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+  
   <!-- Use compiled Tailwind CSS file (works offline, no CDN dependency) -->
   <link rel="stylesheet" href="css/tailwind-compiled.css">
   <link rel="stylesheet" href="css/unified-scorecard-list.css">
@@ -603,6 +610,14 @@
                         if (assignmentRes.ok) {
                           const assignmentData = await assignmentRes.json();
                           console.log('[index] Bracket assignment found:', assignmentData);
+                        } else if (assignmentRes.status === 404) {
+                          // Archer not in this bracket - this is normal, skip silently
+                          continue;
+                        } else {
+                          // Other error - log but continue
+                          console.warn(`[index] Error checking bracket ${bracket.id}:`, assignmentRes.status);
+                          continue;
+                        }
 
                           if (assignmentData.assignment && assignmentData.assignment.opponent) {
                             const assignment = assignmentData.assignment;
@@ -1004,6 +1019,79 @@
 
     // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
     initDarkMode();
+
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js', { scope: '/wdv/' })
+          .then((registration) => {
+            console.log('[PWA] Service Worker registered:', registration.scope);
+            
+            // Listen for messages from service worker (e.g., flush queues)
+            navigator.serviceWorker.addEventListener('message', (event) => {
+              if (event.data && event.data.type === 'FLUSH_QUEUES') {
+                console.log('[PWA] Service worker requested queue flush');
+                // Flush all queues if LiveUpdates is available
+                if (window.LiveUpdates) {
+                  try {
+                    // Flush ranking round queue
+                    if (window.LiveUpdates.flushQueue) {
+                      window.LiveUpdates.flushQueue().catch(e => 
+                        console.warn('[PWA] Ranking queue flush failed:', e)
+                      );
+                    }
+                    // Note: Solo and team queues are flushed by their respective modules
+                    // when they detect online status or receive flush requests
+                  } catch (e) {
+                    console.warn('[PWA] Queue flush error:', e);
+                  }
+                }
+              }
+            });
+            
+            // Notify service worker when online status changes
+            window.addEventListener('online', () => {
+              if (registration.active) {
+                registration.active.postMessage({
+                  type: 'ONLINE_STATUS',
+                  online: true
+                });
+              }
+            });
+            
+            window.addEventListener('offline', () => {
+              if (registration.active) {
+                registration.active.postMessage({
+                  type: 'ONLINE_STATUS',
+                  online: false
+                });
+              }
+            });
+            
+            // Check for updates periodically
+            setInterval(() => {
+              registration.update();
+            }, 60 * 60 * 1000); // Check every hour
+            
+            // Handle updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New service worker available
+                    console.log('[PWA] New service worker available. Reload to update.');
+                    // Optionally show a notification to the user
+                  }
+                });
+              }
+            });
+          })
+          .catch((error) => {
+            console.warn('[PWA] Service Worker registration failed:', error);
+          });
+      });
+    }
 
     // Onboarding disabled - outdated tutorial
     document.addEventListener('DOMContentLoaded', function () {
