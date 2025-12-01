@@ -112,6 +112,8 @@
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Solo Match Table</a>
             <a href="#verification-table"
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Verification Table</a>
+            <a href="#match-type-selector"
+                class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Match Type Selector</a>
             <a href="#footer"
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Footer</a>
         </nav>
@@ -1510,6 +1512,45 @@
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     ✨ Match verification workflow • Status badges • Action buttons (Verify/Void/Unlock) • Used in coach.html verification modal
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section: Match Type Selector -->
+    <section id="match-type-selector" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Match Type Selector</h2>
+
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Radio Button Selector</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Used in coach.html verification modal to switch between different match types. Uses Tailwind radio button styling.
+                </p>
+                
+                <!-- Match Type Selector Example -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div class="flex gap-4 flex-wrap">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="match-type" value="ranking-rounds" checked 
+                                class="w-5 h-5 text-primary border-gray-300 focus:ring-primary focus:ring-2">
+                            <span class="text-sm font-semibold text-gray-800 dark:text-white">Ranking Rounds</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="match-type" value="solo-matches"
+                                class="w-5 h-5 text-primary border-gray-300 focus:ring-primary focus:ring-2">
+                            <span class="text-sm font-semibold text-gray-800 dark:text-white">Solo Matches</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="match-type" value="team-matches"
+                                class="w-5 h-5 text-primary border-gray-300 focus:ring-primary focus:ring-2">
+                            <span class="text-sm font-semibold text-gray-800 dark:text-white">Team Matches</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    ✨ Radio button pattern • Tailwind classes • Used in coach.html verification modal • Dynamically shows/hides selectors based on selection
                 </p>
             </div>
         </div>
