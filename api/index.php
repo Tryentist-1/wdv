@@ -191,22 +191,8 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
     
     $history = [];
     
-    // Check if entry_code column exists (for backward compatibility)
-    $hasEntryCode = false;
-    try {
-        $checkColumn = $pdo->query("SHOW COLUMNS FROM rounds LIKE 'entry_code'");
-        $hasEntryCode = $checkColumn->rowCount() > 0;
-    } catch (Exception $e) {
-        // Column doesn't exist or error checking - assume it doesn't exist
-        $hasEntryCode = false;
-    }
-    
-    // Build query with conditional entry_code column
-    $entryCodeSelect = $hasEntryCode ? 'r.entry_code,' : 'NULL AS entry_code,';
-    $entryCodeGroupBy = $hasEntryCode ? 'r.entry_code,' : '';
-    
     // Get all ranking rounds this archer participated in (including standalone rounds)
-    $rounds = $pdo->prepare("
+    $rounds = $pdo->prepare('
         SELECT 
             e.id AS event_id,
             e.name AS event_name,
@@ -214,7 +200,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             r.id AS round_id,
             r.division,
             r.round_type,
-            {$entryCodeSelect}
+            r.entry_code,
             r.date AS round_date,
             ra.id AS round_archer_id,
             ra.archer_id,
@@ -231,9 +217,9 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         LEFT JOIN events e ON e.id = r.event_id
         LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
         WHERE ra.archer_id = ?
-        GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, {$entryCodeGroupBy} r.date, ra.archer_id, ra.bale_number, ra.target_assignment, ra.card_status, ra.locked
+        GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, r.entry_code, r.date, ra.archer_id, ra.bale_number, ra.target_assignment, ra.card_status, ra.locked
         ORDER BY COALESCE(e.date, r.date) DESC, e.name, r.division
-    ");
+    ');
     $rounds->execute([$archerData['id']]);
     $rankingRounds = $rounds->fetchAll();
     
