@@ -133,7 +133,13 @@ const UnifiedScorecardList = (() => {
     const {
       showRank = false,
       onItemClick = null,
-      getEventName = (item) => item.event_name || item.eventName || item.name || 'Unknown Event',
+      getEventName = (item) => {
+        // Handle standalone rounds
+        if (item.is_standalone || (!item.event_id && item.round_id)) {
+          return item.event_name || 'Standalone Round';
+        }
+        return item.event_name || item.eventName || item.name || 'Unknown Event';
+      },
       getTotal = (item) => item.final_score || item.totalScore || item.total || 0,
       getAvg = (item) => {
         const total = getTotal(item);

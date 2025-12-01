@@ -191,7 +191,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
     
     $history = [];
     
-    // Get all ranking rounds this archer participated in
+    // Get all ranking rounds this archer participated in (including standalone rounds)
     $rounds = $pdo->prepare('
         SELECT 
             e.id AS event_id,
@@ -200,6 +200,8 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             r.id AS round_id,
             r.division,
             r.round_type,
+            r.entry_code,
+            r.date AS round_date,
             ra.id AS round_archer_id,
             ra.archer_id,
             ra.bale_number,
@@ -215,15 +217,22 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         LEFT JOIN events e ON e.id = r.event_id
         LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
         WHERE ra.archer_id = ?
-        GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, ra.archer_id, ra.bale_number, ra.target_assignment, ra.card_status, ra.locked
-        ORDER BY e.date DESC, e.name
+        GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, r.entry_code, r.date, ra.archer_id, ra.bale_number, ra.target_assignment, ra.card_status, ra.locked
+        ORDER BY COALESCE(e.date, r.date) DESC, e.name, r.division
     ');
     $rounds->execute([$archerData['id']]);
     $rankingRounds = $rounds->fetchAll();
     
-    // Add type field and add to history
+    // Add type field and format for history (include standalone round info)
     foreach ($rankingRounds as $round) {
         $round['type'] = 'ranking';
+        // For standalone rounds, set event_name to indicate standalone
+        if (!$round['event_id']) {
+            $round['event_name'] = 'Standalone Round';
+            $round['is_standalone'] = true;
+        } else {
+            $round['is_standalone'] = false;
+        }
         $history[] = $round;
     }
     
