@@ -5696,14 +5696,56 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 2. Fetch entry code FIRST (before any API calls that require auth)
-            console.log('[handleDirectLink] Fetching entry code from event...');
+            // Check if this is a standalone round (eventId is null, 'null', or empty)
+            const isStandalone = !eventId || eventId === 'null' || eventId === '';
+            console.log('[handleDirectLink] Round type:', isStandalone ? 'Standalone' : 'Event-linked', { eventId, roundId });
             
-            // First try to get entry code from localStorage
-            let entryCode = getEventEntryCode();
+            let entryCode = null;
             
-            // ALWAYS fetch event snapshot to get entry code (even if we have one in localStorage, refresh it)
-            // This ensures we have the latest entry code and event data
-            if (eventId) {
+            if (isStandalone) {
+                // Standalone round - use round's entry_code
+                console.log('[handleDirectLink] Standalone round - fetching round entry code...');
+                
+                // Try to get from localStorage first (saved when round was created)
+                const savedRoundEntryCode = localStorage.getItem(`round:${roundId}:entry_code`);
+                if (savedRoundEntryCode) {
+                    entryCode = savedRoundEntryCode;
+                    console.log('[handleDirectLink] ✅ Found round entry code in localStorage:', entryCode);
+                } else {
+                    // Try to get from archer history (which includes entry_code for standalone rounds)
+                    try {
+                        const archerId = getArcherCookie();
+                        const historyResponse = await fetch(`${API_BASE}/archers/${archerId}/history`);
+                        if (historyResponse.ok) {
+                            const historyData = await historyResponse.json();
+                            const history = historyData.history || historyData.rounds || [];
+                            const roundInHistory = history.find(r => r.round_id === roundId && r.is_standalone);
+                            if (roundInHistory && roundInHistory.entry_code) {
+                                entryCode = roundInHistory.entry_code;
+                                console.log('[handleDirectLink] ✅ Found round entry code in archer history:', entryCode);
+                                // Save it for future use
+                                localStorage.setItem(`round:${roundId}:entry_code`, entryCode);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('[handleDirectLink] Could not fetch archer history:', e);
+                    }
+                }
+                
+                if (!entryCode) {
+                    console.error('[handleDirectLink] ❌ No round entry code found for standalone round');
+                    alert('Unable to access this standalone round. The round entry code is required but was not found.\n\nPlease try refreshing the page or contact support.');
+                    return false;
+                }
+            } else {
+                // Event-linked round - use event entry code
+                console.log('[handleDirectLink] Event-linked round - fetching event entry code...');
+                
+                // First try to get entry code from localStorage
+                entryCode = getEventEntryCode();
+                
+                // ALWAYS fetch event snapshot to get entry code (even if we have one in localStorage, refresh it)
+                // This ensures we have the latest entry code and event data
                 console.log('[handleDirectLink] Fetching event snapshot to get entry code:', eventId);
                 try {
                     const eventResponse = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
@@ -5759,11 +5801,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         return false;
                     }
                 }
-            } else if (!entryCode) {
-                console.error('[handleDirectLink] ❌ No event ID provided and no entry code in localStorage');
-                alert('Unable to access this round. Event information is required.\n\nPlease contact the event coordinator or try using the event modal to enter the code manually.');
-                showEventModal();
-                return false;
             }
 
             console.log('[handleDirectLink] Using entry code:', entryCode ? `Yes (${entryCode})` : 'No');
