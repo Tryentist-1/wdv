@@ -6204,9 +6204,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[handleUrlParameters]', { urlEventId, urlEntryCode, urlRoundId, urlArcherId });
 
         // Scenario 1: Direct link with round ID (from index.html)
-        if (urlEventId && urlRoundId && urlArcherId) {
+        // Handle both event-linked and standalone rounds
+        if (urlRoundId && urlArcherId) {
             console.log('[handleUrlParameters] 🎯 Direct link detected - loading round');
-            return await handleDirectLink(urlEventId, urlRoundId, urlArcherId);
+            // urlEventId can be null, 'null', or empty for standalone rounds
+            const eventId = (urlEventId && urlEventId !== 'null') ? urlEventId : null;
+            return await handleDirectLink(eventId, urlRoundId, urlArcherId);
         }
 
         // Scenario 2: QR code with event and entry code
