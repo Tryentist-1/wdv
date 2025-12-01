@@ -304,7 +304,7 @@
 
       <!-- Main Modules -->
       <div class="grid grid-cols-2 gap-4">
-        <a href="ranking_round_300.html"
+        <a href="ranking_round_300.html" id="ranking-round-link"
           class="block px-4 py-4 bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
           title="Score competitive ranking rounds with multiple archers">
           <i class="fas fa-trophy block mb-2 text-xl"></i>Ranking
@@ -1106,6 +1106,38 @@
 
       updateWelcomeMessage();
       loadOpenAssignments();
+      
+      // Intercept Ranking Round link to check for local in-progress cards
+      const rankingRoundLink = document.getElementById('ranking-round-link');
+      if (rankingRoundLink) {
+        rankingRoundLink.addEventListener('click', (e) => {
+          // Check for local in-progress session
+          const sessionData = localStorage.getItem('current_bale_session');
+          if (sessionData) {
+            try {
+              const session = JSON.parse(sessionData);
+              // Check if session is recent (within 24 hours)
+              const sessionAge = Date.now() - new Date(session.lastSaved || 0).getTime();
+              const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+              
+              if (sessionAge <= maxAge && session.roundId && session.baleNumber) {
+                // Session exists and is recent - let ranking_round_300.html handle the resume dialog
+                // Just navigate normally, the resume dialog will show automatically
+                console.log('[index] Local in-progress session found, navigating to ranking round (resume dialog will show)');
+                return; // Allow normal navigation
+              } else {
+                // Session too old, clear it
+                localStorage.removeItem('current_bale_session');
+                console.log('[index] Local session too old, cleared');
+              }
+            } catch (err) {
+              console.warn('[index] Error checking local session:', err);
+              // Continue with normal navigation
+            }
+          }
+          // No local session or invalid - allow normal navigation
+        });
+      }
 
       // Dark mode toggle functionality (only on home screen)
       const darkModeToggle = document.getElementById('dark-mode-toggle');
