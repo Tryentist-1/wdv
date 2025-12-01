@@ -70,9 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
         date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
         archers: [], // { id, firstName, lastName, school, level, gender, targetAssignment, targetSize, scores }
         activeArcherId: null, // For card view
-        selectedEventId: null, // Selected event for this bale
+        selectedEventId: null, // Selected event for this bale (null for standalone)
         activeEventId: null, // Event ID if pre-assigned mode
         eventName: '',
+        selectedDivision: null, // Division selected by user (required for both event-linked and standalone)
         assignmentMode: 'manual', // 'manual' or 'pre-assigned'
         setupMode: 'manual', // 'manual' or 'pre-assigned' - determines which setup section to show
         syncStatus: {}, // Track sync status per archer per end: { archerId: { endNumber: 'synced'|'pending'|'failed' } }
@@ -81,7 +82,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // CRITICAL FIX 5: Add division fields to ensure they persist to localStorage
         divisionCode: null, // Division code for this round (e.g., 'BVAR', 'GJV', 'OPEN') - MUST come from round/event
         divisionRoundId: null, // Round ID for this division - used to prevent creating duplicate rounds
-        divisionName: '' // Display name for division (e.g., 'Boys Varsity')
+        divisionName: '', // Display name for division (e.g., 'Boys Varsity')
+        // Standalone round support
+        roundId: null, // Database round ID (created when starting scoring)
+        roundEntryCode: null, // Generated entry code for standalone rounds
+        isStandalone: false // Flag for standalone mode
     };
 
 
@@ -120,6 +125,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const preassignedSetupControls = {
         section: document.getElementById('preassigned-setup-section'),
         baleListContainer: document.getElementById('bale-list-container'),
+    };
+
+    const eventDivisionControls = {
+        eventSelect: document.getElementById('event-select'),
+        divisionSelect: document.getElementById('division-select'),
+        divisionSelection: document.getElementById('division-selection'),
+        refreshEventsBtn: document.getElementById('refresh-events-btn'),
+        roundTypeIndicator: document.getElementById('round-type-indicator'),
+        roundTypeText: document.getElementById('round-type-text'),
     };
 
     const scoringControls = {
@@ -406,6 +420,172 @@ document.addEventListener('DOMContentLoaded', () => {
         if (banner) banner.style.display = 'none';
     }
 
+    // ==================== Event/Division Selection Functions ====================
+    
+    async function loadEventsIntoSelect() {
+        if (!eventDivisionControls.eventSelect) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/events/recent`);
+            if (!response.ok) {
+                console.error('[Load Events] Failed to load events');
+                return;
+            }
+            
+            const data = await response.json();
+            const events = data.events || [];
+            
+            eventDivisionControls.eventSelect.innerHTML = '<option value="">Standalone Round (No Event)</option>';
+            
+            // Only show active events
+            const activeEvents = events.filter(e => e.status === 'Active');
+            activeEvents.forEach(event => {
+                const option = document.createElement('option');
+                option.value = event.id;
+                option.textContent = `${event.name} - ${event.date}`;
+                eventDivisionControls.eventSelect.appendChild(option);
+            });
+            
+            // Set selected value if we have one
+            if (state.selectedEventId) {
+                eventDivisionControls.eventSelect.value = state.selectedEventId;
+                await loadDivisionsForEvent(state.selectedEventId);
+            } else {
+                // Load default divisions for standalone
+                loadDefaultDivisions();
+            }
+        } catch (error) {
+            console.error('[Load Events] Error:', error);
+            // Still show default divisions for standalone
+            loadDefaultDivisions();
+        }
+    }
+    
+    function loadDefaultDivisions() {
+        if (!eventDivisionControls.divisionSelect) return;
+        
+        const defaultDivisions = [
+            { code: 'OPEN', name: 'OPEN (Mixed - All Levels)' },
+            { code: 'BVAR', name: 'BVAR (Boys Varsity)' },
+            { code: 'GVAR', name: 'GVAR (Girls Varsity)' },
+            { code: 'BJV', name: 'BJV (Boys JV)' },
+            { code: 'GJV', name: 'GJV (Girls JV)' }
+        ];
+        
+        eventDivisionControls.divisionSelect.innerHTML = '<option value="">Select Division...</option>';
+        defaultDivisions.forEach(div => {
+            const option = document.createElement('option');
+            option.value = div.code;
+            option.textContent = div.name;
+            eventDivisionControls.divisionSelect.appendChild(option);
+        });
+        
+        // Set selected value if we have one
+        if (state.selectedDivision) {
+            eventDivisionControls.divisionSelect.value = state.selectedDivision;
+        }
+    }
+    
+    async function loadDivisionsForEvent(eventId) {
+        if (!eventId || !eventDivisionControls.divisionSelect) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
+            if (!response.ok) {
+                console.error('[Load Divisions] Failed to load event snapshot');
+                loadDefaultDivisions();
+                return;
+            }
+            
+            const data = await response.json();
+            const divisions = data.divisions || {};
+            
+            eventDivisionControls.divisionSelect.innerHTML = '<option value="">Select Division...</option>';
+            
+            // Populate from event snapshot
+            const divisionNames = {
+                'OPEN': 'OPEN (Mixed - All Levels)',
+                'BVAR': 'BVAR (Boys Varsity)',
+                'GVAR': 'GVAR (Girls Varsity)',
+                'BJV': 'BJV (Boys JV)',
+                'GJV': 'GJV (Girls JV)'
+            };
+            
+            Object.keys(divisions).forEach(divCode => {
+                const option = document.createElement('option');
+                option.value = divCode;
+                option.textContent = divisionNames[divCode] || divCode;
+                eventDivisionControls.divisionSelect.appendChild(option);
+            });
+            
+            // Set selected value if we have one
+            if (state.selectedDivision && Object.keys(divisions).includes(state.selectedDivision)) {
+                eventDivisionControls.divisionSelect.value = state.selectedDivision;
+            }
+        } catch (error) {
+            console.error('[Load Divisions] Error:', error);
+            loadDefaultDivisions();
+        }
+    }
+    
+    async function handleEventSelection() {
+        const eventId = eventDivisionControls.eventSelect?.value || null;
+        state.selectedEventId = eventId || null;
+        state.isStandalone = !eventId;
+        
+        if (eventId) {
+            // Load divisions from event
+            await loadDivisionsForEvent(eventId);
+            // Load event data
+            const events = await fetch(`${API_BASE}/events/recent`).then(r => r.json()).then(d => d.events || []).catch(() => []);
+            const event = events.find(e => e.id === eventId);
+            if (event) {
+                state.eventName = event.name;
+                await loadEventById(eventId, event.name, event.entryCode || '');
+            }
+        } else {
+            // Standalone - load default divisions
+            loadDefaultDivisions();
+            state.eventName = '';
+        }
+        
+        updateRoundTypeIndicator();
+        saveData();
+    }
+    
+    function handleDivisionSelection() {
+        const division = eventDivisionControls.divisionSelect?.value || null;
+        state.selectedDivision = division || null;
+        
+        if (division) {
+            // Update division code and name
+            const divisionNames = {
+                'OPEN': 'OPEN (Mixed)',
+                'BVAR': 'Boys Varsity',
+                'GVAR': 'Girls Varsity',
+                'BJV': 'Boys JV',
+                'GJV': 'Girls JV'
+            };
+            state.divisionCode = division;
+            state.divisionName = divisionNames[division] || division;
+        }
+        
+        updateRoundTypeIndicator();
+        saveData();
+    }
+    
+    function updateRoundTypeIndicator() {
+        if (!eventDivisionControls.roundTypeText) return;
+        
+        if (state.isStandalone) {
+            eventDivisionControls.roundTypeText.textContent = 'Standalone round - not linked to any event';
+        } else if (state.selectedEventId && state.eventName) {
+            eventDivisionControls.roundTypeText.textContent = `Event-linked round - ${state.eventName}`;
+        } else {
+            eventDivisionControls.roundTypeText.textContent = 'Select event and division to continue';
+        }
+    }
+    
     // Ensure core UI handlers are always attached, even on resume after reload
     function wireCoreHandlers() {
         if (uiWired) return;
@@ -6773,6 +6953,26 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSetupSections();
         };
     }
+
+    // ==================== Event/Division Selection Handlers ====================
+    
+    // Wire up event/division selection handlers
+    if (eventDivisionControls.eventSelect) {
+        eventDivisionControls.eventSelect.addEventListener('change', handleEventSelection);
+    }
+    
+    if (eventDivisionControls.divisionSelect) {
+        eventDivisionControls.divisionSelect.addEventListener('change', handleDivisionSelection);
+    }
+    
+    if (eventDivisionControls.refreshEventsBtn) {
+        eventDivisionControls.refreshEventsBtn.addEventListener('click', async () => {
+            await loadEventsIntoSelect();
+        });
+    }
+    
+    // Initial load of events and divisions
+    loadEventsIntoSelect();
 
     // Change event button (in header)
     if (changeEventBtn) {
