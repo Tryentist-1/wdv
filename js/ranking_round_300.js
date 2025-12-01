@@ -6378,8 +6378,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (handled) return;
         }
         
-        // Scenario 2: Standalone round by round ID: ?round={id}&archer={id} (no event)
-        if (urlRoundId && urlArcherId && !urlEventId) {
+        // Scenario 2: Standalone round by round ID: ?round={id}&archer={id} (no event or event=null)
+        if (urlRoundId && urlArcherId && (!urlEventId || urlEventId === 'null')) {
             console.log('[init] Standalone round by ID detected');
             const handled = await handleStandaloneRoundLink(urlRoundId.trim(), urlArcherId.trim(), false);
             if (handled) return;
