@@ -5826,7 +5826,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleDirectLink(eventId, roundId, archerId) {
         try {
-            console.log('[handleDirectLink] Loading round:', { eventId, roundId, archerId });
+            console.log('[handleDirectLink] ========== START ==========');
+            console.log('[handleDirectLink] Parameters:', { eventId, roundId, archerId });
+            console.log('[handleDirectLink] Current state.roundId:', state.roundId);
+            console.log('[handleDirectLink] Current state.baleNumber:', state.baleNumber);
+            
+            // CRITICAL: Clear any existing state to prevent pollution
+            state.roundId = null;
+            state.baleNumber = null;
+            state.archers = [];
+            
+            console.log('[handleDirectLink] Cleared state, now loading round:', roundId);
 
             // 1. Check if this matches current session
             const sessionData = localStorage.getItem('current_bale_session');
@@ -6119,7 +6129,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Step 3: Use snapshot data to get ALL archers, then filter to same bale or NULL bale_number
             // This ensures we don't miss archers that might be on different bales or have NULL bale_number
-            console.log('[handleDirectLink] Processing snapshot archers:', snapshotData.archers?.length || 0);
+            console.log('[handleDirectLink] ========== SNAPSHOT DATA ==========');
+            console.log('[handleDirectLink] Round ID from URL:', roundId);
+            console.log('[handleDirectLink] Round ID in snapshot:', snapshotData.round?.id);
+            console.log('[handleDirectLink] Snapshot archers count:', snapshotData.archers?.length || 0);
+            console.log('[handleDirectLink] Snapshot archers:', snapshotData.archers?.map(a => ({
+                roundArcherId: a.roundArcherId,
+                archerId: a.archerId,
+                archerName: a.archerName,
+                baleNumber: a.baleNumber
+            })));
+            
+            // VERIFY: Make sure we're using the correct round
+            if (snapshotData.round?.id && snapshotData.round.id !== roundId) {
+                console.error('[handleDirectLink] ❌ ROUND ID MISMATCH!');
+                console.error('[handleDirectLink] URL roundId:', roundId);
+                console.error('[handleDirectLink] Snapshot roundId:', snapshotData.round.id);
+                alert('Round ID mismatch detected. Please refresh and try again.');
+                return false;
+            }
             
             // Filter archers: same bale OR NULL bale_number (unassigned)
             const relevantArchers = snapshotData.archers.filter(a => 
@@ -6203,7 +6231,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Convert map to array
             const allArchers = Array.from(archerMap.values());
-            console.log('[handleDirectLink] ✅ Total archers after merge:', allArchers.length);
+            console.log('[handleDirectLink] ========== MERGED ARCHERS ==========');
+            console.log('[handleDirectLink] Total archers after merge:', allArchers.length);
+            console.log('[handleDirectLink] Merged archers:', allArchers.map(a => ({
+                roundArcherId: a.roundArcherId,
+                archerId: a.archerId,
+                name: `${a.firstName} ${a.lastName}`,
+                baleNumber: a.baleNumber,
+                targetAssignment: a.targetAssignment
+            })));
             
             // Validate we have archers
             if (allArchers.length === 0) {
@@ -6246,9 +6282,12 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('[handleDirectLink] ✅ Found archer:', archerData.firstName, archerData.lastName);
 
             // 4. Set up state (same as restoreCurrentBaleSession)
+            console.log('[handleDirectLink] ========== SETTING STATE ==========');
+            console.log('[handleDirectLink] Setting state.roundId to:', roundId);
+            console.log('[handleDirectLink] Setting state.baleNumber to:', baleNumber);
             state.activeEventId = eventId;
             state.selectedEventId = eventId;
-            state.roundId = roundId;
+            state.roundId = roundId; // CRITICAL: Use roundId from URL parameter
             state.baleNumber = baleNumber;
             state.divisionCode = baleData.division;
             state.divisionRoundId = roundId;

@@ -526,7 +526,16 @@
               const isStarted = (round.ends_completed || 0) > 0;
               
               // Build link - entry code will be fetched from event snapshot in handleDirectLink
-              const link = `ranking_round_300.html?event=${round.event_id}&round=${round.round_id}&archer=${archerId}`;
+              // For standalone rounds, event_id is null, so we need to handle that
+              const eventParam = round.event_id ? round.event_id : 'null';
+              const link = `ranking_round_300.html?event=${eventParam}&round=${round.round_id}&archer=${archerId}`;
+              console.log('[index] Building resume link:', { 
+                round_id: round.round_id, 
+                event_id: round.event_id, 
+                is_standalone: round.is_standalone,
+                archerId: archerId,
+                link: link
+              });
               
               // Build event name - always show event name, add "Resume" prefix if in progress
               const eventName = round.event_name || 'Ranking Round';
