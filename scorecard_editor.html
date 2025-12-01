@@ -171,22 +171,22 @@
                     </table>
                 </div>
                 
-                <!-- Score Totals -->
+                <!-- Score Totals (Dynamic labels based on card type) -->
                 <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Total Score</div>
+                        <div id="total-label" class="text-sm text-gray-600 dark:text-gray-400">Total Score</div>
                         <div id="total-score" class="text-3xl font-bold text-gray-800 dark:text-white">0</div>
                     </div>
                     <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">X Count</div>
+                        <div id="x-label" class="text-sm text-gray-600 dark:text-gray-400">X Count</div>
                         <div id="x-count" class="text-3xl font-bold text-gray-800 dark:text-white">0</div>
                     </div>
                     <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">10 Count</div>
+                        <div id="ten-label" class="text-sm text-gray-600 dark:text-gray-400">10 Count</div>
                         <div id="ten-count" class="text-3xl font-bold text-gray-800 dark:text-white">0</div>
                     </div>
                     <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                        <div class="text-sm text-gray-600 dark:text-gray-400">Avg/Arrow</div>
+                        <div id="avg-label" class="text-sm text-gray-600 dark:text-gray-400">Avg/Arrow</div>
                         <div id="avg-arrow" class="text-3xl font-bold text-gray-800 dark:text-white">0.0</div>
                     </div>
                 </div>
@@ -342,7 +342,9 @@
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const roundArcherId = urlParams.get('id');
+        const soloMatchId = urlParams.get('match') || urlParams.get('soloMatchId');
         const mode = urlParams.get('mode') || 'view'; // view, coach, practice
+        const cardType = soloMatchId ? 'solo_match' : 'ranking_round'; // 'ranking_round' or 'solo_match'
         
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -356,13 +358,18 @@
                 isLocked = false;
             }
             
-            if (!roundArcherId) {
+            if (!roundArcherId && !soloMatchId) {
                 // Show search interface instead of error
                 showSearchInterface();
                 return;
             }
             
-            loadScorecard();
+            // Load appropriate card type
+            if (cardType === 'solo_match') {
+                loadSoloMatch();
+            } else {
+                loadScorecard();
+            }
         });
         
         function showSearchInterface() {
@@ -522,6 +529,89 @@
             }
         }
         
+        // Get authentication headers for API requests
+        function getAuthHeaders(matchId = null, matchCode = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            
+            // Try coach API key first
+            const coachKey = localStorage.getItem('coach_api_key') || 
+                             localStorage.getItem('coach_passcode') || 
+                             getCookie('coach_auth') || 
+                             'wdva26';
+            if (coachKey) {
+                headers['X-API-Key'] = coachKey;
+                headers['X-Passcode'] = coachKey;
+                return headers;
+            }
+            
+            // Fall back to event entry code
+            const entryCode = localStorage.getItem('event_entry_code') || '';
+            if (entryCode) {
+                headers['X-Passcode'] = entryCode;
+                return headers;
+            }
+            
+            // Try match code (for standalone matches)
+            if (matchCode) {
+                headers['X-Passcode'] = matchCode;
+                return headers;
+            }
+            
+            // Try to get match code from localStorage if matchId provided
+            if (matchId) {
+                const storedMatchCode = localStorage.getItem(`solo_match_code:${matchId}`);
+                if (storedMatchCode) {
+                    headers['X-Passcode'] = storedMatchCode;
+                    return headers;
+                }
+            }
+            
+            // Default to coach passcode for coach mode
+            if (isCoach) {
+                headers['X-API-Key'] = 'wdva26';
+                headers['X-Passcode'] = 'wdva26';
+            }
+            
+            return headers;
+        }
+        
+        async function loadSoloMatch() {
+            try {
+                const headers = getAuthHeaders(soloMatchId);
+                const res = await fetch(`${API_BASE}/solo-matches/${soloMatchId}`, {
+                    headers: headers
+                });
+                
+                if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        throw new Error('Authentication required. Please visit the Coach Console to authenticate first.');
+                    }
+                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+                    console.error('[loadSoloMatch] API Error:', errorData);
+                    throw new Error(errorData.error || `Failed to load match: ${res.status}`);
+                }
+                
+                const data = await res.json();
+                currentScorecard = data.match;
+                console.log('[loadSoloMatch] Loaded match:', currentScorecard);
+                
+                // Determine locked status
+                if (mode === 'practice') {
+                    isLocked = false;
+                } else {
+                    isLocked = currentScorecard.locked || currentScorecard.card_status === 'VER' || currentScorecard.card_status === 'VOID';
+                }
+                
+                renderSoloMatch();
+                
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('scorecard-container').classList.remove('hidden');
+            } catch (error) {
+                console.error('[loadSoloMatch] Error:', error);
+                showError(error.message);
+            }
+        }
+        
         function renderScorecard() {
             const card = currentScorecard;
             
@@ -609,6 +699,303 @@
             
             // Calculate and display totals
             calculateTotals();
+            
+            // Reset labels for ranking round
+            document.getElementById('total-label').textContent = 'Total Score';
+            document.getElementById('x-label').textContent = 'X Count';
+            document.getElementById('ten-label').textContent = '10 Count';
+            document.getElementById('avg-label').textContent = 'Avg/Arrow';
+        }
+        
+        function renderSoloMatch() {
+            const match = currentScorecard;
+            if (!match) {
+                showError('Invalid match data');
+                return;
+            }
+            
+            // Extract archers
+            const archer1 = match.archers?.find(a => a.position === 1) || {};
+            const archer2 = match.archers?.find(a => a.position === 2) || {};
+            
+            const a1Name = archer1.archer_name || `${archer1.first_name || ''} ${archer1.last_name || ''}`.trim() || 'Archer 1';
+            const a2Name = archer2.archer_name || `${archer2.first_name || ''} ${archer2.last_name || ''}`.trim() || 'Archer 2';
+            
+            // Match Info
+            document.getElementById('archer-name').textContent = `${a1Name} vs ${a2Name}`;
+            document.getElementById('archer-school').textContent = archer1.school || archer2.school || '';
+            document.getElementById('archer-level').textContent = '';
+            document.getElementById('archer-gender').textContent = '';
+            document.getElementById('archer-bale').textContent = '';
+            
+            // Event/Bracket Info
+            const eventName = match.event_id ? (match.event_name || 'Event') : 'Standalone Match';
+            document.getElementById('event-name').textContent = eventName;
+            document.getElementById('round-type').textContent = match.bracket_name || 'Solo Match';
+            
+            // Status Badge
+            const statusBadge = document.getElementById('status-badge');
+            const cardStatus = (match.card_status || '').toUpperCase();
+            
+            if (mode === 'practice') {
+                statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-primary text-white rounded-full text-sm font-bold">PRACTICE</span>';
+            } else if (cardStatus === 'VER' || cardStatus === 'VERIFIED') {
+                statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-success text-white rounded-full text-sm font-bold">✓ VERIFIED</span>';
+            } else if (cardStatus === 'VOID') {
+                statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-gray-500 text-white rounded-full text-sm font-bold">✗ VOID</span>';
+            } else if (cardStatus === 'COMP' || cardStatus === 'COMPLETED') {
+                statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-primary text-white rounded-full text-sm font-bold">COMP</span>';
+            } else {
+                statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-warning text-white rounded-full text-sm font-bold">PEND</span>';
+            }
+            
+            // Lock Controls (Coach only) - Reuse existing logic
+            if (isCoach) {
+                const lockControls = document.getElementById('lock-controls');
+                lockControls.classList.remove('hidden');
+                
+                const isVoided = match.card_status === 'VOID';
+                const currentStatus = (match.card_status || '').toUpperCase();
+                const canComplete = !isLocked && currentStatus !== 'COMP' && currentStatus !== 'COMPLETED' && currentStatus !== 'VER' && currentStatus !== 'VERIFIED';
+                const canVerify = !isLocked && (currentStatus === 'COMP' || currentStatus === 'COMPLETED' || currentStatus === 'PENDING' || currentStatus === 'PEND');
+                
+                if (isLocked) {
+                    document.getElementById('unlock-btn').classList.remove('hidden');
+                    document.getElementById('lock-btn').classList.add('hidden');
+                    document.getElementById('complete-btn').classList.add('hidden');
+                    document.getElementById('edit-reason').classList.add('hidden');
+                } else {
+                    document.getElementById('unlock-btn').classList.add('hidden');
+                    if (canVerify) {
+                        document.getElementById('lock-btn').classList.remove('hidden');
+                    } else {
+                        document.getElementById('lock-btn').classList.add('hidden');
+                    }
+                    if (canComplete) {
+                        document.getElementById('complete-btn').classList.remove('hidden');
+                    } else {
+                        document.getElementById('complete-btn').classList.add('hidden');
+                    }
+                    document.getElementById('edit-reason').classList.remove('hidden');
+                }
+                
+                if (isVoided) {
+                    document.getElementById('void-btn').classList.add('hidden');
+                } else {
+                    document.getElementById('void-btn').classList.remove('hidden');
+                }
+            }
+            
+            // Render Solo Match Table
+            renderSoloMatchTable();
+            
+            // Render Verification History
+            renderVerificationHistory();
+            
+            // Calculate and display match totals
+            calculateSoloMatchTotals();
+        }
+        
+        function renderSoloMatchTable() {
+            const match = currentScorecard;
+            const archer1 = match.archers?.find(a => a.position === 1) || {};
+            const archer2 = match.archers?.find(a => a.position === 2) || {};
+            
+            const a1Name = archer1.archer_name || 'Archer 1';
+            const a2Name = archer2.archer_name || 'Archer 2';
+            
+            const sets1 = archer1.sets || [];
+            const sets2 = archer2.sets || [];
+            
+            // Organize sets by set_number
+            const setsByNumber = {};
+            for (let i = 1; i <= 5; i++) {
+                setsByNumber[i] = {
+                    a1: sets1.find(s => s.set_number === i) || null,
+                    a2: sets2.find(s => s.set_number === i) || null
+                };
+            }
+            
+            // Check for shoot-off
+            const shootOff1 = sets1.find(s => s.set_number === 6) || null;
+            const shootOff2 = sets2.find(s => s.set_number === 6) || null;
+            const hasShootOff = shootOff1 || shootOff2;
+            
+            let html = `
+                <thead class="bg-primary dark:bg-primary-dark text-white">
+                    <tr>
+                        <th rowspan="2" class="px-2 py-2 text-center font-bold border-r border-white/20">Set</th>
+                        <th colspan="3" class="px-2 py-2 text-center font-bold border-r border-white/20">${a1Name}</th>
+                        <th colspan="3" class="px-2 py-2 text-center font-bold border-r border-white/20">${a2Name}</th>
+                        <th colspan="2" class="px-2 py-2 text-center font-bold border-r border-white/20">Set Total</th>
+                        <th colspan="2" class="px-2 py-2 text-center font-bold">Set Points</th>
+                    </tr>
+                    <tr>
+                        <th class="px-2 py-2 text-center font-bold border-r border-white/20">A1</th>
+                        <th class="px-2 py-2 text-center font-bold border-r border-white/20">A2</th>
+                        <th class="px-2 py-2 text-center font-bold border-r border-white/20">A3</th>
+                        <th class="px-2 py-2 text-center font-bold border-r border-white/20">A1</th>
+                        <th class="px-2 py-2 text-center font-bold border-r border-white/20">A2</th>
+                        <th class="px-2 py-2 text-center font-bold border-r border-white/20">A3</th>
+                        <th class="px-2 py-2 text-center font-bold border-r border-white/20">A1</th>
+                        <th class="px-2 py-2 text-center font-bold border-r border-white/20">A2</th>
+                        <th class="px-2 py-2 text-center font-bold border-r border-white/20">A1</th>
+                        <th class="px-2 py-2 text-center font-bold">A2</th>
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+            
+            // Render 5 sets
+            for (let i = 1; i <= 5; i++) {
+                const set1 = setsByNumber[i].a1;
+                const set2 = setsByNumber[i].a2;
+                
+                const a1Scores = set1 ? [
+                    set1.a1 || set1.arrow1 || '',
+                    set1.a2 || set1.arrow2 || '',
+                    set1.a3 || set1.arrow3 || ''
+                ] : ['', '', ''];
+                
+                const a2Scores = set2 ? [
+                    set2.a1 || set2.arrow1 || '',
+                    set2.a2 || set2.arrow2 || '',
+                    set2.a3 || set2.arrow3 || ''
+                ] : ['', '', ''];
+                
+                const set1Total = set1 ? (set1.set_total || calculateSetTotal(a1Scores)) : 0;
+                const set2Total = set2 ? (set2.set_total || calculateSetTotal(a2Scores)) : 0;
+                const points = calculateSetPoints(set1Total, set2Total);
+                
+                const rowBgClass = i % 2 === 0 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-700';
+                
+                html += `
+                    <tr class="border-b border-gray-200 dark:border-gray-600 ${rowBgClass}">
+                        <td class="px-2 py-2 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">${i}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a1Scores[0])} border-r border-gray-200 dark:border-gray-600">${formatScore(a1Scores[0])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a1Scores[1])} border-r border-gray-200 dark:border-gray-600">${formatScore(a1Scores[1])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a1Scores[2])} border-r border-gray-200 dark:border-gray-600">${formatScore(a1Scores[2])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a2Scores[0])} border-r border-gray-200 dark:border-gray-600">${formatScore(a2Scores[0])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a2Scores[1])} border-r border-gray-200 dark:border-gray-600">${formatScore(a2Scores[1])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a2Scores[2])} border-r border-gray-200 dark:border-gray-600">${formatScore(a2Scores[2])}</td>
+                        <td class="px-2 py-2 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${set1Total > 0 ? set1Total : ''}</td>
+                        <td class="px-2 py-2 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${set2Total > 0 ? set2Total : ''}</td>
+                        <td class="px-2 py-2 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${points.a1 > 0 ? points.a1 : ''}</td>
+                        <td class="px-2 py-2 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold">${points.a2 > 0 ? points.a2 : ''}</td>
+                    </tr>
+                `;
+            }
+            
+            // Render shoot-off if exists
+            if (hasShootOff) {
+                const so1Scores = shootOff1 ? [
+                    shootOff1.a1 || shootOff1.arrow1 || '',
+                    shootOff1.a2 || shootOff1.arrow2 || '',
+                    shootOff1.a3 || shootOff1.arrow3 || ''
+                ] : ['', '', ''];
+                
+                const so2Scores = shootOff2 ? [
+                    shootOff2.a1 || shootOff2.arrow1 || '',
+                    shootOff2.a2 || shootOff2.arrow2 || '',
+                    shootOff2.a3 || shootOff2.arrow3 || ''
+                ] : ['', '', ''];
+                
+                const so1Total = shootOff1 ? (shootOff1.set_total || calculateSetTotal(so1Scores)) : 0;
+                const so2Total = shootOff2 ? (shootOff2.set_total || calculateSetTotal(so2Scores)) : 0;
+                
+                html += `
+                    <tr class="border-b-2 border-gray-400 dark:border-gray-500 bg-yellow-50 dark:bg-yellow-900/20">
+                        <td class="px-2 py-2 text-center font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">SO</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so1Scores[0])} border-r border-gray-200 dark:border-gray-600">${formatScore(so1Scores[0])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so1Scores[1])} border-r border-gray-200 dark:border-gray-600">${formatScore(so1Scores[1])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so1Scores[2])} border-r border-gray-200 dark:border-gray-600">${formatScore(so1Scores[2])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so2Scores[0])} border-r border-gray-200 dark:border-gray-600">${formatScore(so2Scores[0])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so2Scores[1])} border-r border-gray-200 dark:border-gray-600">${formatScore(so2Scores[1])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so2Scores[2])} border-r border-gray-200 dark:border-gray-600">${formatScore(so2Scores[2])}</td>
+                        <td class="px-2 py-2 text-center bg-yellow-100 dark:bg-yellow-900/40 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${so1Total > 0 ? so1Total : ''}</td>
+                        <td class="px-2 py-2 text-center bg-yellow-100 dark:bg-yellow-900/40 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${so2Total > 0 ? so2Total : ''}</td>
+                        <td class="px-2 py-2 text-center bg-yellow-100 dark:bg-yellow-900/40 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">—</td>
+                        <td class="px-2 py-2 text-center bg-yellow-100 dark:bg-yellow-900/40 text-gray-800 dark:text-white font-bold">—</td>
+                    </tr>
+                `;
+            }
+            
+            html += '</tbody>';
+            document.getElementById('scorecard-table').innerHTML = html;
+        }
+        
+        function calculateSetTotal(scores) {
+            return scores.reduce((total, score) => {
+                return total + parseScore(score);
+            }, 0);
+        }
+        
+        function calculateSetPoints(set1Total, set2Total) {
+            if (set1Total > set2Total) return { a1: 2, a2: 0 };
+            if (set2Total > set1Total) return { a1: 0, a2: 2 };
+            return { a1: 1, a2: 1 }; // Tie
+        }
+        
+        function calculateSoloMatchTotals() {
+            const match = currentScorecard;
+            const archer1 = match.archers?.find(a => a.position === 1) || {};
+            const archer2 = match.archers?.find(a => a.position === 2) || {};
+            
+            const sets1 = archer1.sets || [];
+            const sets2 = archer2.sets || [];
+            
+            // Calculate sets won (count sets where set_points = 2)
+            let setsWonA1 = 0;
+            let setsWonA2 = 0;
+            let totalScoreA1 = 0;
+            let totalScoreA2 = 0;
+            
+            for (let i = 1; i <= 5; i++) {
+                const set1 = sets1.find(s => s.set_number === i);
+                const set2 = sets2.find(s => s.set_number === i);
+                
+                if (set1 && set2) {
+                    const set1Total = set1.set_total || calculateSetTotal([
+                        set1.a1 || set1.arrow1 || '',
+                        set1.a2 || set1.arrow2 || '',
+                        set1.a3 || set1.arrow3 || ''
+                    ]);
+                    const set2Total = set2.set_total || calculateSetTotal([
+                        set2.a1 || set2.arrow1 || '',
+                        set2.a2 || set2.arrow2 || '',
+                        set2.a3 || set2.arrow3 || ''
+                    ]);
+                    
+                    totalScoreA1 += set1Total;
+                    totalScoreA2 += set2Total;
+                    
+                    const points = calculateSetPoints(set1Total, set2Total);
+                    if (points.a1 === 2) setsWonA1++;
+                    if (points.a2 === 2) setsWonA2++;
+                }
+            }
+            
+            // Update labels for solo match
+            document.getElementById('total-label').textContent = 'Sets Score';
+            document.getElementById('x-label').textContent = 'Archer 1 Total';
+            document.getElementById('ten-label').textContent = 'Archer 2 Total';
+            document.getElementById('avg-label').textContent = 'Winner';
+            
+            // Update totals display
+            document.getElementById('total-score').textContent = `${setsWonA1}-${setsWonA2}`;
+            document.getElementById('x-count').textContent = totalScoreA1;
+            document.getElementById('ten-count').textContent = totalScoreA2;
+            
+            // Show winner
+            let winnerText = '—';
+            if (setsWonA1 > setsWonA2) {
+                winnerText = archer1.archer_name || 'Archer 1';
+            } else if (setsWonA2 > setsWonA1) {
+                winnerText = archer2.archer_name || 'Archer 2';
+            } else if (setsWonA1 === setsWonA2 && setsWonA1 > 0) {
+                winnerText = 'Tie';
+            }
+            document.getElementById('avg-arrow').textContent = winnerText;
         }
         
         function renderScorecardTable() {
@@ -848,7 +1235,24 @@
         }
         
         function renderVerificationHistory() {
-            const history = currentScorecard.lock_history || [];
+            // Handle both ranking rounds and solo matches
+            let history = [];
+            if (cardType === 'solo_match') {
+                // Parse lock_history JSON if it's a string
+                const lockHistory = currentScorecard.lock_history;
+                if (typeof lockHistory === 'string') {
+                    try {
+                        history = JSON.parse(lockHistory);
+                    } catch (e) {
+                        history = [];
+                    }
+                } else if (Array.isArray(lockHistory)) {
+                    history = lockHistory;
+                }
+            } else {
+                history = currentScorecard.lock_history || [];
+            }
+            
             const historyDiv = document.getElementById('verification-history');
             
             if (history.length === 0) {
@@ -888,19 +1292,34 @@
             }
             
             try {
-                const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
+                const headers = getAuthHeaders();
+                let endpoint;
+                if (cardType === 'solo_match') {
+                    endpoint = `${API_BASE}/solo-matches/${soloMatchId}/verify`;
+                } else {
+                    endpoint = `${API_BASE}/round_archers/${roundArcherId}/verify`;
+                }
+                
+                const res = await fetch(endpoint, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({
                         action: 'unlock',
                         notes: 'Unlocked for score corrections'
                     })
                 });
                 
-                if (!res.ok) throw new Error('Failed to unlock scorecard');
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(errorData.error || 'Failed to unlock');
+                }
                 
                 isLocked = false;
-                await loadScorecard();
+                if (cardType === 'solo_match') {
+                    await loadSoloMatch();
+                } else {
+                    await loadScorecard();
+                }
                 alert('✓ Scorecard unlocked. You can now edit scores.');
             } catch (error) {
                 console.error('[unlock] Error:', error);
@@ -926,38 +1345,63 @@
             }
             
             try {
-                console.log('[lock-btn] Saving scores:', currentScorecard.scores);
+                const headers = getAuthHeaders();
                 
-                const saveRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/scores`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        scores: currentScorecard.scores
-                    })
-                });
-                
-                if (!saveRes.ok) {
-                    const errorData = await saveRes.json().catch(() => ({ error: 'Unknown error' }));
-                    throw new Error(errorData.error || `Failed to save scores: ${saveRes.status}`);
+                if (cardType === 'solo_match') {
+                    // For solo matches, just verify (no score saving needed in view-only mode)
+                    const lockRes = await fetch(`${API_BASE}/solo-matches/${soloMatchId}/verify`, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({
+                            action: 'lock',
+                            verifiedBy: 'Coach',
+                            notes: `Score verification: ${reason}`
+                        })
+                    });
+                    
+                    if (!lockRes.ok) {
+                        const errorData = await lockRes.json().catch(() => ({ error: 'Unknown error' }));
+                        throw new Error(errorData.error || `Failed to lock match: ${lockRes.status}`);
+                    }
+                    
+                    isLocked = true;
+                    await loadSoloMatch();
+                    alert('✓ Match verified and locked.');
+                } else {
+                    // For ranking rounds, save scores first then verify
+                    console.log('[lock-btn] Saving scores:', currentScorecard.scores);
+                    
+                    const saveRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/scores`, {
+                        method: 'PUT',
+                        headers: headers,
+                        body: JSON.stringify({
+                            scores: currentScorecard.scores
+                        })
+                    });
+                    
+                    if (!saveRes.ok) {
+                        const errorData = await saveRes.json().catch(() => ({ error: 'Unknown error' }));
+                        throw new Error(errorData.error || `Failed to save scores: ${saveRes.status}`);
+                    }
+                    
+                    const lockRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({
+                            action: 'lock',
+                            notes: `Score correction: ${reason}`
+                        })
+                    });
+                    
+                    if (!lockRes.ok) {
+                        const errorData = await lockRes.json().catch(() => ({ error: 'Unknown error' }));
+                        throw new Error(errorData.error || `Failed to lock scorecard: ${lockRes.status}`);
+                    }
+                    
+                    isLocked = true;
+                    await loadScorecard();
+                    alert('✓ Scorecard verified and saved.');
                 }
-                
-                const lockRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'lock',
-                        notes: `Score correction: ${reason}`
-                    })
-                });
-                
-                if (!lockRes.ok) {
-                    const errorData = await lockRes.json().catch(() => ({ error: 'Unknown error' }));
-                    throw new Error(errorData.error || `Failed to lock scorecard: ${lockRes.status}`);
-                }
-                
-                isLocked = true;
-                await loadScorecard();
-                alert('✓ Scorecard verified and saved.');
             } catch (error) {
                 console.error('[lock] Error:', error);
                 alert('Failed to save and verify scorecard: ' + error.message);
@@ -1032,22 +1476,35 @@
             }
             
             try {
-                const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
+                const headers = getAuthHeaders();
+                let endpoint;
+                if (cardType === 'solo_match') {
+                    endpoint = `${API_BASE}/solo-matches/${soloMatchId}/verify`;
+                } else {
+                    endpoint = `${API_BASE}/round_archers/${roundArcherId}/verify`;
+                }
+                
+                const res = await fetch(endpoint, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: headers,
                     body: JSON.stringify({
                         action: 'void',
+                        verifiedBy: 'Coach',
                         notes: reason.trim()
                     })
                 });
                 
                 if (!res.ok) {
                     const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
-                    throw new Error(errorData.error || `Failed to void scorecard: ${res.status}`);
+                    throw new Error(errorData.error || `Failed to void: ${res.status}`);
                 }
                 
                 isLocked = true;
-                await loadScorecard();
+                if (cardType === 'solo_match') {
+                    await loadSoloMatch();
+                } else {
+                    await loadScorecard();
+                }
                 alert('✓ Scorecard voided successfully.');
             } catch (error) {
                 console.error('[void] Error:', error);
