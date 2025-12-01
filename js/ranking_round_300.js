@@ -7176,8 +7176,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Removed: Tab switching and Enter Code functionality (no longer needed)
-        verifyCodeBtn.onclick = async () => {
-            const code = eventCodeInput.value.trim();
 
             // Validation
             if (!code) {
