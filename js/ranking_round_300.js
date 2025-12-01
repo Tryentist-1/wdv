@@ -6385,10 +6385,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (handled) return;
         }
         
-        // Scenario 3: Event-linked round: ?event={id}&round={id}&archer={id}
-        if (urlEventId && urlRoundId && urlArcherId) {
-            console.log('[init] Event-linked round detected');
-            const handled = await handleDirectLink(urlEventId.trim(), urlRoundId.trim(), urlArcherId.trim());
+        // Scenario 3: Event-linked or standalone round: ?event={id|null}&round={id}&archer={id}
+        if (urlRoundId && urlArcherId) {
+            // Handle both event-linked and standalone rounds
+            const eventId = (urlEventId && urlEventId !== 'null') ? urlEventId.trim() : null;
+            console.log('[init] Round detected:', eventId ? 'Event-linked' : 'Standalone');
+            const handled = await handleDirectLink(eventId, urlRoundId.trim(), urlArcherId.trim());
             if (handled) return;
         }
         
