@@ -5109,9 +5109,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function showEventModal() {
         const modal = document.getElementById('event-modal');
         if (modal) {
-            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Clear any inline style that might override
+            modal.style.display = '';
 
-            // Load active events into the Events tab
+            // Load active events into the event list
             loadActiveEventsIntoModal();
         }
     }
@@ -5122,6 +5125,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modal) {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            // Clear inline style to ensure classList takes precedence
+            modal.style.display = '';
         }
     }
 
