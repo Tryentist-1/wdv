@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container: document.getElementById('individual-card-container'),
         archerNameDisplay: document.getElementById('card-view-archer-name'),
         backToScoringBtn: document.getElementById('back-to-scoring-btn'),
-        completeBaleBtn: document.getElementById('complete-bale-btn'),
+        completeCardBtn: document.getElementById('complete-card-btn'),
         prevArcherBtn: document.getElementById('prev-archer-btn'),
         nextArcherBtn: document.getElementById('next-archer-btn'),
     };
@@ -653,8 +653,8 @@ document.addEventListener('DOMContentLoaded', () => {
             cardControls.backToScoringBtn.textContent = '← Scoring';
             cardControls.backToScoringBtn.onclick = () => { state.currentView = 'scoring'; renderView(); };
         }
-        if (cardControls.completeBaleBtn) {
-            cardControls.completeBaleBtn.onclick = showCompleteBaleModal;
+        if (cardControls.completeCardBtn) {
+            cardControls.completeCardBtn.onclick = showCompleteCardModal;
         }
         if (cardControls.prevArcherBtn) cardControls.prevArcherBtn.onclick = () => navigateArchers(-1);
         if (cardControls.nextArcherBtn) cardControls.nextArcherBtn.onclick = () => navigateArchers(1);
@@ -3889,8 +3889,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderView(); 
             };
         }
-        if (cardControls.completeBaleBtn) {
-            cardControls.completeBaleBtn.onclick = showCompleteBaleModal;
+        if (cardControls.completeCardBtn) {
+            cardControls.completeCardBtn.onclick = showCompleteCardModal;
         }
         if (cardControls.prevArcherBtn) {
             cardControls.prevArcherBtn.onclick = () => navigateArchers(-1);
@@ -7124,8 +7124,8 @@ document.addEventListener('DOMContentLoaded', () => {
             state.currentView = 'scoring';
             renderView();
         };
-        if (cardControls.completeBaleBtn) {
-            cardControls.completeBaleBtn.onclick = showCompleteBaleModal;
+        if (cardControls.completeCardBtn) {
+            cardControls.completeCardBtn.onclick = showCompleteCardModal;
         }
 
         if (cardControls.prevArcherBtn) {
@@ -7513,38 +7513,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Show Complete Bale confirmation modal
-     * Replaces deprecated Export modal
+     * Show Complete Card confirmation modal
+     * Replaces deprecated Export modal and old confirm() dialog
      */
-    function showCompleteBaleModal() {
-        const modal = document.getElementById('complete-bale-modal');
-        const messageEl = document.getElementById('complete-bale-message');
+    function showCompleteCardModal() {
+        const modal = document.getElementById('complete-card-modal');
         
         if (!modal) {
-            console.error('[showCompleteBaleModal] Modal not found');
+            console.error('[showCompleteCardModal] Modal not found');
             return;
         }
         
-        // Determine message based on round type
-        const isEventRound = !state.isStandalone && (state.activeEventId || state.selectedEventId);
-        let message = '';
-        
-        if (isEventRound) {
-            message = 'This will mark all scorecards in this bale as Complete. They will be ready for Validation by a coach.';
-        } else {
-            message = 'This will mark all scorecards in this bale as Complete. They will no longer show in Active Assignments.';
+        const archer = state.archers.find(a => a.id === state.activeArcherId);
+        if (!archer) {
+            alert('No archer selected.');
+            return;
         }
         
-        if (messageEl) {
-            messageEl.textContent = message;
+        // Check if all ends are complete
+        const allEndsComplete = archer.scores.filter(s => s.every(val => val !== '' && val !== null)).length >= state.totalEnds;
+        if (!allEndsComplete) {
+            alert('Please complete all 10 ends before marking card as complete.');
+            return;
         }
         
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
     
-    function hideCompleteBaleModal() {
-        const modal = document.getElementById('complete-bale-modal');
+    function hideCompleteCardModal() {
+        const modal = document.getElementById('complete-card-modal');
         if (modal) {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
@@ -7552,100 +7550,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     /**
-     * Mark all archers in the current bale as Complete
+     * Mark the current archer's card as Complete
      */
-    async function completeBale() {
-        if (!state.archers || state.archers.length === 0) {
-            alert('No archers found to complete.');
+    async function completeCard() {
+        const archer = state.archers.find(a => a.id === state.activeArcherId);
+        if (!archer) {
+            alert('No archer selected.');
+            hideCompleteCardModal();
             return;
         }
         
-        if (!state.roundId) {
-            alert('Round ID not found. Please ensure the round is saved to the database.');
-            return;
+        // Update card status to COMP
+        const success = await updateCardStatus(archer.id, 'COMP');
+        if (success) {
+            // Refresh card view
+            renderCardView(archer.id);
         }
         
-        // Check if all archers have complete scores
-        const incompleteArchers = state.archers.filter(archer => {
-            const completedEnds = archer.scores.filter(end => 
-                Array.isArray(end) && end.some(score => score !== '' && score !== null && score !== undefined)
-            ).length;
-            return completedEnds < state.totalEnds;
-        });
-        
-        if (incompleteArchers.length > 0) {
-            const names = incompleteArchers.map(a => `${a.firstName} ${a.lastName}`).join(', ');
-            alert(`Please complete all ${state.totalEnds} ends for all archers before marking bale as complete.\n\nIncomplete: ${names}`);
-            return;
-        }
-        
-        // Update all archers
-        const results = [];
-        let successCount = 0;
-        let failCount = 0;
-        
-        for (const archer of state.archers) {
-            if (!archer.roundArcherId) {
-                console.warn(`[completeBale] Archer ${archer.id} has no roundArcherId, skipping`);
-                failCount++;
-                continue;
-            }
-            
-            try {
-                const success = await updateCardStatus(archer.id, 'COMP');
-                if (success) {
-                    successCount++;
-                    results.push({ archer: `${archer.firstName} ${archer.lastName}`, status: 'success' });
-                } else {
-                    failCount++;
-                    results.push({ archer: `${archer.firstName} ${archer.lastName}`, status: 'failed' });
-                }
-            } catch (error) {
-                console.error(`[completeBale] Failed to complete archer ${archer.id}:`, error);
-                failCount++;
-                results.push({ archer: `${archer.firstName} ${archer.lastName}`, status: 'error', error: error.message });
-            }
-        }
-        
-        // Show results
-        if (failCount === 0) {
-            const isEventRound = !state.isStandalone && (state.activeEventId || state.selectedEventId);
-            if (isEventRound) {
-                alert(`✓ All ${successCount} scorecard(s) marked as Complete.\n\nThey are now ready for Validation by a coach.`);
-            } else {
-                alert(`✓ All ${successCount} scorecard(s) marked as Complete.\n\nThey will no longer show in Active Assignments.`);
-            }
-            
-            // Refresh the card view
-            if (state.activeArcherId) {
-                renderCardView(state.activeArcherId);
-            }
-        } else {
-            const failedNames = results.filter(r => r.status !== 'success').map(r => r.archer).join(', ');
-            alert(`⚠️ Completed ${successCount} scorecard(s), but ${failCount} failed:\n\n${failedNames}\n\nPlease try again.`);
-        }
-        
-        hideCompleteBaleModal();
+        hideCompleteCardModal();
     }
     
-    // Wire up Complete Bale modal handlers
-    const completeBaleConfirmBtn = document.getElementById('complete-bale-confirm-btn');
-    const completeBaleCancelBtn = document.getElementById('complete-bale-cancel-btn');
+    // Wire up Complete Card modal handlers
+    const completeCardConfirmBtn = document.getElementById('complete-card-confirm-btn');
+    const completeCardCancelBtn = document.getElementById('complete-card-cancel-btn');
     
-    if (completeBaleConfirmBtn) {
-        completeBaleConfirmBtn.onclick = completeBale;
+    if (completeCardConfirmBtn) {
+        completeCardConfirmBtn.onclick = completeCard;
     }
     
-    if (completeBaleCancelBtn) {
-        completeBaleCancelBtn.onclick = hideCompleteBaleModal;
+    if (completeCardCancelBtn) {
+        completeCardCancelBtn.onclick = hideCompleteCardModal;
     }
     
     // Close modal on background click
-    const completeBaleModal = document.getElementById('complete-bale-modal');
-    if (completeBaleModal) {
-        completeBaleModal.onclick = (e) => {
-            if (e.target === completeBaleModal) {
-                hideCompleteBaleModal();
+    const completeCardModal = document.getElementById('complete-card-modal');
+    if (completeCardModal) {
+        completeCardModal.onclick = (e) => {
+            if (e.target === completeCardModal) {
+                hideCompleteCardModal();
             }
         };
     }

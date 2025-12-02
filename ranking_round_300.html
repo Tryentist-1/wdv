@@ -393,9 +393,6 @@
                     class="px-2 py-1.5 sm:px-4 sm:py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px]">←
                     Scoring</button>
                 <button id="complete-card-btn"
-                    class="px-2 py-1.5 sm:px-4 sm:py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px] hidden">✓
-                    Complete</button>
-                <button id="complete-bale-btn"
                     class="px-2 py-1.5 sm:px-4 sm:py-2 bg-success text-white rounded hover:bg-success-dark font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px]">Complete</button>
                 <button id="prev-archer-btn"
                     class="px-2 py-1.5 sm:px-4 sm:py-2 bg-secondary-light dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px]">←
@@ -496,22 +493,22 @@
             </div>
         </div>
 
-        <!-- Complete Bale Confirmation Modal -->
-        <div id="complete-bale-modal"
+        <!-- Complete Card Confirmation Modal -->
+        <div id="complete-card-modal"
             class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto hidden">
             <div
                 class="bg-white dark:bg-gray-800 p-6 rounded-md shadow-lg w-11/12 max-w-md max-h-[90vh] overflow-y-auto flex flex-col transition-colors duration-200">
                 <h2 class="text-xl font-bold text-center text-gray-800 dark:text-white mb-4">Complete Scorecard</h2>
                 <p class="text-gray-600 dark:text-gray-300 mb-6 text-center">
-                    Confirm this scorecard is completed?
+                    Mark this scorecard as Complete?
                 </p>
-                <div id="complete-bale-message" class="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center">
-                    <!-- Message will be populated based on round type -->
-                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center">
+                    This indicates you have verified the digital card matches the paper card. Coaches can then verify it.
+                </p>
                 <div class="flex gap-3 justify-end">
-                    <button id="complete-bale-cancel-btn"
+                    <button id="complete-card-cancel-btn"
                         class="px-4 py-2 bg-secondary-light dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold transition-colors min-h-[44px]">Cancel</button>
-                    <button id="complete-bale-confirm-btn"
+                    <button id="complete-card-confirm-btn"
                         class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark font-semibold transition-colors min-h-[44px]">Confirm</button>
                 </div>
             </div>
