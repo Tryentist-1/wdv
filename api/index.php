@@ -176,20 +176,21 @@ if ($route === '/v1/health') {
 
 // Archer history endpoint (PUBLIC - archers can view their own history)
 if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method === 'GET') {
-    $archerId = $m[1];
-    $pdo = db();
-    
-    // Get archer info
-    $archer = $pdo->prepare('SELECT id, ext_id, first_name, last_name, school, level, gender FROM archers WHERE id = ? OR ext_id = ? LIMIT 1');
-    $archer->execute([$archerId, $archerId]);
-    $archerData = $archer->fetch();
-    
-    if (!$archerData) {
-        json_response(['error' => 'Archer not found'], 404);
-        exit;
-    }
-    
-    $history = [];
+    try {
+        $archerId = $m[1];
+        $pdo = db();
+        
+        // Get archer info
+        $archer = $pdo->prepare('SELECT id, ext_id, first_name, last_name, school, level, gender FROM archers WHERE id = ? OR ext_id = ? LIMIT 1');
+        $archer->execute([$archerId, $archerId]);
+        $archerData = $archer->fetch();
+        
+        if (!$archerData) {
+            json_response(['error' => 'Archer not found'], 404);
+            exit;
+        }
+        
+        $history = [];
     
     // Get all ranking rounds this archer participated in (including standalone rounds)
     $rounds = $pdo->prepare('
