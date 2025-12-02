@@ -420,9 +420,15 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         'history' => $history,
             'totalRounds' => count($history)
         ]);
+    } catch (PDOException $e) {
+        error_log("GET /v1/archers/{id}/history PDO error: " . $e->getMessage() . "\nSQL State: " . $e->getCode() . "\n" . $e->getTraceAsString());
+        json_response(['error' => 'Database error: ' . $e->getMessage(), 'type' => 'PDOException'], 500);
     } catch (Exception $e) {
         error_log("GET /v1/archers/{id}/history error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
-        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+        json_response(['error' => 'Server error: ' . $e->getMessage(), 'type' => 'Exception'], 500);
+    } catch (Error $e) {
+        error_log("GET /v1/archers/{id}/history fatal error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+        json_response(['error' => 'Fatal error: ' . $e->getMessage(), 'type' => 'Error'], 500);
     }
     exit;
 }
