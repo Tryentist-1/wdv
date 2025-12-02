@@ -6,6 +6,7 @@
     <title>Practice Target</title>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/tailwind-compiled.css">
@@ -483,10 +484,37 @@
     
     function touchStarted() {
         if (touches.length > 0) {
-            processShot(touches[0].x, touches[0].y);
+            const touch = touches[0];
+            const touchX = touch.x;
+            const touchY = touch.y;
+            
+            // Check if touch is on an interactive element (button, link, etc.)
+            // This prevents the canvas from blocking button clicks when match is over
+            const elementAtPoint = document.elementFromPoint(touchX, touchY);
+            if (elementAtPoint) {
+                const isInteractive = elementAtPoint.closest('button, a, input, select, textarea');
+                if (isInteractive) {
+                    // Allow touch to pass through to button/link
+                    return true;
+                }
+            }
+            
+            // If match is over and touch is outside target area, allow default behavior
+            // This enables button clicks even when touching near buttons
+            if (matchOver) {
+                const d = dist(touchX, touchY, targetX, targetY);
+                if (d > targetRadius) {
+                    // Touch is outside target area, allow default behavior (enables button clicks)
+                    return true;
+                }
+            }
+            
+            // Process shot for touches on the target area
+            processShot(touchX, touchY);
             // prevent default browser actions like scrolling or zooming on touch devices, crucial for iOS Safari.
             return false;
         }
+        return true;
     }
 
     // =================== STATS RECALCULATION & ANALYSIS ===================
@@ -974,20 +1002,39 @@
 
     // =================== IMAGE SAVE ===================
     function saveScorecardImage() {
-        let d = new Date(); 
-        let timestamp = `${d.getFullYear()}${nf(d.getMonth() + 1, 2)}${nf(d.getDate(), 2)}_${nf(d.getHours(), 2)}${nf(d.getMinutes(), 2)}${nf(d.getSeconds(), 2)}`; 
-        let filename = `PracticeTarget_${timestamp}.png`; 
-        let originalDisplayMode = displayMode; 
+        if (!matchOver || totalArrowsShot === 0) {
+            alert('Complete the practice round before saving an image.');
+            return;
+        }
+
+        // Save original display mode
+        let originalDisplayMode = displayMode;
         
-        if (displayMode === 'centered') { 
-            displayMode = 'actual'; 
-            redraw(); 
-        } 
-        saveCanvas(filename); 
-        if (originalDisplayMode === 'centered') { 
-            displayMode = 'centered'; 
-        } 
-        if (!isLooping() && matchOver) noLoop();
+        // Switch to actual mode if in centered mode (for cleaner screenshot)
+        if (displayMode === 'centered') {
+            displayMode = 'actual';
+        }
+
+        // Force a redraw to ensure all elements (target, arrows, scores, text) are rendered
+        redraw();
+
+        // Wait a brief moment to ensure canvas is fully rendered before saving
+        // This is critical - p5.js needs time to complete the draw() cycle
+        setTimeout(() => {
+            const d = new Date();
+            const timestamp = `${d.getFullYear()}${nf(d.getMonth() + 1, 2)}${nf(d.getDate(), 2)}_${nf(d.getHours(), 2)}${nf(d.getMinutes(), 2)}${nf(d.getSeconds(), 2)}`;
+            const filename = `PracticeTarget_${timestamp}.png`;
+            
+            // Use p5.js saveCanvas - this should capture everything drawn on the canvas
+            // including target, arrow markers, scores, and all text
+            saveCanvas(filename);
+            
+            // Restore original display mode if needed
+            if (originalDisplayMode === 'centered') {
+                displayMode = 'centered';
+                redraw();
+            }
+        }, 150); // Small delay to ensure draw() has completed
     }
     
     </script>
