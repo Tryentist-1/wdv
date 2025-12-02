@@ -87,10 +87,10 @@
         </div>
 
         <div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-2 transition-colors duration-200">
-            <div class="flex-1 relative">
-                <input class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary transition-colors" type="text" id="search-input" placeholder="Find an Archer">
-                <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors w-6 h-6 flex items-center justify-center hidden z-10" title="Clear search">
-                    <i class="fas fa-times text-sm"></i>
+            <div class="flex-1 flex items-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 focus-within:ring-2 focus-within:ring-primary transition-colors">
+                <input class="flex-1 px-3 py-2 bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none border-none" type="text" id="search-input" placeholder="Find an Archer">
+                <button id="clear-search-btn" class="px-3 py-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors hidden" type="button" title="Clear search" aria-label="Clear search">
+                    <i class="fas fa-times-circle"></i>
                 </button>
             </div>
             <button id="add-archer-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]"><i class="fas fa-plus"></i> Add</button>
@@ -174,23 +174,34 @@
     </div>
 
     <!-- Add/Edit Archer Modal -->
-    <div id="archer-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transition-colors duration-200">
-            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 z-10">
-                <div class="flex justify-between items-center">
-                    <h2 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-white">Add Archer</h2>
-                    <div id="archer-navigation" class="hidden flex gap-2">
-                        <button type="button" id="prev-archer-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Previous archer">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <span id="archer-position" class="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">1 of 25</span>
-                        <button type="button" id="next-archer-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Next archer">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
+    <div id="archer-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-end sm:items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-lg shadow-2xl w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-hidden transition-all duration-300 transform">
+            <!-- Compact Header with Avatar Preview -->
+            <div class="sticky top-0 bg-gradient-to-r from-primary to-primary-dark px-4 py-3 z-10">
+                <div class="flex items-center gap-3">
+                    <!-- Mini Avatar in Header -->
+                    <div id="header-avatar" class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/40 flex-shrink-0">
+                        <span id="header-initials" class="text-lg font-bold text-white">?</span>
+                        <img id="header-avatar-img" class="hidden w-full h-full object-cover" alt="">
                     </div>
+                    <div class="flex-1 min-w-0">
+                        <h2 id="modal-title" class="text-lg font-bold text-white truncate">Add Archer</h2>
+                        <div id="archer-navigation" class="hidden items-center gap-1 mt-0.5">
+                            <button type="button" id="prev-archer-btn" class="w-6 h-6 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 rounded transition-colors" title="Previous">
+                                <i class="fas fa-chevron-left text-xs"></i>
+                            </button>
+                            <span id="archer-position" class="text-xs text-white/80 px-1">1/25</span>
+                            <button type="button" id="next-archer-btn" class="w-6 h-6 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 rounded transition-colors" title="Next">
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" id="close-modal-btn" class="w-8 h-8 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-colors" title="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
-            <form id="archer-form" class="p-6">
+            <form id="archer-form" class="overflow-y-auto max-h-[calc(95vh-120px)] sm:max-h-[calc(90vh-120px)]">
                 <!-- Form content will be injected by JS -->
             </form>
         </div>
@@ -216,6 +227,26 @@
             <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
                 <button id="cancel-change-self-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
                 <button id="confirm-change-self-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Yes, Change It</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- No "Me" Record Modal -->
+    <div id="no-me-record-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[80] hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-colors duration-200">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-user-circle text-primary"></i>
+                    Select Your Profile
+                </h3>
+            </div>
+            <div class="px-6 py-4">
+                <p class="text-gray-700 dark:text-gray-300 mb-4">
+                    Click the <i class="fas fa-plus text-primary"></i> on the avatar to select your profile.
+                </p>
+            </div>
+            <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <button id="close-no-me-modal-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">OK</button>
             </div>
         </div>
     </div>
@@ -623,6 +654,9 @@
                 });
                 refreshSelfSummary(state);
                 updateSyncStatus();
+                
+                // Check and show modal if no "Me" record after render
+                checkAndShowNoMeModal();
             }
             updateSyncStatus();
 
@@ -632,21 +666,27 @@
                 form.innerHTML = createFormFieldsHTML();
                 
                 const buttonContainer = document.createElement('div');
-                buttonContainer.className = 'flex gap-2 mt-6 sticky bottom-0 bg-white dark:bg-gray-800 pt-4 border-t border-gray-200 dark:border-gray-700';
+                buttonContainer.className = 'sticky bottom-0 px-3 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2';
                 buttonContainer.innerHTML = `
-                    <button type="button" id="cancel-archer-btn-modal" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-                    <button type="submit" class="flex-1 px-4 py-2 bg-success hover:bg-success-dark text-white rounded font-semibold transition-colors min-h-[44px]">Save</button>
+                    <button type="button" id="cancel-archer-btn-modal" class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+                    <button type="submit" class="flex-1 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors min-h-[44px] shadow-sm">
+                        <i class="fas fa-check mr-1"></i>Save
+                    </button>
                 `;
                 form.appendChild(buttonContainer);
                 
                 form.querySelector('#cancel-archer-btn-modal').onclick = closeModal;
+                
+                // Close button in header
+                const closeModalBtn = document.getElementById('close-modal-btn');
+                if (closeModalBtn) closeModalBtn.onclick = closeModal;
 
                 const modalTitle = document.getElementById('modal-title');
                 const favesInput = form.querySelector('#faves');
 
                 if (index !== null) {
-                    modalTitle.textContent = 'Edit Archer';
                     const archer = ArcherModule.loadList()[index];
+                    modalTitle.textContent = archer.first ? `${archer.first} ${archer.last || ''}`.trim() : 'Edit Archer';
                     setFormValue(form, 'extId', archer.extId || '');
                     setFormValue(form, 'first', archer.first || '');
                     setFormValue(form, 'last', archer.last || '');
@@ -792,6 +832,10 @@
                 const firstInput = form.querySelector('#first');
                 const lastInput = form.querySelector('#last');
                 
+                // Header avatar elements
+                const headerAvatarImg = document.getElementById('header-avatar-img');
+                const headerInitials = document.getElementById('header-initials');
+                
                 if (!avatarImage || !avatarInitials) return;
                 
                 const photoUrl = photoUrlInput?.value.trim();
@@ -799,22 +843,41 @@
                 const last = lastInput?.value.trim() || '';
                 
                 if (photoUrl) {
-                    // Show photo
+                    // Show photo in form
                     avatarImage.src = photoUrl;
                     avatarImage.classList.remove('hidden');
                     avatarInitials.classList.add('hidden');
+                    
+                    // Show photo in header
+                    if (headerAvatarImg && headerInitials) {
+                        headerAvatarImg.src = photoUrl;
+                        headerAvatarImg.classList.remove('hidden');
+                        headerInitials.classList.add('hidden');
+                    }
                     
                     // Handle image load error
                     avatarImage.onerror = () => {
                         avatarImage.classList.add('hidden');
                         avatarInitials.classList.remove('hidden');
                         showInitials(avatarInitials, first, last);
+                        if (headerAvatarImg && headerInitials) {
+                            headerAvatarImg.classList.add('hidden');
+                            headerInitials.classList.remove('hidden');
+                            showInitials(headerInitials, first, last);
+                        }
                     };
                 } else {
-                    // Show initials
+                    // Show initials in form
                     avatarImage.classList.add('hidden');
                     avatarInitials.classList.remove('hidden');
                     showInitials(avatarInitials, first, last);
+                    
+                    // Show initials in header
+                    if (headerAvatarImg && headerInitials) {
+                        headerAvatarImg.classList.add('hidden');
+                        headerInitials.classList.remove('hidden');
+                        showInitials(headerInitials, first, last);
+                    }
                 }
             }
             
@@ -879,24 +942,28 @@
                 
                 if (!navigationDiv || !prevBtn || !nextBtn || !positionSpan) return;
                 
-                // Show navigation
-                navigationDiv.classList.remove('hidden');
-                
                 // Find current position in filtered list
                 const currentPosition = filteredArcherIndices.indexOf(currentIndex);
                 const totalArchers = filteredArcherIndices.length;
                 
                 if (currentPosition === -1 || totalArchers <= 1) {
                     navigationDiv.classList.add('hidden');
+                    navigationDiv.classList.remove('flex');
                     return;
                 }
                 
-                // Update position display
-                positionSpan.textContent = `${currentPosition + 1} of ${totalArchers}`;
+                // Show navigation with flex
+                navigationDiv.classList.remove('hidden');
+                navigationDiv.classList.add('flex');
+                
+                // Update position display (compact format)
+                positionSpan.textContent = `${currentPosition + 1}/${totalArchers}`;
                 
                 // Update button states
                 prevBtn.disabled = currentPosition === 0;
                 nextBtn.disabled = currentPosition === totalArchers - 1;
+                prevBtn.style.opacity = currentPosition === 0 ? '0.3' : '1';
+                nextBtn.style.opacity = currentPosition === totalArchers - 1 ? '0.3' : '1';
                 
                 // Add click handlers
                 prevBtn.onclick = () => {
@@ -1064,64 +1131,47 @@
                     <input type="hidden" id="legacyBale">
                     <input type="hidden" id="legacyTarget">
                     <input type="hidden" id="legacySize">
+                    <input type="hidden" id="riserHeightIn">
 
-                    <!-- Identity Section -->
-                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <!-- Header with Status -->
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Identity</h3>
-                            <div class="w-32">
-                                <label class="block mb-1 text-xs font-medium text-gray-700 dark:text-gray-300" for="status">Status</label>
-                                <select class="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary text-sm" id="status">
-                                    <option value="active" selected>Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <!-- Photo and Name Fields Row -->
-                        <div class="flex gap-4 mb-4">
-                            <!-- Avatar Preview and Upload -->
-                            <div class="w-32 flex-shrink-0">
-                                <div class="relative">
-                                    <div id="avatar-preview" class="w-32 h-32 rounded-lg border-2 border-gray-300 dark:border-gray-600 overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                                        <span id="avatar-initials" class="text-3xl font-bold text-gray-400 dark:text-gray-500">?</span>
-                                        <img id="avatar-image" class="hidden w-full h-full object-cover" alt="Avatar">
-                                    </div>
-                                    <input type="file" id="avatar-file" accept="image/*" class="hidden">
-                                    <input type="hidden" id="photoUrl">
-                                    <button type="button" id="upload-avatar-btn" class="mt-2 w-full px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors">
-                                        <i class="fas fa-camera mr-1"></i>Upload
-                                    </button>
-                                    <div id="upload-progress" class="hidden mt-1 text-xs text-center text-gray-600 dark:text-gray-400">
-                                        <i class="fas fa-spinner fa-spin mr-1"></i>Uploading...
-                                    </div>
+                    <!-- Hero Section: Avatar + Name + Quick Stats -->
+                    <div class="px-4 pt-4 pb-3 bg-gray-50 dark:bg-gray-900">
+                        <div class="flex gap-3">
+                            <!-- Compact Avatar -->
+                            <div class="relative flex-shrink-0">
+                                <div id="avatar-preview" class="w-20 h-20 rounded-xl border-2 border-gray-200 dark:border-gray-600 overflow-hidden bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
+                                    <span id="avatar-initials" class="text-2xl font-bold text-gray-400 dark:text-gray-500">?</span>
+                                    <img id="avatar-image" class="hidden w-full h-full object-cover" alt="Avatar">
+                                </div>
+                                <button type="button" id="upload-avatar-btn" class="absolute -bottom-1 -right-1 w-7 h-7 bg-primary hover:bg-primary-dark text-white rounded-full shadow-lg flex items-center justify-center transition-colors">
+                                    <i class="fas fa-camera text-xs"></i>
+                                </button>
+                                <input type="file" id="avatar-file" accept="image/*" class="hidden">
+                                <input type="hidden" id="photoUrl">
+                                <div id="upload-progress" class="hidden absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-spinner fa-spin text-white"></i>
                                 </div>
                             </div>
-                            
-                            <!-- Name Fields Aligned with Photo -->
-                            <div class="flex-1 flex flex-col justify-between">
-                                <div>
-                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="first" placeholder="First Name*" required>
-                                </div>
-                                <div>
-                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="last" placeholder="Last Name*" required>
-                                </div>
-                                <div>
-                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="nickname" placeholder="Nickname">
+                            <!-- Name + Status -->
+                            <div class="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
+                                <input class="w-full px-2.5 py-1.5 text-base font-semibold border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="first" placeholder="First Name*" required>
+                                <input class="w-full px-2.5 py-1.5 text-base border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="last" placeholder="Last Name*" required>
+                                <div class="flex gap-2">
+                                    <input class="flex-1 px-2.5 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="nickname" placeholder="Nickname">
+                                    <select class="w-20 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="status">
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- School, Grade, Gender Row -->
-                        <div class="grid grid-cols-3 gap-3 mb-3">
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="school">School</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="school" maxlength="3" placeholder="WDV">
+                        <!-- Quick Stats Row -->
+                        <div class="mt-3 grid grid-cols-4 gap-2">
+                            <div class="text-center">
+                                <input class="w-full px-1 py-1 text-center text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="school" maxlength="3" placeholder="SCH">
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">School</div>
                             </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="grade">Grade</label>
-                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="grade">
+                            <div class="text-center">
+                                <select class="w-full px-1 py-1 text-center text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="grade">
                                     <option value="">-</option>
                                     <option value="9">9</option>
                                     <option value="10">10</option>
@@ -1129,191 +1179,228 @@
                                     <option value="12">12</option>
                                     <option value="GRAD">GRAD</option>
                                 </select>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Grade</div>
                             </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="gender">Gender</label>
-                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="gender">
+                            <div class="text-center">
+                                <select class="w-full px-1 py-1 text-center text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="gender">
                                     <option value="M">M</option>
                                     <option value="F">F</option>
                                 </select>
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Gender</div>
                             </div>
-                            </div>
-                        
-                        <!-- Friends -->
-                        <div>
-                            <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="faves">Friends</label>
-                            <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="faves" placeholder="archer-ext-id-1, archer-ext-id-2">
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Comma-separated extIds</div>
-                        </div>
-                    </section>
-
-                    <!-- Performance Section -->
-                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Performance</h3>
-                        
-                        <div class="grid grid-cols-3 gap-3">
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="level">Level</label>
-                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="level">
+                            <div class="text-center">
+                                <select class="w-full px-1 py-1 text-center text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="level">
                                     <option value="VAR">VAR</option>
                                     <option value="JV">JV</option>
                                     <option value="BEG">BEG</option>
                                 </select>
-                            </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="jvPr">JV PR</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="jvPr" min="0" max="360" placeholder="0-360">
-                            </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="varPr">VAR PR</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="varPr" min="0" max="360" placeholder="0-360">
+                                <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Level</div>
                             </div>
                         </div>
-                    </section>
+                    </div>
 
-                    <!-- Equipment Section -->
-                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Equipment</h3>
+                    <!-- Collapsible Sections -->
+                    <div class="px-3 py-2 space-y-2">
                         
-                        <!-- Row 1: Hand, Eye, Height, Wingspan -->
-                        <div class="grid grid-cols-4 gap-3 mb-3">
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="domHand">Hand</label>
-                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="domHand">
-                                    <option value="">-</option>
-                                    <option value="RT">Right</option>
-                                    <option value="LT">Left</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="domEye">Eye</label>
-                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="domEye">
-                                    <option value="">-</option>
-                                    <option value="RT">Right</option>
-                                    <option value="LT">Left</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="heightIn">Ht (in)</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="heightIn" min="0" step="1" placeholder="60">
-                            </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="wingspanIn">Wing (in)</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="wingspanIn" min="0" step="0.1" placeholder="60.5">
-                            </div>
-                        </div>
-                        
-                        <!-- Row 2: Draw, Limb, Weight -->
-                        <div class="grid grid-cols-3 gap-3">
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="drawLengthSugg">Draw (in)</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="drawLengthSugg" min="0" step="0.1" placeholder="28.5">
-                            </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="limbLength">Limb</label>
-                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="limbLength">
-                                    <option value="">-</option>
-                                    <option value="S">S</option>
-                                    <option value="M">M</option>
-                                    <option value="L">L</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="limbWeightLbs">Wt (lbs)</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="limbWeightLbs" min="0" step="0.5" placeholder="20">
-                        </div>
-                        </div>
-                        
-                        <!-- Hidden Riser Height (kept for data preservation) -->
-                        <input type="hidden" id="riserHeightIn">
-                    </section>
-
-                    <!-- Notes Section -->
-                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Notes</h3>
-                        
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesGear">Gear Notes</label>
-                                <textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesGear" rows="2"></textarea>
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300" for="notesCurrent">Current Notes</label>
-                                    <button type="button" id="move-to-history-btn" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors" title="Move current note to history">
-                                        <i class="fas fa-arrow-down mr-1"></i>Move to History
-                                    </button>
+                        <!-- Performance Section (Always Open) -->
+                        <details class="group bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700" open>
+                            <summary class="flex items-center justify-between px-3 py-2.5 cursor-pointer select-none">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-trophy text-yellow-500 dark:text-yellow-400 text-sm"></i>
+                                    <span class="font-semibold text-sm text-gray-800 dark:text-white">Performance</span>
                                 </div>
-                                <textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="notesCurrent" rows="2"></textarea>
-                            </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="notesArchive">Notes History (Read Only)</label>
-                                <textarea class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none cursor-not-allowed" id="notesArchive" rows="3" readonly placeholder="Previous notes will appear here with timestamps..."></textarea>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Sizes Section -->
-                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Sizes</h3>
-                        
-                        <div class="grid grid-cols-3 gap-3">
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="shirtSize">Shirt</label>
-                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="shirtSize">
-                                    <option value="">-</option>
-                                    <option value="XS">XS</option>
-                                    <option value="S">S</option>
-                                    <option value="M">M</option>
-                                    <option value="L">L</option>
-                                    <option value="XL">XL</option>
-                                    <option value="XXL">XXL</option>
-                                    <option value="XXXL">XXXL</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="pantSize">Pant</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="pantSize" placeholder="32x34">
-                            </div>
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="hatSize">Hat</label>
-                                <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="hatSize">
-                                    <option value="">-</option>
-                                    <option value="XS">XS</option>
-                                    <option value="S">S</option>
-                                    <option value="M">M</option>
-                                    <option value="L">L</option>
-                                    <option value="XL">XL</option>
-                                    <option value="XXL">XXL</option>
-                                </select>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Contact Section -->
-                    <section class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                        <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Contact</h3>
-                        
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="email">Email</label>
-                                <div class="flex gap-2">
-                                    <input class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="email" id="email" placeholder="firstname_lastname">
-                                    <button type="button" id="email-domain-btn" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors whitespace-nowrap">@student...</button>
+                                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform group-open:rotate-180"></i>
+                            </summary>
+                            <div class="px-3 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">JV PR</label>
+                                        <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="jvPr" min="0" max="360" placeholder="0-360">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">VAR PR</label>
+                                        <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="varPr" min="0" max="360" placeholder="0-360">
+                                    </div>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
+                        </details>
+
+                        <!-- Equipment Section -->
+                        <details class="group bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                            <summary class="flex items-center justify-between px-3 py-2.5 cursor-pointer select-none">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-bullseye text-red-500 dark:text-red-400 text-sm"></i>
+                                    <span class="font-semibold text-sm text-gray-800 dark:text-white">Equipment</span>
+                                </div>
+                                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform group-open:rotate-180"></i>
+                            </summary>
+                            <div class="px-3 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700 space-y-2">
+                                <div class="grid grid-cols-4 gap-2">
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Hand</label>
+                                        <select class="w-full px-1 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="domHand">
+                                            <option value="">-</option>
+                                            <option value="RT">R</option>
+                                            <option value="LT">L</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Eye</label>
+                                        <select class="w-full px-1 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="domEye">
+                                            <option value="">-</option>
+                                            <option value="RT">R</option>
+                                            <option value="LT">L</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Height</label>
+                                        <input class="w-full px-1 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="heightIn" placeholder="in">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Wing</label>
+                                        <input class="w-full px-1 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="wingspanIn" placeholder="in">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Draw</label>
+                                        <input class="w-full px-1 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="drawLengthSugg" placeholder="in">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Limb</label>
+                                        <select class="w-full px-1 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="limbLength">
+                                            <option value="">-</option>
+                                            <option value="S">S</option>
+                                            <option value="M">M</option>
+                                            <option value="L">L</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Weight</label>
+                                        <input class="w-full px-1 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="limbWeightLbs" placeholder="lbs">
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+
+                        <!-- Notes Section -->
+                        <details class="group bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                            <summary class="flex items-center justify-between px-3 py-2.5 cursor-pointer select-none">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-sticky-note text-blue-500 dark:text-blue-400 text-sm"></i>
+                                    <span class="font-semibold text-sm text-gray-800 dark:text-white">Notes</span>
+                                </div>
+                                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform group-open:rotate-180"></i>
+                            </summary>
+                            <div class="px-3 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700 space-y-2">
                                 <div>
-                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="phone">Phone</label>
-                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="tel" id="phone" placeholder="###-###-####">
+                                    <label class="text-xs text-gray-500 dark:text-gray-400">Gear Notes</label>
+                                    <textarea class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none" id="notesGear" rows="2"></textarea>
                                 </div>
                                 <div>
-                                    <label class="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300" for="usArcheryId">USA Archery ID</label>
-                                    <input class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="usArcheryId">
+                                    <div class="flex justify-between items-center">
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Current Notes</label>
+                                        <button type="button" id="move-to-history-btn" class="text-xs text-primary hover:text-primary-dark" title="Archive">
+                                            <i class="fas fa-archive mr-1"></i>Archive
+                                        </button>
+                                    </div>
+                                    <textarea class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none" id="notesCurrent" rows="2"></textarea>
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 dark:text-gray-400">History</label>
+                                    <textarea class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 cursor-not-allowed resize-none" id="notesArchive" rows="2" readonly placeholder="Archived notes..."></textarea>
                                 </div>
                             </div>
-                        </div>
-                    </section>
+                        </details>
+
+                        <!-- Sizes Section -->
+                        <details class="group bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                            <summary class="flex items-center justify-between px-3 py-2.5 cursor-pointer select-none">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-tshirt text-purple-500 dark:text-purple-400 text-sm"></i>
+                                    <span class="font-semibold text-sm text-gray-800 dark:text-white">Sizes</span>
+                                </div>
+                                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform group-open:rotate-180"></i>
+                            </summary>
+                            <div class="px-3 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700">
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Shirt</label>
+                                        <select class="w-full px-1 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="shirtSize">
+                                            <option value="">-</option>
+                                            <option value="XS">XS</option>
+                                            <option value="S">S</option>
+                                            <option value="M">M</option>
+                                            <option value="L">L</option>
+                                            <option value="XL">XL</option>
+                                            <option value="XXL">XXL</option>
+                                            <option value="XXXL">3XL</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Pant</label>
+                                        <input class="w-full px-1 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="pantSize" placeholder="32x34">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Hat</label>
+                                        <select class="w-full px-1 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="hatSize">
+                                            <option value="">-</option>
+                                            <option value="XS">XS</option>
+                                            <option value="S">S</option>
+                                            <option value="M">M</option>
+                                            <option value="L">L</option>
+                                            <option value="XL">XL</option>
+                                            <option value="XXL">XXL</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+
+                        <!-- Contact Section -->
+                        <details class="group bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                            <summary class="flex items-center justify-between px-3 py-2.5 cursor-pointer select-none">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-address-card text-green-500 dark:text-green-400 text-sm"></i>
+                                    <span class="font-semibold text-sm text-gray-800 dark:text-white">Contact</span>
+                                </div>
+                                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform group-open:rotate-180"></i>
+                            </summary>
+                            <div class="px-3 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700 space-y-2">
+                                <div>
+                                    <label class="text-xs text-gray-500 dark:text-gray-400">Email</label>
+                                    <div class="flex gap-1">
+                                        <input class="flex-1 px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="email" id="email" placeholder="email">
+                                        <button type="button" id="email-domain-btn" class="px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500">@stu...</button>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Phone</label>
+                                        <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="tel" id="phone" placeholder="###-###-####">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">USA Archery</label>
+                                        <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="usArcheryId" placeholder="ID">
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+
+                        <!-- Friends (Hidden by default) -->
+                        <details class="group bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                            <summary class="flex items-center justify-between px-3 py-2.5 cursor-pointer select-none">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-heart text-red-400 dark:text-red-300 text-sm"></i>
+                                    <span class="font-semibold text-sm text-gray-800 dark:text-white">Friends</span>
+                                </div>
+                                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform group-open:rotate-180"></i>
+                            </summary>
+                            <div class="px-3 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700">
+                                <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="faves" placeholder="Comma-separated extIds">
+                            </div>
+                        </details>
+                    </div>
                 `;
             }
 
@@ -1366,6 +1453,10 @@
                 // Hide banner if shown
                 const banner = document.getElementById('select-yourself-banner');
                 if (banner) banner.classList.add('hidden');
+                
+                // Hide "No Me Record" modal if shown
+                const noMeRecordModal = document.getElementById('no-me-record-modal');
+                if (noMeRecordModal) noMeRecordModal.classList.add('hidden');
                 
                 // Force refresh state and re-render to ensure badges are updated
                 const freshState = getRosterState();
@@ -1483,7 +1574,11 @@
                     if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
                     // Reset banner dismissal when clearing
                     localStorage.removeItem('select-yourself-banner-dismissed');
+                    // Reset modal dismissal so it can show again
+                    sessionStorage.removeItem('no-me-record-modal-dismissed');
                     renderList();
+                    // Check and show modal after clearing
+                    checkAndShowNoMeModal();
                 }
             };
             
@@ -1595,26 +1690,35 @@
             // Search input handlers
             const clearSearchBtn = document.getElementById('clear-search-btn');
             
-            searchInput.oninput = () => {
-                renderList();
-                // Show/hide clear button based on input
+            function updateClearButtonVisibility() {
                 if (clearSearchBtn) {
-                    if (searchInput.value.trim()) {
+                    const hasValue = searchInput.value.trim().length > 0;
+                    if (hasValue) {
                         clearSearchBtn.classList.remove('hidden');
                     } else {
                         clearSearchBtn.classList.add('hidden');
                     }
                 }
+            }
+            
+            searchInput.oninput = () => {
+                updateClearButtonVisibility();
+                renderList();
             };
             
             if (clearSearchBtn) {
-                clearSearchBtn.onclick = () => {
+                clearSearchBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     searchInput.value = '';
-                    clearSearchBtn.classList.add('hidden');
+                    updateClearButtonVisibility();
                     renderList();
                     searchInput.focus();
                 };
             }
+            
+            // Initialize clear button visibility on page load
+            updateClearButtonVisibility();
             
             // Warning modal handlers
             const changeSelfModal = document.getElementById('change-self-warning-modal');
@@ -1675,6 +1779,47 @@
                 renderList();
             };
 
+            // No "Me" Record Modal Handler
+            const noMeRecordModal = document.getElementById('no-me-record-modal');
+            const closeNoMeModalBtn = document.getElementById('close-no-me-modal-btn');
+            
+            if (closeNoMeModalBtn) {
+                closeNoMeModalBtn.onclick = () => {
+                    if (noMeRecordModal) noMeRecordModal.classList.add('hidden');
+                };
+            }
+            
+            // Close modal on backdrop click
+            if (noMeRecordModal) {
+                noMeRecordModal.onclick = (e) => {
+                    if (e.target === noMeRecordModal) {
+                        noMeRecordModal.classList.add('hidden');
+                    }
+                };
+            }
+            
+            function checkAndShowNoMeModal() {
+                const state = getRosterState();
+                if (!state.selfArcher && noMeRecordModal) {
+                    // Check if modal was already dismissed in this session
+                    const dismissed = sessionStorage.getItem('no-me-record-modal-dismissed') === 'true';
+                    if (!dismissed) {
+                        noMeRecordModal.classList.remove('hidden');
+                    }
+                } else if (noMeRecordModal) {
+                    noMeRecordModal.classList.add('hidden');
+                }
+            }
+            
+            // Update close button to also set session storage
+            if (closeNoMeModalBtn) {
+                const originalHandler = closeNoMeModalBtn.onclick;
+                closeNoMeModalBtn.onclick = () => {
+                    sessionStorage.setItem('no-me-record-modal-dismissed', 'true');
+                    if (noMeRecordModal) noMeRecordModal.classList.add('hidden');
+                };
+            }
+
             (async function init() {
                 // Try to load from MySQL first to ensure we have UUIDs
                 try {
@@ -1688,6 +1833,9 @@
                 }
                 
                 renderList();
+                
+                // Check and show modal if no "Me" record
+                checkAndShowNoMeModal();
                 
                 try {
                     await ArcherModule.flushPending();

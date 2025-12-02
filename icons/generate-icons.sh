@@ -39,3 +39,4 @@ echo "1. Review the generated icons"
 echo "2. Ensure they look good at all sizes"
 echo "3. The manifest.json is already configured to use these icons"
 
+

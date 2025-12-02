@@ -71,3 +71,4 @@ After adding icons, test the PWA installation:
 3. Verify the icon appears correctly on the home screen
 4. Check that the splash screen shows the correct icon
 
+
