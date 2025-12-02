@@ -5970,59 +5970,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 return true;
             }
             
-            // Fetch full bale data
-            const baleResponse = await fetch(`${API_BASE}/rounds/${roundId}/bales/${baleNumber}/archers`);
-            if (!baleResponse.ok) {
-                throw new Error(`Failed to fetch bale data: ${baleResponse.status}`);
-            }
-            
-            const baleData = await baleResponse.json();
-            
-            // Reconstruct archers
-            state.archers = baleData.archers.map(archer => {
-                const scoreSheet = createEmptyScoreSheet(state.totalEnds);
-                const endsList = Array.isArray(archer.scorecard?.ends) ? archer.scorecard.ends : [];
-                endsList.forEach(end => {
-                    const idx = Math.max(0, Math.min(state.totalEnds - 1, (end.endNumber || 1) - 1));
-                    scoreSheet[idx] = [end.a1 || '', end.a2 || '', end.a3 || ''];
-                });
-                const provisional = {
-                    extId: archer.extId,
-                    firstName: archer.firstName,
-                    lastName: archer.lastName,
-                    school: archer.school
-                };
-                const extId = getExtIdFromArcher(provisional);
-                const overrides = {
-                    extId,
-                    targetAssignment: archer.targetAssignment || archer.target,
-                    baleNumber: archer.baleNumber || baleNumber,
-                    level: archer.level,
-                    gender: archer.gender,
-                    division: state.divisionCode || archer.division,
-                    scores: scoreSheet
-                };
-                const rosterPayload = Object.assign({}, provisional, {
-                    level: archer.level,
-                    gender: archer.gender,
-                    division: state.divisionCode || archer.division
-                });
-                const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
-                stateArcher.roundArcherId = archer.roundArcherId;
-                return stateArcher;
+            // Use centralized hydration function (Phase 0)
+            console.log('[handleStandaloneRoundLink] Using centralized hydrateScorecardGroup()');
+            const entryCode = state.roundEntryCode || null;
+            await hydrateScorecardGroup(roundId, baleNumber, {
+                entryCode: entryCode,
+                mergeLocal: false,
+                clearStateFirst: true
             });
             
-            // Load existing scores
-            await loadExistingScoresForArchers();
+            // Set standalone-specific state (after hydration, since it clears state)
+            state.isStandalone = true;
+            state.selectedEventId = null;
+            state.activeEventId = null;
+            state.roundEntryCode = isEntryCode ? roundIdOrCode : (roundData?.entryCode || null);
+            state.assignmentMode = 'pre-assigned';
             
             // Initialize LiveUpdates if enabled
             if (getLiveEnabled()) {
                 await ensureLiveRoundReady({ promptForCode: false });
             }
-            
-            // Save session
-            saveCurrentBaleSession();
-            saveData();
             
             // Go to scoring view
             state.currentView = 'scoring';
