@@ -193,7 +193,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         $history = [];
         
         // Get all ranking rounds this archer participated in (including standalone rounds)
-    $rounds = $pdo->prepare('
+        $rounds = $pdo->prepare('
         SELECT 
             e.id AS event_id,
             e.name AS event_name,
@@ -226,14 +226,14 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         
         // Add type field and format for history (include standalone round info)
         foreach ($rankingRounds as $round) {
-        $round['type'] = 'ranking';
-        // For standalone rounds, set event_name to indicate standalone
-        if (!$round['event_id']) {
-            $round['event_name'] = 'Standalone Round';
-            $round['is_standalone'] = true;
-        } else {
-            $round['is_standalone'] = false;
-        }
+            $round['type'] = 'ranking';
+            // For standalone rounds, set event_name to indicate standalone
+            if (!$round['event_id']) {
+                $round['event_name'] = 'Standalone Round';
+                $round['is_standalone'] = true;
+            } else {
+                $round['is_standalone'] = false;
+            }
             $history[] = $round;
         }
         
@@ -315,7 +315,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         
         // Get all team matches this archer participated in
         $teamMatches = $pdo->prepare('
-        SELECT 
+            SELECT 
             tm.id AS match_id,
             tm.event_id,
             tm.date AS event_date,
@@ -352,47 +352,47 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         
         // Format team matches for history
         foreach ($teamResults as $match) {
-        $isTeam1 = $match['team1_id'] === $match['archer_team_id'];
-        $myTeam = $isTeam1 ? [
-            'id' => $match['team1_id'],
-            'name' => $match['team1_name'],
-            'school' => $match['team1_school'],
-            'sets_won' => $match['team1_sets_won'],
-            'winner' => $match['team1_winner']
-        ] : [
-            'id' => $match['team2_id'],
-            'name' => $match['team2_name'],
-            'school' => $match['team2_school'],
-            'sets_won' => $match['team2_sets_won'],
-            'winner' => $match['team2_winner']
-        ];
-        $opponentTeam = $isTeam1 ? [
-            'name' => $match['team2_name'],
-            'school' => $match['team2_school'],
-            'sets_won' => $match['team2_sets_won']
-        ] : [
-            'name' => $match['team1_name'],
-            'school' => $match['team1_school'],
-            'sets_won' => $match['team1_sets_won']
-        ];
-        
+            $isTeam1 = $match['team1_id'] === $match['archer_team_id'];
+            $myTeam = $isTeam1 ? [
+                'id' => $match['team1_id'],
+                'name' => $match['team1_name'],
+                'school' => $match['team1_school'],
+                'sets_won' => $match['team1_sets_won'],
+                'winner' => $match['team1_winner']
+            ] : [
+                'id' => $match['team2_id'],
+                'name' => $match['team2_name'],
+                'school' => $match['team2_school'],
+                'sets_won' => $match['team2_sets_won'],
+                'winner' => $match['team2_winner']
+            ];
+            $opponentTeam = $isTeam1 ? [
+                'name' => $match['team2_name'],
+                'school' => $match['team2_school'],
+                'sets_won' => $match['team2_sets_won']
+            ] : [
+                'name' => $match['team1_name'],
+                'school' => $match['team1_school'],
+                'sets_won' => $match['team1_sets_won']
+            ];
+            
             $opponentDisplay = $opponentTeam['name'] ?: $opponentTeam['school'] ?: 'Opponent Team';
             
             $history[] = [
                 'type' => 'team',
-            'match_id' => $match['match_id'],
-            'event_id' => $match['event_id'],
-            'event_name' => $match['event_name'] ?: 'Team Match',
-            'event_date' => $match['event_date'],
-            'card_status' => $match['card_status'],
-            'locked' => $match['locked'],
-            'team_name' => $myTeam['name'] ?: $myTeam['school'] ?: 'My Team',
-            'opponent_team' => $opponentDisplay,
-            'sets_won' => $myTeam['sets_won'],
-            'opponent_sets_won' => $opponentTeam['sets_won'],
-            'final_score' => 0, // Team matches don't have individual scores
-            'is_winner' => $myTeam['winner'],
-            'ends_completed' => 0, // Not applicable for matches
+                'match_id' => $match['match_id'],
+                'event_id' => $match['event_id'],
+                'event_name' => $match['event_name'] ?: 'Team Match',
+                'event_date' => $match['event_date'],
+                'card_status' => $match['card_status'],
+                'locked' => $match['locked'],
+                'team_name' => $myTeam['name'] ?: $myTeam['school'] ?: 'My Team',
+                'opponent_team' => $opponentDisplay,
+                'sets_won' => $myTeam['sets_won'],
+                'opponent_sets_won' => $opponentTeam['sets_won'],
+                'final_score' => 0, // Team matches don't have individual scores
+                'is_winner' => $myTeam['winner'],
+                'ends_completed' => 0, // Not applicable for matches
                 'total_tens' => 0,
                 'total_xs' => 0
             ];
