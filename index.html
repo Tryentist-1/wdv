@@ -275,14 +275,14 @@
         <!-- Arrow pointing up to Archer Details button (shown when no self selected) -->
         <div id="welcome-self" class="text-center"></div>
         <!-- Prominent banner when user hasn't selected themselves -->
-        <div id="select-yourself-prompt" class="hidden px-4 py-4 bg-gradient-to-r from-primary to-primary-dark dark:from-primary dark:to-primary-dark text-white rounded-lg shadow-lg">
+        <div id="select-yourself-prompt" class="hidden px-4 py-4 bg-gradient-to-r from-primary to-primary-dark dark:from-primary dark:to-primary-dark text-red-600 dark:text-white rounded-lg shadow-lg">
           <div class="flex items-start gap-3">
             <div class="flex-shrink-0 pt-1">
               <i class="fas fa-user-circle text-2xl"></i>
             </div>
             <div class="flex-1 min-w-0">
               <h3 class="font-bold text-lg mb-1">Select Yourself First</h3>
-              <p class="text-sm text-white/90">Before you can start scoring, you need to select your archer profile from the list.</p>
+              <p class="text-sm text-red-600/90 dark:text-white/90">Before you can start scoring, you need to select your archer profile from the list.</p>
             </div>
             <button id="dismiss-select-prompt" class="flex-shrink-0 px-2 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Dismiss">
               <i class="fas fa-times"></i>
@@ -824,7 +824,7 @@
           const archerDetailsBtn = document.getElementById('archer-details-btn');
           if (archerDetailsBtn) {
             welcomeEl.innerHTML = `
-              <div class="flex flex-col items-center justify-center gap-1 text-white py-2">
+              <div class="flex flex-col items-center justify-center gap-1 text-red-600 dark:text-white py-2">
                 <i class="fas fa-angles-up animate-bounce text-3xl"></i>
                 <span class="text-sm font-semibold">Tap "Archer Details" above</span>
               </div>
@@ -891,7 +891,7 @@
             welcomeEl.innerHTML = `
               <div class="relative">
                 <div class="text-sm text-gray-500 dark:text-gray-400 italic animate-pulse mb-2">👆 Select yourself to get started</div>
-                <div class="flex items-center justify-center gap-2 text-primary dark:text-primary-light">
+                <div class="flex items-center justify-center gap-2 text-red-600 dark:text-white">
                   <i class="fas fa-arrow-down animate-bounce text-xl"></i>
                   <span class="text-sm font-semibold">Tap "Archer Details" above</span>
                 </div>
