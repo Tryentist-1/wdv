@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generate Placeholder PWA Icons</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    .icon-preview {
+      display: inline-block;
+      margin: 10px;
+      text-align: center;
+    }
+    canvas {
+      border: 1px solid #ddd;
+      display: block;
+      margin: 10px auto;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <h1>PWA Icon Generator</h1>
+  <p>This tool generates placeholder icons for the OAS Score & Tools PWA.</p>
+  
+  <div id="previews"></div>
+  
+  <div style="text-align: center; margin: 30px 0;">
+    <button onclick="generateAllIcons()">Generate All Icons</button>
+    <button onclick="downloadAll()">Download All as ZIP</button>
+  </div>
+
+  <script>
+    const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+    const icons = {};
+
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      canvas.width = size;
+      canvas.height = size;
+      
+      // Background gradient
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#2563eb');
+      gradient.addColorStop(1, '#1d4ed8');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      
+      // Draw archery target/bullseye
+      const centerX = size / 2;
+      const centerY = size / 2;
+      const maxRadius = size * 0.4;
+      
+      // Outer ring
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, maxRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Middle ring
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, maxRadius * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Center
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, maxRadius * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Add "OAS" text for larger sizes
+      if (size >= 128) {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${size * 0.15}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('OAS', centerX, centerY + size * 0.35);
+      }
+    }
+
+    function generateIcon(size) {
+      const canvas = document.createElement('canvas');
+      drawIcon(canvas, size);
+      return canvas;
+    }
+
+    function generateAllIcons() {
+      const previews = document.getElementById('previews');
+      previews.innerHTML = '';
+      
+      sizes.forEach(size => {
+        const canvas = generateIcon(size);
+        icons[size] = canvas;
+        
+        const div = document.createElement('div');
+        div.className = 'icon-preview';
+        div.innerHTML = `
+          <canvas id="icon-${size}" width="${size}" height="${size}"></canvas>
+          <div>${size}x${size}</div>
+        `;
+        previews.appendChild(div);
+        
+        const previewCanvas = document.getElementById(`icon-${size}`);
+        const previewCtx = previewCanvas.getContext('2d');
+        previewCanvas.width = size;
+        previewCanvas.height = size;
+        previewCtx.drawImage(canvas, 0, 0);
+      });
+    }
+
+    function downloadIcon(size) {
+      const canvas = icons[size];
+      if (!canvas) return;
+      
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `icon-${size}x${size}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+
+    async function downloadAll() {
+      for (const size of sizes) {
+        if (!icons[size]) {
+          icons[size] = generateIcon(size);
+        }
+        await new Promise(resolve => {
+          icons[size].toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `icon-${size}x${size}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            setTimeout(resolve, 100);
+          });
+        });
+      }
+      alert('All icons downloaded! Place them in the icons/ directory.');
+    }
+
+    // Generate previews on load
+    window.addEventListener('load', generateAllIcons);
+  </script>
+</body>
+</html>
+
