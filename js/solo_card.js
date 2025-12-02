@@ -253,68 +253,280 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Phase 2: Restore match from database if matchId exists
-    async function restoreMatchFromDatabase() {
-        if (!state.matchId || !window.LiveUpdates) return false;
+    // =====================================================
+    // PHASE 0: Centralized Data Hydration Functions
+    // Following DATA_SYNCHRONIZATION_STRATEGY.md rules
+    // =====================================================
+    
+    /**
+     * Validate UUID format
+     * Rule 5: UUID-Only for Entity Identification
+     */
+    function isValidUUID(str) {
+        if (!str || typeof str !== 'string') return false;
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    }
+    
+    /**
+     * Normalize entity ID to UUID format
+     * Rule 5: UUID-Only for Entity Identification
+     */
+    function normalizeEntityId(entity, fieldName = 'id') {
+        const id = typeof entity === 'string' ? entity : (entity?.id || entity?.matchId);
+        
+        if (!id) {
+            throw new Error(`Entity missing ${fieldName}`);
+        }
+        
+        if (!isValidUUID(id)) {
+            throw new Error(`Invalid UUID format: ${id}`);
+        }
+        
+        return id;
+    }
+    
+    /**
+     * Clear Solo Match state before hydration
+     * Rule 4: Clear State Before Hydration
+     */
+    function clearSoloMatchState() {
+        console.log('[clearSoloMatchState] Clearing state before hydration');
+        state.matchId = null;
+        state.archer1 = null;
+        state.archer2 = null;
+        state.scores = { a1: Array(5).fill(null).map(() => ['', '', '']), a2: Array(5).fill(null).map(() => ['', '', '']), so: { a1: '', a2: '' } };
+        state.matchArcherIds = {};
+        state.eventId = null;
+        state.bracketId = null;
+        state.location = '';
+        state.syncStatus = {};
+        state.currentView = 'setup';
+    }
+    
+    /**
+     * Validate Solo Match integrity
+     * Rule 3: Atomic Data Units - Verify all data belongs to this match
+     * @param {Object} matchData - Match data from server
+     * @param {string} expectedMatchId - Expected match ID
+     */
+    function validateSoloMatch(matchData, expectedMatchId) {
+        if (!matchData || !matchData.match) {
+            throw new Error('Match data is missing');
+        }
+        
+        const match = matchData.match;
+        
+        // Verify MatchID matches
+        if (match.id && match.id !== expectedMatchId) {
+            throw new Error(`Match ID mismatch: expected ${expectedMatchId}, got ${match.id}`);
+        }
+        
+        // Verify we have exactly 2 archers
+        if (!match.archers || !Array.isArray(match.archers) || match.archers.length < 2) {
+            throw new Error('Match must have exactly 2 archers');
+        }
+        
+        // Verify archers have valid positions
+        const positions = match.archers.map(a => a.position).sort();
+        if (positions[0] !== 1 || positions[1] !== 2) {
+            throw new Error('Match archers must have positions 1 and 2');
+        }
+        
+        // Verify archers have UUIDs
+        match.archers.forEach((archer, index) => {
+            if (!archer.archer_id || !isValidUUID(archer.archer_id)) {
+                console.warn(`[validateSoloMatch] Archer ${index + 1} has invalid UUID: ${archer.archer_id}`);
+            }
+        });
+        
+        console.log('[validateSoloMatch] ✅ Validation passed');
+    }
+    
+    /**
+     * Fetch Solo Match from server
+     * Rule 3: Atomic Data Units - Fetch Complete Units from Server
+     * @param {string} matchId - Match UUID
+     * @returns {Promise<Object>} Match data
+     */
+    async function fetchSoloMatch(matchId) {
+        console.log('[fetchSoloMatch] Fetching Solo Match:', matchId);
+        
+        // Validate input
+        if (!matchId || !isValidUUID(matchId)) {
+            throw new Error(`Invalid matchId: ${matchId}`);
+        }
+        
+        if (!window.LiveUpdates) {
+            throw new Error('LiveUpdates is not available');
+        }
+        
+        const matchData = await window.LiveUpdates.request(`/solo-matches/${matchId}`, 'GET');
+        
+        if (!matchData || !matchData.match) {
+            throw new Error(`Match not found: ${matchId}`);
+        }
+        
+        console.log('[fetchSoloMatch] ✅ Fetched Solo Match:', {
+            matchId: matchData.match.id,
+            status: matchData.match.status,
+            archerCount: matchData.match.archers?.length || 0
+        });
+        
+        return matchData;
+    }
+    
+    /**
+     * Centralized hydration function for Solo Match
+     * Rule 6: Centralized Hydration Function
+     * 
+     * @param {string} matchId - Match UUID
+     * @param {Object} options - Hydration options
+     *   - mergeLocal: Whether to merge with local scores (default: false)
+     *   - clearStateFirst: Whether to clear state before hydration (default: true)
+     * @returns {Promise<Object>} Hydrated state
+     */
+    async function hydrateSoloMatch(matchId, options = {}) {
+        console.log('[hydrateSoloMatch] ========== START ==========');
+        console.log('[hydrateSoloMatch] Parameters:', { matchId, options });
         
         try {
-            const match = await window.LiveUpdates.request(`/solo-matches/${state.matchId}`, 'GET');
-            if (!match || !match.match) return false;
+            // 1. Clear state first (Rule 4)
+            if (options.clearStateFirst !== false) {
+                clearSoloMatchState();
+            }
             
-            console.log('✅ Restored solo match from database:', state.matchId);
+            // 2. Validate inputs (Rule 5)
+            const normalizedMatchId = normalizeEntityId(matchId, 'matchId');
             
-            // Restore archers from match data
-            const matchArchers = match.match.archers || [];
-            if (matchArchers.length >= 2) {
-                const a1Data = matchArchers.find(a => a.position === 1);
-                const a2Data = matchArchers.find(a => a.position === 2);
-                
-                if (a1Data && a2Data) {
-                    // Find archers in master list by name
-                    const masterList = ArcherModule.loadList();
-                    const a1 = masterList.find(a => 
-                        `${a.first} ${a.last}`.toLowerCase() === a1Data.archer_name.toLowerCase()
-                    );
-                    const a2 = masterList.find(a => 
-                        `${a.first} ${a.last}`.toLowerCase() === a2Data.archer_name.toLowerCase()
-                    );
-                    
-                    if (a1 && a2) {
-                        a1.id = `${a1.first}-${a1.last}`;
-                        a2.id = `${a2.first}-${a2.last}`;
-                        state.archer1 = a1;
-                        state.archer2 = a2;
-                        state.matchArcherIds = {
-                            a1: a1Data.id,
-                            a2: a2Data.id
-                        };
-                    }
-                    
-                    // Restore scores from database
-                    state.scores = { a1: Array(5).fill(null).map(() => ['', '', '']), a2: Array(5).fill(null).map(() => ['', '', '']), so: { a1: '', a2: '' } };
-                    matchArchers.forEach(archerData => {
-                        const archerKey = archerData.position === 1 ? 'a1' : 'a2';
-                        if (archerData.sets && archerData.sets.length > 0) {
-                            archerData.sets.forEach(set => {
-                                if (set.set_number <= 5) {
-                                    const setIdx = set.set_number - 1;
-                                    state.scores[archerKey][setIdx] = [set.a1 || '', set.a2 || '', set.a3 || ''];
-                                } else if (set.set_number === 6) {
-                                    // Shoot-off
-                                    state.scores.so[archerKey] = set.a1 || '';
-                                }
-                            });
+            // 3. Fetch atomic unit from server (Rule 3)
+            const matchData = await fetchSoloMatch(normalizedMatchId);
+            
+            // 4. Validate atomic unit integrity (Rule 3)
+            validateSoloMatch(matchData, normalizedMatchId);
+            
+            const match = matchData.match;
+            
+            // 5. Populate metadata from server (Rule 1)
+            state.matchId = normalizedMatchId;
+            state.eventId = match.event_id || null;
+            state.bracketId = match.bracket_id || null;
+            state.location = match.location || '';
+            
+            // 6. Build archers from match data (use UUIDs, not names)
+            const matchArchers = match.archers || [];
+            if (matchArchers.length < 2) {
+                throw new Error('Match must have at least 2 archers');
+            }
+            
+            const a1Data = matchArchers.find(a => a.position === 1);
+            const a2Data = matchArchers.find(a => a.position === 2);
+            
+            if (!a1Data || !a2Data) {
+                throw new Error('Match missing archer at position 1 or 2');
+            }
+            
+            // Find archers in master list by UUID (preferred) or fallback to name
+            const masterList = ArcherModule.loadList();
+            let a1 = masterList.find(a => {
+                const archerId = a.id || a.archerId;
+                return archerId && archerId === a1Data.archer_id;
+            });
+            let a2 = masterList.find(a => {
+                const archerId = a.id || a.archerId;
+                return archerId && archerId === a2Data.archer_id;
+            });
+            
+            // Fallback to name matching if UUID not found
+            if (!a1) {
+                a1 = masterList.find(a => 
+                    `${a.first} ${a.last}`.toLowerCase() === a1Data.archer_name.toLowerCase()
+                );
+            }
+            if (!a2) {
+                a2 = masterList.find(a => 
+                    `${a.first} ${a.last}`.toLowerCase() === a2Data.archer_name.toLowerCase()
+                );
+            }
+            
+            if (!a1 || !a2) {
+                throw new Error(`Could not find archers in master list: ${a1Data.archer_name}, ${a2Data.archer_name}`);
+            }
+            
+            // Ensure archer IDs are set
+            a1.id = a1.id || `${a1.first}-${a1.last}`;
+            a2.id = a2.id || `${a2.first}-${a2.last}`;
+            
+            state.archer1 = a1;
+            state.archer2 = a2;
+            state.matchArcherIds = {
+                a1: a1Data.id,
+                a2: a2Data.id
+            };
+            
+            // 7. Build scores from server data
+            state.scores = {
+                a1: Array(5).fill(null).map(() => ['', '', '']),
+                a2: Array(5).fill(null).map(() => ['', '', '']),
+                so: { a1: '', a2: '' }
+            };
+            
+            matchArchers.forEach(archerData => {
+                const archerKey = archerData.position === 1 ? 'a1' : 'a2';
+                if (archerData.sets && Array.isArray(archerData.sets)) {
+                    archerData.sets.forEach(set => {
+                        if (set.set_number >= 1 && set.set_number <= 5) {
+                            const setIdx = set.set_number - 1;
+                            state.scores[archerKey][setIdx] = [
+                                set.a1 || '',
+                                set.a2 || '',
+                                set.a3 || ''
+                            ];
+                        } else if (set.set_number === 6) {
+                            // Shoot-off
+                            state.scores.so[archerKey] = set.a1 || '';
                         }
                     });
-                    
-                    state.currentView = 'scoring';
-                    return true;
                 }
-            }
-        } catch (e) {
-            console.error('Failed to restore match from database:', e);
+            });
+            
+            // 8. Set current view
+            state.currentView = 'scoring';
+            
+            // 9. Save session for recovery
+            saveData();
+            
+            console.log('[hydrateSoloMatch] ✅ Hydration complete:', {
+                matchId: state.matchId,
+                archer1: `${state.archer1?.first} ${state.archer1?.last}`,
+                archer2: `${state.archer2?.first} ${state.archer2?.last}`,
+                setsScored: state.scores.a1.filter(s => s.some(v => v)).length
+            });
+            console.log('[hydrateSoloMatch] ========== END ==========');
+            
+            return state;
+            
+        } catch (error) {
+            console.error('[hydrateSoloMatch] ❌ Error:', error);
+            throw error;
         }
-        return false;
+    }
+    
+    // Phase 2: Restore match from database if matchId exists
+    // Now uses centralized hydration function (Phase 0)
+    async function restoreMatchFromDatabase() {
+        if (!state.matchId) return false;
+        
+        try {
+            console.log('[restoreMatchFromDatabase] Using centralized hydrateSoloMatch()');
+            await hydrateSoloMatch(state.matchId, {
+                mergeLocal: false,
+                clearStateFirst: true
+            });
+            return true;
+        } catch (error) {
+            console.error('[restoreMatchFromDatabase] Failed to restore match:', error);
+            return false;
+        }
     }
 
     // --- LOGIC ---
@@ -1423,11 +1635,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const eventId = urlParams.get('event');
         const bracketId = urlParams.get('bracket');
         
-        // If match ID is in URL, load that match
+        // If match ID is in URL, load that match using centralized hydration
         if (matchId) {
-            state.matchId = matchId;
-            const restored = await restoreMatchFromDatabase();
-            if (restored) {
+            try {
+                console.log('[init] Loading match from URL parameter using hydrateSoloMatch():', matchId);
+                await hydrateSoloMatch(matchId, {
+                    mergeLocal: false,
+                    clearStateFirst: true
+                });
                 console.log('✅ Match loaded from URL parameter:', matchId);
                 renderScoringView();
                 // Flush any pending queue
@@ -1436,7 +1651,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.warn('Queue flush failed:', e)
                     );
                 }
-            } else {
+            } catch (error) {
                 console.warn('⚠️ Match not found in database:', matchId);
                 alert('Match not found. Please check the match ID.');
             }
