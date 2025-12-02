@@ -400,12 +400,19 @@
 
         console.log('Match data loaded:', matchData);
 
+        // Build editUrl for Scorecard Editor (coach-only)
+        let editUrl = null;
+        if (match.match_id) {
+          editUrl = `scorecard_editor.html?match=${match.match_id}&mode=coach`;
+        }
+
         // Show modal with match details
         SoloMatchView.showMatchModal(matchData, {
           onRemake: () => {
             // Navigate to solo card for remake
             window.location.href = `solo_card.html?match=${match.match_id}`;
-          }
+          },
+          editUrl: editUrl
         });
       } catch (error) {
         console.error('Error loading solo match:', error);

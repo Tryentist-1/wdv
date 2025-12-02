@@ -306,29 +306,46 @@ const SoloMatchView = (() => {
       </div>
     `;
 
-    // Footer with remake button
-    if (showFooter && showRemakeButton) {
-      html += `
-        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
-          <button id="remake-match-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">
-            Remake Match
-          </button>
-        </div>
-      `;
-    }
+    // Footer removed - handled in modal footer for better control
 
     return html;
+  }
+
+  /**
+   * Check if current user is a coach
+   */
+  function isCoach() {
+    // Helper to get cookie value
+    function getCookie(name) {
+      const nameEQ = name + "=";
+      const ca = document.cookie.split(';');
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+      }
+      return null;
+    }
+    
+    return !!(
+      localStorage.getItem('coach_passcode') || 
+      localStorage.getItem('coach_api_key') ||
+      getCookie('coach_auth')
+    );
   }
 
   /**
    * Show a solo match in a modal
    * 
    * @param {Object} matchData - Match data from API
-   * @param {Object} options - Display options + modal options (onClose, onRemake callbacks)
+   * @param {Object} options - Display options + modal options (onClose, onRemake, editUrl callbacks)
    * @returns {HTMLElement} The modal element
    */
   function showMatchModal(matchData, options = {}) {
-    const { onClose, onRemake, ...matchOptions } = options;
+    const { onClose, onRemake, editUrl, ...matchOptions } = options;
+    
+    // Check if user is coach
+    const userIsCoach = isCoach();
     
     // Create modal if it doesn't exist
     let modal = document.getElementById('solo-match-view-modal');
@@ -342,22 +359,66 @@ const SoloMatchView = (() => {
     
     const matchHTML = renderMatchCard(matchData, { ...matchOptions, showRemakeButton: !!onRemake });
     
+    // Build footer with Edit and Remake buttons
+    let footerHTML = '';
+    if (userIsCoach && editUrl) {
+      footerHTML = `
+        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+          <a href="${editUrl}" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px] flex items-center gap-2">
+            <i class="fas fa-edit"></i>
+            <span>Edit</span>
+          </a>
+          ${onRemake ? `
+          <button id="remake-match-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">
+            Remake Match
+          </button>
+          ` : ''}
+          <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">
+            Close
+          </button>
+        </div>
+      `;
+    } else if (onRemake) {
+      footerHTML = `
+        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+          <button id="remake-match-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">
+            Remake Match
+          </button>
+          <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">
+            Close
+          </button>
+        </div>
+      `;
+    } else {
+      footerHTML = `
+        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+          <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">
+            Close
+          </button>
+        </div>
+      `;
+    }
+    
     modal.innerHTML = `
       <div class="bg-white dark:bg-gray-900 rounded-lg shadow-2xl max-w-5xl w-full max-h-[85vh] overflow-y-auto relative p-6">
         <button class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full text-2xl font-bold transition-colors z-10">&times;</button>
         <div class="mt-8">
           ${matchHTML}
         </div>
+        ${footerHTML}
       </div>
     `;
     
-    const closeBtn = modal.querySelector('button');
-    closeBtn.onclick = () => {
-      modal.style.display = 'none';
-      if (onClose) onClose();
-    };
+    // Close button handlers (X button and footer Close button)
+    const closeButtons = modal.querySelectorAll('button:not(#remake-match-btn)');
+    closeButtons.forEach(btn => {
+      btn.onclick = () => {
+        modal.style.display = 'none';
+        if (onClose) onClose();
+      };
+    });
     
-    // Remake button handler
+    // Remake button handler (if exists)
     const remakeBtn = modal.querySelector('#remake-match-btn');
     if (remakeBtn && onRemake) {
       remakeBtn.onclick = () => {
