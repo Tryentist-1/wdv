@@ -1233,6 +1233,327 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // =====================================================
+    // PHASE 0: Centralized Data Hydration Functions
+    // Following DATA_SYNCHRONIZATION_STRATEGY.md rules
+    // =====================================================
+    
+    /**
+     * Clear all state before hydration to prevent ambiguity
+     * Rule 4: Clear State Before Hydration
+     */
+    function clearState() {
+        console.log('[clearState] Clearing state before hydration');
+        state.roundId = null;
+        state.baleNumber = null;
+        state.archers = [];
+        state.divisionCode = null;
+        state.divisionRoundId = null;
+        state.currentEnd = 1;
+        state.activeEventId = null;
+        state.selectedEventId = null;
+        state.eventName = '';
+        // Clear localStorage session (keep offline queue)
+        localStorage.removeItem('current_bale_session');
+    }
+    
+    /**
+     * Validate UUID format
+     * Rule 5: UUID-Only for Entity Identification
+     */
+    function isValidUUID(str) {
+        if (!str || typeof str !== 'string') return false;
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    }
+    
+    /**
+     * Normalize entity ID to UUID format
+     * Rule 5: UUID-Only for Entity Identification
+     */
+    function normalizeEntityId(entity, fieldName = 'id') {
+        const id = typeof entity === 'string' ? entity : (entity?.id || entity?.archerId || entity?.roundId || entity?.matchId);
+        
+        if (!id) {
+            throw new Error(`Entity missing ${fieldName}`);
+        }
+        
+        if (!isValidUUID(id)) {
+            throw new Error(`Invalid UUID format: ${id}`);
+        }
+        
+        return id;
+    }
+    
+    /**
+     * Validate Scorecard Group integrity
+     * Rule 3: Atomic Data Units - Verify all archers belong to this Scorecard Group
+     * @param {Object} scorecardGroup - Scorecard group data from server
+     * @param {string} roundId - Expected round ID
+     * @param {number} baleNumber - Expected bale number
+     */
+    function validateScorecardGroup(scorecardGroup, roundId, baleNumber) {
+        if (!scorecardGroup) {
+            throw new Error('Scorecard group data is missing');
+        }
+        
+        // Verify RoundID matches
+        if (scorecardGroup.roundId && scorecardGroup.roundId !== roundId) {
+            throw new Error(`Round ID mismatch: expected ${roundId}, got ${scorecardGroup.roundId}`);
+        }
+        
+        // Verify all archers belong to this Scorecard Group
+        if (scorecardGroup.archers && Array.isArray(scorecardGroup.archers)) {
+            scorecardGroup.archers.forEach((archer, index) => {
+                if (archer.baleNumber !== baleNumber && archer.baleNumber !== null && archer.baleNumber !== undefined) {
+                    console.warn(`[validateScorecardGroup] Archer ${index} (${archer.archerId || archer.id}) has bale ${archer.baleNumber}, expected ${baleNumber}`);
+                    // Don't throw - just warn (some archers might have NULL bale_number)
+                }
+                
+                // Verify archer has valid UUID
+                const archerId = archer.archerId || archer.id;
+                if (archerId && !isValidUUID(archerId)) {
+                    console.warn(`[validateScorecardGroup] Archer ${index} has invalid UUID: ${archerId}`);
+                }
+            });
+        }
+        
+        // Verify division is set
+        if (!scorecardGroup.division) {
+            console.warn('[validateScorecardGroup] Scorecard Group missing division');
+        }
+        
+        console.log('[validateScorecardGroup] ✅ Validation passed');
+    }
+    
+    /**
+     * Fetch Scorecard Group from server
+     * Rule 3: Atomic Data Units - Fetch Complete Units from Server
+     * @param {string} roundId - Round UUID
+     * @param {number} baleNumber - Bale number
+     * @param {string} entryCode - Entry code for authentication
+     * @returns {Promise<Object>} Scorecard group data
+     */
+    async function fetchScorecardGroup(roundId, baleNumber, entryCode) {
+        console.log('[fetchScorecardGroup] Fetching Scorecard Group:', { roundId, baleNumber });
+        
+        // Validate inputs
+        if (!roundId || !isValidUUID(roundId)) {
+            throw new Error(`Invalid roundId: ${roundId}`);
+        }
+        if (!baleNumber || typeof baleNumber !== 'number') {
+            throw new Error(`Invalid baleNumber: ${baleNumber}`);
+        }
+        
+        const response = await fetch(`${API_BASE}/rounds/${roundId}/bales/${baleNumber}/archers`, {
+            headers: {
+                'X-Passcode': entryCode || ''
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch Scorecard Group: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Verify all archers belong to this Scorecard Group
+        if (data.archers && Array.isArray(data.archers)) {
+            const validatedArchers = data.archers.filter(archer => {
+                // Only include archers on this bale (allow NULL bale_number for unassigned)
+                return archer.baleNumber === baleNumber || 
+                       archer.baleNumber === null || 
+                       archer.baleNumber === undefined;
+            });
+            
+            // Warn if we filtered out any archers
+            if (validatedArchers.length !== data.archers.length) {
+                console.warn(`[fetchScorecardGroup] Filtered out ${data.archers.length - validatedArchers.length} archers not on bale ${baleNumber}`);
+            }
+            
+            data.archers = validatedArchers;
+        }
+        
+        console.log('[fetchScorecardGroup] ✅ Fetched Scorecard Group:', {
+            roundId: data.roundId || roundId,
+            baleNumber: baleNumber,
+            division: data.division,
+            archerCount: data.archers?.length || 0
+        });
+        
+        return data;
+    }
+    
+    /**
+     * Merge scores using sync status to determine source
+     * Rule 2: Scores Use "Last Write Wins" with Sync Status
+     * @param {Array} localScores - Local score array
+     * @param {Array} serverScores - Server score array
+     * @param {Object} syncStatus - Sync status per end (e.g., { endNumber: 'synced'|'pending'|'failed' })
+     * @returns {Array} Merged scores
+     */
+    function mergeScoresWithSyncStatus(localScores, serverScores, syncStatus = {}) {
+        const merged = [];
+        const maxEnds = Math.max(localScores?.length || 0, serverScores?.length || 0, state.totalEnds || 10);
+        
+        for (let i = 0; i < maxEnds; i++) {
+            const localEnd = localScores && localScores[i] ? localScores[i] : null;
+            const serverEnd = serverScores && serverScores[i] ? serverScores[i] : null;
+            const endNumber = i + 1;
+            const sync = syncStatus[endNumber] || '';
+            
+            // Check if score has data
+            const hasLocalData = localEnd && Array.isArray(localEnd) && localEnd.some(val => val !== '' && val !== null && val !== undefined);
+            const hasServerData = serverEnd && Array.isArray(serverEnd) && serverEnd.some(val => val !== '' && val !== null && val !== undefined);
+            
+            if (sync === 'synced') {
+                // Already synced - use server (authoritative)
+                merged[i] = serverEnd || localEnd || ['', '', ''];
+            } else if (sync === 'pending' || sync === 'failed') {
+                // Local has unsynced changes - keep local (will sync later)
+                merged[i] = localEnd || serverEnd || ['', '', ''];
+            } else if (hasServerData && !hasLocalData) {
+                // Server has data, local doesn't - use server
+                merged[i] = serverEnd;
+            } else if (hasLocalData) {
+                // Local has data - keep local (may be unsynced)
+                merged[i] = localEnd;
+            } else {
+                // Neither has data - empty
+                merged[i] = ['', '', ''];
+            }
+        }
+        
+        return merged;
+    }
+    
+    /**
+     * Centralized hydration function for Scorecard Group
+     * Rule 6: Centralized Hydration Function
+     * 
+     * @param {string} roundId - Round UUID
+     * @param {number} baleNumber - Bale number
+     * @param {Object} options - Hydration options
+     *   - entryCode: Entry code for authentication
+     *   - mergeLocal: Whether to merge with local scores (default: false)
+     *   - clearStateFirst: Whether to clear state before hydration (default: true)
+     * @returns {Promise<Object>} Hydrated state
+     */
+    async function hydrateScorecardGroup(roundId, baleNumber, options = {}) {
+        console.log('[hydrateScorecardGroup] ========== START ==========');
+        console.log('[hydrateScorecardGroup] Parameters:', { roundId, baleNumber, options });
+        
+        try {
+            // 1. Clear state first (Rule 4)
+            if (options.clearStateFirst !== false) {
+                clearState();
+            }
+            
+            // 2. Validate inputs (Rule 5)
+            const normalizedRoundId = normalizeEntityId(roundId, 'roundId');
+            if (!baleNumber || typeof baleNumber !== 'number') {
+                throw new Error(`Invalid baleNumber: ${baleNumber}`);
+            }
+            
+            // 3. Fetch atomic unit from server (Rule 3)
+            const entryCode = options.entryCode || getEventEntryCode();
+            const scorecardGroup = await fetchScorecardGroup(normalizedRoundId, baleNumber, entryCode);
+            
+            // 4. Validate atomic unit integrity (Rule 3)
+            validateScorecardGroup(scorecardGroup, normalizedRoundId, baleNumber);
+            
+            // 5. Populate metadata from server (Rule 1)
+            state.roundId = normalizedRoundId;
+            state.baleNumber = baleNumber;
+            state.divisionCode = scorecardGroup.division || null;
+            state.divisionRoundId = normalizedRoundId;
+            
+            // 6. Build archers from Scorecard Group
+            if (!scorecardGroup.archers || !Array.isArray(scorecardGroup.archers)) {
+                throw new Error('Scorecard Group missing archers array');
+            }
+            
+            // 7. Merge scores if option specified (Rule 2)
+            state.archers = scorecardGroup.archers.map(archer => {
+                const scoreSheet = createEmptyScoreSheet(state.totalEnds);
+                
+                // Extract scores from server data
+                const endsList = Array.isArray(archer.scorecard?.ends) ? archer.scorecard.ends : [];
+                endsList.forEach(end => {
+                    const idx = Math.max(0, Math.min(state.totalEnds - 1, (end.endNumber || 1) - 1));
+                    scoreSheet[idx] = [end.a1 || '', end.a2 || '', end.a3 || ''];
+                });
+                
+                // Merge with local if option specified
+                let mergedScores = scoreSheet;
+                if (options.mergeLocal) {
+                    // TODO: Get local scores and sync status for this archer
+                    // For now, just use server scores
+                    mergedScores = scoreSheet;
+                }
+                
+                // Build archer object
+                const provisional = {
+                    extId: archer.extId,
+                    firstName: archer.firstName || '',
+                    lastName: archer.lastName || '',
+                    school: archer.school || ''
+                };
+                const extId = getExtIdFromArcher(provisional);
+                
+                const overrides = {
+                    extId,
+                    targetAssignment: archer.targetAssignment || archer.target || 'A',
+                    baleNumber: archer.baleNumber || baleNumber,
+                    level: archer.level || '',
+                    gender: archer.gender || '',
+                    division: scorecardGroup.division || archer.division,
+                    scores: mergedScores
+                };
+                
+                const rosterPayload = Object.assign({}, provisional, {
+                    level: archer.level,
+                    gender: archer.gender,
+                    division: scorecardGroup.division || archer.division
+                });
+                
+                const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
+                stateArcher.roundArcherId = archer.roundArcherId;
+                stateArcher.archerId = archer.archerId || archer.id; // Ensure UUID is set
+                
+                return stateArcher;
+            });
+            
+            // 8. Set current end to first incomplete end or last end
+            let maxEnd = 0;
+            state.archers.forEach(archer => {
+                const completed = archer.scores.filter(end => 
+                    Array.isArray(end) && end.some(score => score !== '' && score !== null && score !== undefined)
+                ).length;
+                maxEnd = Math.max(maxEnd, completed);
+            });
+            state.currentEnd = Math.min(maxEnd + 1, state.totalEnds);
+            
+            // 9. Save session for recovery
+            saveCurrentBaleSession();
+            saveData();
+            
+            console.log('[hydrateScorecardGroup] ✅ Hydration complete:', {
+                roundId: state.roundId,
+                baleNumber: state.baleNumber,
+                division: state.divisionCode,
+                archerCount: state.archers.length,
+                currentEnd: state.currentEnd
+            });
+            console.log('[hydrateScorecardGroup] ========== END ==========');
+            
+            return state;
+            
+        } catch (error) {
+            console.error('[hydrateScorecardGroup] ❌ Error:', error);
+            throw error;
+        }
+    }
+    
     /**
      * Attempt to restore bale session from localStorage.
      * Fetches full bale group data from server if session exists.
