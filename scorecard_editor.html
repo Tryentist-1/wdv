@@ -339,6 +339,16 @@
         let isLocked = true;
         let isCoach = false;
         
+        // Helper function to check if user is coach
+        function checkIsCoach() {
+            return !!(
+                mode === 'coach' || 
+                localStorage.getItem('coach_passcode') || 
+                localStorage.getItem('coach_api_key') ||
+                getCookie('coach_auth')
+            );
+        }
+        
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const roundArcherId = urlParams.get('id');
@@ -350,7 +360,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             
             // Check if coach mode
-            isCoach = mode === 'coach' || localStorage.getItem('coach_passcode');
+            isCoach = checkIsCoach();
             
             // For practice mode, always allow editing (no lock controls)
             if (mode === 'practice') {
@@ -1514,8 +1524,11 @@
         
         document.getElementById('delete-btn')?.addEventListener('click', async () => {
             const card = currentScorecard;
-            const isLocked = card.locked || card.card_status === 'VER';
-            const canDelete = !isLocked && (
+            const isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VERIFIED';
+            const isVerified = card.card_status === 'VER' || card.card_status === 'VERIFIED';
+            
+            // Check if this is an abandoned/test card (original logic)
+            const isAbandoned = (
                 card.ends_completed === 0 || 
                 card.final_score === 0 || 
                 (card.ends_completed <= 3 && card.final_score < 100) ||
@@ -1523,12 +1536,21 @@
                 card.event_name?.toLowerCase().includes('practice')
             );
             
+            // Coaches can delete any card; others can only delete unlocked abandoned cards
+            const canDelete = isCoach || (!isLocked && isAbandoned);
+            
             if (!canDelete) {
                 alert('This scorecard cannot be deleted. Only unlocked, abandoned, or test scorecards can be deleted.');
                 return;
             }
             
-            if (!confirm(`Delete this scorecard from "${card.event_name}"?\n\nThis action cannot be undone.`)) {
+            // Extra confirmation for verified/locked cards (coach override)
+            let confirmMessage = `Delete this scorecard from "${card.event_name}"?\n\nThis action cannot be undone.`;
+            if (isCoach && isLocked) {
+                confirmMessage = `WARNING: This scorecard is ${isVerified ? 'VERIFIED' : 'LOCKED'}.\n\nDelete anyway?\n\nThis action cannot be undone.`;
+            }
+            
+            if (!confirm(confirmMessage)) {
                 return;
             }
             
@@ -1621,8 +1643,8 @@
                 document.getElementById('void-option').classList.remove('hidden');
             }
             
-            // Delete option - show if can delete
-            if (canDelete) {
+            // Delete option - show if can delete OR if coach (coaches can override)
+            if (canDelete || isCoach) {
                 document.getElementById('delete-option').classList.remove('hidden');
             } else {
                 document.getElementById('delete-option').classList.add('hidden');
@@ -1828,8 +1850,11 @@
         document.getElementById('modal-delete-btn').addEventListener('click', async () => {
             // Check if this scorecard can be deleted
             const card = currentScorecard;
-            const isLocked = card.locked || card.card_status === 'VER';
-            const canDelete = !isLocked && (
+            const isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VERIFIED';
+            const isVerified = card.card_status === 'VER' || card.card_status === 'VERIFIED';
+            
+            // Check if this is an abandoned/test card (original logic)
+            const isAbandoned = (
                 card.ends_completed === 0 || 
                 card.final_score === 0 || 
                 (card.ends_completed <= 3 && card.final_score < 100) ||
@@ -1837,12 +1862,21 @@
                 card.event_name?.toLowerCase().includes('practice')
             );
             
+            // Coaches can delete any card; others can only delete unlocked abandoned cards
+            const canDelete = isCoach || (!isLocked && isAbandoned);
+            
             if (!canDelete) {
                 alert('This scorecard cannot be deleted. Only unlocked, abandoned, or test scorecards can be deleted.');
                 return;
             }
             
-            if (!confirm(`Delete this scorecard from "${card.event_name}"?\n\nThis action cannot be undone.`)) {
+            // Extra confirmation for verified/locked cards (coach override)
+            let confirmMessage = `Delete this scorecard from "${card.event_name}"?\n\nThis action cannot be undone.`;
+            if (isCoach && isLocked) {
+                confirmMessage = `WARNING: This scorecard is ${isVerified ? 'VERIFIED' : 'LOCKED'}.\n\nDelete anyway?\n\nThis action cannot be undone.`;
+            }
+            
+            if (!confirm(confirmMessage)) {
                 return;
             }
             
