@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         container: document.getElementById('individual-card-container'),
         archerNameDisplay: document.getElementById('card-view-archer-name'),
         backToScoringBtn: document.getElementById('back-to-scoring-btn'),
-        exportBtn: document.getElementById('export-btn'),
+        completeBaleBtn: document.getElementById('complete-bale-btn'),
         prevArcherBtn: document.getElementById('prev-archer-btn'),
         nextArcherBtn: document.getElementById('next-archer-btn'),
     };
@@ -653,7 +653,9 @@ document.addEventListener('DOMContentLoaded', () => {
             cardControls.backToScoringBtn.textContent = '← Scoring';
             cardControls.backToScoringBtn.onclick = () => { state.currentView = 'scoring'; renderView(); };
         }
-        if (cardControls.exportBtn) cardControls.exportBtn.onclick = showExportModal;
+        if (cardControls.completeBaleBtn) {
+            cardControls.completeBaleBtn.onclick = showCompleteBaleModal;
+        }
         if (cardControls.prevArcherBtn) cardControls.prevArcherBtn.onclick = () => navigateArchers(-1);
         if (cardControls.nextArcherBtn) cardControls.nextArcherBtn.onclick = () => navigateArchers(1);
         
@@ -3887,8 +3889,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderView(); 
             };
         }
-        if (cardControls.exportBtn) {
-            cardControls.exportBtn.onclick = showExportModal;
+        if (cardControls.completeBaleBtn) {
+            cardControls.completeBaleBtn.onclick = showCompleteBaleModal;
         }
         if (cardControls.prevArcherBtn) {
             cardControls.prevArcherBtn.onclick = () => navigateArchers(-1);
@@ -7112,8 +7114,8 @@ document.addEventListener('DOMContentLoaded', () => {
             state.currentView = 'scoring';
             renderView();
         };
-        if (cardControls.exportBtn) {
-            cardControls.exportBtn.onclick = showExportModal;
+        if (cardControls.completeBaleBtn) {
+            cardControls.completeBaleBtn.onclick = showCompleteBaleModal;
         }
 
         if (cardControls.prevArcherBtn) {
@@ -7500,12 +7502,148 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.display = 'flex';
     }
 
-    function showExportModal() {
-        const exportModal = document.getElementById('export-modal');
-        if (exportModal) {
-            exportModal.classList.remove('hidden');
-            exportModal.classList.add('flex');
+    /**
+     * Show Complete Bale confirmation modal
+     * Replaces deprecated Export modal
+     */
+    function showCompleteBaleModal() {
+        const modal = document.getElementById('complete-bale-modal');
+        const messageEl = document.getElementById('complete-bale-message');
+        
+        if (!modal) {
+            console.error('[showCompleteBaleModal] Modal not found');
+            return;
         }
+        
+        // Determine message based on round type
+        const isEventRound = !state.isStandalone && (state.activeEventId || state.selectedEventId);
+        let message = '';
+        
+        if (isEventRound) {
+            message = 'This will mark all scorecards in this bale as Complete. They will be ready for Validation by a coach.';
+        } else {
+            message = 'This will mark all scorecards in this bale as Complete. They will no longer show in Active Assignments.';
+        }
+        
+        if (messageEl) {
+            messageEl.textContent = message;
+        }
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+    
+    function hideCompleteBaleModal() {
+        const modal = document.getElementById('complete-bale-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+    
+    /**
+     * Mark all archers in the current bale as Complete
+     */
+    async function completeBale() {
+        if (!state.archers || state.archers.length === 0) {
+            alert('No archers found to complete.');
+            return;
+        }
+        
+        if (!state.roundId) {
+            alert('Round ID not found. Please ensure the round is saved to the database.');
+            return;
+        }
+        
+        // Check if all archers have complete scores
+        const incompleteArchers = state.archers.filter(archer => {
+            const completedEnds = archer.scores.filter(end => 
+                Array.isArray(end) && end.some(score => score !== '' && score !== null && score !== undefined)
+            ).length;
+            return completedEnds < state.totalEnds;
+        });
+        
+        if (incompleteArchers.length > 0) {
+            const names = incompleteArchers.map(a => `${a.firstName} ${a.lastName}`).join(', ');
+            alert(`Please complete all ${state.totalEnds} ends for all archers before marking bale as complete.\n\nIncomplete: ${names}`);
+            return;
+        }
+        
+        // Update all archers
+        const results = [];
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const archer of state.archers) {
+            if (!archer.roundArcherId) {
+                console.warn(`[completeBale] Archer ${archer.id} has no roundArcherId, skipping`);
+                failCount++;
+                continue;
+            }
+            
+            try {
+                const success = await updateCardStatus(archer.id, 'COMP');
+                if (success) {
+                    successCount++;
+                    results.push({ archer: `${archer.firstName} ${archer.lastName}`, status: 'success' });
+                } else {
+                    failCount++;
+                    results.push({ archer: `${archer.firstName} ${archer.lastName}`, status: 'failed' });
+                }
+            } catch (error) {
+                console.error(`[completeBale] Failed to complete archer ${archer.id}:`, error);
+                failCount++;
+                results.push({ archer: `${archer.firstName} ${archer.lastName}`, status: 'error', error: error.message });
+            }
+        }
+        
+        // Show results
+        if (failCount === 0) {
+            const isEventRound = !state.isStandalone && (state.activeEventId || state.selectedEventId);
+            if (isEventRound) {
+                alert(`✓ All ${successCount} scorecard(s) marked as Complete.\n\nThey are now ready for Validation by a coach.`);
+            } else {
+                alert(`✓ All ${successCount} scorecard(s) marked as Complete.\n\nThey will no longer show in Active Assignments.`);
+            }
+            
+            // Refresh the card view
+            if (state.activeArcherId) {
+                renderCardView(state.activeArcherId);
+            }
+        } else {
+            const failedNames = results.filter(r => r.status !== 'success').map(r => r.archer).join(', ');
+            alert(`⚠️ Completed ${successCount} scorecard(s), but ${failCount} failed:\n\n${failedNames}\n\nPlease try again.`);
+        }
+        
+        hideCompleteBaleModal();
+    }
+    
+    // Wire up Complete Bale modal handlers
+    const completeBaleConfirmBtn = document.getElementById('complete-bale-confirm-btn');
+    const completeBaleCancelBtn = document.getElementById('complete-bale-cancel-btn');
+    
+    if (completeBaleConfirmBtn) {
+        completeBaleConfirmBtn.onclick = completeBale;
+    }
+    
+    if (completeBaleCancelBtn) {
+        completeBaleCancelBtn.onclick = hideCompleteBaleModal;
+    }
+    
+    // Close modal on background click
+    const completeBaleModal = document.getElementById('complete-bale-modal');
+    if (completeBaleModal) {
+        completeBaleModal.onclick = (e) => {
+            if (e.target === completeBaleModal) {
+                hideCompleteBaleModal();
+            }
+        };
+    }
+    
+    // Deprecated: Keep for backward compatibility but don't use
+    function showExportModal() {
+        console.warn('[showExportModal] Export modal is deprecated. Use Complete button instead.');
+        // Don't show the modal - it's deprecated
     }
 
     function hideExportModal() {
