@@ -3943,12 +3943,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
+            // Build headers - standalone rounds don't need event code
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Only add event code for event-linked rounds
+            if (!state.isStandalone && (state.activeEventId || state.selectedEventId)) {
+                const entryCode = getEventEntryCode();
+                if (entryCode) {
+                    headers['X-Passcode'] = entryCode;
+                }
+            }
+            
             const response = await fetch(`${API_BASE}/round_archers/${archer.roundArcherId}/status`, {
                 method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Event-Code': state.eventEntryCode || ''
-                },
+                headers: headers,
                 body: JSON.stringify({
                     cardStatus: newStatus
                 })
