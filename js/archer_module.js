@@ -468,6 +468,19 @@ const ArcherModule = {
     return payload;
   },
 
+  // Update archer's own profile (magical self-edit - no auth required!)
+  async updateSelfProfile(archer) {
+    if (!window.LiveUpdates || !window.LiveUpdates.request) {
+      throw new Error('Live Updates API is not available');
+    }
+    
+    // Use the new self-update endpoint that doesn't require authentication
+    const payload = this._prepareForSync(archer);
+    const result = await window.LiveUpdates.request('/archers/self', 'POST', payload);
+    this._setLastSynced();
+    return result;
+  },
+
   async _sendUpsert(payload) {
     if (!window.LiveUpdates || !window.LiveUpdates.request) {
       throw new Error('Live Updates API is not available');

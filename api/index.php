@@ -3682,6 +3682,128 @@ if (preg_match('#^/v1/upload_csv$#', $route) && $method === 'POST') {
 // ARCHER MASTER LIST ENDPOINTS
 // ==============================================================================
 
+// POST /v1/archers/self - Update archer's own profile (no auth required for self-updates)
+if (preg_match('#^/v1/archers/self$#', $route) && $method === 'POST') {
+    // Allow archers to update their own profile without requiring coach/event codes
+    // This makes the self-edit experience "magical" - no barriers!
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $archerId = trim($input['id'] ?? $input['archerId'] ?? '');
+    $extId = trim($input['extId'] ?? '');
+    
+    if (empty($archerId) && empty($extId)) {
+        json_response(['error' => 'Archer ID or extId required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Find the archer by ID or extId
+        $findStmt = $pdo->prepare('SELECT id, ext_id FROM archers WHERE id = ? OR ext_id = ? LIMIT 1');
+        $findStmt->execute([$archerId ?: $extId, $extId ?: $archerId]);
+        $existing = $findStmt->fetch();
+        
+        if (!$existing) {
+            json_response(['error' => 'Archer not found'], 404);
+            exit;
+        }
+        
+        $targetId = $existing['id'];
+        
+        // Normalize fields (same as bulk_upsert)
+        $firstName = trim($input['firstName'] ?? $input['first'] ?? '');
+        $lastName = trim($input['lastName'] ?? $input['last'] ?? '');
+        
+        if (empty($firstName) || empty($lastName)) {
+            json_response(['error' => 'firstName and lastName required'], 400);
+            exit;
+        }
+        
+        // Build update (only non-null fields)
+        $normalized = [
+            'firstName' => $firstName,
+            'lastName' => $lastName,
+            'nickname' => $normalizeArcherField('nickname', $input['nickname'] ?? null),
+            'photoUrl' => $normalizeArcherField('photoUrl', $input['photoUrl'] ?? null),
+            'school' => $normalizeArcherField('school', $input['school'] ?? null),
+            'grade' => $normalizeArcherField('grade', $input['grade'] ?? null),
+            'gender' => $normalizeArcherField('gender', $input['gender'] ?? null),
+            'level' => $normalizeArcherField('level', $input['level'] ?? null),
+            'status' => $normalizeArcherField('status', $input['status'] ?? null),
+            'faves' => $normalizeArcherField('faves', $input['faves'] ?? null),
+            'domEye' => $normalizeArcherField('domEye', $input['domEye'] ?? null),
+            'domHand' => $normalizeArcherField('domHand', $input['domHand'] ?? null),
+            'heightIn' => $normalizeArcherField('heightIn', $input['heightIn'] ?? null),
+            'wingspanIn' => $normalizeArcherField('wingspanIn', $input['wingspanIn'] ?? null),
+            'drawLengthSugg' => $normalizeArcherField('drawLengthSugg', $input['drawLengthSugg'] ?? null),
+            'riserHeightIn' => $normalizeArcherField('riserHeightIn', $input['riserHeightIn'] ?? null),
+            'limbLength' => $normalizeArcherField('limbLength', $input['limbLength'] ?? null),
+            'limbWeightLbs' => $normalizeArcherField('limbWeightLbs', $input['limbWeightLbs'] ?? null),
+            'notesGear' => $normalizeArcherField('notesGear', $input['notesGear'] ?? null),
+            'notesCurrent' => $normalizeArcherField('notesCurrent', $input['notesCurrent'] ?? null),
+            'notesArchive' => $normalizeArcherField('notesArchive', $input['notesArchive'] ?? null),
+            'email' => $normalizeArcherField('email', $input['email'] ?? null),
+            'phone' => $normalizeArcherField('phone', $input['phone'] ?? null),
+            'usArcheryId' => $normalizeArcherField('usArcheryId', $input['usArcheryId'] ?? null),
+            'jvPr' => $normalizeArcherField('jvPr', $input['jvPr'] ?? null),
+            'varPr' => $normalizeArcherField('varPr', $input['varPr'] ?? null),
+        ];
+        
+        $updateFields = [];
+        $updateValues = [];
+        
+        if ($normalized['firstName']) { $updateFields[] = 'first_name = ?'; $updateValues[] = $normalized['firstName']; }
+        if ($normalized['lastName']) { $updateFields[] = 'last_name = ?'; $updateValues[] = $normalized['lastName']; }
+        if ($normalized['nickname'] !== null) { $updateFields[] = 'nickname = ?'; $updateValues[] = $normalized['nickname']; }
+        if ($normalized['photoUrl'] !== null) { $updateFields[] = 'photo_url = ?'; $updateValues[] = $normalized['photoUrl']; }
+        if ($normalized['school'] !== null) { $updateFields[] = 'school = ?'; $updateValues[] = $normalized['school']; }
+        if ($normalized['grade'] !== null) { $updateFields[] = 'grade = ?'; $updateValues[] = $normalized['grade']; }
+        if ($normalized['gender'] !== null) { $updateFields[] = 'gender = ?'; $updateValues[] = $normalized['gender']; }
+        if ($normalized['level'] !== null) { $updateFields[] = 'level = ?'; $updateValues[] = $normalized['level']; }
+        if ($normalized['status'] !== null) { $updateFields[] = 'status = ?'; $updateValues[] = $normalized['status']; }
+        if ($normalized['faves'] !== null) { $updateFields[] = 'faves = ?'; $updateValues[] = $normalized['faves']; }
+        if ($normalized['domEye'] !== null) { $updateFields[] = 'dom_eye = ?'; $updateValues[] = $normalized['domEye']; }
+        if ($normalized['domHand'] !== null) { $updateFields[] = 'dom_hand = ?'; $updateValues[] = $normalized['domHand']; }
+        if ($normalized['heightIn'] !== null) { $updateFields[] = 'height_in = ?'; $updateValues[] = $normalized['heightIn']; }
+        if ($normalized['wingspanIn'] !== null) { $updateFields[] = 'wingspan_in = ?'; $updateValues[] = $normalized['wingspanIn']; }
+        if ($normalized['drawLengthSugg'] !== null) { $updateFields[] = 'draw_length_sugg = ?'; $updateValues[] = $normalized['drawLengthSugg']; }
+        if ($normalized['riserHeightIn'] !== null) { $updateFields[] = 'riser_height_in = ?'; $updateValues[] = $normalized['riserHeightIn']; }
+        if ($normalized['limbLength'] !== null) { $updateFields[] = 'limb_length = ?'; $updateValues[] = $normalized['limbLength']; }
+        if ($normalized['limbWeightLbs'] !== null) { $updateFields[] = 'limb_weight_lbs = ?'; $updateValues[] = $normalized['limbWeightLbs']; }
+        if ($normalized['notesGear'] !== null) { $updateFields[] = 'notes_gear = ?'; $updateValues[] = $normalized['notesGear']; }
+        if ($normalized['notesCurrent'] !== null) { $updateFields[] = 'notes_current = ?'; $updateValues[] = $normalized['notesCurrent']; }
+        if ($normalized['notesArchive'] !== null) { $updateFields[] = 'notes_archive = ?'; $updateValues[] = $normalized['notesArchive']; }
+        if ($normalized['email'] !== null) { $updateFields[] = 'email = ?'; $updateValues[] = $normalized['email']; }
+        if ($normalized['phone'] !== null) { $updateFields[] = 'phone = ?'; $updateValues[] = $normalized['phone']; }
+        if ($normalized['usArcheryId'] !== null) { $updateFields[] = 'us_archery_id = ?'; $updateValues[] = $normalized['usArcheryId']; }
+        if ($normalized['jvPr'] !== null) { $updateFields[] = 'jv_pr = ?'; $updateValues[] = $normalized['jvPr']; }
+        if ($normalized['varPr'] !== null) { $updateFields[] = 'var_pr = ?'; $updateValues[] = $normalized['varPr']; }
+        
+        if (empty($updateFields)) {
+            json_response(['error' => 'No fields to update'], 400);
+            exit;
+        }
+        
+        $updateFields[] = 'updated_at = NOW()';
+        $updateValues[] = $targetId;
+        
+        $sql = 'UPDATE archers SET ' . implode(', ', $updateFields) . ' WHERE id = ?';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($updateValues);
+        
+        // Return updated archer
+        $verify = $pdo->prepare('SELECT id, ext_id, first_name, last_name FROM archers WHERE id = ?');
+        $verify->execute([$targetId]);
+        $updated = $verify->fetch(PDO::FETCH_ASSOC);
+        
+        json_response(['archerId' => $targetId, 'updated' => true, 'archer' => $updated], 200);
+    } catch (Exception $e) {
+        error_log("Archer self-update failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // POST /v1/archers/bulk_upsert - Sync archer master list from client (FULL VERSION with all fields)
 if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
     require_api_key();
@@ -4392,8 +4514,11 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers/([0-9a-f-]+)/sets$#i', $
 }
 
 // GET /v1/solo-matches/:id - Get solo match details
+// Allow read-only access without authentication (for match restoration from URL)
+// Match code or event code still required for editing operations (POST/PATCH)
 if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 'GET') {
-    require_api_key();
+    // No authentication required for read-only GET requests
+    // This allows match restoration from URL parameters
     $matchId = $m[1];
     
     try {
@@ -5190,8 +5315,11 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers/([0-9
 }
 
 // GET /v1/team-matches/:id - Get team match details
+// Allow read-only access without authentication (for match restoration from URL)
+// Match code or event code still required for editing operations (POST/PATCH)
 if (preg_match('#^/v1/team-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 'GET') {
-    require_api_key();
+    // No authentication required for read-only GET requests
+    // This allows match restoration from URL parameters
     $matchId = $m[1];
     
     try {

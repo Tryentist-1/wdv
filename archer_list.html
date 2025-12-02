@@ -128,9 +128,13 @@
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Tap your avatar in the list to change</p>
                     </div>
+                    <button id="edit-my-profile-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold text-sm transition-all transform hover:scale-105 active:scale-95 min-h-[44px] flex items-center gap-2 shadow-md hover:shadow-lg">
+                        <i class="fas fa-edit"></i>
+                        <span class="hidden sm:inline">Edit My Profile</span>
+                        <span class="sm:hidden">Edit</span>
+                    </button>
                     <button id="clear-self-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">
-                        <i class="fas fa-times mr-1"></i>
-                        <span class="hidden sm:inline">Clear</span>
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
             </div>
@@ -146,16 +150,11 @@
             </select>
         </div>
 
-        <div id="archer-list-container" class="flex-1 px-2 pb-[calc(36px+env(safe-area-inset-bottom)+24px)] overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
+        <div id="archer-list-container" class="flex-1 px-2 pb-[calc(72px+env(safe-area-inset-bottom)+24px)] overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
             <!-- Archer list will be rendered here -->
         </div>
 
-        <!-- Sync Status Bar (above footer) -->
-        <div class="fixed bottom-[36px] left-0 right-0 px-4 py-1 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-10">
-            <div id="sync-status"></div>
-        </div>
-
-        <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-10 safe-bottom">
+        <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-30 safe-bottom">
             <div class="flex items-center h-full px-4">
                 <a href="index.html" class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
                     <i class="fas fa-home text-lg"></i>
@@ -167,6 +166,11 @@
             </div>
         </footer>
 
+    </div>
+
+    <!-- Sync Status Bar (above footer) - MUST be outside flex container for fixed positioning to work -->
+    <div id="sync-status-bar" class="fixed bottom-[calc(36px+env(safe-area-inset-bottom))] left-0 right-0 px-4 py-1 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-20" style="position: fixed !important; bottom: calc(36px + env(safe-area-inset-bottom)) !important;">
+        <div id="sync-status"></div>
     </div>
 
     <!-- Add/Edit Archer Modal -->
@@ -255,6 +259,7 @@
             const sortByNameBtn = document.getElementById('sort-by-name-btn');
             const sortByLevelBtn = document.getElementById('sort-by-level-btn');
             const clearSelfBtn = document.getElementById('clear-self-btn');
+            const editMyProfileBtn = document.getElementById('edit-my-profile-btn');
 
             let editingIndex = null;
             let sortMode = 'name'; // 'name' or 'level'
@@ -1371,6 +1376,28 @@
                 pendingSelfChange = null;
             }
             
+            // Show delightful save success feedback
+            function showSaveSuccess(message) {
+                const successMsg = document.createElement('div');
+                successMsg.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 bg-success text-white rounded-lg shadow-xl flex items-center gap-3';
+                successMsg.style.animation = 'fadeIn 0.3s ease-in';
+                successMsg.innerHTML = `
+                    <i class="fas fa-check-circle text-2xl animate-bounce"></i>
+                    <p class="font-semibold">${message}</p>
+                `;
+                document.body.appendChild(successMsg);
+                
+                setTimeout(() => {
+                    successMsg.style.animation = 'fadeOut 0.3s ease-out';
+                    successMsg.style.opacity = '0';
+                    setTimeout(() => {
+                        if (successMsg.parentNode) {
+                            successMsg.parentNode.removeChild(successMsg);
+                        }
+                    }, 300);
+                }, 2000);
+            }
+
             // Show success feedback when user sets themselves
             function showSuccessFeedback(archer) {
                 // Create temporary success message
@@ -1427,6 +1454,25 @@
                 };
             }
             
+            // Handle "Edit My Profile" button - opens edit modal for self archer
+            if (editMyProfileBtn) {
+                editMyProfileBtn.onclick = () => {
+                    const state = getRosterState();
+                    if (!state.selfArcher) {
+                        alert('Please select yourself first');
+                        return;
+                    }
+                    const list = ArcherModule.loadList();
+                    const selfIndex = list.findIndex(a => a.extId === state.selfArcher.extId);
+                    if (selfIndex >= 0) {
+                        // Add a pulse animation to the button
+                        editMyProfileBtn.classList.add('animate-pulse');
+                        setTimeout(() => editMyProfileBtn.classList.remove('animate-pulse'), 500);
+                        editArcher(selfIndex);
+                    }
+                };
+            }
+
             clearSelfBtn.onclick = () => {
                 const current = (typeof ArcherModule.getSelfExtId === 'function') ? ArcherModule.getSelfExtId() : '';
                 if (!current) {
@@ -1498,9 +1544,42 @@
 
                 try {
                     let result;
+                    const state = getRosterState();
+                    const isEditingSelf = editingIndex !== null && state.selfArcher && 
+                                         ArcherModule.loadList()[editingIndex]?.extId === state.selfArcher.extId;
+                    
                     if (editingIndex !== null) {
-                        result = await ArcherModule.editArcher(editingIndex, archer);
-                        recordSyncMessage(result?.sync, 'Profile updated');
+                        if (isEditingSelf) {
+                            // Magical self-update - uses special endpoint that doesn't require auth!
+                            const archerToUpdate = ArcherModule.loadList()[editingIndex];
+                            const updatedArcher = Object.assign({}, archerToUpdate, archer, {
+                                id: archerToUpdate.id || archerToUpdate.archerId,
+                                extId: archerToUpdate.extId
+                            });
+                            
+                            // Update local storage first for instant feedback
+                            const list = ArcherModule.loadList();
+                            list[editingIndex] = Object.assign({}, list[editingIndex], updatedArcher);
+                            ArcherModule.saveList(list);
+                            
+                            // Show instant success feedback
+                            showSaveSuccess('Profile updated! ✨');
+                            
+                            // Sync to database in background (no auth needed!)
+                            try {
+                                result = await ArcherModule.updateSelfProfile(updatedArcher);
+                                if (result && result.updated) {
+                                    showSaveSuccess('Saved to database! 💾');
+                                }
+                            } catch (syncError) {
+                                console.warn('Background sync failed (will retry):', syncError);
+                                // Still show success - changes are saved locally
+                            }
+                        } else {
+                            // Regular edit (requires auth)
+                            result = await ArcherModule.editArcher(editingIndex, archer);
+                            recordSyncMessage(result?.sync, 'Profile updated');
+                        }
                     } else {
                         result = await ArcherModule.addArcher(archer);
                         recordSyncMessage(result?.sync, 'Profile added');
