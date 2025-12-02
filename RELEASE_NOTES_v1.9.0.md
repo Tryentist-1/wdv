@@ -41,6 +41,11 @@ All modules now use centralized hydration functions following the universal rule
 - ✅ Fixed standalone rounds defaulting to Bale 1
 - ✅ Fixed standalone rounds with NULL event_id
 - ✅ Eliminated ambiguous data merging (root cause of resume bugs)
+- ✅ Fixed standalone rounds not requiring event code for Live Sync
+- ✅ Fixed Live Sync entry code not being saved during hydration
+- ✅ Fixed `ensureLiveRoundReady()` not detecting existing rounds after hydration
+- ✅ Replaced deprecated Export button with Complete button in Score Card View
+- ✅ Fixed Complete button modal styling and functionality
 
 ### Solo Matches
 - ✅ Fixed resume logic using ambiguous name matching
@@ -101,23 +106,33 @@ All modules now use centralized hydration functions following the universal rule
 ### Next Testing Priority
 - EditScorecard functionality
 - EventDashboard functionality
-- ArcherHistory functionality
+- ArcherHistory functionality (requires database migration)
 - Verification processes
+
+### Known Issues
+- ⚠️ Archer History endpoint requires database migration (`migration_archer_history_required.sql`)
+  - Missing `solo_matches`, `team_matches` tables cause 500 errors
+  - Migration script created: `api/sql/migration_archer_history_required.sql`
 
 ---
 
 ## 📦 Files Changed
 
 ### Core Modules
-- `js/ranking_round_300.js` - Centralized hydration + refactored resume paths
+- `js/ranking_round_300.js` - Centralized hydration + refactored resume paths, Live Sync fixes, Complete button refactor
 - `js/solo_card.js` - Centralized hydration for Solo Matches
 - `js/team_card.js` - Centralized hydration for Team Matches
+- `js/live_updates.js` - Standalone round authentication fixes
+- `ranking_round_300.html` - Complete button modal replacement
+- `api/index.php` - Archer history endpoint error handling, authentication fixes
 
 ### Documentation
 - `docs/core/DATA_SYNCHRONIZATION_STRATEGY.md` - New master strategy
 - `docs/core/DATA_SYNCHRONIZATION_STRATEGY_SUMMARY.md` - New quick reference
 - `docs/core/DATA_SYNCHRONIZATION_DEPRECATION_PLAN.md` - New deprecation plan
+- `docs/analysis/LIVE_SYNC_NEW_ROUND_FLOW.md` - Live Sync flow documentation
 - `docs/analysis/*.md` - Updated with deprecation notices
+- `api/sql/migration_archer_history_required.sql` - Combined migration for archer history
 
 ---
 
@@ -128,9 +143,13 @@ All modules now use centralized hydration functions following the universal rule
 - [x] Universal synchronization rules implemented
 - [x] Documentation updated
 - [x] Deprecation notices added
+- [x] Standalone round Live Sync fixes
+- [x] Complete button refactor
+- [x] Archer history endpoint error handling
+- [ ] **Database migration required:** Run `migration_archer_history_required.sql` on production
 - [ ] EditScorecard verification
 - [ ] EventDashboard verification
-- [ ] ArcherHistory verification
+- [ ] ArcherHistory verification (after migration)
 - [ ] Verification processes verification
 
 ### Post-Deployment
