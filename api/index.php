@@ -98,6 +98,64 @@ function generate_team_match_code(PDO $pdo, array $team1Archers, array $team2Arc
     return $code;
 }
 
+// Generate round entry code: R300-[TARGET_SIZE]-[MMDD]-[RANDOM]
+// Example: R300-60CM-1201-A2D (R300 round, 60cm target, Dec 1, random suffix A2D)
+function generate_round_entry_code(PDO $pdo, string $roundType, string $level, string $date): string {
+    // Map level to target size
+    $targetSize = (strtoupper($level) === 'VAR' || strtoupper($level) === 'VARSITY') ? '40CM' : '60CM';
+    
+    // Get MMDD from date (YYYY-MM-DD format)
+    $dateParts = explode('-', $date);
+    $mmdd = $dateParts[1] . $dateParts[2]; // MM + DD
+    
+    // Generate random 3-character alphanumeric suffix (A-Z, 0-9)
+    $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    $random = '';
+    for ($i = 0; $i < 3; $i++) {
+        $random .= $chars[random_int(0, strlen($chars) - 1)];
+    }
+    
+    $code = $roundType . '-' . $targetSize . '-' . $mmdd . '-' . $random;
+    
+    // Ensure uniqueness - if code exists, regenerate random suffix
+    $baseCode = $roundType . '-' . $targetSize . '-' . $mmdd . '-';
+    $maxAttempts = 10;
+    $attempts = 0;
+    
+    do {
+        $stmt = $pdo->prepare('SELECT id FROM rounds WHERE entry_code = ? LIMIT 1');
+        $stmt->execute([$code]);
+        if ($stmt->fetch()) {
+            // Regenerate random suffix
+            $random = '';
+            for ($i = 0; $i < 3; $i++) {
+                $random .= $chars[random_int(0, strlen($chars) - 1)];
+            }
+            $code = $baseCode . $random;
+            $attempts++;
+        } else {
+            break;
+        }
+    } while ($attempts < $maxAttempts);
+    
+    // If still not unique after max attempts, append counter
+    if ($attempts >= $maxAttempts) {
+        $counter = 1;
+        do {
+            $code = $baseCode . $random . $counter;
+            $stmt = $pdo->prepare('SELECT id FROM rounds WHERE entry_code = ? LIMIT 1');
+            $stmt->execute([$code]);
+            if ($stmt->fetch()) {
+                $counter++;
+            } else {
+                break;
+            }
+        } while (true);
+    }
+    
+    return $code;
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
@@ -133,7 +191,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
     
     $history = [];
     
-    // Get all ranking rounds this archer participated in
+    // Get all ranking rounds this archer participated in (including standalone rounds)
     $rounds = $pdo->prepare('
         SELECT 
             e.id AS event_id,
@@ -142,6 +200,8 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             r.id AS round_id,
             r.division,
             r.round_type,
+            r.entry_code,
+            r.date AS round_date,
             ra.id AS round_archer_id,
             ra.archer_id,
             ra.bale_number,
@@ -157,15 +217,22 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         LEFT JOIN events e ON e.id = r.event_id
         LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
         WHERE ra.archer_id = ?
-        GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, ra.archer_id, ra.bale_number, ra.target_assignment, ra.card_status, ra.locked
-        ORDER BY e.date DESC, e.name
+        GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, r.entry_code, r.date, ra.archer_id, ra.bale_number, ra.target_assignment, ra.card_status, ra.locked
+        ORDER BY COALESCE(e.date, r.date) DESC, e.name, r.division
     ');
     $rounds->execute([$archerData['id']]);
     $rankingRounds = $rounds->fetchAll();
     
-    // Add type field and add to history
+    // Add type field and format for history (include standalone round info)
     foreach ($rankingRounds as $round) {
         $round['type'] = 'ranking';
+        // For standalone rounds, set event_name to indicate standalone
+        if (!$round['event_id']) {
+            $round['event_name'] = 'Standalone Round';
+            $round['is_standalone'] = true;
+        } else {
+            $round['is_standalone'] = false;
+        }
         $history[] = $round;
     }
     
@@ -881,7 +948,6 @@ $getDivisionCode = function(string $gender, string $level): string {
 };
 
 if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
-    require_api_key();
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $roundType = $input['roundType'] ?? 'R300';
     $date = $input['date'] ?? date('Y-m-d');
@@ -889,30 +955,43 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
     $division = $input['division'] ?? null;  // e.g., BJV, GJV, OPEN
     $gender = $input['gender'] ?? null;      // M/F
     $level = $input['level'] ?? null;        // VAR/JV
-    $eventId = $input['eventId'] ?? null;    // Link round to event
+    $eventId = isset($input['eventId']) ? $input['eventId'] : null;    // Link round to event (null for standalone)
+    
+    // Require auth only if round is linked to an event (standalone rounds don't need auth)
+    if ($eventId !== null) {
+        require_api_key();
+    }
     try {
         $pdo = db();
         // Check if round already exists (by eventId + division)
         $row = null;
         
         // Strategy 1: If eventId and division provided, find by eventId + division
-        if ($eventId && $division) {
+        if ($eventId !== null && $division) {
             $existing = $pdo->prepare('SELECT id, event_id FROM rounds WHERE event_id=? AND division=? LIMIT 1');
             $existing->execute([$eventId, $division]);
             $row = $existing->fetch();
             error_log("Round lookup: eventId=$eventId, division=$division -> " . ($row ? "FOUND " . $row['id'] : "NOT FOUND"));
         }
         
-        // Strategy 2: Fallback to date + division (legacy support)
-        if (!$row && $division) {
-            $existing = $pdo->prepare('SELECT id, event_id FROM rounds WHERE round_type=? AND date=? AND division=? LIMIT 1');
+        // Strategy 2: For standalone rounds, check by entry_code if provided
+        if (!$row && $eventId === null && isset($input['entryCode'])) {
+            $existing = $pdo->prepare('SELECT id, event_id, entry_code FROM rounds WHERE entry_code=? LIMIT 1');
+            $existing->execute([$input['entryCode']]);
+            $row = $existing->fetch();
+            error_log("Standalone round lookup by entry_code: " . ($row ? "FOUND " . $row['id'] : "NOT FOUND"));
+        }
+        
+        // Strategy 3: Fallback to date + division (legacy support, only for event-linked)
+        if (!$row && $eventId !== null && $division) {
+            $existing = $pdo->prepare('SELECT id, event_id FROM rounds WHERE round_type=? AND date=? AND division=? AND event_id IS NOT NULL LIMIT 1');
             $existing->execute([$roundType, $date, $division]);
             $row = $existing->fetch();
         }
         
-        // Strategy 3: Last resort (date only - least reliable)
-        if (!$row) {
-            $existing = $pdo->prepare('SELECT id, event_id FROM rounds WHERE round_type=? AND date=? LIMIT 1');
+        // Strategy 4: Last resort (date only - least reliable, only for event-linked)
+        if (!$row && $eventId !== null) {
+            $existing = $pdo->prepare('SELECT id, event_id FROM rounds WHERE round_type=? AND date=? AND event_id IS NOT NULL LIMIT 1');
             $existing->execute([$roundType, $date]);
             $row = $existing->fetch();
         }
@@ -933,7 +1012,7 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
             }
             json_response(['roundId' => $row['id']], 200);
         } else {
-            error_log("Round CREATING NEW: eventId=$eventId, division=$division");
+            error_log("Round CREATING NEW: eventId=" . ($eventId ?? 'NULL') . ", division=$division");
             // Create new round (Phase 0: bale_number removed from schema)
             $id = $genUuid();
             $columns = ['id','round_type','date','created_at'];
@@ -944,20 +1023,35 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
             if ($gender !== null) { $columns[]='gender'; $values[]=$gender; $placeholders[]='?'; }
             if ($level !== null) { $columns[]='level'; $values[]=$level; $placeholders[]='?'; }
             if ($eventId !== null) { $columns[]='event_id'; $values[]=$eventId; $placeholders[]='?'; }
+            
+            // Generate entry code for standalone rounds
+            $entryCode = null;
+            if ($eventId === null && $level !== null) {
+                // Standalone round - generate entry code
+                $entryCode = generate_round_entry_code($pdo, $roundType, $level, $date);
+                $columns[] = 'entry_code';
+                $values[] = $entryCode;
+                $placeholders[] = '?';
+                error_log("Generated entry code for standalone round: $entryCode");
+            }
+            
             $sql = 'INSERT INTO rounds (' . implode(',', $columns) . ') VALUES (' . implode(',', $placeholders) . ')';
             $stmt = $pdo->prepare($sql);
             $stmt->execute($values);
             
-            // If eventId not provided, try to link to most recent event for this date (fallback)
-            if (!$eventId) {
+            // DO NOT auto-link standalone rounds to events (eventId === null means standalone)
+            // Only auto-link if eventId was not provided at all (legacy behavior)
+            if (!isset($input['eventId']) && $eventId === null) {
+                // Legacy: eventId not in input at all - try to link to most recent event for this date
                 try {
                     $event = $pdo->prepare('SELECT id FROM events WHERE date=? ORDER BY created_at DESC LIMIT 1');
                     $event->execute([$date]);
                     $eventRow = $event->fetch();
                     if ($eventRow) {
-                        $link = $pdo->prepare('UPDATE rounds SET event_id=? WHERE id=?');
+                        $link = $pdo->prepare('UPDATE rounds SET event_id=?, entry_code=NULL WHERE id=?');
                         $link->execute([$eventRow['id'], $id]);
-                        error_log("Round $id auto-linked to event " . $eventRow['id']);
+                        error_log("Round $id auto-linked to event " . $eventRow['id'] . " (legacy behavior)");
+                        $entryCode = null; // Clear entry code since it's now event-linked
                     }
                 } catch (Exception $e) {
                     // Ignore event linking errors
@@ -965,10 +1059,68 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
                 }
             }
             
-            json_response(['roundId' => $id], 201);
+            $response = ['roundId' => $id];
+            if ($entryCode !== null) {
+                $response['entryCode'] = $entryCode;
+            }
+            json_response($response, 201);
         }
     } catch (Exception $e) {
         error_log("Round creation failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// GET /v1/rounds?entry_code={code} - Get round by entry code (for standalone rounds)
+if (preg_match('#^/v1/rounds$#', $route) && $method === 'GET') {
+    $entryCode = $_GET['entry_code'] ?? null;
+    
+    if (!$entryCode) {
+        json_response(['error' => 'entry_code parameter required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        $stmt = $pdo->prepare('
+            SELECT 
+                id,
+                event_id,
+                round_type,
+                division,
+                gender,
+                level,
+                date,
+                status,
+                entry_code,
+                created_at
+            FROM rounds 
+            WHERE LOWER(entry_code) = LOWER(?)
+            LIMIT 1
+        ');
+        $stmt->execute([$entryCode]);
+        $round = $stmt->fetch();
+        
+        if (!$round) {
+            json_response(['error' => 'Round not found'], 404);
+            exit;
+        }
+        
+        json_response([
+            'roundId' => $round['id'],
+            'eventId' => $round['event_id'],
+            'roundType' => $round['round_type'],
+            'division' => $round['division'],
+            'gender' => $round['gender'],
+            'level' => $round['level'],
+            'date' => $round['date'],
+            'status' => $round['status'],
+            'entryCode' => $round['entry_code'],
+            'createdAt' => $round['created_at']
+        ], 200);
+    } catch (Exception $e) {
+        error_log("Round lookup by entry_code failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
     exit;

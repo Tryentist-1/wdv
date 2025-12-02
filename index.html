@@ -4,7 +4,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="description" content="Archery scoring and team management tools for OAS">
   <title>OAS Score & Tools</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+  
   <!-- Use compiled Tailwind CSS file (works offline, no CDN dependency) -->
   <link rel="stylesheet" href="css/tailwind-compiled.css">
   <link rel="stylesheet" href="css/unified-scorecard-list.css">
@@ -297,7 +304,7 @@
 
       <!-- Main Modules -->
       <div class="grid grid-cols-2 gap-4">
-        <a href="ranking_round_300.html"
+        <a href="ranking_round_300.html" id="ranking-round-link"
           class="block px-4 py-4 bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
           title="Score competitive ranking rounds with multiple archers">
           <i class="fas fa-trophy block mb-2 text-xl"></i>Ranking
@@ -481,19 +488,32 @@
             const teamMatches = rounds.filter(r => r.type === 'team');
 
             // Find incomplete ranking rounds
+            // CRITICAL: Filter out rounds where the archer is not actually assigned
+            // This prevents standalone rounds from showing for everyone
             const openRounds = rankingRounds.filter(round => {
+              // Only show rounds where this archer is actually assigned
+              // The history API should already filter by archer_id, but double-check
+              if (!round.round_id) {
+                console.warn('[index] Round missing round_id, skipping:', round);
+                return false;
+              }
+              
               const endsCompleted = parseInt(round.ends_completed || 0);
               const hasIncompleteEnds = endsCompleted < 10;
               const isToday = round.event_date === new Date().toISOString().slice(0, 10);
               const shouldShow = hasIncompleteEnds || (isToday && endsCompleted > 0);
 
               console.log('[index] Round check:', {
+                round_id: round.round_id,
+                event_id: round.event_id,
                 event: round.event_name,
+                is_standalone: round.is_standalone,
                 date: round.event_date,
                 endsCompleted,
                 hasIncompleteEnds,
                 isToday,
-                shouldShow
+                shouldShow,
+                archerId: archerId
               });
 
               return shouldShow;
@@ -519,7 +539,16 @@
               const isStarted = (round.ends_completed || 0) > 0;
               
               // Build link - entry code will be fetched from event snapshot in handleDirectLink
-              const link = `ranking_round_300.html?event=${round.event_id}&round=${round.round_id}&archer=${archerId}`;
+              // For standalone rounds, event_id is null, so we need to handle that
+              const eventParam = round.event_id ? round.event_id : 'null';
+              const link = `ranking_round_300.html?event=${eventParam}&round=${round.round_id}&archer=${archerId}`;
+              console.log('[index] Building resume link:', { 
+                round_id: round.round_id, 
+                event_id: round.event_id, 
+                is_standalone: round.is_standalone,
+                archerId: archerId,
+                link: link
+              });
               
               // Build event name - always show event name, add "Resume" prefix if in progress
               const eventName = round.event_name || 'Ranking Round';
@@ -620,6 +649,13 @@
                               matchId: assignment.match_id
                             });
                           }
+                        } else if (assignmentRes.status === 404) {
+                          // Archer not in this bracket - this is normal, skip silently
+                          continue;
+                        } else {
+                          // Other error - log but continue
+                          console.warn(`[index] Error checking bracket ${bracket.id}:`, assignmentRes.status);
+                          continue;
                         }
                       } catch (e) {
                         console.log('[index] Could not check bracket assignment:', e.message);
@@ -1005,6 +1041,79 @@
     // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
     initDarkMode();
 
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js', { scope: '/wdv/' })
+          .then((registration) => {
+            console.log('[PWA] Service Worker registered:', registration.scope);
+            
+            // Listen for messages from service worker (e.g., flush queues)
+            navigator.serviceWorker.addEventListener('message', (event) => {
+              if (event.data && event.data.type === 'FLUSH_QUEUES') {
+                console.log('[PWA] Service worker requested queue flush');
+                // Flush all queues if LiveUpdates is available
+                if (window.LiveUpdates) {
+                  try {
+                    // Flush ranking round queue
+                    if (window.LiveUpdates.flushQueue) {
+                      window.LiveUpdates.flushQueue().catch(e => 
+                        console.warn('[PWA] Ranking queue flush failed:', e)
+                      );
+                    }
+                    // Note: Solo and team queues are flushed by their respective modules
+                    // when they detect online status or receive flush requests
+                  } catch (e) {
+                    console.warn('[PWA] Queue flush error:', e);
+                  }
+                }
+              }
+            });
+            
+            // Notify service worker when online status changes
+            window.addEventListener('online', () => {
+              if (registration.active) {
+                registration.active.postMessage({
+                  type: 'ONLINE_STATUS',
+                  online: true
+                });
+              }
+            });
+            
+            window.addEventListener('offline', () => {
+              if (registration.active) {
+                registration.active.postMessage({
+                  type: 'ONLINE_STATUS',
+                  online: false
+                });
+              }
+            });
+            
+            // Check for updates periodically
+            setInterval(() => {
+              registration.update();
+            }, 60 * 60 * 1000); // Check every hour
+            
+            // Handle updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    // New service worker available
+                    console.log('[PWA] New service worker available. Reload to update.');
+                    // Optionally show a notification to the user
+                  }
+                });
+              }
+            });
+          })
+          .catch((error) => {
+            console.warn('[PWA] Service Worker registration failed:', error);
+          });
+      });
+    }
+
     // Onboarding disabled - outdated tutorial
     document.addEventListener('DOMContentLoaded', function () {
       // showOnboarding(); // DISABLED - Tutorial needs updating
@@ -1019,6 +1128,38 @@
 
       updateWelcomeMessage();
       loadOpenAssignments();
+      
+      // Intercept Ranking Round link to check for local in-progress cards
+      const rankingRoundLink = document.getElementById('ranking-round-link');
+      if (rankingRoundLink) {
+        rankingRoundLink.addEventListener('click', (e) => {
+          // Check for local in-progress session
+          const sessionData = localStorage.getItem('current_bale_session');
+          if (sessionData) {
+            try {
+              const session = JSON.parse(sessionData);
+              // Check if session is recent (within 24 hours)
+              const sessionAge = Date.now() - new Date(session.lastSaved || 0).getTime();
+              const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+              
+              if (sessionAge <= maxAge && session.roundId && session.baleNumber) {
+                // Session exists and is recent - let ranking_round_300.html handle the resume dialog
+                // Just navigate normally, the resume dialog will show automatically
+                console.log('[index] Local in-progress session found, navigating to ranking round (resume dialog will show)');
+                return; // Allow normal navigation
+              } else {
+                // Session too old, clear it
+                localStorage.removeItem('current_bale_session');
+                console.log('[index] Local session too old, cleared');
+              }
+            } catch (err) {
+              console.warn('[index] Error checking local session:', err);
+              // Continue with normal navigation
+            }
+          }
+          // No local session or invalid - allow normal navigation
+        });
+      }
 
       // Dark mode toggle functionality (only on home screen)
       const darkModeToggle = document.getElementById('dark-mode-toggle');

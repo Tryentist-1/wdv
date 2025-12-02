@@ -766,150 +766,361 @@ document.addEventListener('DOMContentLoaded', () => {
         return icons[overallStatus] || icons[''];
     }
     
-    // Phase 2: Restore match from database if matchId exists
-    async function restoreTeamMatchFromDatabase() {
-        if (!state.matchId || !window.LiveUpdates) return false;
+    // =====================================================
+    // PHASE 0: Centralized Data Hydration Functions
+    // Following DATA_SYNCHRONIZATION_STRATEGY.md rules
+    // =====================================================
+    
+    /**
+     * Validate UUID format
+     * Rule 5: UUID-Only for Entity Identification
+     */
+    function isValidUUID(str) {
+        if (!str || typeof str !== 'string') return false;
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    }
+    
+    /**
+     * Normalize entity ID to UUID format
+     * Rule 5: UUID-Only for Entity Identification
+     */
+    function normalizeEntityId(entity, fieldName = 'id') {
+        const id = typeof entity === 'string' ? entity : (entity?.id || entity?.matchId);
+        
+        if (!id) {
+            throw new Error(`Entity missing ${fieldName}`);
+        }
+        
+        if (!isValidUUID(id)) {
+            throw new Error(`Invalid UUID format: ${id}`);
+        }
+        
+        return id;
+    }
+    
+    /**
+     * Clear Team Match state before hydration
+     * Rule 4: Clear State Before Hydration
+     */
+    function clearTeamMatchState() {
+        console.log('[clearTeamMatchState] Clearing state before hydration');
+        state.matchId = null;
+        state.team1 = [];
+        state.team2 = [];
+        state.scores = { t1: [], t2: [], so: { t1: [], t2: [] } };
+        state.teamIds = { t1: null, t2: null };
+        state.matchArcherIds = { t1: {}, t2: {} };
+        state.eventId = null;
+        state.bracketId = null;
+        state.location = '';
+        state.syncStatus = { t1: {}, t2: {} };
+        state.currentView = 'setup';
+        state.currentSet = 1;
+    }
+    
+    /**
+     * Validate Team Match integrity
+     * Rule 3: Atomic Data Units - Verify all data belongs to this match
+     * @param {Object} matchData - Match data from server
+     * @param {string} expectedMatchId - Expected match ID
+     */
+    function validateTeamMatch(matchData, expectedMatchId) {
+        if (!matchData || !matchData.match) {
+            throw new Error('Match data is missing');
+        }
+        
+        const match = matchData.match;
+        
+        // Verify MatchID matches
+        if (match.id && match.id !== expectedMatchId) {
+            throw new Error(`Match ID mismatch: expected ${expectedMatchId}, got ${match.id}`);
+        }
+        
+        // Verify we have exactly 2 teams
+        if (!match.teams || !Array.isArray(match.teams) || match.teams.length < 2) {
+            throw new Error('Match must have exactly 2 teams');
+        }
+        
+        // Verify teams have valid positions
+        const positions = match.teams.map(t => t.position).sort();
+        if (positions[0] !== 1 || positions[1] !== 2) {
+            throw new Error('Match teams must have positions 1 and 2');
+        }
+        
+        // Verify each team has archers
+        match.teams.forEach((team, index) => {
+            if (!team.archers || !Array.isArray(team.archers) || team.archers.length === 0) {
+                throw new Error(`Team ${index + 1} must have at least one archer`);
+            }
+        });
+        
+        console.log('[validateTeamMatch] ✅ Validation passed');
+    }
+    
+    /**
+     * Fetch Team Match from server
+     * Rule 3: Atomic Data Units - Fetch Complete Units from Server
+     * @param {string} matchId - Match UUID
+     * @returns {Promise<Object>} Match data
+     */
+    async function fetchTeamMatch(matchId) {
+        console.log('[fetchTeamMatch] Fetching Team Match:', matchId);
+        
+        // Validate input
+        if (!matchId || !isValidUUID(matchId)) {
+            throw new Error(`Invalid matchId: ${matchId}`);
+        }
+        
+        if (!window.LiveUpdates) {
+            throw new Error('LiveUpdates is not available');
+        }
+        
+        const matchData = await window.LiveUpdates.request(`/team-matches/${matchId}`, 'GET');
+        
+        if (!matchData || !matchData.match) {
+            throw new Error(`Match not found: ${matchId}`);
+        }
+        
+        console.log('[fetchTeamMatch] ✅ Fetched Team Match:', {
+            matchId: matchData.match.id,
+            status: matchData.match.status,
+            teamCount: matchData.match.teams?.length || 0
+        });
+        
+        return matchData;
+    }
+    
+    /**
+     * Centralized hydration function for Team Match
+     * Rule 6: Centralized Hydration Function
+     * 
+     * @param {string} matchId - Match UUID
+     * @param {Object} options - Hydration options
+     *   - mergeLocal: Whether to merge with local scores (default: false)
+     *   - clearStateFirst: Whether to clear state before hydration (default: true)
+     * @returns {Promise<Object>} Hydrated state
+     */
+    async function hydrateTeamMatch(matchId, options = {}) {
+        console.log('[hydrateTeamMatch] ========== START ==========');
+        console.log('[hydrateTeamMatch] Parameters:', { matchId, options });
         
         try {
-            const match = await window.LiveUpdates.request(`/team-matches/${state.matchId}`, 'GET');
-            if (!match || !match.match) return false;
+            // 1. Clear state first (Rule 4)
+            if (options.clearStateFirst !== false) {
+                clearTeamMatchState();
+            }
             
-            console.log('[TeamCard] Restoring team match from database:', state.matchId);
+            // 2. Validate inputs (Rule 5)
+            const normalizedMatchId = normalizeEntityId(matchId, 'matchId');
             
-            // Restore teams and archers from match data
-            const teams = match.match.teams || [];
-            if (teams.length >= 2) {
-                const team1Data = teams.find(t => t.position === 1);
-                const team2Data = teams.find(t => t.position === 2);
-                
-                if (team1Data && team2Data && team1Data.archers && team2Data.archers) {
-                    // Store team IDs
-                    state.teamIds = {
-                        t1: team1Data.id,
-                        t2: team2Data.id
-                    };
+            // 3. Fetch atomic unit from server (Rule 3)
+            const matchData = await fetchTeamMatch(normalizedMatchId);
+            
+            // 4. Validate atomic unit integrity (Rule 3)
+            validateTeamMatch(matchData, normalizedMatchId);
+            
+            const match = matchData.match;
+            
+            // 5. Populate metadata from server (Rule 1)
+            state.matchId = normalizedMatchId;
+            state.eventId = match.event_id || null;
+            state.bracketId = match.bracket_id || null;
+            state.location = match.location || '';
+            
+            // 6. Build teams from match data
+            const teams = match.teams || [];
+            if (teams.length < 2) {
+                throw new Error('Match must have at least 2 teams');
+            }
+            
+            const team1Data = teams.find(t => t.position === 1);
+            const team2Data = teams.find(t => t.position === 2);
+            
+            if (!team1Data || !team2Data) {
+                throw new Error('Match missing team at position 1 or 2');
+            }
+            
+            // Store team IDs
+            state.teamIds = {
+                t1: team1Data.id,
+                t2: team2Data.id
+            };
+            
+            // Find archers in master list by UUID (preferred) or fallback to name
+            const masterList = ArcherModule.loadList();
+            state.team1 = [];
+            state.team2 = [];
+            state.matchArcherIds = { t1: {}, t2: {} };
+            
+            // Restore Team 1 archers
+            if (team1Data.archers && Array.isArray(team1Data.archers)) {
+                team1Data.archers.forEach((archerData, index) => {
+                    const archerName = archerData.archer_name || '';
+                    const nameParts = archerName.split(' ');
+                    const firstName = nameParts[0] || '';
+                    const lastName = nameParts.slice(1).join(' ') || '';
                     
-                    // Find archers in master list by name
-                    const masterList = ArcherModule.loadList();
-                    state.team1 = [];
-                    state.team2 = [];
-                    state.matchArcherIds = { t1: {}, t2: {} };
+                    // Try UUID first
+                    let archer = masterList.find(a => {
+                        const archerId = a.id || a.archerId;
+                        return archerId && archerId === archerData.archer_id;
+                    });
                     
-                    // Restore Team 1 archers
-                    team1Data.archers.forEach((archerData, index) => {
-                        const archerName = archerData.archer_name || '';
-                        const nameParts = archerName.split(' ');
-                        const firstName = nameParts[0] || '';
-                        const lastName = nameParts.slice(1).join(' ') || '';
-                        
-                        const archer = masterList.find(a => 
+                    // Fallback to name matching
+                    if (!archer) {
+                        archer = masterList.find(a => 
                             a.first.toLowerCase() === firstName.toLowerCase() &&
                             a.last.toLowerCase() === lastName.toLowerCase()
                         );
-                        
-                        if (archer) {
-                            archer.id = `${archer.first}-${archer.last}`;
-                            state.team1.push(archer);
-                            state.matchArcherIds.t1[index] = archerData.id;
-                        } else {
-                            // Create a minimal archer object if not found in master list
-                            state.team1.push({
-                                id: `${firstName}-${lastName}`,
-                                first: firstName,
-                                last: lastName,
-                                school: archerData.school || '',
-                                level: archerData.level || 'VAR',
-                                gender: archerData.gender || ''
-                            });
-                            state.matchArcherIds.t1[index] = archerData.id;
-                        }
-                    });
-                    
-                    // Restore Team 2 archers
-                    team2Data.archers.forEach((archerData, index) => {
-                        const archerName = archerData.archer_name || '';
-                        const nameParts = archerName.split(' ');
-                        const firstName = nameParts[0] || '';
-                        const lastName = nameParts.slice(1).join(' ') || '';
-                        
-                        const archer = masterList.find(a => 
-                            a.first.toLowerCase() === firstName.toLowerCase() &&
-                            a.last.toLowerCase() === lastName.toLowerCase()
-                        );
-                        
-                        if (archer) {
-                            archer.id = `${archer.first}-${archer.last}`;
-                            state.team2.push(archer);
-                            state.matchArcherIds.t2[index] = archerData.id;
-                        } else {
-                            // Create a minimal archer object if not found in master list
-                            state.team2.push({
-                                id: `${firstName}-${lastName}`,
-                                first: firstName,
-                                last: lastName,
-                                school: archerData.school || '',
-                                level: archerData.level || 'VAR',
-                                gender: archerData.gender || ''
-                            });
-                            state.matchArcherIds.t2[index] = archerData.id;
-                        }
-                    });
-                    
-                    // Restore scores from database
-                    const numArrows = state.team1.length * 2; // Each archer shoots 2 arrows per end
-                    state.scores = {
-                        t1: Array(4).fill(null).map(() => Array(numArrows).fill('')),
-                        t2: Array(4).fill(null).map(() => Array(numArrows).fill('')),
-                        so: { t1: Array(state.team1.length).fill(''), t2: Array(state.team1.length).fill('') }
-                    };
-                    
-                    // Restore Team 1 scores
-                    team1Data.archers.forEach((archerData, archIdx) => {
-                        if (archerData.sets && archerData.sets.length > 0) {
-                            archerData.sets.forEach(set => {
-                                if (set.set_number <= 4) {
-                                    const setIdx = set.set_number - 1;
-                                    const arrowStartIdx = archIdx * 2;
-                                    if (set.a1) state.scores.t1[setIdx][arrowStartIdx] = set.a1;
-                                    if (set.a2) state.scores.t1[setIdx][arrowStartIdx + 1] = set.a2;
-                                } else if (set.set_number === 5) {
-                                    // Shoot-off
-                                    if (set.a1) state.scores.so.t1[archIdx] = set.a1;
-                                }
-                            });
-                        }
-                    });
-                    
-                    // Restore Team 2 scores
-                    team2Data.archers.forEach((archerData, archIdx) => {
-                        if (archerData.sets && archerData.sets.length > 0) {
-                            archerData.sets.forEach(set => {
-                                if (set.set_number <= 4) {
-                                    const setIdx = set.set_number - 1;
-                                    const arrowStartIdx = archIdx * 2;
-                                    if (set.a1) state.scores.t2[setIdx][arrowStartIdx] = set.a1;
-                                    if (set.a2) state.scores.t2[setIdx][arrowStartIdx + 1] = set.a2;
-                                } else if (set.set_number === 5) {
-                                    // Shoot-off
-                                    if (set.a1) state.scores.so.t2[archIdx] = set.a1;
-                                }
-                            });
-                        }
-                    });
-                    
-                    // Restore event ID if present
-                    if (match.match.event_id) {
-                        state.eventId = match.match.event_id;
                     }
                     
-                    state.currentView = 'scoring';
-                    return true;
-                }
+                    if (archer) {
+                        archer.id = archer.id || `${archer.first}-${archer.last}`;
+                        state.team1.push(archer);
+                        state.matchArcherIds.t1[index] = archerData.id;
+                    } else {
+                        // Create minimal archer object if not found
+                        state.team1.push({
+                            id: `${firstName}-${lastName}`,
+                            first: firstName,
+                            last: lastName,
+                            school: archerData.school || '',
+                            level: archerData.level || 'VAR',
+                            gender: archerData.gender || ''
+                        });
+                        state.matchArcherIds.t1[index] = archerData.id;
+                    }
+                });
             }
-        } catch (e) {
-            console.error('[TeamCard] Failed to restore match from database:', e);
+            
+            // Restore Team 2 archers
+            if (team2Data.archers && Array.isArray(team2Data.archers)) {
+                team2Data.archers.forEach((archerData, index) => {
+                    const archerName = archerData.archer_name || '';
+                    const nameParts = archerName.split(' ');
+                    const firstName = nameParts[0] || '';
+                    const lastName = nameParts.slice(1).join(' ') || '';
+                    
+                    // Try UUID first
+                    let archer = masterList.find(a => {
+                        const archerId = a.id || a.archerId;
+                        return archerId && archerId === archerData.archer_id;
+                    });
+                    
+                    // Fallback to name matching
+                    if (!archer) {
+                        archer = masterList.find(a => 
+                            a.first.toLowerCase() === firstName.toLowerCase() &&
+                            a.last.toLowerCase() === lastName.toLowerCase()
+                        );
+                    }
+                    
+                    if (archer) {
+                        archer.id = archer.id || `${archer.first}-${archer.last}`;
+                        state.team2.push(archer);
+                        state.matchArcherIds.t2[index] = archerData.id;
+                    } else {
+                        // Create minimal archer object if not found
+                        state.team2.push({
+                            id: `${firstName}-${lastName}`,
+                            first: firstName,
+                            last: lastName,
+                            school: archerData.school || '',
+                            level: archerData.level || 'VAR',
+                            gender: archerData.gender || ''
+                        });
+                        state.matchArcherIds.t2[index] = archerData.id;
+                    }
+                });
+            }
+            
+            // 7. Build scores from server data
+            const numArrows = state.team1.length * ARROWS_PER_ARCHER;
+            state.scores = {
+                t1: Array(TOTAL_TEAM_SETS).fill(null).map(() => Array(numArrows).fill('')),
+                t2: Array(TOTAL_TEAM_SETS).fill(null).map(() => Array(numArrows).fill('')),
+                so: {
+                    t1: Array(state.team1.length).fill(''),
+                    t2: Array(state.team2.length).fill('')
+                }
+            };
+            
+            // Restore Team 1 scores
+            if (team1Data.archers && Array.isArray(team1Data.archers)) {
+                team1Data.archers.forEach((archerData, archIdx) => {
+                    if (archerData.sets && Array.isArray(archerData.sets)) {
+                        archerData.sets.forEach(set => {
+                            if (set.set_number >= 1 && set.set_number <= TOTAL_TEAM_SETS) {
+                                const setIdx = set.set_number - 1;
+                                const arrowStartIdx = archIdx * ARROWS_PER_ARCHER;
+                                if (set.a1) state.scores.t1[setIdx][arrowStartIdx] = set.a1;
+                                if (set.a2) state.scores.t1[setIdx][arrowStartIdx + 1] = set.a2;
+                            } else if (set.set_number === 5) {
+                                // Shoot-off
+                                if (set.a1) state.scores.so.t1[archIdx] = set.a1;
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // Restore Team 2 scores
+            if (team2Data.archers && Array.isArray(team2Data.archers)) {
+                team2Data.archers.forEach((archerData, archIdx) => {
+                    if (archerData.sets && Array.isArray(archerData.sets)) {
+                        archerData.sets.forEach(set => {
+                            if (set.set_number >= 1 && set.set_number <= TOTAL_TEAM_SETS) {
+                                const setIdx = set.set_number - 1;
+                                const arrowStartIdx = archIdx * ARROWS_PER_ARCHER;
+                                if (set.a1) state.scores.t2[setIdx][arrowStartIdx] = set.a1;
+                                if (set.a2) state.scores.t2[setIdx][arrowStartIdx + 1] = set.a2;
+                            } else if (set.set_number === 5) {
+                                // Shoot-off
+                                if (set.a1) state.scores.so.t2[archIdx] = set.a1;
+                            }
+                        });
+                    }
+                });
+            }
+            
+            // 8. Set current view
+            state.currentView = 'scoring';
+            
+            // 9. Save session for recovery
+            saveData();
+            
+            console.log('[hydrateTeamMatch] ✅ Hydration complete:', {
+                matchId: state.matchId,
+                team1Archers: state.team1.length,
+                team2Archers: state.team2.length,
+                setsScored: state.scores.t1.filter(s => s.some(v => v)).length
+            });
+            console.log('[hydrateTeamMatch] ========== END ==========');
+            
+            return state;
+            
+        } catch (error) {
+            console.error('[hydrateTeamMatch] ❌ Error:', error);
+            throw error;
         }
-        return false;
+    }
+    
+    // Phase 2: Restore match from database if matchId exists
+    // Now uses centralized hydration function (Phase 0)
+    async function restoreTeamMatchFromDatabase() {
+        if (!state.matchId) return false;
+        
+        try {
+            console.log('[restoreTeamMatchFromDatabase] Using centralized hydrateTeamMatch()');
+            await hydrateTeamMatch(state.matchId, {
+                mergeLocal: false,
+                clearStateFirst: true
+            });
+            return true;
+        } catch (error) {
+            console.error('[restoreTeamMatchFromDatabase] Failed to restore match:', error);
+            return false;
+        }
     }
     
     // Phase 2: Reset clears session state (database match remains for coach visibility)

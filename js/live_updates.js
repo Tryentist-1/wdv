@@ -333,15 +333,31 @@
         }
 
         // PHASE 0: baleNumber removed from rounds table, now lives in round_archers
-        return request('/rounds', 'POST', { roundType, date, division, gender, level, eventId })
+        // Support standalone rounds (eventId = null)
+        return request('/rounds', 'POST', { roundType, date, division, gender, level, eventId: eventId || null })
             .then(json => {
                 if (!json || !json.roundId) {
                     throw new Error('Round creation failed: missing roundId');
                 }
                 state.roundId = json.roundId;
-                state.eventId = eventId;  // Store the eventId to track which event this round belongs to
-                persistState();  // Save roundId and eventId for recovery
-                console.log('Round created and linked to event:', eventId, 'roundId:', state.roundId);
+                state.eventId = eventId;  // Store the eventId (null for standalone rounds)
+                
+                // Store entry code if provided (for standalone rounds)
+                if (json.entryCode) {
+                    state.roundEntryCode = json.entryCode;
+                    // Also store in localStorage for persistence
+                    try {
+                        localStorage.setItem('round_entry_code', json.entryCode);
+                    } catch (_) { }
+                    console.log('✅ Standalone round created with entry code:', json.entryCode);
+                }
+                
+                persistState();  // Save roundId, eventId, and entryCode for recovery
+                if (eventId) {
+                    console.log('Round created and linked to event:', eventId, 'roundId:', state.roundId);
+                } else {
+                    console.log('Standalone round created:', state.roundId, 'entryCode:', json.entryCode);
+                }
                 return state.roundId;
             });
     }

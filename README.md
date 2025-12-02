@@ -2,9 +2,10 @@
 
 > **Mobile-first web applications for Olympic Archery in Schools (OAS) scoring**
 
-[![Version](https://img.shields.io/badge/version-1.8.1-blue.svg)]()
+[![Version](https://img.shields.io/badge/version-1.8.3-blue.svg)]()
 [![Status](https://img.shields.io/badge/status-production-green.svg)]()
 [![Database](https://img.shields.io/badge/database-MySQL-orange.svg)]()
+[![PWA](https://img.shields.io/badge/PWA-enabled-blue.svg)]()
 [![Components](https://img.shields.io/badge/components-50%25_integrated-purple.svg)]()
 
 ---
@@ -19,6 +20,11 @@
 ## 📱 Quick Start
 
 ### For Archers
+
+**Install as App (PWA):**
+1. Visit https://tryentist.com/wdv/ on mobile
+2. Add to home screen for app-like experience
+3. Works offline with cached assets
 
 **Ranking Round:**
 1. Visit https://tryentist.com/wdv/

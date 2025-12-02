@@ -49,7 +49,14 @@ function require_api_key(): void {
                     // Check team match codes
                     $stmt = $pdo->prepare('SELECT id FROM team_matches WHERE LOWER(match_code) = LOWER(?) LIMIT 1');
                     $stmt->execute([$pass]);
-                    $authorized = (bool)$stmt->fetchColumn();
+                    if ($stmt->fetchColumn()) {
+                        $authorized = true;
+                    } else {
+                        // Check round entry codes (for standalone rounds)
+                        $stmt = $pdo->prepare('SELECT id FROM rounds WHERE LOWER(entry_code) = LOWER(?) LIMIT 1');
+                        $stmt->execute([$pass]);
+                        $authorized = (bool)$stmt->fetchColumn();
+                    }
                 }
             }
         } catch (Exception $e) {

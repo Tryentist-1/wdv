@@ -70,9 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
         date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
         archers: [], // { id, firstName, lastName, school, level, gender, targetAssignment, targetSize, scores }
         activeArcherId: null, // For card view
-        selectedEventId: null, // Selected event for this bale
+        selectedEventId: null, // Selected event for this bale (null for standalone)
         activeEventId: null, // Event ID if pre-assigned mode
         eventName: '',
+        selectedDivision: null, // Division selected by user (required for both event-linked and standalone)
         assignmentMode: 'manual', // 'manual' or 'pre-assigned'
         setupMode: 'manual', // 'manual' or 'pre-assigned' - determines which setup section to show
         syncStatus: {}, // Track sync status per archer per end: { archerId: { endNumber: 'synced'|'pending'|'failed' } }
@@ -81,7 +82,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // CRITICAL FIX 5: Add division fields to ensure they persist to localStorage
         divisionCode: null, // Division code for this round (e.g., 'BVAR', 'GJV', 'OPEN') - MUST come from round/event
         divisionRoundId: null, // Round ID for this division - used to prevent creating duplicate rounds
-        divisionName: '' // Display name for division (e.g., 'Boys Varsity')
+        divisionName: '', // Display name for division (e.g., 'Boys Varsity')
+        // Standalone round support
+        roundId: null, // Database round ID (created when starting scoring)
+        roundEntryCode: null, // Generated entry code for standalone rounds
+        isStandalone: false // Flag for standalone mode
     };
 
 
@@ -120,6 +125,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const preassignedSetupControls = {
         section: document.getElementById('preassigned-setup-section'),
         baleListContainer: document.getElementById('bale-list-container'),
+    };
+
+    const eventDivisionControls = {
+        eventSelect: document.getElementById('event-select'),
+        divisionSelect: document.getElementById('division-select'),
+        divisionSelection: document.getElementById('division-selection'),
+        refreshEventsBtn: document.getElementById('refresh-events-btn'),
+        roundTypeIndicator: document.getElementById('round-type-indicator'),
+        roundTypeText: document.getElementById('round-type-text'),
     };
 
     const scoringControls = {
@@ -363,15 +377,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateEventHeader() {
         const eventNameEl = document.getElementById('event-name');
-        const currentEventNameEl = document.getElementById('current-event-name');
         const baleDisplayEl = document.getElementById('current-bale-display');
 
         const eventLabel = state.eventName || (state.activeEventId ? 'Loading...' : 'No Event');
         if (eventNameEl) {
             eventNameEl.textContent = eventLabel;
-        }
-        if (currentEventNameEl) {
-            currentEventNameEl.textContent = eventLabel;
         }
 
         if (baleDisplayEl) {
@@ -406,6 +416,172 @@ document.addEventListener('DOMContentLoaded', () => {
         if (banner) banner.style.display = 'none';
     }
 
+    // ==================== Event/Division Selection Functions ====================
+    
+    async function loadEventsIntoSelect() {
+        if (!eventDivisionControls.eventSelect) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/events/recent`);
+            if (!response.ok) {
+                console.error('[Load Events] Failed to load events');
+                return;
+            }
+            
+            const data = await response.json();
+            const events = data.events || [];
+            
+            eventDivisionControls.eventSelect.innerHTML = '<option value="">Standalone Round (No Event)</option>';
+            
+            // Only show active events
+            const activeEvents = events.filter(e => e.status === 'Active');
+            activeEvents.forEach(event => {
+                const option = document.createElement('option');
+                option.value = event.id;
+                option.textContent = `${event.name} - ${event.date}`;
+                eventDivisionControls.eventSelect.appendChild(option);
+            });
+            
+            // Set selected value if we have one
+            if (state.selectedEventId) {
+                eventDivisionControls.eventSelect.value = state.selectedEventId;
+                await loadDivisionsForEvent(state.selectedEventId);
+            } else {
+                // Load default divisions for standalone
+                loadDefaultDivisions();
+            }
+        } catch (error) {
+            console.error('[Load Events] Error:', error);
+            // Still show default divisions for standalone
+            loadDefaultDivisions();
+        }
+    }
+    
+    function loadDefaultDivisions() {
+        if (!eventDivisionControls.divisionSelect) return;
+        
+        const defaultDivisions = [
+            { code: 'OPEN', name: 'OPEN (Mixed - All Levels)' },
+            { code: 'BVAR', name: 'BVAR (Boys Varsity)' },
+            { code: 'GVAR', name: 'GVAR (Girls Varsity)' },
+            { code: 'BJV', name: 'BJV (Boys JV)' },
+            { code: 'GJV', name: 'GJV (Girls JV)' }
+        ];
+        
+        eventDivisionControls.divisionSelect.innerHTML = '<option value="">Select Division...</option>';
+        defaultDivisions.forEach(div => {
+            const option = document.createElement('option');
+            option.value = div.code;
+            option.textContent = div.name;
+            eventDivisionControls.divisionSelect.appendChild(option);
+        });
+        
+        // Set selected value if we have one
+        if (state.selectedDivision) {
+            eventDivisionControls.divisionSelect.value = state.selectedDivision;
+        }
+    }
+    
+    async function loadDivisionsForEvent(eventId) {
+        if (!eventId || !eventDivisionControls.divisionSelect) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
+            if (!response.ok) {
+                console.error('[Load Divisions] Failed to load event snapshot');
+                loadDefaultDivisions();
+                return;
+            }
+            
+            const data = await response.json();
+            const divisions = data.divisions || {};
+            
+            eventDivisionControls.divisionSelect.innerHTML = '<option value="">Select Division...</option>';
+            
+            // Populate from event snapshot
+            const divisionNames = {
+                'OPEN': 'OPEN (Mixed - All Levels)',
+                'BVAR': 'BVAR (Boys Varsity)',
+                'GVAR': 'GVAR (Girls Varsity)',
+                'BJV': 'BJV (Boys JV)',
+                'GJV': 'GJV (Girls JV)'
+            };
+            
+            Object.keys(divisions).forEach(divCode => {
+                const option = document.createElement('option');
+                option.value = divCode;
+                option.textContent = divisionNames[divCode] || divCode;
+                eventDivisionControls.divisionSelect.appendChild(option);
+            });
+            
+            // Set selected value if we have one
+            if (state.selectedDivision && Object.keys(divisions).includes(state.selectedDivision)) {
+                eventDivisionControls.divisionSelect.value = state.selectedDivision;
+            }
+        } catch (error) {
+            console.error('[Load Divisions] Error:', error);
+            loadDefaultDivisions();
+        }
+    }
+    
+    async function handleEventSelection() {
+        const eventId = eventDivisionControls.eventSelect?.value || null;
+        state.selectedEventId = eventId || null;
+        state.isStandalone = !eventId;
+        
+        if (eventId) {
+            // Load divisions from event
+            await loadDivisionsForEvent(eventId);
+            // Load event data
+            const events = await fetch(`${API_BASE}/events/recent`).then(r => r.json()).then(d => d.events || []).catch(() => []);
+            const event = events.find(e => e.id === eventId);
+            if (event) {
+                state.eventName = event.name;
+                await loadEventById(eventId, event.name, event.entryCode || '');
+            }
+        } else {
+            // Standalone - load default divisions
+            loadDefaultDivisions();
+            state.eventName = '';
+        }
+        
+        updateRoundTypeIndicator();
+        saveData();
+    }
+    
+    function handleDivisionSelection() {
+        const division = eventDivisionControls.divisionSelect?.value || null;
+        state.selectedDivision = division || null;
+        
+        if (division) {
+            // Update division code and name
+            const divisionNames = {
+                'OPEN': 'OPEN (Mixed)',
+                'BVAR': 'Boys Varsity',
+                'GVAR': 'Girls Varsity',
+                'BJV': 'Boys JV',
+                'GJV': 'Girls JV'
+            };
+            state.divisionCode = division;
+            state.divisionName = divisionNames[division] || division;
+        }
+        
+        updateRoundTypeIndicator();
+        saveData();
+    }
+    
+    function updateRoundTypeIndicator() {
+        if (!eventDivisionControls.roundTypeText) return;
+        
+        if (state.isStandalone) {
+            eventDivisionControls.roundTypeText.textContent = 'Standalone round - not linked to any event';
+        } else if (state.selectedEventId && state.eventName) {
+            eventDivisionControls.roundTypeText.textContent = `Event-linked round - ${state.eventName}`;
+        } else {
+            eventDivisionControls.roundTypeText.textContent = 'Select event and division to continue';
+        }
+    }
+    
     // Ensure core UI handlers are always attached, even on resume after reload
     function wireCoreHandlers() {
         if (uiWired) return;
@@ -816,6 +992,461 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
+     * Show resume dialog with server verification
+     * Returns a promise that resolves to true if user wants to resume, false otherwise
+     */
+    async function showResumeDialog({ session, archerCount, hasScores, isCurrent, serverRoundStatus }) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('resume-session-modal');
+            const detailsEl = document.getElementById('resume-session-details');
+            const resumeBtn = document.getElementById('resume-session-btn');
+            const newRoundBtn = document.getElementById('new-round-btn');
+            
+            if (!modal || !detailsEl || !resumeBtn || !newRoundBtn) {
+                console.error('[Resume Dialog] Missing dialog elements');
+                resolve(false);
+                return;
+            }
+            
+            // Build details HTML
+            const statusIcon = isCurrent ? '✅' : '⚠️';
+            const statusText = isCurrent ? 'Current' : 'May be outdated';
+            const serverStatus = serverRoundStatus ? `Server: ${serverRoundStatus}` : 'Server: Unknown';
+            
+            detailsEl.innerHTML = `
+                <div class="space-y-2 text-sm">
+                    <div><strong>Bale:</strong> ${session.baleNumber}</div>
+                    <div><strong>Archers:</strong> ${archerCount}</div>
+                    <div><strong>Current End:</strong> ${session.currentEnd || 1} of ${state.totalEnds}</div>
+                    <div><strong>Scores:</strong> ${hasScores ? '⚠️ Has existing scores' : '✓ No scores yet'}</div>
+                    <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
+                        <div><strong>Status:</strong> ${statusIcon} ${statusText}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">${serverStatus}</div>
+                    </div>
+                </div>
+            `;
+            
+            // Enable/disable resume button based on verification
+            if (!isCurrent) {
+                resumeBtn.disabled = false;
+                resumeBtn.classList.add('opacity-75');
+                resumeBtn.title = 'Round may have been updated on server';
+            } else {
+                resumeBtn.disabled = false;
+                resumeBtn.classList.remove('opacity-75');
+                resumeBtn.title = '';
+            }
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Handle Resume button
+            const handleResume = async () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                
+                const entryCode = session.entryCode ||
+                    localStorage.getItem('event_entry_code') ||
+                    (session.eventId ? (JSON.parse(localStorage.getItem(`event:${session.eventId}:meta`) || '{}').entryCode) : null);
+                
+                if (!entryCode) {
+                    console.error('[Resume Dialog] ❌ No entry code found');
+                    localStorage.removeItem('current_bale_session');
+                    resolve(false);
+                    return;
+                }
+                
+                localStorage.setItem('event_entry_code', entryCode);
+                
+                try {
+                    // Use centralized hydration function (Phase 0)
+                    console.log('[Resume Dialog] Using centralized hydrateScorecardGroup()');
+                    await hydrateScorecardGroup(session.roundId, session.baleNumber, {
+                        entryCode: entryCode,
+                        mergeLocal: false, // Don't merge local scores yet - just use server data
+                        clearStateFirst: true
+                    });
+                    
+                    // Set additional state fields from session
+                    state.activeEventId = session.eventId;
+                    state.selectedEventId = session.eventId;
+                    state.assignmentMode = session.assignmentMode || 'pre-assigned';
+                    
+                    // Initialize LiveUpdates if enabled
+                    if (getLiveEnabled()) {
+                        await ensureLiveRoundReady({ promptForCode: false });
+                    }
+                    
+                    // Transition to scoring view
+                    state.currentView = 'scoring';
+                    renderView();
+                    resolve(true);
+                    
+                } catch (error) {
+                    console.error('[Resume Dialog] ❌ Hydration failed:', error);
+                    alert('Failed to restore session: ' + (error.message || 'Unknown error'));
+                    localStorage.removeItem('current_bale_session');
+                    resolve(false);
+                }
+            };
+            
+            // Handle New Round button
+            const handleNewRound = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                console.log('[Resume Dialog] User chose New Round - clearing local session and showing event selection');
+                localStorage.removeItem('current_bale_session');
+                if (session.roundId) {
+                    try { localStorage.removeItem(`live_updates_session:${session.roundId}`); } catch (e) { }
+                }
+                state.archers = [];
+                state.roundId = null;
+                state.baleNumber = 1;
+                state.currentEnd = 1;
+                state.currentView = 'setup';
+                state.selectedEventId = null;
+                state.activeEventId = null;
+                state.isStandalone = false;
+                state.selectedDivision = null;
+                
+                // Show event selection modal instead of setup
+                showEventModal();
+                resolve(false);
+            };
+            
+            // Remove old listeners and add new ones
+            resumeBtn.replaceWith(resumeBtn.cloneNode(true));
+            newRoundBtn.replaceWith(newRoundBtn.cloneNode(true));
+            const newResumeBtn = document.getElementById('resume-session-btn');
+            const newNewRoundBtn = document.getElementById('new-round-btn');
+            newResumeBtn.addEventListener('click', handleResume);
+            newNewRoundBtn.addEventListener('click', handleNewRound);
+        });
+    }
+    
+    // =====================================================
+    // PHASE 0: Centralized Data Hydration Functions
+    // Following DATA_SYNCHRONIZATION_STRATEGY.md rules
+    // =====================================================
+    
+    /**
+     * Clear all state before hydration to prevent ambiguity
+     * Rule 4: Clear State Before Hydration
+     */
+    function clearState() {
+        console.log('[clearState] Clearing state before hydration');
+        state.roundId = null;
+        state.baleNumber = null;
+        state.archers = [];
+        state.divisionCode = null;
+        state.divisionRoundId = null;
+        state.currentEnd = 1;
+        state.activeEventId = null;
+        state.selectedEventId = null;
+        state.eventName = '';
+        // Clear localStorage session (keep offline queue)
+        localStorage.removeItem('current_bale_session');
+    }
+    
+    /**
+     * Validate UUID format
+     * Rule 5: UUID-Only for Entity Identification
+     */
+    function isValidUUID(str) {
+        if (!str || typeof str !== 'string') return false;
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+    }
+    
+    /**
+     * Normalize entity ID to UUID format
+     * Rule 5: UUID-Only for Entity Identification
+     */
+    function normalizeEntityId(entity, fieldName = 'id') {
+        const id = typeof entity === 'string' ? entity : (entity?.id || entity?.archerId || entity?.roundId || entity?.matchId);
+        
+        if (!id) {
+            throw new Error(`Entity missing ${fieldName}`);
+        }
+        
+        if (!isValidUUID(id)) {
+            throw new Error(`Invalid UUID format: ${id}`);
+        }
+        
+        return id;
+    }
+    
+    /**
+     * Validate Scorecard Group integrity
+     * Rule 3: Atomic Data Units - Verify all archers belong to this Scorecard Group
+     * @param {Object} scorecardGroup - Scorecard group data from server
+     * @param {string} roundId - Expected round ID
+     * @param {number} baleNumber - Expected bale number
+     */
+    function validateScorecardGroup(scorecardGroup, roundId, baleNumber) {
+        if (!scorecardGroup) {
+            throw new Error('Scorecard group data is missing');
+        }
+        
+        // Verify RoundID matches
+        if (scorecardGroup.roundId && scorecardGroup.roundId !== roundId) {
+            throw new Error(`Round ID mismatch: expected ${roundId}, got ${scorecardGroup.roundId}`);
+        }
+        
+        // Verify all archers belong to this Scorecard Group
+        if (scorecardGroup.archers && Array.isArray(scorecardGroup.archers)) {
+            scorecardGroup.archers.forEach((archer, index) => {
+                if (archer.baleNumber !== baleNumber && archer.baleNumber !== null && archer.baleNumber !== undefined) {
+                    console.warn(`[validateScorecardGroup] Archer ${index} (${archer.archerId || archer.id}) has bale ${archer.baleNumber}, expected ${baleNumber}`);
+                    // Don't throw - just warn (some archers might have NULL bale_number)
+                }
+                
+                // Verify archer has valid UUID
+                const archerId = archer.archerId || archer.id;
+                if (archerId && !isValidUUID(archerId)) {
+                    console.warn(`[validateScorecardGroup] Archer ${index} has invalid UUID: ${archerId}`);
+                }
+            });
+        }
+        
+        // Verify division is set
+        if (!scorecardGroup.division) {
+            console.warn('[validateScorecardGroup] Scorecard Group missing division');
+        }
+        
+        console.log('[validateScorecardGroup] ✅ Validation passed');
+    }
+    
+    /**
+     * Fetch Scorecard Group from server
+     * Rule 3: Atomic Data Units - Fetch Complete Units from Server
+     * @param {string} roundId - Round UUID
+     * @param {number} baleNumber - Bale number
+     * @param {string} entryCode - Entry code for authentication
+     * @returns {Promise<Object>} Scorecard group data
+     */
+    async function fetchScorecardGroup(roundId, baleNumber, entryCode) {
+        console.log('[fetchScorecardGroup] Fetching Scorecard Group:', { roundId, baleNumber });
+        
+        // Validate inputs
+        if (!roundId || !isValidUUID(roundId)) {
+            throw new Error(`Invalid roundId: ${roundId}`);
+        }
+        if (!baleNumber || typeof baleNumber !== 'number') {
+            throw new Error(`Invalid baleNumber: ${baleNumber}`);
+        }
+        
+        const response = await fetch(`${API_BASE}/rounds/${roundId}/bales/${baleNumber}/archers`, {
+            headers: {
+                'X-Passcode': entryCode || ''
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch Scorecard Group: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Verify all archers belong to this Scorecard Group
+        if (data.archers && Array.isArray(data.archers)) {
+            const validatedArchers = data.archers.filter(archer => {
+                // Only include archers on this bale (allow NULL bale_number for unassigned)
+                return archer.baleNumber === baleNumber || 
+                       archer.baleNumber === null || 
+                       archer.baleNumber === undefined;
+            });
+            
+            // Warn if we filtered out any archers
+            if (validatedArchers.length !== data.archers.length) {
+                console.warn(`[fetchScorecardGroup] Filtered out ${data.archers.length - validatedArchers.length} archers not on bale ${baleNumber}`);
+            }
+            
+            data.archers = validatedArchers;
+        }
+        
+        console.log('[fetchScorecardGroup] ✅ Fetched Scorecard Group:', {
+            roundId: data.roundId || roundId,
+            baleNumber: baleNumber,
+            division: data.division,
+            archerCount: data.archers?.length || 0
+        });
+        
+        return data;
+    }
+    
+    /**
+     * Merge scores using sync status to determine source
+     * Rule 2: Scores Use "Last Write Wins" with Sync Status
+     * @param {Array} localScores - Local score array
+     * @param {Array} serverScores - Server score array
+     * @param {Object} syncStatus - Sync status per end (e.g., { endNumber: 'synced'|'pending'|'failed' })
+     * @returns {Array} Merged scores
+     */
+    function mergeScoresWithSyncStatus(localScores, serverScores, syncStatus = {}) {
+        const merged = [];
+        const maxEnds = Math.max(localScores?.length || 0, serverScores?.length || 0, state.totalEnds || 10);
+        
+        for (let i = 0; i < maxEnds; i++) {
+            const localEnd = localScores && localScores[i] ? localScores[i] : null;
+            const serverEnd = serverScores && serverScores[i] ? serverScores[i] : null;
+            const endNumber = i + 1;
+            const sync = syncStatus[endNumber] || '';
+            
+            // Check if score has data
+            const hasLocalData = localEnd && Array.isArray(localEnd) && localEnd.some(val => val !== '' && val !== null && val !== undefined);
+            const hasServerData = serverEnd && Array.isArray(serverEnd) && serverEnd.some(val => val !== '' && val !== null && val !== undefined);
+            
+            if (sync === 'synced') {
+                // Already synced - use server (authoritative)
+                merged[i] = serverEnd || localEnd || ['', '', ''];
+            } else if (sync === 'pending' || sync === 'failed') {
+                // Local has unsynced changes - keep local (will sync later)
+                merged[i] = localEnd || serverEnd || ['', '', ''];
+            } else if (hasServerData && !hasLocalData) {
+                // Server has data, local doesn't - use server
+                merged[i] = serverEnd;
+            } else if (hasLocalData) {
+                // Local has data - keep local (may be unsynced)
+                merged[i] = localEnd;
+            } else {
+                // Neither has data - empty
+                merged[i] = ['', '', ''];
+            }
+        }
+        
+        return merged;
+    }
+    
+    /**
+     * Centralized hydration function for Scorecard Group
+     * Rule 6: Centralized Hydration Function
+     * 
+     * @param {string} roundId - Round UUID
+     * @param {number} baleNumber - Bale number
+     * @param {Object} options - Hydration options
+     *   - entryCode: Entry code for authentication
+     *   - mergeLocal: Whether to merge with local scores (default: false)
+     *   - clearStateFirst: Whether to clear state before hydration (default: true)
+     * @returns {Promise<Object>} Hydrated state
+     */
+    async function hydrateScorecardGroup(roundId, baleNumber, options = {}) {
+        console.log('[hydrateScorecardGroup] ========== START ==========');
+        console.log('[hydrateScorecardGroup] Parameters:', { roundId, baleNumber, options });
+        
+        try {
+            // 1. Clear state first (Rule 4)
+            if (options.clearStateFirst !== false) {
+                clearState();
+            }
+            
+            // 2. Validate inputs (Rule 5)
+            const normalizedRoundId = normalizeEntityId(roundId, 'roundId');
+            if (!baleNumber || typeof baleNumber !== 'number') {
+                throw new Error(`Invalid baleNumber: ${baleNumber}`);
+            }
+            
+            // 3. Fetch atomic unit from server (Rule 3)
+            const entryCode = options.entryCode || getEventEntryCode();
+            const scorecardGroup = await fetchScorecardGroup(normalizedRoundId, baleNumber, entryCode);
+            
+            // 4. Validate atomic unit integrity (Rule 3)
+            validateScorecardGroup(scorecardGroup, normalizedRoundId, baleNumber);
+            
+            // 5. Populate metadata from server (Rule 1)
+            state.roundId = normalizedRoundId;
+            state.baleNumber = baleNumber;
+            state.divisionCode = scorecardGroup.division || null;
+            state.divisionRoundId = normalizedRoundId;
+            
+            // 6. Build archers from Scorecard Group
+            if (!scorecardGroup.archers || !Array.isArray(scorecardGroup.archers)) {
+                throw new Error('Scorecard Group missing archers array');
+            }
+            
+            // 7. Merge scores if option specified (Rule 2)
+            state.archers = scorecardGroup.archers.map(archer => {
+                const scoreSheet = createEmptyScoreSheet(state.totalEnds);
+                
+                // Extract scores from server data
+                const endsList = Array.isArray(archer.scorecard?.ends) ? archer.scorecard.ends : [];
+                endsList.forEach(end => {
+                    const idx = Math.max(0, Math.min(state.totalEnds - 1, (end.endNumber || 1) - 1));
+                    scoreSheet[idx] = [end.a1 || '', end.a2 || '', end.a3 || ''];
+                });
+                
+                // Merge with local if option specified
+                let mergedScores = scoreSheet;
+                if (options.mergeLocal) {
+                    // TODO: Get local scores and sync status for this archer
+                    // For now, just use server scores
+                    mergedScores = scoreSheet;
+                }
+                
+                // Build archer object
+                const provisional = {
+                    extId: archer.extId,
+                    firstName: archer.firstName || '',
+                    lastName: archer.lastName || '',
+                    school: archer.school || ''
+                };
+                const extId = getExtIdFromArcher(provisional);
+                
+                const overrides = {
+                    extId,
+                    targetAssignment: archer.targetAssignment || archer.target || 'A',
+                    baleNumber: archer.baleNumber || baleNumber,
+                    level: archer.level || '',
+                    gender: archer.gender || '',
+                    division: scorecardGroup.division || archer.division,
+                    scores: mergedScores
+                };
+                
+                const rosterPayload = Object.assign({}, provisional, {
+                    level: archer.level,
+                    gender: archer.gender,
+                    division: scorecardGroup.division || archer.division
+                });
+                
+                const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
+                stateArcher.roundArcherId = archer.roundArcherId;
+                stateArcher.archerId = archer.archerId || archer.id; // Ensure UUID is set
+                
+                return stateArcher;
+            });
+            
+            // 8. Set current end to first incomplete end or last end
+            let maxEnd = 0;
+            state.archers.forEach(archer => {
+                const completed = archer.scores.filter(end => 
+                    Array.isArray(end) && end.some(score => score !== '' && score !== null && score !== undefined)
+                ).length;
+                maxEnd = Math.max(maxEnd, completed);
+            });
+            state.currentEnd = Math.min(maxEnd + 1, state.totalEnds);
+            
+            // 9. Save session for recovery
+            saveCurrentBaleSession();
+            saveData();
+            
+            console.log('[hydrateScorecardGroup] ✅ Hydration complete:', {
+                roundId: state.roundId,
+                baleNumber: state.baleNumber,
+                division: state.divisionCode,
+                archerCount: state.archers.length,
+                currentEnd: state.currentEnd
+            });
+            console.log('[hydrateScorecardGroup] ========== END ==========');
+            
+            return state;
+            
+        } catch (error) {
+            console.error('[hydrateScorecardGroup] ❌ Error:', error);
+            throw error;
+        }
+    }
+    
+    /**
      * Attempt to restore bale session from localStorage.
      * Fetches full bale group data from server if session exists.
      * Returns true if session was restored, false otherwise.
@@ -869,21 +1500,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // ASK USER with detailed info
-            const resumeMsg = `Resume in-progress scoring?\n\nBale: ${session.baleNumber}\nArchers: ${archerCount}\nCurrent End: ${session.currentEnd || 1}\n${hasScores ? '⚠️ Has existing scores' : '✓ No scores yet'}\n\nOK = Resume\nCancel = Start fresh (clears session only, use Coach Reset to clear server data)`;
-            const shouldResume = confirm(resumeMsg);
-
-            if (!shouldResume) {
-                console.log('[Phase 0 Session] User declined to resume, clearing LOCAL session only');
-                localStorage.removeItem('current_bale_session');
-                // Clear Live Updates session too
-                if (session.roundId) {
-                    try {
-                        localStorage.removeItem(`live_updates_session:${session.roundId}`);
-                    } catch (e) { }
+            // Verify session is still current on server
+            let isCurrent = false;
+            let serverRoundStatus = null;
+            let serverLastModified = null;
+            
+            if (session.roundId && entryCodePreview) {
+                try {
+                    const verifyResponse = await fetch(`${API_BASE}/rounds/${session.roundId}/snapshot`, {
+                        headers: { 'X-Passcode': entryCodePreview }
+                    });
+                    if (verifyResponse.ok) {
+                        const verifyData = await verifyResponse.json();
+                        serverRoundStatus = verifyData.round?.status || null;
+                        // Check if round is still active and matches our session
+                        isCurrent = serverRoundStatus === 'In Progress' || serverRoundStatus === 'Not Started';
+                        if (verifyData.round?.updated_at) {
+                            serverLastModified = new Date(verifyData.round.updated_at);
+                        }
+                        console.log('[Phase 0 Session] Server verification:', { isCurrent, serverRoundStatus });
+                    }
+                } catch (e) {
+                    console.warn('[Phase 0 Session] Could not verify with server:', e);
+                    // If we can't verify, assume it's current (better to let user decide)
+                    isCurrent = true;
                 }
-                return false;
+            } else {
+                // No round ID or entry code - can't verify, assume current
+                isCurrent = true;
             }
+            
+            // Show resume dialog (function defined below)
+            return await showResumeDialog({
+                session,
+                archerCount,
+                hasScores,
+                isCurrent,
+                serverRoundStatus
+            });
 
             // Get event entry code for authentication
             // Priority: 1) Saved in session, 2) Global storage, 3) Event meta
@@ -907,7 +1561,20 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('event_entry_code', entryCode);
             console.log('[Phase 0 Session] ✅ Using entry code for authentication');
 
-            // Fetch bale group from server
+            // Fetch snapshot first to get ALL archers for the round
+            const snapshotResponse = await fetch(`${API_BASE}/rounds/${session.roundId}/snapshot`, {
+                headers: { 'X-Passcode': entryCode }
+            });
+            
+            let snapshotData = null;
+            if (snapshotResponse.ok) {
+                snapshotData = await snapshotResponse.json();
+                console.log('[Phase 0 Session] ✅ Snapshot retrieved:', snapshotData.archers?.length || 0, 'archers');
+            } else {
+                console.warn('[Phase 0 Session] Could not fetch snapshot, using bale data only');
+            }
+
+            // Fetch bale group from server for full archer details
             const response = await fetch(`${API_BASE}/rounds/${session.roundId}/bales/${session.baleNumber}/archers`, {
                 method: 'GET',
                 headers: {
@@ -916,19 +1583,81 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            if (!response.ok) {
+            let baleData = null;
+            if (response.ok) {
+                baleData = await response.json();
+                console.log('[Phase 0 Session] ✅ Bale data retrieved:', baleData.archers?.length || 0, 'archers');
+            } else {
                 console.warn('[Phase 0 Session] Failed to fetch bale group:', response.status);
-                return false;
+                // Create empty bale data structure
+                baleData = { division: null, archers: [] };
             }
 
-            const baleData = await response.json();
-
-            if (!baleData.archers || baleData.archers.length === 0) {
-                console.warn('[Phase 0 Session] No archers found in bale group');
+            // Merge snapshot archers with bale data (same logic as handleDirectLink)
+            const archerMap = new Map();
+            
+            // First, add archers from bale data (full details)
+            if (baleData.archers && Array.isArray(baleData.archers)) {
+                baleData.archers.forEach(archer => {
+                    const key = archer.archerId || archer.id || archer.roundArcherId;
+                    if (key) {
+                        archerMap.set(key, archer);
+                    }
+                });
+            }
+            
+            // Then, add missing archers from snapshot (same bale or NULL bale_number)
+            if (snapshotData && snapshotData.archers) {
+                const relevantArchers = snapshotData.archers.filter(a => 
+                    a.baleNumber === session.baleNumber || 
+                    a.baleNumber === null || 
+                    a.baleNumber === undefined
+                );
+                
+                relevantArchers.forEach(snapshotArcher => {
+                    const key = snapshotArcher.archerId || snapshotArcher.roundArcherId;
+                    if (key && !archerMap.has(key)) {
+                        // Convert snapshot archer to bale data format
+                        const archerName = snapshotArcher.archerName || 'Unknown';
+                        const nameParts = archerName.split(' ');
+                        const firstName = nameParts[0] || '';
+                        const lastName = nameParts.slice(1).join(' ') || '';
+                        
+                        archerMap.set(key, {
+                            roundArcherId: snapshotArcher.roundArcherId,
+                            archerId: snapshotArcher.archerId,
+                            firstName: firstName,
+                            lastName: lastName,
+                            school: '',
+                            level: '',
+                            gender: '',
+                            targetAssignment: snapshotArcher.targetAssignment,
+                            baleNumber: snapshotArcher.baleNumber || session.baleNumber,
+                            scorecard: {
+                                ends: snapshotArcher.scores ? snapshotArcher.scores.map((score, idx) => ({
+                                    endNumber: idx + 1,
+                                    a1: score[0] || '',
+                                    a2: score[1] || '',
+                                    a3: score[2] || ''
+                                })) : []
+                            }
+                        });
+                        console.log('[Phase 0 Session] ✅ Added missing archer from snapshot:', archerName);
+                    }
+                });
+            }
+            
+            // Convert map to array
+            const allArchers = Array.from(archerMap.values());
+            
+            if (allArchers.length === 0) {
+                console.warn('[Phase 0 Session] No archers found after merge');
                 return false;
             }
-
-            console.log('[Phase 0 Session] Successfully retrieved bale group:', baleData);
+            
+            // Replace baleData.archers with merged list
+            baleData.archers = allArchers;
+            console.log('[Phase 0 Session] ✅ Total archers after merge:', allArchers.length);
 
             // Restore state from server data
             state.roundId = session.roundId;
@@ -4324,9 +5053,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            const eventId = state.activeEventId || state.selectedEventId || null;
+            const eventId = state.isStandalone ? null : (state.activeEventId || state.selectedEventId || null);
             const today = new Date().toISOString().slice(0, 10);
-            let division = null;
+            
+            // Use selected division (required)
+            let division = state.selectedDivision || state.divisionCode || null;
             let gender = null;
             let level = null;
 
@@ -4425,11 +5156,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 division,
                 gender,
                 level,
-                eventId
+                eventId: eventId || null  // null for standalone rounds
             });
 
             if (!LiveUpdates._state || !LiveUpdates._state.roundId) {
                 throw new Error('roundId missing after ensureRound');
+            }
+            
+            // Store roundId and entryCode in state
+            state.roundId = LiveUpdates._state.roundId;
+            if (LiveUpdates._state.roundEntryCode) {
+                state.roundEntryCode = LiveUpdates._state.roundEntryCode;
+                console.log('[ensureLiveRoundReady] ✅ Standalone round entry code:', state.roundEntryCode);
             }
 
             // FIX: Pre-populate archerIds mapping with known roundArcherId values
@@ -4735,9 +5473,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function showEventModal() {
         const modal = document.getElementById('event-modal');
         if (modal) {
-            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Clear any inline style that might override
+            modal.style.display = '';
 
-            // Load active events into the Events tab
+            // Load active events into the event list
             loadActiveEventsIntoModal();
         }
     }
@@ -4745,7 +5486,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide event selection modal
     function hideEventModal() {
         const modal = document.getElementById('event-modal');
-        if (modal) modal.style.display = 'none';
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            // Clear inline style to ensure classList takes precedence
+            modal.style.display = '';
+        }
     }
 
     // Load active events into modal list
@@ -4851,16 +5597,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         const url = `ranking_round_300.html?event=${ev.id}&round=${round.round_id}&archer=${archerId}`;
                         window.location.href = url;
                     } else {
-                        // Start new round - load event
+                        // Start new round - load event and go to setup
                         const entryCode = ev.entryCode || ev.entry_code || '';
                         console.log('[Event Selected] Starting new round, entryCode:', entryCode);
 
                         const success = await loadEventById(ev.id, ev.name, entryCode);
                         if (success) {
                             hideEventModal();
+                            // Set event selection in state
+                            state.selectedEventId = ev.id;
+                            state.activeEventId = ev.id;
+                            state.isStandalone = false;
+                            // Load divisions for this event
+                            await loadDivisionsForEvent(ev.id);
+                            // Update event/division selectors
+                            if (eventDivisionControls.eventSelect) {
+                                eventDivisionControls.eventSelect.value = ev.id;
+                            }
+                            updateRoundTypeIndicator();
                             renderSetupSections();
                             updateEventHeader();
-                            console.log('[Event Selected] Event loaded successfully');
+                            console.log('[Event Selected] Event loaded successfully, showing setup with division selector');
                         } else {
                             alert('Failed to load event. Please try again.');
                         }
@@ -4892,6 +5649,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             state.selectedEventId = eventId;
             state.activeEventId = eventId;
+            state.isStandalone = false; // Event-linked round
 
             // Use entry code if provided (for authenticated event snapshots)
             // Note: Event snapshot is typically public, but we include entry code if available
@@ -4932,6 +5690,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (eventData && eventData.divisions) {
                 const divisionKeys = Object.keys(eventData.divisions || {});
                 state.availableDivisions = divisionKeys.length ? divisionKeys : ['OPEN'];
+                
+                // Update division select dropdown with available divisions
+                await loadDivisionsForEvent(eventId);
                 const rosterState = getRosterState();
                 const rosterMap = new Map(
                     rosterState.list.map(item => [getExtIdFromArcher(item), item])
@@ -5008,6 +5769,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         // For now, we'll suppress the prompt to avoid annoyance, as LiveUpdates will prompt if needed
                         console.warn('⚠️ No entry code found for event. Live scoring may prompt later if needed.');
                     }
+                    
+                    // Update round type indicator
+                    updateRoundTypeIndicator();
                 } catch (_) { }
 
                 // Do not pre-populate state.archers here; we only populate when a bale is selected
@@ -5133,9 +5897,126 @@ document.addEventListener('DOMContentLoaded', () => {
      * Handle direct link from index.html
      * URL format: ?event=X&round=Y&archer=Z
      */
+    /**
+     * Handle standalone round link (no event)
+     * URL format: ?round={id}&archer={id} or ?code={entry_code}&archer={id}
+     */
+    async function handleStandaloneRoundLink(roundIdOrCode, archerId, isEntryCode = false) {
+        try {
+            console.log('[handleStandaloneRoundLink] Loading standalone round:', { roundIdOrCode, archerId, isEntryCode });
+            
+            let roundId = roundIdOrCode;
+            let roundData = null;
+            
+            // If entry code, look up round first
+            if (isEntryCode) {
+                const response = await fetch(`${API_BASE}/rounds?entry_code=${encodeURIComponent(roundIdOrCode)}`);
+                if (!response.ok) {
+                    throw new Error(`Round not found for entry code: ${roundIdOrCode}`);
+                }
+                const data = await response.json();
+                roundId = data.roundId;
+                roundData = data;
+                console.log('[handleStandaloneRoundLink] Found round by entry code:', roundId);
+            }
+            
+            // Fetch round snapshot
+            const snapshotResponse = await fetch(`${API_BASE}/rounds/${roundId}/snapshot`);
+            if (!snapshotResponse.ok) {
+                throw new Error(`Failed to load round: ${snapshotResponse.status}`);
+            }
+            
+            const snapshotData = await snapshotResponse.json();
+            console.log('[handleStandaloneRoundLink] Round snapshot loaded:', snapshotData);
+            
+            // Find archer in snapshot
+            const snapshotArcher = snapshotData.archers?.find(a =>
+                a.archerId === archerId ||
+                a.roundArcherId === archerId ||
+                a.id === archerId
+            );
+            
+            if (!snapshotArcher) {
+                alert('You are not assigned to this round.');
+                return false;
+            }
+            
+            const baleNumber = snapshotArcher.baleNumber || snapshotData.round?.baleNumber;
+            
+            // Set up state for standalone round
+            state.isStandalone = true;
+            state.selectedEventId = null;
+            state.activeEventId = null;
+            state.roundId = roundId;
+            state.roundEntryCode = isEntryCode ? roundIdOrCode : (roundData?.entryCode || null);
+            state.baleNumber = baleNumber;
+            state.divisionCode = snapshotData.round?.division || null;
+            state.selectedDivision = snapshotData.round?.division || null;
+            state.divisionRoundId = roundId;
+            state.assignmentMode = 'pre-assigned';
+            
+            // Update archer cookie
+            const currentCookie = getArcherCookie();
+            if (currentCookie !== archerId) {
+                setArcherCookieSafe(archerId);
+            }
+            
+            // If no bale number, go to Setup mode
+            if (!baleNumber) {
+                console.log('[handleStandaloneRoundLink] No bale number - going to Setup mode');
+                state.assignmentMode = 'manual';
+                updateRoundTypeIndicator();
+                renderSetupSections();
+                return true;
+            }
+            
+            // Use centralized hydration function (Phase 0)
+            console.log('[handleStandaloneRoundLink] Using centralized hydrateScorecardGroup()');
+            const entryCode = state.roundEntryCode || null;
+            await hydrateScorecardGroup(roundId, baleNumber, {
+                entryCode: entryCode,
+                mergeLocal: false,
+                clearStateFirst: true
+            });
+            
+            // Set standalone-specific state (after hydration, since it clears state)
+            state.isStandalone = true;
+            state.selectedEventId = null;
+            state.activeEventId = null;
+            state.roundEntryCode = isEntryCode ? roundIdOrCode : (roundData?.entryCode || null);
+            state.assignmentMode = 'pre-assigned';
+            
+            // Initialize LiveUpdates if enabled
+            if (getLiveEnabled()) {
+                await ensureLiveRoundReady({ promptForCode: false });
+            }
+            
+            // Go to scoring view
+            state.currentView = 'scoring';
+            updateRoundTypeIndicator();
+            renderView();
+            return true;
+            
+        } catch (error) {
+            console.error('[handleStandaloneRoundLink] Error:', error);
+            alert('Failed to load standalone round. Please try again.');
+            return false;
+        }
+    }
+
     async function handleDirectLink(eventId, roundId, archerId) {
         try {
-            console.log('[handleDirectLink] Loading round:', { eventId, roundId, archerId });
+            console.log('[handleDirectLink] ========== START ==========');
+            console.log('[handleDirectLink] Parameters:', { eventId, roundId, archerId });
+            console.log('[handleDirectLink] Current state.roundId:', state.roundId);
+            console.log('[handleDirectLink] Current state.baleNumber:', state.baleNumber);
+            
+            // CRITICAL: Clear any existing state to prevent pollution
+            state.roundId = null;
+            state.baleNumber = null;
+            state.archers = [];
+            
+            console.log('[handleDirectLink] Cleared state, now loading round:', roundId);
 
             // 1. Check if this matches current session
             const sessionData = localStorage.getItem('current_bale_session');
@@ -5156,14 +6037,63 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 2. Fetch entry code FIRST (before any API calls that require auth)
-            console.log('[handleDirectLink] Fetching entry code from event...');
+            // Check if this is a standalone round (eventId is null, 'null', or empty)
+            const isStandalone = !eventId || eventId === 'null' || eventId === '';
+            console.log('[handleDirectLink] Round type:', isStandalone ? 'Standalone' : 'Event-linked', { eventId, roundId });
             
-            // First try to get entry code from localStorage
-            let entryCode = getEventEntryCode();
+            let entryCode = null;
             
-            // ALWAYS fetch event snapshot to get entry code (even if we have one in localStorage, refresh it)
-            // This ensures we have the latest entry code and event data
-            if (eventId) {
+            if (isStandalone) {
+                // Standalone round - use round's entry_code
+                console.log('[handleDirectLink] Standalone round - fetching round entry code...');
+                
+                // Try to get from localStorage first (saved when round was created)
+                // Check both round-specific key and global key
+                let savedRoundEntryCode = localStorage.getItem(`round:${roundId}:entry_code`);
+                if (!savedRoundEntryCode) {
+                    // Also check global key (saved by live_updates.js)
+                    savedRoundEntryCode = localStorage.getItem('round_entry_code');
+                }
+                if (savedRoundEntryCode) {
+                    entryCode = savedRoundEntryCode;
+                    console.log('[handleDirectLink] ✅ Found round entry code in localStorage:', entryCode);
+                    // Save it with roundId key for future lookups
+                    localStorage.setItem(`round:${roundId}:entry_code`, entryCode);
+                } else {
+                    // Try to get from archer history (which includes entry_code for standalone rounds)
+                    try {
+                        const archerId = getArcherCookie();
+                        const historyResponse = await fetch(`${API_BASE}/archers/${archerId}/history`);
+                        if (historyResponse.ok) {
+                            const historyData = await historyResponse.json();
+                            const history = historyData.history || historyData.rounds || [];
+                            const roundInHistory = history.find(r => r.round_id === roundId && r.is_standalone);
+                            if (roundInHistory && roundInHistory.entry_code) {
+                                entryCode = roundInHistory.entry_code;
+                                console.log('[handleDirectLink] ✅ Found round entry code in archer history:', entryCode);
+                                // Save it for future use
+                                localStorage.setItem(`round:${roundId}:entry_code`, entryCode);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('[handleDirectLink] Could not fetch archer history:', e);
+                    }
+                }
+                
+                if (!entryCode) {
+                    console.error('[handleDirectLink] ❌ No round entry code found for standalone round');
+                    alert('Unable to access this standalone round. The round entry code is required but was not found.\n\nPlease try refreshing the page or contact support.');
+                    return false;
+                }
+            } else {
+                // Event-linked round - use event entry code
+                console.log('[handleDirectLink] Event-linked round - fetching event entry code...');
+                
+                // First try to get entry code from localStorage
+                entryCode = getEventEntryCode();
+                
+                // ALWAYS fetch event snapshot to get entry code (even if we have one in localStorage, refresh it)
+                // This ensures we have the latest entry code and event data
                 console.log('[handleDirectLink] Fetching event snapshot to get entry code:', eventId);
                 try {
                     const eventResponse = await fetch(`${API_BASE}/events/${eventId}/snapshot`);
@@ -5219,11 +6149,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         return false;
                     }
                 }
-            } else if (!entryCode) {
-                console.error('[handleDirectLink] ❌ No event ID provided and no entry code in localStorage');
-                alert('Unable to access this round. Event information is required.\n\nPlease contact the event coordinator or try using the event modal to enter the code manually.');
-                showEventModal();
-                return false;
             }
 
             console.log('[handleDirectLink] Using entry code:', entryCode ? `Yes (${entryCode})` : 'No');
@@ -5382,34 +6307,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('[handleDirectLink] ✅ Found archer, bale:', baleNumber, 'roundArcherId:', snapshotArcher.roundArcherId);
 
-            // Step 3: Fetch full bale data with all archer details
-            const baleResponse = await fetch(`${API_BASE}/rounds/${roundId}/bales/${baleNumber}/archers`, {
-                headers: {
-                    'X-Passcode': entryCode || ''
-                }
-            });
-
-            if (!baleResponse.ok) {
-                console.error('[handleDirectLink] ❌ Failed to fetch bale data:', baleResponse.status);
-                throw new Error(`Failed to fetch bale data: ${baleResponse.status}`);
-            }
-
-            const baleData = await baleResponse.json();
-            console.log('[handleDirectLink] ✅ Bale data received:', {
-                division: baleData.division,
-                archerCount: baleData.archers?.length || 0
-            });
-
-            // Validate bale data structure
-            if (!baleData.archers || !Array.isArray(baleData.archers)) {
-                console.error('[handleDirectLink] ❌ Invalid bale data structure - missing archers array');
-                console.error('[handleDirectLink] Bale data:', baleData);
-                alert('Invalid round data received from server. Please contact support.');
+            // VERIFY: Make sure we're using the correct round
+            if (snapshotData.round?.id && snapshotData.round.id !== roundId) {
+                console.error('[handleDirectLink] ❌ ROUND ID MISMATCH!');
+                console.error('[handleDirectLink] URL roundId:', roundId);
+                console.error('[handleDirectLink] Snapshot roundId:', snapshotData.round.id);
+                alert('Round ID mismatch detected. Please refresh and try again.');
                 return false;
             }
 
-            // CRITICAL: Update archer cookie to match URL parameter
-            // This prevents loading wrong archer from stale cookie data
+            // Update archer cookie to match URL parameter (before hydration)
             const currentCookie = getArcherCookie();
             if (currentCookie !== archerId) {
                 console.log('[handleDirectLink] 🔄 Updating archer cookie from', currentCookie, 'to', archerId);
@@ -5418,111 +6325,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('[handleDirectLink] ✅ Archer cookie already correct:', archerId);
             }
 
-            // 3. Find archer in full bale data
-            console.log('[handleDirectLink] Looking for archer:', archerId, 'in', baleData.archers.length, 'archers');
-
-            const archerData = baleData.archers.find(a =>
-                a.archerId === archerId ||
-                a.id === archerId ||
-                a.archer_id === archerId
-            );
-
-            if (!archerData) {
-                console.error('[handleDirectLink] ❌ Archer not found in bale data');
-                console.error('[handleDirectLink] Looking for:', archerId);
-                console.error('[handleDirectLink] Available archers:', baleData.archers.map(a => ({
-                    archerId: a.archerId,
-                    id: a.id,
-                    name: `${a.firstName} ${a.lastName}`
-                })));
-                alert('You are not assigned to this round.');
+            // Use centralized hydration function (Phase 0)
+            console.log('[handleDirectLink] Using centralized hydrateScorecardGroup()');
+            try {
+                await hydrateScorecardGroup(roundId, baleNumber, {
+                    entryCode: entryCode,
+                    mergeLocal: false, // Don't merge local scores yet - just use server data
+                    clearStateFirst: true
+                });
+                
+                // Verify archer is in hydrated Scorecard Group
+                // Note: hydrateScorecardGroup already validated all archers have valid UUIDs
+                const archerInGroup = state.archers.find(a => 
+                    a.archerId === archerId ||
+                    a.id === archerId
+                );
+                
+                if (!archerInGroup) {
+                    console.error('[handleDirectLink] ❌ Archer not found in Scorecard Group after hydration');
+                    console.error('[handleDirectLink] Looking for:', archerId);
+                    console.error('[handleDirectLink] Available archers:', state.archers.map(a => ({
+                        archerId: a.archerId,
+                        id: a.id,
+                        name: `${a.firstName} ${a.lastName}`
+                    })));
+                    alert('You are not assigned to this round.');
+                    return false;
+                }
+                
+                console.log('[handleDirectLink] ✅ Archer found in Scorecard Group:', archerInGroup.firstName, archerInGroup.lastName);
+                
+                // Set additional state fields
+                state.activeEventId = eventId;
+                state.selectedEventId = eventId;
+                state.assignmentMode = 'pre-assigned';
+                
+                // Initialize LiveUpdates if enabled
+                if (getLiveEnabled()) {
+                    console.log('[handleDirectLink] Initializing Live Updates...');
+                    await ensureLiveRoundReady({ promptForCode: false });
+                }
+                
+                // Go to scoring view
+                state.currentView = 'scoring';
+                console.log('[handleDirectLink] ✅ Direct link handled - going to scoring view');
+                renderView();
+                return true;
+                
+            } catch (error) {
+                console.error('[handleDirectLink] ❌ Hydration failed:', error);
+                alert('Failed to load round: ' + (error.message || 'Unknown error'));
                 return false;
             }
-
-            console.log('[handleDirectLink] ✅ Found archer:', archerData.firstName, archerData.lastName);
-
-            // 4. Set up state (same as restoreCurrentBaleSession)
-            state.activeEventId = eventId;
-            state.selectedEventId = eventId;
-            state.roundId = roundId;
-            state.baleNumber = baleNumber;
-            state.divisionCode = baleData.division;
-            state.divisionRoundId = roundId;
-            state.assignmentMode = 'pre-assigned';
-
-            console.log('[handleDirectLink] State configured:', {
-                baleNumber: state.baleNumber,
-                division: state.divisionCode,
-                assignmentMode: state.assignmentMode
-            });
-
-            // Save entry code if we have it
-            if (entryCode) {
-                localStorage.setItem('event_entry_code', entryCode);
-            }
-
-            // 5. Reconstruct archers for this bale (same logic as restoreCurrentBaleSession)
-            const baleDivision = baleData.division || null;
-            if (baleDivision) {
-                state.divisionCode = baleDivision;
-                state.divisionRoundId = roundId;
-                console.log('[handleDirectLink] ✅ Set division from bale data:', baleDivision);
-            }
-
-            state.archers = baleData.archers.map(archer => {
-                const scoreSheet = createEmptyScoreSheet(state.totalEnds);
-                const endsList = Array.isArray(archer.scorecard?.ends) ? archer.scorecard.ends : [];
-                endsList.forEach(end => {
-                    const idx = Math.max(0, Math.min(state.totalEnds - 1, (end.endNumber || 1) - 1));
-                    scoreSheet[idx] = [end.a1 || '', end.a2 || '', end.a3 || ''];
-                });
-                const provisional = {
-                    extId: archer.extId,
-                    firstName: archer.firstName,
-                    lastName: archer.lastName,
-                    school: archer.school
-                };
-                const extId = getExtIdFromArcher(provisional);
-                const overrides = {
-                    extId,
-                    targetAssignment: archer.targetAssignment || archer.target,
-                    baleNumber: archer.baleNumber || baleNumber,
-                    level: archer.level,
-                    gender: archer.gender,
-                    division: baleDivision || archer.division,
-                    scores: scoreSheet
-                };
-                const rosterPayload = Object.assign({}, provisional, {
-                    level: archer.level,
-                    gender: archer.gender,
-                    division: baleDivision || archer.division
-                });
-                const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
-                stateArcher.roundArcherId = archer.roundArcherId;
-                return stateArcher;
-            });
-
-            console.log('[handleDirectLink] ✅ Reconstructed', state.archers.length, 'archers for bale', state.baleNumber);
-
-            // 6. Load scores from server
-            console.log('[handleDirectLink] Loading existing scores...');
-            await loadExistingScoresForArchers();
-
-            // 7. Initialize LiveUpdates if enabled
-            if (getLiveEnabled()) {
-                console.log('[handleDirectLink] Initializing Live Updates...');
-                await ensureLiveRoundReady({ promptForCode: false });
-            }
-
-            // 8. Save session
-            saveCurrentBaleSession();
-            saveData();
-
-            // 9. Go to scoring view
-            state.currentView = 'scoring';
-            console.log('[handleDirectLink] ✅ Direct link handled - going to scoring view');
-            renderView();
-            return true;
 
         } catch (error) {
             console.error('[handleDirectLink] Error:', error);
@@ -5627,9 +6481,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[handleUrlParameters]', { urlEventId, urlEntryCode, urlRoundId, urlArcherId });
 
         // Scenario 1: Direct link with round ID (from index.html)
-        if (urlEventId && urlRoundId && urlArcherId) {
+        // Handle both event-linked and standalone rounds
+        if (urlRoundId && urlArcherId) {
             console.log('[handleUrlParameters] 🎯 Direct link detected - loading round');
-            return await handleDirectLink(urlEventId, urlRoundId, urlArcherId);
+            // urlEventId can be null, 'null', or empty for standalone rounds
+            const eventId = (urlEventId && urlEventId !== 'null') ? urlEventId : null;
+            return await handleDirectLink(eventId, urlRoundId, urlArcherId);
         }
 
         // Scenario 2: QR code with event and entry code
@@ -5784,10 +6641,37 @@ document.addEventListener('DOMContentLoaded', () => {
             renderView();
         }
 
-        // No in-progress work - show setup
+        // No in-progress work - show event selection modal
+        console.log('[init] No in-progress work - showing event selection modal');
+        showEventModal();
         renderView();
 
-        // Check for URL parameters (QR code access OR direct event/round link)
+        // Check for URL parameters (QR code access OR direct event/round link OR standalone round)
+        
+        // Scenario 1: Standalone round by entry code: ?code={entry_code}&archer={id}
+        if (urlEntryCode && urlArcherId && !urlEventId) {
+            console.log('[init] Standalone round by entry code detected');
+            const handled = await handleStandaloneRoundLink(urlEntryCode.trim(), urlArcherId.trim(), true);
+            if (handled) return;
+        }
+        
+        // Scenario 2: Standalone round by round ID: ?round={id}&archer={id} (no event or event=null)
+        if (urlRoundId && urlArcherId && (!urlEventId || urlEventId === 'null')) {
+            console.log('[init] Standalone round by ID detected');
+            const handled = await handleStandaloneRoundLink(urlRoundId.trim(), urlArcherId.trim(), false);
+            if (handled) return;
+        }
+        
+        // Scenario 3: Event-linked or standalone round: ?event={id|null}&round={id}&archer={id}
+        if (urlRoundId && urlArcherId) {
+            // Handle both event-linked and standalone rounds
+            const eventId = (urlEventId && urlEventId !== 'null') ? urlEventId.trim() : null;
+            console.log('[init] Round detected:', eventId ? 'Event-linked' : 'Standalone');
+            const handled = await handleDirectLink(eventId, urlRoundId.trim(), urlArcherId.trim());
+            if (handled) return;
+        }
+        
+        // Scenario 4: QR code with event and entry code
         if (urlEventId && urlEntryCode && urlEventId.trim() && urlEntryCode.trim()) {
             // QR code access - requires both event and code
             console.log('QR code detected - verifying entry code...');
@@ -5927,6 +6811,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (state.archers.length === 0) {
                     alert('Please select at least one archer to start scoring.');
+                    return;
+                }
+                
+                // Validate division is selected (required for both event-linked and standalone)
+                if (!state.selectedDivision) {
+                    alert('Please select a division before starting scoring.');
+                    if (eventDivisionControls.divisionSelect) {
+                        eventDivisionControls.divisionSelect.focus();
+                    }
                     return;
                 }
 
@@ -6577,209 +7470,68 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Event Modal Handlers
-    const tabPasscode = document.getElementById('tab-passcode');
-    const tabEvents = document.getElementById('tab-events');
-    const passcodeTabContent = document.getElementById('passcode-tab');
-    const eventsTabContent = document.getElementById('events-tab');
-    const verifyCodeBtn = document.getElementById('verify-code-btn');
-    const eventCodeInput = document.getElementById('event-code-input');
-    const codeError = document.getElementById('code-error');
     const cancelEventModalBtn = document.getElementById('cancel-event-modal-btn');
-    const changeEventBtn = document.getElementById('change-event-btn');
+    const standaloneRoundBtn = document.getElementById('standalone-round-btn');
 
-    // Tab switching
-    if (tabPasscode && tabEvents) {
-        tabPasscode.onclick = () => {
-            tabPasscode.classList.add('active');
-            tabPasscode.style.borderBottom = '3px solid #2d7dd9';
-            tabEvents.classList.remove('active');
-            tabEvents.style.borderBottom = '3px solid transparent';
-            passcodeTabContent.style.display = 'block';
-            eventsTabContent.style.display = 'none';
-        };
-
-        tabEvents.onclick = () => {
-            tabEvents.classList.add('active');
-            tabEvents.style.borderBottom = '3px solid #2d7dd9';
-            tabPasscode.classList.remove('active');
-            tabPasscode.style.borderBottom = '3px solid transparent';
-            eventsTabContent.style.display = 'block';
-            passcodeTabContent.style.display = 'none';
+    // Standalone Round button
+    if (standaloneRoundBtn) {
+        standaloneRoundBtn.onclick = () => {
+            console.log('[Event Modal] Standalone round selected');
+            hideEventModal();
+            
+            // Set standalone mode
+            state.selectedEventId = null;
+            state.activeEventId = null;
+            state.isStandalone = true;
+            state.eventName = '';
+            
+            // Load default divisions for standalone
+            loadDefaultDivisions();
+            
+            // Update event/division selectors
+            if (eventDivisionControls.eventSelect) {
+                eventDivisionControls.eventSelect.value = '';
+            }
+            
+            updateRoundTypeIndicator();
+            renderSetupSections();
+            console.log('[Event Modal] Standalone mode activated, showing setup with division selector');
         };
     }
 
-    // Verify code button
-    if (verifyCodeBtn && eventCodeInput) {
-        verifyCodeBtn.onclick = async () => {
-            const code = eventCodeInput.value.trim();
+    // Removed: Tab switching and Enter Code functionality (no longer needed)
 
-            // Validation
-            if (!code) {
-                codeError.textContent = 'Please enter an event code';
-                codeError.classList.remove('hidden');
-                codeError.style.display = 'block';
-                eventCodeInput.focus();
-                return;
-            }
-
-            if (code.length < 4) {
-                codeError.textContent = 'Event code must be at least 4 characters';
-                codeError.classList.remove('hidden');
-                codeError.style.display = 'block';
-                eventCodeInput.focus();
-                return;
-            }
-
-            // Hide previous errors
-            codeError.classList.add('hidden');
-            codeError.style.display = 'none';
-
-            // Show loading state
-            verifyCodeBtn.disabled = true;
-            verifyCodeBtn.textContent = 'Connecting...';
-            eventCodeInput.disabled = true;
-
-            try {
-                // E2E bypass for test code
-                if ((code || '').toLowerCase() === 'tuesday') {
-                    const eid = state.selectedEventId || state.activeEventId || 'local-e2e';
-                    const sample = [
-                        { firstName: 'Alex', lastName: 'Smith', school: 'WIS', level: 'VAR', gender: 'M', baleNumber: 1, targetAssignment: 'A', division: 'BVAR' },
-                        { firstName: 'Ben', lastName: 'Lee', school: 'WIS', level: 'VAR', gender: 'M', baleNumber: 1, targetAssignment: 'B', division: 'BVAR' },
-                        { firstName: 'Cara', lastName: 'Jones', school: 'DVN', level: 'VAR', gender: 'F', baleNumber: 2, targetAssignment: 'A', division: 'GVAR' },
-                        { firstName: 'Dana', lastName: 'Ng', school: 'DVN', level: 'VAR', gender: 'F', baleNumber: 2, targetAssignment: 'B', division: 'GVAR' }
-                    ];
-                    localStorage.setItem(`event:${eid}:archers_v2`, JSON.stringify(sample));
-                    localStorage.setItem(`event:${eid}:meta`, JSON.stringify({ id: eid, name: 'QR Event', date: '', assignmentMode: 'assigned', snapshotVersion: 2, entryCode: code }));
-                    localStorage.setItem('event_entry_code', code);  // Also save globally for Live Updates
-                    state.selectedEventId = eid;
-                    state.activeEventId = eid;
-                    state.eventName = 'QR Event';
-                    state.assignmentMode = 'pre-assigned';
-                    updateEventHeader();
-                    hideEventModal();
-                    renderSetupForm();
-                    eventCodeInput.value = '';
-                    return;
-                }
-
-                console.log('[Enter Code] Verifying code:', code);
-
-                // First, get list of events to find event ID by code
-                const eventsRes = await fetch(`${API_BASE}/events/recent`);
-                if (!eventsRes.ok) {
-                    throw new Error('Failed to fetch events. Please check your connection.');
-                }
-
-                const eventsData = await eventsRes.json();
-                const activeEvents = (eventsData.events || []).filter(ev => ev.status === 'Active');
-
-                if (activeEvents.length === 0) {
-                    codeError.textContent = 'No active events found. Please check with your coach.';
-                    codeError.classList.remove('hidden');
-                    codeError.style.display = 'block';
-                    return;
-                }
-
-                console.log('[Enter Code] Checking', activeEvents.length, 'active events');
-
-                // Try to verify the code against each active event
-                let matchedEvent = null;
-                for (const event of activeEvents) {
-                    try {
-                        const verifyRes = await fetch(`${API_BASE}/events/verify`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ eventId: event.id, entryCode: code })
-                        });
-
-                        if (verifyRes.ok) {
-                            const verifyData = await verifyRes.json();
-                            if (verifyData.verified) {
-                                matchedEvent = event;
-                                console.log('[Enter Code] ✅ Code verified for event:', event.name);
-                                break;
-                            }
-                        }
-                    } catch (e) {
-                        // Continue to next event
-                        console.warn('[Enter Code] Verification failed for event:', event.name, e.message);
-                        continue;
-                    }
-                }
-
-                if (!matchedEvent) {
-                    console.log('[Enter Code] ❌ Code not valid for any active event');
-                    codeError.textContent = 'Invalid event code. Please check and try again.';
-                    codeError.classList.remove('hidden');
-                    codeError.style.display = 'block';
-                    return;
-                }
-
-                // Save entry code everywhere for maximum resilience
-                console.log('[Enter Code] Saving entry code for event:', matchedEvent.id);
-                localStorage.setItem('event_entry_code', code);
-                const metaKey = `event:${matchedEvent.id}:meta`;
-                try {
-                    const existingMeta = JSON.parse(localStorage.getItem(metaKey) || '{}');
-                    existingMeta.entryCode = code;
-                    localStorage.setItem(metaKey, JSON.stringify(existingMeta));
-                } catch (e) {
-                    console.warn('[Enter Code] Could not update event meta:', e);
-                }
-
-                // Load this event (with entry code)
-                console.log('[Enter Code] Loading event:', matchedEvent.name);
-                const success = await loadEventById(matchedEvent.id, matchedEvent.name, code);
-
-                if (success) {
-                    console.log('[Enter Code] ✅ Event loaded successfully');
-                    hideEventModal();
-                    eventCodeInput.value = '';
-
-                    // Refresh setup sections to show loaded event
-                    renderSetupSections();
-                    updateEventHeader();
-                } else {
-                    throw new Error('Failed to load event data');
-                }
-
-            } catch (err) {
-                console.error('[Enter Code] Error:', err);
-                codeError.textContent = err.message || 'Connection failed. Please check your internet.';
-                codeError.classList.remove('hidden');
-                codeError.style.display = 'block';
-            } finally {
-                verifyCodeBtn.disabled = false;
-                verifyCodeBtn.textContent = 'Connect to Event';
-                eventCodeInput.disabled = false;
-            }
-        };
-
-        // Allow Enter key to submit
-        eventCodeInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                verifyCodeBtn.click();
-            }
-        });
-    }
-
-    // Cancel button
+    // Cancel button - navigate back to index.html
     if (cancelEventModalBtn) {
         cancelEventModalBtn.onclick = () => {
-            hideEventModal();
-            // Render manual setup when canceling modal (no event selected)
-            state.assignmentMode = 'manual';
-            renderSetupSections();
+            console.log('[Event Modal] Cancel clicked - navigating to index.html');
+            window.location.href = 'index.html';
         };
     }
 
-    // Change event button (in header)
-    if (changeEventBtn) {
-        changeEventBtn.onclick = () => {
-            showEventModal();
-        };
+    // ==================== Event/Division Selection Handlers ====================
+    
+    // Wire up event/division selection handlers
+    if (eventDivisionControls.eventSelect) {
+        eventDivisionControls.eventSelect.addEventListener('change', handleEventSelection);
     }
+    
+    if (eventDivisionControls.divisionSelect) {
+        eventDivisionControls.divisionSelect.addEventListener('change', handleDivisionSelection);
+    }
+    
+    if (eventDivisionControls.refreshEventsBtn) {
+        eventDivisionControls.refreshEventsBtn.addEventListener('click', async () => {
+            await loadEventsIntoSelect();
+        });
+    }
+    
+    // Initial load of events and divisions
+    loadEventsIntoSelect();
+
+    // Change event button (in header)
+    // Deprecated: change-event-btn removed from header (Event/Division selection now in setup section)
+    // Event modal still used for QR code entry and other flows
 
     // Only initialize the app if we are on the ranking round page
     if (document.getElementById('bale-scoring-container')) {
