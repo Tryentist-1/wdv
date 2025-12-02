@@ -658,34 +658,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (cardControls.prevArcherBtn) cardControls.prevArcherBtn.onclick = () => navigateArchers(-1);
         if (cardControls.nextArcherBtn) cardControls.nextArcherBtn.onclick = () => navigateArchers(1);
-        
-        // Complete card button
-        const completeCardBtn = document.getElementById('complete-card-btn');
-        if (completeCardBtn) {
-            completeCardBtn.onclick = async () => {
-                const archer = state.archers.find(a => a.id === state.activeArcherId);
-                if (!archer) return;
-                
-                // Check if all ends are complete
-                const allEndsComplete = archer.scores.filter(s => s.every(val => val !== '' && val !== null)).length >= state.totalEnds;
-                if (!allEndsComplete) {
-                    alert('Please complete all 10 ends before marking card as complete.');
-                    return;
-                }
-                
-                // Confirm action
-                if (!confirm('Mark this scorecard as Complete?\n\nThis indicates you have verified the digital card matches the paper card. Coaches can then verify it.')) {
-                    return;
-                }
-                
-                // Update card status to COMP
-                const success = await updateCardStatus(archer.id, 'COMP');
-                if (success) {
-                    // Refresh card view
-                    renderCardView(archer.id);
-                }
-            };
-        }
 
         // Delegated handlers (robust across rerenders)
         document.body.addEventListener('click', (e) => {
