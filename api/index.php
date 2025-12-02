@@ -270,12 +270,12 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         
         // Format solo matches for history and calculate accurate totals
         foreach ($soloResults as $match) {
-        $isArcher1 = $match['archer1_id'] === $archerData['id'];
-        $opponentName = $isArcher1 ? $match['archer2_name'] : $match['archer1_name'];
-        $myMatchArcherId = $isArcher1 ? $match['archer1_match_archer_id'] : $match['archer2_match_archer_id'];
-        $opponentMatchArcherId = $isArcher1 ? $match['archer2_match_archer_id'] : $match['archer1_match_archer_id'];
-        $isWinner = $isArcher1 ? $match['archer1_winner'] : $match['archer2_winner'];
-        
+            $isArcher1 = $match['archer1_id'] === $archerData['id'];
+            $opponentName = $isArcher1 ? $match['archer2_name'] : $match['archer1_name'];
+            $myMatchArcherId = $isArcher1 ? $match['archer1_match_archer_id'] : $match['archer2_match_archer_id'];
+            $opponentMatchArcherId = $isArcher1 ? $match['archer2_match_archer_id'] : $match['archer1_match_archer_id'];
+            $isWinner = $isArcher1 ? $match['archer1_winner'] : $match['archer2_winner'];
+            
             // Calculate sets_won from set_points (count sets where set_points = 2)
             $setsStmt = $pdo->prepare('
                 SELECT 
@@ -294,20 +294,20 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             $opponentSetsWon = (int)($opponentStats['sets_won'] ?? 0);
             
             $history[] = [
-            'type' => 'solo',
-            'match_id' => $match['match_id'],
-            'event_id' => $match['event_id'],
-            'match_code' => $match['match_code'], // Include match code for authentication
-            'event_name' => $match['event_name'] ?: 'Solo Match',
-            'event_date' => $match['event_date'],
-            'card_status' => $match['card_status'],
-            'locked' => $match['locked'],
-            'opponent_name' => $opponentName,
-            'sets_won' => $setsWon,
-            'opponent_sets_won' => $opponentSetsWon,
-            'final_score' => $totalScore,
-            'is_winner' => $isWinner,
-            'ends_completed' => 0, // Not applicable for matches
+                'type' => 'solo',
+                'match_id' => $match['match_id'],
+                'event_id' => $match['event_id'],
+                'match_code' => $match['match_code'], // Include match code for authentication
+                'event_name' => $match['event_name'] ?: 'Solo Match',
+                'event_date' => $match['event_date'],
+                'card_status' => $match['card_status'],
+                'locked' => $match['locked'],
+                'opponent_name' => $opponentName,
+                'sets_won' => $setsWon,
+                'opponent_sets_won' => $opponentSetsWon,
+                'final_score' => $totalScore,
+                'is_winner' => $isWinner,
+                'ends_completed' => 0, // Not applicable for matches
                 'total_tens' => 0, // Could be calculated from sets if needed
                 'total_xs' => 0 // Could be calculated from sets if needed
             ];
