@@ -894,7 +894,7 @@ if (!empty($filters['name_like'])) {
     
     <!-- Footer -->
     <footer style="position: fixed; bottom: 0; left: 0; right: 0; height: 36px; background: white; border-top: 1px solid #ddd; display: flex; align-items: center; padding: 0 16px; z-index: 10; box-shadow: 0 -2px 4px rgba(0,0,0,0.08); padding-bottom: env(safe-area-inset-bottom);">
-        <a href="../index.html" style="padding-left: 12px; color: #666; text-decoration: none; font-size: 18px; transition: color 0.2s; display: flex; align-items: center; justify-content: center;" aria-label="Home" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#666'">
+        <a href="../index.html" style="padding-left: 24px; height: 44px; color: #666; text-decoration: none; font-size: 20px; transition: color 0.2s; display: flex; align-items: center; justify-content: center;" aria-label="Home" onmouseover="this.style.color='#333'" onmouseout="this.style.color='#666'">
             <i class="fas fa-home"></i>
         </a>
     </footer>
