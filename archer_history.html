@@ -478,7 +478,15 @@
           roundType: round.round_type || 'R300'
         };
         
-        ScorecardView.showScorecardModal(archerData, roundData);
+        // Build editUrl for Scorecard Editor (coach-only)
+        // roundArcherId might be in round object or scorecardData
+        let editUrl = null;
+        const roundArcherId = round.round_archer_id || round.roundArcherId || scorecardData.roundArcherId || scorecardData.id;
+        if (roundArcherId) {
+          editUrl = `scorecard_editor.html?id=${roundArcherId}&mode=coach`;
+        }
+        
+        ScorecardView.showScorecardModal(archerData, roundData, { editUrl });
       } catch (err) {
         console.error('Error loading scorecard:', err);
         alert('Error loading scorecard: ' + err.message + '\n\nCheck console for details.');

@@ -208,18 +208,44 @@ const ScorecardView = (() => {
   }
 
   /**
+   * Check if current user is a coach
+   */
+  function isCoach() {
+    // Helper to get cookie value
+    function getCookie(name) {
+      const nameEQ = name + "=";
+      const ca = document.cookie.split(';');
+      for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+      }
+      return null;
+    }
+    
+    return !!(
+      localStorage.getItem('coach_passcode') || 
+      localStorage.getItem('coach_api_key') ||
+      getCookie('coach_auth')
+    );
+  }
+
+  /**
    * Show a scorecard in a modal
    * 
    * @param {Object} archerData - Archer information
    * @param {Object} roundData - Round information
-   * @param {Object} options - Display options + modal options (onClose callback)
+   * @param {Object} options - Display options + modal options (onClose callback, editUrl for Edit button)
    * @returns {HTMLElement} The modal element
    */
   function showScorecardModal(archerData, roundData, options = {}) {
-    const { onClose, ...scorecardOptions } = options;
+    const { onClose, editUrl, ...scorecardOptions } = options;
     
     // Detect dark mode
     const isDark = document.documentElement.classList.contains('dark');
+    
+    // Check if user is coach
+    const userIsCoach = isCoach();
     
     // Create modal if it doesn't exist
     let modal = document.getElementById('scorecard-view-modal');
@@ -233,20 +259,48 @@ const ScorecardView = (() => {
     
     const scorecardHTML = renderScorecard(archerData, roundData, scorecardOptions);
     
+    // Build footer with Edit button if coach and editUrl provided
+    let footerHTML = '';
+    if (userIsCoach && editUrl) {
+      footerHTML = `
+        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+          <a href="${editUrl}" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px] flex items-center gap-2">
+            <i class="fas fa-edit"></i>
+            <span>Edit</span>
+          </a>
+          <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">
+            Close
+          </button>
+        </div>
+      `;
+    } else {
+      footerHTML = `
+        <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+          <button class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">
+            Close
+          </button>
+        </div>
+      `;
+    }
+    
     modal.innerHTML = `
       <div class="bg-white dark:bg-gray-900 rounded-lg shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-y-auto relative p-6">
         <button class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full text-2xl font-bold transition-colors z-10">&times;</button>
         <div class="mt-8">
           ${scorecardHTML}
         </div>
+        ${footerHTML}
       </div>
     `;
     
-    const closeBtn = modal.querySelector('button');
-    closeBtn.onclick = () => {
-      modal.style.display = 'none';
-      if (onClose) onClose();
-    };
+    // Close button handlers (X button and footer Close button)
+    const closeButtons = modal.querySelectorAll('button');
+    closeButtons.forEach(btn => {
+      btn.onclick = () => {
+        modal.style.display = 'none';
+        if (onClose) onClose();
+      };
+    });
     
     // Close on background click
     modal.onclick = (e) => {

@@ -312,13 +312,19 @@
           roundType: 'R300'
         };
         
+        // Build editUrl for Scorecard Editor (coach-only)
+        let editUrl = null;
+        if (archer.roundArcherId) {
+          editUrl = `scorecard_editor.html?id=${archer.roundArcherId}&mode=coach`;
+        }
+        
         if (typeof ScorecardView === 'undefined') {
           alert('Scorecard viewer is not loaded. Please refresh the page.');
           return;
         }
         
         console.log('Opening scorecard modal with data:', { archerData, roundData });
-        ScorecardView.showScorecardModal(archerData, roundData);
+        ScorecardView.showScorecardModal(archerData, roundData, { editUrl });
       } catch (err) {
         console.error('Error displaying scorecard:', err);
         alert('Unable to display scorecard. Error: ' + err.message);
