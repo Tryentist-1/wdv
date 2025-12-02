@@ -1,5 +1,15 @@
 # Resume Round Data Integration Analysis
 
+> ⚠️ **DEPRECATED** - This document has been superseded by the master strategy.
+> 
+> **See:** [DATA_SYNCHRONIZATION_STRATEGY.md](../core/DATA_SYNCHRONIZATION_STRATEGY.md)
+> 
+> This document is kept for historical reference only. For current implementation
+> guidance, refer to the master strategy document.
+> 
+> **Deprecated:** December 1, 2025  
+> **Reason:** Replaced by universal synchronization rules
+
 **Date:** November 28, 2025  
 **Issue:** Ranking round cards not resuming correctly - data integration between localStorage and server  
 **Status:** 🔍 ANALYSIS

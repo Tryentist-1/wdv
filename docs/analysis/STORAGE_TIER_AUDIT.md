@@ -1,5 +1,15 @@
 # 3-Tier Storage Strategy - Implementation Audit
 
+> ⚠️ **DEPRECATED** - This document has been superseded by the master strategy.
+> 
+> **See:** [DATA_SYNCHRONIZATION_STRATEGY.md](../core/DATA_SYNCHRONIZATION_STRATEGY.md)
+> 
+> This document is kept for historical reference only. For current implementation
+> guidance, refer to the master strategy document.
+> 
+> **Deprecated:** December 1, 2025  
+> **Reason:** Replaced by universal synchronization rules
+
 **Date:** November 17, 2025  
 **Auditor:** AI Assistant  
 **Status:** ✅ Core Implementation Verified, ⚠️ 2 Modules Need Integration
