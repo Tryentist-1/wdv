@@ -287,6 +287,9 @@
                     } else {
                         console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
                     }
+                } else if (normalizedPath === '/rounds' && method === 'POST') {
+                    // Creating a new standalone round - no auth required
+                    console.log('[LiveUpdates] Creating standalone round (no auth required).');
                 } else {
                     console.warn('[LiveUpdates] No coach key or entry code available; request may fail.');
                 }

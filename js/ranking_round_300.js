@@ -5067,9 +5067,16 @@ document.addEventListener('DOMContentLoaded', () => {
             let metaConfig = {};
             try { metaConfig = JSON.parse(localStorage.getItem('live_updates_config') || '{}'); } catch (_) { }
             const hasCoachKey = !!(metaConfig && metaConfig.apiKey);
+            
+            // CRITICAL: Check if standalone BEFORE checking entry code
+            // Standalone rounds don't require event entry codes (they generate their own)
+            const eventId = state.isStandalone ? null : (state.activeEventId || state.selectedEventId || null);
+            const isStandalone = state.isStandalone || eventId === null;
+            
             let entryCode = getEventEntryCode();
 
-            if (!hasCoachKey && !entryCode && options.promptForCode !== false) {
+            // Only require entry code for event-linked rounds (not standalone)
+            if (!isStandalone && !hasCoachKey && !entryCode && options.promptForCode !== false) {
                 const userCode = (typeof prompt === 'function') ? prompt('Enter Event Code to enable Live Sync:') : '';
                 if (userCode && userCode.trim()) {
                     entryCode = userCode.trim();
@@ -5087,9 +5094,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.warn('Live Sync requires an event code when a coach key is unavailable.');
                     return false;
                 }
+            } else if (isStandalone) {
+                console.log('[ensureLiveRoundReady] ✅ Standalone round - no event entry code required');
             }
-
-            const eventId = state.isStandalone ? null : (state.activeEventId || state.selectedEventId || null);
             const today = new Date().toISOString().slice(0, 10);
             
             // Use selected division (required)
