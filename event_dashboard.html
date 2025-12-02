@@ -41,7 +41,7 @@
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
   <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-4 py-6 pb-24">
+  <div class="max-w-7xl mx-auto px-4 py-6 pb-[calc(36px+env(safe-area-inset-bottom))]">
     <!-- Event Header -->
     <div id="event-header" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
       <div class="flex justify-between items-start mb-4">
@@ -103,10 +103,14 @@
   </div>
 
   <!-- Footer -->
-  <footer class="fixed bottom-0 left-0 right-0 px-4 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200">
-    <div class="max-w-7xl mx-auto flex gap-2 justify-center flex-wrap">
-      <a href="coach.html" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center">← Back to Coach Console</a>
-      <button id="footer-refresh-btn" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">🔄 Refresh</button>
+  <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-10 safe-bottom">
+    <div class="max-w-7xl mx-auto flex items-center h-full px-4 gap-2">
+      <a href="index.html" class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
+        <i class="fas fa-home text-lg"></i>
+      </a>
+      <div class="flex-1"></div>
+      <a href="coach.html" class="px-2 py-[2px] h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"><i class="fas fa-arrow-left mr-1"></i> Back to Coach Console</a>
+      <button id="footer-refresh-btn" class="px-2 py-[2px] h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
     </div>
   </footer>
 

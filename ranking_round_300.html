@@ -312,7 +312,7 @@
                 </div>
             </div>
 
-            <div id="archer-setup-container" class="flex-1 overflow-auto pb-[30px]">
+            <div id="archer-setup-container" class="flex-1 overflow-auto pb-[calc(36px+env(safe-area-inset-bottom))]">
             </div>
         </div>
 
@@ -350,7 +350,7 @@
                     </div>
                 </div>
             </div>
-            <div id="bale-scoring-container" class="flex-1 overflow-auto pb-[30px]">
+            <div id="bale-scoring-container" class="flex-1 overflow-auto pb-[calc(36px+env(safe-area-inset-bottom))]">
             </div>
             <div
                 class="px-2 py-2 flex justify-start gap-2 bg-white dark:bg-gray-800 shadow-md sticky bottom-0 z-20 safe-bottom transition-colors duration-200">
@@ -384,22 +384,19 @@
                 </div>
             </header>
 
-            <div id="individual-card-container" class="flex-1 overflow-auto p-4 pb-[30px]">
+            <div id="individual-card-container" class="flex-1 overflow-auto p-4 pb-[calc(36px+env(safe-area-inset-bottom))]">
             </div>
 
             <footer
-                class="px-1 py-1.5 sm:px-2 sm:py-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-center gap-1 sm:gap-2 safe-bottom fixed bottom-0 left-0 right-0 z-40 transition-colors duration-200">
+                class="h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center justify-center gap-1 sm:gap-2 safe-bottom fixed bottom-0 left-0 right-0 z-40 shadow-lg transition-colors duration-200 px-1 sm:px-2">
                 <button id="back-to-scoring-btn"
-                    class="px-2 py-1.5 sm:px-4 sm:py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px]">←
-                    Scoring</button>
+                    class="px-2 py-[2px] h-[44px] bg-primary text-white rounded hover:bg-primary-dark font-semibold text-xs sm:text-sm transition-colors flex items-center justify-center"><i class="fas fa-arrow-left mr-1"></i> Scoring</button>
                 <button id="complete-card-btn"
-                    class="px-2 py-1.5 sm:px-4 sm:py-2 bg-success text-white rounded hover:bg-success-dark font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px]">Complete</button>
+                    class="px-2 py-[2px] h-[44px] bg-success text-white rounded hover:bg-success-dark font-semibold text-xs sm:text-sm transition-colors flex items-center justify-center">Complete</button>
                 <button id="prev-archer-btn"
-                    class="px-2 py-1.5 sm:px-4 sm:py-2 bg-secondary-light dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px]">←
-                    Prev</button>
+                    class="px-2 py-[2px] h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold text-xs sm:text-sm transition-colors flex items-center justify-center"><i class="fas fa-arrow-left mr-1"></i> Prev</button>
                 <button id="next-archer-btn"
-                    class="px-2 py-1.5 sm:px-4 sm:py-2 bg-secondary-light dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold text-xs sm:text-sm transition-colors min-h-[36px] sm:min-h-[44px]">Next
-                    →</button>
+                    class="px-2 py-[2px] h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold text-xs sm:text-sm transition-colors flex items-center justify-center">Next <i class="fas fa-arrow-right ml-1"></i></button>
             </footer>
         </div>
 
@@ -570,17 +567,16 @@
         </div>
 
         <footer
-            class="fixed bottom-0 left-0 right-0 h-[30px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 z-30 safe-bottom transition-colors duration-200">
+            class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 z-30 safe-bottom shadow-lg transition-colors duration-200">
             <a href="index.html"
-                class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
                 <i class="fas fa-home text-lg"></i>
             </a>
             <div class="flex-1"></div>
             <button id="reset-event-btn"
-                class="px-4 py-2 bg-danger hover:bg-red-700 text-white rounded font-semibold transition-colors min-h-[44px]">New
-                Event</button>
+                class="px-2 py-[2px] h-[44px] bg-danger hover:bg-red-700 text-white rounded font-semibold transition-colors flex items-center justify-center">New Event</button>
             <button id="setup-bale-btn"
-                class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">Setup</button>
+                class="px-2 py-[2px] h-[44px] bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors flex items-center justify-center">Setup</button>
         </footer>
 
         <script src="js/common.js?v=20250922b"></script>

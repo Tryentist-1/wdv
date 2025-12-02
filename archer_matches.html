@@ -26,7 +26,7 @@
   </script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen transition-colors duration-200">
-  <div class="max-w-6xl mx-auto px-4 py-6 pb-[30px]">
+  <div class="max-w-6xl mx-auto px-4 py-6 pb-[calc(36px+env(safe-area-inset-bottom))]">
     <!-- Header -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 transition-colors duration-200">
       <div class="flex justify-between items-center mb-2">
@@ -62,8 +62,8 @@
     </div>
   </div>
 
-  <footer class="fixed bottom-0 left-0 right-0 h-[30px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10">
-    <a href="index.html" class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+  <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-bottom">
+    <a href="index.html" class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
       <i class="fas fa-home text-lg"></i>
     </a>
   </footer>

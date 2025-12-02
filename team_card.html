@@ -133,7 +133,7 @@
                     <!-- Match summary will be rendered here -->
                 </div>
             </header>
-            <div id="score-table-container" class="flex-1 overflow-auto p-4 pb-[30px]">
+            <div id="score-table-container" class="flex-1 overflow-auto p-4 pb-[calc(36px+env(safe-area-inset-bottom))]">
                 <!-- Score table will be rendered here -->
             </div>
         </div>
@@ -144,13 +144,13 @@
         </div>
 
         <!-- Footer -->
-        <footer class="fixed bottom-0 left-0 right-0 h-[30px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 safe-bottom z-30">
-            <a href="index.html" class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 safe-bottom z-30 shadow-lg transition-colors duration-200">
+            <a href="index.html" class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
                 <i class="fas fa-home text-lg"></i>
             </a>
             <div class="flex-1"></div>
-            <button id="edit-setup-btn" class="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors min-h-[44px]">Edit Setup</button>
-            <button id="new-match-btn" class="px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors min-h-[44px]">New Match</button>
+            <button id="edit-setup-btn" class="px-2 py-[2px] h-[44px] bg-secondary text-white rounded-lg hover:bg-secondary-dark font-semibold transition-colors flex items-center justify-center">Edit Setup</button>
+            <button id="new-match-btn" class="px-2 py-[2px] h-[44px] bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors flex items-center justify-center">New Match</button>
         </footer>
 
     </div>

@@ -146,21 +146,23 @@
             </select>
         </div>
 
-        <div id="archer-list-container" class="flex-1 px-2 pb-[80px] overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
+        <div id="archer-list-container" class="flex-1 px-2 pb-[calc(36px+env(safe-area-inset-bottom)+24px)] overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
             <!-- Archer list will be rendered here -->
         </div>
 
-        <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-10">
-            <div class="px-4 py-2 text-xs text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                <div id="sync-status"></div>
-            </div>
-            <div class="flex items-center px-4 py-2">
-                <a href="index.html" class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <!-- Sync Status Bar (above footer) -->
+        <div class="fixed bottom-[36px] left-0 right-0 px-4 py-1 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-10">
+            <div id="sync-status"></div>
+        </div>
+
+        <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-10 safe-bottom">
+            <div class="flex items-center h-full px-4">
+                <a href="index.html" class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
                     <i class="fas fa-home text-lg"></i>
                 </a>
                 <div class="flex-1"></div>
-                <button id="load-from-mysql-btn" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">
-                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                <button id="load-from-mysql-btn" class="px-2 py-[2px] h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center">
+                    <i class="fas fa-sync-alt mr-1"></i>Refresh
                 </button>
             </div>
         </footer>

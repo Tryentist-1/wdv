@@ -28,7 +28,7 @@
   <script src="js/scorecard_view.js"></script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
-  <div class="max-w-full mx-auto px-2 sm:px-4 py-3 sm:py-4 pb-[30px]">
+  <div class="max-w-full mx-auto px-2 sm:px-4 py-3 sm:py-4 pb-[calc(36px+env(safe-area-inset-bottom))]">
     <!-- Header -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 sm:p-4 mb-3 transition-colors duration-200">
       <div class="flex justify-between items-start">
@@ -180,15 +180,15 @@
   </div>
 
   <!-- Footer -->
-  <footer class="fixed bottom-0 left-0 right-0 h-[30px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10">
-    <a href="index.html" class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+  <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-bottom">
+    <a href="index.html" class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
       <i class="fas fa-home text-lg"></i>
     </a>
     <div class="flex-1"></div>
     <div class="flex gap-1 sm:gap-2">
-      <a href="coach.html" class="px-2 sm:px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center">← Coach</a>
-      <button id="refresh-btn" class="px-2 sm:px-3 py-2 bg-primary text-white rounded text-sm font-semibold hover:bg-primary-dark transition-colors min-h-[44px]">🔄 Refresh</button>
-      <button id="export-csv-btn" class="px-2 sm:px-3 py-2 bg-success text-white rounded text-sm font-semibold hover:bg-green-700 transition-colors min-h-[44px]">📊 Export</button>
+      <a href="coach.html" class="px-2 py-[2px] h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"><i class="fas fa-arrow-left mr-1"></i> Coach</a>
+      <button id="refresh-btn" class="px-2 py-[2px] h-[44px] bg-primary text-white rounded text-sm font-semibold hover:bg-primary-dark transition-colors flex items-center justify-center"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
+      <button id="export-csv-btn" class="px-2 py-[2px] h-[44px] bg-success text-white rounded text-sm font-semibold hover:bg-green-700 transition-colors flex items-center justify-center"><i class="fas fa-download mr-1"></i> Export</button>
     </div>
   </footer>
 

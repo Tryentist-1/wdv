@@ -15,6 +15,9 @@
     <!-- Unified Scorecard List CSS -->
     <link rel="stylesheet" href="/css/unified-scorecard-list.css">
 
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
     <!-- Score Input Utility & Safe Area Styles -->
     <style>
         /* Custom component styles that work with Tailwind */
@@ -118,6 +121,8 @@
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Verification Modal</a>
             <a href="#footer"
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Footer</a>
+            <a href="#fontawesome"
+                class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">FontAwesome</a>
         </nav>
     </div>
 
@@ -1626,35 +1631,339 @@
         <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Footer</h2>
 
         <div class="space-y-6">
+            <!-- Standard Footer Block -->
             <div>
-                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Fixed Footer with Home Icon</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Standard footer pattern used across most pages. Fixed at bottom with home icon on left and action buttons on right.
-                </p>
-                <div class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-900" style="height: 200px;">
-                    <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10">
-                        <a href="index.html" class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <div class="bg-green-50 dark:bg-green-900/20 border-2 border-green-500 dark:border-green-600 rounded-lg p-4 mb-4">
+                    <h3 class="text-sm font-bold text-green-800 dark:text-green-300 mb-2">✅ APPROVED STANDARD (v1.9.1+)</h3>
+                    <div class="text-xs text-green-700 dark:text-green-400 space-y-1">
+                        <p><strong>Height:</strong> 36px • <strong>Home Icon Padding:</strong> 12px left (pl-3) • <strong>Buttons:</strong> 44px height with 2px padding</p>
+                        <p class="mt-2 text-red-700 dark:text-red-300"><strong>⚠️ Important:</strong> Scrollable content must have ample bottom padding (pb-[calc(36px+env(safe-area-inset-bottom))]) to prevent content loss behind footer</p>
+                    </div>
+                </div>
+
+                <!-- Footer Example -->
+                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900">
+                    <div class="h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-600">
+                        <p class="text-sm">Content Area</p>
+                    </div>
+                    <footer class="h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200">
+                        <a href="index.html" class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
                             <i class="fas fa-home text-lg"></i>
                         </a>
                         <div class="flex-1"></div>
                         <div class="flex gap-2">
-                            <a href="coach.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">Coach</a>
+                            <a href="coach.html" class="h-[44px] px-2 py-[2px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">Coach</a>
+                            <button class="h-[44px] px-2 py-[2px] bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded text-sm font-semibold transition-colors flex items-center justify-center">Reset</button>
                         </div>
                     </footer>
                 </div>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    ✨ Fixed positioning • Home icon (FontAwesome) with 12px left padding • 36px height • Flex-1 spacer • Action buttons on right • Safe area support • Used in scorecard_editor.html, coach.html, and most pages
-                </p>
             </div>
         </div>
     </section>
 
-    <footer class="mt-12 text-center text-sm text-gray-500">
-        <p>Style Guide - Archery Score Management</p>
-        <p class="mt-2">Test on mobile: <code
-                class="bg-gray-200 px-2 py-1 rounded">http://172.16.0.97:8001/style-guide.html</code></p>
+    <!-- Section: FontAwesome Icons -->
+    <section id="fontawesome" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">FontAwesome Icons</h2>
+                <a href="https://fontawesome.com/icons" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                    <i class="fab fa-font-awesome mr-1"></i>fontawesome.com
+                </a>
+            </div>
+            <button onclick="toggleFontAwesomeSection()" class="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors" aria-label="Toggle FontAwesome section">
+                <i id="fontawesome-toggle-icon" class="fas fa-chevron-up transition-transform duration-200"></i>
+            </button>
+        </div>
+        
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-500 dark:border-yellow-600 rounded-lg p-4 mb-4">
+            <p class="text-xs text-yellow-800 dark:text-yellow-300"><strong>Standard:</strong> Use FontAwesome icons instead of emojis for consistency, accessibility, and theme support.</p>
+        </div>
+
+        <div id="fontawesome-content" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <!-- Navigation Icons -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-home text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Home</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-home</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-chevron-left text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Chevron Left</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-chevron-left</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-chevron-right text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Chevron Right</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-chevron-right</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-chevron-down text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Chevron Down</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-chevron-down</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-arrow-down text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Arrow Down</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-arrow-down</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-angles-up text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Angles Up</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-angles-up</code>
+            </div>
+
+            <!-- Action Icons -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-sync-alt text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Sync/Refresh</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-sync-alt</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-edit text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Edit</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-edit</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-pen-to-square text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Pen to Square</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-pen-to-square</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-trash-alt text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Trash/Delete</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-trash-alt</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-plus text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Plus/Add</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-plus</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-plus-circle text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Plus Circle</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-plus-circle</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-check text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Check</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-check</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-check-circle text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Check Circle</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-check-circle</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-times text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Times/Close</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-times</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-recycle text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Recycle/Refresh</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-recycle</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-spinner fa-spin text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Spinner (Loading)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-spinner fa-spin</code>
+            </div>
+
+            <!-- User & Profile Icons -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-user text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">User</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-user</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="far fa-user text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">User (Outline)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">far fa-user</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-user-circle text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">User Circle</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-user-circle</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-user-check text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">User Check</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-user-check</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-users text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Users</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-users</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-user-friends text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">User Friends</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-user-friends</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-users-cog text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Users Cog (Team)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-users-cog</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-heart text-2xl text-red-500 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Heart (Filled)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fas fa-heart</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="far fa-heart text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Heart (Outline)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">far fa-heart</code>
+            </div>
+
+            <!-- Competition & Scoring Icons -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-trophy text-2xl text-yellow-500 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Trophy</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-trophy</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-bullseye text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Bullseye</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-bullseye</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-play-circle text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Play Circle</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-play-circle</code>
+            </div>
+
+            <!-- Coach & Admin Icons -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-chalkboard-teacher text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Chalkboard Teacher</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-chalkboard-teacher</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-qrcode text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">QR Code</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-qrcode</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-table-list text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Table List (Dashboard)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-table-list</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-list-ol text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">List OL (Results)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-list-ol</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-tasks text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Tasks</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-tasks</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-cog text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Cog (Settings)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-cog</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-broom text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Broom (Reset)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-broom</code>
+            </div>
+
+            <!-- File & Data Icons -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-file-export text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">File Export</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-file-export</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-file-alt text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">File Alt (History)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-file-alt</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-download text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Download</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-download</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-camera text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Camera</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-camera</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-crop text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Crop</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-crop</code>
+            </div>
+
+            <!-- UI & Status Icons -->
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-info-circle text-2xl text-blue-500 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Info Circle</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-info-circle</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-exclamation-triangle text-2xl text-yellow-500 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Exclamation Triangle</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-exclamation-triangle</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-moon text-2xl text-gray-700 dark:text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Moon (Dark Mode)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-moon</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-sun text-2xl text-yellow-500 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Sun (Light Mode)</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-sun</code>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-center">
+                <i class="fas fa-star text-2xl text-yellow-500 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-800 dark:text-white">Star</p>
+                <code class="text-[10px] text-gray-600 dark:text-gray-400">fa-star</code>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-bottom">
+        <a href="index.html" class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
+            <i class="fas fa-home text-lg"></i>
+        </a>
+        <div class="flex-1"></div>
+        <div class="flex gap-2">
+            <a href="coach.html" class="h-[44px] px-2 py-[2px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">Coach</a>
+            <button onclick="clearCache()" class="h-[44px] px-2 py-[2px] bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded text-sm font-semibold transition-colors flex items-center justify-center">Reset</button>
+        </div>
     </footer>
 
+    <script>
+        function toggleFontAwesomeSection() {
+            const content = document.getElementById('fontawesome-content');
+            const icon = document.getElementById('fontawesome-toggle-icon');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                content.classList.add('hidden');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+
+        function clearCache() {
+            if (confirm('Clear all cached data?')) {
+                localStorage.clear();
+                alert('Cache cleared!');
+            }
+        }
+
+        // Add bottom padding to body to account for fixed footer
+        document.body.style.paddingBottom = 'calc(36px + env(safe-area-inset-bottom))';
+    </script>
 </body>
 
 </html>

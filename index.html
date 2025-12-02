@@ -251,7 +251,7 @@
     </div>
   </div>
 
-  <div class="w-full max-w-md mx-auto flex flex-col min-h-screen">
+  <div class="w-full max-w-md mx-auto flex flex-col min-h-screen pb-[calc(36px+env(safe-area-inset-bottom))]">
     <!-- Header with Dark Mode Toggle -->
     <header class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Archery Tools</h1>
@@ -328,21 +328,23 @@
     </div>
 
     <!-- Footer -->
-    <footer class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-      <div class="grid grid-cols-2 gap-3 mb-4">
+    <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-bottom">
+      <a href="index.html" class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
+        <i class="fas fa-home text-lg"></i>
+      </a>
+      <div class="flex-1"></div>
+      <div class="flex gap-2">
         <a href="coach.html"
-          class="block px-3 py-2.5 bg-gray-600 hover:bg-gray-700 dark:bg-gray-500 dark:hover:bg-gray-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md text-center"
+          class="px-2 py-[2px] h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center text-sm"
           title="Coach console: events and live scoring">
-          <i class="fas fa-chalkboard-teacher block mb-1 text-base"></i>Coaches
+          <i class="fas fa-chalkboard-teacher mr-1"></i>Coaches
         </a>
         <button id="clear-cache-btn"
-          class="px-3 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md text-center"
+          class="px-2 py-[2px] h-[44px] bg-danger text-white rounded font-semibold hover:bg-red-700 transition-colors flex items-center justify-center text-sm"
           title="Clear cached archers, events, and scoring data on this device">
-          <i class="fas fa-broom block mb-1 text-base"></i>Reset Data
+          <i class="fas fa-broom mr-1"></i>Reset Data
         </button>
       </div>
-      <p class="text-center text-gray-600 dark:text-gray-400 text-xs">© 2025 OAS Score Sheets & Tools. All rights
-        reserved.</p>
     </footer>
   </div>
 
