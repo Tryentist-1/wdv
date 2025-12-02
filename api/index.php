@@ -191,8 +191,8 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         }
         
         $history = [];
-    
-    // Get all ranking rounds this archer participated in (including standalone rounds)
+        
+        // Get all ranking rounds this archer participated in (including standalone rounds)
     $rounds = $pdo->prepare('
         SELECT 
             e.id AS event_id,
@@ -221,11 +221,11 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         GROUP BY ra.id, e.id, e.name, e.date, r.id, r.division, r.round_type, r.entry_code, r.date, ra.archer_id, ra.bale_number, ra.target_assignment, ra.card_status, ra.locked
         ORDER BY COALESCE(e.date, r.date) DESC, e.name, r.division
     ');
-    $rounds->execute([$archerData['id']]);
-    $rankingRounds = $rounds->fetchAll();
-    
-    // Add type field and format for history (include standalone round info)
-    foreach ($rankingRounds as $round) {
+        $rounds->execute([$archerData['id']]);
+        $rankingRounds = $rounds->fetchAll();
+        
+        // Add type field and format for history (include standalone round info)
+        foreach ($rankingRounds as $round) {
         $round['type'] = 'ranking';
         // For standalone rounds, set event_name to indicate standalone
         if (!$round['event_id']) {
@@ -234,12 +234,12 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         } else {
             $round['is_standalone'] = false;
         }
-        $history[] = $round;
-    }
-    
-    // Get all solo matches this archer participated in
-    // Calculate sets_won from set_points in solo_match_sets (more accurate than denormalized field)
-    $soloMatches = $pdo->prepare('
+            $history[] = $round;
+        }
+        
+        // Get all solo matches this archer participated in
+        // Calculate sets_won from set_points in solo_match_sets (more accurate than denormalized field)
+        $soloMatches = $pdo->prepare('
         SELECT 
             sm.id AS match_id,
             sm.event_id,
@@ -265,35 +265,35 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         WHERE sma1.archer_id = ? OR sma2.archer_id = ?
         ORDER BY sm.date DESC, sm.created_at DESC
     ');
-    $soloMatches->execute([$archerData['id'], $archerData['id']]);
-    $soloResults = $soloMatches->fetchAll();
-    
-    // Format solo matches for history and calculate accurate totals
-    foreach ($soloResults as $match) {
+        $soloMatches->execute([$archerData['id'], $archerData['id']]);
+        $soloResults = $soloMatches->fetchAll();
+        
+        // Format solo matches for history and calculate accurate totals
+        foreach ($soloResults as $match) {
         $isArcher1 = $match['archer1_id'] === $archerData['id'];
         $opponentName = $isArcher1 ? $match['archer2_name'] : $match['archer1_name'];
         $myMatchArcherId = $isArcher1 ? $match['archer1_match_archer_id'] : $match['archer2_match_archer_id'];
         $opponentMatchArcherId = $isArcher1 ? $match['archer2_match_archer_id'] : $match['archer1_match_archer_id'];
         $isWinner = $isArcher1 ? $match['archer1_winner'] : $match['archer2_winner'];
         
-        // Calculate sets_won from set_points (count sets where set_points = 2)
-        $setsStmt = $pdo->prepare('
-            SELECT 
-                COUNT(CASE WHEN set_points = 2 THEN 1 END) as sets_won,
-                SUM(set_total) as total_score
-            FROM solo_match_sets
-            WHERE match_archer_id = ? AND set_number <= 5
-        ');
-        $setsStmt->execute([$myMatchArcherId]);
-        $myStats = $setsStmt->fetch(PDO::FETCH_ASSOC);
-        $setsWon = (int)($myStats['sets_won'] ?? 0);
-        $totalScore = (int)($myStats['total_score'] ?? 0);
-        
-        $setsStmt->execute([$opponentMatchArcherId]);
-        $opponentStats = $setsStmt->fetch(PDO::FETCH_ASSOC);
-        $opponentSetsWon = (int)($opponentStats['sets_won'] ?? 0);
-        
-        $history[] = [
+            // Calculate sets_won from set_points (count sets where set_points = 2)
+            $setsStmt = $pdo->prepare('
+                SELECT 
+                    COUNT(CASE WHEN set_points = 2 THEN 1 END) as sets_won,
+                    SUM(set_total) as total_score
+                FROM solo_match_sets
+                WHERE match_archer_id = ? AND set_number <= 5
+            ');
+            $setsStmt->execute([$myMatchArcherId]);
+            $myStats = $setsStmt->fetch(PDO::FETCH_ASSOC);
+            $setsWon = (int)($myStats['sets_won'] ?? 0);
+            $totalScore = (int)($myStats['total_score'] ?? 0);
+            
+            $setsStmt->execute([$opponentMatchArcherId]);
+            $opponentStats = $setsStmt->fetch(PDO::FETCH_ASSOC);
+            $opponentSetsWon = (int)($opponentStats['sets_won'] ?? 0);
+            
+            $history[] = [
             'type' => 'solo',
             'match_id' => $match['match_id'],
             'event_id' => $match['event_id'],
@@ -308,13 +308,13 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             'final_score' => $totalScore,
             'is_winner' => $isWinner,
             'ends_completed' => 0, // Not applicable for matches
-            'total_tens' => 0, // Could be calculated from sets if needed
-            'total_xs' => 0 // Could be calculated from sets if needed
-        ];
-    }
-    
-    // Get all team matches this archer participated in
-    $teamMatches = $pdo->prepare('
+                'total_tens' => 0, // Could be calculated from sets if needed
+                'total_xs' => 0 // Could be calculated from sets if needed
+            ];
+        }
+        
+        // Get all team matches this archer participated in
+        $teamMatches = $pdo->prepare('
         SELECT 
             tm.id AS match_id,
             tm.event_id,
@@ -347,11 +347,11 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
                  tmt2.id, tmt2.team_name, tmt2.school, tmt2.sets_won, tmt2.winner, tma.team_id, tma.position
         ORDER BY tm.date DESC, tm.created_at DESC
     ');
-    $teamMatches->execute([$archerData['id']]);
-    $teamResults = $teamMatches->fetchAll();
-    
-    // Format team matches for history
-    foreach ($teamResults as $match) {
+        $teamMatches->execute([$archerData['id']]);
+        $teamResults = $teamMatches->fetchAll();
+        
+        // Format team matches for history
+        foreach ($teamResults as $match) {
         $isTeam1 = $match['team1_id'] === $match['archer_team_id'];
         $myTeam = $isTeam1 ? [
             'id' => $match['team1_id'],
@@ -376,10 +376,10 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             'sets_won' => $match['team1_sets_won']
         ];
         
-        $opponentDisplay = $opponentTeam['name'] ?: $opponentTeam['school'] ?: 'Opponent Team';
-        
-        $history[] = [
-            'type' => 'team',
+            $opponentDisplay = $opponentTeam['name'] ?: $opponentTeam['school'] ?: 'Opponent Team';
+            
+            $history[] = [
+                'type' => 'team',
             'match_id' => $match['match_id'],
             'event_id' => $match['event_id'],
             'event_name' => $match['event_name'] ?: 'Team Match',
@@ -393,20 +393,20 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             'final_score' => 0, // Team matches don't have individual scores
             'is_winner' => $myTeam['winner'],
             'ends_completed' => 0, // Not applicable for matches
-            'total_tens' => 0,
-            'total_xs' => 0
-        ];
-    }
-    
-    // Sort all history by date (most recent first)
-    usort($history, function($a, $b) {
-        $dateA = $a['event_date'] ?? '';
-        $dateB = $b['event_date'] ?? '';
-        if ($dateA === $dateB) return 0;
-        return $dateA > $dateB ? -1 : 1;
-    });
-    
-    json_response([
+                'total_tens' => 0,
+                'total_xs' => 0
+            ];
+        }
+        
+        // Sort all history by date (most recent first)
+        usort($history, function($a, $b) {
+            $dateA = $a['event_date'] ?? '';
+            $dateB = $b['event_date'] ?? '';
+            if ($dateA === $dateB) return 0;
+            return $dateA > $dateB ? -1 : 1;
+        });
+        
+        json_response([
         'archer' => [
             'id' => $archerData['id'],
             'extId' => $archerData['ext_id'],
@@ -418,8 +418,12 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             'gender' => $archerData['gender']
         ],
         'history' => $history,
-        'totalRounds' => count($history)
-    ]);
+            'totalRounds' => count($history)
+        ]);
+    } catch (Exception $e) {
+        error_log("GET /v1/archers/{id}/history error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
     exit;
 }
 
