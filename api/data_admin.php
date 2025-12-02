@@ -384,6 +384,64 @@ if (!empty($filters['name_like'])) {
             font-size: 0.9rem;
         }
         .muted { color: #777; font-size: 0.9rem; }
+        .collapsible-section {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .collapsible-header {
+            background: #f0f4f8;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #444;
+            border-bottom: 1px solid #ddd;
+            user-select: none;
+        }
+        .collapsible-header:hover {
+            background: #e3f2fd;
+        }
+        .collapsible-header i {
+            transition: transform 0.3s;
+        }
+        .collapsible-header.expanded i {
+            transform: rotate(180deg);
+        }
+        .collapsible-content {
+            padding: 20px;
+            display: none;
+        }
+        .collapsible-content.expanded {
+            display: block;
+        }
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .quick-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .quick-link:hover {
+            background: #1565c0;
+        }
+        .quick-link i {
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -402,7 +460,14 @@ if (!empty($filters['name_like'])) {
             </div>
         <?php endif; ?>
 
-        <form method="get" class="filter-form">
+        <!-- Event Filtering & Deletion Section -->
+        <div class="collapsible-section">
+            <div class="collapsible-header expanded" onclick="toggleSection(this)">
+                <span>🔍 Event Filtering & Deletion</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="collapsible-content expanded">
+                <form method="get" class="filter-form">
             <input type="hidden" name="passcode" value="<?= h($passcode) ?>">
             <div>
                 <label for="prefix">Name starts with</label>
@@ -537,11 +602,17 @@ if (!empty($filters['name_like'])) {
                 </table>
             </div>
         <?php endif; ?>
+            </div>
+        </div>
 
-        <hr style="margin: 40px 0; border: none; border-top: 2px solid #ddd;">
-
-        <h2>🧹 Clean Up Unstarted Scorecards</h2>
-        <p>Remove scorecard entries that were created but never had any scoring data recorded (0 ends). These appear in archer history with "Ends: 0" and "Score: 0".</p>
+        <!-- Clean Up Unstarted Scorecards Section -->
+        <div class="collapsible-section">
+            <div class="collapsible-header" onclick="toggleSection(this)">
+                <span>🧹 Clean Up Unstarted Scorecards</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="collapsible-content">
+                <p>Remove scorecard entries that were created but never had any scoring data recorded (0 ends). These appear in archer history with "Ends: 0" and "Score: 0".</p>
         
         <?php
         // Handle unstarted cards cleanup
@@ -723,55 +794,53 @@ if (!empty($filters['name_like'])) {
         <?php else: ?>
         <p style="color: #4caf50; font-weight: bold;">✅ No unstarted cards found. Database is clean!</p>
         <?php endif; ?>
+            </div>
+        </div>
 
-        <hr style="margin: 40px 0; border: none; border-top: 2px solid #ddd;">
-
-        <h2>Helpful Tools & References</h2>
-        <div class="link-list">
-            <div class="link-card">
-                <strong>📦 Database Backups</strong>
-                <a href="backup_admin.php?passcode=<?= urlencode($passcode) ?>">backup_admin.php</a>
+        <!-- Quick Links Section (at bottom) -->
+        <div class="collapsible-section">
+            <div class="collapsible-header" onclick="toggleSection(this)">
+                <span>🔗 Quick Links</span>
+                <i class="fas fa-chevron-down"></i>
             </div>
-            <div class="link-card">
-                <strong>🛠 Migration Admin</strong>
-                <a href="migration_admin.php?passcode=<?= urlencode($passcode) ?>">migration_admin.php</a>
-            </div>
-            <div class="link-card">
-                <strong>🔍 Undefined Division Diagnostic</strong>
-                <a href="diagnostic_undefined_divisions.php?passcode=<?= urlencode($passcode) ?>">diagnostic_undefined_divisions.php</a>
-            </div>
-            <div class="link-card">
-                <strong>📗 Data Hygiene Plan</strong>
-                <a href="../docs/ADMIN_DATA_HYGIENE_PAGE.md" target="_blank">ADMIN_DATA_HYGIENE_PAGE.md</a>
-            </div>
-            <div class="link-card">
-                <strong>📂 SQL Helper Scripts</strong>
-                <a href="https://github.com/Tryentist-1/wdv/tree/main/api/sql" target="_blank">
-                    View on GitHub
-                </a>
-            </div>
-            <div class="link-card">
-                <strong>🧪 Playwright Failures Notes</strong>
-                <a href="https://github.com/Tryentist-1/wdv/blob/main/docs/TEST_FAILURES_ANALYSIS.md" target="_blank">
-                    View on GitHub
-                </a>
-            </div>
-            <div class="link-card">
-                <strong>📝 Scorecard Editor</strong>
-                <a href="../scorecard_editor.html" target="_blank">scorecard_editor.html</a>
-            </div>
-            <div class="link-card">
-                <strong>🧪 API Test Harness</strong>
-                <a href="test_harness.html" target="_blank">test_harness.html</a>
-            </div>
-            <div class="link-card">
-                <strong>🔧 Diagnostic Tool</strong>
-                <a href="../diagnostic_tool.html" target="_blank">diagnostic_tool.html</a>
+            <div class="collapsible-content">
+                <div class="quick-links">
+                    <a href="../tests/components/style-guide.html" target="_blank" class="quick-link">
+                        <i class="fas fa-palette"></i>
+                        <span>Styleguide</span>
+                    </a>
+                    <a href="../scorecard_editor.html" target="_blank" class="quick-link">
+                        <i class="fas fa-edit"></i>
+                        <span>ScoreCard Editor</span>
+                    </a>
+                    <a href="../tests/api/harness/test_harness.html" target="_blank" class="quick-link">
+                        <i class="fas fa-vial"></i>
+                        <span>Test Harness</span>
+                    </a>
+                    <a href="backup_admin.php?passcode=<?= urlencode($passcode) ?>" class="quick-link">
+                        <i class="fas fa-database"></i>
+                        <span>Database Backup</span>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Collapsible section toggle
+        function toggleSection(header) {
+            const content = header.nextElementSibling;
+            const isExpanded = header.classList.contains('expanded');
+            
+            if (isExpanded) {
+                header.classList.remove('expanded');
+                content.classList.remove('expanded');
+            } else {
+                header.classList.add('expanded');
+                content.classList.add('expanded');
+            }
+        }
+
         // Select All functionality
         document.addEventListener('DOMContentLoaded', function() {
             const selectAllCheckbox = document.getElementById('select-all-checkbox');
