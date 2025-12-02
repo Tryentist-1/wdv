@@ -6340,19 +6340,6 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('[handleDirectLink] ✅ Found archer, bale:', baleNumber, 'roundArcherId:', snapshotArcher.roundArcherId);
 
-            // Step 3: Use snapshot data to get ALL archers, then filter to same bale or NULL bale_number
-            // This ensures we don't miss archers that might be on different bales or have NULL bale_number
-            console.log('[handleDirectLink] ========== SNAPSHOT DATA ==========');
-            console.log('[handleDirectLink] Round ID from URL:', roundId);
-            console.log('[handleDirectLink] Round ID in snapshot:', snapshotData.round?.id);
-            console.log('[handleDirectLink] Snapshot archers count:', snapshotData.archers?.length || 0);
-            console.log('[handleDirectLink] Snapshot archers:', snapshotData.archers?.map(a => ({
-                roundArcherId: a.roundArcherId,
-                archerId: a.archerId,
-                archerName: a.archerName,
-                baleNumber: a.baleNumber
-            })));
-            
             // VERIFY: Make sure we're using the correct round
             if (snapshotData.round?.id && snapshotData.round.id !== roundId) {
                 console.error('[handleDirectLink] ❌ ROUND ID MISMATCH!');
@@ -6361,108 +6348,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Round ID mismatch detected. Please refresh and try again.');
                 return false;
             }
-            
-            // Filter archers: same bale OR NULL bale_number (unassigned)
-            const relevantArchers = snapshotData.archers.filter(a => 
-                a.baleNumber === baleNumber || 
-                a.baleNumber === null || 
-                a.baleNumber === undefined
-            );
-            
-            console.log('[handleDirectLink] Filtered to', relevantArchers.length, 'archers (bale', baleNumber, 'or NULL)');
-            
-            // Step 4: Fetch full bale data for detailed archer info (firstName, lastName, etc.)
-            // This gives us the full archer details we need
-            const baleResponse = await fetch(`${API_BASE}/rounds/${roundId}/bales/${baleNumber}/archers`, {
-                headers: {
-                    'X-Passcode': entryCode || ''
-                }
-            });
 
-            let baleData = null;
-            if (baleResponse.ok) {
-                baleData = await baleResponse.json();
-                console.log('[handleDirectLink] ✅ Bale data received:', {
-                    division: baleData.division,
-                    archerCount: baleData.archers?.length || 0
-                });
-            } else {
-                console.warn('[handleDirectLink] ⚠️ Could not fetch bale data, using snapshot data only');
-                // Create bale data structure from snapshot
-                baleData = {
-                    division: snapshotData.round?.division,
-                    archers: []
-                };
-            }
-
-            // Merge snapshot archers with bale data archers
-            // Use bale data for full details, but include snapshot archers that might be missing
-            const archerMap = new Map();
-            
-            // First, add archers from bale data (full details)
-            if (baleData.archers && Array.isArray(baleData.archers)) {
-                baleData.archers.forEach(archer => {
-                    const key = archer.archerId || archer.id || archer.roundArcherId;
-                    if (key) {
-                        archerMap.set(key, archer);
-                    }
-                });
-            }
-            
-            // Then, add missing archers from snapshot (might have NULL bale_number or be on different bale)
-            relevantArchers.forEach(snapshotArcher => {
-                const key = snapshotArcher.archerId || snapshotArcher.roundArcherId;
-                if (key && !archerMap.has(key)) {
-                    // Convert snapshot archer to bale data format
-                    const archerName = snapshotArcher.archerName || 'Unknown';
-                    const nameParts = archerName.split(' ');
-                    const firstName = nameParts[0] || '';
-                    const lastName = nameParts.slice(1).join(' ') || '';
-                    
-                    archerMap.set(key, {
-                        roundArcherId: snapshotArcher.roundArcherId,
-                        archerId: snapshotArcher.archerId,
-                        firstName: firstName,
-                        lastName: lastName,
-                        school: '',
-                        level: '',
-                        gender: '',
-                        targetAssignment: snapshotArcher.targetAssignment,
-                        baleNumber: snapshotArcher.baleNumber || baleNumber,
-                        scorecard: {
-                            ends: snapshotArcher.scores ? snapshotArcher.scores.map((score, idx) => ({
-                                endNumber: idx + 1,
-                                a1: score[0] || '',
-                                a2: score[1] || '',
-                                a3: score[2] || ''
-                            })) : []
-                        }
-                    });
-                    console.log('[handleDirectLink] ✅ Added missing archer from snapshot:', archerName);
-                }
-            });
-            
-            // Convert map to array
-            const allArchers = Array.from(archerMap.values());
-            console.log('[handleDirectLink] ========== MERGED ARCHERS ==========');
-            console.log('[handleDirectLink] Total archers after merge:', allArchers.length);
-            console.log('[handleDirectLink] Merged archers:', allArchers.map(a => ({
-                roundArcherId: a.roundArcherId,
-                archerId: a.archerId,
-                name: `${a.firstName} ${a.lastName}`,
-                baleNumber: a.baleNumber,
-                targetAssignment: a.targetAssignment
-            })));
-            
-            // Validate we have archers
-            if (allArchers.length === 0) {
-                console.error('[handleDirectLink] ❌ No archers found after merge');
-                alert('No archers found for this round. Please contact support.');
-                return false;
-            }
-
-            // CRITICAL: Update archer cookie to match URL parameter
-            // This prevents loading wrong archer from stale cookie data
+            // Update archer cookie to match URL parameter (before hydration)
             const currentCookie = getArcherCookie();
             if (currentCookie !== archerId) {
                 console.log('[handleDirectLink] 🔄 Updating archer cookie from', currentCookie, 'to', archerId);
@@ -6471,114 +6358,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('[handleDirectLink] ✅ Archer cookie already correct:', archerId);
             }
 
-            // 3. Find archer in merged archer list
-            console.log('[handleDirectLink] Looking for archer:', archerId, 'in', allArchers.length, 'archers');
-
-            const archerData = allArchers.find(a =>
-                a.archerId === archerId ||
-                a.id === archerId ||
-                a.archer_id === archerId
-            );
-
-            if (!archerData) {
-                console.error('[handleDirectLink] ❌ Archer not found in merged archer list');
-                console.error('[handleDirectLink] Looking for:', archerId);
-                console.error('[handleDirectLink] Available archers:', allArchers.map(a => ({
-                    archerId: a.archerId,
-                    id: a.id,
-                    name: `${a.firstName} ${a.lastName}`
-                })));
-                alert('You are not assigned to this round.');
+            // Use centralized hydration function (Phase 0)
+            console.log('[handleDirectLink] Using centralized hydrateScorecardGroup()');
+            try {
+                await hydrateScorecardGroup(roundId, baleNumber, {
+                    entryCode: entryCode,
+                    mergeLocal: false, // Don't merge local scores yet - just use server data
+                    clearStateFirst: true
+                });
+                
+                // Verify archer is in hydrated Scorecard Group
+                // Note: hydrateScorecardGroup already validated all archers have valid UUIDs
+                const archerInGroup = state.archers.find(a => 
+                    a.archerId === archerId ||
+                    a.id === archerId
+                );
+                
+                if (!archerInGroup) {
+                    console.error('[handleDirectLink] ❌ Archer not found in Scorecard Group after hydration');
+                    console.error('[handleDirectLink] Looking for:', archerId);
+                    console.error('[handleDirectLink] Available archers:', state.archers.map(a => ({
+                        archerId: a.archerId,
+                        id: a.id,
+                        name: `${a.firstName} ${a.lastName}`
+                    })));
+                    alert('You are not assigned to this round.');
+                    return false;
+                }
+                
+                console.log('[handleDirectLink] ✅ Archer found in Scorecard Group:', archerInGroup.firstName, archerInGroup.lastName);
+                
+                // Set additional state fields
+                state.activeEventId = eventId;
+                state.selectedEventId = eventId;
+                state.assignmentMode = 'pre-assigned';
+                
+                // Initialize LiveUpdates if enabled
+                if (getLiveEnabled()) {
+                    console.log('[handleDirectLink] Initializing Live Updates...');
+                    await ensureLiveRoundReady({ promptForCode: false });
+                }
+                
+                // Go to scoring view
+                state.currentView = 'scoring';
+                console.log('[handleDirectLink] ✅ Direct link handled - going to scoring view');
+                renderView();
+                return true;
+                
+            } catch (error) {
+                console.error('[handleDirectLink] ❌ Hydration failed:', error);
+                alert('Failed to load round: ' + (error.message || 'Unknown error'));
                 return false;
             }
-
-            console.log('[handleDirectLink] ✅ Found archer:', archerData.firstName, archerData.lastName);
-
-            // 4. Set up state (same as restoreCurrentBaleSession)
-            console.log('[handleDirectLink] ========== SETTING STATE ==========');
-            console.log('[handleDirectLink] Setting state.roundId to:', roundId);
-            console.log('[handleDirectLink] Setting state.baleNumber to:', baleNumber);
-            state.activeEventId = eventId;
-            state.selectedEventId = eventId;
-            state.roundId = roundId; // CRITICAL: Use roundId from URL parameter
-            state.baleNumber = baleNumber;
-            state.divisionCode = baleData.division;
-            state.divisionRoundId = roundId;
-            state.assignmentMode = 'pre-assigned';
-
-            console.log('[handleDirectLink] State configured:', {
-                baleNumber: state.baleNumber,
-                division: state.divisionCode,
-                assignmentMode: state.assignmentMode
-            });
-
-            // Save entry code if we have it
-            if (entryCode) {
-                localStorage.setItem('event_entry_code', entryCode);
-            }
-
-            // 5. Reconstruct archers for this bale (same logic as restoreCurrentBaleSession)
-            const baleDivision = baleData?.division || snapshotData.round?.division || null;
-            if (baleDivision) {
-                state.divisionCode = baleDivision;
-                state.divisionRoundId = roundId;
-                console.log('[handleDirectLink] ✅ Set division from bale data:', baleDivision);
-            }
-
-            state.archers = allArchers.map(archer => {
-                const scoreSheet = createEmptyScoreSheet(state.totalEnds);
-                const endsList = Array.isArray(archer.scorecard?.ends) ? archer.scorecard.ends : [];
-                endsList.forEach(end => {
-                    const idx = Math.max(0, Math.min(state.totalEnds - 1, (end.endNumber || 1) - 1));
-                    scoreSheet[idx] = [end.a1 || '', end.a2 || '', end.a3 || ''];
-                });
-                const provisional = {
-                    extId: archer.extId,
-                    firstName: archer.firstName,
-                    lastName: archer.lastName,
-                    school: archer.school
-                };
-                const extId = getExtIdFromArcher(provisional);
-                const overrides = {
-                    extId,
-                    targetAssignment: archer.targetAssignment || archer.target,
-                    baleNumber: archer.baleNumber || baleNumber,
-                    level: archer.level,
-                    gender: archer.gender,
-                    division: baleDivision || archer.division,
-                    scores: scoreSheet
-                };
-                const rosterPayload = Object.assign({}, provisional, {
-                    level: archer.level,
-                    gender: archer.gender,
-                    division: baleDivision || archer.division
-                });
-                const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
-                stateArcher.roundArcherId = archer.roundArcherId;
-                return stateArcher;
-            });
-
-            console.log('[handleDirectLink] ✅ Reconstructed', state.archers.length, 'archers for bale', state.baleNumber);
-
-            // 6. Load scores from server
-            console.log('[handleDirectLink] Loading existing scores...');
-            await loadExistingScoresForArchers();
-
-            // 7. Initialize LiveUpdates if enabled
-            if (getLiveEnabled()) {
-                console.log('[handleDirectLink] Initializing Live Updates...');
-                await ensureLiveRoundReady({ promptForCode: false });
-            }
-
-            // 8. Save session
-            saveCurrentBaleSession();
-            saveData();
-
-            // 9. Go to scoring view
-            state.currentView = 'scoring';
-            console.log('[handleDirectLink] ✅ Direct link handled - going to scoring view');
-            renderView();
-            return true;
 
         } catch (error) {
             console.error('[handleDirectLink] Error:', error);
