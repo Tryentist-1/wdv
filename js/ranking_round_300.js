@@ -1353,6 +1353,29 @@ document.addEventListener('DOMContentLoaded', () => {
             // 4. Validate atomic unit integrity (Rule 3)
             validateScorecardGroup(scorecardGroup, normalizedRoundId, baleNumber);
             
+            // 4.5. Save entry code to localStorage for Live Updates (CRITICAL)
+            if (entryCode) {
+                localStorage.setItem('event_entry_code', entryCode);
+                console.log('[hydrateScorecardGroup] ✅ Saved entry code to localStorage for Live Updates');
+                
+                // Also save to event metadata if we have an eventId
+                const eventId = state.activeEventId || state.selectedEventId;
+                if (eventId) {
+                    try {
+                        const metaKey = `event:${eventId}:meta`;
+                        const existingMeta = JSON.parse(localStorage.getItem(metaKey) || '{}');
+                        existingMeta.entryCode = entryCode;
+                        existingMeta.id = eventId;
+                        localStorage.setItem(metaKey, JSON.stringify(existingMeta));
+                        console.log('[hydrateScorecardGroup] ✅ Saved entry code to event metadata');
+                    } catch (e) {
+                        console.warn('[hydrateScorecardGroup] Could not save entry code to event metadata:', e);
+                    }
+                }
+            } else {
+                console.warn('[hydrateScorecardGroup] ⚠️ No entry code available - Live Updates may not work');
+            }
+            
             // 5. Populate metadata from server (Rule 1)
             state.roundId = normalizedRoundId;
             state.baleNumber = baleNumber;
