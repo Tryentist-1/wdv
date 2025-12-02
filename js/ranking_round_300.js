@@ -1059,144 +1059,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 localStorage.setItem('event_entry_code', entryCode);
                 
-                // Fetch snapshot first to get ALL archers for the round
-                const snapshotResponse = await fetch(`${API_BASE}/rounds/${session.roundId}/snapshot`, {
-                    headers: { 'X-Passcode': entryCode }
-                });
-                
-                let snapshotData = null;
-                if (snapshotResponse.ok) {
-                    snapshotData = await snapshotResponse.json();
-                    console.log('[Resume Dialog] ✅ Snapshot retrieved:', snapshotData.archers?.length || 0, 'archers');
-                } else {
-                    console.warn('[Resume Dialog] Could not fetch snapshot, using bale data only');
-                }
-                
-                const response = await fetch(`${API_BASE}/rounds/${session.roundId}/bales/${session.baleNumber}/archers`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json', 'X-Passcode': entryCode }
-                });
-                
-                let baleData = null;
-                if (response.ok) {
-                    baleData = await response.json();
-                    console.log('[Resume Dialog] ✅ Bale data retrieved:', baleData.archers?.length || 0, 'archers');
-                } else {
-                    console.warn('[Resume Dialog] Failed to fetch bale group:', response.status);
-                    baleData = { division: null, archers: [] };
-                }
-                
-                // Merge snapshot archers with bale data (same logic as handleDirectLink)
-                const archerMap = new Map();
-                
-                // First, add archers from bale data (full details)
-                if (baleData.archers && Array.isArray(baleData.archers)) {
-                    baleData.archers.forEach(archer => {
-                        const key = archer.archerId || archer.id || archer.roundArcherId;
-                        if (key) {
-                            archerMap.set(key, archer);
-                        }
+                try {
+                    // Use centralized hydration function (Phase 0)
+                    console.log('[Resume Dialog] Using centralized hydrateScorecardGroup()');
+                    await hydrateScorecardGroup(session.roundId, session.baleNumber, {
+                        entryCode: entryCode,
+                        mergeLocal: false, // Don't merge local scores yet - just use server data
+                        clearStateFirst: true
                     });
-                }
-                
-                // Then, add missing archers from snapshot (same bale or NULL bale_number)
-                if (snapshotData && snapshotData.archers) {
-                    const relevantArchers = snapshotData.archers.filter(a => 
-                        a.baleNumber === session.baleNumber || 
-                        a.baleNumber === null || 
-                        a.baleNumber === undefined
-                    );
                     
-                    relevantArchers.forEach(snapshotArcher => {
-                        const key = snapshotArcher.archerId || snapshotArcher.roundArcherId;
-                        if (key && !archerMap.has(key)) {
-                            // Convert snapshot archer to bale data format
-                            const archerName = snapshotArcher.archerName || 'Unknown';
-                            const nameParts = archerName.split(' ');
-                            const firstName = nameParts[0] || '';
-                            const lastName = nameParts.slice(1).join(' ') || '';
-                            
-                            archerMap.set(key, {
-                                roundArcherId: snapshotArcher.roundArcherId,
-                                archerId: snapshotArcher.archerId,
-                                firstName: firstName,
-                                lastName: lastName,
-                                school: '',
-                                level: '',
-                                gender: '',
-                                targetAssignment: snapshotArcher.targetAssignment,
-                                baleNumber: snapshotArcher.baleNumber || session.baleNumber,
-                                scorecard: {
-                                    ends: snapshotArcher.scores ? snapshotArcher.scores.map((score, idx) => ({
-                                        endNumber: idx + 1,
-                                        a1: score[0] || '',
-                                        a2: score[1] || '',
-                                        a3: score[2] || ''
-                                    })) : []
-                                }
-                            });
-                            console.log('[Resume Dialog] ✅ Added missing archer from snapshot:', archerName);
-                        }
-                    });
-                }
-                
-                // Convert map to array
-                const allArchers = Array.from(archerMap.values());
-                
-                if (allArchers.length === 0) {
-                    console.warn('[Resume Dialog] No archers found after merge');
+                    // Set additional state fields from session
+                    state.activeEventId = session.eventId;
+                    state.selectedEventId = session.eventId;
+                    state.assignmentMode = session.assignmentMode || 'pre-assigned';
+                    
+                    // Initialize LiveUpdates if enabled
+                    if (getLiveEnabled()) {
+                        await ensureLiveRoundReady({ promptForCode: false });
+                    }
+                    
+                    // Transition to scoring view
+                    state.currentView = 'scoring';
+                    renderView();
+                    resolve(true);
+                    
+                } catch (error) {
+                    console.error('[Resume Dialog] ❌ Hydration failed:', error);
+                    alert('Failed to restore session: ' + (error.message || 'Unknown error'));
+                    localStorage.removeItem('current_bale_session');
                     resolve(false);
-                    return;
                 }
-                
-                // Replace baleData.archers with merged list
-                baleData.archers = allArchers;
-                console.log('[Resume Dialog] ✅ Total archers after merge:', allArchers.length);
-                
-                // Restore state (same logic as original restoreCurrentBaleSession)
-                state.roundId = session.roundId;
-                state.baleNumber = session.baleNumber;
-                state.activeEventId = session.eventId;
-                state.selectedEventId = session.eventId;
-                state.assignmentMode = session.assignmentMode || 'pre-assigned';
-                state.currentEnd = baleData.archers[0]?.scorecard?.currentEnd || session.currentEnd || 1;
-                
-                const baleDivision = baleData.division || null;
-                if (baleDivision) {
-                    state.divisionCode = baleDivision;
-                    state.divisionRoundId = session.roundId;
-                }
-                
-                state.archers = baleData.archers.map(archer => {
-                    const scoreSheet = createEmptyScoreSheet(state.totalEnds);
-                    const endsList = Array.isArray(archer.scorecard?.ends) ? archer.scorecard.ends : [];
-                    endsList.forEach(end => {
-                        const idx = Math.max(0, Math.min(state.totalEnds - 1, (end.endNumber || 1) - 1));
-                        scoreSheet[idx] = [end.a1 || '', end.a2 || '', end.a3 || ''];
-                    });
-                    const provisional = { extId: archer.extId, firstName: archer.firstName, lastName: archer.lastName, school: archer.school };
-                    const extId = getExtIdFromArcher(provisional);
-                    const overrides = {
-                        extId, targetAssignment: archer.targetAssignment || archer.target,
-                        baleNumber: archer.baleNumber || session.baleNumber,
-                        level: archer.level, gender: archer.gender,
-                        division: baleDivision || archer.division, scores: scoreSheet
-                    };
-                    const rosterPayload = Object.assign({}, provisional, { level: archer.level, gender: archer.gender, division: baleDivision || archer.division });
-                    const stateArcher = buildStateArcherFromRoster(rosterPayload, overrides);
-                    stateArcher.roundArcherId = archer.roundArcherId;
-                    return stateArcher;
-                });
-                
-                await loadExistingScoresForArchers();
-                if (getLiveEnabled()) {
-                    await ensureLiveRoundReady({ promptForCode: false });
-                }
-                saveCurrentBaleSession();
-                saveData();
-                state.currentView = 'scoring';
-                renderView();
-                resolve(true);
             };
             
             // Handle New Round button
