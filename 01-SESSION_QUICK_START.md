@@ -76,21 +76,31 @@
 ### 🎯 Current Sprint / Active Work
 
 **Last Session Focus:** Universal Data Synchronization Strategy Implementation - Centralized hydration functions, Live Sync fixes, Complete button refactor, Archer History endpoint fixes  
-**Current Priority:** Verification testing - EditScorecard, EventDashboard, ArcherHistory, Verification processes  
+**Current Priority:** UI/UX Improvements - Coach event layout, Scorecard editor permissions, Footer standardization  
 **Active Branch:** `main`  
-**Blockers:** Database migration required for Archer History (`migration_archer_history_required.sql`)
+**Blockers:** None
 
 **Quick Context for This Session:**
-- ✅ What we completed:
-  - Universal data synchronization strategy implemented across all modules
-  - Centralized hydration functions for Ranking Rounds, Solo Matches, Team Matches
-  - Fixed standalone round Live Sync (no event code required)
-  - Replaced deprecated Export button with Complete button
-  - Fixed Archer History endpoint error handling
-  - Created combined migration script for archer history
-- ✅ Next steps:
-  - Run database migration on production
-  - Verify EditScorecard, EventDashboard, ArcherHistory, Verification processes 
+- ✅ **Completed:**
+  1. **Coach.html Event Layout:** ✅ Converted events table to 2-line card layout per event
+     - Line 1: Event name + Date + Status + Edit icon
+     - Line 2: Action buttons (QR Code, Dashboard, Results, Verify)
+     - Updated button labels and icons (FontAwesome)
+  2. **Verify Scorecards Modal:** ✅ Mobile-friendly refactor
+     - Converted radio buttons to dropdown selector
+     - Single-row inputs (Verified by, Notes, Refresh icon)
+     - Bottom action bar with "This Bale" and "ALL Bales" buttons
+     - Verification table now uses Unified Scorecard List pattern
+- 🎯 **In Progress:**
+  3. **Scorecard Editor Permissions:** Allow coaches to delete or void any card regardless of status
+  4. **Footer Standardization:** Audit and update all footers across the application
+     - Increase height from 30px to 36px
+     - Add 12px left padding to Home icon
+- 📂 **Files Changed:**
+  - `coach.html` - Event layout, verify modal, footer updates
+  - `js/coach.js` - Event rendering, verify modal handlers, verification table grid layout
+  - `css/unified-scorecard-list.css` - Added verification table responsive styles
+  - `tests/components/style-guide.html` - Added verification modal documentation 
 
 ---
 

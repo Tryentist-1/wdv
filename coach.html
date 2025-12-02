@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <!-- Use compiled Tailwind CSS file (works offline, no CDN dependency) -->
   <link rel="stylesheet" href="css/tailwind-compiled.css">
+  <link rel="stylesheet" href="css/unified-scorecard-list.css">
   <script src="js/common.js"></script>
   <script>
     // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
@@ -434,65 +435,82 @@
   </div>
 
 <!-- Verify Scorecards Modal -->
-  <div id="verify-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
-    <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-5xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
-      <h2 id="verify-modal-title" class="text-2xl font-bold text-gray-800 dark:text-white mb-4">Verify Scorecards</h2>
-      
-      <!-- Match Type Selection (Radio Buttons) -->
-      <div class="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-        <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Verification Type</label>
-        <div class="flex flex-wrap gap-4">
-          <label class="flex items-center p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-primary dark:hover:border-primary transition-colors">
-            <input type="radio" name="verify-match-type" value="ranking-rounds" checked class="mr-3 w-5 h-5 text-primary border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary" />
-            <div>
-              <div class="font-medium text-gray-800 dark:text-white">Ranking Rounds</div>
-              <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Division & Bale</div>
-            </div>
-          </label>
-          <label class="flex items-center p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-primary dark:hover:border-primary transition-colors">
-            <input type="radio" name="verify-match-type" value="solo-matches" class="mr-3 w-5 h-5 text-primary border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary" />
-            <div>
-              <div class="font-medium text-gray-800 dark:text-white">Solo Matches</div>
-              <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Event & Bracket</div>
-            </div>
-          </label>
-          <label class="flex items-center p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-primary dark:hover:border-primary transition-colors">
-            <input type="radio" name="verify-match-type" value="team-matches" class="mr-3 w-5 h-5 text-primary border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary" />
-            <div>
-              <div class="font-medium text-gray-800 dark:text-white">Team Matches</div>
-              <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Event & Bracket</div>
-            </div>
-          </label>
+  <div id="verify-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+      <!-- Header -->
+      <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 z-10">
+        <div class="flex items-center justify-between">
+          <h2 id="verify-modal-title" class="text-xl font-bold text-gray-800 dark:text-white">Verify Scorecards</h2>
+          <button id="verify-modal-close-btn" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+            <i class="fas fa-times text-lg"></i>
+          </button>
         </div>
       </div>
       
-      <!-- Selectors Container - Changes based on match type -->
-      <div id="verify-selectors-container" class="flex flex-wrap gap-2 mb-4">
-        <!-- Ranking Round Selectors (default) -->
-        <div id="verify-ranking-selectors" class="contents">
-          <select id="verify-division-select" class="flex-1 min-w-[150px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"></select>
-          <select id="verify-bale-select" class="flex-1 min-w-[140px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"></select>
+      <!-- Content -->
+      <div class="flex-1 overflow-y-auto px-4 py-4">
+        <!-- Match Type Selection (Popup Dropdown) -->
+        <div class="mb-4">
+          <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Verification Type</label>
+          <div class="relative">
+            <button id="verify-match-type-btn" class="w-full px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-left flex items-center justify-between hover:border-primary-dark transition-colors min-h-[44px]">
+              <span id="verify-match-type-text">Ranking Rounds</span>
+              <i class="fas fa-chevron-down text-sm"></i>
+            </button>
+            <div id="verify-match-type-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-20">
+              <button class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700 first:rounded-t-lg" data-value="ranking-rounds">
+                <div class="font-medium text-gray-800 dark:text-white">Ranking Rounds</div>
+                <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Division & Bale</div>
+              </button>
+              <button class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700" data-value="solo-matches">
+                <div class="font-medium text-gray-800 dark:text-white">Solo Matches</div>
+                <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Event & Bracket</div>
+              </button>
+              <button class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg" data-value="team-matches">
+                <div class="font-medium text-gray-800 dark:text-white">Team Matches</div>
+                <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Event & Bracket</div>
+              </button>
+            </div>
+          </div>
         </div>
-        <!-- Solo/Team Match Selectors (hidden by default) -->
-        <div id="verify-match-selectors" class="contents hidden">
-          <select id="verify-event-select" class="flex-1 min-w-[180px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"></select>
-          <select id="verify-bracket-select" class="flex-1 min-w-[180px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"></select>
+        
+        <!-- Selectors Container - Changes based on match type -->
+        <div id="verify-selectors-container" class="flex flex-wrap gap-2 mb-4">
+          <!-- Ranking Round Selectors (default) -->
+          <div id="verify-ranking-selectors" class="contents w-full">
+            <select id="verify-division-select" class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
+            <select id="verify-bale-select" class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
+          </div>
+          <!-- Solo/Team Match Selectors (hidden by default) -->
+          <div id="verify-match-selectors" class="contents hidden w-full">
+            <select id="verify-event-select" class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
+            <select id="verify-bracket-select" class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
+          </div>
         </div>
-        <!-- Common Inputs -->
-        <input type="text" id="verify-actor-input" placeholder="Verified by (name or passcode)" class="flex-1 min-w-[180px] px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none" />
-        <input type="text" id="verify-notes-input" placeholder="Notes (optional)" class="flex-1 min-w-[200px] px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none" />
-        <button id="verify-refresh-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-w-[120px]">Refresh</button>
+        
+        <!-- Verified By, Notes, and Refresh in one row -->
+        <div class="flex gap-2 mb-4">
+          <input type="text" id="verify-actor-input" placeholder="Verified by (name or passcode)" class="flex-1 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none min-h-[44px]" />
+          <input type="text" id="verify-notes-input" placeholder="Notes (optional)" class="flex-1 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none min-h-[44px]" />
+          <button id="verify-refresh-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Refresh">
+            <i class="fas fa-recycle text-lg"></i>
+          </button>
+        </div>
+        
+        <!-- Scorecard Table -->
+        <div id="verify-table-container" class="max-h-[50vh] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"></div>
       </div>
       
-      <div id="verify-table-container" class="max-h-[55vh] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700"></div>
-      
-      <div class="flex flex-wrap gap-2 mt-4">
-        <button id="verify-lock-all-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Lock All On Bale</button>
-        <button id="verify-close-round-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Verify &amp; Close Round</button>
-        <button id="verify-modal-close-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Close</button>
+      <!-- Bottom Action Bar -->
+      <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+        <div class="flex items-center gap-3 flex-wrap">
+          <span class="font-bold text-gray-800 dark:text-white">Verify:</span>
+          <button id="verify-this-bale-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px] whitespace-nowrap">This Bale</button>
+          <button id="verify-all-bales-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px] whitespace-nowrap">ALL Bales</button>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-4 py-6 pb-[30px]">
@@ -502,20 +520,21 @@
     </div>
     
     <!-- Action Buttons -->
-    <div class="flex flex-wrap gap-2 mb-6">
+    <div class="flex flex-wrap items-center gap-2 mb-6">
       <button id="create-event-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Create Event</button>
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">CSV</span>
       <label class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center cursor-pointer">
-        Import CSV
+        Import
         <input id="csv-input" type="file" accept=".csv" class="hidden" />
       </label>
       <button id="export-csv-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">
-        <i class="fas fa-file-export"></i> Export CSV from Database
+        Export
       </button>
     </div>
     
     <!-- Events List -->
     <div id="events-list" class="overflow-x-auto webkit-overflow-scrolling-touch">
-      <!-- Events table populated dynamically -->
+      <!-- Events cards populated dynamically -->
     </div>
   </div>
 

@@ -157,28 +157,13 @@
         return;
       }
 
-      let html = `
-        <table class="w-full border-collapse bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
-          <thead class="bg-gray-700 dark:bg-gray-600 text-white">
-            <tr>
-              <th class="px-4 py-3 text-left font-semibold">Event</th>
-              <th class="px-4 py-3 text-left font-semibold">Date</th>
-              <th class="px-4 py-3 text-left font-semibold">Status</th>
-              <th class="px-4 py-3 text-left font-semibold">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="text-gray-700 dark:text-gray-300">
-      `;
+      let html = '<div class="space-y-3">';
 
       events.forEach(ev => {
         const eventData = encodeURIComponent(JSON.stringify(ev));
         // Format date without year: "Oct 15" instead of "2024-10-15"
         const dateObj = new Date(ev.date + 'T00:00:00');
         const shortDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        
-        // Truncate event name on mobile
-        const maxNameLength = 20;
-        const displayName = ev.name.length > maxNameLength ? ev.name.substring(0, maxNameLength) + '...' : ev.name;
         
         const statusColors = {
           'active': 'bg-success text-white',
@@ -188,22 +173,42 @@
         const statusClass = statusColors[ev.status.toLowerCase()] || 'bg-gray-400 text-white';
         
         html += `
-          <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <td class="px-4 py-3 font-semibold">${displayName}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${shortDate}</td>
-            <td class="px-4 py-3"><span class="px-2 py-1 rounded text-xs font-semibold ${statusClass}">${ev.status}</span></td>
-            <td class="px-4 py-3 whitespace-nowrap">
-              <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.viewDashboard('${ev.id}')" title="Event Dashboard">📊 Dashboard</button>
-              <button class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors" onclick="coach.showQRCode('${eventData}')" title="QR Code">QR</button>
-              <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.viewResults('${ev.id}')" title="View Results">📊 Results</button>
-              <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors" onclick="coach.verifyEvent('${eventData}')" title="Verify Scorecards">🛡️ Validate</button>
-              <button class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors" onclick="coach.editEvent('${eventData}')" title="Edit Event">✏️ Edit</button>
-            </td>
-          </tr>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow p-4">
+            <!-- Line 1: Event Name + Date + Status + Edit -->
+            <div class="flex items-center gap-3 mb-3 flex-wrap">
+              <div class="flex-1 min-w-0">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white truncate">${ev.name}</h3>
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                ${shortDate}
+              </div>
+              <div class="flex-shrink-0">
+                <span class="px-2 py-1 rounded text-xs font-semibold ${statusClass}">${ev.status}</span>
+              </div>
+              <button class="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center" onclick="coach.editEvent('${eventData}')" title="Edit Event">
+                <i class="fas fa-pen-to-square"></i>
+              </button>
+            </div>
+            <!-- Line 2: Actions (QR Code, Dashboard, Results, Validate) -->
+            <div class="flex flex-wrap gap-2">
+              <button class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center" onclick="coach.showQRCode('${eventData}')" title="QR Code">
+                <i class="fas fa-qrcode"></i>
+              </button>
+              <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center gap-1 whitespace-nowrap" onclick="coach.viewDashboard('${ev.id}')" title="Event Dashboard">
+                <i class="fas fa-table-list"></i> Dashboard
+              </button>
+              <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center gap-1 whitespace-nowrap" onclick="coach.viewResults('${ev.id}')" title="View Results">
+                <i class="fas fa-list-ol"></i> Results
+              </button>
+              <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center gap-1 whitespace-nowrap" onclick="coach.verifyEvent('${eventData}')" title="Verify Scorecards">
+                <i class="fas fa-user-check"></i> Verify
+              </button>
+            </div>
+          </div>
         `;
       });
 
-      html += '</tbody></table>';
+      html += '</div>';
       container.innerHTML = html;
     } catch (err) {
       container.innerHTML = `<p class="error">Error loading events: ${err.message}</p>`;
@@ -623,54 +628,76 @@
       return (a.target || '').localeCompare(b.target || '');
     });
 
+    // Use Unified Scorecard List pattern
     let html = `
-      <table class="score-table">
-        <thead>
-          <tr>
-            <th>Archer</th>
-            <th>Ends</th>
-            <th>Total</th>
-            <th>Last Sync</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+        <div class="scorecard-list-header verify-list-header grid gap-2 items-center bg-gray-200 dark:bg-gray-600 px-3 py-2 rounded font-semibold text-sm text-gray-800 dark:text-white" 
+             style="grid-template-columns: minmax(0, 2fr) minmax(60px, 1fr) minmax(70px, 1fr) minmax(80px, 1fr) minmax(70px, 1fr) minmax(120px, 1fr);"
+             data-columns="6">
+          <div class="text-center">Archer</div>
+          <div class="text-center">Ends</div>
+          <div class="text-center">Total</div>
+          <div class="text-center">Last Sync</div>
+          <div class="text-center">Status</div>
+          <div class="text-center">Actions</div>
+        </div>
+        <div class="mt-2 space-y-1">
     `;
 
     archers.forEach(a => {
       const status = (a.cardStatus || 'PENDING').toUpperCase();
       const locked = !!a.locked;
+      const archerName = a.archerName || `${a.firstName || ''} ${a.lastName || ''}`.trim();
+      const targetInfo = `Target ${a.target || '—'} • Bale ${a.bale || '—'}`;
+      
+      // Status badge
+      let statusBadge = '';
+      if (status === 'VER' || status === 'VERIFIED') {
+        statusBadge = '<span class="inline-block px-2 py-1 rounded bg-success-light text-success-dark text-xs font-bold">VER</span>';
+      } else if (status === 'VOID') {
+        statusBadge = '<span class="inline-block px-2 py-1 rounded bg-danger-light text-danger-dark text-xs font-bold">VOID</span>';
+      } else if (status === 'COMP' || status === 'COMPLETED') {
+        statusBadge = '<span class="inline-block px-2 py-1 rounded bg-primary text-white text-xs font-bold">COMP</span>';
+      } else {
+        statusBadge = '<span class="inline-block px-2 py-1 rounded bg-warning-light text-warning-dark text-xs font-bold">PEND</span>';
+      }
+      
+      // Actions
       let actions = '';
       if (status === 'VER' && locked) {
-        actions = `<button class="btn btn-secondary btn-sm" data-action="unlock" data-round-archer-id="${a.roundArcherId}">Unlock</button>`;
+        actions = `<button class="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" data-action="unlock" data-round-archer-id="${a.roundArcherId}">Unlock</button>`;
       } else if (status === 'VOID') {
-        actions = `<button class="btn btn-secondary btn-sm" data-action="unlock" data-round-archer-id="${a.roundArcherId}">Reopen</button>`;
+        actions = `<button class="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" data-action="unlock" data-round-archer-id="${a.roundArcherId}">Reopen</button>`;
       } else {
         actions = `
-          <button class="btn btn-primary btn-sm" data-action="lock" data-round-archer-id="${a.roundArcherId}">Validate</button>
-          <button class="btn btn-danger btn-sm" data-action="void" data-round-archer-id="${a.roundArcherId}">Void</button>
+          <div class="flex gap-1 justify-center flex-wrap">
+            <button class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-xs font-semibold transition-colors" data-action="lock" data-round-archer-id="${a.roundArcherId}">Validate</button>
+            <button class="px-2 py-1 bg-danger hover:bg-red-700 text-white rounded text-xs font-semibold transition-colors" data-action="void" data-round-archer-id="${a.roundArcherId}">Void</button>
+          </div>
         `;
       }
 
       html += `
-        <tr>
-          <td>
-            <strong>${a.archerName || `${a.firstName || ''} ${a.lastName || ''}`}</strong><br>
-            <span style="font-size:0.75rem;color:#7f8c8d;">Target ${a.target || '—'} • Bale ${a.bale || '—'}</span>
-          </td>
-          <td>${a.endsCompleted || 0}</td>
-          <td>${a.runningTotal || 0}</td>
-          <td>${formatTimestamp(a.lastSyncTime)}</td>
-          <td>${formatStatusBadge(status)}</td>
-          <td style="white-space:nowrap;display:flex;gap:0.25rem;flex-wrap:wrap;">
-            ${actions}
-          </td>
-        </tr>
+        <div class="scorecard-list-item verify-list-item grid gap-2 items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 px-3 py-2 min-h-[2.75rem] min-w-0 transition-all duration-200 sm:gap-2 sm:px-3 sm:py-2.5 sm:min-h-[3rem]"
+             style="grid-template-columns: minmax(0, 2fr) minmax(60px, 1fr) minmax(70px, 1fr) minmax(80px, 1fr) minmax(70px, 1fr) minmax(120px, 1fr);"
+             data-columns="6">
+          <div class="flex flex-col gap-0.5 min-w-0 overflow-hidden">
+            <div class="text-[13px] font-semibold text-gray-900 dark:text-white overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">${archerName}</div>
+            <div class="text-[11px] text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-xs">${targetInfo}</div>
+          </div>
+          <div class="text-[13px] font-semibold text-gray-900 dark:text-white text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-sm">${a.endsCompleted || 0}</div>
+          <div class="text-[15px] font-bold text-blue-600 dark:text-blue-400 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-base">${a.runningTotal || 0}</div>
+          <div class="text-[11px] text-gray-600 dark:text-gray-400 text-center flex items-center justify-center min-w-0 whitespace-nowrap sm:text-xs">${formatTimestamp(a.lastSyncTime)}</div>
+          <div class="text-center flex items-center justify-center min-w-0">${statusBadge}</div>
+          <div class="text-center flex items-center justify-center min-w-0">${actions}</div>
+        </div>
       `;
     });
 
-    html += '</tbody></table>';
+    html += `
+        </div>
+      </div>
+    `;
     container.innerHTML = html;
 
     container.querySelectorAll('[data-action]').forEach(btn => {
@@ -929,7 +956,7 @@
     document.getElementById('verify-notes-input').value = '';
 
     // Set default match type to ranking-rounds
-    document.querySelector('input[name="verify-match-type"][value="ranking-rounds"]').checked = true;
+    updateVerifyMatchTypeDropdown('ranking-rounds');
     updateVerifyMatchType('ranking-rounds');
 
     try {
@@ -941,12 +968,31 @@
       alert(`Unable to load verification data: ${err.message}`);
     }
 
-    // Radio button handlers for match type switching
-    document.querySelectorAll('input[name="verify-match-type"]').forEach(radio => {
-      radio.onchange = () => {
-        if (radio.checked) {
-          updateVerifyMatchType(radio.value);
-        }
+    // Dropdown button handler for match type switching
+    const matchTypeBtn = document.getElementById('verify-match-type-btn');
+    const matchTypeDropdown = document.getElementById('verify-match-type-dropdown');
+    const matchTypeOptions = document.querySelectorAll('.verify-match-type-option');
+    
+    matchTypeBtn.onclick = (e) => {
+      e.stopPropagation();
+      matchTypeDropdown.classList.toggle('hidden');
+    };
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!matchTypeBtn.contains(e.target) && !matchTypeDropdown.contains(e.target)) {
+        matchTypeDropdown.classList.add('hidden');
+      }
+    });
+    
+    // Option click handlers
+    matchTypeOptions.forEach(option => {
+      option.onclick = (e) => {
+        e.stopPropagation();
+        const value = option.getAttribute('data-value');
+        updateVerifyMatchTypeDropdown(value);
+        updateVerifyMatchType(value);
+        matchTypeDropdown.classList.add('hidden');
       };
     });
 
@@ -956,8 +1002,8 @@
     const bracketSelect = document.getElementById('verify-bracket-select');
     const refreshBtn = document.getElementById('verify-refresh-btn');
     const closeBtn = document.getElementById('verify-modal-close-btn');
-    const lockAllBtn = document.getElementById('verify-lock-all-btn');
-    const closeRoundBtn = document.getElementById('verify-close-round-btn');
+    const thisBaleBtn = document.getElementById('verify-this-bale-btn');
+    const allBalesBtn = document.getElementById('verify-all-bales-btn');
 
     divisionSelect.onchange = () => {
       verifyState.division = divisionSelect.value;
@@ -1016,13 +1062,26 @@
       modal.style.display = 'none';
     };
 
-    lockAllBtn.onclick = () => {
+    thisBaleBtn.onclick = () => {
       handleLockAllForBale();
     };
 
-    closeRoundBtn.onclick = () => {
+    allBalesBtn.onclick = () => {
       handleVerifyAndCloseRound();
     };
+  }
+
+  // Update dropdown text based on match type
+  function updateVerifyMatchTypeDropdown(matchType) {
+    const matchTypeText = document.getElementById('verify-match-type-text');
+    const matchTypeLabels = {
+      'ranking-rounds': 'Ranking Rounds',
+      'solo-matches': 'Solo Matches',
+      'team-matches': 'Team Matches'
+    };
+    if (matchTypeText) {
+      matchTypeText.textContent = matchTypeLabels[matchType] || 'Ranking Rounds';
+    }
   }
 
   // Update verification UI based on match type selection
@@ -1036,9 +1095,6 @@
     if (matchType === 'ranking-rounds') {
       rankingSelectors.classList.remove('hidden');
       matchSelectors.classList.add('hidden');
-      document.getElementById('verify-lock-all-btn').textContent = 'Lock All On Bale';
-      document.getElementById('verify-close-round-btn').textContent = 'Verify & Close Round';
-      document.getElementById('verify-close-round-btn').classList.remove('hidden'); // Show close round button for ranking rounds
       
       // Load ranking round data
       try {
@@ -1052,8 +1108,6 @@
       // Solo or Team matches
       rankingSelectors.classList.add('hidden');
       matchSelectors.classList.remove('hidden');
-      document.getElementById('verify-lock-all-btn').textContent = 'Verify Selected Matches';
-      document.getElementById('verify-close-round-btn').classList.add('hidden'); // Hide close round button for matches
       
       // Load events with brackets
       await loadEventsWithBrackets();

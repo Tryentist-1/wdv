@@ -114,6 +114,8 @@
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Verification Table</a>
             <a href="#match-type-selector"
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Match Type Selector</a>
+            <a href="#verification-modal"
+                class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Verification Modal</a>
             <a href="#footer"
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Footer</a>
         </nav>
@@ -1556,6 +1558,69 @@
         </div>
     </section>
 
+    <!-- Section: Verification Modal -->
+    <section id="verification-modal" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Verification Modal</h2>
+
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Mobile-Friendly Verification Modal</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Mobile-optimized modal for verifying scorecards. Features dropdown match type selector, single-row inputs, and sticky header/footer.
+                </p>
+                
+                <!-- Match Type Dropdown -->
+                <div class="mb-4">
+                    <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Verification Type</label>
+                    <div class="relative">
+                        <button class="w-full px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-left flex items-center justify-between hover:border-primary-dark transition-colors min-h-[44px]">
+                            <span>Ranking Rounds</span>
+                            <i class="fas fa-chevron-down text-sm"></i>
+                        </button>
+                        <div class="hidden absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-20">
+                            <button class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700 first:rounded-t-lg">
+                                <div class="font-medium text-gray-800 dark:text-white">Ranking Rounds</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Division & Bale</div>
+                            </button>
+                            <button class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700">
+                                <div class="font-medium text-gray-800 dark:text-white">Solo Matches</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Event & Bracket</div>
+                            </button>
+                            <button class="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg">
+                                <div class="font-medium text-gray-800 dark:text-white">Team Matches</div>
+                                <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Event & Bracket</div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Single Row Inputs -->
+                <div class="mb-4">
+                    <div class="flex gap-2">
+                        <input type="text" placeholder="Verified by (name or passcode)" class="flex-1 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none min-h-[44px]" />
+                        <input type="text" placeholder="Notes (optional)" class="flex-1 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none min-h-[44px]" />
+                        <button class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Refresh">
+                            <i class="fas fa-recycle text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Bottom Action Bar -->
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <span class="font-bold text-gray-800 dark:text-white">Verify:</span>
+                        <button class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px] whitespace-nowrap">This Bale</button>
+                        <button class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px] whitespace-nowrap">ALL Bales</button>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    ✨ Dropdown match type selector • Single-row inputs with icon button • Sticky header/footer • Mobile-optimized • Used in coach.html verification modal
+                </p>
+            </div>
+        </div>
+    </section>
+
     <!-- Section: Footer -->
     <section id="footer" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
         <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Footer</h2>
@@ -1567,8 +1632,8 @@
                     Standard footer pattern used across most pages. Fixed at bottom with home icon on left and action buttons on right.
                 </p>
                 <div class="relative border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-900" style="height: 200px;">
-                    <footer class="fixed bottom-0 left-0 right-0 h-[30px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10">
-                        <a href="index.html" class="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                    <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10">
+                        <a href="index.html" class="pl-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                             <i class="fas fa-home text-lg"></i>
                         </a>
                         <div class="flex-1"></div>
@@ -1578,7 +1643,7 @@
                     </footer>
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    ✨ Fixed positioning • Home icon (FontAwesome) • Flex-1 spacer • Action buttons on right • Safe area support • Used in scorecard_editor.html, coach.html, and most pages
+                    ✨ Fixed positioning • Home icon (FontAwesome) with 12px left padding • 36px height • Flex-1 spacer • Action buttons on right • Safe area support • Used in scorecard_editor.html, coach.html, and most pages
                 </p>
             </div>
         </div>

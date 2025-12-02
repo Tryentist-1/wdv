@@ -45,3 +45,21 @@
     grid-template-columns: minmax(0, 2fr) minmax(60px, 1fr) minmax(70px, 1fr) minmax(60px, 1fr) minmax(40px, 0.5fr) minmax(40px, 0.5fr) !important;
   }
 }
+
+/* Verification table specific: 6 columns with different layout (Archer, Ends, Total, Last Sync, Status, Actions) */
+@media (max-width: 375px) {
+  .verify-list-header[data-columns="6"],
+  .verify-list-item[data-columns="6"] {
+    grid-template-columns: minmax(0, 2fr) minmax(50px, 1fr) minmax(60px, 1fr) minmax(70px, 1fr) minmax(60px, 1fr) minmax(100px, 1fr) !important;
+    gap: 0.25rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+@media (min-width: 376px) and (max-width: 640px) {
+  .verify-list-header[data-columns="6"],
+  .verify-list-item[data-columns="6"] {
+    grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(80px, 1fr) minmax(70px, 1fr) minmax(120px, 1fr) !important;
+  }
+}
