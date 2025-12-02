@@ -1382,6 +1382,19 @@ document.addEventListener('DOMContentLoaded', () => {
             state.divisionCode = scorecardGroup.division || null;
             state.divisionRoundId = normalizedRoundId;
             
+            // 5.5. Set LiveUpdates state to prevent duplicate round creation
+            if (window.LiveUpdates && window.LiveUpdates._state) {
+                window.LiveUpdates._state.roundId = normalizedRoundId;
+                const eventId = state.activeEventId || state.selectedEventId;
+                if (eventId) {
+                    window.LiveUpdates._state.eventId = eventId;
+                }
+                console.log('[hydrateScorecardGroup] ✅ Set LiveUpdates state:', {
+                    roundId: normalizedRoundId,
+                    eventId: eventId
+                });
+            }
+            
             // 6. Build archers from Scorecard Group
             if (!scorecardGroup.archers || !Array.isArray(scorecardGroup.archers)) {
                 throw new Error('Scorecard Group missing archers array');
@@ -5084,15 +5097,19 @@ document.addEventListener('DOMContentLoaded', () => {
             let gender = null;
             let level = null;
 
-            // CRITICAL: Check if we already have a roundId from the event snapshot (prevents creating "Undefined" rounds)
-            if (state.divisionRoundId && eventId) {
-                console.log(`✅ Using existing roundId from event: ${state.divisionRoundId} (division: ${state.divisionCode})`);
+            // CRITICAL: Check if we already have a roundId from hydration or event snapshot (prevents creating "Undefined" rounds)
+            // Check both state.roundId (from hydration) and state.divisionRoundId (legacy)
+            const existingRoundId = state.roundId || state.divisionRoundId;
+            if (existingRoundId) {
+                console.log(`✅ Using existing roundId: ${existingRoundId} (division: ${state.divisionCode})`);
                 // Set the roundId directly in LiveUpdates state to use existing round
                 if (!LiveUpdates._state) {
                     LiveUpdates._state = {};
                 }
-                LiveUpdates._state.roundId = state.divisionRoundId;
-                LiveUpdates._state.eventId = eventId;
+                LiveUpdates._state.roundId = existingRoundId;
+                if (eventId) {
+                    LiveUpdates._state.eventId = eventId;
+                }
 
                 // Ensure division is set from state
                 if (state.divisionCode) {
