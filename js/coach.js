@@ -664,13 +664,30 @@
       
       // Actions
       let actions = '';
+      const editUrl = `scorecard_editor.html?id=${a.roundArcherId}&mode=coach`;
+      const editButton = `<a href="${editUrl}" class="inline-flex items-center gap-1 px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" title="Edit Scorecard">
+        <i class="fas fa-edit"></i>
+        <span>Edit</span>
+      </a>`;
+      
       if (status === 'VER' && locked) {
-        actions = `<button class="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" data-action="unlock" data-round-archer-id="${a.roundArcherId}">Unlock</button>`;
+        actions = `
+          <div class="flex gap-1 justify-center flex-wrap">
+            ${editButton}
+            <button class="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" data-action="unlock" data-round-archer-id="${a.roundArcherId}">Unlock</button>
+          </div>
+        `;
       } else if (status === 'VOID') {
-        actions = `<button class="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" data-action="unlock" data-round-archer-id="${a.roundArcherId}">Reopen</button>`;
+        actions = `
+          <div class="flex gap-1 justify-center flex-wrap">
+            ${editButton}
+            <button class="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors" data-action="unlock" data-round-archer-id="${a.roundArcherId}">Reopen</button>
+          </div>
+        `;
       } else {
         actions = `
           <div class="flex gap-1 justify-center flex-wrap">
+            ${editButton}
             <button class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-xs font-semibold transition-colors" data-action="lock" data-round-archer-id="${a.roundArcherId}">Validate</button>
             <button class="px-2 py-1 bg-danger hover:bg-red-700 text-white rounded text-xs font-semibold transition-colors" data-action="void" data-round-archer-id="${a.roundArcherId}">Void</button>
           </div>
@@ -784,12 +801,30 @@
         : '—';
       
       let actions = '';
+      
+      // Add Edit button for solo matches (editor supports solo matches)
+      let editButton = '';
+      if (matchType === 'solo' && match.id) {
+        const editUrl = `scorecard_editor.html?match=${match.id}&mode=coach`;
+        editButton = `<a href="${editUrl}" class="inline-flex items-center gap-1 px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]" title="Edit Match">
+          <i class="fas fa-edit"></i>
+          <span>Edit</span>
+        </a>`;
+      }
+      
       if (cardStatus === 'VER' || cardStatus === 'VERIFIED') {
-        actions = `<button class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">Unlock</button>`;
+        actions = `
+          ${editButton}
+          <button class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">Unlock</button>
+        `;
       } else if (cardStatus === 'VOID') {
-        actions = `<button class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">Reopen</button>`;
+        actions = `
+          ${editButton}
+          <button class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">Reopen</button>
+        `;
       } else {
         actions = `
+          ${editButton}
           <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm font-semibold transition-colors min-h-[44px]" data-action="lock" data-match-id="${match.id}" data-match-type="${matchType}">Verify</button>
           <button class="px-3 py-1 bg-danger hover:bg-red-700 text-white rounded text-sm font-semibold transition-colors min-h-[44px]" data-action="void" data-match-id="${match.id}" data-match-type="${matchType}">Void</button>
         `;
