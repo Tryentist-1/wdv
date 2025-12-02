@@ -75,8 +75,8 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Universal Data Synchronization Strategy Implementation - Centralized hydration functions, Live Sync fixes, Complete button refactor, Archer History endpoint fixes  
-**Current Priority:** UI/UX Improvements - Coach event layout, Scorecard editor permissions, Footer standardization  
+**Last Session Focus:** Scorecard Editor Edit Button Integration - Added Edit buttons across all scorecard display locations, enhanced void/delete permissions for coaches  
+**Current Priority:** Footer Standardization - Audit and update all footers across the application  
 **Active Branch:** `main`  
 **Blockers:** None
 
@@ -91,16 +91,21 @@
      - Single-row inputs (Verified by, Notes, Refresh icon)
      - Bottom action bar with "This Bale" and "ALL Bales" buttons
      - Verification table now uses Unified Scorecard List pattern
+  3. **Scorecard Editor Edit Buttons:** ✅ Complete integration
+     - Added Edit buttons to ScorecardView and SoloMatchView modals
+     - Added Edit buttons to coach verification table
+     - Enhanced void/delete permissions for coaches (can delete any card)
+     - All Edit buttons use FontAwesome icons and coach-only visibility
 - 🎯 **In Progress:**
-  3. **Scorecard Editor Permissions:** Allow coaches to delete or void any card regardless of status
   4. **Footer Standardization:** Audit and update all footers across the application
      - Increase height from 30px to 36px
      - Add 12px left padding to Home icon
-- 📂 **Files Changed:**
-  - `coach.html` - Event layout, verify modal, footer updates
-  - `js/coach.js` - Event rendering, verify modal handlers, verification table grid layout
-  - `css/unified-scorecard-list.css` - Added verification table responsive styles
-  - `tests/components/style-guide.html` - Added verification modal documentation 
+- 📂 **Files Changed (Recent):**
+  - `scorecard_editor.html` - Enhanced void/delete permissions
+  - `js/scorecard_view.js` - Added Edit button to modal footer
+  - `js/solo_match_view.js` - Added Edit button to modal footer
+  - `js/coach.js` - Added Edit buttons to verification table
+  - `results.html`, `archer_history.html`, `archer_results_pivot.html` - Pass editUrl to modals 
 
 ---
 
