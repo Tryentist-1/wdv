@@ -5102,11 +5102,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 return true;
             }
 
+            // Extract division/gender/level from archers (check all archers, not just first)
             if (state.archers && state.archers.length) {
-                const sample = state.archers[0];
-                division = sample.division || division || state.divisionCode;
-                gender = sample.gender || gender;
-                level = sample.level || level;
+                for (const archer of state.archers) {
+                    if (!division && archer.division) division = archer.division;
+                    if (!gender && archer.gender) gender = archer.gender;
+                    if (!level && archer.level) level = archer.level;
+                    // Stop if we have all values
+                    if (division && gender && level) break;
+                }
+                // Also try fallback from state
+                division = division || state.divisionCode;
+            }
+            
+            // Derive level/gender from division code if we have division but missing level/gender
+            // Division codes: BVAR, GVAR, BJV, GJV, OPEN
+            if (division && (!gender || !level)) {
+                const divUpper = (division || '').toUpperCase();
+                if (!gender) {
+                    if (divUpper.startsWith('B')) gender = 'M';
+                    else if (divUpper.startsWith('G')) gender = 'F';
+                }
+                if (!level) {
+                    if (divUpper.includes('VAR')) level = 'VAR';
+                    else if (divUpper.includes('JV')) level = 'JV';
+                    else if (divUpper === 'OPEN') level = 'JV'; // Default OPEN to JV (60cm target)
+                }
+                console.log('[ensureLiveRoundReady] Derived gender/level from division:', { division, gender, level });
             }
 
             if (eventId) {
@@ -5153,13 +5175,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
 
+            // For standalone rounds with archers that don't have roundArcherIds, use atomic creation
+            const isStandaloneRound = !eventId || eventId === null;
+            const archersForAtomicCreation = isStandaloneRound && state.archers && state.archers.length > 0
+                ? state.archers.filter(a => !a.roundArcherId) // Only archers without existing mapping
+                : [];
+            
+            if (archersForAtomicCreation.length > 0) {
+                console.log('[ensureLiveRoundReady] Using atomic round+archer creation for', archersForAtomicCreation.length, 'archers');
+            }
+            
             await LiveUpdates.ensureRound({
                 roundType: 'R300',
                 date: today,
                 division,
                 gender,
                 level,
-                eventId: eventId || null  // null for standalone rounds
+                eventId: eventId || null,  // null for standalone rounds
+                archers: archersForAtomicCreation.length > 0 ? archersForAtomicCreation : undefined
             });
 
             if (!LiveUpdates._state || !LiveUpdates._state.roundId) {
@@ -5171,6 +5204,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (LiveUpdates._state.roundEntryCode) {
                 state.roundEntryCode = LiveUpdates._state.roundEntryCode;
                 console.log('[ensureLiveRoundReady] ✅ Standalone round entry code:', state.roundEntryCode);
+                // Also save to localStorage with round-specific key (backup)
+                try {
+                    localStorage.setItem(`round:${state.roundId}:entry_code`, state.roundEntryCode);
+                } catch (_) { }
             }
 
             // FIX: Pre-populate archerIds mapping with known roundArcherId values
@@ -5187,11 +5224,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            if (state.archers && state.archers.length) {
-                console.log('[ensureLiveRoundReady] Ensuring archers:', state.archers.map(a => ({ id: a.id, archerId: a.archerId, roundArcherId: a.roundArcherId, name: `${a.firstName} ${a.lastName}` })));
+            // For archers that weren't created atomically, ensure them individually
+            const archersToEnsure = state.archers ? state.archers.filter(a => !LiveUpdates._state.archerIds[a.id]) : [];
+            if (archersToEnsure.length > 0) {
+                console.log('[ensureLiveRoundReady] Ensuring remaining archers:', archersToEnsure.map(a => ({ id: a.id, name: `${a.firstName} ${a.lastName}` })));
                 await Promise.all(
-                    state.archers.map(archer => {
-                        console.log(`[ensureLiveRoundReady] Calling ensureArcher with id="${archer.id}", archerId="${archer.archerId}", roundArcherId="${archer.roundArcherId}"`);
+                    archersToEnsure.map(archer => {
+                        console.log(`[ensureLiveRoundReady] Calling ensureArcher with id="${archer.id}"`);
                         return LiveUpdates.ensureArcher(archer.id, archer);
                     })
                 );
@@ -5495,6 +5534,164 @@ document.addEventListener('DOMContentLoaded', () => {
             // Clear inline style to ensure classList takes precedence
             modal.style.display = '';
         }
+    }
+
+    // ==================== Archer Metadata Modal ====================
+    
+    /**
+     * Show modal to collect missing archer metadata (level/gender)
+     * Returns a Promise that resolves with the updated archers or rejects if cancelled
+     */
+    function showArcherMetadataModal(archersNeedingData) {
+        return new Promise((resolve, reject) => {
+            const modal = document.getElementById('archer-metadata-modal');
+            const content = document.getElementById('archer-metadata-content');
+            const confirmBtn = document.getElementById('archer-metadata-confirm-btn');
+            const cancelBtn = document.getElementById('archer-metadata-cancel-btn');
+            
+            if (!modal || !content) {
+                console.error('Archer metadata modal not found');
+                reject(new Error('Modal not available'));
+                return;
+            }
+            
+            // Build form content
+            let html = '';
+            archersNeedingData.forEach((archer, idx) => {
+                const archerName = `${archer.firstName || ''} ${archer.lastName || ''}`.trim() || 'Unknown Archer';
+                const needsLevel = !archer.level;
+                const needsGender = !archer.gender;
+                
+                html += `
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg" data-archer-idx="${idx}">
+                        <div class="font-semibold text-gray-800 dark:text-white mb-2">${archerName}</div>
+                        ${needsLevel ? `
+                            <div class="mb-2">
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Level <span class="text-red-500">*</span></label>
+                                <select class="archer-level-select w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-white min-h-[44px]" data-archer-id="${archer.id}">
+                                    <option value="">Select Level...</option>
+                                    <option value="VAR">Varsity (40cm target)</option>
+                                    <option value="JV">JV (60cm target)</option>
+                                </select>
+                            </div>
+                        ` : ''}
+                        ${needsGender ? `
+                            <div>
+                                <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">Gender <span class="text-red-500">*</span></label>
+                                <select class="archer-gender-select w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-800 dark:text-white min-h-[44px]" data-archer-id="${archer.id}">
+                                    <option value="">Select Gender...</option>
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                </select>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            content.innerHTML = html;
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Handle confirm
+            const handleConfirm = () => {
+                // Collect values
+                const updates = [];
+                let allValid = true;
+                
+                archersNeedingData.forEach((archer, idx) => {
+                    const levelSelect = content.querySelector(`.archer-level-select[data-archer-id="${archer.id}"]`);
+                    const genderSelect = content.querySelector(`.archer-gender-select[data-archer-id="${archer.id}"]`);
+                    
+                    const level = levelSelect ? levelSelect.value : archer.level;
+                    const gender = genderSelect ? genderSelect.value : archer.gender;
+                    
+                    if (levelSelect && !level) allValid = false;
+                    if (genderSelect && !gender) allValid = false;
+                    
+                    updates.push({ archerId: archer.id, level, gender });
+                });
+                
+                if (!allValid) {
+                    alert('Please fill in all required fields.');
+                    return;
+                }
+                
+                // Apply updates to state.archers
+                updates.forEach(update => {
+                    const archer = state.archers.find(a => a.id === update.archerId);
+                    if (archer) {
+                        if (update.level) archer.level = update.level;
+                        if (update.gender) archer.gender = update.gender;
+                        // Also derive division if we now have both
+                        if (archer.level && archer.gender && !archer.division) {
+                            archer.division = deriveDivisionCode(archer.gender, archer.level);
+                        }
+                    }
+                });
+                
+                // Cleanup and resolve
+                cleanup();
+                resolve(state.archers);
+            };
+            
+            // Handle cancel
+            const handleCancel = () => {
+                cleanup();
+                reject(new Error('User cancelled'));
+            };
+            
+            // Cleanup function
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+            };
+            
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+        });
+    }
+    
+    /**
+     * Validate archers have required metadata for standalone rounds
+     * Returns { valid: boolean, archersNeedingData: [] }
+     */
+    function validateArcherMetadata() {
+        const archersNeedingData = [];
+        
+        for (const archer of state.archers) {
+            const needsLevel = !archer.level;
+            const needsGender = !archer.gender;
+            
+            if (needsLevel || needsGender) {
+                archersNeedingData.push(archer);
+            }
+        }
+        
+        return {
+            valid: archersNeedingData.length === 0,
+            archersNeedingData
+        };
+    }
+    
+    /**
+     * Derive division code from gender and level
+     */
+    function deriveDivisionCode(gender, level) {
+        const g = (gender || '').toUpperCase();
+        const l = (level || '').toUpperCase();
+        
+        if (g === 'M' && l === 'VAR') return 'BVAR';
+        if (g === 'M' && l === 'JV') return 'BJV';
+        if (g === 'F' && l === 'VAR') return 'GVAR';
+        if (g === 'F' && l === 'JV') return 'GJV';
+        
+        // Fallback to OPEN for mixed or unknown
+        return 'OPEN';
     }
 
     // Load active events into modal list
@@ -6050,33 +6247,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Standalone round - use round's entry_code
                 console.log('[handleDirectLink] Standalone round - fetching round entry code...');
                 
-                // Try to get from localStorage first (saved when round was created)
-                // Check both round-specific key and global key
-                let savedRoundEntryCode = localStorage.getItem(`round:${roundId}:entry_code`);
-                if (!savedRoundEntryCode) {
-                    // Also check global key (saved by live_updates.js)
-                    savedRoundEntryCode = localStorage.getItem('round_entry_code');
-                }
-                if (savedRoundEntryCode) {
-                    entryCode = savedRoundEntryCode;
-                    console.log('[handleDirectLink] ✅ Found round entry code in localStorage:', entryCode);
-                    // Save it with roundId key for future lookups
+                // Check URL parameter first (from index.html links with &code= appended)
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlEntryCode = urlParams.get('code');
+                if (urlEntryCode) {
+                    entryCode = urlEntryCode;
+                    console.log('[handleDirectLink] ✅ Found round entry code in URL:', entryCode);
+                    // Save it for future lookups
                     localStorage.setItem(`round:${roundId}:entry_code`, entryCode);
-                } else {
+                }
+                
+                // Try to get from localStorage (saved when round was created)
+                if (!entryCode) {
+                    // Check both round-specific key and global key
+                    let savedRoundEntryCode = localStorage.getItem(`round:${roundId}:entry_code`);
+                    if (!savedRoundEntryCode) {
+                        // Also check global key (saved by live_updates.js)
+                        savedRoundEntryCode = localStorage.getItem('round_entry_code');
+                    }
+                    if (savedRoundEntryCode) {
+                        entryCode = savedRoundEntryCode;
+                        console.log('[handleDirectLink] ✅ Found round entry code in localStorage:', entryCode);
+                        // Save it with roundId key for future lookups
+                        localStorage.setItem(`round:${roundId}:entry_code`, entryCode);
+                    }
+                }
+                
+                if (!entryCode) {
                     // Try to get from archer history (which includes entry_code for standalone rounds)
+                    // IMPORTANT: Use the archerId from URL parameter, not the cookie (which may be newly created)
                     try {
-                        const archerId = getArcherCookie();
+                        console.log('[handleDirectLink] Fetching archer history for URL archerId:', archerId);
                         const historyResponse = await fetch(`${API_BASE}/archers/${archerId}/history`);
                         if (historyResponse.ok) {
                             const historyData = await historyResponse.json();
                             const history = historyData.history || historyData.rounds || [];
+                            console.log('[handleDirectLink] History contains', history.length, 'entries');
                             const roundInHistory = history.find(r => r.round_id === roundId && r.is_standalone);
                             if (roundInHistory && roundInHistory.entry_code) {
                                 entryCode = roundInHistory.entry_code;
                                 console.log('[handleDirectLink] ✅ Found round entry code in archer history:', entryCode);
                                 // Save it for future use
                                 localStorage.setItem(`round:${roundId}:entry_code`, entryCode);
+                            } else if (roundInHistory) {
+                                console.warn('[handleDirectLink] Round found in history but no entry_code:', roundInHistory);
+                            } else {
+                                console.warn('[handleDirectLink] Round not found in history. Looking for round_id:', roundId, 'with is_standalone=true');
+                                // Log available rounds for debugging
+                                const standaloneRounds = history.filter(r => r.is_standalone);
+                                console.log('[handleDirectLink] Available standalone rounds:', standaloneRounds.map(r => ({ round_id: r.round_id, entry_code: r.entry_code })));
                             }
+                        } else {
+                            console.warn('[handleDirectLink] History API returned:', historyResponse.status);
                         }
                     } catch (e) {
                         console.warn('[handleDirectLink] Could not fetch archer history:', e);
@@ -6277,20 +6499,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('[handleDirectLink] ⚠️ No bale number assigned - going to Setup mode');
                 console.log('[handleDirectLink] Archer found in round but not assigned to a bale yet');
                 
-                // Load the event so Setup mode can work
-                const eventLoaded = await loadEventById(eventId, '', entryCode);
-                if (!eventLoaded) {
-                    console.error('[handleDirectLink] Failed to load event for Setup mode');
-                    alert('Could not load event. Please try again.');
-                    return false;
+                // Handle differently for standalone vs event-linked rounds
+                if (isStandalone) {
+                    // STANDALONE ROUND: No event to load, set up state directly from round data
+                    console.log('[handleDirectLink] Standalone round - setting up state without event');
+                    
+                    // Set up state for Setup mode using round data
+                    state.activeEventId = null;
+                    state.selectedEventId = null;
+                    state.isStandalone = true;
+                    state.roundId = roundId;
+                    state.assignmentMode = 'manual'; // Force manual mode for bale selection
+                    state.divisionCode = snapshotData.round?.division || '';
+                    state.eventName = 'Standalone Round';
+                    
+                    // Load default divisions for standalone rounds
+                    loadDefaultDivisions();
+                    
+                    // Store entry code for future API calls
+                    if (entryCode) {
+                        localStorage.setItem(`round:${roundId}:entry_code`, entryCode);
+                        localStorage.setItem('round_entry_code', entryCode);
+                    }
+                } else {
+                    // EVENT-LINKED ROUND: Load the event so Setup mode can work
+                    const eventLoaded = await loadEventById(eventId, '', entryCode);
+                    if (!eventLoaded) {
+                        console.error('[handleDirectLink] Failed to load event for Setup mode');
+                        alert('Could not load event. Please try again.');
+                        return false;
+                    }
+                    
+                    // Set up state for Setup mode
+                    state.activeEventId = eventId;
+                    state.selectedEventId = eventId;
+                    state.isStandalone = false;
+                    state.roundId = roundId; // Keep the round ID so we can update it later
+                    state.assignmentMode = 'manual'; // Force manual mode for bale selection
+                    state.divisionCode = snapshotData.round?.division || '';
                 }
-                
-                // Set up state for Setup mode
-                state.activeEventId = eventId;
-                state.selectedEventId = eventId;
-                state.roundId = roundId; // Keep the round ID so we can update it later
-                state.assignmentMode = 'manual'; // Force manual mode for bale selection
-                state.divisionCode = snapshotData.round?.division || '';
                 
                 // Update archer cookie
                 const currentCookie = getArcherCookie();
@@ -6824,6 +7071,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         eventDivisionControls.divisionSelect.focus();
                     }
                     return;
+                }
+                
+                // For standalone rounds, validate archer metadata (level/gender required for entry code)
+                if (state.isStandalone || !state.selectedEventId) {
+                    console.log('[START SCORING] Standalone round - validating archer metadata');
+                    const validation = validateArcherMetadata();
+                    
+                    if (!validation.valid) {
+                        console.log('[START SCORING] ⚠️ Missing metadata for', validation.archersNeedingData.length, 'archers');
+                        try {
+                            await showArcherMetadataModal(validation.archersNeedingData);
+                            console.log('[START SCORING] ✅ Archer metadata updated');
+                            saveData(); // Save the updated archer data
+                        } catch (err) {
+                            console.log('[START SCORING] Metadata modal cancelled');
+                            return; // User cancelled, don't proceed
+                        }
+                    }
                 }
 
                 // Store original button text and show loading state

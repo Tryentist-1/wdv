@@ -318,7 +318,7 @@
         return res.json();
     }
 
-    function ensureRound({ roundType, date, division, gender, level, eventId }) {
+    function ensureRound({ roundType, date, division, gender, level, eventId, archers }) {
         if (!state.config.enabled) return Promise.resolve(null);
 
         // Check if we have a cached roundId and if it's for the same event
@@ -337,7 +337,23 @@
 
         // PHASE 0: baleNumber removed from rounds table, now lives in round_archers
         // Support standalone rounds (eventId = null)
-        return request('/rounds', 'POST', { roundType, date, division, gender, level, eventId: eventId || null })
+        // Optional: Pass archers for atomic round+archer creation
+        const requestBody = { roundType, date, division, gender, level, eventId: eventId || null };
+        if (archers && Array.isArray(archers) && archers.length > 0) {
+            requestBody.archers = archers.map(a => ({
+                archerId: a.id || a.archerId,
+                extId: a.id,
+                firstName: a.firstName || '',
+                lastName: a.lastName || '',
+                school: a.school || '',
+                level: a.level || level || '',
+                gender: a.gender || gender || '',
+                baleNumber: a.baleNumber || 1,
+                targetAssignment: a.targetAssignment || ''
+            }));
+            console.log('🔄 Atomic round+archer creation with', archers.length, 'archers');
+        }
+        return request('/rounds', 'POST', requestBody)
             .then(json => {
                 if (!json || !json.roundId) {
                     throw new Error('Round creation failed: missing roundId');
@@ -348,11 +364,26 @@
                 // Store entry code if provided (for standalone rounds)
                 if (json.entryCode) {
                     state.roundEntryCode = json.entryCode;
-                    // Also store in localStorage for persistence
+                    // Store in localStorage with BOTH generic and round-specific keys
+                    // Round-specific key is critical for cross-session access
                     try {
                         localStorage.setItem('round_entry_code', json.entryCode);
+                        // CRITICAL: Also store with round-specific key immediately
+                        localStorage.setItem(`round:${json.roundId}:entry_code`, json.entryCode);
+                        console.log('✅ Entry code stored with round-specific key:', `round:${json.roundId}:entry_code`);
                     } catch (_) { }
                     console.log('✅ Standalone round created with entry code:', json.entryCode);
+                }
+                
+                // Handle atomic archer creation response
+                if (json.archers && Array.isArray(json.archers)) {
+                    console.log('✅ Atomic archer creation: pre-populating archerIds mapping');
+                    json.archers.forEach(a => {
+                        if (a.archerId && a.roundArcherId) {
+                            state.archerIds[a.archerId] = a.roundArcherId;
+                            console.log(`  - ${a.archerName}: ${a.archerId} -> ${a.roundArcherId}`);
+                        }
+                    });
                 }
                 
                 persistState();  // Save roundId, eventId, and entryCode for recovery

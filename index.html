@@ -540,14 +540,22 @@
             openRounds.forEach(round => {
               const isStarted = (round.ends_completed || 0) > 0;
               
-              // Build link - entry code will be fetched from event snapshot in handleDirectLink
-              // For standalone rounds, event_id is null, so we need to handle that
+              // Build link with entry code for standalone rounds
+              // For event-linked rounds, entry code will be fetched from event snapshot in handleDirectLink
+              // For standalone rounds, include entry code in URL so it works across browser sessions
               const eventParam = round.event_id ? round.event_id : 'null';
-              const link = `ranking_round_300.html?event=${eventParam}&round=${round.round_id}&archer=${archerId}`;
+              let link = `ranking_round_300.html?event=${eventParam}&round=${round.round_id}&archer=${archerId}`;
+              
+              // Include entry_code in URL for standalone rounds (so link works across browser sessions)
+              if (round.is_standalone && round.entry_code) {
+                link += `&code=${encodeURIComponent(round.entry_code)}`;
+              }
+              
               console.log('[index] Building resume link:', { 
                 round_id: round.round_id, 
                 event_id: round.event_id, 
                 is_standalone: round.is_standalone,
+                entry_code: round.entry_code ? 'present' : 'missing',
                 archerId: archerId,
                 link: link
               });

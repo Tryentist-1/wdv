@@ -967,6 +967,23 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
     $gender = $input['gender'] ?? null;      // M/F
     $level = $input['level'] ?? null;        // VAR/JV
     $eventId = isset($input['eventId']) ? $input['eventId'] : null;    // Link round to event (null for standalone)
+    $archers = $input['archers'] ?? [];      // Optional: archers for atomic creation
+    
+    // Derive level/gender from division if not provided
+    // Division codes: BVAR, GVAR, BJV, GJV, OPEN
+    if ($division && (!$level || !$gender)) {
+        $divUpper = strtoupper($division);
+        if (!$gender) {
+            if (strpos($divUpper, 'B') === 0) $gender = 'M';
+            else if (strpos($divUpper, 'G') === 0) $gender = 'F';
+        }
+        if (!$level) {
+            if (strpos($divUpper, 'VAR') !== false) $level = 'VAR';
+            else if (strpos($divUpper, 'JV') !== false) $level = 'JV';
+            else if ($divUpper === 'OPEN') $level = 'JV'; // Default OPEN to JV (60cm target)
+        }
+        error_log("Derived level/gender from division: division=$division, gender=$gender, level=$level");
+    }
     
     // Require auth only if round is linked to an event (standalone rounds don't need auth)
     if ($eventId !== null) {
@@ -1037,13 +1054,15 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
             
             // Generate entry code for standalone rounds
             $entryCode = null;
-            if ($eventId === null && $level !== null) {
-                // Standalone round - generate entry code
-                $entryCode = generate_round_entry_code($pdo, $roundType, $level, $date);
+            if ($eventId === null) {
+                // Standalone round - ALWAYS generate entry code (critical for cross-session access)
+                // Use level if available, otherwise default to JV (60cm target)
+                $entryCodeLevel = $level ?? 'JV';
+                $entryCode = generate_round_entry_code($pdo, $roundType, $entryCodeLevel, $date);
                 $columns[] = 'entry_code';
                 $values[] = $entryCode;
                 $placeholders[] = '?';
-                error_log("Generated entry code for standalone round: $entryCode");
+                error_log("Generated entry code for standalone round: $entryCode (level used: $entryCodeLevel)");
             }
             
             $sql = 'INSERT INTO rounds (' . implode(',', $columns) . ') VALUES (' . implode(',', $placeholders) . ')';
@@ -1074,6 +1093,62 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
             if ($entryCode !== null) {
                 $response['entryCode'] = $entryCode;
             }
+            
+            // ATOMIC ARCHER CREATION: If archers provided, create them in same transaction
+            if (!empty($archers) && is_array($archers)) {
+                $createdArchers = [];
+                $targetLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+                $targetIdx = 0;
+                
+                foreach ($archers as $archerData) {
+                    $archerId = $archerData['archerId'] ?? $archerData['extId'] ?? null;
+                    $firstName = $archerData['firstName'] ?? '';
+                    $lastName = $archerData['lastName'] ?? '';
+                    $school = $archerData['school'] ?? '';
+                    $archerLevel = $archerData['level'] ?? $level ?? '';
+                    $archerGender = $archerData['gender'] ?? $gender ?? '';
+                    $targetAssignment = $archerData['targetAssignment'] ?? $targetLetters[$targetIdx % 8];
+                    $baleNumber = $archerData['baleNumber'] ?? 1;
+                    
+                    // Create or find master archer
+                    $masterArcherId = null;
+                    if ($archerId) {
+                        // Check if archer exists
+                        $existingArcher = $pdo->prepare('SELECT id FROM archers WHERE id = ? OR ext_id = ? LIMIT 1');
+                        $existingArcher->execute([$archerId, $archerId]);
+                        $existingRow = $existingArcher->fetch();
+                        
+                        if ($existingRow) {
+                            $masterArcherId = $existingRow['id'];
+                        } else {
+                            // Create new master archer
+                            $masterArcherId = $genUuid();
+                            $insertArcher = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+                            $insertArcher->execute([$masterArcherId, $archerId, $firstName, $lastName, $school, $archerLevel, $archerGender]);
+                        }
+                    }
+                    
+                    // Create round_archer entry
+                    $roundArcherId = $genUuid();
+                    $archerName = trim("$firstName $lastName");
+                    $insertRoundArcher = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_id, archer_name, target_assignment, bale_number, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
+                    $insertRoundArcher->execute([$roundArcherId, $id, $masterArcherId, $archerName, $targetAssignment, $baleNumber]);
+                    
+                    $createdArchers[] = [
+                        'roundArcherId' => $roundArcherId,
+                        'archerId' => $masterArcherId,
+                        'archerName' => $archerName,
+                        'targetAssignment' => $targetAssignment,
+                        'baleNumber' => $baleNumber
+                    ];
+                    
+                    $targetIdx++;
+                }
+                
+                $response['archers'] = $createdArchers;
+                error_log("Atomic round+archer creation: round=$id, archers=" . count($createdArchers));
+            }
+            
             json_response($response, 201);
         }
     } catch (Exception $e) {
