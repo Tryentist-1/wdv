@@ -364,6 +364,138 @@
     }
   }
 
+  // ==================== Create Event Wizard State ====================
+  let createEventStep = 1;
+  let selectedTemplate = 'standard';
+  
+  function generateEntryCode() {
+    // Generate a 6-character alphanumeric code
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid confusing chars like 0/O, 1/I
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  }
+  
+  function applyTemplate(template) {
+    selectedTemplate = template;
+    const divisionCheckboxes = {
+      open: document.getElementById('division-open'),
+      bvar: document.getElementById('division-bvar'),
+      gvar: document.getElementById('division-gvar'),
+      bjv: document.getElementById('division-bjv'),
+      gjv: document.getElementById('division-gjv')
+    };
+    
+    // Clear all first
+    Object.values(divisionCheckboxes).forEach(cb => { if (cb) cb.checked = false; });
+    
+    // Apply template settings
+    switch (template) {
+      case 'practice':
+        if (divisionCheckboxes.open) divisionCheckboxes.open.checked = true;
+        break;
+      case 'standard':
+        if (divisionCheckboxes.bvar) divisionCheckboxes.bvar.checked = true;
+        if (divisionCheckboxes.gvar) divisionCheckboxes.gvar.checked = true;
+        if (divisionCheckboxes.bjv) divisionCheckboxes.bjv.checked = true;
+        if (divisionCheckboxes.gjv) divisionCheckboxes.gjv.checked = true;
+        break;
+      case 'varsity':
+        if (divisionCheckboxes.bvar) divisionCheckboxes.bvar.checked = true;
+        if (divisionCheckboxes.gvar) divisionCheckboxes.gvar.checked = true;
+        break;
+      case 'custom':
+        // No preselection for custom
+        break;
+    }
+    
+    updateDivisionSummary();
+  }
+  
+  function updateDivisionSummary() {
+    const count = ['open', 'bvar', 'gvar', 'bjv', 'gjv'].filter(div => {
+      const cb = document.getElementById(`division-${div}`);
+      return cb && cb.checked;
+    }).length;
+    
+    const countEl = document.getElementById('division-count');
+    if (countEl) countEl.textContent = count;
+  }
+  
+  function updateStepIndicators(step) {
+    for (let i = 1; i <= 3; i++) {
+      const indicator = document.getElementById(`step-${i}-indicator`);
+      if (indicator) {
+        if (i <= step) {
+          indicator.classList.remove('bg-white/30');
+          indicator.classList.add('bg-white');
+        } else {
+          indicator.classList.remove('bg-white');
+          indicator.classList.add('bg-white/30');
+        }
+      }
+    }
+    
+    // Update subtitle
+    const subtitle = document.getElementById('step-subtitle');
+    if (subtitle) {
+      const subtitles = {
+        1: 'Choose a template',
+        2: 'Event details',
+        3: 'Select divisions'
+      };
+      subtitle.textContent = subtitles[step] || '';
+    }
+  }
+  
+  function showStep(step) {
+    createEventStep = step;
+    
+    // Hide all step contents
+    for (let i = 1; i <= 3; i++) {
+      const content = document.getElementById(`step-${i}-content`);
+      if (content) {
+        content.classList.add('hidden');
+      }
+    }
+    
+    // Show current step
+    const currentContent = document.getElementById(`step-${step}-content`);
+    if (currentContent) {
+      currentContent.classList.remove('hidden');
+    }
+    
+    // Update indicators
+    updateStepIndicators(step);
+    
+    // Update button text
+    const cancelText = document.getElementById('cancel-btn-text');
+    const submitText = document.getElementById('submit-btn-text');
+    const submitIcon = document.getElementById('submit-btn-icon');
+    
+    if (step === 1) {
+      if (cancelText) cancelText.textContent = 'Cancel';
+    } else {
+      if (cancelText) cancelText.textContent = 'Back';
+    }
+    
+    if (step === 3) {
+      if (submitText) submitText.textContent = 'Create Event';
+      if (submitIcon) submitIcon.className = 'fas fa-check ml-2';
+    } else {
+      if (submitText) submitText.textContent = 'Next';
+      if (submitIcon) submitIcon.className = 'fas fa-arrow-right ml-2';
+    }
+    
+    // Focus appropriate element
+    if (step === 2) {
+      const nameInput = document.getElementById('event-name');
+      if (nameInput) setTimeout(() => nameInput.focus(), 100);
+    }
+  }
+
   function showCreateEventModal() {
     const modal = document.getElementById('create-event-modal');
     const nameInput = document.getElementById('event-name');
@@ -371,31 +503,134 @@
     const statusSelect = document.getElementById('event-status');
     const codeInput = document.getElementById('event-code');
 
+    // Reset wizard state
+    createEventStep = 1;
+    selectedTemplate = 'standard';
+    
     // Set defaults
     nameInput.value = '';
     dateInput.value = new Date().toISOString().split('T')[0];
     statusSelect.value = 'Planned';
-    codeInput.value = '';
+    codeInput.value = generateEntryCode();
+    
+    // Reset division checkboxes
+    ['open', 'bvar', 'gvar', 'bjv', 'gjv'].forEach(div => {
+      const cb = document.getElementById(`division-${div}`);
+      if (cb) cb.checked = false;
+    });
 
+    // Show step 1
+    showStep(1);
+    updateDivisionSummary();
+    
     modal.style.display = 'flex';
-    nameInput.focus();
+    
+    // Setup template button handlers
+    document.querySelectorAll('.event-template-btn').forEach(btn => {
+      btn.onclick = () => {
+        const template = btn.dataset.template;
+        applyTemplate(template);
+        
+        // Update visual selection
+        document.querySelectorAll('.event-template-btn').forEach(b => {
+          b.classList.remove('border-green-400', 'dark:border-green-500', 'bg-green-50', 'dark:bg-green-900/20');
+          b.classList.add('border-gray-200', 'dark:border-gray-600');
+        });
+        btn.classList.remove('border-gray-200', 'dark:border-gray-600');
+        btn.classList.add('border-green-400', 'dark:border-green-500', 'bg-green-50', 'dark:bg-green-900/20');
+        
+        // Auto-advance to step 2
+        showStep(2);
+      };
+    });
+    
+    // Generate code button
+    const generateCodeBtn = document.getElementById('generate-code-btn');
+    if (generateCodeBtn) {
+      generateCodeBtn.onclick = () => {
+        codeInput.value = generateEntryCode();
+      };
+    }
+    
+    // Close button
+    const closeBtn = document.getElementById('close-create-modal-btn');
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        modal.style.display = 'none';
+      };
+    }
+    
+    // Select/Clear all divisions
+    const selectAllBtn = document.getElementById('select-all-divisions-btn');
+    const clearAllBtn = document.getElementById('clear-all-divisions-btn');
+    
+    if (selectAllBtn) {
+      selectAllBtn.onclick = () => {
+        ['open', 'bvar', 'gvar', 'bjv', 'gjv'].forEach(div => {
+          const cb = document.getElementById(`division-${div}`);
+          if (cb) cb.checked = true;
+        });
+        updateDivisionSummary();
+      };
+    }
+    
+    if (clearAllBtn) {
+      clearAllBtn.onclick = () => {
+        ['open', 'bvar', 'gvar', 'bjv', 'gjv'].forEach(div => {
+          const cb = document.getElementById(`division-${div}`);
+          if (cb) cb.checked = false;
+        });
+        updateDivisionSummary();
+      };
+    }
+    
+    // Division checkbox change handlers
+    ['open', 'bvar', 'gvar', 'bjv', 'gjv'].forEach(div => {
+      const cb = document.getElementById(`division-${div}`);
+      if (cb) {
+        cb.onchange = updateDivisionSummary;
+      }
+    });
 
+    // Cancel/Back button
     document.getElementById('cancel-event-btn').onclick = () => {
-      modal.style.display = 'none';
+      if (createEventStep === 1) {
+        modal.style.display = 'none';
+      } else {
+        showStep(createEventStep - 1);
+      }
     };
 
+    // Next/Submit button
     document.getElementById('submit-event-btn').onclick = async () => {
+      if (createEventStep < 3) {
+        // Validate current step before advancing
+        if (createEventStep === 2) {
+          const name = nameInput.value.trim();
+          if (!name) {
+            nameInput.focus();
+            nameInput.classList.add('border-red-500');
+            setTimeout(() => nameInput.classList.remove('border-red-500'), 2000);
+            return;
+          }
+        }
+        showStep(createEventStep + 1);
+        return;
+      }
+      
+      // Final step - create the event
       const name = nameInput.value.trim();
       const date = dateInput.value;
       const status = statusSelect.value;
       const entryCode = codeInput.value.trim();
 
       if (!name) {
-        alert('Please enter an event name');
+        showStep(2);
+        nameInput.focus();
         return;
       }
 
-      // PHASE 0: Get selected divisions
+      // Get selected divisions
       const divisions = [];
       ['open', 'bvar', 'gvar', 'bjv', 'gjv'].forEach(div => {
         const checkbox = document.getElementById(`division-${div}`);
@@ -405,14 +640,17 @@
       });
 
       if (divisions.length === 0) {
-        alert('Please select at least one division round');
+        alert('Please select at least one division');
         return;
       }
 
       try {
         const btn = document.getElementById('submit-event-btn');
         btn.disabled = true;
-        btn.textContent = 'Creating...';
+        const submitText = document.getElementById('submit-btn-text');
+        const submitIcon = document.getElementById('submit-btn-icon');
+        if (submitText) submitText.textContent = 'Creating...';
+        if (submitIcon) submitIcon.className = 'fas fa-spinner fa-spin ml-2';
 
         // Step 1: Create event
         const result = await req('/events', 'POST', {
@@ -450,7 +688,10 @@
       } finally {
         const btn = document.getElementById('submit-event-btn');
         btn.disabled = false;
-        btn.textContent = 'Create Event';
+        const submitText = document.getElementById('submit-btn-text');
+        const submitIcon = document.getElementById('submit-btn-icon');
+        if (submitText) submitText.textContent = 'Create Event';
+        if (submitIcon) submitIcon.className = 'fas fa-check ml-2';
       }
     };
   }
@@ -2216,12 +2457,18 @@
     const dateInput = document.getElementById('edit-event-date');
     const statusSelect = document.getElementById('edit-event-status');
     const codeInput = document.getElementById('edit-event-code');
+    const subtitleEl = document.getElementById('edit-event-subtitle');
     
     // Populate with current values
     nameInput.value = event.name || '';
     dateInput.value = event.date || '';
     statusSelect.value = event.status || 'Planned';
     codeInput.value = event.entry_code || '';
+    
+    // Update subtitle with event name
+    if (subtitleEl) {
+      subtitleEl.textContent = event.name || 'Modify event settings';
+    }
     
     modal.style.display = 'flex';
     
@@ -2231,10 +2478,28 @@
     // Load and display matches
     await loadEventBrackets(event.id);
     
+    // Close button (X in header)
+    const closeBtn = document.getElementById('close-edit-modal-btn');
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        modal.style.display = 'none';
+        currentEditEventId = null;
+      };
+    }
+    
+    // Cancel button
     document.getElementById('cancel-edit-event-btn').onclick = () => {
       modal.style.display = 'none';
       currentEditEventId = null;
     };
+    
+    // Generate code button
+    const generateCodeBtn = document.getElementById('edit-generate-code-btn');
+    if (generateCodeBtn) {
+      generateCodeBtn.onclick = () => {
+        codeInput.value = generateEntryCode();
+      };
+    }
     
     // Add Archers button - opens Add Archers modal
     const addArchersBtn = document.getElementById('edit-add-archers-btn');

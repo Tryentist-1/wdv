@@ -63,84 +63,274 @@
     </div>
   </div>
 
-  <!-- Create Event Modal -->
-  <div id="create-event-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
-      <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Create New Event</h2>
+  <!-- Create Event Modal - Redesigned with Stepper -->
+  <div id="create-event-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-40 flex items-end sm:items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-hidden transition-all duration-300">
       
-      <div class="mb-5">
-        <label for="event-name" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Name</label>
-        <input type="text" id="event-name" placeholder="Fall Tournament" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
-      </div>
-      
-      <!-- Date, Status, and Entry Code on one line -->
-      <div class="grid grid-cols-3 gap-3 mb-5">
-        <div>
-          <label for="event-date" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Date</label>
-          <input type="date" id="event-date" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+      <!-- Gradient Header with Progress -->
+      <div class="px-4 py-4" style="background: linear-gradient(to right, #22c55e, #3b82f6);">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+              <i class="fas fa-calendar-plus text-white text-lg"></i>
       </div>
         <div>
-          <label for="event-status" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Status</label>
-          <select id="event-status" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
-          <option value="Planned">Planned</option>
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-        </select>
+              <h2 class="text-lg font-bold text-white">Create Event</h2>
+              <p id="step-subtitle" class="text-sm text-white/80">Choose a template</p>
+            </div>
+          </div>
+          <button type="button" id="close-create-modal-btn" class="w-8 h-8 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-colors">
+            <i class="fas fa-times"></i>
+          </button>
       </div>
-        <div>
-          <label for="event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry Code</label>
-          <input type="text" id="event-code" placeholder="FALL2024" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        
+        <!-- Step Indicator -->
+        <div class="flex items-center gap-2">
+          <div id="step-1-indicator" class="flex-1 h-1.5 rounded-full bg-white transition-all duration-300"></div>
+          <div id="step-2-indicator" class="flex-1 h-1.5 rounded-full bg-white/30 transition-all duration-300"></div>
+          <div id="step-3-indicator" class="flex-1 h-1.5 rounded-full bg-white/30 transition-all duration-300"></div>
         </div>
       </div>
       
-      <!-- Division Rounds Selection -->
-      <div class="border-t-2 border-gray-200 dark:border-gray-700 pt-4 mt-6 mb-5">
-        <label class="block mb-3 font-semibold text-gray-700 dark:text-gray-300">Division Rounds</label>
+      <!-- Scrollable Content Area -->
+      <div class="overflow-y-auto max-h-[calc(95vh-180px)] sm:max-h-[calc(90vh-180px)]">
         
-        <!-- OPEN on its own line -->
-        <div class="mb-3">
-          <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
-            <input type="checkbox" id="division-open" value="OPEN" checked class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-            <span class="text-gray-800 dark:text-gray-200 font-medium">OPEN (Mixed - All Levels)</span>
-          </label>
+        <!-- Step 1: Template Selection -->
+        <div id="step-1-content" class="p-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <i class="fas fa-magic text-green-500 mr-1"></i>
+            Quick start with a preset or customize your own
+          </p>
+          
+          <!-- Template Cards -->
+          <div class="space-y-3">
+            <!-- Practice/Casual Template -->
+            <button type="button" class="event-template-btn w-full text-left p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all group" data-template="practice">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <i class="fas fa-bullseye text-blue-600 dark:text-blue-400"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-gray-800 dark:text-white">Practice Session</div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">OPEN division only • Quick setup</div>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400 group-hover:text-green-500 transition-colors mt-2"></i>
+              </div>
+            </button>
+            
+            <!-- Standard Tournament Template -->
+            <button type="button" class="event-template-btn w-full text-left p-4 rounded-xl border-2 border-green-400 dark:border-green-500 bg-green-50 dark:bg-green-900/20 transition-all group" data-template="standard">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/40 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <i class="fas fa-trophy text-green-600 dark:text-green-400"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+                    Standard Tournament
+                    <span class="text-xs bg-green-500 text-white px-1.5 py-0.5 rounded">Popular</span>
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">BVAR, GVAR, BJV, GJV • Full setup</div>
+                </div>
+                <i class="fas fa-chevron-right text-green-500 transition-colors mt-2"></i>
+              </div>
+            </button>
+            
+            <!-- Varsity Only Template -->
+            <button type="button" class="event-template-btn w-full text-left p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all group" data-template="varsity">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <i class="fas fa-medal text-purple-600 dark:text-purple-400"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-gray-800 dark:text-white">Varsity Only</div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">BVAR, GVAR • Competition focused</div>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400 group-hover:text-green-500 transition-colors mt-2"></i>
+              </div>
+            </button>
+            
+            <!-- Custom Template -->
+            <button type="button" class="event-template-btn w-full text-left p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all group" data-template="custom">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                  <i class="fas fa-sliders-h text-orange-600 dark:text-orange-400"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="font-semibold text-gray-800 dark:text-white">Custom Setup</div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">Choose your own divisions</div>
+                </div>
+                <i class="fas fa-chevron-right text-gray-400 group-hover:text-green-500 transition-colors mt-2"></i>
+              </div>
+            </button>
+          </div>
         </div>
         
-        <!-- VAR on left, JV on right -->
-        <div class="grid grid-cols-2 gap-3">
-          <!-- Varsity Column -->
-          <div class="space-y-2">
-            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-bvar" value="BVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-              <span class="text-gray-800 dark:text-gray-200">BVAR (Boys Varsity)</span>
+        <!-- Step 2: Event Details -->
+        <div id="step-2-content" class="p-4 hidden">
+          <!-- Event Name -->
+          <div class="mb-4">
+            <label for="event-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <i class="fas fa-tag text-green-500 mr-1"></i> Event Name
+            </label>
+            <input type="text" id="event-name" placeholder="e.g., Fall Championship 2024" 
+              class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none transition-all" />
+          </div>
+          
+          <!-- Date & Status Row -->
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label for="event-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <i class="fas fa-calendar text-green-500 mr-1"></i> Date
+              </label>
+              <input type="date" id="event-date" 
+                class="w-full px-3 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none transition-all" />
+            </div>
+            <div>
+              <label for="event-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                <i class="fas fa-flag text-green-500 mr-1"></i> Status
+              </label>
+              <select id="event-status" 
+                class="w-full px-3 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none transition-all cursor-pointer">
+                <option value="Planned">📋 Planned</option>
+                <option value="Active">🟢 Active</option>
+                <option value="Completed">✅ Completed</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- Entry Code with Auto-Generate -->
+          <div class="mb-4">
+            <label for="event-code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <i class="fas fa-key text-green-500 mr-1"></i> Entry Code
+              <span class="text-gray-400 font-normal">(for archer access)</span>
           </label>
-            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-gvar" value="GVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-              <span class="text-gray-800 dark:text-gray-200">GVAR (Girls Varsity)</span>
+            <div class="flex gap-2">
+              <input type="text" id="event-code" placeholder="AUTO-GENERATED" 
+                class="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 focus:outline-none transition-all uppercase tracking-wider font-mono" />
+              <button type="button" id="generate-code-btn" class="px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl transition-colors" title="Generate random code">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+              <i class="fas fa-info-circle mr-1"></i>
+              Archers use this code to join the event
+            </p>
+          </div>
+        </div>
+        
+        <!-- Step 3: Division Selection -->
+        <div id="step-3-content" class="p-4 hidden">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <i class="fas fa-users text-green-500 mr-1"></i>
+            Select which divisions to include in this event
+          </p>
+          
+          <!-- Quick Select Buttons -->
+          <div class="flex gap-2 mb-4">
+            <button type="button" id="select-all-divisions-btn" class="flex-1 px-3 py-2 text-sm bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+              <i class="fas fa-check-double mr-1"></i> Select All
+            </button>
+            <button type="button" id="clear-all-divisions-btn" class="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+              <i class="fas fa-times mr-1"></i> Clear All
+            </button>
+          </div>
+          
+          <!-- OPEN Division - Featured -->
+          <div class="mb-3">
+            <label class="flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 cursor-pointer hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/10 transition-all has-[:checked]:border-green-500 has-[:checked]:bg-green-50 dark:has-[:checked]:bg-green-900/20">
+              <input type="checkbox" id="division-open" value="OPEN" 
+                class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-500 text-green-500 focus:ring-green-500 focus:ring-offset-0 cursor-pointer">
+              <div class="flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">O</span>
+                  <div>
+                    <div class="font-semibold text-gray-800 dark:text-white">OPEN</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">Mixed • All Levels</div>
+                  </div>
+                </div>
+              </div>
           </label>
           </div>
           
-          <!-- JV Column -->
-          <div class="space-y-2">
-            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-bjv" value="BJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-              <span class="text-gray-800 dark:text-gray-200">BJV (Boys JV)</span>
+          <!-- Gendered Divisions Grid -->
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Boys Column -->
+            <div class="space-y-3">
+              <div class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider px-1">
+                <i class="fas fa-mars mr-1"></i> Boys
+              </div>
+              
+              <!-- BVAR -->
+              <label class="flex items-center gap-2 p-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/20">
+                <input type="checkbox" id="division-bvar" value="BVAR" 
+                  class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-500 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer">
+                <div>
+                  <div class="font-medium text-gray-800 dark:text-white text-sm">BVAR</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Varsity</div>
+                </div>
+              </label>
+              
+              <!-- BJV -->
+              <label class="flex items-center gap-2 p-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/20">
+                <input type="checkbox" id="division-bjv" value="BJV" 
+                  class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-500 text-blue-500 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer">
+                <div>
+                  <div class="font-medium text-gray-800 dark:text-white text-sm">BJV</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Junior Varsity</div>
+                </div>
+              </label>
+            </div>
+            
+            <!-- Girls Column -->
+            <div class="space-y-3">
+              <div class="text-xs font-semibold text-pink-600 dark:text-pink-400 uppercase tracking-wider px-1">
+                <i class="fas fa-venus mr-1"></i> Girls
+              </div>
+              
+              <!-- GVAR -->
+              <label class="flex items-center gap-2 p-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 cursor-pointer hover:border-pink-400 dark:hover:border-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/10 transition-all has-[:checked]:border-pink-500 has-[:checked]:bg-pink-50 dark:has-[:checked]:bg-pink-900/20">
+                <input type="checkbox" id="division-gvar" value="GVAR" 
+                  class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-500 text-pink-500 focus:ring-pink-500 focus:ring-offset-0 cursor-pointer">
+                <div>
+                  <div class="font-medium text-gray-800 dark:text-white text-sm">GVAR</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Varsity</div>
+                </div>
           </label>
-            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-gjv" value="GJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-              <span class="text-gray-800 dark:text-gray-200">GJV (Girls JV)</span>
+              
+              <!-- GJV -->
+              <label class="flex items-center gap-2 p-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 cursor-pointer hover:border-pink-400 dark:hover:border-pink-500 hover:bg-pink-50 dark:hover:bg-pink-900/10 transition-all has-[:checked]:border-pink-500 has-[:checked]:bg-pink-50 dark:has-[:checked]:bg-pink-900/20">
+                <input type="checkbox" id="division-gjv" value="GJV" 
+                  class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-500 text-pink-500 focus:ring-pink-500 focus:ring-offset-0 cursor-pointer">
+                <div>
+                  <div class="font-medium text-gray-800 dark:text-white text-sm">GJV</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">Junior Varsity</div>
+                </div>
           </label>
+            </div>
+          </div>
+          
+          <!-- Selection Summary -->
+          <div id="division-summary" class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-xl text-sm text-gray-600 dark:text-gray-400">
+            <i class="fas fa-info-circle text-green-500 mr-1"></i>
+            <span id="division-count">0</span> division(s) selected
           </div>
         </div>
         
-        <div class="mt-3 text-sm text-gray-600 dark:text-gray-400">
-          Select divisions to create for this event. You'll add archers to each division next.
+      </div>
+      
+      <!-- Fixed Footer with Navigation -->
+      <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/50">
+        <div class="flex gap-3">
+          <button type="button" id="cancel-event-btn" class="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[48px]">
+            <span id="cancel-btn-text">Cancel</span>
+          </button>
+          <button type="button" id="submit-event-btn" class="flex-1 px-4 py-3 text-white rounded-xl font-semibold transition-all min-h-[48px] shadow-lg" style="background: linear-gradient(to right, #22c55e, #3b82f6);">
+            <span id="submit-btn-text">Next</span>
+            <i id="submit-btn-icon" class="fas fa-arrow-right ml-2"></i>
+          </button>
         </div>
       </div>
       
-      <div class="flex gap-2 mt-6">
-        <button id="cancel-event-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-        <button id="submit-event-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Create Event</button>
-      </div>
     </div>
   </div>
 
@@ -241,86 +431,178 @@
     </div>
   </div>
 
-  <!-- Edit Event Modal -->
-  <div id="edit-event-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
-      <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Edit Event</h2>
+  <!-- Edit Event Modal - Redesigned -->
+  <div id="edit-event-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-40 flex items-end sm:items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-hidden transition-all duration-300">
       
-      <div class="mb-5">
-        <label for="edit-event-name" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Name</label>
-        <input type="text" id="edit-event-name" placeholder="Fall Tournament" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
-      </div>
-      
-      <!-- Date, Status, and Entry Code on one line -->
-      <div class="grid grid-cols-3 gap-3 mb-5">
-        <div>
-          <label for="edit-event-date" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Date</label>
-          <input type="date" id="edit-event-date" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+      <!-- Gradient Header -->
+      <div class="px-4 py-4" style="background: linear-gradient(to right, #3b82f6, #8b5cf6);">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+              <i class="fas fa-edit text-white text-lg"></i>
       </div>
         <div>
-          <label for="edit-event-status" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Status</label>
-          <select id="edit-event-status" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
-          <option value="Planned">Planned</option>
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-        </select>
+              <h2 class="text-lg font-bold text-white">Edit Event</h2>
+              <p id="edit-event-subtitle" class="text-sm text-white/80">Modify event settings</p>
+            </div>
       </div>
-        <div>
-          <label for="edit-event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry Code</label>
-          <input type="text" id="edit-event-code" placeholder="FALL2024" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+          <button type="button" id="close-edit-modal-btn" class="w-8 h-8 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-colors">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
       </div>
       
-      <div class="mb-5">
-        <label class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Division Rounds</label>
-        <div id="edit-event-rounds-list" class="p-3 bg-gray-50 dark:bg-gray-700 rounded min-h-[60px]">
-          <div class="text-gray-500 dark:text-gray-400 text-center">Loading rounds...</div>
+      <!-- Scrollable Content Area -->
+      <div class="overflow-y-auto max-h-[calc(95vh-180px)] sm:max-h-[calc(90vh-180px)] p-4">
+        
+        <!-- Event Details Section -->
+        <div class="mb-4">
+          <label for="edit-event-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <i class="fas fa-tag text-blue-500 mr-1"></i> Event Name
+          </label>
+          <input type="text" id="edit-event-name" placeholder="e.g., Fall Championship 2024" 
+            class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all" />
+        </div>
+        
+        <!-- Date & Status Row -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label for="edit-event-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <i class="fas fa-calendar text-blue-500 mr-1"></i> Date
+            </label>
+            <input type="date" id="edit-event-date" 
+              class="w-full px-3 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all" />
+          </div>
+          <div>
+            <label for="edit-event-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <i class="fas fa-flag text-blue-500 mr-1"></i> Status
+            </label>
+            <select id="edit-event-status" 
+              class="w-full px-3 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all cursor-pointer">
+              <option value="Planned">📋 Planned</option>
+              <option value="Active">🟢 Active</option>
+              <option value="Completed">✅ Completed</option>
+            </select>
         </div>
       </div>
       
-      <!-- Brackets Section -->
-      <div class="mb-5 border-t-2 border-gray-200 dark:border-gray-700 pt-5">
-        <div class="flex justify-between items-center mb-3">
-          <label class="block font-semibold text-gray-700 dark:text-gray-300">Brackets</label>
+        <!-- Entry Code -->
+        <div class="mb-4">
+          <label for="edit-event-code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+            <i class="fas fa-key text-blue-500 mr-1"></i> Entry Code
+            <span class="text-gray-400 font-normal">(for archer access)</span>
+          </label>
           <div class="flex gap-2">
-            <button id="create-bracket-btn" class="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors">
-              ➕ Create Bracket
-            </button>
-            <button id="refresh-brackets-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-              🔄 Refresh
+            <input type="text" id="edit-event-code" placeholder="e.g., FALL2024" 
+              class="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all uppercase tracking-wider font-mono" />
+            <button type="button" id="edit-generate-code-btn" class="px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl transition-colors" title="Generate random code">
+              <i class="fas fa-sync-alt"></i>
             </button>
           </div>
         </div>
         
-        <!-- Brackets List -->
-        <div id="brackets-list" class="space-y-2 max-h-[300px] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-gray-700">
-          <div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No brackets yet. Create a bracket after ranking rounds are complete.</div>
+        <!-- Collapsible Sections -->
+        
+        <!-- Division Rounds Section -->
+        <details class="mb-3 group" open>
+          <summary class="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-layer-group text-purple-500 dark:text-purple-400"></i>
+              <span class="font-medium text-gray-800 dark:text-white">Division Rounds</span>
+            </div>
+            <i class="fas fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div id="edit-event-rounds-list" class="mt-2 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl min-h-[60px]">
+            <div class="text-gray-500 dark:text-gray-400 text-center text-sm py-2">
+              <i class="fas fa-spinner fa-spin mr-1"></i> Loading rounds...
+            </div>
+          </div>
+        </details>
+        
+        <!-- Brackets Section -->
+        <details class="mb-3 group">
+          <summary class="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-sitemap text-orange-500 dark:text-orange-400"></i>
+              <span class="font-medium text-gray-800 dark:text-white">Brackets</span>
+            </div>
+            <i class="fas fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="mt-2 space-y-2">
+            <div class="flex gap-2">
+              <button id="create-bracket-btn" class="flex-1 px-3 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-lg font-medium text-sm hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors">
+                <i class="fas fa-plus mr-1"></i> Create Bracket
+              </button>
+              <button id="refresh-brackets-btn" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <i class="fas fa-sync-alt"></i>
+              </button>
+            </div>
+            <div id="brackets-list" class="space-y-2 max-h-[200px] overflow-y-auto p-2 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+              <div class="text-gray-500 dark:text-gray-400 text-center text-sm py-3">
+                <i class="fas fa-trophy text-gray-300 dark:text-gray-600 text-2xl mb-2 block"></i>
+                No brackets yet
+              </div>
+            </div>
+          </div>
+        </details>
+        
+        <!-- Quick Actions Section -->
+        <details class="mb-3 group">
+          <summary class="flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-700 rounded-xl cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-bolt text-yellow-500 dark:text-yellow-400"></i>
+              <span class="font-medium text-gray-800 dark:text-white">Quick Actions</span>
+            </div>
+            <i class="fas fa-chevron-down text-gray-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="mt-2 space-y-2">
+            <button id="edit-add-archers-btn" class="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+              <i class="fas fa-user-plus"></i>
+              <span>Add Archers</span>
+            </button>
+            <button id="edit-bale-settings-btn" class="w-full px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+              <i class="fas fa-cog"></i>
+              <span>Manage Bales</span>
+            </button>
+          </div>
+        </details>
+        
+        <!-- Danger Zone Section -->
+        <details class="mb-3 group">
+          <summary class="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-xl cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-exclamation-triangle text-red-500 dark:text-red-400"></i>
+              <span class="font-medium text-red-700 dark:text-red-400">Danger Zone</span>
+            </div>
+            <i class="fas fa-chevron-down text-red-400 group-open:rotate-180 transition-transform"></i>
+          </summary>
+          <div class="mt-2 p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-200 dark:border-red-900/30">
+            <p class="text-sm text-red-600 dark:text-red-400 mb-3">
+              <i class="fas fa-info-circle mr-1"></i>
+              Deleting an event will remove all rounds, scores, and brackets permanently.
+            </p>
+            <button id="edit-delete-event-btn" class="w-full px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+              <i class="fas fa-trash-alt"></i>
+              <span>Delete Event</span>
+            </button>
+        </div>
+        </details>
+        
+      </div>
+      
+      <!-- Fixed Footer -->
+      <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800/50">
+        <div class="flex gap-3">
+          <button type="button" id="cancel-edit-event-btn" class="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[48px]">
+            Cancel
+          </button>
+          <button type="button" id="submit-edit-event-btn" class="flex-1 px-4 py-3 text-white rounded-xl font-semibold transition-all min-h-[48px] shadow-lg" style="background: linear-gradient(to right, #3b82f6, #8b5cf6);">
+            <i class="fas fa-save mr-2"></i>Save Changes
+          </button>
         </div>
       </div>
       
-      <!-- Event Management Actions -->
-      <div class="border-t-2 border-gray-200 dark:border-gray-700 pt-5 mt-6 mb-5">
-        <label class="block mb-3 font-semibold text-gray-700 dark:text-gray-300">Event Management</label>
-        <div class="grid grid-cols-1 gap-3">
-          <button id="edit-add-archers-btn" class="w-full px-4 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
-            <span>➕</span>
-            <span>Add Archers to Event</span>
-          </button>
-          <button id="edit-bale-settings-btn" class="w-full px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
-            <span>⚙️</span>
-            <span>Manage Bale Assignments</span>
-          </button>
-          <button id="edit-delete-event-btn" class="w-full px-4 py-3 bg-danger hover:bg-red-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
-            <span>🗑️</span>
-            <span>Delete Event</span>
-          </button>
-        </div>
-      </div>
-      
-      <div class="flex gap-2 mt-6">
-        <button id="cancel-edit-event-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-        <button id="submit-edit-event-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Save Changes</button>
-      </div>
     </div>
   </div>
 
