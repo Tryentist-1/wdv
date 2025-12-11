@@ -178,9 +178,9 @@
 
     <!-- Add/Edit Archer Modal -->
     <div id="archer-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-end sm:items-center justify-center z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-lg shadow-2xl w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-hidden transition-all duration-300 transform">
+        <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-lg shadow-2xl w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] flex flex-col transition-all duration-300 transform">
             <!-- Compact Header with Avatar Preview -->
-            <div class="sticky top-0 bg-gradient-to-r from-primary to-primary-dark px-4 py-3 z-10">
+            <div class="flex-shrink-0 bg-gradient-to-r from-primary to-primary-dark px-4 py-3 rounded-t-2xl sm:rounded-t-lg">
                 <div class="flex items-center gap-3">
                     <!-- Mini Avatar in Header -->
                     <div id="header-avatar" class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/40 flex-shrink-0">
@@ -204,9 +204,17 @@
                     </button>
                 </div>
             </div>
-            <form id="archer-form" class="overflow-y-auto max-h-[calc(95vh-120px)] sm:max-h-[calc(90vh-120px)]">
+            <!-- Scrollable Form Content -->
+            <form id="archer-form" class="flex-1 overflow-y-auto min-h-0">
                 <!-- Form content will be injected by JS -->
             </form>
+            <!-- Fixed Button Container (outside scrollable area) -->
+            <div id="archer-form-buttons" class="flex-shrink-0 px-3 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2 safe-bottom">
+                <button type="button" id="cancel-archer-btn-fixed" class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+                <button type="submit" form="archer-form" class="flex-1 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors min-h-[44px] shadow-sm">
+                    <i class="fas fa-check mr-1"></i>Save
+                </button>
+            </div>
         </div>
     </div>
 
@@ -680,17 +688,9 @@
                 const form = document.getElementById('archer-form');
                 form.innerHTML = createFormFieldsHTML();
                 
-                const buttonContainer = document.createElement('div');
-                buttonContainer.className = 'sticky bottom-0 px-3 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2';
-                buttonContainer.innerHTML = `
-                    <button type="button" id="cancel-archer-btn-modal" class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-                    <button type="submit" class="flex-1 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors min-h-[44px] shadow-sm">
-                        <i class="fas fa-check mr-1"></i>Save
-                    </button>
-                `;
-                form.appendChild(buttonContainer);
-                
-                form.querySelector('#cancel-archer-btn-modal').onclick = closeModal;
+                // Wire up the fixed cancel button (outside the form)
+                const cancelBtn = document.getElementById('cancel-archer-btn-fixed');
+                if (cancelBtn) cancelBtn.onclick = closeModal;
                 
                 // Close button in header
                 const closeModalBtn = document.getElementById('close-modal-btn');
