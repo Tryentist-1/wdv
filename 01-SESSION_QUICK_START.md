@@ -75,7 +75,7 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Extended Archer Profile - Added 12 new coach-only fields for USA Archery reporting with CSV export  
+**Last Session Focus:** Extended Archer Profile (v1.9.3) - Added 12 new coach-only fields for USA Archery reporting with CSV export, plus modal UX fixes  
 **Current Priority:** Ready for next feature development  
 **Active Branch:** `fix/standalone-round-stranded-cards`  
 **Blockers:** None
@@ -287,7 +287,7 @@
 
 ### Recent Changes
 - ✅ **Session Date:** December 11, 2025
-- ✅ **What We Did:** Extended Archer Profile for USA Archery Reporting:
+- ✅ **What We Did:** Extended Archer Profile for USA Archery Reporting + UX Fixes:
   - **New Database Columns:** Added 12 coach-only fields to `archers` table (dob, email2, nationality, ethnicity, discipline, street_address, street_address2, city, state, postal_code, disability, camp_attendance)
   - **API Updates:** Updated GET `/v1/archers` and POST `/v1/archers/bulk_upsert` to handle new fields
   - **ArcherModule.js:** Added new fields to template, sync, and API conversion functions
@@ -295,13 +295,20 @@
   - **CSV Export:** Added `exportCoachRosterCSV()` function with specific columns for USA Archery reporting
   - **Export Button:** Added amber "Export" button in footer (visible only to coaches)
   - **Database Migration:** Created and ran `api/sql/migration_archer_extended_profile.sql` on local and production
+  - **Modal UX Fix:** Fixed Save button being cut off - moved buttons outside scrollable area using flexbox layout
+  - **Navigation Button Fix:** Improved visibility of Next/Previous buttons in dark mode (full white text + border)
+  - **Expanded Sections Persistence:** Sections like "Equipment" now stay open when navigating between archers
+  - **Backfill Scripts:** Added `api/backfill_entry_codes.php` and SQL for standalone round entry codes
 - ✅ **Files Changed:** 
   - `api/sql/migration_archer_extended_profile.sql` - New migration file
   - `api/sql/schema.mysql.sql` - Updated base schema
   - `api/index.php` - Updated GET /archers and bulk_upsert endpoints
   - `js/archer_module.js` - Added new fields and export function
-  - `archer_list.html` - Added isCoachMode(), form fields, and export button
-- ✅ **Status:** Completed - Deployed to local and production databases
+  - `archer_list.html` - Added isCoachMode(), form fields, export button, and UX fixes
+  - `api/backfill_entry_codes.php` - New backfill script
+  - `api/sql/backfill_standalone_entry_codes.sql` - Supporting SQL
+- ✅ **Status:** Completed - All features deployed to production
+- ✅ **Release:** v1.9.3 - See RELEASE_NOTES_v1.9.3.md
 - ✅ **Next Steps:** None - Feature complete
 
 ### Previous Session
