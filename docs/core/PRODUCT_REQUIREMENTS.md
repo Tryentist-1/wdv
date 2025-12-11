@@ -10,6 +10,8 @@
 
 *   **Vision:** A suite of mobile-first web apps for scoring the primary formats of OAS (Olympic Archery in Schools) archery: Ranking, Solo Match, and Team Match. Also a version of archery arrow grouping analysis.
 *   **Goal:** Provide a simple, reliable, and offline-capable tool for each specific scoring scenario, replacing paper or spreadsheet-based methods.
+*   **Goal:** Provide a centralized place for coaches and archers to share progress and development.
+
 
 ---
 
