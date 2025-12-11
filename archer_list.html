@@ -155,11 +155,14 @@
         </div>
 
         <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-30 safe-bottom">
-            <div class="flex items-center h-full px-4">
+            <div class="flex items-center h-full px-4 gap-2">
                 <a href="index.html" class="pl-6 h-[44px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
                     <i class="fas fa-home text-xl"></i>
                 </a>
                 <div class="flex-1"></div>
+                <button id="export-roster-btn" class="hidden px-2 py-[2px] h-[44px] bg-amber-500 hover:bg-amber-600 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Export Coach Roster CSV">
+                    <i class="fas fa-download mr-1"></i><span class="hidden sm:inline">Export</span>
+                </button>
                 <button id="load-from-mysql-btn" class="px-2 py-[2px] h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center">
                     <i class="fas fa-sync-alt mr-1"></i>Refresh
                 </button>
@@ -296,6 +299,18 @@
             let sortMode = 'name'; // 'name' or 'level'
             let lastSyncMessage = '';
             let filteredArcherIndices = []; // For navigation
+
+            // Check if current user is in coach mode (has API key)
+            function isCoachMode() {
+                try {
+                    const configRaw = localStorage.getItem('live_updates_config') || '{}';
+                    const config = JSON.parse(configRaw);
+                    const coachKey = (config && config.apiKey) || localStorage.getItem('coach_api_key') || '';
+                    return !!(coachKey && coachKey.trim());
+                } catch (_) {
+                    return false;
+                }
+            }
 
             function formatTimestamp(ts) {
                 if (!ts) return 'Never';
@@ -720,6 +735,19 @@
                     setFormValue(form, 'legacyBale', archer.bale || '');
                     setFormValue(form, 'legacyTarget', archer.target || '');
                     setFormValue(form, 'legacySize', archer.size || '');
+                    // Extended profile fields (coach-only)
+                    setFormValue(form, 'dob', archer.dob || '');
+                    setFormValue(form, 'email2', archer.email2 || '');
+                    setFormValue(form, 'nationality', archer.nationality || 'U.S.A.');
+                    setFormValue(form, 'ethnicity', archer.ethnicity || '');
+                    setFormValue(form, 'discipline', archer.discipline || '');
+                    setFormValue(form, 'streetAddress', archer.streetAddress || '');
+                    setFormValue(form, 'streetAddress2', archer.streetAddress2 || '');
+                    setFormValue(form, 'city', archer.city || '');
+                    setFormValue(form, 'state', archer.state || '');
+                    setFormValue(form, 'postalCode', archer.postalCode || '');
+                    setFormValue(form, 'disability', archer.disability || '');
+                    setFormValue(form, 'campAttendance', archer.campAttendance || '');
                 } else {
                     modalTitle.textContent = 'Add Archer';
                     setFormValue(form, 'status', 'active');
@@ -1400,6 +1428,84 @@
                                 <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="faves" placeholder="Comma-separated extIds">
                             </div>
                         </details>
+
+                        <!-- Coach-Only Section (Extended Profile for USA Archery) -->
+                        ${isCoachMode() ? `
+                        <details class="group bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-amber-200 dark:border-amber-700">
+                            <summary class="flex items-center justify-between px-3 py-2.5 cursor-pointer select-none bg-amber-50 dark:bg-amber-900/20 rounded-t-lg">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-user-shield text-amber-600 dark:text-amber-400 text-sm"></i>
+                                    <span class="font-semibold text-sm text-gray-800 dark:text-white">Extended Profile</span>
+                                    <span class="text-xs text-amber-600 dark:text-amber-400">(Coach Only)</span>
+                                </div>
+                                <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform group-open:rotate-180"></i>
+                            </summary>
+                            <div class="px-3 pb-3 pt-2 border-t border-amber-100 dark:border-amber-800 space-y-3">
+                                <!-- Personal Info -->
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Date of Birth</label>
+                                        <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="date" id="dob">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Discipline</label>
+                                        <select class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="discipline">
+                                            <option value="">-</option>
+                                            <option value="Recurve">Recurve</option>
+                                            <option value="Compound">Compound</option>
+                                            <option value="Barebow">Barebow</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 dark:text-gray-400">Secondary Email</label>
+                                    <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="email" id="email2" placeholder="Parent/Guardian email">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Nationality</label>
+                                        <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="nationality" placeholder="U.S.A.">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray-500 dark:text-gray-400">Ethnicity</label>
+                                        <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="ethnicity">
+                                    </div>
+                                </div>
+                                
+                                <!-- Address -->
+                                <div class="border-t border-gray-100 dark:border-gray-700 pt-2">
+                                    <label class="text-xs text-gray-500 dark:text-gray-400 font-medium">Mailing Address</label>
+                                    <div class="space-y-2 mt-1">
+                                        <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="streetAddress" placeholder="Street Address">
+                                        <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="streetAddress2" placeholder="Apt, Suite, Unit (optional)">
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="city" placeholder="City">
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="state" placeholder="State" maxlength="2">
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="postalCode" placeholder="ZIP">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Disability & Camp -->
+                                <div class="border-t border-gray-100 dark:border-gray-700 pt-2">
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">Disability</label>
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="disability" placeholder="If applicable">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">Camp Attendance</label>
+                                            <select class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="campAttendance">
+                                                <option value="">-</option>
+                                                <option value="Y">Yes</option>
+                                                <option value="N">No</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+                        ` : ''}
                     </div>
                 `;
             }
@@ -1595,6 +1701,12 @@
                     .filter(Boolean);
 
                 const current = editingIndex !== null ? ArcherModule.loadList()[editingIndex] || {} : {};
+                // Helper to safely get form value (handles coach-only fields that may not exist)
+                const getVal = (id) => {
+                    const el = form.querySelector(`#${id}`);
+                    return el ? el.value.trim() : (current[id] || '');
+                };
+                
                 const archer = {
                     extId: form.querySelector('#extId').value.trim(),
                     first: form.querySelector('#first').value.trim(),
@@ -1626,6 +1738,19 @@
                     notesGear: form.querySelector('#notesGear').value,
                     notesCurrent: form.querySelector('#notesCurrent').value,
                     notesArchive: form.querySelector('#notesArchive').value,
+                    // Extended profile fields (coach-only - safely get values)
+                    dob: getVal('dob'),
+                    email2: getVal('email2'),
+                    nationality: getVal('nationality') || current.nationality || 'U.S.A.',
+                    ethnicity: getVal('ethnicity'),
+                    discipline: getVal('discipline'),
+                    streetAddress: getVal('streetAddress'),
+                    streetAddress2: getVal('streetAddress2'),
+                    city: getVal('city'),
+                    state: getVal('state'),
+                    postalCode: getVal('postalCode'),
+                    disability: getVal('disability'),
+                    campAttendance: getVal('campAttendance'),
                     // Preserve legacy fields until dependent modules migrate
                     bale: current.bale || form.querySelector('#legacyBale').value || '',
                     target: current.target || form.querySelector('#legacyTarget').value || '',
@@ -1764,6 +1889,23 @@
                     alert('Failed to refresh from database: ' + error.message + '\n\nEnter your coach API key or event code in Coach Console, then try again.');
                 }
             };
+
+            // Export Roster (Coach Only)
+            const exportRosterBtn = document.getElementById('export-roster-btn');
+            if (exportRosterBtn) {
+                // Show button only for coaches
+                if (isCoachMode()) {
+                    exportRosterBtn.classList.remove('hidden');
+                    exportRosterBtn.classList.add('flex');
+                }
+                exportRosterBtn.onclick = () => {
+                    if (typeof ArcherModule.exportCoachRosterCSV === 'function') {
+                        ArcherModule.exportCoachRosterCSV();
+                    } else {
+                        alert('Export function not available.');
+                    }
+                };
+            }
             
             sortByNameBtn.onclick = () => {
                 sortMode = 'name';

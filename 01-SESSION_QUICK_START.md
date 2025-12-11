@@ -75,9 +75,9 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Footer Standardization - Standardized all footers to 36px height with consistent styling, added home buttons everywhere, replaced emojis with FontAwesome icons  
+**Last Session Focus:** Extended Archer Profile - Added 12 new coach-only fields for USA Archery reporting with CSV export  
 **Current Priority:** Ready for next feature development  
-**Active Branch:** `main`  
+**Active Branch:** `fix/standalone-round-stranded-cards`  
 **Blockers:** None
 
 **Quick Context for This Session:**
@@ -283,9 +283,28 @@
 
 > **💡 Pro Tip:** See [SESSION_WRAP_UP_BEST_PRACTICES.md](docs/SESSION_WRAP_UP_BEST_PRACTICES.md) for quick wrap-up process (5 minutes)
 
-**Last Updated:** January 21, 2025
+**Last Updated:** December 11, 2025
 
 ### Recent Changes
+- ✅ **Session Date:** December 11, 2025
+- ✅ **What We Did:** Extended Archer Profile for USA Archery Reporting:
+  - **New Database Columns:** Added 12 coach-only fields to `archers` table (dob, email2, nationality, ethnicity, discipline, street_address, street_address2, city, state, postal_code, disability, camp_attendance)
+  - **API Updates:** Updated GET `/v1/archers` and POST `/v1/archers/bulk_upsert` to handle new fields
+  - **ArcherModule.js:** Added new fields to template, sync, and API conversion functions
+  - **Coach-Only Form Section:** New "Extended Profile (Coach Only)" section in archer edit modal with amber styling
+  - **CSV Export:** Added `exportCoachRosterCSV()` function with specific columns for USA Archery reporting
+  - **Export Button:** Added amber "Export" button in footer (visible only to coaches)
+  - **Database Migration:** Created and ran `api/sql/migration_archer_extended_profile.sql` on local and production
+- ✅ **Files Changed:** 
+  - `api/sql/migration_archer_extended_profile.sql` - New migration file
+  - `api/sql/schema.mysql.sql` - Updated base schema
+  - `api/index.php` - Updated GET /archers and bulk_upsert endpoints
+  - `js/archer_module.js` - Added new fields and export function
+  - `archer_list.html` - Added isCoachMode(), form fields, and export button
+- ✅ **Status:** Completed - Deployed to local and production databases
+- ✅ **Next Steps:** None - Feature complete
+
+### Previous Session
 - ✅ **Session Date:** January 21, 2025
 - ✅ **What We Did:** Ranking Round Event/Division Refactor and Resume Flow Debugging:
   - **Event Modal Refactor:** Simplified event selection modal - removed "Enter Code" tab, added "New Round (Standalone)" option
