@@ -190,11 +190,11 @@
                     <div class="flex-1 min-w-0">
                         <h2 id="modal-title" class="text-lg font-bold text-white truncate">Add Archer</h2>
                         <div id="archer-navigation" class="hidden items-center gap-1 mt-0.5">
-                            <button type="button" id="prev-archer-btn" class="w-6 h-6 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 rounded transition-colors" title="Previous">
+                            <button type="button" id="prev-archer-btn" class="w-6 h-6 flex items-center justify-center text-white hover:text-white hover:bg-white/30 rounded transition-colors border border-white/30" title="Previous">
                                 <i class="fas fa-chevron-left text-xs"></i>
                             </button>
-                            <span id="archer-position" class="text-xs text-white/80 px-1">1/25</span>
-                            <button type="button" id="next-archer-btn" class="w-6 h-6 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 rounded transition-colors" title="Next">
+                            <span id="archer-position" class="text-xs text-white px-1">1/25</span>
+                            <button type="button" id="next-archer-btn" class="w-6 h-6 flex items-center justify-center text-white hover:text-white hover:bg-white/30 rounded transition-colors border border-white/30" title="Next">
                                 <i class="fas fa-chevron-right text-xs"></i>
                             </button>
                         </div>
@@ -683,10 +683,45 @@
             }
             updateSyncStatus();
 
+            // Store expanded sections state for persistence across navigation
+            let expandedSections = new Set();
+            
             function openModal(index = null) {
+                // Save which sections are currently expanded (if modal is already open)
+                const existingForm = document.getElementById('archer-form');
+                if (existingForm && index !== null && editingIndex !== null) {
+                    expandedSections.clear();
+                    const detailsElements = existingForm.querySelectorAll('details');
+                    detailsElements.forEach((details, idx) => {
+                        if (details.open) {
+                            // Use section identifier (summary text or index)
+                            const summary = details.querySelector('summary');
+                            const sectionName = summary ? summary.textContent.trim() : `section-${idx}`;
+                            expandedSections.add(sectionName);
+                        }
+                    });
+                } else {
+                    // Reset on first open or when adding new archer
+                    expandedSections.clear();
+                }
+                
                 editingIndex = index;
                 const form = document.getElementById('archer-form');
                 form.innerHTML = createFormFieldsHTML();
+                
+                // Restore expanded sections
+                if (expandedSections.size > 0) {
+                    const detailsElements = form.querySelectorAll('details');
+                    detailsElements.forEach((details) => {
+                        const summary = details.querySelector('summary');
+                        if (summary) {
+                            const sectionName = summary.textContent.trim();
+                            if (expandedSections.has(sectionName)) {
+                                details.open = true;
+                            }
+                        }
+                    });
+                }
                 
                 // Wire up the fixed cancel button (outside the form)
                 const cancelBtn = document.getElementById('cancel-archer-btn-fixed');
