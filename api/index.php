@@ -967,6 +967,23 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
     $gender = $input['gender'] ?? null;      // M/F
     $level = $input['level'] ?? null;        // VAR/JV
     $eventId = isset($input['eventId']) ? $input['eventId'] : null;    // Link round to event (null for standalone)
+    $archers = $input['archers'] ?? [];      // Optional: archers for atomic creation
+    
+    // Derive level/gender from division if not provided
+    // Division codes: BVAR, GVAR, BJV, GJV, OPEN
+    if ($division && (!$level || !$gender)) {
+        $divUpper = strtoupper($division);
+        if (!$gender) {
+            if (strpos($divUpper, 'B') === 0) $gender = 'M';
+            else if (strpos($divUpper, 'G') === 0) $gender = 'F';
+        }
+        if (!$level) {
+            if (strpos($divUpper, 'VAR') !== false) $level = 'VAR';
+            else if (strpos($divUpper, 'JV') !== false) $level = 'JV';
+            else if ($divUpper === 'OPEN') $level = 'JV'; // Default OPEN to JV (60cm target)
+        }
+        error_log("Derived level/gender from division: division=$division, gender=$gender, level=$level");
+    }
     
     // Require auth only if round is linked to an event (standalone rounds don't need auth)
     if ($eventId !== null) {
@@ -1037,13 +1054,15 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
             
             // Generate entry code for standalone rounds
             $entryCode = null;
-            if ($eventId === null && $level !== null) {
-                // Standalone round - generate entry code
-                $entryCode = generate_round_entry_code($pdo, $roundType, $level, $date);
+            if ($eventId === null) {
+                // Standalone round - ALWAYS generate entry code (critical for cross-session access)
+                // Use level if available, otherwise default to JV (60cm target)
+                $entryCodeLevel = $level ?? 'JV';
+                $entryCode = generate_round_entry_code($pdo, $roundType, $entryCodeLevel, $date);
                 $columns[] = 'entry_code';
                 $values[] = $entryCode;
                 $placeholders[] = '?';
-                error_log("Generated entry code for standalone round: $entryCode");
+                error_log("Generated entry code for standalone round: $entryCode (level used: $entryCodeLevel)");
             }
             
             $sql = 'INSERT INTO rounds (' . implode(',', $columns) . ') VALUES (' . implode(',', $placeholders) . ')';
@@ -1074,6 +1093,62 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
             if ($entryCode !== null) {
                 $response['entryCode'] = $entryCode;
             }
+            
+            // ATOMIC ARCHER CREATION: If archers provided, create them in same transaction
+            if (!empty($archers) && is_array($archers)) {
+                $createdArchers = [];
+                $targetLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+                $targetIdx = 0;
+                
+                foreach ($archers as $archerData) {
+                    $archerId = $archerData['archerId'] ?? $archerData['extId'] ?? null;
+                    $firstName = $archerData['firstName'] ?? '';
+                    $lastName = $archerData['lastName'] ?? '';
+                    $school = $archerData['school'] ?? '';
+                    $archerLevel = $archerData['level'] ?? $level ?? '';
+                    $archerGender = $archerData['gender'] ?? $gender ?? '';
+                    $targetAssignment = $archerData['targetAssignment'] ?? $targetLetters[$targetIdx % 8];
+                    $baleNumber = $archerData['baleNumber'] ?? 1;
+                    
+                    // Create or find master archer
+                    $masterArcherId = null;
+                    if ($archerId) {
+                        // Check if archer exists
+                        $existingArcher = $pdo->prepare('SELECT id FROM archers WHERE id = ? OR ext_id = ? LIMIT 1');
+                        $existingArcher->execute([$archerId, $archerId]);
+                        $existingRow = $existingArcher->fetch();
+                        
+                        if ($existingRow) {
+                            $masterArcherId = $existingRow['id'];
+                        } else {
+                            // Create new master archer
+                            $masterArcherId = $genUuid();
+                            $insertArcher = $pdo->prepare('INSERT INTO archers (id, ext_id, first_name, last_name, school, level, gender, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+                            $insertArcher->execute([$masterArcherId, $archerId, $firstName, $lastName, $school, $archerLevel, $archerGender]);
+                        }
+                    }
+                    
+                    // Create round_archer entry
+                    $roundArcherId = $genUuid();
+                    $archerName = trim("$firstName $lastName");
+                    $insertRoundArcher = $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_id, archer_name, target_assignment, bale_number, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
+                    $insertRoundArcher->execute([$roundArcherId, $id, $masterArcherId, $archerName, $targetAssignment, $baleNumber]);
+                    
+                    $createdArchers[] = [
+                        'roundArcherId' => $roundArcherId,
+                        'archerId' => $masterArcherId,
+                        'archerName' => $archerName,
+                        'targetAssignment' => $targetAssignment,
+                        'baleNumber' => $baleNumber
+                    ];
+                    
+                    $targetIdx++;
+                }
+                
+                $response['archers'] = $createdArchers;
+                error_log("Atomic round+archer creation: round=$id, archers=" . count($createdArchers));
+            }
+            
             json_response($response, 201);
         }
     } catch (Exception $e) {
@@ -3854,7 +3929,19 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                 'notesCurrent' => $normalizeArcherField('notesCurrent', $archer['notesCurrent'] ?? null),
                 'notesArchive' => $normalizeArcherField('notesArchive', $archer['notesArchive'] ?? null),
                 'email' => $normalizeArcherField('email', $archer['email'] ?? null),
+                'email2' => $normalizeArcherField('email', $archer['email2'] ?? null),
                 'phone' => $normalizeArcherField('phone', $archer['phone'] ?? null),
+                'dob' => $normalizeArcherField('dob', $archer['dob'] ?? null),
+                'nationality' => $normalizeArcherField('nationality', $archer['nationality'] ?? null),
+                'ethnicity' => $normalizeArcherField('ethnicity', $archer['ethnicity'] ?? null),
+                'discipline' => $normalizeArcherField('discipline', $archer['discipline'] ?? null),
+                'streetAddress' => $normalizeArcherField('streetAddress', $archer['streetAddress'] ?? null),
+                'streetAddress2' => $normalizeArcherField('streetAddress2', $archer['streetAddress2'] ?? null),
+                'city' => $normalizeArcherField('city', $archer['city'] ?? null),
+                'state' => $normalizeArcherField('state', $archer['state'] ?? null),
+                'postalCode' => $normalizeArcherField('postalCode', $archer['postalCode'] ?? null),
+                'disability' => $normalizeArcherField('disability', $archer['disability'] ?? null),
+                'campAttendance' => $normalizeArcherField('campAttendance', $archer['campAttendance'] ?? null),
                 'usArcheryId' => $normalizeArcherField('usArcheryId', $archer['usArcheryId'] ?? null),
                 'jvPr' => $normalizeArcherField('jvPr', $archer['jvPr'] ?? null),
                 'varPr' => $normalizeArcherField('varPr', $archer['varPr'] ?? null),
@@ -3898,7 +3985,19 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                 if ($normalized['notesCurrent'] !== null) { $updateFields[] = 'notes_current = ?'; $updateValues[] = $normalized['notesCurrent']; }
                 if ($normalized['notesArchive'] !== null) { $updateFields[] = 'notes_archive = ?'; $updateValues[] = $normalized['notesArchive']; }
                 if ($normalized['email'] !== null) { $updateFields[] = 'email = ?'; $updateValues[] = $normalized['email']; }
+                if ($normalized['email2'] !== null) { $updateFields[] = 'email2 = ?'; $updateValues[] = $normalized['email2']; }
                 if ($normalized['phone'] !== null) { $updateFields[] = 'phone = ?'; $updateValues[] = $normalized['phone']; }
+                if ($normalized['dob'] !== null) { $updateFields[] = 'dob = ?'; $updateValues[] = $normalized['dob'] ?: null; }
+                if ($normalized['nationality'] !== null) { $updateFields[] = 'nationality = ?'; $updateValues[] = $normalized['nationality']; }
+                if ($normalized['ethnicity'] !== null) { $updateFields[] = 'ethnicity = ?'; $updateValues[] = $normalized['ethnicity']; }
+                if ($normalized['discipline'] !== null) { $updateFields[] = 'discipline = ?'; $updateValues[] = $normalized['discipline']; }
+                if ($normalized['streetAddress'] !== null) { $updateFields[] = 'street_address = ?'; $updateValues[] = $normalized['streetAddress']; }
+                if ($normalized['streetAddress2'] !== null) { $updateFields[] = 'street_address2 = ?'; $updateValues[] = $normalized['streetAddress2']; }
+                if ($normalized['city'] !== null) { $updateFields[] = 'city = ?'; $updateValues[] = $normalized['city']; }
+                if ($normalized['state'] !== null) { $updateFields[] = 'state = ?'; $updateValues[] = $normalized['state']; }
+                if ($normalized['postalCode'] !== null) { $updateFields[] = 'postal_code = ?'; $updateValues[] = $normalized['postalCode']; }
+                if ($normalized['disability'] !== null) { $updateFields[] = 'disability = ?'; $updateValues[] = $normalized['disability']; }
+                if ($normalized['campAttendance'] !== null) { $updateFields[] = 'camp_attendance = ?'; $updateValues[] = $normalized['campAttendance']; }
                 if ($normalized['usArcheryId'] !== null) { $updateFields[] = 'us_archery_id = ?'; $updateValues[] = $normalized['usArcheryId']; }
                 if ($normalized['jvPr'] !== null) { $updateFields[] = 'jv_pr = ?'; $updateValues[] = $normalized['jvPr']; }
                 if ($normalized['varPr'] !== null) { $updateFields[] = 'var_pr = ?'; $updateValues[] = $normalized['varPr']; }
@@ -3924,9 +4023,11 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                     id, ext_id, first_name, last_name, nickname, photo_url, school, grade, 
                     gender, level, status, faves, dom_eye, dom_hand, height_in, wingspan_in, 
                     draw_length_sugg, riser_height_in, limb_length, limb_weight_lbs, 
-                    notes_gear, notes_current, notes_archive, email, phone, us_archery_id, 
-                    jv_pr, var_pr, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
+                    notes_gear, notes_current, notes_archive, email, email2, phone, 
+                    dob, nationality, ethnicity, discipline, street_address, street_address2,
+                    city, state, postal_code, disability, camp_attendance,
+                    us_archery_id, jv_pr, var_pr, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
                 
                 $stmt->execute([
                     $newId,
@@ -3953,7 +4054,19 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                     $normalized['notesCurrent'],
                     $normalized['notesArchive'],
                     $normalized['email'],
+                    $normalized['email2'],
                     $normalized['phone'],
+                    $normalized['dob'] ?: null,
+                    $normalized['nationality'] ?: 'U.S.A.',
+                    $normalized['ethnicity'],
+                    $normalized['discipline'],
+                    $normalized['streetAddress'],
+                    $normalized['streetAddress2'],
+                    $normalized['city'],
+                    $normalized['state'],
+                    $normalized['postalCode'],
+                    $normalized['disability'],
+                    $normalized['campAttendance'],
                     $normalized['usArcheryId'],
                     $normalized['jvPr'],
                     $normalized['varPr']
@@ -4022,8 +4135,20 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
             notes_gear as notesGear, 
             notes_current as notesCurrent, 
             notes_archive as notesArchive,
-            email, 
+            email,
+            email2,
             phone, 
+            dob,
+            nationality,
+            ethnicity,
+            discipline,
+            street_address as streetAddress,
+            street_address2 as streetAddress2,
+            city,
+            state,
+            postal_code as postalCode,
+            disability,
+            camp_attendance as campAttendance,
             us_archery_id as usArcheryId,
             jv_pr as jvPr, 
             var_pr as varPr,

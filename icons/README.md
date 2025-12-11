@@ -72,3 +72,7 @@ After adding icons, test the PWA installation:
 4. Check that the splash screen shows the correct icon
 
 
+
+
+
+

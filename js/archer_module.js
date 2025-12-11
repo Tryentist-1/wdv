@@ -49,7 +49,19 @@ const DEFAULT_ARCHER_TEMPLATE = {
   notesCurrent: '',
   notesArchive: '',
   email: '',
+  email2: '',
   phone: '',
+  dob: '',
+  nationality: 'U.S.A.',
+  ethnicity: '',
+  discipline: '',
+  streetAddress: '',
+  streetAddress2: '',
+  city: '',
+  state: '',
+  postalCode: '',
+  disability: '',
+  campAttendance: '',
   usArcheryId: '',
   jvPr: '',
   varPr: '',
@@ -457,7 +469,19 @@ const ArcherModule = {
       notesCurrent: this._safeString(data.notesCurrent),
       notesArchive: this._safeString(data.notesArchive),
       email: this._safeString(data.email),
+      email2: this._safeString(data.email2),
       phone: this._safeString(data.phone),
+      dob: this._safeString(data.dob),
+      nationality: this._safeString(data.nationality) || 'U.S.A.',
+      ethnicity: this._safeString(data.ethnicity),
+      discipline: this._safeString(data.discipline),
+      streetAddress: this._safeString(data.streetAddress),
+      streetAddress2: this._safeString(data.streetAddress2),
+      city: this._safeString(data.city),
+      state: this._safeString(data.state),
+      postalCode: this._safeString(data.postalCode),
+      disability: this._safeString(data.disability),
+      campAttendance: this._safeString(data.campAttendance),
       usArcheryId: this._safeString(data.usArcheryId),
       jvPr: this._toNullableInt(data.jvPr),
       varPr: this._toNullableInt(data.varPr),
@@ -628,7 +652,19 @@ const ArcherModule = {
       notesCurrent: this._safeString(apiArcher.notesCurrent ?? apiArcher.notes_current),
       notesArchive: this._safeString(apiArcher.notesArchive ?? apiArcher.notes_archive),
       email: this._safeString(apiArcher.email),
+      email2: this._safeString(apiArcher.email2),
       phone: this._safeString(apiArcher.phone),
+      dob: this._safeString(apiArcher.dob),
+      nationality: this._safeString(apiArcher.nationality) || 'U.S.A.',
+      ethnicity: this._safeString(apiArcher.ethnicity),
+      discipline: this._safeString(apiArcher.discipline),
+      streetAddress: this._safeString(apiArcher.streetAddress ?? apiArcher.street_address),
+      streetAddress2: this._safeString(apiArcher.streetAddress2 ?? apiArcher.street_address2),
+      city: this._safeString(apiArcher.city),
+      state: this._safeString(apiArcher.state),
+      postalCode: this._safeString(apiArcher.postalCode ?? apiArcher.postal_code),
+      disability: this._safeString(apiArcher.disability),
+      campAttendance: this._safeString(apiArcher.campAttendance ?? apiArcher.camp_attendance),
       usArcheryId: this._safeString(apiArcher.usArcheryId ?? apiArcher.us_archery_id),
       jvPr: apiArcher.jvPr ?? apiArcher.jv_pr ?? '',
       varPr: apiArcher.varPr ?? apiArcher.var_pr ?? '',
@@ -940,6 +976,89 @@ const ArcherModule = {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Export CSV failed', err);
+    }
+    return csv;
+  },
+
+  // Export coach roster CSV with specific fields for USA Archery reporting
+  exportCoachRosterCSV() {
+    const list = this.loadList();
+    if (!list.length) {
+      alert('No archers to export.');
+      return '';
+    }
+    // Coach roster specific columns as requested
+    const headers = [
+      'First Name',
+      'Last Name',
+      'USAArcheryNo',
+      'DOB',
+      'Email1',
+      'Email2',
+      'Phone',
+      'Gender',
+      'Nationality',
+      'Ethnicity',
+      'Discipline',
+      'Street Address',
+      'Street Address 2',
+      'City',
+      'State',
+      'PostalCode',
+      'Disability',
+      'Camp'
+    ];
+    
+    // Map internal field names to CSV headers
+    const fieldMap = {
+      'First Name': 'first',
+      'Last Name': 'last',
+      'USAArcheryNo': 'usArcheryId',
+      'DOB': 'dob',
+      'Email1': 'email',
+      'Email2': 'email2',
+      'Phone': 'phone',
+      'Gender': 'gender',
+      'Nationality': 'nationality',
+      'Ethnicity': 'ethnicity',
+      'Discipline': 'discipline',
+      'Street Address': 'streetAddress',
+      'Street Address 2': 'streetAddress2',
+      'City': 'city',
+      'State': 'state',
+      'PostalCode': 'postalCode',
+      'Disability': 'disability',
+      'Camp': 'campAttendance'
+    };
+
+    const rows = list.map(archer => {
+      const normalized = this._applyTemplate(archer);
+      return headers.map(header => {
+        const fieldName = fieldMap[header];
+        let value = normalized[fieldName];
+        if (value === undefined || value === null) value = '';
+        const str = String(value);
+        // Quote values that contain commas, quotes, or newlines
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }).join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    try {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `coach-roster-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export Coach Roster CSV failed', err);
     }
     return csv;
   },
