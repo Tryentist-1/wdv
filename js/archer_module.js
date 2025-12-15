@@ -1195,37 +1195,131 @@ const ArcherModule = {
     const headers = parseCSVLine(rows[0]).map(h => h.replace(/^"|"$/g, '').trim());
     
     // Map USA Archery column names to our field names
+    // Includes official names AND common alternatives/variations
     const headerToFieldMap = {
+      // Email variations
       'Email': 'email',
+      'Email 2': 'email',
+      'email': 'email',
+      
+      // Name variations
       'First Name': 'first',
+      'First': 'first',
+      'first': 'first',
+      'FirstName': 'first',
       'Last Name': 'last',
+      'Last': 'last',
+      'last': 'last',
+      'LastName': 'last',
+      
+      // Gender variations
       'Gender': 'gender',
+      'Gener': 'gender', // Common typo
+      'gender': 'gender',
+      
+      // DOB variations
       'DOB': 'dob',
+      'dob': 'dob',
+      'Date of Birth': 'dob',
+      'Birth Date': 'dob',
+      'Birthdate': 'dob',
+      
+      // USA Archery ID
       'Membership Number Look Up': 'usArcheryId',
+      'Membership Number': 'usArcheryId',
+      'Member ID': 'usArcheryId',
+      'USA Archery ID': 'usArcheryId',
+      
       'Valid From': 'validFrom',
-      'State': 'clubState', // Club state
+      
+      // State/Club
+      'State': 'clubState',
       'Clubs': 'schoolFullName',
+      'Club': 'schoolFullName',
+      
       'Membership Type': 'membershipType',
+      
+      // Discipline variations
       'What is your Primary Discipline?': 'discipline',
+      'Discipline': 'discipline',
+      'discipline': 'discipline',
+      'Primary Discipline': 'discipline',
+      
+      // Ethnicity variations
       'Race/Ethnicity': 'ethnicity',
+      'Ethnicity': 'ethnicity',
+      'ethnicity': 'ethnicity',
+      'Race': 'ethnicity',
+      
+      // Address variations
       'Address - Addr 1': 'streetAddress',
+      'Address1': 'streetAddress',
+      'Address 1': 'streetAddress',
+      'Street Address': 'streetAddress',
+      'Address': 'streetAddress',
+      
       'Address - Addr 2': 'streetAddress2',
+      'Address2': 'streetAddress2',
+      'Address 2': 'streetAddress2',
+      
       'Address - Addr 3': 'addressLine3',
+      'Address3': 'addressLine3',
+      
       'Address - Addr City': 'city',
-      'Address - Addr State': 'state', // Address state
+      'City': 'city',
+      'city': 'city',
+      
+      'Address - Addr State': 'state',
+      // Note: 'State' maps to clubState above; use context
+      
       'Address - Addr Zip Code': 'postalCode',
+      'PostalCode': 'postalCode',
+      'Postal Code': 'postalCode',
+      'Zip': 'postalCode',
+      'Zip Code': 'postalCode',
+      
       'Address - Addr Country': 'addressCountry',
+      'Address_Country': 'addressCountry',
+      'Country': 'addressCountry',
+      
+      // Phone variations
       'Primary Phone Number': 'phone',
+      'Phone': 'phone',
+      'phone': 'phone',
+      'Phone Number': 'phone',
+      
+      // Disability variations
       'Do you consider yourself to have a disability?': 'disability',
+      'Disability?': 'disability',
+      'Disability': 'disability',
       'Please select all that apply.': 'disabilityList',
+      
+      // Military
       'Have you ever served in the US Armed Forces?': 'militaryService',
+      'Military Service': 'militaryService',
+      
+      // Introduction to archery
       'Please tell us where you were first introduced to archery.': 'introductionSource',
+      'Intro_to_Archery': 'introductionSource',
+      'Introduction to Archery': 'introductionSource',
+      'How Introduced': 'introductionSource',
       'Other': 'introductionOther',
+      
+      // Nationality
       'Select Your Citizenship Country': 'nationality',
+      'Nationality': 'nationality',
+      'Citizenship': 'nationality',
+      
+      // NFAA
       'NFAA Membership Number': 'nfaaMemberNo',
+      'NFAA Number': 'nfaaMemberNo',
+      
+      // School
       'School Type': 'schoolType',
       'Grade in School': 'grade',
-      'School Name': 'schoolFullName'
+      'Grade': 'grade',
+      'School Name': 'schoolFullName',
+      'School': 'schoolFullName'
     };
 
     const list = [];

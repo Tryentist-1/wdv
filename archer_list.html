@@ -159,18 +159,14 @@
                 <a href="index.html" class="pl-6 h-[44px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
                     <i class="fas fa-home text-xl"></i>
                 </a>
+                <!-- Keep coach actions near Home so it doesn't get pushed off-screen on small widths -->
+                <button id="coach-actions-btn" class="hidden px-2 py-[2px] h-[44px] bg-orange hover:bg-orange-dark text-white rounded font-semibold transition-colors flex items-center justify-center" title="Coach Actions">
+                    <i class="fas fa-user-shield mr-1"></i>
+                    <span class="hidden sm:inline">Coach</span>
+                </button>
                 <div class="flex-1"></div>
-                <button id="export-roster-btn" class="hidden px-2 py-[2px] h-[44px] bg-amber-500 hover:bg-amber-600 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Export Coach Roster CSV">
-                    <i class="fas fa-download mr-1"></i><span class="hidden sm:inline">Export</span>
-                </button>
-                <button id="import-usa-archery-btn" class="hidden px-2 py-[2px] h-[44px] bg-amber-600 hover:bg-amber-700 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Import USA Archery CSV">
-                    <i class="fas fa-upload mr-1"></i><span class="hidden sm:inline">Import USA</span>
-                </button>
-                <button id="export-usa-archery-btn" class="hidden px-2 py-[2px] h-[44px] bg-amber-600 hover:bg-amber-700 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Export USA Archery CSV">
-                    <i class="fas fa-download mr-1"></i><span class="hidden sm:inline">Export USA</span>
-                </button>
-                <button id="load-from-mysql-btn" class="px-2 py-[2px] h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center">
-                    <i class="fas fa-sync-alt mr-1"></i>Refresh
+                <button id="load-from-mysql-btn" class="px-2 py-[2px] h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center" aria-label="Refresh from server">
+                    <i class="fas fa-sync-alt mr-1"></i><span class="hidden sm:inline">Refresh</span>
                 </button>
             </div>
         </footer>
@@ -180,6 +176,35 @@
     <!-- Sync Status Bar (above footer) - MUST be outside flex container for fixed positioning to work -->
     <div id="sync-status-bar" class="fixed bottom-[calc(36px+env(safe-area-inset-bottom))] left-0 right-0 px-4 py-1 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-20" style="position: fixed !important; bottom: calc(36px + env(safe-area-inset-bottom)) !important;">
         <div id="sync-status"></div>
+    </div>
+
+    <!-- Coach Actions Modal (Coach-only) -->
+    <div id="coach-actions-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60] hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-colors duration-200">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-user-shield text-primary"></i>
+                    Coach Actions
+                </h3>
+            </div>
+            <div class="px-6 py-4 flex flex-col gap-3">
+                <button id="coach-action-import-usa-btn" class="w-full min-h-[44px] px-4 py-3 bg-orange hover:bg-orange-dark text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-upload"></i>
+                    <span>Import USA Archery CSV</span>
+                </button>
+                <button id="coach-action-export-usa-btn" class="w-full min-h-[44px] px-4 py-3 bg-orange hover:bg-orange-dark text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-download"></i>
+                    <span>Export USA Archery CSV</span>
+                </button>
+                <button id="coach-action-export-roster-btn" class="w-full min-h-[44px] px-4 py-3 bg-warning hover:bg-warning-dark text-gray-900 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-file-csv"></i>
+                    <span>Export Coach Roster CSV</span>
+                </button>
+            </div>
+            <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <button id="close-coach-actions-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Close</button>
+            </div>
+        </div>
     </div>
 
     <!-- Add/Edit Archer Modal -->
@@ -314,17 +339,34 @@
             let lastSyncMessage = '';
             let filteredArcherIndices = []; // For navigation
 
-            // Check if current user is in coach mode (has API key)
+            /**
+             * Check if current user is in coach mode.
+             *
+             * Coach auth can be present in multiple places depending on the page/flow:
+             * - `live_updates_config.apiKey` (Live Updates config)
+             * - `coach_api_key` or `coach_passcode` (localStorage)
+             * - `coach_auth=true` cookie (coach console sets this)
+             *
+             * @returns {boolean}
+             */
             function isCoachMode() {
                 try {
                     const configRaw = localStorage.getItem('live_updates_config') || '{}';
                     const config = JSON.parse(configRaw);
-                    const coachKey = (config && config.apiKey) || localStorage.getItem('coach_api_key') || '';
-                    const isCoach = !!(coachKey && coachKey.trim());
-                    console.log('[Coach Mode Check]', { 
-                        hasConfigApiKey: !!(config && config.apiKey),
-                        hasCoachApiKey: !!localStorage.getItem('coach_api_key'),
-                        coachKey: coachKey ? '***' : '',
+
+                    const hasConfigApiKey = !!(config && config.apiKey && String(config.apiKey).trim());
+                    const hasCoachApiKey = !!(localStorage.getItem('coach_api_key') || '').trim();
+                    const hasCoachPasscode = !!(localStorage.getItem('coach_passcode') || '').trim();
+                    const coachAuthCookie = (typeof getCookie === 'function') ? getCookie('coach_auth') : null;
+                    const hasCoachCookie = coachAuthCookie === 'true';
+
+                    const isCoach = hasConfigApiKey || hasCoachApiKey || hasCoachPasscode || hasCoachCookie;
+
+                    console.log('[Coach Mode Check]', {
+                        hasConfigApiKey,
+                        hasCoachApiKey,
+                        hasCoachPasscode,
+                        hasCoachCookie,
                         isCoach
                     });
                     return isCoach;
@@ -2061,41 +2103,83 @@
                 }
             };
 
-            // Helper function to show/hide coach buttons
+            /**
+             * Show/hide coach-only UI elements (Tailwind class toggles only).
+             * @returns {void}
+             */
             function updateCoachButtonsVisibility() {
                 const isCoach = isCoachMode();
-                console.log('[Update Coach Buttons]', { isCoach });
-                
-                const buttons = [
-                    { id: 'export-roster-btn', name: 'Export Roster' },
-                    { id: 'import-usa-archery-btn', name: 'Import USA' },
-                    { id: 'export-usa-archery-btn', name: 'Export USA' }
-                ];
-                
-                buttons.forEach(btnInfo => {
-                    const btn = document.getElementById(btnInfo.id);
-                    if (!btn) {
-                        console.warn(`[Button Visibility] ${btnInfo.id} not found in DOM`);
-                        return;
-                    }
-                    
-                    if (isCoach) {
-                        // Remove hidden class and force flex display with !important to override Tailwind
-                        btn.classList.remove('hidden');
-                        btn.style.setProperty('display', 'flex', 'important');
-                        console.log(`[Button Visibility] ${btnInfo.name} shown - classes:`, btn.className, 'display:', getComputedStyle(btn).display);
-                    } else {
-                        btn.classList.add('hidden');
-                        btn.style.removeProperty('display');
-                        console.log(`[Button Visibility] ${btnInfo.name} hidden`);
-                    }
-                });
+                const coachActionsBtn = document.getElementById('coach-actions-btn');
+                if (coachActionsBtn) {
+                    // Debug override: add ?showCoachActions=1 to force the Coach button visible.
+                    // Use only for debugging; remove when confirmed.
+                    const params = new URLSearchParams(window.location.search || '');
+                    const debugShowCoachActions = params.get('showCoachActions') === '1';
+                    coachActionsBtn.classList.toggle('hidden', !(isCoach || debugShowCoachActions));
+                }
+
+                // If coach logs out, ensure modal is closed.
+                if (!isCoach) closeCoachActionsModal();
             }
 
-            // Export Roster (Coach Only)
-            const exportRosterBtn = document.getElementById('export-roster-btn');
-            if (exportRosterBtn) {
-                exportRosterBtn.onclick = () => {
+            /**
+             * @returns {void}
+             */
+            function openCoachActionsModal() {
+                const modalEl = document.getElementById('coach-actions-modal');
+                if (!modalEl) return;
+                console.log('[Coach Actions Modal] Opening');
+                modalEl.classList.remove('hidden');
+            }
+
+            /**
+             * @returns {void}
+             */
+            function closeCoachActionsModal() {
+                const modalEl = document.getElementById('coach-actions-modal');
+                if (!modalEl) return;
+                console.log('[Coach Actions Modal] Closing');
+                modalEl.classList.add('hidden');
+            }
+
+            // Coach Actions button (opens action sheet)
+            const coachActionsBtn = document.getElementById('coach-actions-btn');
+            if (coachActionsBtn) {
+                coachActionsBtn.onclick = () => {
+                    console.log('[Coach Actions] Open requested');
+                    openCoachActionsModal();
+                };
+            }
+
+            // Debug helper: add ?openCoachActions=1 to auto-open the coach actions modal on load.
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                if (params.get('openCoachActions') === '1') {
+                    setTimeout(() => {
+                        console.log('[Coach Actions] Auto-open via openCoachActions=1');
+                        openCoachActionsModal();
+                    }, 50);
+                }
+            } catch (_) { }
+
+            // Close handlers (X button + backdrop)
+            const coachActionsModal = document.getElementById('coach-actions-modal');
+            const closeCoachActionsBtn = document.getElementById('close-coach-actions-btn');
+            if (closeCoachActionsBtn) closeCoachActionsBtn.onclick = () => closeCoachActionsModal();
+            if (coachActionsModal) {
+                coachActionsModal.onclick = (e) => {
+                    if (e.target === coachActionsModal) closeCoachActionsModal();
+                };
+            }
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeCoachActionsModal();
+            });
+
+            // Coach Actions: Export Roster
+            const coachActionExportRosterBtn = document.getElementById('coach-action-export-roster-btn');
+            if (coachActionExportRosterBtn) {
+                coachActionExportRosterBtn.onclick = () => {
+                    closeCoachActionsModal();
                     if (typeof ArcherModule.exportCoachRosterCSV === 'function') {
                         ArcherModule.exportCoachRosterCSV();
                     } else {
@@ -2104,26 +2188,26 @@
                 };
             }
 
-            // USA Archery Import button (Coach Only)
-            const importUSAArcheryBtn = document.getElementById('import-usa-archery-btn');
-            if (importUSAArcheryBtn) {
-                importUSAArcheryBtn.onclick = async () => {
+            // Coach Actions: USA Archery Import
+            const coachActionImportUSABtn = document.getElementById('coach-action-import-usa-btn');
+            if (coachActionImportUSABtn) {
+                coachActionImportUSABtn.onclick = async () => {
+                    closeCoachActionsModal();
                     const input = document.createElement('input');
                     input.type = 'file';
                     input.accept = '.csv';
                     input.onchange = async (e) => {
-                        const file = e.target.files[0];
+                        const file = e.target.files && e.target.files[0];
                         if (!file) return;
                         try {
                             const text = await file.text();
                             if (typeof ArcherModule.importUSAArcheryCSV === 'function') {
                                 const result = ArcherModule.importUSAArcheryCSV(text);
-                                if (result.errors && result.errors.length > 0) {
+                                if (result && result.errors && result.errors.length > 0) {
                                     alert('Import completed with errors:\n' + result.errors.join('\n'));
                                 } else {
                                     alert(`Successfully imported ${result.list.length} archer(s).`);
                                 }
-                                // Refresh archer list
                                 renderList();
                             } else {
                                 alert('Import function not available.');
@@ -2137,10 +2221,11 @@
                 };
             }
 
-            // USA Archery Export button (Coach Only)
-            const exportUSAArcheryBtn = document.getElementById('export-usa-archery-btn');
-            if (exportUSAArcheryBtn) {
-                exportUSAArcheryBtn.onclick = () => {
+            // Coach Actions: USA Archery Export
+            const coachActionExportUSABtn = document.getElementById('coach-action-export-usa-btn');
+            if (coachActionExportUSABtn) {
+                coachActionExportUSABtn.onclick = () => {
+                    closeCoachActionsModal();
                     if (typeof ArcherModule.exportUSAArcheryCSV === 'function') {
                         ArcherModule.exportUSAArcheryCSV();
                     } else {
@@ -2149,12 +2234,20 @@
                 };
             }
 
-            // Initial visibility check
+            // Initial visibility check (with delay to ensure DOM is ready)
+            setTimeout(() => {
+                updateCoachButtonsVisibility();
+            }, 100);
+            
+            // Also check immediately
             updateCoachButtonsVisibility();
             
             // Re-check visibility when page gains focus (in case coach logged in another tab)
             window.addEventListener('focus', updateCoachButtonsVisibility);
             window.addEventListener('storage', updateCoachButtonsVisibility); // Listen for localStorage changes
+            
+            // Make function available globally for debugging
+            window.updateCoachButtonsVisibility = updateCoachButtonsVisibility;
             
             sortByNameBtn.onclick = () => {
                 sortMode = 'name';
