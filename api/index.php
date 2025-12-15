@@ -3942,6 +3942,18 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                 'postalCode' => $normalizeArcherField('postalCode', $archer['postalCode'] ?? null),
                 'disability' => $normalizeArcherField('disability', $archer['disability'] ?? null),
                 'campAttendance' => $normalizeArcherField('campAttendance', $archer['campAttendance'] ?? null),
+                'validFrom' => $normalizeArcherField('validFrom', $archer['validFrom'] ?? null),
+                'clubState' => $normalizeArcherField('clubState', $archer['clubState'] ?? null),
+                'membershipType' => $normalizeArcherField('membershipType', $archer['membershipType'] ?? null),
+                'addressCountry' => $normalizeArcherField('addressCountry', $archer['addressCountry'] ?? null),
+                'addressLine3' => $normalizeArcherField('addressLine3', $archer['addressLine3'] ?? null),
+                'disabilityList' => $normalizeArcherField('disabilityList', $archer['disabilityList'] ?? null),
+                'militaryService' => $normalizeArcherField('militaryService', $archer['militaryService'] ?? null),
+                'introductionSource' => $normalizeArcherField('introductionSource', $archer['introductionSource'] ?? null),
+                'introductionOther' => $normalizeArcherField('introductionOther', $archer['introductionOther'] ?? null),
+                'nfaaMemberNo' => $normalizeArcherField('nfaaMemberNo', $archer['nfaaMemberNo'] ?? null),
+                'schoolType' => $normalizeArcherField('schoolType', $archer['schoolType'] ?? null),
+                'schoolFullName' => $normalizeArcherField('schoolFullName', $archer['schoolFullName'] ?? null),
                 'usArcheryId' => $normalizeArcherField('usArcheryId', $archer['usArcheryId'] ?? null),
                 'jvPr' => $normalizeArcherField('jvPr', $archer['jvPr'] ?? null),
                 'varPr' => $normalizeArcherField('varPr', $archer['varPr'] ?? null),
@@ -3998,6 +4010,18 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                 if ($normalized['postalCode'] !== null) { $updateFields[] = 'postal_code = ?'; $updateValues[] = $normalized['postalCode']; }
                 if ($normalized['disability'] !== null) { $updateFields[] = 'disability = ?'; $updateValues[] = $normalized['disability']; }
                 if ($normalized['campAttendance'] !== null) { $updateFields[] = 'camp_attendance = ?'; $updateValues[] = $normalized['campAttendance']; }
+                if ($normalized['validFrom'] !== null) { $updateFields[] = 'valid_from = ?'; $updateValues[] = $normalized['validFrom'] ?: null; }
+                if ($normalized['clubState'] !== null) { $updateFields[] = 'club_state = ?'; $updateValues[] = $normalized['clubState']; }
+                if ($normalized['membershipType'] !== null) { $updateFields[] = 'membership_type = ?'; $updateValues[] = $normalized['membershipType']; }
+                if ($normalized['addressCountry'] !== null) { $updateFields[] = 'address_country = ?'; $updateValues[] = $normalized['addressCountry']; }
+                if ($normalized['addressLine3'] !== null) { $updateFields[] = 'address_line3 = ?'; $updateValues[] = $normalized['addressLine3']; }
+                if ($normalized['disabilityList'] !== null) { $updateFields[] = 'disability_list = ?'; $updateValues[] = $normalized['disabilityList']; }
+                if ($normalized['militaryService'] !== null) { $updateFields[] = 'military_service = ?'; $updateValues[] = $normalized['militaryService']; }
+                if ($normalized['introductionSource'] !== null) { $updateFields[] = 'introduction_source = ?'; $updateValues[] = $normalized['introductionSource']; }
+                if ($normalized['introductionOther'] !== null) { $updateFields[] = 'introduction_other = ?'; $updateValues[] = $normalized['introductionOther']; }
+                if ($normalized['nfaaMemberNo'] !== null) { $updateFields[] = 'nfaa_member_no = ?'; $updateValues[] = $normalized['nfaaMemberNo']; }
+                if ($normalized['schoolType'] !== null) { $updateFields[] = 'school_type = ?'; $updateValues[] = $normalized['schoolType']; }
+                if ($normalized['schoolFullName'] !== null) { $updateFields[] = 'school_full_name = ?'; $updateValues[] = $normalized['schoolFullName']; }
                 if ($normalized['usArcheryId'] !== null) { $updateFields[] = 'us_archery_id = ?'; $updateValues[] = $normalized['usArcheryId']; }
                 if ($normalized['jvPr'] !== null) { $updateFields[] = 'jv_pr = ?'; $updateValues[] = $normalized['jvPr']; }
                 if ($normalized['varPr'] !== null) { $updateFields[] = 'var_pr = ?'; $updateValues[] = $normalized['varPr']; }
@@ -4026,8 +4050,11 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                     notes_gear, notes_current, notes_archive, email, email2, phone, 
                     dob, nationality, ethnicity, discipline, street_address, street_address2,
                     city, state, postal_code, disability, camp_attendance,
+                    valid_from, club_state, membership_type, address_country, address_line3,
+                    disability_list, military_service, introduction_source, introduction_other,
+                    nfaa_member_no, school_type, school_full_name,
                     us_archery_id, jv_pr, var_pr, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
                 
                 $stmt->execute([
                     $newId,
@@ -4067,6 +4094,18 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                     $normalized['postalCode'],
                     $normalized['disability'],
                     $normalized['campAttendance'],
+                    $normalized['validFrom'] ?: null,
+                    $normalized['clubState'],
+                    $normalized['membershipType'],
+                    $normalized['addressCountry'] ?: 'USA',
+                    $normalized['addressLine3'],
+                    $normalized['disabilityList'],
+                    $normalized['militaryService'] ?: 'No',
+                    $normalized['introductionSource'],
+                    $normalized['introductionOther'],
+                    $normalized['nfaaMemberNo'],
+                    $normalized['schoolType'],
+                    $normalized['schoolFullName'],
                     $normalized['usArcheryId'],
                     $normalized['jvPr'],
                     $normalized['varPr']
@@ -4149,6 +4188,18 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
             postal_code as postalCode,
             disability,
             camp_attendance as campAttendance,
+            valid_from as validFrom,
+            club_state as clubState,
+            membership_type as membershipType,
+            address_country as addressCountry,
+            address_line3 as addressLine3,
+            disability_list as disabilityList,
+            military_service as militaryService,
+            introduction_source as introductionSource,
+            introduction_other as introductionOther,
+            nfaa_member_no as nfaaMemberNo,
+            school_type as schoolType,
+            school_full_name as schoolFullName,
             us_archery_id as usArcheryId,
             jv_pr as jvPr, 
             var_pr as varPr,
