@@ -160,14 +160,6 @@
                     <i class="fas fa-home text-xl"></i>
                 </a>
                 <div class="flex-1"></div>
-                <!-- General Import/Export (available to all users) -->
-                <button id="import-csv-btn" class="px-2 py-[2px] h-[44px] bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Import CSV">
-                    <i class="fas fa-upload mr-1"></i><span class="hidden sm:inline">Import</span>
-                </button>
-                <button id="export-csv-btn" class="px-2 py-[2px] h-[44px] bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Export CSV">
-                    <i class="fas fa-download mr-1"></i><span class="hidden sm:inline">Export</span>
-                </button>
-                <!-- Coach-only buttons -->
                 <button id="export-roster-btn" class="hidden px-2 py-[2px] h-[44px] bg-amber-500 hover:bg-amber-600 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Export Coach Roster CSV">
                     <i class="fas fa-download mr-1"></i><span class="hidden sm:inline">Export</span>
                 </button>
@@ -328,8 +320,16 @@
                     const configRaw = localStorage.getItem('live_updates_config') || '{}';
                     const config = JSON.parse(configRaw);
                     const coachKey = (config && config.apiKey) || localStorage.getItem('coach_api_key') || '';
-                    return !!(coachKey && coachKey.trim());
-                } catch (_) {
+                    const isCoach = !!(coachKey && coachKey.trim());
+                    console.log('[Coach Mode Check]', { 
+                        hasConfigApiKey: !!(config && config.apiKey),
+                        hasCoachApiKey: !!localStorage.getItem('coach_api_key'),
+                        coachKey: coachKey ? '***' : '',
+                        isCoach
+                    });
+                    return isCoach;
+                } catch (e) {
+                    console.error('[Coach Mode Check Error]', e);
                     return false;
                 }
             }
@@ -2061,46 +2061,45 @@
                 }
             };
 
-            // General CSV Import (Available to all users)
-            const importCsvBtn = document.getElementById('import-csv-btn');
-            if (importCsvBtn) {
-                importCsvBtn.onclick = async () => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = '.csv';
-                    input.onchange = async (e) => {
-                        const file = e.target.files[0];
-                        if (!file) return;
-                        try {
-                            const text = await file.text();
-                            const list = ArcherModule.importCSV(text);
-                            alert(`Successfully imported ${list.length} archer(s).`);
-                            renderList();
-                        } catch (err) {
-                            console.error('Import failed:', err);
-                            alert('Error importing CSV: ' + err.message);
-                        }
-                    };
-                    input.click();
-                };
-            }
+            // Helper function to show/hide coach buttons
+            function updateCoachButtonsVisibility() {
+                const isCoach = isCoachMode();
+                console.log('[Update Coach Buttons]', { isCoach });
+                
+                // Export Roster button
+                const exportRosterBtn = document.getElementById('export-roster-btn');
+                if (exportRosterBtn) {
+                    if (isCoach) {
+                        exportRosterBtn.classList.remove('hidden');
+                    } else {
+                        exportRosterBtn.classList.add('hidden');
+                    }
+                }
 
-            // General CSV Export (Available to all users)
-            const exportCsvBtn = document.getElementById('export-csv-btn');
-            if (exportCsvBtn) {
-                exportCsvBtn.onclick = () => {
-                    ArcherModule.exportCSV();
-                };
+                // USA Archery Import button
+                const importUSAArcheryBtn = document.getElementById('import-usa-archery-btn');
+                if (importUSAArcheryBtn) {
+                    if (isCoach) {
+                        importUSAArcheryBtn.classList.remove('hidden');
+                    } else {
+                        importUSAArcheryBtn.classList.add('hidden');
+                    }
+                }
+
+                // USA Archery Export button
+                const exportUSAArcheryBtn = document.getElementById('export-usa-archery-btn');
+                if (exportUSAArcheryBtn) {
+                    if (isCoach) {
+                        exportUSAArcheryBtn.classList.remove('hidden');
+                    } else {
+                        exportUSAArcheryBtn.classList.add('hidden');
+                    }
+                }
             }
 
             // Export Roster (Coach Only)
             const exportRosterBtn = document.getElementById('export-roster-btn');
             if (exportRosterBtn) {
-                // Show button only for coaches
-                if (isCoachMode()) {
-                    exportRosterBtn.classList.remove('hidden');
-                    exportRosterBtn.classList.add('flex');
-                }
                 exportRosterBtn.onclick = () => {
                     if (typeof ArcherModule.exportCoachRosterCSV === 'function') {
                         ArcherModule.exportCoachRosterCSV();
@@ -2113,10 +2112,6 @@
             // USA Archery Import button (Coach Only)
             const importUSAArcheryBtn = document.getElementById('import-usa-archery-btn');
             if (importUSAArcheryBtn) {
-                if (isCoachMode()) {
-                    importUSAArcheryBtn.classList.remove('hidden');
-                    importUSAArcheryBtn.classList.add('flex');
-                }
                 importUSAArcheryBtn.onclick = async () => {
                     const input = document.createElement('input');
                     input.type = 'file';
@@ -2150,10 +2145,6 @@
             // USA Archery Export button (Coach Only)
             const exportUSAArcheryBtn = document.getElementById('export-usa-archery-btn');
             if (exportUSAArcheryBtn) {
-                if (isCoachMode()) {
-                    exportUSAArcheryBtn.classList.remove('hidden');
-                    exportUSAArcheryBtn.classList.add('flex');
-                }
                 exportUSAArcheryBtn.onclick = () => {
                     if (typeof ArcherModule.exportUSAArcheryCSV === 'function') {
                         ArcherModule.exportUSAArcheryCSV();
@@ -2162,6 +2153,13 @@
                     }
                 };
             }
+
+            // Initial visibility check
+            updateCoachButtonsVisibility();
+            
+            // Re-check visibility when page gains focus (in case coach logged in another tab)
+            window.addEventListener('focus', updateCoachButtonsVisibility);
+            window.addEventListener('storage', updateCoachButtonsVisibility); // Listen for localStorage changes
             
             sortByNameBtn.onclick = () => {
                 sortMode = 'name';
