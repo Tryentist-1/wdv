@@ -1375,7 +1375,42 @@ const ArcherModule = {
     }
 
     if (list.length > 0) {
-      this.saveList(list, { source: 'usa-archery-csv-import', lastImportedAt: Date.now() });
+      // MERGE with existing archers instead of replacing
+      const existingList = this.loadList();
+      const mergedList = [...existingList];
+      let addedCount = 0;
+      let updatedCount = 0;
+      
+      list.forEach(imported => {
+        // Find existing archer by extId, email, or name match
+        const existingIndex = mergedList.findIndex(existing => {
+          if (imported.extId && existing.extId === imported.extId) return true;
+          if (imported.email && existing.email && imported.email.toLowerCase() === existing.email.toLowerCase()) return true;
+          if (imported.first && imported.last && existing.first && existing.last &&
+              imported.first.toLowerCase() === existing.first.toLowerCase() &&
+              imported.last.toLowerCase() === existing.last.toLowerCase()) return true;
+          return false;
+        });
+        
+        if (existingIndex >= 0) {
+          // Merge: update existing archer with imported data, preserving existing fields
+          const existing = mergedList[existingIndex];
+          mergedList[existingIndex] = Object.assign({}, existing, 
+            // Only overwrite with non-empty imported values
+            Object.fromEntries(
+              Object.entries(imported).filter(([k, v]) => v !== '' && v !== null && v !== undefined)
+            )
+          );
+          updatedCount++;
+        } else {
+          // Add new archer
+          mergedList.push(imported);
+          addedCount++;
+        }
+      });
+      
+      this.saveList(mergedList, { source: 'usa-archery-csv-import', lastImportedAt: Date.now() });
+      console.log(`[Import] Added ${addedCount} new archers, updated ${updatedCount} existing archers`);
     }
 
     return { list, errors };
