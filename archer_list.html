@@ -783,6 +783,19 @@
                     setFormValue(form, 'postalCode', archer.postalCode || '');
                     setFormValue(form, 'disability', archer.disability || '');
                     setFormValue(form, 'campAttendance', archer.campAttendance || '');
+                    // USA Archery fields
+                    setFormValue(form, 'validFrom', archer.validFrom || '');
+                    setFormValue(form, 'clubState', archer.clubState || '');
+                    setFormValue(form, 'membershipType', archer.membershipType || '');
+                    setFormValue(form, 'addressCountry', archer.addressCountry || 'USA');
+                    setFormValue(form, 'addressLine3', archer.addressLine3 || '');
+                    setFormValue(form, 'disabilityList', archer.disabilityList || '');
+                    setFormValue(form, 'militaryService', archer.militaryService || 'No');
+                    setFormValue(form, 'introductionSource', archer.introductionSource || '');
+                    setFormValue(form, 'introductionOther', archer.introductionOther || '');
+                    setFormValue(form, 'nfaaMemberNo', archer.nfaaMemberNo || '');
+                    setFormValue(form, 'schoolType', archer.schoolType || '');
+                    setFormValue(form, 'schoolFullName', archer.schoolFullName || '');
                 } else {
                     modalTitle.textContent = 'Add Archer';
                     setFormValue(form, 'status', 'active');
@@ -838,6 +851,23 @@
                 // Initialize navigation if editing
                 if (index !== null) {
                     initializeArcherNavigation(index);
+                }
+                
+                // Conditional field: introductionOther (show/hide based on introductionSource)
+                const introductionSourceSelect = form.querySelector('#introductionSource');
+                const introductionOtherWrapper = form.querySelector('#introductionOtherWrapper');
+                if (introductionSourceSelect && introductionOtherWrapper) {
+                    const toggleIntroductionOther = () => {
+                        if (introductionSourceSelect.value === 'Other') {
+                            introductionOtherWrapper.classList.remove('hidden');
+                        } else {
+                            introductionOtherWrapper.classList.add('hidden');
+                            const introOtherInput = form.querySelector('#introductionOther');
+                            if (introOtherInput) introOtherInput.value = '';
+                        }
+                    };
+                    introductionSourceSelect.addEventListener('change', toggleIntroductionOther);
+                    toggleIntroductionOther(); // Initial state
                 }
             }
             
@@ -1507,16 +1537,44 @@
                                     </div>
                                 </div>
                                 
+                                <!-- USA Archery Membership Information -->
+                                <div class="border-t border-gray-100 dark:border-gray-700 pt-2">
+                                    <label class="text-xs text-gray-500 dark:text-gray-400 font-medium">USA Archery Membership</label>
+                                    <div class="grid grid-cols-2 gap-2 mt-1">
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">Membership Valid From</label>
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="date" id="validFrom">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">Membership Type</label>
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="membershipType" placeholder="OAS Membership">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">Club State</label>
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="clubState" placeholder="CA" maxlength="2">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">NFAA Member #</label>
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="nfaaMemberNo" placeholder="NFAA number">
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <!-- Address -->
                                 <div class="border-t border-gray-100 dark:border-gray-700 pt-2">
                                     <label class="text-xs text-gray-500 dark:text-gray-400 font-medium">Mailing Address</label>
                                     <div class="space-y-2 mt-1">
                                         <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="streetAddress" placeholder="Street Address">
                                         <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="streetAddress2" placeholder="Apt, Suite, Unit (optional)">
+                                        <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="addressLine3" placeholder="Address Line 3 (optional)">
                                         <div class="grid grid-cols-3 gap-2">
                                             <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="city" placeholder="City">
                                             <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="state" placeholder="State" maxlength="2">
                                             <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="postalCode" placeholder="ZIP">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">Country</label>
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="addressCountry" placeholder="USA" value="USA">
                                         </div>
                                     </div>
                                 </div>
@@ -1535,6 +1593,57 @@
                                                 <option value="Y">Yes</option>
                                                 <option value="N">No</option>
                                             </select>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">Disability List</label>
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="disabilityList" placeholder="Comma-separated options">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">Military Service</label>
+                                            <select class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="militaryService">
+                                                <option value="No">No</option>
+                                                <option value="Yes">Yes</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Additional Information -->
+                                <div class="border-t border-gray-100 dark:border-gray-700 pt-2">
+                                    <label class="text-xs text-gray-500 dark:text-gray-400 font-medium">Introduction Source</label>
+                                    <div class="space-y-2 mt-1">
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">Where were you introduced to archery?</label>
+                                            <select class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="introductionSource">
+                                                <option value="">-</option>
+                                                <option value="Olympic Archery in the Schools (OAS)">Olympic Archery in the Schools (OAS)</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div id="introductionOtherWrapper" class="hidden">
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">Other Introduction Source</label>
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="introductionOther" placeholder="Specify other source">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- School Information -->
+                                <div class="border-t border-gray-100 dark:border-gray-700 pt-2">
+                                    <label class="text-xs text-gray-500 dark:text-gray-400 font-medium">School Information</label>
+                                    <div class="grid grid-cols-2 gap-2 mt-1">
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">School Type</label>
+                                            <select class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" id="schoolType">
+                                                <option value="">-</option>
+                                                <option value="Elementary">Elementary</option>
+                                                <option value="Middle">Middle</option>
+                                                <option value="High" selected>High</option>
+                                                <option value="College">College</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs text-gray-500 dark:text-gray-400">Full School Name</label>
+                                            <input class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="text" id="schoolFullName" placeholder="Wiseburn Da Vinci High School">
                                         </div>
                                     </div>
                                 </div>
@@ -1786,6 +1895,19 @@
                     postalCode: getVal('postalCode'),
                     disability: getVal('disability'),
                     campAttendance: getVal('campAttendance'),
+                    // USA Archery fields
+                    validFrom: getVal('validFrom'),
+                    clubState: getVal('clubState'),
+                    membershipType: getVal('membershipType'),
+                    addressCountry: getVal('addressCountry') || 'USA',
+                    addressLine3: getVal('addressLine3'),
+                    disabilityList: getVal('disabilityList'),
+                    militaryService: getVal('militaryService') || 'No',
+                    introductionSource: getVal('introductionSource'),
+                    introductionOther: getVal('introductionOther'),
+                    nfaaMemberNo: getVal('nfaaMemberNo'),
+                    schoolType: getVal('schoolType'),
+                    schoolFullName: getVal('schoolFullName'),
                     // Preserve legacy fields until dependent modules migrate
                     bale: current.bale || form.querySelector('#legacyBale').value || '',
                     target: current.target || form.querySelector('#legacyTarget').value || '',
