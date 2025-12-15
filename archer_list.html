@@ -160,6 +160,14 @@
                     <i class="fas fa-home text-xl"></i>
                 </a>
                 <div class="flex-1"></div>
+                <!-- General Import/Export (available to all users) -->
+                <button id="import-csv-btn" class="px-2 py-[2px] h-[44px] bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Import CSV">
+                    <i class="fas fa-upload mr-1"></i><span class="hidden sm:inline">Import</span>
+                </button>
+                <button id="export-csv-btn" class="px-2 py-[2px] h-[44px] bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Export CSV">
+                    <i class="fas fa-download mr-1"></i><span class="hidden sm:inline">Export</span>
+                </button>
+                <!-- Coach-only buttons -->
                 <button id="export-roster-btn" class="hidden px-2 py-[2px] h-[44px] bg-amber-500 hover:bg-amber-600 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Export Coach Roster CSV">
                     <i class="fas fa-download mr-1"></i><span class="hidden sm:inline">Export</span>
                 </button>
@@ -2052,6 +2060,38 @@
                     alert('Failed to refresh from database: ' + error.message + '\n\nEnter your coach API key or event code in Coach Console, then try again.');
                 }
             };
+
+            // General CSV Import (Available to all users)
+            const importCsvBtn = document.getElementById('import-csv-btn');
+            if (importCsvBtn) {
+                importCsvBtn.onclick = async () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.csv';
+                    input.onchange = async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        try {
+                            const text = await file.text();
+                            const list = ArcherModule.importCSV(text);
+                            alert(`Successfully imported ${list.length} archer(s).`);
+                            renderList();
+                        } catch (err) {
+                            console.error('Import failed:', err);
+                            alert('Error importing CSV: ' + err.message);
+                        }
+                    };
+                    input.click();
+                };
+            }
+
+            // General CSV Export (Available to all users)
+            const exportCsvBtn = document.getElementById('export-csv-btn');
+            if (exportCsvBtn) {
+                exportCsvBtn.onclick = () => {
+                    ArcherModule.exportCSV();
+                };
+            }
 
             // Export Roster (Coach Only)
             const exportRosterBtn = document.getElementById('export-roster-btn');
