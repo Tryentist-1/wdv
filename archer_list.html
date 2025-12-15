@@ -160,7 +160,7 @@
                     <i class="fas fa-home text-xl"></i>
                 </a>
                 <!-- Keep coach actions near Home so it doesn't get pushed off-screen on small widths -->
-                <button id="coach-actions-btn" class="hidden px-2 py-[2px] h-[44px] bg-orange hover:bg-orange-dark text-white rounded font-semibold transition-colors flex items-center justify-center" title="Coach Actions">
+                <button id="coach-actions-btn" class="hidden px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark min-w-[44px] min-h-[44px] font-semibold transition-colors flex items-center justify-center" title="Coach Actions">
                     <i class="fas fa-user-shield mr-1"></i>
                     <span class="hidden sm:inline">Coach</span>
                 </button>
@@ -188,15 +188,15 @@
                 </h3>
             </div>
             <div class="px-6 py-4 flex flex-col gap-3">
-                <button id="coach-action-import-usa-btn" class="w-full min-h-[44px] px-4 py-3 bg-orange hover:bg-orange-dark text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+                <button id="coach-action-import-usa-btn" class="w-full px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
                     <i class="fas fa-upload"></i>
                     <span>Import USA Archery CSV</span>
                 </button>
-                <button id="coach-action-export-usa-btn" class="w-full min-h-[44px] px-4 py-3 bg-orange hover:bg-orange-dark text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+                <button id="coach-action-export-usa-btn" class="w-full px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
                     <i class="fas fa-download"></i>
                     <span>Export USA Archery CSV</span>
                 </button>
-                <button id="coach-action-export-roster-btn" class="w-full min-h-[44px] px-4 py-3 bg-warning hover:bg-warning-dark text-gray-900 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+                <button id="coach-action-export-roster-btn" class="w-full px-4 py-2 bg-warning text-gray-800 rounded hover:bg-warning-dark min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
                     <i class="fas fa-file-csv"></i>
                     <span>Export Coach Roster CSV</span>
                 </button>
@@ -2123,6 +2123,9 @@
             }
 
             /**
+             * Open the Coach Actions modal (action sheet).
+             * Displays options for Import/Export USA Archery CSV and Export Roster.
+             * Only accessible in coach mode.
              * @returns {void}
              */
             function openCoachActionsModal() {
@@ -2133,6 +2136,8 @@
             }
 
             /**
+             * Close the Coach Actions modal.
+             * Hides the action sheet overlay.
              * @returns {void}
              */
             function closeCoachActionsModal() {

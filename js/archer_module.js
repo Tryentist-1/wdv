@@ -1155,7 +1155,20 @@ const ArcherModule = {
     return csv;
   },
 
-  // Import CSV in USA Archery template format (30 columns)
+  /**
+   * Import archers from a USA Archery CSV file (30-column template format).
+   * Parses CSV text, maps headers to archer fields, and merges with existing archers.
+   * Supports 50+ header name variations for flexible import.
+   * After saving locally, syncs imported archers to MySQL database.
+   * 
+   * @param {string} csvText - Raw CSV text content to parse
+   * @returns {{list: Object[], errors: string[], addedCount?: number, updatedCount?: number}} 
+   *   Object containing:
+   *   - list: Array of parsed archer objects
+   *   - errors: Array of error messages (if any)
+   *   - addedCount: Number of new archers added (if import succeeded)
+   *   - updatedCount: Number of existing archers updated (if import succeeded)
+   */
   importUSAArcheryCSV(csvText) {
     if (!csvText || !csvText.trim()) {
       return { list: [], errors: ['Empty CSV content'] };
@@ -1428,7 +1441,19 @@ const ArcherModule = {
     return { list, errors, addedCount, updatedCount };
   },
   
-  // Sync imported archers to MySQL database
+  /**
+   * Sync imported archers to MySQL database via bulk_upsert API.
+   * Called automatically after CSV import to persist data to server.
+   * If sync fails, archers are queued for pending retry.
+   * 
+   * @private
+   * @param {Object[]} importedList - Array of archer objects to sync
+   * @returns {Promise<{ok: boolean, result?: Object, error?: Error|string}>}
+   *   Object containing:
+   *   - ok: true if sync succeeded, false otherwise
+   *   - result: API response (if successful)
+   *   - error: Error object or message (if failed)
+   */
   async _syncImportedToMySQL(importedList) {
     if (!window.LiveUpdates || !window.LiveUpdates.request) {
       console.warn('[Import] Live Updates not available - cannot sync to MySQL');
@@ -1448,7 +1473,13 @@ const ArcherModule = {
     }
   },
 
-  // Export CSV in USA Archery template format (30 columns, exact order)
+  /**
+   * Export archers to USA Archery CSV format (30-column template).
+   * Downloads a CSV file with exact column order required by USA Archery.
+   * Loads archers from localStorage and formats according to template.
+   * 
+   * @returns {string} The generated CSV content (also triggers download)
+   */
   exportUSAArcheryCSV() {
     const list = this.loadList();
     if (!list.length) {
