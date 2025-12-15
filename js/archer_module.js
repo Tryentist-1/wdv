@@ -838,7 +838,12 @@ const ArcherModule = {
     const rows = csvText.trim().split(/\r?\n/);
     if (rows.length < 2) return [];
     
-    // Parse CSV line with proper quote handling
+    // Detect delimiter (tab or comma)
+    const firstLine = rows[0];
+    const hasTabs = firstLine.includes('\t');
+    const delimiter = hasTabs ? '\t' : ',';
+    
+    // Parse CSV/TSV line with proper quote handling
     const parseCSVLine = (line) => {
       const result = [];
       let current = '';
@@ -852,7 +857,7 @@ const ArcherModule = {
           } else {
             inQuotes = !inQuotes;
           }
-        } else if (char === ',' && !inQuotes) {
+        } else if (char === delimiter && !inQuotes) {
           result.push(current.trim());
           current = '';
         } else {
@@ -863,15 +868,21 @@ const ArcherModule = {
       return result;
     };
     
-    const headers = parseCSVLine(rows[0]).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+    // Parse headers - preserve original case for mapping, but also store lowercase for lookup
+    const rawHeaders = parseCSVLine(rows[0]).map(h => h.replace(/^"|"$/g, '').trim());
+    const headers = rawHeaders.map(h => h.toLowerCase());
+    
     const list = rows
       .slice(1)
       .map(line => {
         if (!line.trim()) return null;
         const cols = parseCSVLine(line).map(col => col.replace(/^"|"$/g, '').trim());
         const row = {};
-        headers.forEach((header, idx) => {
-          row[header] = cols[idx] || '';
+        // Store both original and lowercase versions for flexible lookup
+        rawHeaders.forEach((rawHeader, idx) => {
+          const lowerHeader = rawHeader.toLowerCase();
+          row[lowerHeader] = cols[idx] || '';
+          row[rawHeader] = cols[idx] || ''; // Also store original case
         });
         return this._fromCsvRow(row);
       })
@@ -882,8 +893,27 @@ const ArcherModule = {
 
   _fromCsvRow(row = {}) {
     const lookup = key => {
-      const val = row[key] || row[key.replace(/_/g, '')];
-      return val !== undefined && val !== null && val !== '' ? String(val).trim() : '';
+      // Try multiple variations: exact match, lowercase, with/without underscores
+      const variations = [
+        key,
+        key.toLowerCase(),
+        key.toUpperCase(),
+        key.replace(/_/g, ''),
+        key.replace(/_/g, '').toLowerCase(),
+        key.replace(/_/g, '').toUpperCase(),
+        // Handle common variations like "First Name" vs "First"
+        key === 'first' ? 'first name' : null,
+        key === 'last' ? 'last name' : null,
+        key === 'first name' ? 'first' : null,
+        key === 'last name' ? 'last' : null
+      ].filter(Boolean);
+      
+      for (const variant of variations) {
+        if (row[variant] !== undefined && row[variant] !== null && row[variant] !== '') {
+          return String(row[variant]).trim();
+        }
+      }
+      return '';
     };
     // CRITICAL: Preserve UUID (id) from CSV if present (for database matching)
     const id = lookup('id') || lookup('uuid') || '';
@@ -891,16 +921,16 @@ const ArcherModule = {
       id: id || undefined,  // Only set if UUID exists (don't set empty string)
       archerId: id || undefined,  // Also set archerId for compatibility
       extId: lookup('extid') || '',
-      first: lookup('first'),
-      last: lookup('last'),
+      first: lookup('first') || lookup('first name') || lookup('First') || lookup('First Name'),
+      last: lookup('last') || lookup('last name') || lookup('Last') || lookup('Last Name'),
       nickname: lookup('nickname'),
       photoUrl: lookup('photo') || lookup('photourl'),
       school: lookup('school'),
       grade: lookup('grade'),
-      gender: lookup('gender'),
+      gender: lookup('gender') || lookup('gener'), // Handle typo "Gener"
       level: lookup('level'),
       status: lookup('status') || 'active',
-      email: lookup('email'),
+      email: lookup('email') || lookup('email 2') || lookup('email2'), // Handle "Email 2" column
       phone: lookup('phone'),
         usArcheryId: lookup('usa_archery_id') || lookup('usaarcheryid') || lookup('usaarchery'),
         jvPr: lookup('jv_pr') || lookup('jvpr'),
@@ -920,15 +950,27 @@ const ArcherModule = {
       notesCurrent: lookup('notes_current'),
       notesArchive: lookup('notes_archive'),
       faves: this._parseFaves(lookup('faves')),
+      // Address fields
+      streetAddress: lookup('street_address') || lookup('streetaddress') || lookup('address1') || lookup('Address1'),
+      streetAddress2: lookup('street_address2') || lookup('streetaddress2') || lookup('address2') || lookup('Address2'),
+      city: lookup('city') || lookup('City'),
+      state: lookup('state') || lookup('State'),
+      postalCode: lookup('postal_code') || lookup('postalcode') || lookup('PostalCode') || lookup('zip'),
+      // Basic profile fields
+      dob: lookup('dob') || lookup('DOB'),
+      nationality: lookup('nationality') || lookup('Nationality'),
+      ethnicity: lookup('ethnicity') || lookup('Ethnicity'),
+      discipline: lookup('discipline') || lookup('Discipline'),
+      disability: lookup('disability') || lookup('Disability?'), // Handle "Disability?" column
       // USA Archery fields (for CSV import compatibility)
       validFrom: lookup('valid_from') || lookup('validfrom'),
       clubState: lookup('club_state') || lookup('clubstate'),
       membershipType: lookup('membership_type') || lookup('membershiptype'),
-      addressCountry: lookup('address_country') || lookup('addresscountry') || 'USA',
+      addressCountry: lookup('address_country') || lookup('addresscountry') || lookup('Address_Country') || 'USA',
       addressLine3: lookup('address_line3') || lookup('addressline3') || lookup('address3'),
       disabilityList: lookup('disability_list') || lookup('disabilitylist'),
       militaryService: lookup('military_service') || lookup('militaryservice') || 'No',
-      introductionSource: lookup('introduction_source') || lookup('introductionsource'),
+      introductionSource: lookup('introduction_source') || lookup('introductionsource') || lookup('Intro_to_Archery') || lookup('Intro to Archery'),
       introductionOther: lookup('introduction_other') || lookup('introductionother'),
       nfaaMemberNo: lookup('nfaa_member_no') || lookup('nfaamemberno') || lookup('nfaa'),
       schoolType: lookup('school_type') || lookup('schooltype'),
