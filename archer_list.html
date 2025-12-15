@@ -2066,48 +2066,30 @@
                 const isCoach = isCoachMode();
                 console.log('[Update Coach Buttons]', { isCoach });
                 
-                // Export Roster button
-                const exportRosterBtn = document.getElementById('export-roster-btn');
-                if (exportRosterBtn) {
-                    if (isCoach) {
-                        exportRosterBtn.classList.remove('hidden');
-                        // Force display style to ensure visibility (Tailwind's hidden uses !important)
-                        exportRosterBtn.style.display = '';
-                        console.log('[Button Visibility] export-roster-btn classes:', exportRosterBtn.className);
-                    } else {
-                        exportRosterBtn.classList.add('hidden');
+                const buttons = [
+                    { id: 'export-roster-btn', name: 'Export Roster' },
+                    { id: 'import-usa-archery-btn', name: 'Import USA' },
+                    { id: 'export-usa-archery-btn', name: 'Export USA' }
+                ];
+                
+                buttons.forEach(btnInfo => {
+                    const btn = document.getElementById(btnInfo.id);
+                    if (!btn) {
+                        console.warn(`[Button Visibility] ${btnInfo.id} not found in DOM`);
+                        return;
                     }
-                } else {
-                    console.warn('[Button Visibility] export-roster-btn not found in DOM');
-                }
-
-                // USA Archery Import button
-                const importUSAArcheryBtn = document.getElementById('import-usa-archery-btn');
-                if (importUSAArcheryBtn) {
+                    
                     if (isCoach) {
-                        importUSAArcheryBtn.classList.remove('hidden');
-                        importUSAArcheryBtn.style.display = '';
-                        console.log('[Button Visibility] import-usa-archery-btn classes:', importUSAArcheryBtn.className);
+                        // Remove hidden class and force flex display with !important to override Tailwind
+                        btn.classList.remove('hidden');
+                        btn.style.setProperty('display', 'flex', 'important');
+                        console.log(`[Button Visibility] ${btnInfo.name} shown - classes:`, btn.className, 'display:', getComputedStyle(btn).display);
                     } else {
-                        importUSAArcheryBtn.classList.add('hidden');
+                        btn.classList.add('hidden');
+                        btn.style.removeProperty('display');
+                        console.log(`[Button Visibility] ${btnInfo.name} hidden`);
                     }
-                } else {
-                    console.warn('[Button Visibility] import-usa-archery-btn not found in DOM');
-                }
-
-                // USA Archery Export button
-                const exportUSAArcheryBtn = document.getElementById('export-usa-archery-btn');
-                if (exportUSAArcheryBtn) {
-                    if (isCoach) {
-                        exportUSAArcheryBtn.classList.remove('hidden');
-                        exportUSAArcheryBtn.style.display = '';
-                        console.log('[Button Visibility] export-usa-archery-btn classes:', exportUSAArcheryBtn.className);
-                    } else {
-                        exportUSAArcheryBtn.classList.add('hidden');
-                    }
-                } else {
-                    console.warn('[Button Visibility] export-usa-archery-btn not found in DOM');
-                }
+                });
             }
 
             // Export Roster (Coach Only)
