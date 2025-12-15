@@ -2071,9 +2071,14 @@
                 if (exportRosterBtn) {
                     if (isCoach) {
                         exportRosterBtn.classList.remove('hidden');
+                        // Force display style to ensure visibility (Tailwind's hidden uses !important)
+                        exportRosterBtn.style.display = '';
+                        console.log('[Button Visibility] export-roster-btn classes:', exportRosterBtn.className);
                     } else {
                         exportRosterBtn.classList.add('hidden');
                     }
+                } else {
+                    console.warn('[Button Visibility] export-roster-btn not found in DOM');
                 }
 
                 // USA Archery Import button
@@ -2081,9 +2086,13 @@
                 if (importUSAArcheryBtn) {
                     if (isCoach) {
                         importUSAArcheryBtn.classList.remove('hidden');
+                        importUSAArcheryBtn.style.display = '';
+                        console.log('[Button Visibility] import-usa-archery-btn classes:', importUSAArcheryBtn.className);
                     } else {
                         importUSAArcheryBtn.classList.add('hidden');
                     }
+                } else {
+                    console.warn('[Button Visibility] import-usa-archery-btn not found in DOM');
                 }
 
                 // USA Archery Export button
@@ -2091,9 +2100,13 @@
                 if (exportUSAArcheryBtn) {
                     if (isCoach) {
                         exportUSAArcheryBtn.classList.remove('hidden');
+                        exportUSAArcheryBtn.style.display = '';
+                        console.log('[Button Visibility] export-usa-archery-btn classes:', exportUSAArcheryBtn.className);
                     } else {
                         exportUSAArcheryBtn.classList.add('hidden');
                     }
+                } else {
+                    console.warn('[Button Visibility] export-usa-archery-btn not found in DOM');
                 }
             }
 
