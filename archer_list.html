@@ -163,6 +163,12 @@
                 <button id="export-roster-btn" class="hidden px-2 py-[2px] h-[44px] bg-amber-500 hover:bg-amber-600 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Export Coach Roster CSV">
                     <i class="fas fa-download mr-1"></i><span class="hidden sm:inline">Export</span>
                 </button>
+                <button id="import-usa-archery-btn" class="hidden px-2 py-[2px] h-[44px] bg-amber-600 hover:bg-amber-700 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Import USA Archery CSV">
+                    <i class="fas fa-upload mr-1"></i><span class="hidden sm:inline">Import USA</span>
+                </button>
+                <button id="export-usa-archery-btn" class="hidden px-2 py-[2px] h-[44px] bg-amber-600 hover:bg-amber-700 text-white rounded font-semibold transition-colors flex items-center justify-center" title="Export USA Archery CSV">
+                    <i class="fas fa-download mr-1"></i><span class="hidden sm:inline">Export USA</span>
+                </button>
                 <button id="load-from-mysql-btn" class="px-2 py-[2px] h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center">
                     <i class="fas fa-sync-alt mr-1"></i>Refresh
                 </button>
@@ -2058,6 +2064,59 @@
                 exportRosterBtn.onclick = () => {
                     if (typeof ArcherModule.exportCoachRosterCSV === 'function') {
                         ArcherModule.exportCoachRosterCSV();
+                    } else {
+                        alert('Export function not available.');
+                    }
+                };
+            }
+
+            // USA Archery Import button (Coach Only)
+            const importUSAArcheryBtn = document.getElementById('import-usa-archery-btn');
+            if (importUSAArcheryBtn) {
+                if (isCoachMode()) {
+                    importUSAArcheryBtn.classList.remove('hidden');
+                    importUSAArcheryBtn.classList.add('flex');
+                }
+                importUSAArcheryBtn.onclick = async () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.csv';
+                    input.onchange = async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        try {
+                            const text = await file.text();
+                            if (typeof ArcherModule.importUSAArcheryCSV === 'function') {
+                                const result = ArcherModule.importUSAArcheryCSV(text);
+                                if (result.errors && result.errors.length > 0) {
+                                    alert('Import completed with errors:\n' + result.errors.join('\n'));
+                                } else {
+                                    alert(`Successfully imported ${result.list.length} archer(s).`);
+                                }
+                                // Refresh archer list
+                                renderList();
+                            } else {
+                                alert('Import function not available.');
+                            }
+                        } catch (err) {
+                            console.error('Import failed:', err);
+                            alert('Error importing CSV: ' + err.message);
+                        }
+                    };
+                    input.click();
+                };
+            }
+
+            // USA Archery Export button (Coach Only)
+            const exportUSAArcheryBtn = document.getElementById('export-usa-archery-btn');
+            if (exportUSAArcheryBtn) {
+                if (isCoachMode()) {
+                    exportUSAArcheryBtn.classList.remove('hidden');
+                    exportUSAArcheryBtn.classList.add('flex');
+                }
+                exportUSAArcheryBtn.onclick = () => {
+                    if (typeof ArcherModule.exportUSAArcheryCSV === 'function') {
+                        ArcherModule.exportUSAArcheryCSV();
                     } else {
                         alert('Export function not available.');
                     }
