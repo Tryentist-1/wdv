@@ -62,6 +62,19 @@ const DEFAULT_ARCHER_TEMPLATE = {
   postalCode: '',
   disability: '',
   campAttendance: '',
+  // USA Archery fields
+  validFrom: '',
+  clubState: '',
+  membershipType: '',
+  addressCountry: 'USA',
+  addressLine3: '',
+  disabilityList: '',
+  militaryService: 'No',
+  introductionSource: '',
+  introductionOther: '',
+  nfaaMemberNo: '',
+  schoolType: '',
+  schoolFullName: '',
   usArcheryId: '',
   jvPr: '',
   varPr: '',
@@ -482,6 +495,18 @@ const ArcherModule = {
       postalCode: this._safeString(data.postalCode),
       disability: this._safeString(data.disability),
       campAttendance: this._safeString(data.campAttendance),
+      validFrom: this._safeString(data.validFrom),
+      clubState: this._safeString(data.clubState),
+      membershipType: this._safeString(data.membershipType),
+      addressCountry: this._safeString(data.addressCountry) || 'USA',
+      addressLine3: this._safeString(data.addressLine3),
+      disabilityList: this._safeString(data.disabilityList),
+      militaryService: this._safeString(data.militaryService) || 'No',
+      introductionSource: this._safeString(data.introductionSource),
+      introductionOther: this._safeString(data.introductionOther),
+      nfaaMemberNo: this._safeString(data.nfaaMemberNo),
+      schoolType: this._safeString(data.schoolType),
+      schoolFullName: this._safeString(data.schoolFullName),
       usArcheryId: this._safeString(data.usArcheryId),
       jvPr: this._toNullableInt(data.jvPr),
       varPr: this._toNullableInt(data.varPr),
@@ -665,6 +690,18 @@ const ArcherModule = {
       postalCode: this._safeString(apiArcher.postalCode ?? apiArcher.postal_code),
       disability: this._safeString(apiArcher.disability),
       campAttendance: this._safeString(apiArcher.campAttendance ?? apiArcher.camp_attendance),
+      validFrom: this._safeString(apiArcher.validFrom ?? apiArcher.valid_from),
+      clubState: this._safeString(apiArcher.clubState ?? apiArcher.club_state),
+      membershipType: this._safeString(apiArcher.membershipType ?? apiArcher.membership_type),
+      addressCountry: this._safeString(apiArcher.addressCountry ?? apiArcher.address_country) || 'USA',
+      addressLine3: this._safeString(apiArcher.addressLine3 ?? apiArcher.address_line3),
+      disabilityList: this._safeString(apiArcher.disabilityList ?? apiArcher.disability_list),
+      militaryService: this._safeString(apiArcher.militaryService ?? apiArcher.military_service) || 'No',
+      introductionSource: this._safeString(apiArcher.introductionSource ?? apiArcher.introduction_source),
+      introductionOther: this._safeString(apiArcher.introductionOther ?? apiArcher.introduction_other),
+      nfaaMemberNo: this._safeString(apiArcher.nfaaMemberNo ?? apiArcher.nfaa_member_no),
+      schoolType: this._safeString(apiArcher.schoolType ?? apiArcher.school_type),
+      schoolFullName: this._safeString(apiArcher.schoolFullName ?? apiArcher.school_full_name),
       usArcheryId: this._safeString(apiArcher.usArcheryId ?? apiArcher.us_archery_id),
       jvPr: apiArcher.jvPr ?? apiArcher.jv_pr ?? '',
       varPr: apiArcher.varPr ?? apiArcher.var_pr ?? '',
@@ -801,7 +838,12 @@ const ArcherModule = {
     const rows = csvText.trim().split(/\r?\n/);
     if (rows.length < 2) return [];
     
-    // Parse CSV line with proper quote handling
+    // Detect delimiter (tab or comma)
+    const firstLine = rows[0];
+    const hasTabs = firstLine.includes('\t');
+    const delimiter = hasTabs ? '\t' : ',';
+    
+    // Parse CSV/TSV line with proper quote handling
     const parseCSVLine = (line) => {
       const result = [];
       let current = '';
@@ -815,7 +857,7 @@ const ArcherModule = {
           } else {
             inQuotes = !inQuotes;
           }
-        } else if (char === ',' && !inQuotes) {
+        } else if (char === delimiter && !inQuotes) {
           result.push(current.trim());
           current = '';
         } else {
@@ -826,15 +868,21 @@ const ArcherModule = {
       return result;
     };
     
-    const headers = parseCSVLine(rows[0]).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase());
+    // Parse headers - preserve original case for mapping, but also store lowercase for lookup
+    const rawHeaders = parseCSVLine(rows[0]).map(h => h.replace(/^"|"$/g, '').trim());
+    const headers = rawHeaders.map(h => h.toLowerCase());
+    
     const list = rows
       .slice(1)
       .map(line => {
         if (!line.trim()) return null;
         const cols = parseCSVLine(line).map(col => col.replace(/^"|"$/g, '').trim());
         const row = {};
-        headers.forEach((header, idx) => {
-          row[header] = cols[idx] || '';
+        // Store both original and lowercase versions for flexible lookup
+        rawHeaders.forEach((rawHeader, idx) => {
+          const lowerHeader = rawHeader.toLowerCase();
+          row[lowerHeader] = cols[idx] || '';
+          row[rawHeader] = cols[idx] || ''; // Also store original case
         });
         return this._fromCsvRow(row);
       })
@@ -845,8 +893,27 @@ const ArcherModule = {
 
   _fromCsvRow(row = {}) {
     const lookup = key => {
-      const val = row[key] || row[key.replace(/_/g, '')];
-      return val !== undefined && val !== null && val !== '' ? String(val).trim() : '';
+      // Try multiple variations: exact match, lowercase, with/without underscores
+      const variations = [
+        key,
+        key.toLowerCase(),
+        key.toUpperCase(),
+        key.replace(/_/g, ''),
+        key.replace(/_/g, '').toLowerCase(),
+        key.replace(/_/g, '').toUpperCase(),
+        // Handle common variations like "First Name" vs "First"
+        key === 'first' ? 'first name' : null,
+        key === 'last' ? 'last name' : null,
+        key === 'first name' ? 'first' : null,
+        key === 'last name' ? 'last' : null
+      ].filter(Boolean);
+      
+      for (const variant of variations) {
+        if (row[variant] !== undefined && row[variant] !== null && row[variant] !== '') {
+          return String(row[variant]).trim();
+        }
+      }
+      return '';
     };
     // CRITICAL: Preserve UUID (id) from CSV if present (for database matching)
     const id = lookup('id') || lookup('uuid') || '';
@@ -854,16 +921,16 @@ const ArcherModule = {
       id: id || undefined,  // Only set if UUID exists (don't set empty string)
       archerId: id || undefined,  // Also set archerId for compatibility
       extId: lookup('extid') || '',
-      first: lookup('first'),
-      last: lookup('last'),
+      first: lookup('first') || lookup('first name') || lookup('First') || lookup('First Name'),
+      last: lookup('last') || lookup('last name') || lookup('Last') || lookup('Last Name'),
       nickname: lookup('nickname'),
       photoUrl: lookup('photo') || lookup('photourl'),
       school: lookup('school'),
       grade: lookup('grade'),
-      gender: lookup('gender'),
+      gender: lookup('gender') || lookup('gener'), // Handle typo "Gener"
       level: lookup('level'),
       status: lookup('status') || 'active',
-      email: lookup('email'),
+      email: lookup('email') || lookup('email 2') || lookup('email2'), // Handle "Email 2" column
       phone: lookup('phone'),
         usArcheryId: lookup('usa_archery_id') || lookup('usaarcheryid') || lookup('usaarchery'),
         jvPr: lookup('jv_pr') || lookup('jvpr'),
@@ -883,6 +950,31 @@ const ArcherModule = {
       notesCurrent: lookup('notes_current'),
       notesArchive: lookup('notes_archive'),
       faves: this._parseFaves(lookup('faves')),
+      // Address fields
+      streetAddress: lookup('street_address') || lookup('streetaddress') || lookup('address1') || lookup('Address1'),
+      streetAddress2: lookup('street_address2') || lookup('streetaddress2') || lookup('address2') || lookup('Address2'),
+      city: lookup('city') || lookup('City'),
+      state: lookup('state') || lookup('State'),
+      postalCode: lookup('postal_code') || lookup('postalcode') || lookup('PostalCode') || lookup('zip'),
+      // Basic profile fields
+      dob: lookup('dob') || lookup('DOB'),
+      nationality: lookup('nationality') || lookup('Nationality'),
+      ethnicity: lookup('ethnicity') || lookup('Ethnicity'),
+      discipline: lookup('discipline') || lookup('Discipline'),
+      disability: lookup('disability') || lookup('Disability?'), // Handle "Disability?" column
+      // USA Archery fields (for CSV import compatibility)
+      validFrom: lookup('valid_from') || lookup('validfrom'),
+      clubState: lookup('club_state') || lookup('clubstate'),
+      membershipType: lookup('membership_type') || lookup('membershiptype'),
+      addressCountry: lookup('address_country') || lookup('addresscountry') || lookup('Address_Country') || 'USA',
+      addressLine3: lookup('address_line3') || lookup('addressline3') || lookup('address3'),
+      disabilityList: lookup('disability_list') || lookup('disabilitylist'),
+      militaryService: lookup('military_service') || lookup('militaryservice') || 'No',
+      introductionSource: lookup('introduction_source') || lookup('introductionsource') || lookup('Intro_to_Archery') || lookup('Intro to Archery'),
+      introductionOther: lookup('introduction_other') || lookup('introductionother'),
+      nfaaMemberNo: lookup('nfaa_member_no') || lookup('nfaamemberno') || lookup('nfaa'),
+      schoolType: lookup('school_type') || lookup('schooltype'),
+      schoolFullName: lookup('school_full_name') || lookup('schoolfullname'),
       coachFavorite: lookup('coach_favorite') === 'true' || lookup('coachfavorite') === 'true',
       fave: lookup('coach_favorite') === 'true' || lookup('coachfavorite') === 'true'
     });
@@ -1059,6 +1151,342 @@ const ArcherModule = {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Export Coach Roster CSV failed', err);
+    }
+    return csv;
+  },
+
+  // Import CSV in USA Archery template format (30 columns)
+  importUSAArcheryCSV(csvText) {
+    if (!csvText || !csvText.trim()) {
+      return { list: [], errors: ['Empty CSV content'] };
+    }
+
+    const errors = [];
+    const parseCSVLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++; // Skip next quote (escaped quote)
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim()); // Add last field
+      return result;
+    };
+    
+    const rows = csvText.split('\n').filter(line => line.trim());
+    if (rows.length < 2) {
+      return { list: [], errors: ['CSV must have at least a header row and one data row'] };
+    }
+
+    // Parse header row - USA Archery template has specific column names
+    const headers = parseCSVLine(rows[0]).map(h => h.replace(/^"|"$/g, '').trim());
+    
+    // Map USA Archery column names to our field names
+    // Includes official names AND common alternatives/variations
+    const headerToFieldMap = {
+      // Email variations
+      'Email': 'email',
+      'Email 2': 'email',
+      'email': 'email',
+      
+      // Name variations
+      'First Name': 'first',
+      'First': 'first',
+      'first': 'first',
+      'FirstName': 'first',
+      'Last Name': 'last',
+      'Last': 'last',
+      'last': 'last',
+      'LastName': 'last',
+      
+      // Gender variations
+      'Gender': 'gender',
+      'Gener': 'gender', // Common typo
+      'gender': 'gender',
+      
+      // DOB variations
+      'DOB': 'dob',
+      'dob': 'dob',
+      'Date of Birth': 'dob',
+      'Birth Date': 'dob',
+      'Birthdate': 'dob',
+      
+      // USA Archery ID
+      'Membership Number Look Up': 'usArcheryId',
+      'Membership Number': 'usArcheryId',
+      'Member ID': 'usArcheryId',
+      'USA Archery ID': 'usArcheryId',
+      
+      'Valid From': 'validFrom',
+      
+      // State/Club
+      'State': 'clubState',
+      'Clubs': 'schoolFullName',
+      'Club': 'schoolFullName',
+      
+      'Membership Type': 'membershipType',
+      
+      // Discipline variations
+      'What is your Primary Discipline?': 'discipline',
+      'Discipline': 'discipline',
+      'discipline': 'discipline',
+      'Primary Discipline': 'discipline',
+      
+      // Ethnicity variations
+      'Race/Ethnicity': 'ethnicity',
+      'Ethnicity': 'ethnicity',
+      'ethnicity': 'ethnicity',
+      'Race': 'ethnicity',
+      
+      // Address variations
+      'Address - Addr 1': 'streetAddress',
+      'Address1': 'streetAddress',
+      'Address 1': 'streetAddress',
+      'Street Address': 'streetAddress',
+      'Address': 'streetAddress',
+      
+      'Address - Addr 2': 'streetAddress2',
+      'Address2': 'streetAddress2',
+      'Address 2': 'streetAddress2',
+      
+      'Address - Addr 3': 'addressLine3',
+      'Address3': 'addressLine3',
+      
+      'Address - Addr City': 'city',
+      'City': 'city',
+      'city': 'city',
+      
+      'Address - Addr State': 'state',
+      // Note: 'State' maps to clubState above; use context
+      
+      'Address - Addr Zip Code': 'postalCode',
+      'PostalCode': 'postalCode',
+      'Postal Code': 'postalCode',
+      'Zip': 'postalCode',
+      'Zip Code': 'postalCode',
+      
+      'Address - Addr Country': 'addressCountry',
+      'Address_Country': 'addressCountry',
+      'Country': 'addressCountry',
+      
+      // Phone variations
+      'Primary Phone Number': 'phone',
+      'Phone': 'phone',
+      'phone': 'phone',
+      'Phone Number': 'phone',
+      
+      // Disability variations
+      'Do you consider yourself to have a disability?': 'disability',
+      'Disability?': 'disability',
+      'Disability': 'disability',
+      'Please select all that apply.': 'disabilityList',
+      
+      // Military
+      'Have you ever served in the US Armed Forces?': 'militaryService',
+      'Military Service': 'militaryService',
+      
+      // Introduction to archery
+      'Please tell us where you were first introduced to archery.': 'introductionSource',
+      'Intro_to_Archery': 'introductionSource',
+      'Introduction to Archery': 'introductionSource',
+      'How Introduced': 'introductionSource',
+      'Other': 'introductionOther',
+      
+      // Nationality
+      'Select Your Citizenship Country': 'nationality',
+      'Nationality': 'nationality',
+      'Citizenship': 'nationality',
+      
+      // NFAA
+      'NFAA Membership Number': 'nfaaMemberNo',
+      'NFAA Number': 'nfaaMemberNo',
+      
+      // School
+      'School Type': 'schoolType',
+      'Grade in School': 'grade',
+      'Grade': 'grade',
+      'School Name': 'schoolFullName',
+      'School': 'schoolFullName'
+    };
+
+    const list = [];
+    for (let i = 1; i < rows.length; i++) {
+      const line = rows[i];
+      if (!line.trim()) continue;
+
+      const cols = parseCSVLine(line).map(col => col.replace(/^"|"$/g, '').trim());
+      
+      // Build row object from headers
+      const row = {};
+      headers.forEach((header, idx) => {
+        row[header] = cols[idx] || '';
+      });
+
+      // Map to our field names
+      const archerData = Object.assign({}, DEFAULT_ARCHER_TEMPLATE);
+      
+      // Map each field
+      headers.forEach(header => {
+        const fieldName = headerToFieldMap[header];
+        if (fieldName && row[header] !== undefined && row[header] !== '') {
+          archerData[fieldName] = String(row[header]).trim();
+        }
+      });
+
+      // Validate required fields
+      if (!archerData.first || !archerData.last) {
+        errors.push(`Line ${i + 1}: Missing required fields (first name, last name)`);
+        continue;
+      }
+
+      // Apply defaults if not provided
+      if (!archerData.gender) archerData.gender = 'M';
+      if (!archerData.level) archerData.level = 'VAR';
+      if (!archerData.status) archerData.status = 'active';
+      if (!archerData.nationality) archerData.nationality = 'U.S.A.';
+      if (!archerData.addressCountry) archerData.addressCountry = 'USA';
+      if (!archerData.militaryService) archerData.militaryService = 'No';
+
+      // Build extId if not provided
+      if (!archerData.extId) {
+        archerData.extId = this._buildExtId(archerData);
+      }
+
+      // Normalize fields
+      archerData.gender = this._normalizeGender(archerData.gender);
+      archerData.level = this._normalizeLevel(archerData.level);
+      archerData.status = this._normalizeStatus(archerData.status);
+      archerData.school = this._normalizeSchool(archerData.school);
+
+      list.push(archerData);
+    }
+
+    if (list.length > 0) {
+      this.saveList(list, { source: 'usa-archery-csv-import', lastImportedAt: Date.now() });
+    }
+
+    return { list, errors };
+  },
+
+  // Export CSV in USA Archery template format (30 columns, exact order)
+  exportUSAArcheryCSV() {
+    const list = this.loadList();
+    if (!list.length) {
+      alert('No archers to export.');
+      return '';
+    }
+    
+    // USA Archery template columns in exact order (30 columns)
+    const headers = [
+      'Email',
+      'First Name',
+      'Last Name',
+      'Gender',
+      'DOB',
+      'Membership Number Look Up',
+      'Valid From',
+      'State',
+      'Clubs',
+      'Membership Type',
+      'What is your Primary Discipline?',
+      'Race/Ethnicity',
+      'Address - Addr 1',
+      'Address - Addr 2',
+      'Address - Addr 3',
+      'Address - Addr City',
+      'Address - Addr State',
+      'Address - Addr Zip Code',
+      'Address - Addr Country',
+      'Primary Phone Number',
+      'Do you consider yourself to have a disability?',
+      'Please select all that apply.',
+      'Have you ever served in the US Armed Forces?',
+      'Please tell us where you were first introduced to archery.',
+      'Other',
+      'Select Your Citizenship Country',
+      'NFAA Membership Number',
+      'School Type',
+      'Grade in School',
+      'School Name'
+    ];
+    
+    // Map USA Archery columns to our internal field names
+    const fieldMap = {
+      'Email': 'email',
+      'First Name': 'first',
+      'Last Name': 'last',
+      'Gender': 'gender',
+      'DOB': 'dob',
+      'Membership Number Look Up': 'usArcheryId',
+      'Valid From': 'validFrom',
+      'State': 'clubState', // Club state (not address state)
+      'Clubs': 'schoolFullName', // Full school name
+      'Membership Type': 'membershipType',
+      'What is your Primary Discipline?': 'discipline',
+      'Race/Ethnicity': 'ethnicity',
+      'Address - Addr 1': 'streetAddress',
+      'Address - Addr 2': 'streetAddress2',
+      'Address - Addr 3': 'addressLine3',
+      'Address - Addr City': 'city',
+      'Address - Addr State': 'state', // Address state
+      'Address - Addr Zip Code': 'postalCode',
+      'Address - Addr Country': 'addressCountry',
+      'Primary Phone Number': 'phone',
+      'Do you consider yourself to have a disability?': 'disability',
+      'Please select all that apply.': 'disabilityList',
+      'Have you ever served in the US Armed Forces?': 'militaryService',
+      'Please tell us where you were first introduced to archery.': 'introductionSource',
+      'Other': 'introductionOther',
+      'Select Your Citizenship Country': 'nationality',
+      'NFAA Membership Number': 'nfaaMemberNo',
+      'School Type': 'schoolType',
+      'Grade in School': 'grade',
+      'School Name': 'schoolFullName'
+    };
+
+    const rows = list.map(archer => {
+      const normalized = this._applyTemplate(archer);
+      return headers.map(header => {
+        const fieldName = fieldMap[header];
+        let value = fieldName ? normalized[fieldName] : '';
+        if (value === undefined || value === null) value = '';
+        const str = String(value);
+        // Quote values that contain commas, quotes, or newlines
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }).join(',');
+    });
+    
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    try {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `usa-archery-roster-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export USA Archery CSV failed', err);
+      alert('Failed to export CSV. Please check console for details.');
     }
     return csv;
   },
