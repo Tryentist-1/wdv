@@ -1113,6 +1113,116 @@ const ArcherModule = {
     return csv;
   },
 
+  // Export CSV in USA Archery template format (30 columns, exact order)
+  exportUSAArcheryCSV() {
+    const list = this.loadList();
+    if (!list.length) {
+      alert('No archers to export.');
+      return '';
+    }
+    
+    // USA Archery template columns in exact order (30 columns)
+    const headers = [
+      'Email',
+      'First Name',
+      'Last Name',
+      'Gender',
+      'DOB',
+      'Membership Number Look Up',
+      'Valid From',
+      'State',
+      'Clubs',
+      'Membership Type',
+      'What is your Primary Discipline?',
+      'Race/Ethnicity',
+      'Address - Addr 1',
+      'Address - Addr 2',
+      'Address - Addr 3',
+      'Address - Addr City',
+      'Address - Addr State',
+      'Address - Addr Zip Code',
+      'Address - Addr Country',
+      'Primary Phone Number',
+      'Do you consider yourself to have a disability?',
+      'Please select all that apply.',
+      'Have you ever served in the US Armed Forces?',
+      'Please tell us where you were first introduced to archery.',
+      'Other',
+      'Select Your Citizenship Country',
+      'NFAA Membership Number',
+      'School Type',
+      'Grade in School',
+      'School Name'
+    ];
+    
+    // Map USA Archery columns to our internal field names
+    const fieldMap = {
+      'Email': 'email',
+      'First Name': 'first',
+      'Last Name': 'last',
+      'Gender': 'gender',
+      'DOB': 'dob',
+      'Membership Number Look Up': 'usArcheryId',
+      'Valid From': 'validFrom',
+      'State': 'clubState', // Club state (not address state)
+      'Clubs': 'schoolFullName', // Full school name
+      'Membership Type': 'membershipType',
+      'What is your Primary Discipline?': 'discipline',
+      'Race/Ethnicity': 'ethnicity',
+      'Address - Addr 1': 'streetAddress',
+      'Address - Addr 2': 'streetAddress2',
+      'Address - Addr 3': 'addressLine3',
+      'Address - Addr City': 'city',
+      'Address - Addr State': 'state', // Address state
+      'Address - Addr Zip Code': 'postalCode',
+      'Address - Addr Country': 'addressCountry',
+      'Primary Phone Number': 'phone',
+      'Do you consider yourself to have a disability?': 'disability',
+      'Please select all that apply.': 'disabilityList',
+      'Have you ever served in the US Armed Forces?': 'militaryService',
+      'Please tell us where you were first introduced to archery.': 'introductionSource',
+      'Other': 'introductionOther',
+      'Select Your Citizenship Country': 'nationality',
+      'NFAA Membership Number': 'nfaaMemberNo',
+      'School Type': 'schoolType',
+      'Grade in School': 'grade',
+      'School Name': 'schoolFullName'
+    };
+
+    const rows = list.map(archer => {
+      const normalized = this._applyTemplate(archer);
+      return headers.map(header => {
+        const fieldName = fieldMap[header];
+        let value = fieldName ? normalized[fieldName] : '';
+        if (value === undefined || value === null) value = '';
+        const str = String(value);
+        // Quote values that contain commas, quotes, or newlines
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }).join(',');
+    });
+    
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    try {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `usa-archery-roster-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export USA Archery CSV failed', err);
+      alert('Failed to export CSV. Please check console for details.');
+    }
+    return csv;
+  },
+
   // Load default CSV if localStorage is empty
   loadDefaultCSVIfNeeded: async function(force = false) {
     if (!force && localStorage.getItem(ARCHER_LIST_KEY)) return; // Already loaded
