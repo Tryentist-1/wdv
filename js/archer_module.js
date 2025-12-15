@@ -1113,6 +1113,138 @@ const ArcherModule = {
     return csv;
   },
 
+  // Import CSV in USA Archery template format (30 columns)
+  importUSAArcheryCSV(csvText) {
+    if (!csvText || !csvText.trim()) {
+      return { list: [], errors: ['Empty CSV content'] };
+    }
+
+    const errors = [];
+    const parseCSVLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++; // Skip next quote (escaped quote)
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim()); // Add last field
+      return result;
+    };
+    
+    const rows = csvText.split('\n').filter(line => line.trim());
+    if (rows.length < 2) {
+      return { list: [], errors: ['CSV must have at least a header row and one data row'] };
+    }
+
+    // Parse header row - USA Archery template has specific column names
+    const headers = parseCSVLine(rows[0]).map(h => h.replace(/^"|"$/g, '').trim());
+    
+    // Map USA Archery column names to our field names
+    const headerToFieldMap = {
+      'Email': 'email',
+      'First Name': 'first',
+      'Last Name': 'last',
+      'Gender': 'gender',
+      'DOB': 'dob',
+      'Membership Number Look Up': 'usArcheryId',
+      'Valid From': 'validFrom',
+      'State': 'clubState', // Club state
+      'Clubs': 'schoolFullName',
+      'Membership Type': 'membershipType',
+      'What is your Primary Discipline?': 'discipline',
+      'Race/Ethnicity': 'ethnicity',
+      'Address - Addr 1': 'streetAddress',
+      'Address - Addr 2': 'streetAddress2',
+      'Address - Addr 3': 'addressLine3',
+      'Address - Addr City': 'city',
+      'Address - Addr State': 'state', // Address state
+      'Address - Addr Zip Code': 'postalCode',
+      'Address - Addr Country': 'addressCountry',
+      'Primary Phone Number': 'phone',
+      'Do you consider yourself to have a disability?': 'disability',
+      'Please select all that apply.': 'disabilityList',
+      'Have you ever served in the US Armed Forces?': 'militaryService',
+      'Please tell us where you were first introduced to archery.': 'introductionSource',
+      'Other': 'introductionOther',
+      'Select Your Citizenship Country': 'nationality',
+      'NFAA Membership Number': 'nfaaMemberNo',
+      'School Type': 'schoolType',
+      'Grade in School': 'grade',
+      'School Name': 'schoolFullName'
+    };
+
+    const list = [];
+    for (let i = 1; i < rows.length; i++) {
+      const line = rows[i];
+      if (!line.trim()) continue;
+
+      const cols = parseCSVLine(line).map(col => col.replace(/^"|"$/g, '').trim());
+      
+      // Build row object from headers
+      const row = {};
+      headers.forEach((header, idx) => {
+        row[header] = cols[idx] || '';
+      });
+
+      // Map to our field names
+      const archerData = Object.assign({}, DEFAULT_ARCHER_TEMPLATE);
+      
+      // Map each field
+      headers.forEach(header => {
+        const fieldName = headerToFieldMap[header];
+        if (fieldName && row[header] !== undefined && row[header] !== '') {
+          archerData[fieldName] = String(row[header]).trim();
+        }
+      });
+
+      // Validate required fields
+      if (!archerData.first || !archerData.last) {
+        errors.push(`Line ${i + 1}: Missing required fields (first name, last name)`);
+        continue;
+      }
+
+      // Apply defaults if not provided
+      if (!archerData.gender) archerData.gender = 'M';
+      if (!archerData.level) archerData.level = 'VAR';
+      if (!archerData.status) archerData.status = 'active';
+      if (!archerData.nationality) archerData.nationality = 'U.S.A.';
+      if (!archerData.addressCountry) archerData.addressCountry = 'USA';
+      if (!archerData.militaryService) archerData.militaryService = 'No';
+
+      // Build extId if not provided
+      if (!archerData.extId) {
+        archerData.extId = this._buildExtId(archerData);
+      }
+
+      // Normalize fields
+      archerData.gender = this._normalizeGender(archerData.gender);
+      archerData.level = this._normalizeLevel(archerData.level);
+      archerData.status = this._normalizeStatus(archerData.status);
+      archerData.school = this._normalizeSchool(archerData.school);
+
+      list.push(archerData);
+    }
+
+    if (list.length > 0) {
+      this.saveList(list, { source: 'usa-archery-csv-import', lastImportedAt: Date.now() });
+    }
+
+    return { list, errors };
+  },
+
   // Export CSV in USA Archery template format (30 columns, exact order)
   exportUSAArcheryCSV() {
     const list = this.loadList();
