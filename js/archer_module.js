@@ -1411,9 +1411,41 @@ const ArcherModule = {
       
       this.saveList(mergedList, { source: 'usa-archery-csv-import', lastImportedAt: Date.now() });
       console.log(`[Import] Added ${addedCount} new archers, updated ${updatedCount} existing archers`);
+      
+      // Sync imported/updated archers to MySQL (the master database)
+      // This is async but we don't block the UI - it will sync in background
+      this._syncImportedToMySQL(list).then(result => {
+        if (result.ok) {
+          console.log(`[Import] Synced ${list.length} archers to MySQL`);
+        } else {
+          console.warn('[Import] MySQL sync failed - data saved locally, will retry on next sync');
+        }
+      }).catch(err => {
+        console.error('[Import] MySQL sync error:', err);
+      });
     }
 
-    return { list, errors };
+    return { list, errors, addedCount, updatedCount };
+  },
+  
+  // Sync imported archers to MySQL database
+  async _syncImportedToMySQL(importedList) {
+    if (!window.LiveUpdates || !window.LiveUpdates.request) {
+      console.warn('[Import] Live Updates not available - cannot sync to MySQL');
+      return { ok: false, error: 'Live Updates not available' };
+    }
+    
+    try {
+      const payload = importedList.map(a => this._prepareForSync(a));
+      const result = await window.LiveUpdates.request('/archers/bulk_upsert', 'POST', payload);
+      this._setLastSynced();
+      return { ok: true, result };
+    } catch (error) {
+      console.error('[Import] Failed to sync to MySQL:', error);
+      // Queue for later sync
+      importedList.forEach(archer => this._queuePendingUpsert(archer));
+      return { ok: false, error };
+    }
   },
 
   // Export CSV in USA Archery template format (30 columns, exact order)
