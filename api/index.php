@@ -5670,16 +5670,31 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
         
         // If setting to COMP, verify match is actually complete
         if ($newStatus === 'COMP') {
-            // Check if match has a winner (sets_won >= 6 for solo matches)
-            $archersStmt = $pdo->prepare('SELECT sets_won FROM solo_match_archers WHERE match_id = ?');
-            $archersStmt->execute([$matchId]);
-            $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            $isComplete = false;
-            foreach ($archers as $archer) {
-                if ((int)$archer['sets_won'] >= 6) {
-                    $isComplete = true;
-                    break;
+            // Check if winner_archer_id is set (alternative indicator of completion)
+            if (!empty($match['winner_archer_id'])) {
+                $isComplete = true;
+            } else {
+                // Calculate sets_won dynamically from solo_match_sets (more accurate than denormalized field)
+                $archersStmt = $pdo->prepare('SELECT id FROM solo_match_archers WHERE match_id = ?');
+                $archersStmt->execute([$matchId]);
+                $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                $isComplete = false;
+                foreach ($archers as $archer) {
+                    // Count sets where set_points = 2 (won set) for this archer
+                    $setsStmt = $pdo->prepare('
+                        SELECT COUNT(CASE WHEN set_points = 2 THEN 1 END) as sets_won
+                        FROM solo_match_sets
+                        WHERE match_archer_id = ? AND set_number <= 5
+                    ');
+                    $setsStmt->execute([$archer['id']]);
+                    $stats = $setsStmt->fetch(PDO::FETCH_ASSOC);
+                    $setsWon = (int)($stats['sets_won'] ?? 0);
+                    
+                    if ($setsWon >= 6) {
+                        $isComplete = true;
+                        break;
+                    }
                 }
             }
             
