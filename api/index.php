@@ -5674,26 +5674,64 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
             if (!empty($match['winner_archer_id'])) {
                 $isComplete = true;
             } else {
-                // Calculate sets_won dynamically from solo_match_sets (more accurate than denormalized field)
-                $archersStmt = $pdo->prepare('SELECT id FROM solo_match_archers WHERE match_id = ?');
+                // Calculate match completion using same logic as client: running match score >= 6
+                // Get both archers and their running_points (match score)
+                $archersStmt = $pdo->prepare('
+                    SELECT 
+                        sma.id,
+                        sma.position,
+                        COALESCE(MAX(sms.running_points), 0) as match_score
+                    FROM solo_match_archers sma
+                    LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 5
+                    WHERE sma.match_id = ?
+                    GROUP BY sma.id, sma.position
+                    ORDER BY sma.position
+                ');
                 $archersStmt->execute([$matchId]);
                 $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
                 
                 $isComplete = false;
                 foreach ($archers as $archer) {
-                    // Count sets where set_points = 2 (won set) for this archer
-                    $setsStmt = $pdo->prepare('
-                        SELECT COUNT(CASE WHEN set_points = 2 THEN 1 END) as sets_won
-                        FROM solo_match_sets
-                        WHERE match_archer_id = ? AND set_number <= 5
-                    ');
-                    $setsStmt->execute([$archer['id']]);
-                    $stats = $setsStmt->fetch(PDO::FETCH_ASSOC);
-                    $setsWon = (int)($stats['sets_won'] ?? 0);
-                    
-                    if ($setsWon >= 6) {
+                    $matchScore = (int)($archer['match_score'] ?? 0);
+                    // Match is complete when any archer reaches 6 points (same as client logic)
+                    if ($matchScore >= 6) {
                         $isComplete = true;
                         break;
+                    }
+                }
+                
+                // Also check shoot-off if match is tied at 5-5
+                if (!$isComplete && count($archers) === 2) {
+                    $a1Score = (int)($archers[0]['match_score'] ?? 0);
+                    $a2Score = (int)($archers[1]['match_score'] ?? 0);
+                    
+                    if ($a1Score === 5 && $a2Score === 5) {
+                        // Check if shoot-off scores exist and determine winner
+                        $soStmt = $pdo->prepare('
+                            SELECT 
+                                sma.position,
+                                sms.set_total as so_score
+                            FROM solo_match_archers sma
+                            LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number = 6
+                            WHERE sma.match_id = ?
+                            ORDER BY sma.position
+                        ');
+                        $soStmt->execute([$matchId]);
+                        $soScores = $soStmt->fetchAll(PDO::FETCH_ASSOC);
+                        
+                        if (count($soScores) === 2) {
+                            $a1SoScore = (int)($soScores[0]['so_score'] ?? 0);
+                            $a2SoScore = (int)($soScores[1]['so_score'] ?? 0);
+                            
+                            // If shoot-off scores exist and are different, match is complete
+                            if ($a1SoScore > 0 && $a2SoScore > 0 && $a1SoScore !== $a2SoScore) {
+                                $isComplete = true;
+                            }
+                            // If shoot-off is tied but winner_archer_id is set, match is complete
+                            elseif ($a1SoScore === $a2SoScore && !empty($match['winner_archer_id'])) {
+                                $isComplete = true;
+                            }
+                        }
                     }
                 }
             }
