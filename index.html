@@ -134,9 +134,35 @@
     
     /**
      * Load archer list from server or localStorage
+     * Prefers ArcherModule if available for consistency
      */
     async function loadArcherList() {
-      // Try localStorage first
+      // Try ArcherModule first (most consistent with archer_list.html)
+      if (window.ArcherModule && typeof window.ArcherModule.loadList === 'function') {
+        try {
+          const moduleList = window.ArcherModule.loadList();
+          if (moduleList && moduleList.length > 0) {
+            // Convert ArcherModule format to index.html format
+            archerList = moduleList.map(a => ({
+              id: a.id || a.extId,
+              extId: a.extId || a.id,
+              first: a.first || '',
+              last: a.last || '',
+              school: a.school || '',
+              level: a.level || '',
+              gender: a.gender || '',
+              photoUrl: a.photoUrl || null,
+              nickname: a.nickname || ''
+            }));
+            filteredArchers = archerList.slice(0, 50);
+            return archerList;
+          }
+        } catch (e) {
+          console.log('[index] Could not load from ArcherModule:', e.message);
+        }
+      }
+      
+      // Fallback: Try localStorage cache
       const cached = localStorage.getItem('archerList');
       if (cached) {
         try {
@@ -146,7 +172,7 @@
         }
       }
       
-      // Fetch fresh list from server
+      // Fallback: Fetch fresh list from server
       try {
         const res = await fetch('api/v1/archers');
         if (res.ok) {
@@ -228,16 +254,16 @@
     /**
      * Select an archer as "self"
      */
-    function selectSelfArcher(archerId) {
+    async function selectSelfArcher(archerId) {
       const archer = archerList.find(a => (a.extId || a.id) === archerId);
       if (!archer) return;
       
-      // Save selection
-      localStorage.setItem('archerSelfExtId', archerId);
-      
-      // Also save to ArcherModule if available
-      if (window.ArcherModule && typeof window.ArcherModule.setSelfArcher === 'function') {
-        window.ArcherModule.setSelfArcher(archer);
+      // Use ArcherModule to set self (this handles localStorage and consistency)
+      if (window.ArcherModule && typeof window.ArcherModule.setSelfExtId === 'function') {
+        await window.ArcherModule.setSelfExtId(archerId);
+      } else {
+        // Fallback to direct localStorage if ArcherModule not available
+        localStorage.setItem('archerSelfExtId', archerId);
       }
       
       // Re-render to show profile view
@@ -259,16 +285,28 @@
       // Check if we have a selected archer
       let archer = null;
       
-      // Try ArcherModule first
+      // Try ArcherModule first (this is the source of truth)
       if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
         archer = window.ArcherModule.getSelfArcher();
       }
       
-      // Fallback to localStorage
+      // Fallback: Try to find archer by extId from localStorage
       if (!archer) {
-        const extId = localStorage.getItem('archerSelfExtId') || '';
-        if (extId && archerList.length > 0) {
-          archer = archerList.find(a => (a.extId || a.id) === extId || `${(a.first || '').trim()}-${(a.last || '').trim()}` === extId);
+        const extId = window.ArcherModule && typeof window.ArcherModule.getSelfExtId === 'function' 
+          ? window.ArcherModule.getSelfExtId()
+          : localStorage.getItem('archerSelfExtId') || '';
+        
+        if (extId) {
+          // First try ArcherModule list (most reliable)
+          if (window.ArcherModule && typeof window.ArcherModule.loadList === 'function') {
+            const moduleList = window.ArcherModule.loadList();
+            archer = moduleList.find(a => (a.extId === extId || a.id === extId));
+          }
+          
+          // Fallback to local archerList
+          if (!archer && archerList.length > 0) {
+            archer = archerList.find(a => (a.extId || a.id) === extId || `${(a.first || '').trim()}-${(a.last || '').trim()}` === extId);
+          }
         }
       }
       
@@ -1039,9 +1077,12 @@
         });
       }
 
-      // Render identity section (inline archer picker or profile)
-      renderIdentitySection();
-      loadOpenAssignments();
+      // Load archer list first (needed for identity section)
+      loadArcherList().then(() => {
+        // Render identity section (inline archer picker or profile)
+        renderIdentitySection();
+        loadOpenAssignments();
+      });
       
       // Intercept Ranking Round link to check for local in-progress cards
       const rankingRoundLink = document.getElementById('ranking-round-link');

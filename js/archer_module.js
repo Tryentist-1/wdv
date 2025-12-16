@@ -429,7 +429,12 @@ const ArcherModule = {
     const extId = this.getSelfExtId();
     if (!extId) return null;
     const list = this._readRawList();
-    const found = Array.isArray(list) ? list.find(a => (a.extId || this._buildExtId(a)) === extId) : null;
+    // Match on extId, id (UUID), or built extId
+    const found = Array.isArray(list) ? list.find(a => 
+      a.extId === extId || 
+      a.id === extId || 
+      this._buildExtId(a) === extId
+    ) : null;
     if (!found) return null;
     return this._applyTemplate(found);
   },
