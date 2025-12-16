@@ -2,7 +2,7 @@
 
 **Purpose:** Rapidly onboard into development session without derailing  
 **Use Case:** Start of every AI-assisted session or new developer onboarding  
-**Last Updated:** December 1, 2025
+**Last Updated:** December 15, 2025
 
 ---
 
@@ -68,48 +68,43 @@
 
 ---
 
-## 🚨 Status Update (December 1, 2025)
+## 🚨 Status Update (December 15, 2025)
 
 > **💡 Pro Tip:** For detailed change history, see [RELEASE_NOTES_FOR_LLMS.md](docs/RELEASE_NOTES_FOR_LLMS.md)  
 > Release notes provide context and "why" - much better for LLM onboarding than git commits alone!
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Extended Archer Profile (v1.9.3) - Added 12 new coach-only fields for USA Archery reporting with CSV export, plus modal UX fixes  
+**Last Session Focus:** Footer Mobile-Friendly Update (v1.9.4) - Increased footer height and home button touch targets for better mobile usability  
 **Current Priority:** Ready for next feature development  
-**Active Branch:** `fix/standalone-round-stranded-cards`  
+**Active Branch:** `main`  
 **Blockers:** None
 
 **Quick Context for This Session:**
 - ✅ **Completed:**
-  1. **Coach.html Event Layout:** ✅ Converted events table to 2-line card layout per event
-     - Line 1: Event name + Date + Status + Edit icon
-     - Line 2: Action buttons (QR Code, Dashboard, Results, Verify)
-     - Updated button labels and icons (FontAwesome)
-  2. **Verify Scorecards Modal:** ✅ Mobile-friendly refactor
-     - Converted radio buttons to dropdown selector
-     - Single-row inputs (Verified by, Notes, Refresh icon)
-     - Bottom action bar with "This Bale" and "ALL Bales" buttons
-     - Verification table now uses Unified Scorecard List pattern
-  3. **Scorecard Editor Edit Buttons:** ✅ Complete integration
-     - Added Edit buttons to ScorecardView and SoloMatchView modals
-     - Added Edit buttons to coach verification table
-     - Enhanced void/delete permissions for coaches (can delete any card)
-     - All Edit buttons use FontAwesome icons and coach-only visibility
-  4. **Footer Standardization:** ✅ Complete - All 14 footers standardized
-     - Increased height from 30px to 36px across all footers
-     - Added 12px left padding to Home icon on all pages
-     - Standardized button styling to `h-[44px] px-2 py-[2px]`
-     - Replaced all emoji icons with FontAwesome icons
-     - Added home button to every footer (including index.html)
-     - Updated all scrollable containers with safe area padding
-     - Verified z-index hierarchy and JavaScript compatibility
-- 📂 **Files Changed (Recent):**
-  - `scorecard_editor.html` - Enhanced void/delete permissions
-  - `js/scorecard_view.js` - Added Edit button to modal footer
-  - `js/solo_match_view.js` - Added Edit button to modal footer
-  - `js/coach.js` - Added Edit buttons to verification table
-  - `results.html`, `archer_history.html`, `archer_results_pivot.html` - Pass editUrl to modals 
+  1. **Footer Mobile-Friendly Update (v1.9.4):** ✅ Complete - All 14 footers updated
+     - Increased footer height from 36px to 48px for better touch targets
+     - Home button now 48×48px touch target (`min-w-[48px] h-[48px]`)
+     - Larger home icon (`text-2xl` instead of `text-xl`)
+     - Added active state feedback (`active:bg-gray-100 dark:active:bg-gray-700`)
+     - Updated button padding from `px-2 py-[2px]` to `px-3`
+     - Updated all body padding from `calc(36px+...)` to `calc(48px+...)`
+     - Updated style-guide.html with new footer standard
+     - Updated FOOTER_STANDARDIZATION_ANALYSIS.md documentation
+     - Rebuilt Tailwind CSS with new utility classes
+  2. **Previous: Coach.html Event Layout:** ✅ Converted events table to 2-line card layout per event
+  3. **Previous: Verify Scorecards Modal:** ✅ Mobile-friendly refactor
+  4. **Previous: Scorecard Editor Edit Buttons:** ✅ Complete integration
+  5. **Previous: Footer Standardization (v1.9.2):** ✅ All 14 footers standardized to 36px
+- 📂 **Files Changed (This Session):**
+  - `index.html`, `coach.html`, `archer_list.html`, `archer_matches.html` - Footer updates
+  - `archer_history.html`, `archer_results_pivot.html`, `event_dashboard.html` - Footer updates
+  - `results.html`, `solo_card.html`, `team_card.html`, `scorecard_editor.html` - Footer updates
+  - `gemini-oneshot.html`, `ranking_round_300.html` - Footer updates
+  - `api/data_admin.php` - Footer inline styles updated
+  - `tests/components/style-guide.html` - Updated footer standard to v1.9.4
+  - `docs/features/footer/FOOTER_STANDARDIZATION_ANALYSIS.md` - Updated documentation
+  - `css/tailwind-compiled.css` - Rebuilt with new utility classes 
 
 ---
 
@@ -283,33 +278,33 @@
 
 > **💡 Pro Tip:** See [SESSION_WRAP_UP_BEST_PRACTICES.md](docs/SESSION_WRAP_UP_BEST_PRACTICES.md) for quick wrap-up process (5 minutes)
 
-**Last Updated:** December 11, 2025
+**Last Updated:** December 15, 2025
 
 ### Recent Changes
-- ✅ **Session Date:** December 11, 2025
-- ✅ **What We Did:** Extended Archer Profile for USA Archery Reporting + UX Fixes:
-  - **New Database Columns:** Added 12 coach-only fields to `archers` table (dob, email2, nationality, ethnicity, discipline, street_address, street_address2, city, state, postal_code, disability, camp_attendance)
-  - **API Updates:** Updated GET `/v1/archers` and POST `/v1/archers/bulk_upsert` to handle new fields
-  - **ArcherModule.js:** Added new fields to template, sync, and API conversion functions
-  - **Coach-Only Form Section:** New "Extended Profile (Coach Only)" section in archer edit modal with amber styling
-  - **CSV Export:** Added `exportCoachRosterCSV()` function with specific columns for USA Archery reporting
-  - **Export Button:** Added amber "Export" button in footer (visible only to coaches)
-  - **Database Migration:** Created and ran `api/sql/migration_archer_extended_profile.sql` on local and production
-  - **Modal UX Fix:** Fixed Save button being cut off - moved buttons outside scrollable area using flexbox layout
-  - **Navigation Button Fix:** Improved visibility of Next/Previous buttons in dark mode (full white text + border)
-  - **Expanded Sections Persistence:** Sections like "Equipment" now stay open when navigating between archers
-  - **Backfill Scripts:** Added `api/backfill_entry_codes.php` and SQL for standalone round entry codes
+- ✅ **Session Date:** December 15, 2025
+- ✅ **What We Did:** Footer Mobile-Friendly Update (v1.9.4):
+  - **Footer Height Increase:** Changed all footers from 36px to 48px for better mobile ergonomics
+  - **Home Button Touch Target:** Increased to 48×48px (`min-w-[48px] h-[48px]`) for easier tapping
+  - **Larger Home Icon:** Changed from `text-xl` to `text-2xl` for better visibility
+  - **Active State Feedback:** Added `active:bg-gray-100 dark:active:bg-gray-700 rounded-lg` for touch feedback
+  - **Button Padding:** Updated from `px-2 py-[2px]` to `px-3` for more comfortable touch targets
+  - **Body Padding:** Updated all scrollable containers from `calc(36px+...)` to `calc(48px+...)`
+  - **Documentation:** Updated style-guide.html and FOOTER_STANDARDIZATION_ANALYSIS.md
+  - **CSS Rebuild:** Rebuilt tailwind-compiled.css with new utility classes
 - ✅ **Files Changed:** 
-  - `api/sql/migration_archer_extended_profile.sql` - New migration file
-  - `api/sql/schema.mysql.sql` - Updated base schema
-  - `api/index.php` - Updated GET /archers and bulk_upsert endpoints
-  - `js/archer_module.js` - Added new fields and export function
-  - `archer_list.html` - Added isCoachMode(), form fields, export button, and UX fixes
-  - `api/backfill_entry_codes.php` - New backfill script
-  - `api/sql/backfill_standalone_entry_codes.sql` - Supporting SQL
-- ✅ **Status:** Completed - All features deployed to production
-- ✅ **Release:** v1.9.3 - See RELEASE_NOTES_v1.9.3.md
-- ✅ **Next Steps:** None - Feature complete
+  - All 14 HTML files with footers (index, coach, archer_list, archer_matches, etc.)
+  - `api/data_admin.php` - Inline footer styles updated
+  - `tests/components/style-guide.html` - Updated footer standard to v1.9.4
+  - `docs/features/footer/FOOTER_STANDARDIZATION_ANALYSIS.md` - Updated documentation
+  - `css/tailwind-compiled.css` - Rebuilt
+- ✅ **Status:** Completed - Ready for deployment
+- ✅ **Release:** v1.9.4
+- ✅ **Next Steps:** Deploy to production via `npm run deploy:fast`
+
+### Previous Session
+- ✅ **Session Date:** December 11, 2025
+- ✅ **What We Did:** Extended Archer Profile for USA Archery Reporting + UX Fixes (v1.9.3)
+- ✅ **Status:** Completed - Deployed to production
 
 ### Previous Session
 - ✅ **Session Date:** January 21, 2025
@@ -700,24 +695,70 @@ git commit -m "docs: description"
 git push origin feature/your-feature
 ```
 
-### Deployment
+### Deployment Workflow
 
-**IMPORTANT FOR LLMs:** When asked to "promote to prod", "deploy to production", or "FTP deploy", use the deployment script:
+**IMPORTANT FOR LLMs:** When asked to "promote to prod", "deploy to production", or "FTP deploy", follow this complete workflow:
+
+#### Pre-Deployment Checklist
 
 ```bash
-# Deploy to production via FTP (requires FTP credentials)
-# Primary deployment script location: scripts/deploy/DeployFTP.sh
-./scripts/deploy/DeployFTP.sh
+# 1. Build Tailwind CSS (if any styling changes)
+npm run build:css:prod
 
-# Available flags:
-#   --dry-run          Preview changes without deploying
-#   --reset            Reset remote files before deployment
-#   --no-local-backup  Skip local backup creation
-#   --remote-backup    Create backup on remote server
+# 2. Run tests (optional but recommended)
+npm test                    # Remote tests
+npm run test:local          # Local tests (if server running)
 
-# Purge Cloudflare cache after deployment
-./tests/scripts/test_cloudflare.sh
+# 3. Preview deployment (dry run)
+npm run deploy:dry
 ```
+
+#### Deploy to Production
+
+```bash
+# Primary deployment script location: scripts/deploy/DeployFTP.sh
+npm run deploy              # Full deploy with local backup
+npm run deploy:fast         # Skip local backup (faster)
+
+# The script automatically:
+# ✅ Creates local backup (unless --no-local-backup)
+# ✅ Shows files to be uploaded
+# ✅ Uploads changed files via FTP-SSL
+# ✅ Purges Cloudflare cache (if credentials in .env)
+```
+
+#### Available Flags
+
+| Flag | Purpose |
+|------|---------|
+| `--dry-run` | Preview changes without deploying |
+| `--reset` | Force re-upload all files, delete remote orphans |
+| `--no-local-backup` | Skip local backup (faster) |
+| `--remote-backup` | Download remote backup before deploying |
+
+#### What Gets Deployed
+
+| Deployed ✅ | Excluded ❌ |
+|-------------|------------|
+| `api/` - Backend PHP | `docs/` - Documentation |
+| `js/` - Frontend JS | `tests/` - Test files |
+| `css/` - Stylesheets | `*.md` - Markdown files |
+| `*.html` - HTML pages | `node_modules/` |
+| `avatars/`, `icons/` | `backups/`, `deploy_backups/` |
+| `sw.js`, `manifest.json` | `.env`, `.git/` |
+
+#### Post-Deployment Verification
+
+```bash
+# Check production health
+curl https://tryentist.com/wdv/api/v1/health
+
+# Open key pages to verify
+open https://tryentist.com/wdv/
+open https://tryentist.com/wdv/coach.html
+```
+
+📋 **Full Checklist:** See [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
 
 ### Database
 
@@ -1154,14 +1195,15 @@ Need more detail on anything? Check the linked docs above.
 
 ---
 
-**Last Updated:** November 17, 2025  
-**Version:** 1.1  
+**Last Updated:** December 15, 2025  
+**Version:** 1.2  
 **Maintainer:** Development Team
 
 **Recent Updates:**
 
+- ✅ Footer mobile-friendly update (Dec 15, 2025) - 48px height, 48×48px home button
+- ✅ Extended Archer Profile for USA Archery (Dec 11, 2025)
+- ✅ Footer standardization complete (Dec 2, 2025)
 - ✅ Tailwind CSS migration complete (Nov 17, 2025)
-- ✅ Keypad standardization across all modules
-- ✅ Dark mode support complete
 
 **Keep this file updated as phases progress!**
