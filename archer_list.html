@@ -94,16 +94,21 @@
         </div>
         
         <div class="px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-2 flex-wrap transition-colors duration-200">
-            <button id="sort-by-name-btn" class="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px]">Sort A-Z</button>
-            <button id="sort-by-level-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Sort by Level</button>
-            <button id="show-favorites-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center gap-1">
-                <i class="fas fa-heart text-red-500"></i>
-                <span>Favorites</span>
+            <button id="sort-by-name-btn" class="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px] flex items-center gap-1">
+                <i class="fas fa-sort text-lg"></i>
+                <span>A-Z</span>
+            </button>
+            <button id="sort-by-level-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center gap-1">
+                <i class="fas fa-sort text-lg"></i>
+                <span>Level</span>
+            </button>
+            <button id="show-favorites-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
+                <i class="fas fa-heart text-red-500 text-lg"></i>
             </button>
             <select id="status-filter" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-w-[140px] min-h-[44px] cursor-pointer">
-                <option value="active">Active Only</option>
-                <option value="all">All Statuses</option>
-                <option value="inactive">Inactive Only</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="all">All</option>
             </select>
         </div>
 
@@ -165,14 +170,14 @@
     </div>
 
     <!-- Add/Edit Archer Modal -->
-    <div id="archer-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-end sm:items-center justify-center z-50 hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-lg shadow-2xl w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] flex flex-col transition-all duration-300 transform">
+    <div id="archer-modal" class="fixed inset-0 bg-black/60 flex items-start justify-center z-50 hidden p-0 pt-[48px]">
+        <div class="bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl w-full h-[calc(100vh-48px)] flex flex-col transition-all duration-300 transform">
             <!-- Compact Header with Avatar Preview -->
             <div class="flex-shrink-0 bg-gradient-to-r from-primary to-primary-dark px-4 py-3 rounded-t-2xl sm:rounded-t-lg">
                 <div class="flex items-center gap-3">
-                    <!-- Mini Avatar in Header -->
-                    <div id="header-avatar" class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/40 flex-shrink-0">
-                        <span id="header-initials" class="text-lg font-bold text-white">?</span>
+                    <!-- Avatar in Header (larger to match form) -->
+                    <div id="header-avatar" class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/40 flex-shrink-0">
+                        <span id="header-initials" class="text-xl font-bold text-white">?</span>
                         <img id="header-avatar-img" class="hidden w-full h-full object-cover" alt="">
                     </div>
                     <div class="flex-1 min-w-0">
@@ -557,8 +562,9 @@
                     nameLabel.style.flexWrap = 'wrap';
                     
                     const nameText = document.createElement('span');
-                    const nickname = archer.nickname ? ` (${archer.nickname})` : '';
-                    nameText.textContent = `${archer.first} ${archer.last}${nickname}`;
+                    // Show nickname instead of first name if nickname exists
+                    const displayName = archer.nickname ? archer.nickname : archer.first;
+                    nameText.textContent = `${displayName} ${archer.last}`;
                     nameLabel.appendChild(nameText);
                     
                     // Add "You" badge inline
@@ -707,7 +713,9 @@
 
                 if (index !== null) {
                     const archer = ArcherModule.loadList()[index];
-                    modalTitle.textContent = archer.first ? `${archer.first} ${archer.last || ''}`.trim() : 'Edit Archer';
+                    // Show nickname instead of first name if nickname exists
+                    const displayName = archer.nickname || archer.first || '';
+                    modalTitle.textContent = displayName ? `${displayName} ${archer.last || ''}`.trim() : 'Edit Archer';
                     setFormValue(form, 'extId', archer.extId || '');
                     setFormValue(form, 'first', archer.first || '');
                     setFormValue(form, 'last', archer.last || '');
@@ -1200,10 +1208,10 @@
                     <!-- Hero Section: Avatar + Name + Quick Stats -->
                     <div class="px-4 pt-4 pb-3 bg-gray-50 dark:bg-gray-900">
                         <div class="flex gap-3">
-                            <!-- Compact Avatar -->
+                            <!-- Large Avatar (as tall as 3 name lines) -->
                             <div class="relative flex-shrink-0">
-                                <div id="avatar-preview" class="w-20 h-20 rounded-xl border-2 border-gray-200 dark:border-gray-600 overflow-hidden bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
-                                    <span id="avatar-initials" class="text-2xl font-bold text-gray-400 dark:text-gray-500">?</span>
+                                <div id="avatar-preview" class="w-32 h-32 rounded-xl border-2 border-gray-200 dark:border-gray-600 overflow-hidden bg-white dark:bg-gray-800 flex items-center justify-center shadow-sm">
+                                    <span id="avatar-initials" class="text-3xl font-bold text-gray-400 dark:text-gray-500">?</span>
                                     <img id="avatar-image" class="hidden w-full h-full object-cover" alt="Avatar">
                                 </div>
                                 <button type="button" id="upload-avatar-btn" class="absolute -bottom-1 -right-1 w-7 h-7 bg-primary hover:bg-primary-dark text-white rounded-full shadow-lg flex items-center justify-center transition-colors">
@@ -1344,6 +1352,10 @@
                                         <input class="w-full px-1 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" type="number" id="limbWeightLbs" placeholder="lbs">
                                     </div>
                                 </div>
+                                <div>
+                                    <label class="text-xs text-gray-500 dark:text-gray-400">Gear Notes</label>
+                                    <textarea class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none" id="notesGear" rows="2"></textarea>
+                                </div>
                             </div>
                         </details>
 
@@ -1357,10 +1369,6 @@
                                 <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform group-open:rotate-180"></i>
                             </summary>
                             <div class="px-3 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700 space-y-2">
-                                <div>
-                                    <label class="text-xs text-gray-500 dark:text-gray-400">Gear Notes</label>
-                                    <textarea class="w-full px-2 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary resize-none" id="notesGear" rows="2"></textarea>
-                                </div>
                                 <div>
                                     <div class="flex justify-between items-center">
                                         <label class="text-xs text-gray-500 dark:text-gray-400">Current Notes</label>
@@ -1711,11 +1719,13 @@
                 const successMsg = document.createElement('div');
                 successMsg.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 bg-success text-white rounded-lg shadow-xl flex items-center gap-3 animate-bounce';
                 successMsg.style.animation = 'fadeIn 0.3s ease-in';
+                // Show nickname instead of first name if nickname exists
+                const displayName = archer.nickname || archer.first || '';
                 successMsg.innerHTML = `
                     <i class="fas fa-check-circle text-2xl"></i>
                     <div>
                         <p class="font-semibold">You've selected yourself!</p>
-                        <p class="text-sm text-white/90">${archer.first} ${archer.last}</p>
+                        <p class="text-sm text-white/90">${displayName} ${archer.last || ''}</p>
                     </div>
                 `;
                 document.body.appendChild(successMsg);
@@ -1871,7 +1881,7 @@
                     alert('Unable to save archer at this time. Changes are kept locally and will retry when online.');
                 }
                 renderList();
-                closeModal();
+                // Keep modal open for easier editing
             };
 
             // Search input handlers
@@ -2105,24 +2115,24 @@
             
             sortByNameBtn.onclick = () => {
                 sortMode = 'name';
-                sortByNameBtn.className = 'px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px]';
-                sortByLevelBtn.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]';
+                sortByNameBtn.className = 'px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px] flex items-center gap-1';
+                sortByLevelBtn.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center gap-1';
                 renderList();
             };
 
             sortByLevelBtn.onclick = () => {
                 sortMode = 'level';
-                sortByLevelBtn.className = 'px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px]';
-                sortByNameBtn.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]';
+                sortByLevelBtn.className = 'px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px] flex items-center gap-1';
+                sortByNameBtn.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center gap-1';
                 renderList();
             };
 
             showFavoritesBtn.onclick = () => {
                 showFavoritesOnly = !showFavoritesOnly;
                 if (showFavoritesOnly) {
-                    showFavoritesBtn.className = 'px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px] flex items-center gap-1';
+                    showFavoritesBtn.className = 'px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px] flex items-center justify-center';
                 } else {
-                    showFavoritesBtn.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center gap-1';
+                    showFavoritesBtn.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center';
                 }
                 renderList();
             };
