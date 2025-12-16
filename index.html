@@ -579,48 +579,64 @@
             const soloMatches = rounds.filter(r => r.type === 'solo');
             const teamMatches = rounds.filter(r => r.type === 'team');
 
-            // Find incomplete ranking rounds
-            // CRITICAL: Filter out rounds where the archer is not actually assigned
-            // This prevents standalone rounds from showing for everyone
+            // Find ranking rounds to show in assignments
+            // Show only PENDING (incomplete work) and COMP (completed today)
             const openRounds = rankingRounds.filter(round => {
               // Only show rounds where this archer is actually assigned
-              // The history API should already filter by archer_id, but double-check
               if (!round.round_id) {
                 console.warn('[index] Round missing round_id, skipping:', round);
                 return false;
               }
               
+              const cardStatus = (round.card_status || round.cardStatus || 'PENDING').toUpperCase();
               const endsCompleted = parseInt(round.ends_completed || 0);
-              const hasIncompleteEnds = endsCompleted < 10;
               const isToday = round.event_date === new Date().toISOString().slice(0, 10);
-              const shouldShow = hasIncompleteEnds || (isToday && endsCompleted > 0);
-
-              console.log('[index] Round check:', {
-                round_id: round.round_id,
-                event_id: round.event_id,
-                event: round.event_name,
-                is_standalone: round.is_standalone,
-                date: round.event_date,
-                endsCompleted,
-                hasIncompleteEnds,
-                isToday,
-                shouldShow,
-                archerId: archerId
-              });
-
-              return shouldShow;
+              
+              // Normalize status (handle both PENDING/PEND and COMPLETED/COMP)
+              const normalizedStatus = cardStatus === 'PEND' ? 'PENDING' : 
+                                      cardStatus === 'COMP' ? 'COMPLETED' :
+                                      cardStatus === 'VRFD' ? 'VERIFIED' : cardStatus;
+              
+              // Show if PENDING/PEND (incomplete work)
+              if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && endsCompleted < 10) {
+                return true;
+              }
+              
+              // Show if COMPLETED/COMP and today (completed today, may need review)
+              if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
+                return isToday;
+              }
+              
+              // Don't show VERIFIED/VRFD or VOID
+              return false;
             });
 
-            // Find incomplete solo matches (not completed or today's matches)
+            // Find solo matches to show in assignments
+            // Show only PENDING/PEND (incomplete work) and COMPLETED/COMP (completed today)
             const openSoloMatches = soloMatches.filter(match => {
+              const cardStatus = (match.card_status || 'PENDING').toUpperCase();
+              const isToday = match.event_date === new Date().toISOString().slice(0, 10);
               const setsWon = parseInt(match.sets_won || 0);
               const opponentSetsWon = parseInt(match.opponent_sets_won || 0);
-              const isComplete = setsWon >= 6 || opponentSetsWon >= 6;
-              const isToday = match.event_date === new Date().toISOString().slice(0, 10);
-              const hasStarted = setsWon > 0 || opponentSetsWon > 0;
+              const isMatchComplete = setsWon >= 6 || opponentSetsWon >= 6;
               
-              // Show if not complete, or if it's today's match (for quick access)
-              return !isComplete || (isToday && hasStarted);
+              // Normalize status (handle both PENDING/PEND and COMPLETED/COMP)
+              const normalizedStatus = cardStatus === 'PEND' ? 'PENDING' : 
+                                      cardStatus === 'COMP' ? 'COMPLETED' :
+                                      cardStatus === 'VRFD' ? 'VERIFIED' : cardStatus;
+              
+              // Show if PENDING/PEND (incomplete work)
+              if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && !isMatchComplete) {
+                return true;
+              }
+              
+              // Show if COMPLETED/COMP and today (completed today, may need review)
+              if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
+                return isToday;
+              }
+              
+              // Don't show VERIFIED/VRFD or VOID
+              return false;
             });
 
             console.log('[index] Open rounds found:', openRounds.length);
