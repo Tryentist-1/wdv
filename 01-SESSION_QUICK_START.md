@@ -75,14 +75,25 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Tailwind Styling Fixes & Footer Standardization - Fixed invalid Tailwind classes, removed onboarding modal, standardized footers across all pages  
+**Last Session Focus:** Archer List Header Cleanup & Identity Selection Flow Improvements
+- Removed redundant self-summary container and select-yourself banner from archer_list.html
+- Added favorites filter button that includes "Me" record
+- Highlighted "Me" record with blue background and left border accent
+- Fixed identity selection persistence between index.html and archer_list.html
+- Improved ArcherModule.getSelfArcher() to check both extId and id (UUID)
 **Current Priority:** Ready for next feature development  
 **Active Branch:** `main`  
 **Blockers:** None
 
 **Quick Context for This Session:**
 - ✅ **Completed:**
-  1. **Footer Mobile-Friendly Update (v1.9.4):** ✅ Complete - All 14 footers updated
+  1. **Archer List Header Cleanup (v1.9.5):** ✅ Complete - Cleaned up header, added favorites filter, improved identity selection
+     - Removed redundant self-summary container and select-yourself banner
+     - Added favorites filter button (includes "Me" record)
+     - Highlighted "Me" record with blue background and left border accent
+     - Fixed identity selection persistence between pages
+     - Improved ArcherModule.getSelfArcher() lookup logic
+  2. **Footer Mobile-Friendly Update (v1.9.4):** ✅ Complete - All 14 footers updated
      - Increased footer height from 36px to 48px for better touch targets
      - Home button now 48×48px touch target (`min-w-[48px] h-[48px]`)
      - Larger home icon (`text-2xl` instead of `text-xl`)
@@ -97,14 +108,10 @@
   4. **Previous: Scorecard Editor Edit Buttons:** ✅ Complete integration
   5. **Previous: Footer Standardization (v1.9.2):** ✅ All 14 footers standardized to 36px
 - 📂 **Files Changed (This Session):**
-  - `index.html`, `coach.html`, `archer_list.html`, `archer_matches.html` - Footer updates
-  - `archer_history.html`, `archer_results_pivot.html`, `event_dashboard.html` - Footer updates
-  - `results.html`, `solo_card.html`, `team_card.html`, `scorecard_editor.html` - Footer updates
-  - `gemini-oneshot.html`, `ranking_round_300.html` - Footer updates
-  - `api/data_admin.php` - Footer inline styles updated
-  - `tests/components/style-guide.html` - Updated footer standard to v1.9.4
-  - `docs/features/footer/FOOTER_STANDARDIZATION_ANALYSIS.md` - Updated documentation
-  - `css/tailwind-compiled.css` - Rebuilt with new utility classes 
+  - `archer_list.html` - Removed header self-selection elements, added favorites filter, highlighted "Me" record
+  - `index.html` - Fixed identity selection to use ArcherModule.setSelfExtId(), improved lookup logic
+  - `js/archer_module.js` - Updated getSelfArcher() to check both extId and id (UUID)
+  - `docs/analysis/ARCHER_LIST_HEADER_RECOMMENDATIONS.md` - New analysis document 
 
 ---
 
@@ -282,6 +289,26 @@
 
 ### Recent Changes
 - ✅ **Session Date:** December 15, 2025
+- ✅ **What We Did:** Archer List Header Cleanup & Identity Selection Flow Improvements:
+  - **Header Cleanup:** Removed redundant self-summary container and select-yourself banner from archer_list.html
+    - Simplified header structure for better mobile experience
+    - Reduced header height from ~200-250px to ~120-150px
+  - **Favorites Filter:** Added favorites filter button that includes "Me" record
+    - Quick access to favorite archers and self
+    - Toggle button with active state styling
+  - **"Me" Record Highlighting:** Added visual highlighting for "Me" record
+    - Blue background (bg-blue-50 in light, bg-blue-900/20 in dark)
+    - Left border accent (border-l-4 border-l-primary)
+    - Stands out clearly from other archers
+  - **Identity Selection Fixes:** Fixed persistence between index.html and archer_list.html
+    - Updated index.html to use ArcherModule.setSelfExtId() instead of non-existent method
+    - Improved ArcherModule.getSelfArcher() to check both extId and id (UUID)
+    - Improved lookup logic in renderIdentitySection() to check ArcherModule first
+    - Ensured archer list loads before rendering identity section
+  - **Code Cleanup:** Removed unused functions and handlers
+    - Removed refreshSelfSummary() function
+    - Removed banner dismiss and select-yourself button handlers
+    - Removed edit-my-profile and clear-self button handlers
 - ✅ **What We Did:** Tailwind Styling Fixes & Footer Standardization:
   - **Tailwind Class Fixes:** Fixed invalid Tailwind classes in index.html
     - Changed `border-3` → `border-[3px]` (2 instances in avatar HTML)
@@ -1204,11 +1231,13 @@ Need more detail on anything? Check the linked docs above.
 ---
 
 **Last Updated:** December 15, 2025  
-**Version:** 1.2  
+**Version:** 1.3  
 **Maintainer:** Development Team
 
 **Recent Updates:**
 
+- ✅ Archer list header cleanup (Dec 15, 2025) - Removed redundant self-selection UI, added favorites filter, highlighted "Me" record
+- ✅ Identity selection flow improvements (Dec 15, 2025) - Fixed persistence between pages, improved ArcherModule lookup
 - ✅ Footer mobile-friendly update (Dec 15, 2025) - 48px height, 48×48px home button
 - ✅ Extended Archer Profile for USA Archery (Dec 11, 2025)
 - ✅ Footer standardization complete (Dec 2, 2025)
