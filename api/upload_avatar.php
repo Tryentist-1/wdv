@@ -181,7 +181,30 @@ if (!$thumbSaved || !$fullSaved) {
 }
 
 // Return URLs (relative to web root)
-$baseUrl = '/wdv/avatars/';
+// Dynamically determine base path from script location
+// Handles both production (/wdv/api/upload_avatar.php) and dev (/api/upload_avatar.php)
+// Use REQUEST_URI if available (more reliable), fallback to SCRIPT_NAME
+$requestPath = $_SERVER['REQUEST_URI'] ?? $_SERVER['SCRIPT_NAME'] ?? '/api/upload_avatar.php';
+// Extract just the path part (remove query string if present)
+$pathOnly = parse_url($requestPath, PHP_URL_PATH);
+$scriptDir = dirname($pathOnly); // e.g., '/wdv/api' or '/api'
+
+// Remove '/api' from the end if present to get the base path
+$basePath = rtrim($scriptDir, '/');
+if (substr($basePath, -4) === '/api') {
+    $basePath = substr($basePath, 0, -4);
+}
+$basePath = rtrim($basePath, '/');
+
+// Construct the avatar URL path
+// If basePath is empty, we're at root, otherwise use the basePath
+// Ensure we always have a leading slash and proper format
+if ($basePath === '') {
+    $baseUrl = '/avatars/';
+} else {
+    $baseUrl = '/' . ltrim($basePath, '/') . '/avatars/';
+}
+
 $response = [
     'success' => true,
     'urls' => [

@@ -75,17 +75,18 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Archer Edit Modal Scroll/Touch Fixes - Complete Resolution
-- Fixed critical scroll and touch issues - background no longer scrolls when modal is open
-- Implemented body scroll lock when modal opens (prevents background scrolling)
-- Fixed form scrolling issue - Extended Profile and other long sections now scroll properly
-- Added touch-action CSS (touch-action: pan-y) for proper touch scrolling
-- Improved touch event detection to work with deeply nested form content
-- Added will-change: scroll-position for better scroll performance
-- Ensured all nested elements allow touch events for scrolling
-- Evaluated modal paradigm - confirmed modal is appropriate for this use case
-- Created comprehensive evaluation document (ARCHER_EDIT_MODAL_EVALUATION.md)
-- Modal now properly scrolls form content while preventing background scroll
+**Last Session Focus:** Avatar Upload Fix & Unsaved Changes Protection
+- Fixed avatar upload path issue - avatars now display correctly in dev environment
+  - Replaced hardcoded `/wdv/avatars/` path with dynamic path detection
+  - Uses `$_SERVER['REQUEST_URI']` to determine base path automatically
+  - Works correctly in both production (`/wdv/avatars/`) and dev (`/avatars/`)
+  - Added debugging logs to help diagnose future path issues
+- Added unsaved changes protection to archer profile form
+  - Tracks all form field changes (text inputs, selects, textareas, arrays)
+  - Shows confirmation prompt before closing modal with unsaved changes
+  - Prevents accidental navigation away (browser beforeunload event)
+  - Automatically resets tracking after successful save
+  - Handles both new archer creation and editing existing archers
 **Current Priority:** Ready for next feature  
 **Next Session Focus:** TBD  
 **Active Branch:** `main`  
