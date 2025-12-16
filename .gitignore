@@ -34,3 +34,15 @@ api/config.local.php
 deploy_backups/
 playwright-report/
 test-results/
+
+# Cursor IDE - ignore cache/temp files, but allow rules
+.cursor/cache/
+.cursor/tmp/
+.cursor/*.log
+.cursor/*.tmp
+
+# Agent workflows - ignore cache/temp files, but allow workflows
+.agent/cache/
+.agent/tmp/
+.agent/*.log
+.agent/*.tmp
