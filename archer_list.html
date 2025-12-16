@@ -150,14 +150,14 @@
             </select>
         </div>
 
-        <div id="archer-list-container" class="flex-1 px-2 pb-[calc(72px+env(safe-area-inset-bottom)+24px)] overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
+        <div id="archer-list-container" class="flex-1 px-2 pb-[calc(84px+env(safe-area-inset-bottom)+24px)] overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
             <!-- Archer list will be rendered here -->
         </div>
 
-        <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-30 safe-bottom">
+        <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-30 safe-area-bottom">
             <div class="flex items-center h-full px-4 gap-2">
-                <a href="index.html" class="pl-6 h-[44px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
-                    <i class="fas fa-home text-xl"></i>
+                <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+                    <i class="fas fa-home text-2xl"></i>
                 </a>
                 <!-- Keep coach actions near Home so it doesn't get pushed off-screen on small widths -->
                 <button id="coach-actions-btn" class="hidden px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark min-w-[44px] min-h-[44px] font-semibold transition-colors flex items-center justify-center" title="Coach Actions">
@@ -165,7 +165,7 @@
                     <span class="hidden sm:inline">Coach</span>
                 </button>
                 <div class="flex-1"></div>
-                <button id="load-from-mysql-btn" class="px-2 py-[2px] h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center" aria-label="Refresh from server">
+                <button id="load-from-mysql-btn" class="px-3 h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center" aria-label="Refresh from server">
                     <i class="fas fa-sync-alt mr-1"></i><span class="hidden sm:inline">Refresh</span>
                 </button>
             </div>
@@ -174,7 +174,7 @@
     </div>
 
     <!-- Sync Status Bar (above footer) - MUST be outside flex container for fixed positioning to work -->
-    <div id="sync-status-bar" class="fixed bottom-[calc(36px+env(safe-area-inset-bottom))] left-0 right-0 px-4 py-1 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-20" style="position: fixed !important; bottom: calc(36px + env(safe-area-inset-bottom)) !important;">
+    <div id="sync-status-bar" class="fixed bottom-[calc(48px+env(safe-area-inset-bottom))] left-0 right-0 px-4 py-1 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-20" style="position: fixed !important; bottom: calc(48px + env(safe-area-inset-bottom)) !important;">
         <div id="sync-status"></div>
     </div>
 
@@ -240,7 +240,7 @@
                 <!-- Form content will be injected by JS -->
             </form>
             <!-- Fixed Button Container (outside scrollable area) -->
-            <div id="archer-form-buttons" class="flex-shrink-0 px-3 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2 safe-bottom">
+            <div id="archer-form-buttons" class="flex-shrink-0 px-3 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2 safe-area-bottom">
                 <button type="button" id="cancel-archer-btn-fixed" class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
                 <button type="submit" form="archer-form" class="flex-1 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors min-h-[44px] shadow-sm">
                     <i class="fas fa-check mr-1"></i>Save
@@ -714,9 +714,8 @@
                     // Use UUID (id) only for history link
                     const archerHistoryId = archer.id;
                     historyBtn.href = `archer_history.html?archer=${encodeURIComponent(archerHistoryId)}`;
-                    historyBtn.className = 'favorite-star';
-                    historyBtn.style.marginLeft = '0.5rem';
-                    historyBtn.innerHTML = '<i class="fas fa-file-alt" style="color: #3498db;"></i>';
+                    historyBtn.className = 'ml-2 p-1 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors';
+                    historyBtn.innerHTML = '<i class="fas fa-file-alt"></i>';
                     historyBtn.title = 'View archer history';
                     historyBtn.onclick = (e) => {
                         e.stopPropagation();

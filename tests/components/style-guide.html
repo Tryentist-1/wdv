@@ -40,7 +40,7 @@
             padding-top: env(safe-area-inset-top, 0);
         }
 
-        .safe-bottom {
+        .safe-area-bottom {
             padding-bottom: env(safe-area-inset-bottom, 0);
         }
     </style>
@@ -123,6 +123,8 @@
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Verification Modal</a>
             <a href="#footer"
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Footer</a>
+            <a href="#identity-picker"
+                class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Identity Picker</a>
             <a href="#fontawesome"
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">FontAwesome</a>
         </nav>
@@ -1964,10 +1966,10 @@
             <!-- Standard Footer Block -->
             <div>
                 <div class="bg-green-50 dark:bg-green-900/20 border-2 border-green-500 dark:border-green-600 rounded-lg p-4 mb-4">
-                    <h3 class="text-sm font-bold text-green-800 dark:text-green-300 mb-2">✅ APPROVED STANDARD (v1.9.1+)</h3>
+                    <h3 class="text-sm font-bold text-green-800 dark:text-green-300 mb-2">✅ APPROVED STANDARD (v1.9.4+)</h3>
                     <div class="text-xs text-green-700 dark:text-green-400 space-y-1">
-                        <p><strong>Height:</strong> 36px • <strong>Home Button:</strong> 44px height, 24px left padding (pl-6), text-xl icon • <strong>Buttons:</strong> 44px height with 2px padding</p>
-                        <p class="mt-2 text-red-700 dark:text-red-300"><strong>⚠️ Important:</strong> Scrollable content must have ample bottom padding (pb-[calc(36px+env(safe-area-inset-bottom))]) to prevent content loss behind footer</p>
+                        <p><strong>Height:</strong> 48px • <strong>Home Button:</strong> 48×48px touch target (min-w-[48px] h-[48px]), text-2xl icon • <strong>Buttons:</strong> 44px height with px-3 padding</p>
+                        <p class="mt-2 text-red-700 dark:text-red-300"><strong>⚠️ Important:</strong> Scrollable content must have ample bottom padding (pb-[calc(48px+env(safe-area-inset-bottom))]) to prevent content loss behind footer</p>
                     </div>
                 </div>
 
@@ -1976,16 +1978,134 @@
                     <div class="h-48 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 dark:text-gray-600">
                         <p class="text-sm">Content Area</p>
                     </div>
-                    <footer class="h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200">
-                        <a href="index.html" class="pl-6 h-[44px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
-                            <i class="fas fa-home text-xl"></i>
+                    <footer class="h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200">
+                        <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+                            <i class="fas fa-home text-2xl"></i>
                         </a>
                         <div class="flex-1"></div>
                         <div class="flex gap-2">
-                            <a href="coach.html" class="h-[44px] px-2 py-[2px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">Coach</a>
-                            <button class="h-[44px] px-2 py-[2px] bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded text-sm font-semibold transition-colors flex items-center justify-center">Reset</button>
+                            <a href="coach.html" class="h-[44px] px-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">Coach</a>
+                            <button class="h-[44px] px-3 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded text-sm font-semibold transition-colors flex items-center justify-center">Reset</button>
                         </div>
                     </footer>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section: Identity Picker / Onboarding -->
+    <section id="identity-picker" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Identity Picker / Onboarding</h2>
+
+        <div class="space-y-6">
+            <!-- Standard approved block -->
+            <div class="bg-green-50 dark:bg-green-900/20 border-2 border-green-500 dark:border-green-600 rounded-lg p-4 mb-4">
+                <h3 class="text-sm font-bold text-green-800 dark:text-green-300 mb-2">✅ APPROVED PATTERN (v1.9.5+)</h3>
+                <div class="text-xs text-green-700 dark:text-green-400 space-y-1">
+                    <p><strong>Container:</strong> bg-white dark:bg-gray-800 with rounded-xl, shadow-sm, and border</p>
+                    <p><strong>Header:</strong> Gradient bg-gradient-to-r from-blue-600 to-blue-700 (dark: from-blue-700 to-blue-800)</p>
+                    <p><strong>Search Input:</strong> bg-gray-50 dark:bg-gray-700 with focus:ring-2 focus:ring-blue-500</p>
+                    <p><strong>List Items:</strong> bg-white dark:bg-gray-800, border border-gray-200 dark:border-gray-600</p>
+                    <p><strong>Secondary Buttons:</strong> bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white</p>
+                </div>
+            </div>
+
+            <!-- Archer Picker Example (Not Selected State) -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">Inline Archer Picker (Not Selected)</h3>
+                <div class="max-w-md mx-auto">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <!-- Header -->
+                        <div class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 px-4 py-4 text-white">
+                            <h2 class="text-lg font-bold flex items-center gap-2">
+                                <i class="fas fa-user-circle"></i>
+                                Who are you?
+                            </h2>
+                            <p class="text-sm text-blue-100 mt-1">Select your name to get started</p>
+                        </div>
+                        
+                        <!-- Search -->
+                        <div class="p-3 border-b border-gray-200 dark:border-gray-600">
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <input type="text" 
+                                       placeholder="Type your name..." 
+                                       class="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        
+                        <!-- List -->
+                        <div class="p-2 max-h-[200px] overflow-y-auto space-y-2 bg-white dark:bg-gray-800">
+                            <button class="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700 active:bg-blue-100 dark:active:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-600 transition-colors text-left">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                    <span class="text-sm font-bold text-white">TA</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-gray-900 dark:text-white truncate">Terry Adams</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">COA • VAR • M</div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </button>
+                            <button class="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700 active:bg-blue-100 dark:active:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-600 transition-colors text-left">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                    <span class="text-sm font-bold text-white">SC</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-gray-900 dark:text-white truncate">Sarah Coach</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">COA • VAR • F</div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="p-3 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                            <div class="flex gap-2">
+                                <a href="#" class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg font-medium text-center hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm border border-gray-300 dark:border-gray-600">
+                                    <i class="fas fa-user-plus mr-1"></i>Add New
+                                </a>
+                                <button class="flex-1 px-4 py-2.5 text-gray-600 dark:text-gray-300 rounded-lg font-medium text-center hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm">
+                                    Skip for now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Card Example (Selected State) -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">Profile Card (Selected)</h3>
+                <div class="max-w-md mx-auto">
+                    <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-3 border-white dark:border-gray-700 shadow-md">
+                                <span class="text-xl font-bold text-white">TA</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xl font-bold text-gray-900 dark:text-white truncate">Terry Adams</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">COA • VAR • M</div>
+                            </div>
+                            <div class="flex gap-2">
+                                <a href="#" class="p-2 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors" title="View scoring history">
+                                    <i class="fas fa-file-alt text-lg"></i>
+                                </a>
+                                <button class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Switch archer">
+                                    <i class="fas fa-exchange-alt text-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary Button (Manage Archers) -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3">Secondary Action Button</h3>
+                <div class="max-w-md mx-auto">
+                    <a href="#" class="block w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium transition-colors text-center">
+                        <i class="fas fa-users mr-2"></i>Manage Archers
+                    </a>
                 </div>
             </div>
         </div>
@@ -2257,14 +2377,14 @@
     </section>
 
     <!-- Footer -->
-    <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-bottom">
-            <a href="../../index.html" class="pl-6 h-[44px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
-            <i class="fas fa-home text-xl"></i>
+    <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
+        <a href="../../index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+            <i class="fas fa-home text-2xl"></i>
         </a>
         <div class="flex-1"></div>
         <div class="flex gap-2">
-            <a href="../../coach.html" class="h-[44px] px-2 py-[2px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">Coach</a>
-            <button onclick="clearCache()" class="h-[44px] px-2 py-[2px] bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded text-sm font-semibold transition-colors flex items-center justify-center">Reset</button>
+            <a href="../../coach.html" class="h-[44px] px-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">Coach</a>
+            <button onclick="clearCache()" class="h-[44px] px-3 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded text-sm font-semibold transition-colors flex items-center justify-center">Reset</button>
         </div>
     </footer>
 
@@ -2292,7 +2412,7 @@
         }
 
         // Add bottom padding to body to account for fixed footer
-        document.body.style.paddingBottom = 'calc(36px + env(safe-area-inset-bottom))';
+        document.body.style.paddingBottom = 'calc(48px + env(safe-area-inset-bottom))';
     </script>
 </body>
 

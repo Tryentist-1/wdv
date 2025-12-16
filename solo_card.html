@@ -105,7 +105,7 @@
             padding-top: env(safe-area-inset-top, 0);
         }
 
-        .safe-bottom {
+        .safe-area-bottom {
             padding-bottom: env(safe-area-inset-bottom, 0);
         }
     </style>
@@ -136,7 +136,7 @@
 </head>
 
 <body>
-    <div id="app-container" class="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col pb-[calc(36px+env(safe-area-inset-bottom))]">
+    <div id="app-container" class="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col pb-[calc(48px+env(safe-area-inset-bottom))]">
 
         <!-- Setup View -->
         <div id="setup-view">
@@ -222,7 +222,7 @@
 
         <!-- Keypad -->
         <div id="score-keypad"
-            class="fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-bottom overflow-hidden hidden">
+            class="fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-area-bottom overflow-hidden hidden">
         </div>
 
         <!-- Export Modal -->
@@ -271,16 +271,16 @@
 
         <!-- Global Footer -->
         <footer
-            class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 safe-bottom z-30 shadow-lg transition-colors duration-200">
+            class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 safe-area-bottom z-30 shadow-lg transition-colors duration-200">
             <a href="index.html"
-                class="pl-6 h-[44px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
-                <i class="fas fa-home text-xl"></i>
+                class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+                <i class="fas fa-home text-2xl"></i>
             </a>
             <div class="flex-1"></div>
             <button id="new-match-btn"
-                class="px-2 py-[2px] h-[44px] bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors flex items-center justify-center">New Match</button>
+                class="px-3 h-[44px] bg-danger text-white rounded-lg hover:bg-danger-dark font-semibold transition-colors flex items-center justify-center">New Match</button>
             <button id="export-btn"
-                class="px-2 py-[2px] h-[44px] bg-purple text-white rounded-lg hover:bg-purple-dark font-semibold transition-colors flex items-center justify-center"><i class="fas fa-upload mr-1"></i> Export</button>
+                class="px-3 h-[44px] bg-purple text-white rounded-lg hover:bg-purple-dark font-semibold transition-colors flex items-center justify-center"><i class="fas fa-upload mr-1"></i> Export</button>
         </footer>
 
     </div>

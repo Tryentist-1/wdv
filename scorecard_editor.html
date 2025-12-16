@@ -56,7 +56,7 @@
         }
     </script>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200 pb-[calc(36px+env(safe-area-inset-bottom))]">
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200 pb-[calc(48px+env(safe-area-inset-bottom))]">
     
     <!-- Header -->
     <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
@@ -293,7 +293,7 @@
     </div>
     
     <!-- Score Input Keypad - Bottom Sheet -->
-    <div id="score-modal" class="hidden fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-bottom">
+    <div id="score-modal" class="hidden fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-area-bottom">
         <div class="bg-white dark:bg-gray-800 rounded-t-lg shadow-xl p-4">
             <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Edit Score</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -1951,13 +1951,13 @@
     <script src="js/unified_scorecard_list.js"></script>
     
     <!-- Footer -->
-    <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-bottom">
-        <a href="index.html" class="pl-6 h-[44px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
-            <i class="fas fa-home text-xl"></i>
+    <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
+        <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+            <i class="fas fa-home text-2xl"></i>
         </a>
         <div class="flex-1"></div>
         <div class="flex gap-2">
-            <a href="coach.html" class="px-2 py-[2px] h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">Coach</a>
+            <a href="coach.html" class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">Coach</a>
         </div>
     </footer>
 </body>
