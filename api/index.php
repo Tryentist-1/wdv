@@ -6160,6 +6160,131 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/archer-assignment/by-name/(.+?)/(.+?
     exit;
 }
 
+// GET /v1/archers/:id/bracket-assignments - Get all bracket assignments for an archer (efficient single query)
+// This replaces the need to check each bracket individually, avoiding 404 noise
+if (preg_match('#^/v1/archers/([0-9a-f-]+)/bracket-assignments$#i', $route, $m) && $method === 'GET') {
+    // Public endpoint - archers can see their own bracket assignments
+    $archerId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Verify archer exists
+        $archerStmt = $pdo->prepare('SELECT id, first_name, last_name FROM archers WHERE id = ?');
+        $archerStmt->execute([$archerId]);
+        $archer = $archerStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$archer) {
+            json_response(['error' => 'Archer not found'], 404);
+            exit;
+        }
+        
+        // Get all bracket entries for this archer with bracket and event info
+        $stmt = $pdo->prepare('
+            SELECT 
+                be.id as entry_id,
+                be.seed_position,
+                be.swiss_points,
+                be.swiss_wins,
+                be.swiss_losses,
+                b.id as bracket_id,
+                b.event_id,
+                b.bracket_type,
+                b.bracket_format,
+                b.division,
+                b.bracket_size,
+                b.status as bracket_status,
+                e.name as event_name,
+                e.date as event_date,
+                e.status as event_status
+            FROM bracket_entries be
+            JOIN brackets b ON b.id = be.bracket_id
+            LEFT JOIN events e ON e.id = b.event_id
+            WHERE be.archer_id = ?
+            ORDER BY e.date DESC, b.created_at DESC
+        ');
+        $stmt->execute([$archerId]);
+        $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // For each entry, calculate opponent info if it's an elimination bracket
+        $assignments = [];
+        foreach ($entries as $entry) {
+            $assignment = [
+                'entry_id' => $entry['entry_id'],
+                'bracket_id' => $entry['bracket_id'],
+                'event_id' => $entry['event_id'],
+                'event_name' => $entry['event_name'],
+                'event_date' => $entry['event_date'],
+                'event_status' => $entry['event_status'],
+                'bracket_type' => $entry['bracket_type'],
+                'bracket_format' => $entry['bracket_format'],
+                'division' => $entry['division'],
+                'bracket_size' => $entry['bracket_size'],
+                'bracket_status' => $entry['bracket_status'],
+                'seed' => $entry['seed_position'],
+                'swiss_points' => $entry['swiss_points'],
+                'swiss_wins' => $entry['swiss_wins'],
+                'swiss_losses' => $entry['swiss_losses'],
+                'opponent' => null,
+                'round' => null,
+                'match_id' => null
+            ];
+            
+            // Calculate opponent for elimination brackets
+            if ($entry['bracket_format'] === 'ELIMINATION') {
+                $seed = $entry['seed_position'];
+                $opponentSeed = null;
+                $round = 'Quarter-Finals';
+                
+                // Standard 8-person bracket pairings
+                if ($seed === 1) { $opponentSeed = 8; }
+                elseif ($seed === 2) { $opponentSeed = 7; }
+                elseif ($seed === 3) { $opponentSeed = 6; }
+                elseif ($seed === 4) { $opponentSeed = 5; }
+                elseif ($seed === 5) { $opponentSeed = 4; }
+                elseif ($seed === 6) { $opponentSeed = 3; }
+                elseif ($seed === 7) { $opponentSeed = 2; }
+                elseif ($seed === 8) { $opponentSeed = 1; }
+                
+                if ($opponentSeed) {
+                    // Get opponent info
+                    $oppStmt = $pdo->prepare('
+                        SELECT be.seed_position, a.id, a.first_name, a.last_name
+                        FROM bracket_entries be
+                        JOIN archers a ON a.id = be.archer_id
+                        WHERE be.bracket_id = ? AND be.seed_position = ?
+                    ');
+                    $oppStmt->execute([$entry['bracket_id'], $opponentSeed]);
+                    $opponent = $oppStmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($opponent) {
+                        $assignment['opponent'] = [
+                            'id' => $opponent['id'],
+                            'name' => $opponent['first_name'] . ' ' . $opponent['last_name'],
+                            'seed' => $opponent['seed_position']
+                        ];
+                        $assignment['round'] = $round;
+                    }
+                }
+            }
+            
+            $assignments[] = $assignment;
+        }
+        
+        json_response([
+            'archer' => [
+                'id' => $archer['id'],
+                'name' => $archer['first_name'] . ' ' . $archer['last_name']
+            ],
+            'assignments' => $assignments
+        ], 200);
+        
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // GET /v1/brackets/:id/entries - List bracket entries
 if (preg_match('#^/v1/brackets/([0-9a-f-]+)/entries$#i', $route, $m) && $method === 'GET') {
     require_api_key();
