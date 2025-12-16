@@ -629,12 +629,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Check if match is complete (winner determined)
+     * Checks both state.scores and match data from database
      */
     function isMatchComplete() {
+        // First check if we have match data with winner_team_id or sets_won from database
+        if (state.matchData) {
+            // Check if winner_team_id is set
+            if (state.matchData.winner_team_id) {
+                return true;
+            }
+            // Check if any team has sets_won >= 5
+            if (state.matchData.teams && Array.isArray(state.matchData.teams)) {
+                for (const team of state.matchData.teams) {
+                    if ((team.sets_won || 0) >= 5) {
+                        return true;
+                    }
+                }
+            }
+        }
+        
+        // Fallback: Check state.scores (for matches being scored in real-time)
         let t1MatchScore = 0, t2MatchScore = 0, matchOver = false, winner = null;
         for (let i = 0; i < 4; i++) {
-            const endScoresT1 = state.scores.t1[i], endScoresT2 = state.scores.t2[i];
-            const endComplete = endScoresT1 && endScoresT2 && endScoresT1.every(s => s !== '') && endScoresT2.every(s => s !== '');
+            const endScoresT1 = state.scores.t1 && state.scores.t1[i];
+            const endScoresT2 = state.scores.t2 && state.scores.t2[i];
+            if (!endScoresT1 || !endScoresT2) continue;
+            
+            const endComplete = endScoresT1.every(s => s !== '' && s !== null) && endScoresT2.every(s => s !== '' && s !== null);
             if (!matchOver && endComplete) {
                 const t1EndTotal = endScoresT1.reduce((sum, s) => sum + parseScoreValue(s), 0);
                 const t2EndTotal = endScoresT2.reduce((sum, s) => sum + parseScoreValue(s), 0);
@@ -653,7 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check shoot-off if tied at 4-4
         if (!matchOver && t1MatchScore === 4 && t2MatchScore === 4) {
             const soComplete = state.scores.so && state.scores.so.t1 && state.scores.so.t2 &&
-                state.scores.so.t1.every(s => s !== '') && state.scores.so.t2.every(s => s !== '');
+                state.scores.so.t1.every(s => s !== '' && s !== null) && state.scores.so.t2.every(s => s !== '' && s !== null);
             if (soComplete) {
                 const t1SoTotal = state.scores.so.t1.reduce((sum, s) => sum + parseScoreValue(s), 0);
                 const t2SoTotal = state.scores.so.t2.reduce((sum, s) => sum + parseScoreValue(s), 0);
@@ -1098,6 +1119,10 @@ document.addEventListener('DOMContentLoaded', () => {
             state.eventId = match.event_id || null;
             state.bracketId = match.bracket_id || null;
             state.location = match.location || '';
+            state.cardStatus = match.card_status || 'PEND';
+            state.locked = match.locked || false;
+            // Store match data for completion checking
+            state.matchData = match;
             
             // 6. Build teams from match data
             const teams = match.teams || [];

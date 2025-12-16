@@ -588,44 +588,54 @@
                 return false;
               }
               
-              const cardStatus = (round.card_status || round.cardStatus || 'PEND').toUpperCase();
+              const cardStatus = (round.card_status || round.cardStatus || 'PENDING').toUpperCase();
               const endsCompleted = parseInt(round.ends_completed || 0);
               const isToday = round.event_date === new Date().toISOString().slice(0, 10);
               
-              // Show if PEND (incomplete work)
-              if (cardStatus === 'PEND' && endsCompleted < 10) {
+              // Normalize status (handle both PENDING/PEND and COMPLETED/COMP)
+              const normalizedStatus = cardStatus === 'PEND' ? 'PENDING' : 
+                                      cardStatus === 'COMP' ? 'COMPLETED' :
+                                      cardStatus === 'VRFD' ? 'VERIFIED' : cardStatus;
+              
+              // Show if PENDING/PEND (incomplete work)
+              if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && endsCompleted < 10) {
                 return true;
               }
               
-              // Show if COMP and today (completed today, may need review)
-              if (cardStatus === 'COMP') {
+              // Show if COMPLETED/COMP and today (completed today, may need review)
+              if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
                 return isToday;
               }
               
-              // Don't show VRFD or VOID
+              // Don't show VERIFIED/VRFD or VOID
               return false;
             });
 
             // Find solo matches to show in assignments
-            // Show only PEND (incomplete work) and COMP (completed today)
+            // Show only PENDING/PEND (incomplete work) and COMPLETED/COMP (completed today)
             const openSoloMatches = soloMatches.filter(match => {
-              const cardStatus = (match.card_status || 'PEND').toUpperCase();
+              const cardStatus = (match.card_status || 'PENDING').toUpperCase();
               const isToday = match.event_date === new Date().toISOString().slice(0, 10);
               const setsWon = parseInt(match.sets_won || 0);
               const opponentSetsWon = parseInt(match.opponent_sets_won || 0);
               const isMatchComplete = setsWon >= 6 || opponentSetsWon >= 6;
               
-              // Show if PEND (incomplete work)
-              if (cardStatus === 'PEND' && !isMatchComplete) {
+              // Normalize status (handle both PENDING/PEND and COMPLETED/COMP)
+              const normalizedStatus = cardStatus === 'PEND' ? 'PENDING' : 
+                                      cardStatus === 'COMP' ? 'COMPLETED' :
+                                      cardStatus === 'VRFD' ? 'VERIFIED' : cardStatus;
+              
+              // Show if PENDING/PEND (incomplete work)
+              if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && !isMatchComplete) {
                 return true;
               }
               
-              // Show if COMP and today (completed today, may need review)
-              if (cardStatus === 'COMP') {
+              // Show if COMPLETED/COMP and today (completed today, may need review)
+              if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
                 return isToday;
               }
               
-              // Don't show VRFD or VOID
+              // Don't show VERIFIED/VRFD or VOID
               return false;
             });
 

@@ -5752,7 +5752,7 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
         
         // If setting to COMP, verify match is actually complete
         if ($newStatus === 'COMP') {
-            // Check if match has a winner (sets_won >= 5 for team matches)
+            // Check if match has a winner (sets_won >= 5 for team matches OR winner_team_id is set)
             $teamsStmt = $pdo->prepare('SELECT sets_won FROM team_match_teams WHERE match_id = ?');
             $teamsStmt->execute([$matchId]);
             $teams = $teamsStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -5763,6 +5763,11 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
                     $isComplete = true;
                     break;
                 }
+            }
+            
+            // Also check if winner_team_id is set (alternative indicator of completion)
+            if (!$isComplete && !empty($match['winner_team_id'])) {
+                $isComplete = true;
             }
             
             if (!$isComplete) {
