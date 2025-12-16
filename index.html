@@ -35,223 +35,12 @@
       })();
     }
   </script>
-  <style>
-    /* Minimal custom CSS - onboarding modal step visibility */
-    .onboarding-step {
-      display: none;
-    }
-
-    .onboarding-step.active {
-      display: block;
-    }
-  </style>
 </head>
 
 <body
   class="bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center p-4 transition-colors duration-200">
-  <!-- Onboarding Modal -->
-  <div id="onboarding-modal"
-    class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
-    <div
-      class="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full max-h-[95vh] overflow-y-auto shadow-2xl transition-colors duration-200">
-      <!-- Step 1: Welcome -->
-      <div id="step-1" class="onboarding-step active">
-        <div class="flex justify-center gap-1 mb-4">
-          <div class="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-500"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-        </div>
-        <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-3">
-          <span
-            class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">1</span>
-          Welcome to Archery Tools!
-        </h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">This app helps you score archery rounds
-          and manage your team. Let's get you set up in just a few steps.</p>
 
-        <div class="text-center my-4">
-          <img
-            src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='160' viewBox='0 0 250 160'><rect width='250' height='160' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='25' text-anchor='middle' font-family='Arial' font-size='14' fill='%23343a40'>🏹 Archery Tools</text><rect x='15' y='40' width='100' height='30' rx='4' fill='%23198754' stroke='%23fff' stroke-width='1'/><text x='65' y='60' text-anchor='middle' font-family='Arial' font-size='10' fill='%23fff'>👥 Setup</text><rect x='125' y='40' width='100' height='30' rx='4' fill='%232a9d8f' stroke='%23fff' stroke-width='1'/><text x='175' y='60' text-anchor='middle' font-family='Arial' font-size='10' fill='%23fff'>🏆 Rank</text><rect x='15' y='80' width='100' height='30' rx='4' fill='%23e9c46a' stroke='%23fff' stroke-width='1'/><text x='65' y='100' text-anchor='middle' font-family='Arial' font-size='10' fill='%23343a40'>👥 Solo</text><rect x='125' y='80' width='100' height='30' rx='4' fill='%23f4a261' stroke='%23fff' stroke-width='1'/><text x='175' y='100' text-anchor='middle' font-family='Arial' font-size='10' fill='%23343a40'>👥👥 Team</text><rect x='15' y='120' width='100' height='30' rx='4' fill='%23e76f51' stroke='%23fff' stroke-width='1'/><text x='65' y='140' text-anchor='middle' font-family='Arial' font-size='10' fill='%23fff'>🎯 Practice</text><line x1='125' y1='10' x2='125' y2='150' stroke='%23ff6b6b' stroke-width='2'/><text x='145' y='80' font-family='Arial' font-size='8' fill='%23ff6b6b'>Start!</text></svg>"
-            alt="Main app interface"
-            class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-        </div>
-
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-trophy"></i> Ranking
-            Rounds</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Score competitive ranking rounds with multiple archers</p>
-        </div>
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-user-friends"></i>
-            Solo & Team Matches</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Track head-to-head matches and team competitions</p>
-        </div>
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-bullseye"></i>
-            Practice Sessions</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Analyze your arrow grouping and improve accuracy</p>
-        </div>
-        <div class="flex gap-3 justify-center mt-6">
-          <button
-            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
-            onclick="nextStep()">Get Started</button>
-          <button
-            class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
-            onclick="skipOnboarding()">Skip Tutorial</button>
-        </div>
-      </div>
-
-      <!-- Step 2: Find Yourself -->
-      <div id="step-2" class="onboarding-step">
-        <div class="flex justify-center gap-1 mb-4">
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-500"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-        </div>
-        <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-3">
-          <span
-            class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">2</span>
-          Find Yourself & Bale Mates
-        </h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">First, let's make sure you and your
-          teammates are in the system. You'll need to:</p>
-
-        <div class="text-center my-4">
-          <img
-            src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='180' viewBox='0 0 250 180'><rect width='250' height='180' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='20' text-anchor='middle' font-family='Arial' font-size='12' fill='%23343a40'>👥 Archer Setup</text><rect x='10' y='30' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='20' y='45' font-family='Arial' font-size='10' fill='%23343a40'>🔍 Search...</text><rect x='10' y='60' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='72' font-family='Arial' font-size='8' fill='%23ffc107'>⭐</text><text x='25' y='72' font-family='Arial' font-size='8' fill='%23343a40'>Sarah J</text><text x='150' y='72' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 A</text><rect x='10' y='85' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='97' font-family='Arial' font-size='8' fill='%23ccc'>☆</text><text x='25' y='97' font-family='Arial' font-size='8' fill='%23343a40'>Mike C</text><text x='150' y='97' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 B</text><rect x='10' y='110' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='122' font-family='Arial' font-size='8' fill='%23ccc'>☆</text><text x='25' y='122' font-family='Arial' font-size='8' fill='%23343a40'>Alex R</text><text x='150' y='122' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 C</text><rect x='10' y='135' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='147' font-family='Arial' font-size='8' fill='%23ccc'>☆</text><text x='25' y='147' font-family='Arial' font-size='8' fill='%23343a40'>Emma D</text><text x='150' y='147' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 D</text><line x1='40' y1='72' x2='40' y2='72' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='68' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='40' y1='97' x2='40' y2='97' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='93' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='40' y1='122' x2='40' y2='122' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='118' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='40' y1='147' x2='40' y2='147' stroke='%23ff6b6b' stroke-width='2'/><text x='50' y='143' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text></svg>"
-            alt="Archer setup interface"
-            class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-        </div>
-
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-users"></i> Archer
-            Setup</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Add yourself and your teammates to the archer list</p>
-        </div>
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-star"></i> Mark
-            Favorites</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Star your teammates so they appear at the top of the list
-          </p>
-        </div>
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-sync-alt"></i> Sync
-            with Master List</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Import the latest archer list from your coach</p>
-        </div>
-        <div class="flex gap-3 justify-center mt-6">
-          <button
-            class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
-            onclick="prevStep()">Back</button>
-          <button
-            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
-            onclick="nextStep()">Continue</button>
-        </div>
-      </div>
-
-      <!-- Step 3: Sync Archer List -->
-      <div id="step-3" class="onboarding-step">
-        <div class="flex justify-center gap-1 mb-4">
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-500"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-        </div>
-        <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-3">
-          <span
-            class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">3</span>
-          Sync Your Archer List
-        </h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">Keep your archer list up to date with
-          the latest information from your coach:</p>
-
-        <div class="text-center my-4">
-          <img
-            src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='140' viewBox='0 0 250 140'><rect width='250' height='140' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='20' text-anchor='middle' font-family='Arial' font-size='12' fill='%23343a40'>👥 Archer List</text><rect x='10' y='30' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='20' y='45' font-family='Arial' font-size='10' fill='%23343a40'>🔍 Search...</text><rect x='10' y='60' width='110' height='25' rx='3' fill='%236c757d' stroke='%23fff' stroke-width='1'/><text x='65' y='75' text-anchor='middle' font-family='Arial' font-size='8' fill='%23fff'>Sort Name</text><rect x='130' y='60' width='110' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='185' y='75' text-anchor='middle' font-family='Arial' font-size='8' fill='%23343a40'>Sort Bale</text><rect x='10' y='90' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='102' font-family='Arial' font-size='8' fill='%23ffc107'>⭐</text><text x='25' y='102' font-family='Arial' font-size='8' fill='%23343a40'>Sarah J</text><text x='150' y='102' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 A</text><rect x='10' y='115' width='230' height='20' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='127' font-family='Arial' font-size='8' fill='%23ffc107'>⭐</text><text x='25' y='127' font-family='Arial' font-size='8' fill='%23343a40'>Mike C</text><text x='150' y='127' font-family='Arial' font-size='6' fill='%236c757d'>Bale 2 B</text><rect x='210' y='30' width='30' height='20' rx='3' fill='%230d6efd' stroke='%23fff' stroke-width='1'/><text x='225' y='42' text-anchor='middle' font-family='Arial' font-size='8' fill='%23fff'>🔄</text><line x1='225' y1='55' x2='225' y2='65' stroke='%23ff6b6b' stroke-width='2'/><text x='235' y='75' font-family='Arial' font-size='6' fill='%23ff6b6b'>Refresh</text></svg>"
-            alt="Sync archer list"
-            class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-        </div>
-
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-download"></i> Import
-            from Master List</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Get the latest archer information and assignments</p>
-        </div>
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-edit"></i> Add
-            Missing Archers</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Add any archers who aren't in the master list</p>
-        </div>
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-check"></i> Verify
-            Information</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Make sure bale assignments and target letters are correct
-          </p>
-        </div>
-        <div class="flex gap-3 justify-center mt-6">
-          <button
-            class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
-            onclick="prevStep()">Back</button>
-          <button
-            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
-            onclick="nextStep()">Continue</button>
-        </div>
-      </div>
-
-      <!-- Step 4: Start Scoring -->
-      <div id="step-4" class="onboarding-step">
-        <div class="flex justify-center gap-1 mb-4">
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600"></div>
-          <div class="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-500"></div>
-        </div>
-        <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-3">
-          <span
-            class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 dark:bg-blue-500 text-white text-sm mr-2">4</span>
-          Start Scoring!
-        </h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4 text-sm leading-relaxed">You're all set! Choose the type of
-          scoring you want to do:</p>
-
-        <div class="text-center my-4">
-          <img
-            src="data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='250' height='180' viewBox='0 0 250 180'><rect width='250' height='180' fill='%23f8f9fa' stroke='%23dee2e6' stroke-width='1'/><text x='125' y='20' text-anchor='middle' font-family='Arial' font-size='12' fill='%23343a40'>🏆 Ranking - E1</text><rect x='10' y='35' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='50' font-family='Arial' font-size='8' fill='%23343a40'>Sarah J</text><text x='70' y='50' font-family='Arial' font-size='8' fill='%23ffc107'>X</text><text x='95' y='50' font-family='Arial' font-size='8' fill='%23ffc107'>10</text><text x='120' y='50' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='145' y='50' font-family='Arial' font-size='8' fill='%23dc3545'>29</text><text x='170' y='50' font-family='Arial' font-size='8' fill='%230d6efd'>29</text><rect x='10' y='65' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='80' font-family='Arial' font-size='8' fill='%23343a40'>Mike C</text><text x='70' y='80' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='95' y='80' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='120' y='80' font-family='Arial' font-size='8' fill='%23ffc107'>8</text><text x='145' y='80' font-family='Arial' font-size='8' fill='%23dc3545'>26</text><text x='170' y='80' font-family='Arial' font-size='8' fill='%230d6efd'>26</text><rect x='10' y='95' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='110' font-family='Arial' font-size='8' fill='%23343a40'>Alex R</text><text x='70' y='110' font-family='Arial' font-size='8' fill='%23ffc107'>10</text><text x='95' y='110' font-family='Arial' font-size='8' fill='%23ffc107'>X</text><text x='120' y='110' font-family='Arial' font-size='8' fill='%23ffc107'>9</text><text x='145' y='110' font-family='Arial' font-size='8' fill='%23dc3545'>29</text><text x='170' y='110' font-family='Arial' font-size='8' fill='%230d6efd'>29</text><rect x='10' y='125' width='230' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='15' y='140' font-family='Arial' font-size='8' fill='%23343a40'>Emma D</text><text x='70' y='140' font-family='Arial' font-size='8' fill='%23ffc107'>8</text><text x='95' y='140' font-family='Arial' font-size='8' fill='%23ffc107'>8</text><text x='120' y='140' font-family='Arial' font-size='8' fill='%23ffc107'>7</text><text x='145' y='140' font-family='Arial' font-size='8' fill='%23dc3545'>23</text><text x='170' y='140' font-family='Arial' font-size='8' fill='%230d6efd'>23</text><rect x='10' y='155' width='110' height='25' rx='3' fill='%23fff' stroke='%23dee2e6' stroke-width='1'/><text x='65' y='170' text-anchor='middle' font-family='Arial' font-size='8' fill='%23343a40'>← E</text><rect x='130' y='155' width='110' height='25' rx='3' fill='%23198754' stroke='%23fff' stroke-width='1'/><text x='185' y='170' text-anchor='middle' font-family='Arial' font-size='8' fill='%23fff'>E →</text><line x1='70' y1='50' x2='70' y2='50' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='45' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='70' y1='80' x2='70' y2='80' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='75' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='70' y1='110' x2='70' y2='110' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='105' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text><line x1='70' y1='140' x2='70' y2='140' stroke='%23ff6b6b' stroke-width='2'/><text x='80' y='135' font-family='Arial' font-size='6' fill='%23ff6b6b'>Tap</text></svg>"
-            alt="Scoring interface"
-            class="w-full max-w-xs mx-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-        </div>
-
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-trophy"></i> Ranking
-            Round</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Score competitive ranking rounds with multiple archers</p>
-        </div>
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-user-friends"></i>
-            Solo Match</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Track a 1v1 match (first to 6 set points wins)</p>
-        </div>
-        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg my-3 border-l-4 border-blue-600 dark:border-blue-500">
-          <h3 class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-1"><i class="fas fa-users-cog"></i> Team
-            Match</h3>
-          <p class="text-gray-600 dark:text-gray-300 text-xs">Score a team vs team match (first to 5 set points wins)
-          </p>
-        </div>
-        <div class="flex gap-3 justify-center mt-6">
-          <button
-            class="px-5 py-2.5 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
-            onclick="prevStep()">Back</button>
-          <button
-            class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all hover:-translate-y-0.5 shadow-md"
-            onclick="completeOnboarding()">Let's Go!</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="w-full max-w-md mx-auto flex flex-col min-h-screen pb-[calc(36px+env(safe-area-inset-bottom))]">
+  <div class="w-full max-w-md mx-auto flex flex-col min-h-screen pb-[calc(48px+env(safe-area-inset-bottom))]">
     <!-- Header with Dark Mode Toggle -->
     <header class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Archery Tools</h1>
@@ -265,30 +54,9 @@
 
     <!-- Main Content -->
     <div class="flex-grow space-y-6">
-      <!-- Archer Details Section -->
-      <div class="space-y-3">
-        <a href="archer_list.html" id="archer-details-btn"
-          class="block w-full px-6 py-4 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-lg font-semibold text-lg transition-all hover:-translate-y-0.5 shadow-lg text-center"
-          title="Update your archer profile and details">
-          <i class="fas fa-user-circle mr-2"></i>Archer Details
-        </a>
-        <!-- Arrow pointing up to Archer Details button (shown when no self selected) -->
-        <div id="welcome-self" class="text-center"></div>
-        <!-- Prominent banner when user hasn't selected themselves -->
-        <div id="select-yourself-prompt" class="hidden px-4 py-4 bg-gradient-to-r from-primary to-primary-dark dark:from-primary dark:to-primary-dark text-red-600 dark:text-white rounded-lg shadow-lg">
-          <div class="flex items-start gap-3">
-            <div class="flex-shrink-0 pt-1">
-              <i class="fas fa-user-circle text-2xl"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <h3 class="font-bold text-lg mb-1">Select Yourself First</h3>
-              <p class="text-sm text-red-600/90 dark:text-white/90">Before you can start scoring, you need to select your archer profile from the list.</p>
-            </div>
-            <button id="dismiss-select-prompt" class="flex-shrink-0 px-2 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Dismiss">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-        </div>
+      <!-- User Identity Section - Shows archer picker or profile -->
+      <div id="identity-section" class="space-y-3">
+        <!-- This will be populated by JavaScript based on state -->
       </div>
 
       <!-- Open Assignments Section -->
@@ -301,6 +69,13 @@
           <!-- Assignments will be populated here -->
         </div>
       </div>
+
+      <!-- Manage Archers Button - access full archer list for editing -->
+      <a href="archer_list.html" id="archer-details-btn"
+        class="block w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium transition-colors text-center"
+        title="View and manage the archer list">
+        <i class="fas fa-users mr-2"></i>Manage Archers
+      </a>
 
       <!-- Main Modules -->
       <div class="grid grid-cols-2 gap-4">
@@ -328,19 +103,19 @@
     </div>
 
     <!-- Footer -->
-    <footer class="fixed bottom-0 left-0 right-0 h-[36px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-bottom">
-      <a href="index.html" class="pl-6 h-[44px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center" aria-label="Home">
-        <i class="fas fa-home text-xl"></i>
+    <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
+      <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+        <i class="fas fa-home text-2xl"></i>
       </a>
       <div class="flex-1"></div>
       <div class="flex gap-2">
         <a href="coach.html"
-          class="px-2 py-[2px] h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center text-sm"
+          class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center text-sm"
           title="Coach console: events and live scoring">
           <i class="fas fa-chalkboard-teacher mr-1"></i>Coaches
         </a>
         <button id="clear-cache-btn"
-          class="px-2 py-[2px] h-[44px] bg-danger text-white rounded font-semibold hover:bg-red-700 transition-colors flex items-center justify-center text-sm"
+          class="px-3 h-[44px] bg-danger text-white rounded font-semibold hover:bg-red-700 transition-colors flex items-center justify-center text-sm"
           title="Clear cached archers, events, and scoring data on this device">
           <i class="fas fa-broom mr-1"></i>Reset Data
         </button>
@@ -352,55 +127,332 @@
   <script src="js/archer_module.js"></script>
   <script src="js/unified_scorecard_list.js"></script>
   <script>
-    // Onboarding functionality
-    let currentStep = 1;
-    const totalSteps = 4;
-
-    // Check if this is the first visit
-    function shouldShowOnboarding() {
-      const hasVisited = localStorage.getItem('archery_tools_onboarding_complete');
-      return !hasVisited;
+    // Inline archer picker state
+    let archerPickerVisible = false;
+    let archerList = [];
+    let filteredArchers = [];
+    
+    /**
+     * Load archer list from server or localStorage
+     */
+    async function loadArcherList() {
+      // Try localStorage first
+      const cached = localStorage.getItem('archerList');
+      if (cached) {
+        try {
+          archerList = JSON.parse(cached) || [];
+        } catch (e) {
+          archerList = [];
+        }
+      }
+      
+      // Fetch fresh list from server
+      try {
+        const res = await fetch('api/v1/archers');
+        if (res.ok) {
+          const data = await res.json();
+          archerList = (data.archers || []).map(a => ({
+            id: a.id,
+            extId: a.id,
+            first: a.first_name || a.firstName || '',
+            last: a.last_name || a.lastName || '',
+            school: a.school || '',
+            level: a.level || '',
+            gender: a.gender || '',
+            photoUrl: a.photo_url || a.photoUrl || null,
+            nickname: a.nickname || ''
+          }));
+          localStorage.setItem('archerList', JSON.stringify(archerList));
+        }
+      } catch (e) {
+        console.log('[index] Could not fetch archer list:', e.message);
+      }
+      
+      filteredArchers = archerList.slice(0, 50); // Show first 50 by default
+      return archerList;
     }
-
-    function showOnboarding() {
-      if (shouldShowOnboarding()) {
-        document.getElementById('onboarding-modal').classList.remove('hidden');
+    
+    /**
+     * Filter archer list based on search query
+     */
+    function filterArchers(query) {
+      if (!query || query.length < 1) {
+        filteredArchers = archerList.slice(0, 50);
+      } else {
+        const q = query.toLowerCase();
+        filteredArchers = archerList.filter(a => 
+          `${a.first} ${a.last}`.toLowerCase().includes(q) ||
+          (a.nickname && a.nickname.toLowerCase().includes(q))
+        ).slice(0, 20);
+      }
+      renderArcherPickerList();
+    }
+    
+    /**
+     * Render just the archer list portion of the picker
+     */
+    function renderArcherPickerList() {
+      const listEl = document.getElementById('archer-picker-list');
+      if (!listEl) return;
+      
+      if (filteredArchers.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+            <i class="fas fa-search text-2xl mb-2"></i>
+            <p class="text-sm">No archers found. Try a different search.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      listEl.innerHTML = filteredArchers.map(archer => {
+        const initials = ((archer.first || '').charAt(0) + (archer.last || '').charAt(0)).toUpperCase();
+        const details = [archer.school, archer.level, archer.gender].filter(Boolean).join(' • ');
+        
+        return `
+          <button onclick="selectSelfArcher('${archer.extId || archer.id}')" 
+                  class="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700 active:bg-blue-100 dark:active:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-600 transition-colors text-left">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+              <span class="text-sm font-bold text-white">${initials}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-gray-900 dark:text-white truncate">${archer.first} ${archer.last}</div>
+              ${details ? `<div class="text-xs text-gray-500 dark:text-gray-400 truncate">${details}</div>` : ''}
+            </div>
+            <i class="fas fa-chevron-right text-gray-400"></i>
+          </button>
+        `;
+      }).join('');
+    }
+    
+    /**
+     * Select an archer as "self"
+     */
+    function selectSelfArcher(archerId) {
+      const archer = archerList.find(a => (a.extId || a.id) === archerId);
+      if (!archer) return;
+      
+      // Save selection
+      localStorage.setItem('archerSelfExtId', archerId);
+      
+      // Also save to ArcherModule if available
+      if (window.ArcherModule && typeof window.ArcherModule.setSelfArcher === 'function') {
+        window.ArcherModule.setSelfArcher(archer);
+      }
+      
+      // Re-render to show profile view
+      renderIdentitySection();
+      
+      // Load assignments for the selected archer
+      loadOpenAssignments();
+    }
+    
+    /**
+     * Render the identity section based on state
+     * - No archer selected: Show inline picker
+     * - Archer selected: Show profile card
+     */
+    async function renderIdentitySection() {
+      const section = document.getElementById('identity-section');
+      if (!section) return;
+      
+      // Check if we have a selected archer
+      let archer = null;
+      
+      // Try ArcherModule first
+      if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
+        archer = window.ArcherModule.getSelfArcher();
+      }
+      
+      // Fallback to localStorage
+      if (!archer) {
+        const extId = localStorage.getItem('archerSelfExtId') || '';
+        if (extId && archerList.length > 0) {
+          archer = archerList.find(a => (a.extId || a.id) === extId || `${(a.first || '').trim()}-${(a.last || '').trim()}` === extId);
+        }
+      }
+      
+      if (archer) {
+        // SELECTED STATE: Show profile card
+        const nickname = archer.nickname ? ` "${archer.nickname}"` : '';
+        const initials = ((archer.first || '').charAt(0) + (archer.last || '').charAt(0)).toUpperCase();
+        const archerId = archer.extId || archer.id || '';
+        
+        let avatarHTML = '';
+        if (archer.photoUrl) {
+          avatarHTML = `<img src="${archer.photoUrl}" alt="${archer.first} ${archer.last}" class="w-16 h-16 rounded-full object-cover border-[3px] border-white dark:border-gray-700 shadow-md">`;
+        } else {
+          avatarHTML = `<div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-[3px] border-white dark:border-gray-700 shadow-md"><span class="text-xl font-bold text-white">${initials}</span></div>`;
+        }
+        
+        section.innerHTML = `
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-4">
+              ${avatarHTML}
+              <div class="flex-1 min-w-0">
+                <div class="text-xl font-bold text-gray-900 dark:text-white truncate">${archer.first} ${archer.last}${nickname}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">${[archer.school, archer.level, archer.gender].filter(Boolean).join(' • ') || 'Archer'}</div>
+              </div>
+              <div class="flex gap-2">
+                <a href="archer_history.html?archer=${archerId}" 
+                   class="p-2 text-blue-500 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors" 
+                   title="View scoring history">
+                  <i class="fas fa-file-alt text-lg"></i>
+                </a>
+                <button onclick="showArcherPicker()" 
+                        class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" 
+                        title="Switch archer">
+                  <i class="fas fa-exchange-alt text-lg"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        // NOT SELECTED STATE: Show inline picker
+        await loadArcherList();
+        
+        section.innerHTML = `
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 px-4 py-4 text-white">
+              <h2 class="text-lg font-bold flex items-center gap-2">
+                <i class="fas fa-user-circle"></i>
+                Who are you?
+              </h2>
+              <p class="text-sm text-blue-100 mt-1">Select your name to get started</p>
+            </div>
+            
+            <!-- Search -->
+            <div class="p-3 border-b border-gray-200 dark:border-gray-600">
+              <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" 
+                       id="archer-search-input"
+                       placeholder="Type your name..." 
+                       class="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       oninput="filterArchers(this.value)">
+              </div>
+            </div>
+            
+            <!-- List -->
+            <div id="archer-picker-list" class="p-2 max-h-[300px] overflow-y-auto space-y-2 bg-white dark:bg-gray-800">
+              <!-- Populated by renderArcherPickerList -->
+            </div>
+            
+            <!-- Footer -->
+            <div class="p-3 border-t border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+              <div class="flex gap-2">
+                <a href="archer_list.html" 
+                   class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg font-medium text-center hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm border border-gray-300 dark:border-gray-600">
+                  <i class="fas fa-user-plus mr-1"></i>Add New
+                </a>
+                <button onclick="skipIdentity()" 
+                        class="flex-1 px-4 py-2.5 text-gray-600 dark:text-gray-300 rounded-lg font-medium text-center hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm">
+                  Skip for now
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Render the initial list
+        renderArcherPickerList();
+      }
+    }
+    
+    /**
+     * Show the archer picker (for switching archers)
+     */
+    function showArcherPicker() {
+      localStorage.removeItem('archerSelfExtId');
+      renderIdentitySection();
+    }
+    
+    /**
+     * Skip identity selection
+     */
+    function skipIdentity() {
+      const section = document.getElementById('identity-section');
+      if (section) {
+        section.innerHTML = `
+          <div class="text-center py-4">
+            <button onclick="renderIdentitySection()" 
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+              <i class="fas fa-user-circle mr-2"></i>Select Yourself
+            </button>
+          </div>
+        `;
       }
     }
 
-    function nextStep() {
-      if (currentStep < totalSteps) {
-        document.getElementById(`step-${currentStep}`).classList.remove('active');
-        currentStep++;
-        document.getElementById(`step-${currentStep}`).classList.add('active');
-        updateProgressDots();
-      }
-    }
+    /**
+     * Create simplified 2-column assignments list
+     * Layout: Assignment (name + details, wide) | Progress (score/sets)
+     * Optimized for mobile with larger text and touch targets
+     */
+    function createAssignmentsList(items, options) {
+      const container = document.createElement('div');
+      container.className = 'flex flex-col w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700';
 
-    function prevStep() {
-      if (currentStep > 1) {
-        document.getElementById(`step-${currentStep}`).classList.remove('active');
-        currentStep--;
-        document.getElementById(`step-${currentStep}`).classList.add('active');
-        updateProgressDots();
-      }
-    }
+      // Header row
+      const header = document.createElement('div');
+      header.className = 'grid gap-2 px-3 py-2.5 bg-gray-100 dark:bg-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide items-center';
+      header.style.gridTemplateColumns = 'minmax(0, 1fr) minmax(80px, auto)';
+      header.innerHTML = `
+        <div>Assignment</div>
+        <div class="text-right">Progress</div>
+      `;
+      container.appendChild(header);
 
-    function updateProgressDots() {
-      const dots = document.querySelectorAll('.progress-dot');
-      dots.forEach((dot, index) => {
-        dot.classList.toggle('active', index === currentStep - 1);
+      // Items
+      items.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'grid gap-2 px-3 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600 items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors min-h-[60px]';
+        row.style.gridTemplateColumns = 'minmax(0, 1fr) minmax(80px, auto)';
+        
+        if (options.onItemClick) {
+          row.onclick = () => options.onItemClick(item, index);
+        }
+
+        // Get values
+        const eventName = options.getEventName ? options.getEventName(item) : item.event_name;
+        const progress = options.getTotal ? options.getTotal(item) : '';
+        const roundType = options.getAvg ? options.getAvg(item) : item.round_type || '';
+        
+        // Format date
+        let dateStr = '';
+        if (item.event_date) {
+          const date = new Date(item.event_date);
+          if (!isNaN(date.getTime())) {
+            dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+          }
+        }
+        
+        // Build subtitle with date, round type, and division
+        const subtitleParts = [dateStr, roundType, item.division].filter(p => p && p.trim());
+        const subtitle = subtitleParts.join(' • ');
+
+        // Determine progress color based on type
+        let progressClass = 'text-blue-600 dark:text-blue-400';
+        if (item.isSolo) {
+          progressClass = 'text-green-600 dark:text-green-400';
+        } else if (item.isBracket) {
+          progressClass = 'text-yellow-600 dark:text-yellow-400';
+        }
+
+        row.innerHTML = `
+          <div class="flex flex-col gap-1 min-w-0 overflow-hidden">
+            <div class="text-base font-semibold text-gray-900 dark:text-white overflow-hidden text-ellipsis whitespace-nowrap leading-tight">${eventName}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight">${subtitle}</div>
+          </div>
+          <div class="text-lg font-bold ${progressClass} text-right whitespace-nowrap">${progress}</div>
+        `;
+        
+        container.appendChild(row);
       });
-    }
 
-    function completeOnboarding() {
-      localStorage.setItem('archery_tools_onboarding_complete', 'true');
-      document.getElementById('onboarding-modal').classList.add('hidden');
-    }
-
-    function skipOnboarding() {
-      localStorage.setItem('archery_tools_onboarding_complete', 'true');
-      document.getElementById('onboarding-modal').classList.add('hidden');
+      return container;
     }
 
     // Load open assignments for the current archer
@@ -617,66 +669,40 @@
           console.log('Could not load ranking round history:', e.message);
         }
 
-        // Check for bracket assignments
+        // Check for bracket assignments - use efficient single-query endpoint
         try {
           console.log('[index] Checking for bracket assignments...');
-          // Get recent events to find brackets
-          const eventsRes = await fetch('api/v1/events/recent');
-          if (eventsRes.ok) {
-            const eventsData = await eventsRes.json();
-            const events = eventsData.events || [];
-
-            // Check each event for brackets
-            for (const event of events) {
-              try {
-                const bracketsRes = await fetch(`api/v1/events/${event.id}/brackets`);
-                if (bracketsRes.ok) {
-                  const bracketsData = await bracketsRes.json();
-                  const brackets = bracketsData.brackets || [];
-
-                  // Check each bracket for this archer's assignment
-                  for (const bracket of brackets) {
-                    if (bracket.bracket_type === 'SOLO' && bracket.bracket_format === 'ELIMINATION') {
-                      try {
-                        const assignmentRes = await fetch(`api/v1/brackets/${bracket.id}/archer-assignment/${archerId}`);
-                        if (assignmentRes.ok) {
-                          const assignmentData = await assignmentRes.json();
-                          console.log('[index] Bracket assignment found:', assignmentData);
-
-                          if (assignmentData.assignment && assignmentData.assignment.opponent) {
-                            const assignment = assignmentData.assignment;
-                            const opponent = assignment.opponent;
-
-                            assignments.push({
-                              type: 'bracket',
-                              title: `${bracket.division} Elimination Bracket`,
-                              subtitle: `${event.name} • ${assignment.round}`,
-                              details: `You (Seed ${assignmentData.archer.seed}) vs ${opponent.name} (Seed ${opponent.seed})`,
-                              link: `solo_card.html?event=${event.id}&bracket=${bracket.id}`,
-                              icon: 'fas fa-trophy',
-                              color: 'bg-yellow-500 hover:bg-yellow-600',
-                              urgent: true,
-                              matchId: assignment.match_id
-                            });
-                          }
-                        } else if (assignmentRes.status === 404) {
-                          // Archer not in this bracket - this is normal, skip silently
-                          continue;
-                        } else {
-                          // Other error - log but continue
-                          console.warn(`[index] Error checking bracket ${bracket.id}:`, assignmentRes.status);
-                          continue;
-                        }
-                      } catch (e) {
-                        console.log('[index] Could not check bracket assignment:', e.message);
-                      }
-                    }
-                  }
-                }
-              } catch (e) {
-                console.log('[index] Could not load brackets for event:', e.message);
+          const bracketRes = await fetch(`api/v1/archers/${archerId}/bracket-assignments`);
+          
+          if (bracketRes.ok) {
+            const bracketData = await bracketRes.json();
+            const bracketAssignments = bracketData.assignments || [];
+            console.log('[index] Bracket assignments found:', bracketAssignments.length);
+            
+            // Add each bracket assignment
+            bracketAssignments.forEach(assignment => {
+              // Only show SOLO ELIMINATION brackets with an opponent
+              if (assignment.bracket_type === 'SOLO' && 
+                  assignment.bracket_format === 'ELIMINATION' && 
+                  assignment.opponent) {
+                
+                assignments.push({
+                  type: 'bracket',
+                  title: `${assignment.division} Elimination Bracket`,
+                  subtitle: `${assignment.event_name || 'Event'} • ${assignment.round}`,
+                  details: `You (Seed ${assignment.seed}) vs ${assignment.opponent.name} (Seed ${assignment.opponent.seed})`,
+                  link: `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`,
+                  icon: 'fas fa-trophy',
+                  color: 'bg-yellow-500 hover:bg-yellow-600',
+                  urgent: true,
+                  matchId: assignment.match_id,
+                  event_date: assignment.event_date
+                });
               }
-            }
+            });
+          } else if (bracketRes.status !== 404) {
+            // 404 means no assignments - that's fine, don't log
+            console.warn('[index] Error loading bracket assignments:', bracketRes.status);
           }
         } catch (e) {
           console.log('Could not load bracket assignments:', e.message);
@@ -768,8 +794,11 @@
           };
         });
 
+        // Simplified 2-column layout: Assignment (wide) + Progress
+        // Removed Status and Type columns for cleaner mobile display
         const options = {
-          columns: ['Assignment', 'Status', 'Progress', 'Type', '', ''],
+          columns: ['Assignment', 'Progress'],
+          twoColumnLayout: true, // Custom flag for simplified layout
           onItemClick: (item) => {
             window.location.href = item.link;
           },
@@ -779,29 +808,21 @@
             if (item.isBracket) {
               return `vs ${item.ends_completed}`;
             }
-            // For solo matches, show sets score
+            // For solo matches, show sets score with color coding
             if (item.isSolo) {
               return item.ends_completed || '0-0';
             }
             // For ranking rounds, show ends completed
             return `${item.ends_completed}/10`;
           },
-          getAvg: (item) => item.round_type, // Type column shows round type (e.g., R300) or match ID
-          getXs: (item) => '', // Empty column (not used)
-          getTens: (item) => '', // Empty column (6th column, not used)
-          getStatus: (item) => {
-            // Status represents card lifecycle - follows master document: PENDING → COMP → VER → VOID
-            // Use the same renderStatusText logic as results.html and other modules
-            const status = (item.card_status || item.cardStatus || item.status || 'PENDING').toUpperCase();
-            if (status === 'VER' || status === 'VERIFIED') return 'VER';
-            if (status === 'VOID') return 'VOID';
-            if (status === 'COMP' || status === 'COMPLETED') return 'COMP';
-            if (status === 'PENDING' || status === 'PEND') return 'PEND';
-            return 'PEND'; // Default to PEND for unknown statuses
-          }
+          getAvg: (item) => item.round_type, // Still used for type info in subtitle
+          getXs: (item) => '', // Not displayed
+          getTens: (item) => '', // Not displayed
+          getStatus: (item) => item.card_status || 'PEND' // Not displayed but used internally
         };
 
-        const listContainer = UnifiedScorecardList.create(assignmentItems, options);
+        // Create custom simplified list for assignments (2 columns, bigger text)
+        const listContainer = createAssignmentsList(assignmentItems, options);
         assignmentsList.innerHTML = '';
         assignmentsList.appendChild(listContainer);
 
@@ -812,121 +833,6 @@
       }
     }
 
-    function updateWelcomeMessage() {
-      const welcomeEl = document.getElementById('welcome-self');
-      const selectPrompt = document.getElementById('select-yourself-prompt');
-      if (!welcomeEl) return;
-      try {
-        let archer = null;
-
-        // Try ArcherModule first
-        if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
-          archer = window.ArcherModule.getSelfArcher();
-        }
-
-        // Fallback to localStorage
-        if (!archer) {
-          const extId = localStorage.getItem('archerSelfExtId') || '';
-          if (!extId) {
-          // Show arrow pointing UP to Archer Details button (above the banner)
-          const archerDetailsBtn = document.getElementById('archer-details-btn');
-          if (archerDetailsBtn) {
-            welcomeEl.innerHTML = `
-              <div class="flex flex-col items-center justify-center gap-1 text-red-600 dark:text-white py-2">
-                <i class="fas fa-angles-up animate-bounce text-3xl"></i>
-                <span class="text-sm font-semibold">Tap "Archer Details" above</span>
-              </div>
-            `;
-          } else {
-            welcomeEl.innerHTML = '';
-          }
-          // Show prominent prompt to select yourself (below the arrow)
-          if (selectPrompt) {
-            const dismissed = localStorage.getItem('select-yourself-prompt-dismissed') === 'true';
-            if (!dismissed) {
-              selectPrompt.classList.remove('hidden');
-            } else {
-              selectPrompt.classList.add('hidden');
-            }
-          }
-            return;
-          }
-          const listRaw = localStorage.getItem('archerList');
-          if (listRaw) {
-            try {
-              const list = JSON.parse(listRaw) || [];
-              archer = list.find(a => (a.extId || '') === extId || `${(a.first || '').trim()}-${(a.last || '').trim()}` === extId);
-            } catch (_) { }
-          }
-        }
-
-        if (archer) {
-          // Hide the select yourself prompt
-          if (selectPrompt) {
-            selectPrompt.classList.add('hidden');
-          }
-          
-          const nickname = archer.nickname ? ` "${archer.nickname}"` : '';
-          const initials = (archer.first.charAt(0) + archer.last.charAt(0)).toUpperCase();
-
-          // Build avatar HTML
-          let avatarHTML = '';
-          if (archer.photoUrl) {
-            avatarHTML = `<img src="${archer.photoUrl}" alt="${archer.first} ${archer.last}" class="w-20 h-20 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg">`;
-          } else {
-            avatarHTML = `<div class="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-4 border-white dark:border-gray-700 shadow-lg"><span class="text-2xl font-bold text-white">${initials}</span></div>`;
-          }
-
-          welcomeEl.innerHTML = `
-            <div class="flex flex-col items-center gap-3">
-              ${avatarHTML}
-              <div class="text-2xl font-bold text-gray-800 dark:text-white">${archer.first} ${archer.last}${nickname}</div>
-            </div>
-          `;
-        } else {
-          // Show prominent prompt to select yourself
-          if (selectPrompt) {
-            const dismissed = localStorage.getItem('select-yourself-prompt-dismissed') === 'true';
-            if (!dismissed) {
-              selectPrompt.classList.remove('hidden');
-            } else {
-              selectPrompt.classList.add('hidden');
-            }
-          }
-          // Show arrow pointing to Archer Details button
-          const archerDetailsBtn = document.getElementById('archer-details-btn');
-          if (archerDetailsBtn) {
-            welcomeEl.innerHTML = `
-              <div class="relative">
-                <div class="text-sm text-gray-500 dark:text-gray-400 italic animate-pulse mb-2">👆 Select yourself to get started</div>
-                <div class="flex items-center justify-center gap-2 text-red-600 dark:text-white">
-                  <i class="fas fa-arrow-down animate-bounce text-xl"></i>
-                  <span class="text-sm font-semibold">Tap "Archer Details" above</span>
-                </div>
-              </div>
-            `;
-          } else {
-            welcomeEl.innerHTML = `<div class="text-sm text-gray-500 dark:text-gray-400 italic animate-pulse">👆 Tap above to update your details</div>`;
-          }
-        }
-      } catch (e) {
-        console.warn('Unable to render welcome message:', e);
-      }
-    }
-    
-    // Handle dismiss button for select yourself prompt
-    document.addEventListener('DOMContentLoaded', () => {
-      const dismissBtn = document.getElementById('dismiss-select-prompt');
-      if (dismissBtn) {
-        dismissBtn.onclick = () => {
-          const prompt = document.getElementById('select-yourself-prompt');
-          if (prompt) {
-            prompt.classList.add('hidden');
-            localStorage.setItem('select-yourself-prompt-dismissed', 'true');
-          }
-        };
-      }
-    });
 
     async function clearAppData() {
       const confirmed = confirm('Reset local app data? This clears cached archers, events, and scoring sessions stored on this device.');
@@ -1124,11 +1030,8 @@
       });
     }
 
-    // Onboarding disabled - outdated tutorial
+    // Initialize the app
     document.addEventListener('DOMContentLoaded', function () {
-      // showOnboarding(); // DISABLED - Tutorial needs updating
-      // Note: Active event banner disabled - requires authentication that archers don't have
-
       const clearBtn = document.getElementById('clear-cache-btn');
       if (clearBtn) {
         clearBtn.addEventListener('click', () => {
@@ -1136,7 +1039,8 @@
         });
       }
 
-      updateWelcomeMessage();
+      // Render identity section (inline archer picker or profile)
+      renderIdentitySection();
       loadOpenAssignments();
       
       // Intercept Ranking Round link to check for local in-progress cards
