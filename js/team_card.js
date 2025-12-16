@@ -26,7 +26,9 @@ document.addEventListener('DOMContentLoaded', () => {
         syncStatus: { t1: {}, t2: {} },
         location: '',
         events: [],
-        brackets: []
+        brackets: [],
+        cardStatus: 'PEND',   // Match card status: PEND, COMP, VRFD, VOID
+        locked: false         // Match locked after verification
     };
 
     const sessionKey = `teamCard_${new Date().toISOString().split('T')[0]}`;
@@ -376,6 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMatchSummary();
         renderScoreTable();
         updateScoreHighlightsAndTotals();
+        updateCompleteMatchButton();
     }
 
     function renderMatchSummary() {
@@ -621,6 +624,175 @@ document.addEventListener('DOMContentLoaded', () => {
             matchResultEl.textContent = 'Match in Progress...';
             matchResultEl.classList.add('text-gray-500');
             matchResultEl.classList.remove('text-success');
+        }
+    }
+
+    /**
+     * Check if match is complete (winner determined)
+     */
+    function isMatchComplete() {
+        let t1MatchScore = 0, t2MatchScore = 0, matchOver = false, winner = null;
+        for (let i = 0; i < 4; i++) {
+            const endScoresT1 = state.scores.t1[i], endScoresT2 = state.scores.t2[i];
+            const endComplete = endScoresT1 && endScoresT2 && endScoresT1.every(s => s !== '') && endScoresT2.every(s => s !== '');
+            if (!matchOver && endComplete) {
+                const t1EndTotal = endScoresT1.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                const t2EndTotal = endScoresT2.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                let t1SetPoints = 0, t2SetPoints = 0;
+                if (t1EndTotal > t2EndTotal) t1SetPoints = 2;
+                else if (t2EndTotal > t1EndTotal) t2SetPoints = 2;
+                else { t1SetPoints = 1; t2SetPoints = 1; }
+                t1MatchScore += t1SetPoints;
+                t2MatchScore += t2SetPoints;
+                if (t1MatchScore >= 5 || t2MatchScore >= 5) {
+                    matchOver = true;
+                    winner = t1MatchScore > t2MatchScore ? 't1' : 't2';
+                }
+            }
+        }
+        // Check shoot-off if tied at 4-4
+        if (!matchOver && t1MatchScore === 4 && t2MatchScore === 4) {
+            const soComplete = state.scores.so && state.scores.so.t1 && state.scores.so.t2 &&
+                state.scores.so.t1.every(s => s !== '') && state.scores.so.t2.every(s => s !== '');
+            if (soComplete) {
+                const t1SoTotal = state.scores.so.t1.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                const t2SoTotal = state.scores.so.t2.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                if (t1SoTotal > t2SoTotal || t2SoTotal > t1SoTotal || state.shootOffWinner) {
+                    matchOver = true;
+                    winner = state.shootOffWinner || (t1SoTotal > t2SoTotal ? 't1' : 't2');
+                }
+            }
+        }
+        return matchOver && winner !== null;
+    }
+
+    /**
+     * Show Complete Match confirmation modal
+     */
+    function showCompleteMatchModal() {
+        const modal = document.getElementById('complete-match-modal');
+        
+        if (!modal) {
+            console.error('[showCompleteMatchModal] Modal not found');
+            return;
+        }
+        
+        // Check if match is actually complete
+        if (!isMatchComplete()) {
+            alert('Match is not complete. Please finish all sets and determine a winner before marking as complete.');
+            return;
+        }
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function hideCompleteMatchModal() {
+        const modal = document.getElementById('complete-match-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    /**
+     * Mark the current match as Complete
+     */
+    async function completeMatch() {
+        if (!state.matchId) {
+            alert('No match ID found. Please ensure match is saved to database.');
+            hideCompleteMatchModal();
+            return;
+        }
+        
+        // Check if match is actually complete
+        if (!isMatchComplete()) {
+            alert('Match is not complete. Please finish all sets and determine a winner before marking as complete.');
+            hideCompleteMatchModal();
+            return;
+        }
+        
+        try {
+            // Build headers
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            // Add event code if match is part of an event
+            if (state.eventId) {
+                const entryCode = localStorage.getItem('event_entry_code') || localStorage.getItem('coach_passcode');
+                if (entryCode) {
+                    headers['X-Passcode'] = entryCode;
+                }
+            }
+            
+            const response = await fetch(`api/v1/team-matches/${state.matchId}/status`, {
+                method: 'PATCH',
+                headers: headers,
+                body: JSON.stringify({
+                    cardStatus: 'COMP'
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+                throw new Error(errorData.error || `HTTP ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            // Update local state
+            state.cardStatus = result.cardStatus || 'COMP';
+            state.status = result.status || 'Completed';
+            state.locked = result.locked || false;
+            
+            console.log('[completeMatch] Status updated:', result);
+            
+            // Update UI to show completed status
+            updateCompleteMatchButton();
+            
+            // Show success message
+            alert('Match marked as complete! Ready for coach verification.');
+            
+            hideCompleteMatchModal();
+            return true;
+        } catch (err) {
+            console.error('[completeMatch] Failed:', err);
+            alert('Failed to mark match as complete: ' + err.message);
+            return false;
+        }
+    }
+
+    /**
+     * Update Complete Match button state
+     */
+    function updateCompleteMatchButton() {
+        const completeBtn = document.getElementById('complete-match-btn');
+        if (!completeBtn) return;
+        
+        const isComplete = isMatchComplete();
+        const isAlreadyCompleted = state.cardStatus === 'COMP';
+        const isVerified = state.cardStatus === 'VRFD';
+        const isLocked = state.locked || isVerified;
+        
+        if (isLocked) {
+            completeBtn.disabled = true;
+            completeBtn.innerHTML = '<i class="fas fa-lock mr-1"></i> Verified';
+            completeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark');
+            completeBtn.classList.add('bg-gray-500', 'hover:bg-gray-600');
+        } else if (isAlreadyCompleted) {
+            completeBtn.disabled = true;
+            completeBtn.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Completed';
+            completeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark');
+            completeBtn.classList.add('bg-blue-500', 'hover:bg-blue-600');
+        } else if (isComplete) {
+            completeBtn.disabled = false;
+            completeBtn.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Complete';
+            completeBtn.classList.remove('bg-gray-500', 'hover:bg-gray-600', 'bg-blue-500', 'hover:bg-blue-600');
+            completeBtn.classList.add('bg-primary', 'hover:bg-primary-dark');
+        } else {
+            completeBtn.disabled = true;
+            completeBtn.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Complete';
         }
     }
     
@@ -1357,6 +1529,24 @@ document.addEventListener('DOMContentLoaded', () => {
         startScoringBtn.addEventListener('click', startScoring);
         editSetupBtn.addEventListener('click', () => { state.currentView = 'setup'; renderView(); });
         newMatchBtn.addEventListener('click', resetMatch);
+
+        // Complete Match functionality
+        const completeMatchBtn = document.getElementById('complete-match-btn');
+        if (completeMatchBtn) {
+            completeMatchBtn.addEventListener('click', showCompleteMatchModal);
+        }
+
+        // Complete Match modal handlers
+        const completeMatchConfirmBtn = document.getElementById('complete-match-confirm-btn');
+        const completeMatchCancelBtn = document.getElementById('complete-match-cancel-btn');
+
+        if (completeMatchConfirmBtn) {
+            completeMatchConfirmBtn.addEventListener('click', completeMatch);
+        }
+
+        if (completeMatchCancelBtn) {
+            completeMatchCancelBtn.addEventListener('click', hideCompleteMatchModal);
+        }
         
         document.body.addEventListener('focusin', (e) => {
             if (e.target.matches('#scoring-view input[type="text"]') && scoreKeypad) {
