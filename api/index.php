@@ -5636,6 +5636,170 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
     exit;
 }
 
+// PATCH /v1/solo-matches/{id}/status - Update match card_status (for COMP status from scorer)
+if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $method === 'PATCH') {
+    $matchId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $newStatus = strtoupper(trim($input['cardStatus'] ?? ''));
+    
+    // Validate status value - use standardized 4-letter abbreviations
+    $allowedStatuses = ['PEND', 'COMP', 'VRFD', 'VOID'];
+    if (!in_array($newStatus, $allowedStatuses, true)) {
+        json_response(['error' => 'Invalid status. Allowed: ' . implode(', ', $allowedStatuses)], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Check if match exists and get current state
+        $checkStmt = $pdo->prepare('SELECT id, event_id, status, locked, card_status FROM solo_matches WHERE id = ? LIMIT 1');
+        $checkStmt->execute([$matchId]);
+        $match = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$match) {
+            json_response(['error' => 'Match not found'], 404);
+            exit;
+        }
+        
+        // Prevent status changes on locked matches (except unlocking via verification endpoint)
+        if ((bool)$match['locked'] && $newStatus !== 'VRFD' && $newStatus !== 'VOID') {
+            json_response(['error' => 'Cannot change status of locked match'], 403);
+            exit;
+        }
+        
+        // If setting to COMP, verify match is actually complete
+        if ($newStatus === 'COMP') {
+            // Check if match has a winner (sets_won >= 6 for solo matches)
+            $archersStmt = $pdo->prepare('SELECT sets_won FROM solo_match_archers WHERE match_id = ?');
+            $archersStmt->execute([$matchId]);
+            $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $isComplete = false;
+            foreach ($archers as $archer) {
+                if ((int)$archer['sets_won'] >= 6) {
+                    $isComplete = true;
+                    break;
+                }
+            }
+            
+            if (!$isComplete) {
+                json_response(['error' => 'Match is not complete. Winner must be determined before marking as complete.'], 400);
+                exit;
+            }
+        }
+        
+        // Update card_status
+        $updateStmt = $pdo->prepare('UPDATE solo_matches SET card_status = ? WHERE id = ?');
+        $updateStmt->execute([$newStatus, $matchId]);
+        
+        // If setting to COMP, also update match status to Completed
+        if ($newStatus === 'COMP') {
+            $statusStmt = $pdo->prepare('UPDATE solo_matches SET status = ? WHERE id = ?');
+            $statusStmt->execute(['Completed', $matchId]);
+        }
+        
+        // Return updated match
+        $refetch = $pdo->prepare('SELECT id, event_id, status, locked, card_status FROM solo_matches WHERE id = ? LIMIT 1');
+        $refetch->execute([$matchId]);
+        $updated = $refetch->fetch(PDO::FETCH_ASSOC);
+        
+        json_response([
+            'matchId' => $updated['id'],
+            'cardStatus' => $updated['card_status'],
+            'status' => $updated['status'],
+            'locked' => (bool)$updated['locked']
+        ]);
+    } catch (Exception $e) {
+        $status = (int)$e->getCode();
+        if ($status < 100 || $status > 599) $status = 500;
+        json_response(['error' => $e->getMessage()], $status);
+    }
+    exit;
+}
+
+// PATCH /v1/team-matches/{id}/status - Update match card_status (for COMP status from scorer)
+if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $method === 'PATCH') {
+    $matchId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $newStatus = strtoupper(trim($input['cardStatus'] ?? ''));
+    
+    // Validate status value - use standardized 4-letter abbreviations
+    $allowedStatuses = ['PEND', 'COMP', 'VRFD', 'VOID'];
+    if (!in_array($newStatus, $allowedStatuses, true)) {
+        json_response(['error' => 'Invalid status. Allowed: ' . implode(', ', $allowedStatuses)], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Check if match exists and get current state
+        $checkStmt = $pdo->prepare('SELECT id, event_id, status, locked, card_status FROM team_matches WHERE id = ? LIMIT 1');
+        $checkStmt->execute([$matchId]);
+        $match = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$match) {
+            json_response(['error' => 'Match not found'], 404);
+            exit;
+        }
+        
+        // Prevent status changes on locked matches (except unlocking via verification endpoint)
+        if ((bool)$match['locked'] && $newStatus !== 'VRFD' && $newStatus !== 'VOID') {
+            json_response(['error' => 'Cannot change status of locked match'], 403);
+            exit;
+        }
+        
+        // If setting to COMP, verify match is actually complete
+        if ($newStatus === 'COMP') {
+            // Check if match has a winner (sets_won >= 5 for team matches)
+            $teamsStmt = $pdo->prepare('SELECT sets_won FROM team_match_teams WHERE match_id = ?');
+            $teamsStmt->execute([$matchId]);
+            $teams = $teamsStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $isComplete = false;
+            foreach ($teams as $team) {
+                if ((int)$team['sets_won'] >= 5) {
+                    $isComplete = true;
+                    break;
+                }
+            }
+            
+            if (!$isComplete) {
+                json_response(['error' => 'Match is not complete. Winner must be determined before marking as complete.'], 400);
+                exit;
+            }
+        }
+        
+        // Update card_status
+        $updateStmt = $pdo->prepare('UPDATE team_matches SET card_status = ? WHERE id = ?');
+        $updateStmt->execute([$newStatus, $matchId]);
+        
+        // If setting to COMP, also update match status to Completed
+        if ($newStatus === 'COMP') {
+            $statusStmt = $pdo->prepare('UPDATE team_matches SET status = ? WHERE id = ?');
+            $statusStmt->execute(['Completed', $matchId]);
+        }
+        
+        // Return updated match
+        $refetch = $pdo->prepare('SELECT id, event_id, status, locked, card_status FROM team_matches WHERE id = ? LIMIT 1');
+        $refetch->execute([$matchId]);
+        $updated = $refetch->fetch(PDO::FETCH_ASSOC);
+        
+        json_response([
+            'matchId' => $updated['id'],
+            'cardStatus' => $updated['card_status'],
+            'status' => $updated['status'],
+            'locked' => (bool)$updated['locked']
+        ]);
+    } catch (Exception $e) {
+        $status = (int)$e->getCode();
+        if ($status < 100 || $status > 599) $status = 500;
+        json_response(['error' => $e->getMessage()], $status);
+    }
+    exit;
+}
+
 // =====================================================
 // PHASE 2 ENHANCEMENT: BRACKET MANAGEMENT ENDPOINTS
 // =====================================================
