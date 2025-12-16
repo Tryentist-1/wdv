@@ -676,15 +676,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         let avatarHTML = '';
         if (archer.photoUrl) {
-            avatarHTML = `<img src="${archer.photoUrl}" alt="${archer.first} ${archer.last}" class="w-8 h-8 rounded-full object-cover mx-auto mb-1 border-2 border-white/50">`;
+            avatarHTML = `<img src="${archer.photoUrl}" alt="${archer.first} ${archer.last}" class="w-8 h-8 rounded-full object-cover border-2 border-white/50">`;
         } else {
-            avatarHTML = `<div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold mx-auto mb-1 border-2 border-white/50">${initials}</div>`;
+            avatarHTML = `<div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold border-2 border-white/50">${initials}</div>`;
         }
         
         return `
-            <div class="flex flex-col items-center gap-1">
+            <div class="flex flex-row items-center justify-center gap-2">
                 ${avatarHTML}
-                <span class="text-xs md:text-sm">${displayName}</span>
+                <span class="text-xs md:text-sm whitespace-nowrap">${displayName}</span>
             </div>
         `;
     }
@@ -719,7 +719,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </th>
                     <th colspan="2" class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">End Total</th>
                     <th colspan="2" class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">Set Points</th>
-                    <th rowspan="2" class="px-2 py-2 text-center font-bold text-white">Sync</th>
                 </tr>
                 <tr>
                     <th class="px-2 py-2 text-center font-bold text-white border-r border-gray-300 dark:border-gray-600">A1</th>
@@ -754,7 +753,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a2-e${i+1}-total"></td>
                 <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a1-e${i+1}-setpts"></td>
                 <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a2-e${i+1}-setpts"></td>
-                <td class="px-2 py-1 text-center" id="sync-e${i+1}" data-set="${setNumber}">${syncIcon}</td>
             </tr>`;
         }
 
@@ -776,15 +774,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <button class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]" data-winner="a2">A2 Wins</button>
                     </span>
                 </td>
-                <td class="px-2 py-1 text-center" id="sync-so" data-set="6">${soSyncIcon}</td>
             </tr>
             </tbody>
             <tfoot class="bg-gray-200 dark:bg-gray-600">
                 <tr>
-                    <td colspan="8" class="px-2 py-2 text-right font-bold dark:text-white">Match Score:</td>
+                    <td colspan="9" class="px-2 py-2 text-right font-bold dark:text-white">Match Score:</td>
                     <td class="px-2 py-2 text-center font-bold dark:text-white" id="a1-match-score"></td>
                     <td class="px-2 py-2 text-center font-bold dark:text-white" id="a2-match-score"></td>
-                    <td></td>
                 </tr>
                 <tr><td colspan="11" id="match-result"></td></tr>
             </tfoot>
