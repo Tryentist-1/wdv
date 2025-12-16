@@ -75,19 +75,16 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Archer List Header Cleanup & Modal Improvements
-- Removed redundant self-summary container and select-yourself banner from archer_list.html
-- Added favorites filter button that includes "Me" record
-- Highlighted "Me" record with blue background and left border accent
-- Fixed identity selection persistence between index.html and archer_list.html
-- Improved ArcherModule.getSelfArcher() to check both extId and id (UUID)
-- Fixed modal alignment (top stays locked, content scrolls down)
-- Increased photo size to match 3 lines of name inputs
-- Show nickname instead of first name in list and modal
-- Moved gear notes to Equipment section
-- Modal stays open after save for easier editing
-**Current Priority:** Clean up Archer Edit modal UI/UX  
-**Next Session Focus:** Archer Edit modal cleanup - improve layout, organization, and user experience  
+**Last Session Focus:** Archer Edit Modal Scroll/Touch Fixes & Evaluation
+- Fixed critical scroll and touch issues - background no longer scrolls when modal is open
+- Implemented body scroll lock when modal opens (prevents background scrolling)
+- Added touch event prevention on modal overlay
+- Added scroll containment CSS classes (overscroll-contain, touch-none)
+- Evaluated modal paradigm - confirmed modal is appropriate for this use case
+- Created comprehensive evaluation document (ARCHER_EDIT_MODAL_EVALUATION.md)
+- Modal now properly contains scrolling within form content
+**Current Priority:** Ready for next feature  
+**Next Session Focus:** TBD  
 **Active Branch:** `main`  
 **Blockers:** None
 
@@ -299,7 +296,31 @@
 **Last Updated:** December 15, 2025
 
 ### Recent Changes
-- ✅ **Session Date:** December 15, 2025
+- ✅ **Session Date:** December 15, 2025 (Afternoon)
+- ✅ **What We Did:** Archer Edit Modal Scroll/Touch Fixes & Evaluation (v1.9.6):
+  - **Scroll/Touch Fixes:** Fixed critical issues where background was scrolling when modal was open
+    - Implemented body scroll lock when modal opens (overflow: hidden, position: fixed)
+    - Added touch event prevention on modal overlay background
+    - Added scroll containment CSS classes (overscroll-contain, touch-none)
+    - Added wheel event prevention on overlay
+    - Modal form content now scrolls independently while background is locked
+  - **Modal Evaluation:** Comprehensive evaluation of modal paradigm for complex form
+    - Created ARCHER_EDIT_MODAL_EVALUATION.md analysis document
+    - Confirmed modal is appropriate for this use case (mobile-first, context preservation)
+    - Documented technical implementation details
+  - **User Experience:** Improved modal behavior on mobile devices
+    - Background no longer scrolls when interacting with modal
+    - Touch events properly contained within modal
+    - Smooth scrolling within form content
+- ✅ **Files Changed:**
+  - `archer_list.html` - Fixed scroll/touch handling, added body lock, event prevention
+  - `docs/analysis/ARCHER_EDIT_MODAL_EVALUATION.md` - New evaluation document
+  - `01-SESSION_QUICK_START.md` - Updated session status
+- ✅ **Status:** Completed - Ready for deployment
+- ✅ **Next Steps:** Deploy to production
+
+### Previous Session
+- ✅ **Session Date:** December 15, 2025 (Morning)
 - ✅ **What We Did:** Archer List Header Cleanup & Identity Selection Flow Improvements:
   - **Header Cleanup:** Removed redundant self-summary container and select-yourself banner from archer_list.html
     - Simplified header structure for better mobile experience
@@ -447,11 +468,13 @@
 
 **Note:** These are planned improvements but not currently being worked on. Prioritize based on user needs and sprint goals.
 
-- **Archer Edit Modal Cleanup:** Improve layout, organization, and user experience of the archer edit modal
-  - Review section organization and grouping
-  - Optimize mobile layout and scrolling
-  - Improve field labeling and visual hierarchy
-  - Enhance form validation and error handling
+- ✅ **Archer Edit Modal Scroll/Touch Fixes (v1.9.6):** ✅ Complete - Fixed critical scroll and touch issues
+  - Fixed background scrolling when modal is open
+  - Implemented body scroll lock
+  - Added touch event prevention on overlay
+  - Added scroll containment CSS
+  - Evaluated modal paradigm (confirmed appropriate)
+  - Created evaluation documentation
 - **Headers and Footers:** Update headers and footers in scoring modules (Ranking Round 300, Ranking Round 360, Solo Card, Team Card) for consistency and improved UX
 - **Complete Checkbox:** Add "Complete" checkbox to scorecards so archers can mark in-progress cards as complete
   - This will help archers signal when they've finished scoring a round/match

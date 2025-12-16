@@ -170,8 +170,8 @@
     </div>
 
     <!-- Add/Edit Archer Modal -->
-    <div id="archer-modal" class="fixed inset-0 bg-black/60 flex items-start justify-center z-50 hidden p-0 pt-[48px]">
-        <div class="bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl w-full h-[calc(100vh-48px)] flex flex-col transition-all duration-300 transform">
+    <div id="archer-modal" class="fixed inset-0 bg-black/60 flex items-start justify-center z-50 hidden p-0 pt-[48px] overscroll-none touch-none">
+        <div class="bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl w-full h-[calc(100vh-48px)] flex flex-col transition-all duration-300 transform overscroll-contain">
             <!-- Compact Header with Avatar Preview -->
             <div class="flex-shrink-0 bg-gradient-to-r from-primary to-primary-dark px-4 py-3 rounded-t-2xl sm:rounded-t-lg">
                 <div class="flex items-center gap-3">
@@ -198,7 +198,7 @@
                 </div>
             </div>
             <!-- Scrollable Form Content -->
-            <form id="archer-form" class="flex-1 overflow-y-auto min-h-0">
+            <form id="archer-form" class="flex-1 overflow-y-auto min-h-0 overscroll-contain touch-auto">
                 <!-- Form content will be injected by JS -->
             </form>
             <!-- Fixed Button Container (outside scrollable area) -->
@@ -685,6 +685,11 @@
                 editingIndex = index;
                 const form = document.getElementById('archer-form');
                 form.innerHTML = createFormFieldsHTML();
+                
+                // Prevent body scroll when modal is open
+                document.body.style.overflow = 'hidden';
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
                 
                 // Restore expanded sections
                 if (expandedSections.size > 0) {
@@ -1643,6 +1648,10 @@
 
             function closeModal() {
                 modal.classList.add('hidden');
+                // Restore body scroll when modal is closed
+                document.body.style.overflow = '';
+                document.body.style.position = '';
+                document.body.style.width = '';
             }
 
             function editArcher(index) {
@@ -1747,9 +1756,28 @@
             // Users can edit their profile by clicking on their name in the list
             // Users can clear "Me" by clicking on their avatar/icon in the list
             
-            window.onclick = (event) => {
-                if (event.target === modal) closeModal();
-            };
+            // Handle modal overlay clicks and prevent background scrolling
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            // Prevent touch events on background from scrolling the page
+            modal.addEventListener('touchmove', (event) => {
+                // Only prevent if touching the overlay (not the form content)
+                if (event.target === modal) {
+                    event.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Prevent body scroll when modal is open (additional safety)
+            modal.addEventListener('wheel', (event) => {
+                // Only prevent if scrolling on the overlay background
+                if (event.target === modal) {
+                    event.preventDefault();
+                }
+            }, { passive: false });
 
             document.getElementById('archer-form').onsubmit = async (e) => {
                 e.preventDefault();
