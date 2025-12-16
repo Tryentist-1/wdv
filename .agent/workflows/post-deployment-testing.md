@@ -309,6 +309,12 @@ After successful deployment:
 
 ---
 
+## Related Workflows
+
+- **Bug Fixes:** [Bug Fix Workflow](bug-workflow.md) - Complete bug fix process
+- **Development Setup:** [Start Development Servers](start-dev-servers.md) - Local environment setup
+- **Coach Testing:** [Coach Login Start](coach-login-start.md) - Testing coach features
+
 ## References
 
 - **Deployment Checklist:** `DEPLOYMENT_CHECKLIST.md`

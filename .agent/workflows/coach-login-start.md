@@ -152,8 +152,9 @@ After completing these steps, verify:
 
 ## Related Workflows
 
-- **Start Development Servers:** `.agent/workflows/start-dev-servers.md`
-- **Post-Deployment Testing:** `.agent/workflows/post-deployment-testing.md`
+- **Start Development Servers:** [Start Development Servers](start-dev-servers.md) - Set up local environment first
+- **Post-Deployment Testing:** [Post-Deployment Testing](post-deployment-testing.md) - Testing after deployment
+- **Bug Fixes:** [Bug Fix Workflow](bug-workflow.md) - If you find issues while testing
 
 ---
 

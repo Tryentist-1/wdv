@@ -75,7 +75,7 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Footer Mobile-Friendly Update (v1.9.4) - Increased footer height and home button touch targets for better mobile usability  
+**Last Session Focus:** Tailwind Styling Fixes & Footer Standardization - Fixed invalid Tailwind classes, removed onboarding modal, standardized footers across all pages  
 **Current Priority:** Ready for next feature development  
 **Active Branch:** `main`  
 **Blockers:** None
@@ -282,24 +282,32 @@
 
 ### Recent Changes
 - ✅ **Session Date:** December 15, 2025
-- ✅ **What We Did:** Footer Mobile-Friendly Update (v1.9.4):
-  - **Footer Height Increase:** Changed all footers from 36px to 48px for better mobile ergonomics
-  - **Home Button Touch Target:** Increased to 48×48px (`min-w-[48px] h-[48px]`) for easier tapping
-  - **Larger Home Icon:** Changed from `text-xl` to `text-2xl` for better visibility
-  - **Active State Feedback:** Added `active:bg-gray-100 dark:active:bg-gray-700 rounded-lg` for touch feedback
-  - **Button Padding:** Updated from `px-2 py-[2px]` to `px-3` for more comfortable touch targets
-  - **Body Padding:** Updated all scrollable containers from `calc(36px+...)` to `calc(48px+...)`
-  - **Documentation:** Updated style-guide.html and FOOTER_STANDARDIZATION_ANALYSIS.md
-  - **CSS Rebuild:** Rebuilt tailwind-compiled.css with new utility classes
+- ✅ **What We Did:** Tailwind Styling Fixes & Footer Standardization:
+  - **Tailwind Class Fixes:** Fixed invalid Tailwind classes in index.html
+    - Changed `border-3` → `border-[3px]` (2 instances in avatar HTML)
+    - Fixed typo `safe-bottom` → `safe-area-bottom` in footer
+  - **Onboarding Modal Removal:** Removed onboarding modal and related CSS from index.html (no longer needed)
+  - **Footer Standardization:** Standardized footer styling across all 14 HTML pages
+    - Fixed `safe-bottom` typo → `safe-area-bottom` everywhere
+    - Updated footer height from 36px to 48px for better mobile touch targets
+    - Improved footer button styling (min-w-[48px], rounded-lg, active states)
+    - Updated home button icon size from text-xl to text-2xl
+  - **API Enhancement:** Added efficient bracket assignments endpoint (`GET /v1/archers/:id/bracket-assignments`)
+    - Single query to get all bracket assignments for an archer
+    - Reduces 404 noise from checking brackets individually
+  - **CSS Rebuild:** Rebuilt tailwind-compiled.css with all fixes
+  - **Documentation:** Updated docs and added workflow documentation
 - ✅ **Files Changed:** 
-  - All 14 HTML files with footers (index, coach, archer_list, archer_matches, etc.)
-  - `api/data_admin.php` - Inline footer styles updated
-  - `tests/components/style-guide.html` - Updated footer standard to v1.9.4
-  - `docs/features/footer/FOOTER_STANDARDIZATION_ANALYSIS.md` - Updated documentation
-  - `css/tailwind-compiled.css` - Rebuilt
-- ✅ **Status:** Completed - Ready for deployment
-- ✅ **Release:** v1.9.4
-- ✅ **Next Steps:** Deploy to production via `npm run deploy:fast`
+  - `index.html` - Removed onboarding modal, fixed Tailwind classes
+  - All 14 HTML files - Footer standardization (`safe-bottom` → `safe-area-bottom`)
+  - `api/index.php` - New bracket assignments endpoint
+  - `api/data_admin.php`, `api/check_and_migrate.php` - Minor updates
+  - `css/tailwind-compiled.css` - Rebuilt with fixes
+  - `tests/components/style-guide.html` - Updated footer patterns
+  - Documentation files updated
+- ✅ **Status:** Completed - Committed in logical groups
+- ✅ **Commits:** 6 commits organized by feature area
+- ✅ **Next Steps:** Ready for deployment or next feature development
 
 ### Previous Session
 - ✅ **Session Date:** December 11, 2025
