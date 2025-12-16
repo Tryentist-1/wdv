@@ -170,8 +170,8 @@
     </div>
 
     <!-- Add/Edit Archer Modal -->
-    <div id="archer-modal" class="fixed inset-0 bg-black/60 flex items-start justify-center z-50 hidden p-0 pt-[48px] overscroll-none touch-none">
-        <div class="bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl w-full h-[calc(100vh-48px)] flex flex-col transition-all duration-300 transform overscroll-contain">
+    <div id="archer-modal" class="fixed inset-0 bg-black/60 flex items-start justify-center z-50 hidden p-0 pt-[48px] overscroll-none">
+        <div class="bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl w-full h-[calc(100vh-48px)] flex flex-col transition-all duration-300 transform" style="max-height: calc(100vh - 48px);">
             <!-- Compact Header with Avatar Preview -->
             <div class="flex-shrink-0 bg-gradient-to-r from-primary to-primary-dark px-4 py-3 rounded-t-2xl sm:rounded-t-lg">
                 <div class="flex items-center gap-3">
@@ -198,7 +198,7 @@
                 </div>
             </div>
             <!-- Scrollable Form Content -->
-            <form id="archer-form" class="flex-1 overflow-y-auto min-h-0 overscroll-contain touch-auto">
+            <form id="archer-form" class="flex-1 overflow-y-auto min-h-0 overscroll-contain" style="-webkit-overflow-scrolling: touch; touch-action: pan-y; will-change: scroll-position;">
                 <!-- Form content will be injected by JS -->
             </form>
             <!-- Fixed Button Container (outside scrollable area) -->
@@ -687,9 +687,36 @@
                 form.innerHTML = createFormFieldsHTML();
                 
                 // Prevent body scroll when modal is open
-                document.body.style.overflow = 'hidden';
+                // Store current scroll position
+                const scrollY = window.scrollY;
                 document.body.style.position = 'fixed';
+                document.body.style.top = `-${scrollY}px`;
                 document.body.style.width = '100%';
+                document.body.style.overflow = 'hidden';
+                
+                // Store scroll position for restoration
+                modal.dataset.scrollY = scrollY;
+                
+                // Ensure form is scrollable - reset scroll position and ensure proper height
+                setTimeout(() => {
+                    form.scrollTop = 0;
+                    // Force browser to recalculate scrollable area
+                    const formHeight = form.offsetHeight;
+                    const formScrollHeight = form.scrollHeight;
+                    // If content is taller than container, ensure scrolling works
+                    if (formScrollHeight > formHeight) {
+                        form.style.overflowY = 'auto';
+                    }
+                    
+                    // Ensure all nested elements allow touch events for scrolling
+                    const allElements = form.querySelectorAll('*');
+                    allElements.forEach(el => {
+                        // Don't override if element already has touch-action set
+                        if (!el.style.touchAction) {
+                            el.style.touchAction = 'auto';
+                        }
+                    });
+                }, 100);
                 
                 // Restore expanded sections
                 if (expandedSections.size > 0) {
@@ -1649,9 +1676,13 @@
             function closeModal() {
                 modal.classList.add('hidden');
                 // Restore body scroll when modal is closed
-                document.body.style.overflow = '';
+                const scrollY = modal.dataset.scrollY || '0';
                 document.body.style.position = '';
+                document.body.style.top = '';
                 document.body.style.width = '';
+                document.body.style.overflow = '';
+                // Restore scroll position
+                window.scrollTo(0, parseInt(scrollY, 10));
             }
 
             function editArcher(index) {
@@ -1764,17 +1795,49 @@
             });
             
             // Prevent touch events on background from scrolling the page
+            // But allow scrolling within the form content
             modal.addEventListener('touchmove', (event) => {
-                // Only prevent if touching the overlay (not the form content)
-                if (event.target === modal) {
+                // Get the form element
+                const form = document.getElementById('archer-form');
+                
+                // Check if touch is anywhere within the form or its children
+                // This includes deeply nested elements like details, divs, inputs, etc.
+                const isInForm = form && (
+                    form === event.target || 
+                    form.contains(event.target) ||
+                    event.target.closest('#archer-form') === form ||
+                    event.target.closest('form#archer-form') === form
+                );
+                
+                // Allow scrolling if touch is on form or any of its children
+                if (isInForm) {
+                    return; // Allow normal scrolling - form can scroll
+                }
+                
+                // Only prevent if touching the overlay background directly
+                // This prevents background scrolling while allowing form scrolling
+                if (event.target === modal || event.target === modal.querySelector('.bg-black\\/60')) {
                     event.preventDefault();
                 }
             }, { passive: false });
             
-            // Prevent body scroll when modal is open (additional safety)
+            // Prevent wheel scrolling on overlay background only
             modal.addEventListener('wheel', (event) => {
-                // Only prevent if scrolling on the overlay background
-                if (event.target === modal) {
+                // Only prevent if scrolling on the overlay background itself
+                const target = event.target;
+                const form = document.getElementById('archer-form');
+                const modalContent = modal.querySelector('.bg-white, .dark\\:bg-gray-800');
+                
+                // Allow scrolling if wheel is on form or modal content
+                if (form && (form.contains(target) || form === target)) {
+                    return; // Allow normal scrolling
+                }
+                if (modalContent && (modalContent.contains(target) || modalContent === target)) {
+                    return; // Allow normal scrolling
+                }
+                
+                // Only prevent if scrolling on overlay background
+                if (target === modal) {
                     event.preventDefault();
                 }
             }, { passive: false });

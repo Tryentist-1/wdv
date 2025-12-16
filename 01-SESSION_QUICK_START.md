@@ -75,14 +75,17 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Archer Edit Modal Scroll/Touch Fixes & Evaluation
+**Last Session Focus:** Archer Edit Modal Scroll/Touch Fixes - Complete Resolution
 - Fixed critical scroll and touch issues - background no longer scrolls when modal is open
 - Implemented body scroll lock when modal opens (prevents background scrolling)
-- Added touch event prevention on modal overlay
-- Added scroll containment CSS classes (overscroll-contain, touch-none)
+- Fixed form scrolling issue - Extended Profile and other long sections now scroll properly
+- Added touch-action CSS (touch-action: pan-y) for proper touch scrolling
+- Improved touch event detection to work with deeply nested form content
+- Added will-change: scroll-position for better scroll performance
+- Ensured all nested elements allow touch events for scrolling
 - Evaluated modal paradigm - confirmed modal is appropriate for this use case
 - Created comprehensive evaluation document (ARCHER_EDIT_MODAL_EVALUATION.md)
-- Modal now properly contains scrolling within form content
+- Modal now properly scrolls form content while preventing background scroll
 **Current Priority:** Ready for next feature  
 **Next Session Focus:** TBD  
 **Active Branch:** `main`  
@@ -296,14 +299,20 @@
 **Last Updated:** December 15, 2025
 
 ### Recent Changes
-- ✅ **Session Date:** December 15, 2025 (Afternoon)
-- ✅ **What We Did:** Archer Edit Modal Scroll/Touch Fixes & Evaluation (v1.9.6):
+- ✅ **Session Date:** December 15, 2025 (Afternoon - Final)
+- ✅ **What We Did:** Archer Edit Modal Scroll/Touch Fixes - Complete Resolution (v1.9.6):
   - **Scroll/Touch Fixes:** Fixed critical issues where background was scrolling when modal was open
-    - Implemented body scroll lock when modal opens (overflow: hidden, position: fixed)
-    - Added touch event prevention on modal overlay background
-    - Added scroll containment CSS classes (overscroll-contain, touch-none)
-    - Added wheel event prevention on overlay
+    - Implemented body scroll lock when modal opens (position: fixed, preserves scroll position)
+    - Added touch event prevention on modal overlay background only
+    - Added scroll containment CSS classes (overscroll-contain)
+    - Added wheel event prevention on overlay background
     - Modal form content now scrolls independently while background is locked
+  - **Form Scrolling Fix:** Resolved issue where Extended Profile and other long sections couldn't scroll
+    - Added touch-action: pan-y CSS for explicit vertical scrolling
+    - Improved touch event detection to work with deeply nested form content
+    - Added will-change: scroll-position for better scroll performance
+    - Ensured all nested elements allow touch events (touch-action: auto)
+    - Form now properly scrolls when content exceeds viewport height
   - **Modal Evaluation:** Comprehensive evaluation of modal paradigm for complex form
     - Created ARCHER_EDIT_MODAL_EVALUATION.md analysis document
     - Confirmed modal is appropriate for this use case (mobile-first, context preservation)
@@ -311,12 +320,13 @@
   - **User Experience:** Improved modal behavior on mobile devices
     - Background no longer scrolls when interacting with modal
     - Touch events properly contained within modal
-    - Smooth scrolling within form content
+    - Smooth scrolling within form content, including long sections like Extended Profile
+    - All nested form elements (details, divs, inputs) properly scrollable
 - ✅ **Files Changed:**
-  - `archer_list.html` - Fixed scroll/touch handling, added body lock, event prevention
+  - `archer_list.html` - Fixed scroll/touch handling, added body lock, improved form scrolling
   - `docs/analysis/ARCHER_EDIT_MODAL_EVALUATION.md` - New evaluation document
   - `01-SESSION_QUICK_START.md` - Updated session status
-- ✅ **Status:** Completed - Ready for deployment
+- ✅ **Status:** Completed - Tested and working
 - ✅ **Next Steps:** Deploy to production
 
 ### Previous Session
