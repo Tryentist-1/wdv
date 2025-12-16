@@ -857,10 +857,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (matchOver) {
             const winnerName = (winner === 'a1' ? state.archer1.first : state.archer2.first);
             matchResultEl.textContent = `Match Over: ${winnerName} Wins!`;
-            matchResultEl.style.color = 'var(--primary-green)';
+            // Use Tailwind classes for bold, visible styling with dark mode support
+            matchResultEl.className = 'text-center font-bold text-lg md:text-xl py-2 px-4 bg-success/20 dark:bg-success/30 text-success dark:text-green-400 border-2 border-success dark:border-green-400 rounded-lg';
+            matchResultEl.style.color = ''; // Clear inline style
         } else {
             matchResultEl.textContent = 'Match in Progress...';
-            matchResultEl.style.color = 'var(--medium-gray)';
+            // Use Tailwind classes for in-progress styling
+            matchResultEl.className = 'text-center font-semibold text-base md:text-lg py-2 px-4 text-gray-600 dark:text-gray-400';
+            matchResultEl.style.color = ''; // Clear inline style
         }
     }
 
