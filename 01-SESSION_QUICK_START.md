@@ -75,24 +75,35 @@
 
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Archer List Header Cleanup & Identity Selection Flow Improvements
+**Last Session Focus:** Archer List Header Cleanup & Modal Improvements
 - Removed redundant self-summary container and select-yourself banner from archer_list.html
 - Added favorites filter button that includes "Me" record
 - Highlighted "Me" record with blue background and left border accent
 - Fixed identity selection persistence between index.html and archer_list.html
 - Improved ArcherModule.getSelfArcher() to check both extId and id (UUID)
-**Current Priority:** Ready for next feature development  
+- Fixed modal alignment (top stays locked, content scrolls down)
+- Increased photo size to match 3 lines of name inputs
+- Show nickname instead of first name in list and modal
+- Moved gear notes to Equipment section
+- Modal stays open after save for easier editing
+**Current Priority:** Clean up Archer Edit modal UI/UX  
+**Next Session Focus:** Archer Edit modal cleanup - improve layout, organization, and user experience  
 **Active Branch:** `main`  
 **Blockers:** None
 
 **Quick Context for This Session:**
 - ✅ **Completed:**
-  1. **Archer List Header Cleanup (v1.9.5):** ✅ Complete - Cleaned up header, added favorites filter, improved identity selection
+  1. **Archer List Header Cleanup & Modal Improvements (v1.9.5):** ✅ Complete - Cleaned up header, added favorites filter, improved modal
      - Removed redundant self-summary container and select-yourself banner
      - Added favorites filter button (includes "Me" record)
      - Highlighted "Me" record with blue background and left border accent
      - Fixed identity selection persistence between pages
      - Improved ArcherModule.getSelfArcher() lookup logic
+     - Fixed modal alignment (top locked, content scrolls down)
+     - Increased photo size (w-32 h-32) to match 3 lines of name inputs
+     - Show nickname instead of first name in list, modal title, and success messages
+     - Moved gear notes to Equipment section
+     - Modal stays open after save for easier editing
   2. **Footer Mobile-Friendly Update (v1.9.4):** ✅ Complete - All 14 footers updated
      - Increased footer height from 36px to 48px for better touch targets
      - Home button now 48×48px touch target (`min-w-[48px] h-[48px]`)
@@ -108,7 +119,7 @@
   4. **Previous: Scorecard Editor Edit Buttons:** ✅ Complete integration
   5. **Previous: Footer Standardization (v1.9.2):** ✅ All 14 footers standardized to 36px
 - 📂 **Files Changed (This Session):**
-  - `archer_list.html` - Removed header self-selection elements, added favorites filter, highlighted "Me" record
+  - `archer_list.html` - Removed header self-selection elements, added favorites filter, highlighted "Me" record, improved modal
   - `index.html` - Fixed identity selection to use ArcherModule.setSelfExtId(), improved lookup logic
   - `js/archer_module.js` - Updated getSelfArcher() to check both extId and id (UUID)
   - `docs/analysis/ARCHER_LIST_HEADER_RECOMMENDATIONS.md` - New analysis document 
@@ -436,6 +447,11 @@
 
 **Note:** These are planned improvements but not currently being worked on. Prioritize based on user needs and sprint goals.
 
+- **Archer Edit Modal Cleanup:** Improve layout, organization, and user experience of the archer edit modal
+  - Review section organization and grouping
+  - Optimize mobile layout and scrolling
+  - Improve field labeling and visual hierarchy
+  - Enhance form validation and error handling
 - **Headers and Footers:** Update headers and footers in scoring modules (Ranking Round 300, Ranking Round 360, Solo Card, Team Card) for consistency and improved UX
 - **Complete Checkbox:** Add "Complete" checkbox to scorecards so archers can mark in-progress cards as complete
   - This will help archers signal when they've finished scoring a round/match
