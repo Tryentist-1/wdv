@@ -663,6 +663,32 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    /**
+     * Generate HTML for archer header with avatar and name
+     */
+    function getArcherHeaderHTML(archer) {
+        if (!archer) {
+            return '<span>Archer</span>';
+        }
+        
+        const displayName = archer.nickname || archer.first || 'Archer';
+        const initials = `${(archer.first || '?').charAt(0)}${(archer.last || '').charAt(0)}`.toUpperCase();
+        
+        let avatarHTML = '';
+        if (archer.photoUrl) {
+            avatarHTML = `<img src="${archer.photoUrl}" alt="${archer.first} ${archer.last}" class="w-8 h-8 rounded-full object-cover mx-auto mb-1 border-2 border-white/50">`;
+        } else {
+            avatarHTML = `<div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold mx-auto mb-1 border-2 border-white/50">${initials}</div>`;
+        }
+        
+        return `
+            <div class="flex flex-col items-center gap-1">
+                ${avatarHTML}
+                <span class="text-xs md:text-sm">${displayName}</span>
+            </div>
+        `;
+    }
+
     function renderScoreTable() {
         // Ensure scores arrays are initialized
         if (!state.scores.a1 || !Array.isArray(state.scores.a1)) {
