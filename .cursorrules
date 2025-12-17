@@ -1,0 +1,100 @@
+# WDV Archery Suite - Hard Rules for AI Assistants
+
+**CRITICAL:** These rules MUST be followed for ALL code changes, commits, and deployments.
+
+## 🔴 MANDATORY PRE-COMMIT CHECKS
+
+Before suggesting ANY code changes or commits, you MUST verify:
+
+1. **Branch Naming:** Branch MUST follow pattern: `fix/`, `vibe/`, or `feature/` + descriptive name
+   - ✅ GOOD: `fix/solo-record-winner-field-update`
+   - ❌ BAD: `small-fixes-2024-12-16`, `fix`, `update`
+
+2. **Documentation:** ALL new functions MUST have JSDoc (JS) or PHPDoc (PHP)
+   - Include `@param` for all parameters
+   - Include `@returns` for return values
+   - Explain complex logic with comments
+
+3. **Mobile-First:** ALL UI changes MUST be tested on mobile (iPhone SE minimum)
+   - Touch targets ≥ 44px
+   - No hover-only interactions
+   - Mobile-first Tailwind utilities
+
+4. **Tech Stack:** STRICTLY enforced
+   - Vanilla JavaScript ONLY (no frameworks)
+   - Tailwind CSS ONLY (no custom CSS)
+   - Check `tests/components/style-guide.html` before adding UI
+
+5. **Architecture:** MUST follow patterns
+   - Database is source of truth (localStorage = cache only)
+   - UUIDs for all IDs (never sequential)
+   - Coach verification workflow preserved
+
+## 🔴 MANDATORY PRE-DEPLOYMENT CHECKS
+
+Before suggesting deployment:
+
+1. **Code Review Checklist:** Complete `.cursor/rules/code-review-checklist.mdc`
+2. **Testing:** All tests pass, mobile tested, dark mode tested
+3. **Standards:** All `.cursor/rules/*.mdc` standards followed
+4. **Documentation:** All changes documented
+
+## 🚫 NEVER DO THESE
+
+- ❌ Commit without completing code review checklist
+- ❌ Use sequential numbers for IDs
+- ❌ Store permanent data in localStorage
+- ❌ Skip mobile testing
+- ❌ Add custom CSS files (except score-colors.css)
+- ❌ Use JavaScript frameworks
+- ❌ Bypass coach verification workflow
+- ❌ Deploy without testing
+
+## ✅ ALWAYS DO THESE
+
+- ✅ Check branch naming before creating branch
+- ✅ Add JSDoc/PHPDoc to all new functions
+- ✅ Test on mobile device before suggesting deployment
+- ✅ Reference style guide before adding UI
+- ✅ Use UUIDs for all IDs
+- ✅ Follow database-as-source-of-truth pattern
+- ✅ Complete code review checklist before commit
+
+## 📋 When User Asks for Code Changes
+
+1. **First:** Check if branch name follows standard (if creating branch)
+2. **Then:** Implement changes with proper documentation
+3. **Before commit:** Run through code review checklist
+4. **Suggest commit:** Only after checklist complete
+
+## 📋 When User Asks to Deploy
+
+1. **First:** Verify code review checklist complete
+2. **Then:** Verify all tests pass
+3. **Then:** Verify mobile testing done
+4. **Finally:** Suggest deployment with rollback plan
+
+## 🔗 Reference Files
+
+- **All Standards:** `.cursor/rules/*.mdc`
+- **Code Review:** `.cursor/rules/code-review-checklist.mdc`
+- **Workflows:** `.agent/workflows/*.md`
+- **Deployment:** `DEPLOYMENT_CHECKLIST.md`
+
+## ⚠️ Enforcement
+
+**If you see code that violates these rules:**
+1. Point out the violation
+2. Explain why it's a problem
+3. Suggest the fix
+4. Do NOT proceed until fixed
+
+**If user asks to skip these checks:**
+1. Politely explain why checks are important
+2. Offer to help complete them quickly
+3. Do NOT skip mandatory checks
+
+---
+
+**Remember:** These rules exist to prevent bugs, maintain code quality, and ensure mobile-first experience for 99% of users who are on phones.
+

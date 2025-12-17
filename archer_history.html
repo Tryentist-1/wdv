@@ -101,12 +101,23 @@
     let historyData = []; // Store history for win/loss calculation
 
     /**
-     * Calculate win/loss ratio from history
+     * Calculate win/loss ratio from history for solo matches.
+     * Handles both boolean (true/false) and numeric (1/0) values from PHP JSON encoding.
+     * 
+     * @param {Array<Object>} history - Array of history items from API
+     * @param {string} history[].type - Type of history item ('solo', 'ranking', 'team')
+     * @param {boolean|number|null} history[].is_winner - Winner status (true/1 = win, false/0 = loss, null = incomplete)
+     * @returns {Object} Win/loss statistics
+     * @returns {number} returns.wins - Number of wins
+     * @returns {number} returns.losses - Number of losses
+     * @returns {number} returns.total - Total solo matches
+     * @returns {string} returns.ratio - Formatted ratio string (e.g., "5-3")
      */
     function calculateWinLossRatio(history) {
       const soloMatches = history.filter(item => item.type === 'solo');
-      const wins = soloMatches.filter(m => m.is_winner === true).length;
-      const losses = soloMatches.filter(m => m.is_winner === false).length;
+      // Handle both boolean true/false and numeric 1/0 from PHP JSON encoding
+      const wins = soloMatches.filter(m => m.is_winner === true || m.is_winner === 1).length;
+      const losses = soloMatches.filter(m => m.is_winner === false || m.is_winner === 0).length;
       const total = soloMatches.length;
       
       return {

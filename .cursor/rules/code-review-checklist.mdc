@@ -1,0 +1,108 @@
+---
+description: Mandatory code review checklist - must be completed before any commit or deployment
+appliesTo: "*"
+---
+
+# Code Review Checklist
+
+**CRITICAL:** This checklist MUST be completed before committing code or deploying to production.
+
+## Pre-Commit Checklist
+
+### 1. Branch Naming ✅
+- [ ] Branch follows naming convention: `fix/`, `vibe/`, or `feature/`
+- [ ] Branch name is descriptive (e.g., `fix/solo-record-winner-field-update`)
+- [ ] NOT using generic names like `small-fixes` or date-only names
+
+### 2. Code Documentation ✅
+- [ ] All new functions have JSDoc (JavaScript) or PHPDoc (PHP) comments
+- [ ] Function parameters documented with `@param`
+- [ ] Return values documented with `@returns`
+- [ ] Complex logic has inline comments explaining WHY, not just WHAT
+
+### 3. Architecture Compliance ✅
+- [ ] Database is source of truth (no localStorage for permanent data)
+- [ ] Using UUIDs for all IDs (never sequential numbers)
+- [ ] Coach verification workflow preserved (if applicable)
+- [ ] Offline queue handled correctly (if applicable)
+
+### 4. Mobile-First Design ✅
+- [ ] Touch targets are at least 44px × 44px
+- [ ] Tested on mobile device (iPhone SE minimum)
+- [ ] No hover-only interactions (use tap targets)
+- [ ] Responsive design uses mobile-first Tailwind utilities
+
+### 5. Tech Stack Compliance ✅
+- [ ] Vanilla JavaScript only (no frameworks)
+- [ ] Tailwind CSS only (no custom CSS files)
+- [ ] No inline styles (use Tailwind classes)
+- [ ] Checked `tests/components/style-guide.html` before adding new UI
+
+### 6. Testing ✅
+- [ ] Automated tests pass (if applicable)
+- [ ] Tested on actual mobile device
+- [ ] Tested in dark mode and light mode
+- [ ] Edge cases handled (empty inputs, invalid data, etc.)
+- [ ] No console errors introduced
+- [ ] Regression tests passed (related features still work)
+
+### 7. Database Changes ✅
+- [ ] Migrations are idempotent (safe to run multiple times)
+- [ ] MySQL 5.7+ compatible
+- [ ] New columns are nullable OR have sensible defaults
+- [ ] Indexes added for common query patterns
+
+### 8. Git Workflow ✅
+- [ ] All changes committed
+- [ ] Commit message is clear and descriptive
+- [ ] Commit explains WHAT changed and WHY (if not obvious)
+- [ ] Related files committed together
+
+## Pre-Deployment Checklist
+
+### 9. Final Verification ✅
+- [ ] All pre-commit checklist items completed
+- [ ] Code reviewed (self-review minimum)
+- [ ] Branch is up to date with base branch
+- [ ] No merge conflicts
+- [ ] Deployment checklist reviewed (`DEPLOYMENT_CHECKLIST.md`)
+
+### 10. Post-Deployment Plan ✅
+- [ ] Know how to verify fix works in production
+- [ ] Know how to rollback if needed
+- [ ] Monitoring plan in place (what to watch for)
+
+## Quick Reference
+
+**Before ANY commit:**
+1. Branch name correct? ✅
+2. Documentation added? ✅
+3. Mobile tested? ✅
+4. Standards followed? ✅
+
+**Before ANY deployment:**
+1. All checklists complete? ✅
+2. Tests pass? ✅
+3. Rollback plan ready? ✅
+
+## Enforcement
+
+**This checklist is MANDATORY.** If any item is not checked:
+- ❌ Do NOT commit
+- ❌ Do NOT deploy
+- ✅ Fix the issue first
+- ✅ Re-run checklist
+
+## References
+
+- **Coding Standards:** `.cursor/rules/coding-standards.mdc`
+- **Architecture Patterns:** `.cursor/rules/architecture-patterns.mdc`
+- **Mobile-First:** `.cursor/rules/mobile-first-principles.mdc`
+- **Tech Stack:** `.cursor/rules/tech-stack-constraints.mdc`
+- **Git Workflow:** `.cursor/rules/git-workflow.mdc`
+- **Testing:** `.cursor/rules/testing-requirements.mdc`
+- **Deployment:** `DEPLOYMENT_CHECKLIST.md`
+
+---
+
+**Remember:** Quality > Speed. It's faster to do it right the first time than to fix bugs in production.

@@ -274,7 +274,6 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             $opponentName = $isArcher1 ? $match['archer2_name'] : $match['archer1_name'];
             $myMatchArcherId = $isArcher1 ? $match['archer1_match_archer_id'] : $match['archer2_match_archer_id'];
             $opponentMatchArcherId = $isArcher1 ? $match['archer2_match_archer_id'] : $match['archer1_match_archer_id'];
-            $isWinner = $isArcher1 ? $match['archer1_winner'] : $match['archer2_winner'];
             
             // Calculate sets_won from set_points (count sets where set_points = 2)
             $setsStmt = $pdo->prepare('
@@ -292,6 +291,22 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             $setsStmt->execute([$opponentMatchArcherId]);
             $opponentStats = $setsStmt->fetch(PDO::FETCH_ASSOC);
             $opponentSetsWon = (int)($opponentStats['sets_won'] ?? 0);
+            
+            // Determine winner based on sets_won (more reliable than database field)
+            // Winner is the archer with more sets won, or null if match is incomplete/tied
+            $isWinner = null;
+            if ($setsWon > $opponentSetsWon) {
+                $isWinner = true;
+            } elseif ($opponentSetsWon > $setsWon) {
+                $isWinner = false;
+            } else {
+                // Match is tied or incomplete - check if there's a shoot-off winner
+                // Fall back to database field if sets are equal (might be shoot-off scenario)
+                $dbWinner = $isArcher1 ? $match['archer1_winner'] : $match['archer2_winner'];
+                if ($dbWinner !== null) {
+                    $isWinner = (bool)$dbWinner;
+                }
+            }
             
             $history[] = [
                 'type' => 'solo',
@@ -5034,6 +5049,25 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
         if (isset($input['winnerArcherId'])) {
             $updates[] = 'winner_archer_id=?';
             $params[] = $input['winnerArcherId'];
+            
+            /**
+             * Update winner field in solo_match_archers when winnerArcherId is set.
+             * Ensures consistency between solo_matches.winner_archer_id and solo_match_archers.winner.
+             * 
+             * @param PDO $pdo Database connection
+             * @param string $matchId Match UUID
+             * @param string $winnerArcherId Winning archer UUID
+             * @return void
+             */
+            $archersStmt = $pdo->prepare('SELECT id, archer_id FROM solo_match_archers WHERE match_id = ?');
+            $archersStmt->execute([$matchId]);
+            $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($archers as $archer) {
+                $isWinner = ($archer['archer_id'] === $input['winnerArcherId']) ? 1 : 0;
+                $winnerUpdateStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = ? WHERE id = ?');
+                $winnerUpdateStmt->execute([$isWinner, $archer['id']]);
+            }
         }
         if (isset($input['shootOff'])) {
             $updates[] = 'shoot_off=?';
@@ -5746,10 +5780,54 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
         $updateStmt = $pdo->prepare('UPDATE solo_matches SET card_status = ? WHERE id = ?');
         $updateStmt->execute([$newStatus, $matchId]);
         
-        // If setting to COMP, also update match status to Completed
+        // If setting to COMP, also update match status to Completed and set winner fields
         if ($newStatus === 'COMP') {
             $statusStmt = $pdo->prepare('UPDATE solo_matches SET status = ? WHERE id = ?');
             $statusStmt->execute(['Completed', $matchId]);
+            
+            /**
+             * Calculate and update winner field in solo_match_archers based on sets_won.
+             * This ensures the stored winner field matches the actual match result.
+             * 
+             * @param PDO $pdo Database connection
+             * @param string $matchId Match UUID
+             * @return void
+             */
+            // Get both archers with their sets_won
+            $archersStmt = $pdo->prepare('
+                SELECT 
+                    sma.id,
+                    sma.position,
+                    COUNT(CASE WHEN sms.set_points = 2 THEN 1 END) as sets_won
+                FROM solo_match_archers sma
+                LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 5
+                WHERE sma.match_id = ?
+                GROUP BY sma.id, sma.position
+                ORDER BY sma.position
+            ');
+            $archersStmt->execute([$matchId]);
+            $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (count($archers) === 2) {
+                $archer1SetsWon = (int)($archers[0]['sets_won'] ?? 0);
+                $archer2SetsWon = (int)($archers[1]['sets_won'] ?? 0);
+                
+                // Determine winner based on sets won
+                if ($archer1SetsWon > $archer2SetsWon) {
+                    // Archer 1 wins
+                    $winnerStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 1 WHERE id = ?');
+                    $winnerStmt->execute([$archers[0]['id']]);
+                    $loserStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 0 WHERE id = ?');
+                    $loserStmt->execute([$archers[1]['id']]);
+                } elseif ($archer2SetsWon > $archer1SetsWon) {
+                    // Archer 2 wins
+                    $winnerStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 1 WHERE id = ?');
+                    $winnerStmt->execute([$archers[1]['id']]);
+                    $loserStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 0 WHERE id = ?');
+                    $loserStmt->execute([$archers[0]['id']]);
+                }
+                // If sets are equal (tied), leave winner field as-is (might be shoot-off scenario handled elsewhere)
+            }
         }
         
         // Return updated match
