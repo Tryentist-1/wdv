@@ -1,0 +1,76 @@
+---
+description: JavaScript and PHP coding standards - JSDoc, naming conventions, code organization
+appliesTo: "*.js,*.php"
+---
+
+# Coding Standards
+
+## JavaScript
+
+### Function Documentation
+
+**REQUIRED:** All functions must have JSDoc comments:
+
+```javascript
+/**
+ * Brief description of function.
+ * @param {string} paramName Description of parameter.
+ * @returns {number} Description of return value.
+ */
+function functionName(paramName) {
+    // implementation
+}
+```
+
+### Pure Functions
+
+Functions in `js/common.js` should be:
+- Pure functions (no side effects)
+- Accompanied by unit tests in `/tests`
+- Reusable across multiple modules
+
+### Naming Conventions
+
+- Functions: `camelCase` (e.g., `parseScoreValue`)
+- Constants: `UPPER_SNAKE_CASE` (e.g., `API_BASE`, `COACH_COOKIE_NAME`)
+- Variables: `camelCase`
+- Module objects: `PascalCase` (e.g., `ArcherModule`)
+
+## PHP
+
+### Function Documentation
+
+Use PHPDoc format:
+
+```php
+/**
+ * Brief description.
+ * @param PDO $pdo Database connection
+ * @param string $param Description
+ * @return string Description
+ */
+function functionName(PDO $pdo, string $param): string {
+    // implementation
+}
+```
+
+### Code Organization
+
+- API endpoints in `api/index.php` with RESTful routing
+- Database functions in `api/db.php`
+- Use prepared statements for all database queries
+- Always use UUIDs for ID generation
+
+### Error Handling
+
+- Return appropriate HTTP status codes
+- Use try-catch for database operations
+- Log errors appropriately
+- Never expose sensitive data in error messages
+
+## References
+
+- Example: `js/common.js` for function patterns
+- API patterns: `api/index.php`
+- See `docs/core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md`
+

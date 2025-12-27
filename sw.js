@@ -4,22 +4,22 @@ const CACHE_NAME = 'oas-score-v1';
 const RUNTIME_CACHE = 'oas-runtime-v1';
 
 // Assets to cache immediately on install
-// Note: Paths are relative to service worker location (/wdv/)
+// Note: Paths are relative to service worker location (root /)
 const STATIC_ASSETS = [
-  '/wdv/',
-  '/wdv/index.html',
-  '/wdv/css/tailwind-compiled.css',
-  '/wdv/css/unified-scorecard-list.css',
-  '/wdv/css/main.css',
-  '/wdv/css/score.css',
-  '/wdv/css/score-colors.css',
-  '/wdv/css/keypad.css',
-  '/wdv/css/components.css',
-  '/wdv/js/common.js',
-  '/wdv/js/archer_module.js',
-  '/wdv/js/live_updates.js',
-  '/wdv/js/unified_scorecard_list.js',
-  '/wdv/offline.html'
+  '/',
+  '/index.html',
+  '/css/tailwind-compiled.css',
+  '/css/unified-scorecard-list.css',
+  '/css/main.css',
+  '/css/score.css',
+  '/css/score-colors.css',
+  '/css/keypad.css',
+  '/css/components.css',
+  '/js/common.js',
+  '/js/archer_module.js',
+  '/js/live_updates.js',
+  '/js/unified_scorecard_list.js',
+  '/offline.html'
 ];
 
 // External resources to cache
@@ -101,7 +101,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // API requests - special handling to work with live_updates.js offline queue
-  if (url.pathname.startsWith('/wdv/api/') || url.pathname.startsWith('/api/')) {
+  if (url.pathname.startsWith('/api/')) {
     // For POST/PUT/DELETE/PATCH: Don't intercept - let live_updates.js handle network errors
     // This allows the offline queue system to detect failures and queue requests
     if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
@@ -168,7 +168,7 @@ self.addEventListener('fetch', (event) => {
               return cachedResponse;
             }
             // Fallback to offline page
-            return caches.match('/wdv/offline.html');
+            return caches.match('/offline.html');
           });
         })
     );
@@ -177,10 +177,6 @@ self.addEventListener('fetch', (event) => {
 
   // Static assets (CSS, JS, images) - cache first, network fallback
   if (
-    url.pathname.startsWith('/wdv/css/') ||
-    url.pathname.startsWith('/wdv/js/') ||
-    url.pathname.startsWith('/wdv/icons/') ||
-    url.pathname.startsWith('/wdv/avatars/') ||
     url.pathname.startsWith('/css/') ||
     url.pathname.startsWith('/js/') ||
     url.pathname.startsWith('/icons/') ||

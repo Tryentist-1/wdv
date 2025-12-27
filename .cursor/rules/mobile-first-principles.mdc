@@ -1,0 +1,30 @@
+---
+description: Mobile-first design principles - 99% of users are on phones
+appliesTo: "*.html,*.js,*.css"
+---
+
+# Mobile-First Design Principles
+
+**CRITICAL:** 99% of users access this application on mobile devices (phones). All design decisions must prioritize mobile experience first.
+
+## Core Requirements
+
+1. **Touch Targets:** All interactive elements must be at least 44px × 44px
+2. **Screen Size:** Test on iPhone SE (smallest common screen) before larger screens
+3. **Simple UX:** Keep interfaces simple and fast - avoid complex interactions
+4. **Responsive Design:** Use Tailwind responsive classes (mobile-first breakpoints)
+5. **Performance:** Optimize for slow networks and lower-end devices
+
+## Implementation Guidelines
+
+- Use Tailwind's mobile-first utilities: `sm:`, `md:`, `lg:` only when necessary
+- Default styles should work on mobile, then enhance for larger screens
+- Avoid hover states that are critical for functionality (use tap targets)
+- Test on actual mobile devices, not just browser dev tools
+- Keep modals and overlays mobile-friendly with proper scrolling
+
+## References
+
+- See `docs/core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md`
+- Reference: `tests/components/style-guide.html` for mobile-optimized components
+

@@ -4247,13 +4247,18 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
         $stmt->execute($params);
         $archers = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Parse JSON fields
+        // Parse JSON fields and normalize avatar paths
         foreach ($archers as &$archer) {
             if (!empty($archer['faves'])) {
                 $decoded = json_decode($archer['faves'], true);
                 $archer['faves'] = is_array($decoded) ? $decoded : [];
             } else {
                 $archer['faves'] = [];
+            }
+            
+            // Normalize avatar paths: convert /wdv/avatars/ to /avatars/
+            if (!empty($archer['photoUrl'])) {
+                $archer['photoUrl'] = str_replace('/wdv/avatars/', '/avatars/', $archer['photoUrl']);
             }
         }
         

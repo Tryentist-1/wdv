@@ -5,7 +5,7 @@
  * Secured with passcode authentication
  * 
  * Usage:
- *   curl "https://tryentist.com/wdv/api/diagnostic_undefined_divisions.php?passcode=wdva26"
+ *   curl "https://archery.tryentist.com/api/diagnostic_undefined_divisions.php?passcode=wdva26"
  */
 
 require_once __DIR__ . '/db.php';

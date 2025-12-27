@@ -952,7 +952,7 @@
 
       // Clear cookies - explicitly delete known cookies with multiple paths/domains
       const knownCookies = ['oas_archer_id', 'coach_auth'];
-      const paths = ['/', '/wdv', '/wdv/'];
+      const paths = ['/'];
       const domains = [window.location.hostname, '.' + window.location.hostname, ''];
 
       try {
@@ -1014,7 +1014,7 @@
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js', { scope: '/wdv/' })
+        navigator.serviceWorker.register('sw.js', { scope: '/' })
           .then((registration) => {
             console.log('[PWA] Service Worker registered:', registration.scope);
             

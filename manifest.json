@@ -2,12 +2,12 @@
   "name": "WDV Archery",
   "short_name": "WDV Score",
   "description": "Archery scoring and team management tools for OAS",
-  "start_url": "/wdv/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#f9fafb",
   "theme_color": "#2563eb",
   "orientation": "portrait-primary",
-  "scope": "/wdv/",
+  "scope": "/",
   "icons": [
     {
       "src": "icons/icon-72x72.png",
@@ -65,7 +65,7 @@
       "name": "Ranking Round",
       "short_name": "Ranking",
       "description": "Start a ranking round",
-      "url": "/wdv/ranking_round_300.html",
+      "url": "/ranking_round_300.html",
       "icons": [
         {
           "src": "icons/icon-96x96.png",
@@ -77,7 +77,7 @@
       "name": "Solo Match",
       "short_name": "Solo",
       "description": "Start a solo match",
-      "url": "/wdv/solo_card.html",
+      "url": "/solo_card.html",
       "icons": [
         {
           "src": "icons/icon-96x96.png",
@@ -89,7 +89,7 @@
       "name": "Team Match",
       "short_name": "Team",
       "description": "Start a team match",
-      "url": "/wdv/team_card.html",
+      "url": "/team_card.html",
       "icons": [
         {
           "src": "icons/icon-96x96.png",

@@ -1,0 +1,64 @@
+---
+description: Database migration requirements - MySQL 5.7+ compatibility, idempotent, UUIDs
+appliesTo: "*.sql,*.php"
+---
+
+# Database Migration Standards
+
+## Critical Requirements
+
+1. **MySQL 5.7+ Compatibility** - Migrations must work on MySQL 5.7 and 8.0+
+2. **Idempotent** - Safe to run multiple times without errors
+3. **UUIDs for IDs** - Never use sequential numbers for primary keys
+4. **Backward Compatible** - New columns should be nullable with defaults
+
+## Migration Structure
+
+```sql
+-- Use stored procedures for MySQL 5.7+ compatibility
+DELIMITER $$
+
+-- Check if column exists before adding
+-- Use IF NOT EXISTS patterns
+-- Provide verification queries at end
+```
+
+## Best Practices
+
+1. **Check before modifying:**
+   - Use `IF NOT EXISTS` for columns
+   - Check for column/table existence before operations
+   - Use stored procedures when needed for compatibility
+
+2. **Default values:**
+   - New columns should be nullable OR have sensible defaults
+   - Ensure defaults work for existing rows
+
+3. **Indexes:**
+   - Add indexes for common query patterns
+   - Use descriptive names: `idx_tablename_columnname`
+
+4. **Verification:**
+   - Include SELECT queries to verify migration success
+   - Test on both MySQL 5.7 and 8.0+
+
+5. **Documentation:**
+   - Add comments explaining the purpose
+   - Document any breaking changes
+   - Include rollback instructions if needed
+
+## File Naming
+
+- Pattern: `migration_[description].sql`
+- Location: `api/sql/`
+- Example: `migration_archer_extended_profile.sql`
+
+## References
+
+- Example migration: `api/sql/migration_archer_extended_profile.sql`
+- Base schema: `api/sql/schema.mysql.sql`
+- See `RELEASE_NOTES_v1.9.3.md` for migration example
+
+
+
+

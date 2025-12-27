@@ -22,18 +22,18 @@
 ### For Archers
 
 **Install as App (PWA):**
-1. Visit https://tryentist.com/wdv/ on mobile
+1. Visit https://archery.tryentist.com/ on mobile
 2. Add to home screen for app-like experience
 3. Works offline with cached assets
 
 **Ranking Round:**
-1. Visit https://tryentist.com/wdv/
+1. Visit https://archery.tryentist.com/
 2. Scan QR code OR select event
 3. Find your bale group
 4. Begin scoring!
 
 **Solo/Team Matches:**
-1. Visit https://tryentist.com/wdv/
+1. Visit https://archery.tryentist.com/
 2. Select "Solo Match" or "Team Match"
 3. Enter archer names
 4. Start match!
@@ -41,7 +41,7 @@
 ### For Coaches
 
 **Event Management:**
-1. Visit https://tryentist.com/wdv/coach.html
+1. Visit https://archery.tryentist.com/coach.html
 2. Enter coach passcode
 3. Create/manage events
 4. View live scores
@@ -314,7 +314,7 @@ npm run test:e2e
 ./tests/scripts/test_cloudflare.sh
 
 # 4. Verify deployment
-open https://tryentist.com/wdv/
+open https://archery.tryentist.com/
 ```
 
 ### Deployment Documentation
@@ -514,9 +514,9 @@ chore: Build/tooling changes
 - **All Docs:** [/docs](/docs) (57 documents)
 
 ### Quick Links
-- **Production:** https://tryentist.com/wdv/
-- **Coach Console:** https://tryentist.com/wdv/coach.html
-- **Live Results:** https://tryentist.com/wdv/results.html
+- **Production:** https://archery.tryentist.com/
+- **Coach Console:** https://archery.tryentist.com/coach.html
+- **Live Results:** https://archery.tryentist.com/results.html
 
 ### Development
 - **Local Dev Guide:** [QUICK_START_LOCAL.md](QUICK_START_LOCAL.md)

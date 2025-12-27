@@ -9,7 +9,7 @@
 #   php backup_database.php
 #
 # Or via web request (if you set up a protected endpoint):
-#   curl https://tryentist.com/wdv/api/backup_database.php?token=SECRET_TOKEN
+#   curl https://archery.tryentist.com/api/backup_database.php?token=SECRET_TOKEN
 #
 # For direct MySQL dump (if you have SSH access):
 #   mysqldump -u wdv_user -p wdv events rounds round_archers end_events archers > backup_$(date +%Y%m%d_%H%M%S).sql
@@ -20,7 +20,7 @@ echo ""
 echo "Option 1: Run backup script on server via SSH"
 echo "---------------------------------------------"
 echo "ssh user@da100.is.cc"
-echo "cd public_html/wdv/api"
+echo "cd public_html/api"
 echo "php backup_database.php"
 echo ""
 echo "Option 2: Use mysqldump directly (if you have SSH access)"

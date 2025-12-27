@@ -5,10 +5,10 @@
  * Secured with passcode authentication
  * 
  * Usage:
- *   curl "https://tryentist.com/wdv/api/backup_database_web.php?passcode=wdva26" -o backup.sql
+ *   curl "https://archery.tryentist.com/api/backup_database_web.php?passcode=wdva26" -o backup.sql
  * 
  * Or via browser (will download file):
- *   https://tryentist.com/wdv/api/backup_database_web.php?passcode=wdva26
+ *   https://archery.tryentist.com/api/backup_database_web.php?passcode=wdva26
  */
 
 require_once __DIR__ . '/config.php';

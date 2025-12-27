@@ -5,7 +5,7 @@
  * Web interface for creating database backups with customizable options
  * 
  * Usage:
- *   https://tryentist.com/wdv/api/backup_admin.php?passcode=wdva26
+ *   https://archery.tryentist.com/api/backup_admin.php?passcode=wdva26
  */
 
 require_once __DIR__ . '/config.php';

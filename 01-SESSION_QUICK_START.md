@@ -836,11 +836,11 @@ npm run deploy:fast         # Skip local backup (faster)
 
 ```bash
 # Check production health
-curl https://tryentist.com/wdv/api/v1/health
+curl https://archery.tryentist.com/api/v1/health
 
 # Open key pages to verify
-open https://tryentist.com/wdv/
-open https://tryentist.com/wdv/coach.html
+open https://archery.tryentist.com/
+open https://archery.tryentist.com/coach.html
 ```
 
 📋 **Full Checklist:** See [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
@@ -1003,13 +1003,13 @@ When Terry says... | He means...
 
 ```bash
 # 1. Check API health
-curl https://tryentist.com/wdv/api/health
+curl https://archery.tryentist.com/api/health
 
 # 2. Check database connection
-curl https://tryentist.com/wdv/api/v1/archers | jq '.archers | length'
+curl https://archery.tryentist.com/api/v1/archers | jq '.archers | length'
 
 # 3. Check authentication
-curl -H "X-Passcode: wdva26" https://tryentist.com/wdv/api/v1/events | jq '.events | length'
+curl -H "X-Passcode: wdva26" https://archery.tryentist.com/api/v1/events | jq '.events | length'
 ```
 
 ### Expected Results
@@ -1242,9 +1242,9 @@ See [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 
 ### Important URLs
 
-- **Production:** <https://tryentist.com/wdv/>
-- **Coach Console:** <https://tryentist.com/wdv/coach.html>
-- **Results:** <https://tryentist.com/wdv/results.html>
+- **Production:** <https://archery.tryentist.com/>
+- **Coach Console:** <https://archery.tryentist.com/coach.html>
+- **Results:** <https://archery.tryentist.com/results.html>
 - **Local:** <http://localhost:3000>
 
 ### Important Files

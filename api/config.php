@@ -23,7 +23,7 @@ if (!defined('PASSCODE')) {
     define('PASSCODE', 'wdva26');
 }
 if (!defined('CORS_ORIGIN')) {
-    define('CORS_ORIGIN', 'https://tryentist.com');
+    define('CORS_ORIGIN', 'https://archery.tryentist.com');
 }
 
 

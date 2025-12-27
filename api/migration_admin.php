@@ -5,7 +5,7 @@
  * Web interface for safely executing database migrations with preview and verification
  * 
  * Usage:
- *   https://tryentist.com/wdv/api/migration_admin.php?passcode=wdva26
+ *   https://archery.tryentist.com/api/migration_admin.php?passcode=wdva26
  */
 
 require_once __DIR__ . '/config.php';

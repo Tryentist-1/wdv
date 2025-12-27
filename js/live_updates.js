@@ -9,7 +9,7 @@
             const port = window.location.port || '8001';
             return `${window.location.protocol}//${window.location.hostname}:${port}/api/index.php/v1`;
         }
-        return 'https://tryentist.com/wdv/api/v1';
+        return 'https://archery.tryentist.com/api/v1';
     };
 
     const state = {
@@ -601,7 +601,7 @@
             ...storedConfig,
             ...overrides,
             // Always use detected API base when on localhost
-            apiBase: (isLocalhost && !overrides?.apiBase) ? detectedApiBase : (overrides?.apiBase || storedConfig.apiBase || detectedApiBase || 'https://tryentist.com/wdv/api/v1')
+            apiBase: (isLocalhost && !overrides?.apiBase) ? detectedApiBase : (overrides?.apiBase || storedConfig.apiBase || detectedApiBase || 'https://archery.tryentist.com/api/v1')
         };
 
         setConfig(config);

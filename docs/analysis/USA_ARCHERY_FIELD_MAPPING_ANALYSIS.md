@@ -204,3 +204,4 @@ Where the field appears in our archer profile modal UI:
 - Default Template: `js/archer_module.js:26-76` (`DEFAULT_ARCHER_TEMPLATE`)
 - Database Schema: `api/sql/schema.mysql.sql:4-52` (archers table)
 
+

@@ -49,3 +49,4 @@ echo "3. The manifest.json is already configured to use these icons"
 
 
 
+

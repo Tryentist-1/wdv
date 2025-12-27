@@ -1,0 +1,78 @@
+---
+description: Testing requirements - test before deployment, mobile testing, edge cases
+appliesTo: "*.js,*.php,*.html"
+---
+
+# Testing Requirements
+
+## Testing Philosophy
+
+**QA Lead Mindset:** All changes must be reviewed with testing in mind before production.
+
+### Before Deployment
+
+1. **Local Tests:**
+   ```bash
+   npm run test:setup-sections  # Setup sections tests
+   npm run test:ranking-round   # Ranking round tests
+   npm run test:api:all         # API tests
+   ```
+
+2. **Manual Smoke Test:**
+   - Test on actual mobile device (iPhone SE minimum)
+   - Test full workflow from setup to verification
+   - Test offline/online sync behavior
+   - Test dark mode and light mode
+
+3. **Code Quality:**
+   - No console errors on key pages
+   - No lint errors
+   - All changes committed to git
+
+## Test Types
+
+### Unit Tests
+- Pure functions in `js/common.js` must have unit tests
+- Located in `tests/` directory
+- Use Jest or QUnit as appropriate
+
+### Integration Tests
+- API endpoints tested via `tests/api/`
+- Use test harness: `api/test_harness.html`
+- Test full workflows, not just individual endpoints
+
+### E2E Tests
+- Playwright tests in `tests/` directory
+- Test user workflows end-to-end
+- Test mobile interactions
+
+## Testing Checklist
+
+Before marking feature complete:
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Tested on mobile device
+- [ ] Tested in dark mode
+- [ ] Tested offline behavior
+- [ ] No console errors
+- [ ] Edge cases handled (empty inputs, invalid data, etc.)
+- [ ] Error states display properly
+
+## Mobile Testing
+
+**CRITICAL:** Always test on actual mobile device:
+- iPhone SE (smallest screen)
+- Touch interactions work
+- Buttons are tappable
+- Scrollable areas work correctly
+- Modals display properly
+
+## References
+
+- Test organization: `tests/TEST_ORGANIZATION.md`
+- Deployment checklist: `DEPLOYMENT_CHECKLIST.md`
+- Testing strategy: `docs/testing/TESTING_STRATEGY.md`
+
+
+
+

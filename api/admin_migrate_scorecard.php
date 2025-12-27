@@ -3,7 +3,7 @@
  * Admin Tool: Migrate a scorecard between rounds
  * This fixes the round ID contamination bug for Brandon Garcia
  * 
- * Access: https://tryentist.com/wdv/api/admin_migrate_scorecard.php?key=wdva26
+ * Access: https://archery.tryentist.com/api/admin_migrate_scorecard.php?key=wdva26
  */
 
 header('Content-Type: application/json');

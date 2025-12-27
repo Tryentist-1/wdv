@@ -1,0 +1,45 @@
+---
+description: Technology stack requirements and constraints - no frameworks, Tailwind only
+appliesTo: "*.js,*.html,*.css,*.php"
+---
+
+# Technology Stack Constraints
+
+## Frontend
+
+**MUST USE:**
+- **Vanilla JavaScript** - NO frameworks (React, Vue, Angular, etc.)
+- **Tailwind CSS** - 100% migrated, use Tailwind exclusively
+- **Mobile-first** responsive design
+
+**MUST NOT USE:**
+- Any JavaScript frameworks or libraries (except p5.js for Practice Analyzer)
+- Legacy CSS classes (use Tailwind utilities instead)
+- Inline styles (prefer Tailwind classes)
+- Custom CSS files for new features (use Tailwind + existing score-colors.css only)
+
+## Backend
+
+**MUST USE:**
+- **PHP 8.0+** for API endpoints
+- **MySQL 8.0+** (compatible with MySQL 5.7+ for migrations)
+- **RESTful API** pattern in `api/index.php`
+
+## Database
+
+**MUST:**
+- Use **UUIDs/GUIDs** for all IDs (never sequential numbers)
+- Store all competition data in MySQL (source of truth)
+- Use localStorage only for cache/offline queue (never as permanent storage)
+- Ensure migrations are idempotent and MySQL 5.7+ compatible
+
+## References
+
+- API router: `api/index.php`
+- Database layer: `api/db.php`
+- Shared utilities: `js/common.js`
+- See `docs/core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md`
+
+
+
+

@@ -46,7 +46,7 @@ Verify API endpoints are working:
 ```
 
 **Or manually check:**
-- https://tryentist.com/wdv/api/v1/health → `{"ok":true}`
+- https://archery.tryentist.com/api/v1/health → `{"ok":true}`
 
 **What it tests:**
 - API server is responding
@@ -57,7 +57,7 @@ Verify API endpoints are working:
 
 ### 3. Production Component Library Verification
 
-**URL:** https://tryentist.com/wdv/style-guide.html
+**URL:** https://archery.tryentist.com/style-guide.html
 
 **Verify:**
 - [ ] All components load correctly
@@ -96,8 +96,8 @@ If Cloudflare cache purge script is available:
 
 ### 1. API Sanity Check
 
-- [ ] https://tryentist.com/wdv/api/v1/health → `{"ok":true}`
-- [ ] https://tryentist.com/wdv/api/test_harness.html → Opens correctly
+- [ ] https://archery.tryentist.com/api/v1/health → `{"ok":true}`
+- [ ] https://archery.tryentist.com/api/test_harness.html → Opens correctly
 
 **If health check fails:**
 - Check server logs
@@ -109,11 +109,11 @@ If Cloudflare cache purge script is available:
 ### 2. Frontend Page Load Checks
 
 **Critical Pages:**
-- [ ] https://tryentist.com/wdv/index.html → Loads correctly
-- [ ] https://tryentist.com/wdv/coach.html → Loads, can log in
-- [ ] https://tryentist.com/wdv/archer_list.html → Loads archer list
-- [ ] https://tryentist.com/wdv/ranking_round_300.html → Loads, modal shows
-- [ ] https://tryentist.com/wdv/results.html → Loads (even without event param)
+- [ ] https://archery.tryentist.com/index.html → Loads correctly
+- [ ] https://archery.tryentist.com/coach.html → Loads, can log in
+- [ ] https://archery.tryentist.com/archer_list.html → Loads archer list
+- [ ] https://archery.tryentist.com/ranking_round_300.html → Loads, modal shows
+- [ ] https://archery.tryentist.com/results.html → Loads (even without event param)
 
 **Check for:**
 - No JavaScript console errors

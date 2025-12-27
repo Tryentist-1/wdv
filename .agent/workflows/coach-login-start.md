@@ -145,7 +145,7 @@ After completing these steps, verify:
 
 - **Coach Passcode:** `wdva26` (stored in `COACH_PASSCODE` constant in `js/coach.js`)
 - **Local Development:** Uses `localhost:8001` for local development server
-- **Production:** Use `https://tryentist.com/wdv/` instead
+- **Production:** Use `https://archery.tryentist.com/` instead
 - **Coach Mode:** Detected by checking for `coach_api_key` or `live_updates_config.apiKey` in localStorage
 
 ---

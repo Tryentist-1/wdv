@@ -1,0 +1,72 @@
+---
+description: Project structure and file organization patterns
+appliesTo: "*"
+---
+
+# Project Structure
+
+## Directory Organization
+
+```
+wdv/
+├── *.html                 # Main application pages
+├── js/                    # JavaScript modules
+│   ├── common.js          # Shared utilities (pure functions)
+│   ├── live_updates.js    # API client + offline sync
+│   └── [module].js        # Feature-specific modules
+├── api/
+│   ├── index.php          # RESTful API router
+│   ├── db.php             # Database + auth layer
+│   └── sql/               # Database migrations
+├── css/
+│   ├── tailwind-compiled.css  # Compiled Tailwind (generated)
+│   └── score-colors.css       # Archery ring colors (allowed exception)
+├── tests/
+│   ├── api/               # API tests
+│   ├── components/        # Component tests (style-guide.html)
+│   └── *.spec.js          # Playwright tests
+└── docs/                  # Documentation
+    ├── core/              # Essential reference docs
+    ├── guides/            # How-to guides
+    ├── features/          # Feature documentation
+    └── implementation/    # Implementation details
+```
+
+## File Naming Conventions
+
+### HTML Files
+- Lowercase with underscores: `ranking_round_300.html`, `solo_card.html`
+- Descriptive names indicating purpose
+
+### JavaScript Files
+- Lowercase with underscores: `archer_module.js`, `live_updates.js`
+- Module pattern when appropriate (e.g., `ArcherModule` object)
+
+### SQL Files
+- Migrations: `migration_[description].sql`
+- Schema: `schema.mysql.sql`
+- Scripts: `backfill_[description].sql`
+
+### Documentation
+- Root docs: `[NUMBER-]SCREAMING_CASE.md` (e.g., `01-SESSION_QUICK_START.md`)
+- Docs folder: `UPPERCASE_WITH_UNDERSCORES.md`
+
+## Module Integration
+
+**Standardized Components:**
+- `js/archer_selector.js` - Standardized archer selection
+- `js/score_keypad.js` - Touch-optimized score input
+- `js/scorecard_view.js` - Scorecard rendering utilities
+
+**When creating new features:**
+1. Check if standardized components exist
+2. Reuse existing patterns from Ranking Round 300 (most integrated)
+3. Follow mobile-first principles
+4. Use Tailwind exclusively
+
+## References
+
+- Architecture: `docs/core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md`
+- File organization: `docs/guides/DOCUMENTATION_ORGANIZATION_GUIDE.md`
+- README: See project structure section
+

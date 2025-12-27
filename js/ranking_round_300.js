@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const port = window.location.port || '8001';
             return `${window.location.protocol}//${window.location.hostname}:${port}/api/index.php/v1`;
         }
-        return 'https://tryentist.com/wdv/api/v1';
+        return 'https://archery.tryentist.com/api/v1';
     };
     const API_BASE = getApiBase();
 

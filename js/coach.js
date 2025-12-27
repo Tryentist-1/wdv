@@ -7,7 +7,7 @@
   // Use local API when running on localhost, otherwise use production
   const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || 8001}/api/index.php/v1`
-    : 'https://tryentist.com/wdv/api/v1';
+    : 'https://archery.tryentist.com/api/v1';
   const COACH_COOKIE_NAME = 'coach_auth';
   const COACH_PASSCODE = 'wdva26'; // The actual passcode
   const COOKIE_DAYS = 90;

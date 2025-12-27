@@ -1,0 +1,63 @@
+---
+description: Tailwind CSS styling rules - use utilities, reference style guide, no custom CSS
+appliesTo: "*.html,*.js"
+---
+
+# Tailwind CSS Styling Rules
+
+## Critical Rules
+
+1. **NO legacy CSS** - All new code must use Tailwind utilities
+2. **NO inline styles** - Use Tailwind classes instead
+3. **NO custom CSS files** for new features
+4. **Reference style guide** - Use `tests/components/style-guide.html` as reference
+5. **Check style guide BEFORE adding new UI** - Before adding icons, buttons, or UI components:
+   - Check if the element already exists in `tests/components/style-guide.html`
+   - Use existing patterns for consistency
+   - If adding a new pattern, update the style guide as part of the same change
+
+## Allowed Exceptions
+
+- `css/score-colors.css` - Archery ring color definitions (existing)
+- PWA manifest and service worker files
+- Practice Analyzer (p5.js canvas - standalone module)
+
+## Styling Patterns
+
+### Score Colors
+
+Use `getScoreColor()` function from `js/common.js` which returns Tailwind classes:
+- Gold: X, 10, 9 → `bg-score-gold text-black`
+- Red: 8, 7 → `bg-score-red text-white`
+- Blue: 6, 5 → `bg-score-blue text-white`
+- Black: 4, 3 → `bg-score-black text-white`
+- White: 2, 1, M → `bg-score-white text-black`
+
+### Button Styles
+
+Reference `style-guide.html` for all button variants:
+- Primary buttons
+- Secondary buttons
+- Danger buttons
+- Disabled states
+- Touch-optimized sizes (44px minimum)
+
+### Layout Patterns
+
+- Use Flexbox utilities: `flex`, `flex-col`, `items-center`, `justify-between`
+- Use Grid utilities: `grid`, `grid-cols-*` when appropriate
+- Modal layouts: Use fixed button containers with scrollable content
+
+## Dark Mode
+
+All components must support dark mode:
+- Use `dark:` variant for dark mode styles
+- Test both light and dark modes
+- Ensure proper contrast ratios
+
+## References
+
+- Style Guide: `tests/components/style-guide.html`
+- Score colors: `js/common.js` → `getScoreColor()`
+- Tailwind config: `tailwind.config.js`
+

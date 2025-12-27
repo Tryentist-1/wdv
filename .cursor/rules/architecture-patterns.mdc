@@ -1,0 +1,55 @@
+---
+description: Core architecture patterns - database source of truth, verification workflow, coach gatekeeper
+appliesTo: "*.js,*.php,*.sql"
+---
+
+# Architecture Patterns
+
+## Database is Source of Truth
+
+**CRITICAL:** All competition scores and data MUST be stored in MySQL.
+
+- localStorage = **cache only** + offline queue for sync
+- Never rely on localStorage for permanent data
+- All data flows: UI → API → Database
+- Offline queue syncs when connection restored (see `js/live_updates.js`)
+
+## Verification Workflow is Sacred
+
+**CRITICAL:** Coach verification must occur before finalization.
+
+1. Coach must verify scores before finalization
+2. Locking prevents tampering after verification
+3. Event closure is permanent (cannot be undone)
+4. Full audit trail required for all score changes
+
+**DO NOT:**
+- Allow score changes after verification without coach approval
+- Skip verification steps
+- Make event closure reversible
+
+## IDs Must Use GUIDs/UUIDs
+
+**NEVER use sequential numbers for IDs.** Always use UUIDs to prevent:
+- Enumeration attacks
+- Data leakage
+- Security vulnerabilities
+
+Use `generateUUID()` from `js/common.js` or PHP UUID generation functions.
+
+## Coach is Gatekeeper
+
+Coach controls:
+- Event creation and management
+- Score verification
+- Event closure
+- Results access for decisions
+
+Coach detection: Use `isCoachMode()` helper or check for coach API key in cookies.
+
+## References
+
+- See `docs/core/BALE_GROUP_SCORING_WORKFLOW.md` for complete workflow
+- Verification implementation: Check coach.js and API verification endpoints
+- Data sync: `js/live_updates.js` handles offline queue
+

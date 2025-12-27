@@ -3,7 +3,7 @@
 ## Pre-Deployment Verification
 
 ### 1. API Test Harness ✅
-- [ ] Open `https://tryentist.com/wdv/api/test_harness.html` (or local)
+- [ ] Open `https://archery.tryentist.com/api/test_harness.html` (or local)
 - [ ] Toggle to "Use Event Code"
 - [ ] Run Test 1: Health Check → ✅ 200 OK
 - [ ] Run Test 6: Full Workflow → ✅ All steps pass
@@ -54,13 +54,13 @@ npm run deploy:fast
 ### 2. Verify Production
 
 **API Sanity Check:**
-- [ ] https://tryentist.com/wdv/api/v1/health → `{"ok":true}`
-- [ ] https://tryentist.com/wdv/api/test_harness.html → Opens correctly
+- [ ] https://archery.tryentist.com/api/v1/health → `{"ok":true}`
+- [ ] https://archery.tryentist.com/api/test_harness.html → Opens correctly
 
 **Frontend Check:**
-- [ ] https://tryentist.com/wdv/coach.html → Loads, can log in
-- [ ] https://tryentist.com/wdv/ranking_round_300.html → Loads, modal shows
-- [ ] https://tryentist.com/wdv/results.html → Loads (even without event param)
+- [ ] https://archery.tryentist.com/coach.html → Loads, can log in
+- [ ] https://archery.tryentist.com/ranking_round_300.html → Loads, modal shows
+- [ ] https://archery.tryentist.com/results.html → Loads (even without event param)
 
 **Full Flow (Live on Production):**
 1. Coach creates event: "Prod Test {timestamp}"
@@ -160,5 +160,5 @@ If critical issues occur:
 **Deployment Date:** _____________  
 **Deployed By:** _____________  
 **Git Commit:** _____________  
-**Production URL:** https://tryentist.com/wdv/
+**Production URL:** https://archery.tryentist.com/
 

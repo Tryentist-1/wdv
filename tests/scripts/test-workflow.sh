@@ -166,7 +166,7 @@ pre_deployment_workflow() {
     # 5. Component library production check
     print_info "Step 5: Component library production verification"
     echo "Please verify component library on production:"
-    echo "URL: https://tryentist.com/wdv/style-guide.html"
+    echo "URL: https://archery.tryentist.com/style-guide.html"
     read -p "Press Enter when production component library is verified..."
     print_success "Production component library verified"
     
@@ -208,7 +208,7 @@ post_deployment_workflow() {
     # 3. Production component library
     print_info "Step 3: Production component library verification"
     echo "Verifying production component library..."
-    echo "URL: https://tryentist.com/wdv/style-guide.html"
+    echo "URL: https://archery.tryentist.com/style-guide.html"
     echo "Please verify:"
     echo "  - All components load correctly"
     echo "  - Styling is consistent"
@@ -243,10 +243,10 @@ post_deployment_workflow() {
     echo "🎉 Deployment verified and ready for use!"
     echo ""
     echo "Production URLs:"
-    echo "  - Main app: https://tryentist.com/wdv/"
-    echo "  - Coach console: https://tryentist.com/wdv/coach.html"
-    echo "  - Component library: https://tryentist.com/wdv/style-guide.html"
-    echo "  - Live results: https://tryentist.com/wdv/results.html"
+    echo "  - Main app: https://archery.tryentist.com/"
+    echo "  - Coach console: https://archery.tryentist.com/coach.html"
+    echo "  - Component library: https://archery.tryentist.com/style-guide.html"
+    echo "  - Live results: https://archery.tryentist.com/results.html"
 }
 
 # Main script logic

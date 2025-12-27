@@ -1766,7 +1766,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cfg = window.LIVE_UPDATES || {};
         let isEnabled = false;
         try { isEnabled = !!(JSON.parse(localStorage.getItem('live_updates_config') || '{}').enabled); } catch (_) { }
-        LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://tryentist.com/wdv/api/v1', apiKey: cfg.apiKey || '' });
+        LiveUpdates.setConfig({ apiBase: cfg.apiBase || 'https://archery.tryentist.com/api/v1', apiKey: cfg.apiKey || '' });
 
         const onStartScoring = async () => {
             if (!LiveUpdates || !LiveUpdates._state || !LiveUpdates.setConfig) return;

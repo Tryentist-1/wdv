@@ -1,0 +1,57 @@
+---
+description: Git workflow - branch naming, commit messages, safe development practices
+appliesTo: "*"
+---
+
+# Git Workflow
+
+## Branch Naming
+
+**Pattern:** `[type]/[description]`
+
+Types:
+- `fix/` - Bug fixes (e.g., `fix/standalone-round-stranded-cards`)
+- `vibe/` - Feature development (e.g., `vibe/mobile-landing-page`)
+- `feature/` - Major features
+
+## Safe Development Practices
+
+1. **Always create a branch** before making changes:
+   ```bash
+   git checkout -b fix/description
+   ```
+
+2. **Commit often** - Think of commits as save points:
+   ```bash
+   git add .
+   git commit -m "Clear description of what changed"
+   ```
+
+3. **Check status frequently:**
+   ```bash
+   git status  # See what branch and what files changed
+   ```
+
+## Commit Messages
+
+- Use clear, descriptive messages
+- Explain WHAT changed and WHY (if not obvious)
+- Reference issue numbers or features when applicable
+
+Good examples:
+- "Add coach-only extended profile fields for USA Archery reporting"
+- "Fix modal button visibility in dark mode"
+- "Ensure expanded sections persist when navigating archers"
+
+## Before Deployment
+
+- [ ] All changes committed
+- [ ] Branch is up to date with base branch
+- [ ] Tests pass
+- [ ] Code reviewed (if applicable)
+
+## References
+
+- See `docs/guides/VIBE_CODING_GIT_WORKFLOW.md` for detailed workflow
+- Deployment: `DEPLOYMENT_CHECKLIST.md`
+

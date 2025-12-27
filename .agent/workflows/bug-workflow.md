@@ -375,7 +375,7 @@ npm run deploy:fast
 **Immediate Checks:**
 
 1. **API Health:**
-   - [ ] https://tryentist.com/wdv/api/v1/health → `{"ok":true}`
+   - [ ] https://archery.tryentist.com/api/v1/health → `{"ok":true}`
 
 2. **Frontend Check:**
    - [ ] Relevant page loads correctly

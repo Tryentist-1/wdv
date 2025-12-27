@@ -617,7 +617,7 @@
                 var port = window.location.port || '8001';
                 var detectedApiBase = isLocalhost
                     ? window.location.protocol + '//' + window.location.hostname + ':' + port + '/api/index.php/v1'
-                    : 'https://tryentist.com/wdv/api/v1';
+                    : 'https://archery.tryentist.com/api/v1';
 
                 // If we are on localhost and stored config points to production, clear it
                 if (isLocalhost && stored && stored.apiBase && /tryentist\.com/.test(stored.apiBase)) {

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coach Button Visibility Test</title>
+</head>
+<body>
+    <h1>Coach Button Visibility Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Simulate coach login
+        localStorage.setItem('coach_api_key', 'wdva26');
+        localStorage.setItem('live_updates_config', JSON.stringify({ apiKey: 'wdva26', enabled: true }));
+        
+        function isCoachMode() {
+            try {
+                const configRaw = localStorage.getItem('live_updates_config') || '{}';
+                const config = JSON.parse(configRaw);
+                const coachKey = (config && config.apiKey) || localStorage.getItem('coach_api_key') || '';
+                return !!(coachKey && coachKey.trim());
+            } catch (_) {
+                return false;
+            }
+        }
+        
+        const results = document.getElementById('results');
+        const isCoach = isCoachMode();
+        
+        results.innerHTML = `
+            <h2>Coach Mode Status</h2>
+            <p><strong>Coach Mode Detected:</strong> ${isCoach ? '✅ YES' : '❌ NO'}</p>
+            <p><strong>coach_api_key:</strong> ${localStorage.getItem('coach_api_key') || 'NOT SET'}</p>
+            <p><strong>live_updates_config:</strong> ${localStorage.getItem('live_updates_config') || 'NOT SET'}</p>
+            
+            <h2>Next Steps</h2>
+            <ol>
+                <li>Open <a href="http://localhost:8001/archer_list.html" target="_blank">Archer List</a></li>
+                <li>Open browser console (F12)</li>
+                <li>Look for <code>[Coach Mode Check]</code> and <code>[Update Coach Buttons]</code> logs</li>
+                <li>Check if buttons are visible in footer</li>
+                <li>Run this in console: <code>document.getElementById('import-usa-archery-btn').style.display</code></li>
+            </ol>
+        `;
+    </script>
+</body>
+</html>
+
+

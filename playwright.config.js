@@ -9,7 +9,7 @@ module.exports = defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'https://tryentist.com/wdv',
+    baseURL: 'https://archery.tryentist.com',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
