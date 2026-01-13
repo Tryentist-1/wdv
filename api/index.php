@@ -3837,6 +3837,9 @@ if (preg_match('#^/v1/archers/self$#', $route) && $method === 'POST') {
             'usArcheryId' => $normalizeArcherField('usArcheryId', $input['usArcheryId'] ?? null),
             'jvPr' => $normalizeArcherField('jvPr', $input['jvPr'] ?? null),
             'varPr' => $normalizeArcherField('varPr', $input['varPr'] ?? null),
+            'shirtSize' => $normalizeArcherField('shirtSize', $input['shirtSize'] ?? null),
+            'pantSize' => $normalizeArcherField('pantSize', $input['pantSize'] ?? null),
+            'hatSize' => $normalizeArcherField('hatSize', $input['hatSize'] ?? null),
         ];
         
         $updateFields = [];
@@ -3868,6 +3871,9 @@ if (preg_match('#^/v1/archers/self$#', $route) && $method === 'POST') {
         if ($normalized['usArcheryId'] !== null) { $updateFields[] = 'us_archery_id = ?'; $updateValues[] = $normalized['usArcheryId']; }
         if ($normalized['jvPr'] !== null) { $updateFields[] = 'jv_pr = ?'; $updateValues[] = $normalized['jvPr']; }
         if ($normalized['varPr'] !== null) { $updateFields[] = 'var_pr = ?'; $updateValues[] = $normalized['varPr']; }
+        if ($normalized['shirtSize'] !== null) { $updateFields[] = 'shirt_size = ?'; $updateValues[] = $normalized['shirtSize']; }
+        if ($normalized['pantSize'] !== null) { $updateFields[] = 'pant_size = ?'; $updateValues[] = $normalized['pantSize']; }
+        if ($normalized['hatSize'] !== null) { $updateFields[] = 'hat_size = ?'; $updateValues[] = $normalized['hatSize']; }
         
         if (empty($updateFields)) {
             json_response(['error' => 'No fields to update'], 400);
