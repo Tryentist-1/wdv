@@ -68,25 +68,46 @@
 
 ---
 
-## 🚨 Status Update (December 15, 2025)
+## 🚨 Status Update (January 13, 2026)
 
 > **💡 Pro Tip:** For detailed change history, see [RELEASE_NOTES_FOR_LLMS.md](docs/RELEASE_NOTES_FOR_LLMS.md)  
 > Release notes provide context and "why" - much better for LLM onboarding than git commits alone!
 
+### 📝 What Changed Since Last Session
+
+**Last Updated:** January 13, 2026
+
+**Session Date:** January 13, 2026
+
+**What We Did:**
+- ✅ **Shirt Sizes Entry List Feature:** Complete implementation of new shirt sizes entry list for Manage Archers module
+  - Added "Shirt Sizes" button to selector strip (right side)
+  - Created shirt sizes entry list view with 3-row button grid (L/XL/2X/3X, M, S/XS)
+  - Implemented larger avatar (100px tall, matches 3 name rows)
+  - Added nickname entry modal (opens on field click, green check saves, X cancels)
+  - Implemented auto-submit/save on shirt size button selection
+  - Updated style guide with new patterns
+  - Fixed bug: Use extId/id to find archers instead of filtered list indices
+  - Layout: Names on left, shirt sizes on right, avatar spans full height
+- ✅ **Unsaved Changes Detection Fix:** Fixed false positive warnings in Edit Archer modal
+  - Added unsaved changes check before navigating to next/previous archer
+  - Improved comparison logic with normalizeValue() to handle null/undefined/empty consistently
+  - Added guard checks to ensure originalFormState exists before comparing
+  - Fixed false positive warnings when closing/navigating with no actual changes
+
+**Files Changed:**
+- `archer_list.html` - Shirt sizes entry list view, nickname modal, unsaved changes detection fixes
+- `tests/components/style-guide.html` - Added Shirt Sizes Entry section with examples
+
+**Status:** ✅ Completed and deployed to production
+
+**Commits:**
+- `dc8bb3f` - Add Shirt Sizes entry list feature
+- `818be07` - Fix unsaved changes detection in Edit Archer modal
+
 ### 🎯 Current Sprint / Active Work
 
-**Last Session Focus:** Avatar Upload Fix & Unsaved Changes Protection
-- Fixed avatar upload path issue - avatars now display correctly in dev environment
-  - Replaced hardcoded `/wdv/avatars/` path with dynamic path detection
-  - Uses `$_SERVER['REQUEST_URI']` to determine base path automatically
-  - Works correctly in both production (`/wdv/avatars/`) and dev (`/avatars/`)
-  - Added debugging logs to help diagnose future path issues
-- Added unsaved changes protection to archer profile form
-  - Tracks all form field changes (text inputs, selects, textareas, arrays)
-  - Shows confirmation prompt before closing modal with unsaved changes
-  - Prevents accidental navigation away (browser beforeunload event)
-  - Automatically resets tracking after successful save
-  - Handles both new archer creation and editing existing archers
+**Last Session Focus:** Shirt Sizes Entry List Feature & Unsaved Changes Detection Fix  
 **Current Priority:** Ready for next feature  
 **Next Session Focus:** TBD  
 **Active Branch:** `main`  
