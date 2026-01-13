@@ -4233,6 +4233,9 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
             us_archery_id as usArcheryId,
             jv_pr as jvPr, 
             var_pr as varPr,
+            shirt_size as shirtSize,
+            pant_size as pantSize,
+            hat_size as hatSize,
             created_at as createdAt, 
             updated_at as updatedAt
         FROM archers WHERE 1=1';
