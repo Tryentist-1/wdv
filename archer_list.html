@@ -885,10 +885,62 @@
                         list[archerIndex].shirtSize = size;
                         ArcherModule.saveList(list);
                         
-                        // Try to sync to server
-                        if (typeof ArcherModule.upsertArcher === 'function') {
-                            const result = await ArcherModule.upsertArcher(list[archerIndex]);
-                            recordSyncMessage(result?.sync, 'Shirt size updated');
+                        // Check if this is a self-edit (no auth required)
+                        const state = getRosterState();
+                        const isSelfEdit = state.selfArcher && 
+                            ((archer.extId && archer.extId === state.selfArcher.extId) ||
+                             (archer.id && archer.id === state.selfArcher.id));
+                        
+                        if (isSelfEdit) {
+                            // Use self-update endpoint (no auth required!)
+                            try {
+                                const updatedArcher = Object.assign({}, list[archerIndex], {
+                                    id: list[archerIndex].id || list[archerIndex].archerId,
+                                    extId: list[archerIndex].extId
+                                });
+                                const result = await ArcherModule.updateSelfProfile(updatedArcher);
+                                if (result && result.updated) {
+                                    showSaveSuccess('Shirt size saved to database! 💾');
+                                } else {
+                                    showSaveSuccess('Shirt size updated! ✨');
+                                }
+                            } catch (syncError) {
+                                console.warn('Self-update sync failed:', syncError);
+                                showSaveSuccess('Shirt size saved locally (will retry) 📱');
+                            }
+                        } else {
+                            // Regular update (requires auth) - use editArcher which handles sync
+                            try {
+                                const result = await ArcherModule.editArcher(archerIndex, { shirtSize: size });
+                                let syncResult = result?.sync;
+                                if (syncResult && typeof syncResult.then === 'function') {
+                                    try {
+                                        syncResult = await syncResult;
+                                    } catch (syncError) {
+                                        console.error('Sync error:', syncError);
+                                        syncResult = { ok: false, error: syncError.message };
+                                    }
+                                }
+                                
+                                if (syncResult?.ok && syncResult.processed > 0 && syncResult.pending === 0) {
+                                    showSaveSuccess('Shirt size saved to database! 💾');
+                                } else if (syncResult?.ok && syncResult.pending > 0) {
+                                    showSaveSuccess('Shirt size saved locally (syncing...) ⏳');
+                                } else if (syncResult?.ok === false) {
+                                    const errorMsg = syncResult?.error || 'Unknown error';
+                                    if (errorMsg.includes('API key') || errorMsg.includes('auth') || errorMsg.includes('unauthorized')) {
+                                        showSaveSuccess('Shirt size saved locally (coach API key needed) 🔑');
+                                    } else {
+                                        showSaveSuccess('Shirt size saved locally (offline - will retry) 📱');
+                                    }
+                                } else {
+                                    showSaveSuccess('Shirt size updated! ✨');
+                                }
+                                recordSyncMessage(syncResult, 'Shirt size updated');
+                            } catch (syncError) {
+                                console.warn('Sync failed:', syncError);
+                                showSaveSuccess('Shirt size saved locally (offline - will retry) 📱');
+                            }
                         }
                         
                         // Re-render to show updated selection
@@ -933,10 +985,62 @@
                             list[archerIndex].nickname = newNickname;
                             ArcherModule.saveList(list);
                             
-                            // Try to sync to server
-                            if (typeof ArcherModule.upsertArcher === 'function') {
-                                const result = await ArcherModule.upsertArcher(list[archerIndex]);
-                                recordSyncMessage(result?.sync, 'Nickname updated');
+                            // Check if this is a self-edit (no auth required)
+                            const state = getRosterState();
+                            const isSelfEdit = state.selfArcher && 
+                                ((archer.extId && archer.extId === state.selfArcher.extId) ||
+                                 (archer.id && archer.id === state.selfArcher.id));
+                            
+                            if (isSelfEdit) {
+                                // Use self-update endpoint (no auth required!)
+                                try {
+                                    const updatedArcher = Object.assign({}, list[archerIndex], {
+                                        id: list[archerIndex].id || list[archerIndex].archerId,
+                                        extId: list[archerIndex].extId
+                                    });
+                                    const result = await ArcherModule.updateSelfProfile(updatedArcher);
+                                    if (result && result.updated) {
+                                        showSaveSuccess('Nickname saved to database! 💾');
+                                    } else {
+                                        showSaveSuccess('Nickname updated! ✨');
+                                    }
+                                } catch (syncError) {
+                                    console.warn('Self-update sync failed:', syncError);
+                                    showSaveSuccess('Nickname saved locally (will retry) 📱');
+                                }
+                            } else {
+                                // Regular update (requires auth) - use editArcher which handles sync
+                                try {
+                                    const result = await ArcherModule.editArcher(archerIndex, { nickname: newNickname });
+                                    let syncResult = result?.sync;
+                                    if (syncResult && typeof syncResult.then === 'function') {
+                                        try {
+                                            syncResult = await syncResult;
+                                        } catch (syncError) {
+                                            console.error('Sync error:', syncError);
+                                            syncResult = { ok: false, error: syncError.message };
+                                        }
+                                    }
+                                    
+                                    if (syncResult?.ok && syncResult.processed > 0 && syncResult.pending === 0) {
+                                        showSaveSuccess('Nickname saved to database! 💾');
+                                    } else if (syncResult?.ok && syncResult.pending > 0) {
+                                        showSaveSuccess('Nickname saved locally (syncing...) ⏳');
+                                    } else if (syncResult?.ok === false) {
+                                        const errorMsg = syncResult?.error || 'Unknown error';
+                                        if (errorMsg.includes('API key') || errorMsg.includes('auth') || errorMsg.includes('unauthorized')) {
+                                            showSaveSuccess('Nickname saved locally (coach API key needed) 🔑');
+                                        } else {
+                                            showSaveSuccess('Nickname saved locally (offline - will retry) 📱');
+                                        }
+                                    } else {
+                                        showSaveSuccess('Nickname updated! ✨');
+                                    }
+                                    recordSyncMessage(syncResult, 'Nickname updated');
+                                } catch (syncError) {
+                                    console.warn('Sync failed:', syncError);
+                                    showSaveSuccess('Nickname saved locally (offline - will retry) 📱');
+                                }
                             }
                             
                             modal.classList.add('hidden');
@@ -2528,11 +2632,69 @@
                         } else {
                             // Regular edit (requires auth)
                             result = await ArcherModule.editArcher(editingIndex, archer);
-                            recordSyncMessage(result?.sync, 'Profile updated');
+                            
+                            // Wait for sync to complete (it's async, so we need to await it)
+                            let syncResult = result?.sync;
+                            if (syncResult && typeof syncResult.then === 'function') {
+                                try {
+                                    syncResult = await syncResult;
+                                } catch (syncError) {
+                                    console.error('Sync error:', syncError);
+                                    syncResult = { ok: false, error: syncError.message };
+                                }
+                            }
+                            
+                            // Show visual feedback based on actual sync result
+                            if (syncResult?.ok && syncResult.processed > 0 && syncResult.pending === 0) {
+                                showSaveSuccess('Profile saved to database! 💾');
+                            } else if (syncResult?.ok && syncResult.pending > 0) {
+                                showSaveSuccess('Profile saved locally (syncing...) ⏳');
+                            } else if (syncResult?.ok === false) {
+                                console.warn('Sync failed:', syncResult);
+                                const errorMsg = syncResult?.error || 'Unknown error';
+                                if (errorMsg.includes('API key') || errorMsg.includes('auth') || errorMsg.includes('unauthorized')) {
+                                    showSaveSuccess('Profile saved locally (coach API key needed for sync) 🔑');
+                                } else {
+                                    showSaveSuccess('Profile saved locally (offline - will retry) 📱');
+                                }
+                            } else {
+                                showSaveSuccess('Profile updated! ✨');
+                            }
+                            
+                            recordSyncMessage(syncResult, 'Profile updated');
                         }
                     } else {
                         result = await ArcherModule.addArcher(archer);
-                        recordSyncMessage(result?.sync, 'Profile added');
+                        
+                        // Wait for sync to complete (it's async, so we need to await it)
+                        let syncResult = result?.sync;
+                        if (syncResult && typeof syncResult.then === 'function') {
+                            try {
+                                syncResult = await syncResult;
+                            } catch (syncError) {
+                                console.error('Sync error:', syncError);
+                                syncResult = { ok: false, error: syncError.message };
+                            }
+                        }
+                        
+                        // Show visual feedback based on actual sync result
+                        if (syncResult?.ok && syncResult.processed > 0 && syncResult.pending === 0) {
+                            showSaveSuccess('Archer added to database! 💾');
+                        } else if (syncResult?.ok && syncResult.pending > 0) {
+                            showSaveSuccess('Archer saved locally (syncing...) ⏳');
+                        } else if (syncResult?.ok === false) {
+                            console.warn('Sync failed:', syncResult);
+                            const errorMsg = syncResult?.error || 'Unknown error';
+                            if (errorMsg.includes('API key') || errorMsg.includes('auth') || errorMsg.includes('unauthorized')) {
+                                showSaveSuccess('Archer saved locally (coach API key needed for sync) 🔑');
+                            } else {
+                                showSaveSuccess('Archer saved locally (offline - will retry) 📱');
+                            }
+                        } else {
+                            showSaveSuccess('Archer added! ✨');
+                        }
+                        
+                        recordSyncMessage(syncResult, 'Profile added');
                     }
                     
                     // Reset change tracking after successful save
