@@ -127,6 +127,8 @@
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Identity Picker</a>
             <a href="#fontawesome"
                 class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">FontAwesome</a>
+            <a href="#shirt-sizes-entry"
+                class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark transition-colors">Shirt Sizes Entry</a>
         </nav>
     </div>
 
@@ -747,6 +749,132 @@
                         Confirm
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Shirt Sizes Entry List -->
+    <section id="shirt-sizes-entry" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Shirt Sizes Entry List</h2>
+
+        <div class="space-y-6">
+            <!-- Shirt Size Button Grid -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Shirt Size Button Grid</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    3-row button grid layout: Row 1 (L, XL, 2X, 3X), Row 2 (M), Row 3 (S, XS). Buttons highlight when selected and auto-submit on click.
+                </p>
+                
+                <div class="flex flex-col gap-1 max-w-xs">
+                    <!-- Row 1: L, XL, 2X, 3X -->
+                    <div class="flex gap-1">
+                        <button class="px-3 py-1.5 text-sm font-semibold rounded min-h-[36px] min-w-[44px] transition-colors bg-primary text-white hover:bg-primary-dark">
+                            L
+                        </button>
+                        <button class="px-3 py-1.5 text-sm font-semibold rounded min-h-[36px] min-w-[44px] transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+                            XL
+                        </button>
+                        <button class="px-3 py-1.5 text-sm font-semibold rounded min-h-[36px] min-w-[44px] transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+                            2X
+                        </button>
+                        <button class="px-3 py-1.5 text-sm font-semibold rounded min-h-[36px] min-w-[44px] transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+                            3X
+                        </button>
+                    </div>
+                    <!-- Row 2: M -->
+                    <div class="flex gap-1">
+                        <button class="px-3 py-1.5 text-sm font-semibold rounded min-h-[36px] min-w-[44px] transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+                            M
+                        </button>
+                    </div>
+                    <!-- Row 3: S, XS -->
+                    <div class="flex gap-1">
+                        <button class="px-3 py-1.5 text-sm font-semibold rounded min-h-[36px] min-w-[44px] transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+                            S
+                        </button>
+                        <button class="px-3 py-1.5 text-sm font-semibold rounded min-h-[36px] min-w-[44px] transition-colors bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+                            XS
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Larger Avatar (3 Lines High) -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Larger Avatar (3 Lines High)</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Avatar sized to match 3 name rows (60x60px). Shows photo if available, otherwise user icon.
+                </p>
+                
+                <div class="flex items-start gap-3">
+                    <!-- Avatar with photo -->
+                    <div class="relative flex-shrink-0 w-[60px] h-[60px] rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                        <div class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                            <i class="fas fa-user text-white text-2xl"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- Avatar with icon -->
+                    <div class="relative flex-shrink-0 w-[60px] h-[60px] rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                        <i class="far fa-user text-gray-400 dark:text-gray-500 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Name Rows Layout -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Name Rows (3 Lines)</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Three-row name layout: Row 1 (Nickname - clickable to open modal), Row 2 (First name), Row 3 (Last name).
+                </p>
+                
+                <div class="flex flex-col gap-1 max-w-xs">
+                    <input type="text" value="Nickname" 
+                           class="px-2 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary min-h-[32px]"
+                           placeholder="Nickname" readonly>
+                    <div class="px-2 py-1 text-sm text-gray-700 dark:text-gray-300">First Name</div>
+                    <div class="px-2 py-1 text-sm text-gray-700 dark:text-gray-300">Last Name</div>
+                </div>
+            </div>
+
+            <!-- Nickname Modal -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">Nickname Entry Modal</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Modal opens when nickname field is clicked. Green check saves, X cancels. Auto-saves on Enter key.
+                </p>
+                
+                <button onclick="document.getElementById('nickname-modal-example').classList.remove('hidden')"
+                    class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark min-h-[44px]">
+                    Open Nickname Modal
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Nickname Modal Example -->
+    <div id="nickname-modal-example" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[70]">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-colors duration-200">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-user-edit text-primary"></i>
+                    Nickname
+                </h3>
+            </div>
+            <div class="px-6 py-4">
+                <input type="text" value="Example Nickname" 
+                       class="w-full px-4 py-2 text-base border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" 
+                       placeholder="Enter nickname">
+            </div>
+            <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="document.getElementById('nickname-modal-example').classList.add('hidden')"
+                    class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </button>
+                <button onclick="document.getElementById('nickname-modal-example').classList.add('hidden')"
+                    class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded font-semibold transition-colors min-h-[44px] flex items-center justify-center">
+                    <i class="fas fa-check mr-2"></i>Save
+                </button>
             </div>
         </div>
     </div>

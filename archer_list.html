@@ -110,6 +110,10 @@
                 <option value="inactive">Inactive</option>
                 <option value="all">All</option>
             </select>
+            <button id="shirt-sizes-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center gap-1">
+                <i class="fas fa-tshirt text-lg"></i>
+                <span>Shirt Sizes</span>
+            </button>
         </div>
 
         <div id="archer-list-container" class="flex-1 px-2 pb-[calc(84px+env(safe-area-inset-bottom)+24px)] overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
@@ -255,6 +259,31 @@
         </div>
     </div>
 
+    <!-- Nickname Entry Modal -->
+    <div id="nickname-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[70] hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-colors duration-200">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-user-edit text-primary"></i>
+                    Nickname
+                </h3>
+            </div>
+            <div class="px-6 py-4">
+                <input type="text" id="nickname-modal-input" 
+                       class="w-full px-4 py-2 text-base border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" 
+                       placeholder="Enter nickname">
+            </div>
+            <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                <button id="nickname-modal-cancel" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </button>
+                <button id="nickname-modal-save" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded font-semibold transition-colors min-h-[44px] flex items-center justify-center">
+                    <i class="fas fa-check mr-2"></i>Save
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Image Crop Modal -->
     <div id="crop-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[60] hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full transition-colors duration-200">
@@ -299,9 +328,11 @@
             let beforeUnloadHandler = null;
             const sortByLevelBtn = document.getElementById('sort-by-level-btn');
             const showFavoritesBtn = document.getElementById('show-favorites-btn');
+            const shirtSizesBtn = document.getElementById('shirt-sizes-btn');
             let editingIndex = null;
             let sortMode = 'name'; // 'name' or 'level'
             let showFavoritesOnly = false; // Filter to show only favorites
+            let viewMode = 'list'; // 'list' or 'shirtSizes'
             let lastSyncMessage = '';
             let filteredArcherIndices = []; // For navigation
 
@@ -408,6 +439,13 @@
                     stateOverride = null;
                 }
                 const container = document.getElementById('archer-list-container');
+                
+                // Check view mode and render accordingly
+                if (viewMode === 'shirtSizes') {
+                    renderShirtSizesList(stateOverride);
+                    return;
+                }
+                
                 const filter = searchInput.value.toLowerCase();
                 container.innerHTML = '';
 
@@ -663,6 +701,291 @@
                 // Check and show modal if no "Me" record after render
                 checkAndShowNoMeModal();
             }
+
+            /**
+             * Render shirt sizes entry list view
+             * Shows larger avatars (3 lines high) with name rows and shirt size button grid
+             */
+            function renderShirtSizesList(stateOverride) {
+                const container = document.getElementById('archer-list-container');
+                const filter = searchInput.value.toLowerCase();
+                container.innerHTML = '';
+
+                const state = stateOverride || getRosterState();
+                const { list, selfExtId, friendSet } = state;
+
+                let items = list.map((archer, index) => ({ archer, index }));
+
+                const statusValue = statusFilter.value;
+                if (statusValue !== 'all') {
+                    items = items.filter(item => (item.archer.status || 'active').toLowerCase() === statusValue);
+                }
+
+                if (filter) {
+                    items = items.filter(({ archer }) =>
+                        `${archer.first} ${archer.last}`.toLowerCase().includes(filter) ||
+                        (archer.nickname || '').toLowerCase().includes(filter) ||
+                        (archer.school || '').toLowerCase().includes(filter)
+                    );
+                }
+
+                if (showFavoritesOnly) {
+                    items = items.filter(({ archer }) => 
+                        friendSet.has(archer.extId) || (selfExtId && archer.extId === selfExtId)
+                    );
+                }
+
+                items.sort((a, b) => {
+                    if (sortMode === 'level') {
+                        const levelOrder = ['VAR', 'JV', 'BEG'];
+                        const levelA = (a.archer.level || '').toUpperCase();
+                        const levelB = (b.archer.level || '').toUpperCase();
+                        const levelCompare = levelOrder.indexOf(levelA) - levelOrder.indexOf(levelB);
+                        if (levelCompare !== 0) return levelCompare;
+                    }
+                    const nameA = `${a.archer.first} ${a.archer.last}`.toLowerCase();
+                    const nameB = `${b.archer.first} ${b.archer.last}`.toLowerCase();
+                    return nameA.localeCompare(nameB);
+                });
+
+                if (items.length === 0) {
+                    container.innerHTML = '<p class="text-center py-8 text-gray-600 dark:text-gray-400">No archers found.</p>';
+                    return;
+                }
+
+                // Shirt size options in the specified grid layout
+                const shirtSizes = [
+                    ['L', 'XL', '2X', '3X'],  // Row 1
+                    ['M'],                     // Row 2
+                    ['S', 'XS']               // Row 3
+                ];
+
+                items.forEach(({ archer, index }) => {
+                    const row = document.createElement('div');
+                    row.className = 'px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors';
+                    
+                    const isSelf = !!selfExtId && archer.extId === selfExtId;
+                    if (isSelf) {
+                        row.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'border-l-4', 'border-l-primary');
+                    }
+
+                    // Main content container
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'flex items-start gap-3';
+
+                    // Avatar (3 lines high to match name rows with spacing)
+                    // Height calculation: 3 rows (32px + 30px + 30px) + 2 gaps (4px each) = ~100px
+                    const avatarDiv = document.createElement('div');
+                    avatarDiv.className = 'relative flex-shrink-0';
+                    avatarDiv.style.width = '60px';
+                    avatarDiv.style.height = '100px'; // Matches 3 name rows with spacing
+                    
+                    if (archer.photoUrl) {
+                        avatarDiv.className += ' rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700';
+                        const avatarImg = document.createElement('img');
+                        avatarImg.src = archer.photoUrl;
+                        avatarImg.alt = `${archer.first} ${archer.last}`;
+                        avatarImg.className = 'w-full h-full object-cover';
+                        avatarDiv.appendChild(avatarImg);
+                    } else {
+                        avatarDiv.className += ' rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center';
+                        const icon = document.createElement('i');
+                        icon.className = isSelf 
+                            ? 'fas fa-user-check text-primary dark:text-primary-light text-3xl'
+                            : 'far fa-user text-gray-400 dark:text-gray-500 text-3xl';
+                        avatarDiv.appendChild(icon);
+                    }
+
+                    // Left side: Name rows (3 lines)
+                    const nameContainer = document.createElement('div');
+                    nameContainer.className = 'flex flex-col gap-1 flex-1 min-w-0';
+
+                    // Row 1: Nickname field (clickable to open modal)
+                    const nicknameRow = document.createElement('div');
+                    nicknameRow.className = 'flex items-center gap-2';
+                    const nicknameInput = document.createElement('input');
+                    nicknameInput.type = 'text';
+                    nicknameInput.value = archer.nickname || '';
+                    nicknameInput.placeholder = 'Nickname';
+                    nicknameInput.className = 'px-2 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary flex-1 min-h-[32px]';
+                    nicknameInput.readOnly = true;
+                    nicknameInput.onclick = () => openNicknameModal(archer, index);
+                    nicknameRow.appendChild(nicknameInput);
+                    nameContainer.appendChild(nicknameRow);
+
+                    // Row 2: First name
+                    const firstRow = document.createElement('div');
+                    firstRow.className = 'px-2 py-1 text-sm text-gray-700 dark:text-gray-300';
+                    firstRow.textContent = archer.first || '';
+                    nameContainer.appendChild(firstRow);
+
+                    // Row 3: Last name
+                    const lastRow = document.createElement('div');
+                    lastRow.className = 'px-2 py-1 text-sm text-gray-700 dark:text-gray-300';
+                    lastRow.textContent = archer.last || '';
+                    nameContainer.appendChild(lastRow);
+
+                    // Right side: Shirt size button grid
+                    const sizeGrid = document.createElement('div');
+                    sizeGrid.className = 'flex flex-col gap-1 flex-shrink-0';
+
+                    shirtSizes.forEach((sizeRow, rowIdx) => {
+                        const rowDiv = document.createElement('div');
+                        rowDiv.className = 'flex gap-1';
+                        
+                        sizeRow.forEach(size => {
+                            const button = document.createElement('button');
+                            button.type = 'button';
+                            button.textContent = size;
+                            const isSelected = archer.shirtSize === size;
+                            button.className = `px-3 py-1.5 text-sm font-semibold rounded min-h-[36px] min-w-[44px] transition-colors ${
+                                isSelected 
+                                    ? 'bg-primary text-white hover:bg-primary-dark' 
+                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                            }`;
+                            
+                            button.onclick = async (e) => {
+                                e.stopPropagation();
+                                await handleShirtSizeSelect(archer, index, size);
+                            };
+                            
+                            rowDiv.appendChild(button);
+                        });
+                        
+                        sizeGrid.appendChild(rowDiv);
+                    });
+
+                    // Assemble: Avatar | Names (left) | Sizes (right)
+                    contentDiv.appendChild(avatarDiv);
+                    contentDiv.appendChild(nameContainer);
+                    contentDiv.appendChild(sizeGrid);
+                    row.appendChild(contentDiv);
+                    container.appendChild(row);
+                });
+
+                updateSyncStatus();
+            }
+
+            /**
+             * Handle shirt size selection - auto-submit/save
+             * @param {Object} archer - The archer object
+             * @param {number} index - Index in filtered list (not used, kept for compatibility)
+             * @param {string} size - Selected shirt size
+             */
+            async function handleShirtSizeSelect(archer, index, size) {
+                try {
+                    const list = ArcherModule.loadList();
+                    // Find archer in full list by extId or id
+                    const archerIndex = list.findIndex(a => 
+                        (a.extId && a.extId === archer.extId) || 
+                        (a.id && a.id === archer.id)
+                    );
+                    
+                    if (archerIndex >= 0) {
+                        list[archerIndex].shirtSize = size;
+                        ArcherModule.saveList(list);
+                        
+                        // Try to sync to server
+                        if (typeof ArcherModule.upsertArcher === 'function') {
+                            const result = await ArcherModule.upsertArcher(list[archerIndex]);
+                            recordSyncMessage(result?.sync, 'Shirt size updated');
+                        }
+                        
+                        // Re-render to show updated selection
+                        renderList();
+                    }
+                } catch (err) {
+                    console.error('Failed to update shirt size:', err);
+                    alert('Failed to update shirt size: ' + err.message);
+                }
+            }
+
+            /**
+             * Open nickname entry modal
+             * @param {Object} archer - The archer object
+             * @param {number} index - Index in filtered list (not used, kept for compatibility)
+             */
+            function openNicknameModal(archer, index) {
+                const modal = document.getElementById('nickname-modal');
+                const input = document.getElementById('nickname-modal-input');
+                const saveBtn = document.getElementById('nickname-modal-save');
+                const cancelBtn = document.getElementById('nickname-modal-cancel');
+                
+                if (!modal || !input) return;
+                
+                input.value = archer.nickname || '';
+                modal.classList.remove('hidden');
+                input.focus();
+                input.select();
+                
+                // Save handler
+                const saveHandler = async () => {
+                    const newNickname = input.value.trim();
+                    try {
+                        const list = ArcherModule.loadList();
+                        // Find archer in full list by extId or id
+                        const archerIndex = list.findIndex(a => 
+                            (a.extId && a.extId === archer.extId) || 
+                            (a.id && a.id === archer.id)
+                        );
+                        
+                        if (archerIndex >= 0) {
+                            list[archerIndex].nickname = newNickname;
+                            ArcherModule.saveList(list);
+                            
+                            // Try to sync to server
+                            if (typeof ArcherModule.upsertArcher === 'function') {
+                                const result = await ArcherModule.upsertArcher(list[archerIndex]);
+                                recordSyncMessage(result?.sync, 'Nickname updated');
+                            }
+                            
+                            modal.classList.add('hidden');
+                            renderList();
+                        }
+                    } catch (err) {
+                        console.error('Failed to update nickname:', err);
+                        alert('Failed to update nickname: ' + err.message);
+                    }
+                };
+                
+                // Cancel handler
+                const cancelHandler = () => {
+                    modal.classList.add('hidden');
+                };
+                
+                // Remove old listeners by replacing onclick
+                saveBtn.onclick = saveHandler;
+                cancelBtn.onclick = cancelHandler;
+                
+                // Handle backdrop click - only close if clicking the backdrop itself
+                const backdropHandler = (e) => {
+                    if (e.target === modal) {
+                        cancelHandler();
+                    }
+                };
+                modal.onclick = backdropHandler;
+                
+                // Prevent inner content clicks from closing modal
+                const innerContent = modal.querySelector('div.bg-white, div.dark\\:bg-gray-800');
+                if (innerContent) {
+                    innerContent.onclick = (e) => {
+                        e.stopPropagation();
+                    };
+                }
+                
+                // Handle Enter and Escape keys
+                const keyHandler = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveHandler();
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        cancelHandler();
+                    }
+                };
+                input.onkeydown = keyHandler;
+            }
+
             updateSyncStatus();
 
             // Store expanded sections state for persistence across navigation
@@ -2439,6 +2762,17 @@
                     showFavoritesBtn.className = 'px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px] flex items-center justify-center';
                 } else {
                     showFavoritesBtn.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center';
+                }
+                renderList();
+            };
+
+            shirtSizesBtn.onclick = () => {
+                if (viewMode === 'shirtSizes') {
+                    viewMode = 'list';
+                    shirtSizesBtn.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center gap-1';
+                } else {
+                    viewMode = 'shirtSizes';
+                    shirtSizesBtn.className = 'px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px] flex items-center gap-1';
                 }
                 renderList();
             };
