@@ -420,16 +420,11 @@
 
             function getRosterState() {
                 const list = ArcherModule.loadList();
-                const extId = (typeof ArcherModule.getSelfExtId === 'function') ? ArcherModule.getSelfExtId() : '';
-                let selfArcher = null;
-                let selfExtId = extId;
-                if (extId) {
-                    selfArcher = list.find(a => a.extId === extId) || null;
-                    if (!selfArcher) {
-                        selfExtId = '';
-                        if (typeof ArcherModule.clearSelf === 'function') ArcherModule.clearSelf();
-                    }
-                }
+                // Use getSelfArcher() which has the correct matching logic (extId, id, or built extId)
+                const selfArcher = (typeof ArcherModule.getSelfArcher === 'function') 
+                    ? ArcherModule.getSelfArcher() 
+                    : null;
+                const selfExtId = selfArcher ? (selfArcher.extId || ArcherModule.getSelfExtId() || '') : '';
                 const friendSet = new Set((selfArcher?.faves || []).filter(Boolean));
                 return { list, selfExtId, selfArcher, friendSet };
             }
