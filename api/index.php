@@ -3978,6 +3978,9 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                 'usArcheryId' => $normalizeArcherField('usArcheryId', $archer['usArcheryId'] ?? null),
                 'jvPr' => $normalizeArcherField('jvPr', $archer['jvPr'] ?? null),
                 'varPr' => $normalizeArcherField('varPr', $archer['varPr'] ?? null),
+                'shirtSize' => $normalizeArcherField('shirtSize', $archer['shirtSize'] ?? null),
+                'pantSize' => $normalizeArcherField('pantSize', $archer['pantSize'] ?? null),
+                'hatSize' => $normalizeArcherField('hatSize', $archer['hatSize'] ?? null),
             ];
             
             // Generate extId if missing
@@ -4046,6 +4049,9 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                 if ($normalized['usArcheryId'] !== null) { $updateFields[] = 'us_archery_id = ?'; $updateValues[] = $normalized['usArcheryId']; }
                 if ($normalized['jvPr'] !== null) { $updateFields[] = 'jv_pr = ?'; $updateValues[] = $normalized['jvPr']; }
                 if ($normalized['varPr'] !== null) { $updateFields[] = 'var_pr = ?'; $updateValues[] = $normalized['varPr']; }
+                if ($normalized['shirtSize'] !== null) { $updateFields[] = 'shirt_size = ?'; $updateValues[] = $normalized['shirtSize']; }
+                if ($normalized['pantSize'] !== null) { $updateFields[] = 'pant_size = ?'; $updateValues[] = $normalized['pantSize']; }
+                if ($normalized['hatSize'] !== null) { $updateFields[] = 'hat_size = ?'; $updateValues[] = $normalized['hatSize']; }
                 
                 $updateFields[] = 'updated_at = NOW()';
                 $updateValues[] = $existingId;
@@ -4074,8 +4080,8 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                     valid_from, club_state, membership_type, address_country, address_line3,
                     disability_list, military_service, introduction_source, introduction_other,
                     nfaa_member_no, school_type, school_full_name,
-                    us_archery_id, jv_pr, var_pr, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
+                    us_archery_id, jv_pr, var_pr, shirt_size, pant_size, hat_size, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
                 
                 $stmt->execute([
                     $newId,
@@ -4129,7 +4135,10 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                     $normalized['schoolFullName'],
                     $normalized['usArcheryId'],
                     $normalized['jvPr'],
-                    $normalized['varPr']
+                    $normalized['varPr'],
+                    $normalized['shirtSize'],
+                    $normalized['pantSize'],
+                    $normalized['hatSize']
                 ]);
                 
                 if ($samples['firstInserted'] === null) {
