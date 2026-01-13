@@ -17,9 +17,23 @@ npm run test:setup-sections
 # Main ranking round tests  
 npm run test:ranking-round
 # Expected: Most pass (3 QR code tests may need event setup)
+
+# API tests (CRITICAL for field validation)
+npm run test:api:archers
+# Expected: All archer endpoint tests pass, including self-update
+
+# Field completeness check (if available)
+npm run test:api:all
+# Expected: No missing field errors
 ```
 
-### 3. Manual Smoke Test
+### 3. API Field Validation (CRITICAL)
+- [ ] Run self-update endpoint tests: `npm run test:api:archers`
+- [ ] Verify all fields are tested (shirtSize, pantSize, hatSize, etc.)
+- [ ] Check for field completeness warnings
+- [ ] Verify persistence tests pass (update → refresh → verify)
+
+### 4. Manual Smoke Test
 - [ ] Coach creates event with entry code
 - [ ] Coach adds archers to event
 - [ ] Coach generates QR code
@@ -29,6 +43,7 @@ npm run test:ranking-round
 - [ ] Enter scores: 10, 9, 8
 - [ ] Click "Sync End"
 - [ ] Open `results.html?event={id}` → Score shows (27)
+- [ ] **NEW:** Test field persistence (update shirt size → refresh → verify)
 
 ### 4. Code Quality
 - [ ] No console errors on key pages
