@@ -1411,9 +1411,17 @@
                 prevBtn.style.opacity = currentPosition === 0 ? '0.3' : '1';
                 nextBtn.style.opacity = currentPosition === totalArchers - 1 ? '0.3' : '1';
                 
-                // Add click handlers
+                // Add click handlers with unsaved changes check
                 prevBtn.onclick = () => {
                     if (currentPosition > 0) {
+                        // Check for unsaved changes before navigating
+                        const form = document.getElementById('archer-form');
+                        if (form && originalFormState && checkForChanges(form) && hasUnsavedChanges) {
+                            const confirmed = confirm('You have unsaved changes. Are you sure you want to navigate away without saving?');
+                            if (!confirmed) {
+                                return; // Don't navigate if user cancels
+                            }
+                        }
                         const prevIndex = filteredArcherIndices[currentPosition - 1];
                         openModal(prevIndex);
                     }
@@ -1421,6 +1429,14 @@
                 
                 nextBtn.onclick = () => {
                     if (currentPosition < totalArchers - 1) {
+                        // Check for unsaved changes before navigating
+                        const form = document.getElementById('archer-form');
+                        if (form && originalFormState && checkForChanges(form) && hasUnsavedChanges) {
+                            const confirmed = confirm('You have unsaved changes. Are you sure you want to navigate away without saving?');
+                            if (!confirmed) {
+                                return; // Don't navigate if user cancels
+                            }
+                        }
                         const nextIndex = filteredArcherIndices[currentPosition + 1];
                         openModal(nextIndex);
                     }
@@ -2097,70 +2113,96 @@
             
             /**
              * Check if form has unsaved changes
+             * @param {HTMLFormElement} form - The form element to check
+             * @returns {boolean} True if there are unsaved changes
              */
             function checkForChanges(form) {
-                if (!originalFormState) return false;
+                // If originalFormState hasn't been set yet, there can't be changes
+                if (!originalFormState) {
+                    hasUnsavedChanges = false;
+                    return false;
+                }
                 
-                const parseList = (value) => value
-                    .split(/[,;]+/)
-                    .map(s => s.trim())
-                    .filter(Boolean);
-                
-                const currentState = {
-                    extId: form.querySelector('#extId')?.value.trim() || '',
-                    first: form.querySelector('#first')?.value.trim() || '',
-                    last: form.querySelector('#last')?.value.trim() || '',
-                    nickname: form.querySelector('#nickname')?.value.trim() || '',
-                    photoUrl: form.querySelector('#photoUrl')?.value.trim() || '',
-                    school: form.querySelector('#school')?.value.trim() || '',
-                    grade: form.querySelector('#grade')?.value || '',
-                    status: form.querySelector('#status')?.value || '',
-                    gender: form.querySelector('#gender')?.value || '',
-                    level: form.querySelector('#level')?.value || '',
-                    faves: parseList(form.querySelector('#faves')?.value || ''),
-                    email: form.querySelector('#email')?.value.trim() || '',
-                    phone: form.querySelector('#phone')?.value.trim() || '',
-                    usArcheryId: form.querySelector('#usArcheryId')?.value.trim() || '',
-                    jvPr: form.querySelector('#jvPr')?.value || '',
-                    varPr: form.querySelector('#varPr')?.value || '',
-                    shirtSize: form.querySelector('#shirtSize')?.value || '',
-                    pantSize: form.querySelector('#pantSize')?.value.trim() || '',
-                    hatSize: form.querySelector('#hatSize')?.value || '',
-                    domEye: form.querySelector('#domEye')?.value || '',
-                    domHand: form.querySelector('#domHand')?.value || '',
-                    heightIn: form.querySelector('#heightIn')?.value || '',
-                    wingspanIn: form.querySelector('#wingspanIn')?.value || '',
-                    drawLengthSugg: form.querySelector('#drawLengthSugg')?.value || '',
-                    riserHeightIn: form.querySelector('#riserHeightIn')?.value || '',
-                    limbLength: form.querySelector('#limbLength')?.value || '',
-                    limbWeightLbs: form.querySelector('#limbWeightLbs')?.value || '',
-                    notesGear: form.querySelector('#notesGear')?.value.trim() || '',
-                    notesCurrent: form.querySelector('#notesCurrent')?.value.trim() || '',
-                    notesArchive: form.querySelector('#notesArchive')?.value.trim() || '',
-                    dob: form.querySelector('#dob')?.value || '',
-                    email2: form.querySelector('#email2')?.value.trim() || '',
-                    nationality: form.querySelector('#nationality')?.value || '',
-                    ethnicity: form.querySelector('#ethnicity')?.value || '',
-                    discipline: form.querySelector('#discipline')?.value || '',
-                    streetAddress: form.querySelector('#streetAddress')?.value.trim() || '',
-                    streetAddress2: form.querySelector('#streetAddress2')?.value.trim() || '',
-                    city: form.querySelector('#city')?.value.trim() || '',
-                    state: form.querySelector('#state')?.value || '',
-                    postalCode: form.querySelector('#postalCode')?.value.trim() || '',
-                    addressCountry: form.querySelector('#addressCountry')?.value || '',
-                    disability: form.querySelector('#disability')?.value || '',
-                    campAttendance: form.querySelector('#campAttendance')?.value || '',
-                    introductionSource: form.querySelector('#introductionSource')?.value || '',
-                    introductionOther: form.querySelector('#introductionOther')?.value.trim() || '',
-                    nfaaMemberNo: form.querySelector('#nfaaMemberNo')?.value.trim() || ''
+                const parseList = (value) => {
+                    if (!value || typeof value !== 'string') return [];
+                    return value
+                        .split(/[,;]+/)
+                        .map(s => s.trim())
+                        .filter(Boolean);
                 };
                 
-                // Compare arrays for faves
-                const favesChanged = JSON.stringify(currentState.faves.sort()) !== JSON.stringify(originalFormState.faves.sort());
+                // Normalize value for comparison (handle null, undefined, empty string consistently)
+                const normalizeValue = (value) => {
+                    if (value === null || value === undefined) return '';
+                    return String(value).trim();
+                };
                 
-                // Check all fields for changes
+                const currentState = {
+                    extId: normalizeValue(form.querySelector('#extId')?.value),
+                    first: normalizeValue(form.querySelector('#first')?.value),
+                    last: normalizeValue(form.querySelector('#last')?.value),
+                    nickname: normalizeValue(form.querySelector('#nickname')?.value),
+                    photoUrl: normalizeValue(form.querySelector('#photoUrl')?.value),
+                    school: normalizeValue(form.querySelector('#school')?.value),
+                    grade: normalizeValue(form.querySelector('#grade')?.value),
+                    status: normalizeValue(form.querySelector('#status')?.value),
+                    gender: normalizeValue(form.querySelector('#gender')?.value),
+                    level: normalizeValue(form.querySelector('#level')?.value),
+                    faves: parseList(form.querySelector('#faves')?.value || ''),
+                    email: normalizeValue(form.querySelector('#email')?.value),
+                    phone: normalizeValue(form.querySelector('#phone')?.value),
+                    usArcheryId: normalizeValue(form.querySelector('#usArcheryId')?.value),
+                    jvPr: normalizeValue(form.querySelector('#jvPr')?.value),
+                    varPr: normalizeValue(form.querySelector('#varPr')?.value),
+                    shirtSize: normalizeValue(form.querySelector('#shirtSize')?.value),
+                    pantSize: normalizeValue(form.querySelector('#pantSize')?.value),
+                    hatSize: normalizeValue(form.querySelector('#hatSize')?.value),
+                    domEye: normalizeValue(form.querySelector('#domEye')?.value),
+                    domHand: normalizeValue(form.querySelector('#domHand')?.value),
+                    heightIn: normalizeValue(form.querySelector('#heightIn')?.value),
+                    wingspanIn: normalizeValue(form.querySelector('#wingspanIn')?.value),
+                    drawLengthSugg: normalizeValue(form.querySelector('#drawLengthSugg')?.value),
+                    riserHeightIn: normalizeValue(form.querySelector('#riserHeightIn')?.value),
+                    limbLength: normalizeValue(form.querySelector('#limbLength')?.value),
+                    limbWeightLbs: normalizeValue(form.querySelector('#limbWeightLbs')?.value),
+                    notesGear: normalizeValue(form.querySelector('#notesGear')?.value),
+                    notesCurrent: normalizeValue(form.querySelector('#notesCurrent')?.value),
+                    notesArchive: normalizeValue(form.querySelector('#notesArchive')?.value),
+                    dob: normalizeValue(form.querySelector('#dob')?.value),
+                    email2: normalizeValue(form.querySelector('#email2')?.value),
+                    nationality: normalizeValue(form.querySelector('#nationality')?.value),
+                    ethnicity: normalizeValue(form.querySelector('#ethnicity')?.value),
+                    discipline: normalizeValue(form.querySelector('#discipline')?.value),
+                    streetAddress: normalizeValue(form.querySelector('#streetAddress')?.value),
+                    streetAddress2: normalizeValue(form.querySelector('#streetAddress2')?.value),
+                    city: normalizeValue(form.querySelector('#city')?.value),
+                    state: normalizeValue(form.querySelector('#state')?.value),
+                    postalCode: normalizeValue(form.querySelector('#postalCode')?.value),
+                    addressCountry: normalizeValue(form.querySelector('#addressCountry')?.value),
+                    disability: normalizeValue(form.querySelector('#disability')?.value),
+                    campAttendance: normalizeValue(form.querySelector('#campAttendance')?.value),
+                    introductionSource: normalizeValue(form.querySelector('#introductionSource')?.value),
+                    introductionOther: normalizeValue(form.querySelector('#introductionOther')?.value),
+                    nfaaMemberNo: normalizeValue(form.querySelector('#nfaaMemberNo')?.value)
+                };
+                
+                // Normalize originalFormState values for comparison
+                const normalizedOriginal = {};
+                Object.keys(originalFormState).forEach(key => {
+                    if (key === 'faves') {
+                        normalizedOriginal[key] = originalFormState[key];
+                    } else {
+                        normalizedOriginal[key] = normalizeValue(originalFormState[key]);
+                    }
+                });
+                
+                // Compare arrays for faves
+                const favesChanged = JSON.stringify(currentState.faves.sort()) !== JSON.stringify(normalizedOriginal.faves.sort());
+                
+                // Check all fields for changes (excluding faves which we already checked)
                 hasUnsavedChanges = favesChanged || Object.keys(currentState).some(key => {
-                    return currentState[key] !== originalFormState[key];
+                    if (key === 'faves') return false; // Already checked
+                    return currentState[key] !== normalizedOriginal[key];
                 });
                 
                 // Set up/remove beforeunload handler
@@ -2180,9 +2222,9 @@
             }
             
             function closeModal() {
-                // Check for unsaved changes
+                // Check for unsaved changes (only if originalFormState has been set)
                 const form = document.getElementById('archer-form');
-                if (form && checkForChanges(form) && hasUnsavedChanges) {
+                if (form && originalFormState && checkForChanges(form) && hasUnsavedChanges) {
                     const confirmed = confirm('You have unsaved changes. Are you sure you want to close without saving?');
                     if (!confirmed) {
                         return; // Don't close if user cancels
