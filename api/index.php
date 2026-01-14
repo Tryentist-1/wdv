@@ -3809,11 +3809,13 @@ if (preg_match('#^/v1/archers/self$#', $route) && $method === 'POST') {
             exit;
         }
         
-        // Build update (only non-null fields)
+        // Build update (only non-null fields, but allow explicit empty strings for clearing fields)
+        // Check if nickname was explicitly provided (even if empty) to allow clearing it
+        $nicknameProvided = array_key_exists('nickname', $input);
         $normalized = [
             'firstName' => $firstName,
             'lastName' => $lastName,
-            'nickname' => $normalizeArcherField('nickname', $input['nickname'] ?? null),
+            'nickname' => $nicknameProvided ? $normalizeArcherField('nickname', $input['nickname'] ?? '') : null,
             'photoUrl' => $normalizeArcherField('photoUrl', $input['photoUrl'] ?? null),
             'school' => $normalizeArcherField('school', $input['school'] ?? null),
             'grade' => $normalizeArcherField('grade', $input['grade'] ?? null),
@@ -3847,7 +3849,11 @@ if (preg_match('#^/v1/archers/self$#', $route) && $method === 'POST') {
         
         if ($normalized['firstName']) { $updateFields[] = 'first_name = ?'; $updateValues[] = $normalized['firstName']; }
         if ($normalized['lastName']) { $updateFields[] = 'last_name = ?'; $updateValues[] = $normalized['lastName']; }
-        if ($normalized['nickname'] !== null) { $updateFields[] = 'nickname = ?'; $updateValues[] = $normalized['nickname']; }
+        // Allow setting nickname to null/empty if explicitly provided
+        if ($normalized['nickname'] !== null || $nicknameProvided) { 
+            $updateFields[] = 'nickname = ?'; 
+            $updateValues[] = $normalized['nickname']; 
+        }
         if ($normalized['photoUrl'] !== null) { $updateFields[] = 'photo_url = ?'; $updateValues[] = $normalized['photoUrl']; }
         if ($normalized['school'] !== null) { $updateFields[] = 'school = ?'; $updateValues[] = $normalized['school']; }
         if ($normalized['grade'] !== null) { $updateFields[] = 'grade = ?'; $updateValues[] = $normalized['grade']; }
@@ -3925,12 +3931,14 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
             if (empty($firstName) || empty($lastName)) continue;
             
             // Normalize all fields
+            // Check if nickname was explicitly provided (even if empty) to allow clearing it
+            $nicknameProvided = array_key_exists('nickname', $archer);
             $normalized = [
                 'id' => $archer['id'] ?? null,
                 'extId' => trim($archer['extId'] ?? ''),
                 'firstName' => $firstName,
                 'lastName' => $lastName,
-                'nickname' => $normalizeArcherField('nickname', $archer['nickname'] ?? null),
+                'nickname' => $nicknameProvided ? $normalizeArcherField('nickname', $archer['nickname'] ?? '') : null,
                 'photoUrl' => $normalizeArcherField('photoUrl', $archer['photoUrl'] ?? null),
                 'school' => $normalizeArcherField('school', $archer['school'] ?? null),
                 'grade' => $normalizeArcherField('grade', $archer['grade'] ?? null),
@@ -4001,7 +4009,11 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                 if ($normalized['extId']) { $updateFields[] = 'ext_id = ?'; $updateValues[] = $normalized['extId']; }
                 if ($normalized['firstName']) { $updateFields[] = 'first_name = ?'; $updateValues[] = $normalized['firstName']; }
                 if ($normalized['lastName']) { $updateFields[] = 'last_name = ?'; $updateValues[] = $normalized['lastName']; }
-                if ($normalized['nickname'] !== null) { $updateFields[] = 'nickname = ?'; $updateValues[] = $normalized['nickname']; }
+                // Allow setting nickname to null/empty if explicitly provided
+                if ($normalized['nickname'] !== null || $nicknameProvided) { 
+                    $updateFields[] = 'nickname = ?'; 
+                    $updateValues[] = $normalized['nickname']; 
+                }
                 if ($normalized['photoUrl'] !== null) { $updateFields[] = 'photo_url = ?'; $updateValues[] = $normalized['photoUrl']; }
                 if ($normalized['school']) { $updateFields[] = 'school = ?'; $updateValues[] = $normalized['school']; }
                 if ($normalized['grade'] !== null) { $updateFields[] = 'grade = ?'; $updateValues[] = $normalized['grade']; }
