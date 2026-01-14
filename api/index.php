@@ -5144,6 +5144,42 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
     exit;
 }
 
+// DELETE /v1/solo-matches/:id - Delete solo match
+if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
+    require_api_key();
+    $matchId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Check if match exists and get locked/verified status
+        $checkStmt = $pdo->prepare('SELECT locked, card_status FROM solo_matches WHERE id = ? LIMIT 1');
+        $checkStmt->execute([$matchId]);
+        $match = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$match) {
+            json_response(['error' => 'Match not found'], 404);
+            exit;
+        }
+        
+        // Check if match is locked or verified (coaches can still delete, but log it)
+        if ($match['locked'] || $match['card_status'] === 'VER') {
+            // Allow deletion but log it (coach override)
+            error_log("Deleting locked/verified solo match: {$matchId}");
+        }
+        
+        // Delete match (CASCADE will delete archers and sets automatically)
+        $stmt = $pdo->prepare('DELETE FROM solo_matches WHERE id = ?');
+        $stmt->execute([$matchId]);
+        
+        json_response(['ok' => true, 'message' => 'Match deleted successfully']);
+    } catch (Exception $e) {
+        error_log("Solo match delete failed: " . $e->getMessage());
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // =====================================================
 // PHASE 2: TEAM OLYMPIC MATCH ENDPOINTS
 // =====================================================
@@ -5700,6 +5736,42 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
         
         json_response(['message' => 'Match updated successfully'], 200);
     } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// DELETE /v1/team-matches/:id - Delete team match
+if (preg_match('#^/v1/team-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
+    require_api_key();
+    $matchId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Check if match exists and get locked/verified status
+        $checkStmt = $pdo->prepare('SELECT locked, card_status FROM team_matches WHERE id = ? LIMIT 1');
+        $checkStmt->execute([$matchId]);
+        $match = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$match) {
+            json_response(['error' => 'Match not found'], 404);
+            exit;
+        }
+        
+        // Check if match is locked or verified (coaches can still delete, but log it)
+        if ($match['locked'] || $match['card_status'] === 'VER') {
+            // Allow deletion but log it (coach override)
+            error_log("Deleting locked/verified team match: {$matchId}");
+        }
+        
+        // Delete match (CASCADE will delete teams, archers, and sets automatically)
+        $stmt = $pdo->prepare('DELETE FROM team_matches WHERE id = ?');
+        $stmt->execute([$matchId]);
+        
+        json_response(['ok' => true, 'message' => 'Match deleted successfully']);
+    } catch (Exception $e) {
+        error_log("Team match delete failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
     exit;

@@ -1527,14 +1527,28 @@
             const isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VERIFIED';
             const isVerified = card.card_status === 'VER' || card.card_status === 'VERIFIED';
             
-            // Check if this is an abandoned/test card (original logic)
-            const isAbandoned = (
-                card.ends_completed === 0 || 
-                card.final_score === 0 || 
-                (card.ends_completed <= 3 && card.final_score < 100) ||
-                card.event_name?.toLowerCase().includes('test') || 
-                card.event_name?.toLowerCase().includes('practice')
-            );
+            // Check if this is a solo match or ranking round
+            const isSoloMatch = cardType === 'solo_match';
+            
+            // Check if this is an abandoned/test card
+            let isAbandoned = false;
+            if (isSoloMatch) {
+                // For solo matches, check if match has no sets or very low scores
+                const hasSets = card.archers?.some(archer => archer.sets && archer.sets.length > 0);
+                const totalScore = card.archers?.reduce((sum, archer) => sum + (archer.total_score || 0), 0) || 0;
+                isAbandoned = !hasSets || totalScore === 0 || 
+                             card.event_name?.toLowerCase().includes('test') || 
+                             card.event_name?.toLowerCase().includes('practice');
+            } else {
+                // For ranking rounds, use original logic
+                isAbandoned = (
+                    card.ends_completed === 0 || 
+                    card.final_score === 0 || 
+                    (card.ends_completed <= 3 && card.final_score < 100) ||
+                    card.event_name?.toLowerCase().includes('test') || 
+                    card.event_name?.toLowerCase().includes('practice')
+                );
+            }
             
             // Coaches can delete any card; others can only delete unlocked abandoned cards
             const canDelete = isCoach || (!isLocked && isAbandoned);
@@ -1545,9 +1559,10 @@
             }
             
             // Extra confirmation for verified/locked cards (coach override)
-            let confirmMessage = `Delete this scorecard from "${card.event_name}"?\n\nThis action cannot be undone.`;
+            const eventName = card.event_name || (isSoloMatch ? 'this match' : 'this scorecard');
+            let confirmMessage = `Delete ${isSoloMatch ? 'this match' : 'this scorecard'} from "${eventName}"?\n\nThis action cannot be undone.`;
             if (isCoach && isLocked) {
-                confirmMessage = `WARNING: This scorecard is ${isVerified ? 'VERIFIED' : 'LOCKED'}.\n\nDelete anyway?\n\nThis action cannot be undone.`;
+                confirmMessage = `WARNING: This ${isSoloMatch ? 'match' : 'scorecard'} is ${isVerified ? 'VERIFIED' : 'LOCKED'}.\n\nDelete anyway?\n\nThis action cannot be undone.`;
             }
             
             if (!confirm(confirmMessage)) {
@@ -1566,36 +1581,50 @@
                     'X-API-Key': coachApiKey
                 };
                 
-                const currentArcherId = card.archer_id;
-                const selfArcherId = localStorage.getItem('archerSelfExtId');
-                if (currentArcherId && selfArcherId && currentArcherId === selfArcherId) {
-                    headers['X-Archer-ID'] = currentArcherId;
-                    headers['X-Archer-Self'] = 'true';
+                let response;
+                if (isSoloMatch) {
+                    // For solo matches, delete the entire match
+                    const matchId = card.id || card.match_id || soloMatchId;
+                    if (!matchId) {
+                        throw new Error('Match ID not found');
+                    }
+                    response = await fetch(`${API_BASE}/solo-matches/${matchId}`, {
+                        method: 'DELETE',
+                        headers: headers
+                    });
+                } else {
+                    // For ranking rounds, use existing logic
+                    const currentArcherId = card.archer_id;
+                    const selfArcherId = localStorage.getItem('archerSelfExtId');
+                    if (currentArcherId && selfArcherId && currentArcherId === selfArcherId) {
+                        headers['X-Archer-ID'] = currentArcherId;
+                        headers['X-Archer-Self'] = 'true';
+                    }
+                    
+                    response = await fetch(`${API_BASE}/rounds/${card.round_id}/archers/${roundArcherId}`, {
+                        method: 'DELETE',
+                        headers: headers
+                    });
                 }
-                
-                const response = await fetch(`${API_BASE}/rounds/${card.round_id}/archers/${roundArcherId}`, {
-                    method: 'DELETE',
-                    headers: headers
-                });
                 
                 if (!response.ok) {
                     if (response.status === 401 || response.status === 403) {
                         throw new Error('Authentication required. Please visit the Coach Console to authenticate first, then try again.');
                     }
                     const errorText = await response.text().catch(() => 'Unknown error');
-                    throw new Error(`Failed to delete scorecard (HTTP ${response.status}): ${errorText}`);
+                    throw new Error(`Failed to delete ${isSoloMatch ? 'match' : 'scorecard'} (HTTP ${response.status}): ${errorText}`);
                 }
                 
                 const result = await response.json();
                 if (result.ok) {
-                    alert('Scorecard deleted successfully!');
+                    alert(`${isSoloMatch ? 'Match' : 'Scorecard'} deleted successfully!`);
                     window.history.back();
                 } else {
                     throw new Error(result.error || 'Delete failed');
                 }
             } catch (error) {
                 console.error('Delete scorecard error:', error);
-                alert('Failed to delete scorecard: ' + error.message);
+                alert(`Failed to delete ${isSoloMatch ? 'match' : 'scorecard'}: ` + error.message);
             }
         });
         
@@ -1853,14 +1882,28 @@
             const isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VERIFIED';
             const isVerified = card.card_status === 'VER' || card.card_status === 'VERIFIED';
             
-            // Check if this is an abandoned/test card (original logic)
-            const isAbandoned = (
-                card.ends_completed === 0 || 
-                card.final_score === 0 || 
-                (card.ends_completed <= 3 && card.final_score < 100) ||
-                card.event_name?.toLowerCase().includes('test') || 
-                card.event_name?.toLowerCase().includes('practice')
-            );
+            // Check if this is a solo match or ranking round
+            const isSoloMatch = cardType === 'solo_match';
+            
+            // Check if this is an abandoned/test card
+            let isAbandoned = false;
+            if (isSoloMatch) {
+                // For solo matches, check if match has no sets or very low scores
+                const hasSets = card.archers?.some(archer => archer.sets && archer.sets.length > 0);
+                const totalScore = card.archers?.reduce((sum, archer) => sum + (archer.total_score || 0), 0) || 0;
+                isAbandoned = !hasSets || totalScore === 0 || 
+                             card.event_name?.toLowerCase().includes('test') || 
+                             card.event_name?.toLowerCase().includes('practice');
+            } else {
+                // For ranking rounds, use original logic
+                isAbandoned = (
+                    card.ends_completed === 0 || 
+                    card.final_score === 0 || 
+                    (card.ends_completed <= 3 && card.final_score < 100) ||
+                    card.event_name?.toLowerCase().includes('test') || 
+                    card.event_name?.toLowerCase().includes('practice')
+                );
+            }
             
             // Coaches can delete any card; others can only delete unlocked abandoned cards
             const canDelete = isCoach || (!isLocked && isAbandoned);
@@ -1871,9 +1914,10 @@
             }
             
             // Extra confirmation for verified/locked cards (coach override)
-            let confirmMessage = `Delete this scorecard from "${card.event_name}"?\n\nThis action cannot be undone.`;
+            const eventName = card.event_name || (isSoloMatch ? 'this match' : 'this scorecard');
+            let confirmMessage = `Delete ${isSoloMatch ? 'this match' : 'this scorecard'} from "${eventName}"?\n\nThis action cannot be undone.`;
             if (isCoach && isLocked) {
-                confirmMessage = `WARNING: This scorecard is ${isVerified ? 'VERIFIED' : 'LOCKED'}.\n\nDelete anyway?\n\nThis action cannot be undone.`;
+                confirmMessage = `WARNING: This ${isSoloMatch ? 'match' : 'scorecard'} is ${isVerified ? 'VERIFIED' : 'LOCKED'}.\n\nDelete anyway?\n\nThis action cannot be undone.`;
             }
             
             if (!confirm(confirmMessage)) {
@@ -1893,31 +1937,45 @@
                     'X-API-Key': coachApiKey
                 };
                 
-                // Check if this is archer self-deletion
-                const currentArcherId = card.archer_id;
-                const selfArcherId = localStorage.getItem('archerSelfExtId');
-                if (currentArcherId && selfArcherId && currentArcherId === selfArcherId) {
-                    headers['X-Archer-ID'] = currentArcherId;
-                    headers['X-Archer-Self'] = 'true';
+                let response;
+                if (isSoloMatch) {
+                    // For solo matches, delete the entire match
+                    const matchId = card.id || card.match_id || soloMatchId;
+                    if (!matchId) {
+                        throw new Error('Match ID not found');
+                    }
+                    response = await fetch(`${API_BASE}/solo-matches/${matchId}`, {
+                        method: 'DELETE',
+                        headers: headers
+                    });
+                } else {
+                    // For ranking rounds, use existing logic
+                    // Check if this is archer self-deletion
+                    const currentArcherId = card.archer_id;
+                    const selfArcherId = localStorage.getItem('archerSelfExtId');
+                    if (currentArcherId && selfArcherId && currentArcherId === selfArcherId) {
+                        headers['X-Archer-ID'] = currentArcherId;
+                        headers['X-Archer-Self'] = 'true';
+                    }
+                    
+                    response = await fetch(`${API_BASE}/rounds/${card.round_id}/archers/${roundArcherId}`, {
+                        method: 'DELETE',
+                        headers: headers
+                    });
                 }
-                
-                const response = await fetch(`${API_BASE}/rounds/${card.round_id}/archers/${roundArcherId}`, {
-                    method: 'DELETE',
-                    headers: headers
-                });
                 
                 if (!response.ok) {
                     if (response.status === 401 || response.status === 403) {
                         throw new Error('Authentication required. Please visit the Coach Console to authenticate first, then try again.');
                     }
                     const errorText = await response.text().catch(() => 'Unknown error');
-                    throw new Error(`Failed to delete scorecard (HTTP ${response.status}): ${errorText}`);
+                    throw new Error(`Failed to delete ${isSoloMatch ? 'match' : 'scorecard'} (HTTP ${response.status}): ${errorText}`);
                 }
                 
                 const result = await response.json();
                 if (result.ok) {
                     closeModifyCardModal();
-                    alert('Scorecard deleted successfully!');
+                    alert(`${isSoloMatch ? 'Match' : 'Scorecard'} deleted successfully!`);
                     // Go back to previous page or archer history
                     window.history.back();
                 } else {
@@ -1925,7 +1983,7 @@
                 }
             } catch (error) {
                 console.error('Delete scorecard error:', error);
-                alert('Failed to delete scorecard: ' + error.message);
+                alert(`Failed to delete ${isSoloMatch ? 'match' : 'scorecard'}: ` + error.message);
             }
         });
         
