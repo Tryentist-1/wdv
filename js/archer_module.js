@@ -1170,12 +1170,36 @@ const ArcherModule = {
    * - Style: "archery 1/4 zip"
    * - Note: blank
    * 
-   * @returns {string} CSV content (also triggers download)
+   * Fetches fresh data from the API before exporting to ensure production data.
+   * 
+   * @returns {Promise<string>} CSV content (also triggers download)
    */
-  exportShirtOrderCSV() {
-    const list = this.loadList();
+  async exportShirtOrderCSV() {
+    // Fetch fresh data from API first to ensure we're exporting production data
+    let list = [];
+    try {
+      console.log('[Export Shirt Order] Fetching fresh data from API...');
+      list = await this.loadFromMySQL();
+      console.log(`[Export Shirt Order] Loaded ${list.length} archers from production database`);
+    } catch (error) {
+      console.warn('[Export Shirt Order] Failed to fetch from API, using cached data:', error);
+      // Fallback to localStorage if API fails
+      list = this.loadList();
+      if (list.length > 0) {
+        const useCached = confirm(
+          'Could not fetch fresh data from server.\n\n' +
+          'Using cached data. This may be from a different environment.\n\n' +
+          'Click "Refresh" button first to load production data, then try exporting again.\n\n' +
+          'Export cached data anyway?'
+        );
+        if (!useCached) {
+          return '';
+        }
+      }
+    }
+    
     if (!list.length) {
-      alert('No archers to export.');
+      alert('No archers to export. Please refresh the list first.');
       return '';
     }
     

@@ -2920,10 +2920,15 @@
             // Coach Actions: Export Shirt Order
             const coachActionExportShirtOrderBtn = document.getElementById('coach-action-export-shirt-order-btn');
             if (coachActionExportShirtOrderBtn) {
-                coachActionExportShirtOrderBtn.onclick = () => {
+                coachActionExportShirtOrderBtn.onclick = async () => {
                     closeCoachActionsModal();
                     if (typeof ArcherModule.exportShirtOrderCSV === 'function') {
-                        ArcherModule.exportShirtOrderCSV();
+                        try {
+                            await ArcherModule.exportShirtOrderCSV();
+                        } catch (error) {
+                            console.error('Export failed:', error);
+                            alert('Failed to export shirt order: ' + error.message);
+                        }
                     } else {
                         alert('Export function not available.');
                     }
