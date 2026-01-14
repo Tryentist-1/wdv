@@ -1233,8 +1233,8 @@ const ArcherModule = {
       // Style: "archery 1/4 zip"
       const style = 'archery 1/4 zip';
       
-      // Note: blank
-      const note = '';
+      // Note: Gear Notes (notesGear field)
+      const note = this._safeString(normalized.notesGear) || '';
       
       // Build row with proper CSV escaping
       const row = [
