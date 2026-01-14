@@ -1161,6 +1161,97 @@ const ArcherModule = {
   },
 
   /**
+   * Export shirt order CSV for custom jersey/apparel ordering.
+   * Exports archers with fields formatted for shirt order forms:
+   * - Name on Jersey: LastName
+   * - Number: blank
+   * - Size: Gender (W or M) + "-" + ShirtSize (e.g., "M-L" or "W-XL")
+   * - Name on Front: Nickname (or FirstName if no Nickname)
+   * - Style: "archery 1/4 zip"
+   * - Note: blank
+   * 
+   * @returns {string} CSV content (also triggers download)
+   */
+  exportShirtOrderCSV() {
+    const list = this.loadList();
+    if (!list.length) {
+      alert('No archers to export.');
+      return '';
+    }
+    
+    // Shirt order columns matching the form format
+    const headers = [
+      'Name on Jersey',
+      'Number',
+      'Size',
+      'Name on Front (if necessary)',
+      'Style',
+      'Note'
+    ];
+    
+    const rows = list.map(archer => {
+      const normalized = this._applyTemplate(archer);
+      
+      // Name on Jersey: LastName
+      const nameOnJersey = this._safeString(normalized.last) || '';
+      
+      // Number: blank
+      const number = '';
+      
+      // Size: Gender (W or M) + "-" + ShirtSize
+      const genderPrefix = (normalized.gender === 'F' || normalized.gender === 'W') ? 'W' : 'M';
+      const shirtSize = this._safeString(normalized.shirtSize) || '';
+      const size = shirtSize ? `${genderPrefix}-${shirtSize}` : '';
+      
+      // Name on Front: Nickname (or FirstName if no Nickname)
+      const nameOnFront = this._safeString(normalized.nickname) || this._safeString(normalized.first) || '';
+      
+      // Style: "archery 1/4 zip"
+      const style = 'archery 1/4 zip';
+      
+      // Note: blank
+      const note = '';
+      
+      // Build row with proper CSV escaping
+      const row = [
+        nameOnJersey,
+        number,
+        size,
+        nameOnFront,
+        style,
+        note
+      ].map(value => {
+        const str = String(value);
+        // Quote values that contain commas, quotes, or newlines
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      });
+      
+      return row.join(',');
+    });
+    
+    const csv = [headers.join(','), ...rows].join('\n');
+    
+    try {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `shirt-order-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export Shirt Order CSV failed', err);
+      alert('Failed to export shirt order: ' + err.message);
+    }
+    return csv;
+  },
+
+  /**
    * Import archers from a USA Archery CSV file (30-column template format).
    * Parses CSV text, maps headers to archer fields, and merges with existing archers.
    * Supports 50+ header name variations for flexible import.
