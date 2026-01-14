@@ -2199,14 +2199,18 @@
           ? '<span style="background: #3498db; color: white; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-left: 0.5rem;">Auto</span>'
           : '<span style="background: #95a5a6; color: white; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-left: 0.5rem;">Manual</span>';
         
+        const roundId = round.roundId || round.id;
         roundsHTML += `
           <div style="padding: 0.5rem; background: white; border: 1px solid #ddd; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
             <div>
               <strong>${round.division || 'N/A'}</strong> - ${round.roundType || 'R300'}
               ${assignmentBadge}
             </div>
-            <div style="font-size: 0.85rem; color: #7f8c8d;">
-              ${round.archerCount || 0} archers
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div style="font-size: 0.85rem; color: #7f8c8d;">
+                ${round.archerCount || 0} archers
+              </div>
+              <button class="print-scorecards-btn" data-round-id="${roundId}" data-round-division="${round.division || ''}" data-round-type="${round.roundType || 'R300'}" style="padding: 0.25rem 0.5rem; background: #0d6efd; color: white; border: none; border-radius: 3px; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">📄 Print</button>
             </div>
           </div>
         `;
@@ -2214,6 +2218,48 @@
       roundsHTML += '</div>';
       
       roundsList.innerHTML = roundsHTML;
+      
+      // Wire up print scorecards buttons
+      roundsList.querySelectorAll('.print-scorecards-btn').forEach(btn => {
+        btn.onclick = async () => {
+          const roundId = btn.getAttribute('data-round-id');
+          const division = btn.getAttribute('data-round-division');
+          const roundType = btn.getAttribute('data-round-type');
+          
+          if (!roundId) {
+            alert('Round ID missing');
+            return;
+          }
+          
+          try {
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+            
+            if (typeof PrintableScorecards === 'undefined' || typeof PrintableScorecards.generateScorecardsPDF !== 'function') {
+              alert('Print scorecards module not loaded. Please refresh the page.');
+              return;
+            }
+            
+            await PrintableScorecards.generateScorecardsPDF(
+              roundId,
+              eventId,
+              {
+                eventName: event.name || '',
+                division: division,
+                roundType: roundType,
+                date: event.date || ''
+              },
+              API_BASE
+            );
+          } catch (err) {
+            console.error('Error generating scorecards:', err);
+            alert('Error generating scorecards: ' + err.message);
+          } finally {
+            btn.disabled = false;
+            btn.textContent = '📄 Print Scorecards';
+          }
+        };
+      });
     } catch (err) {
       console.error('Error loading rounds:', err);
       roundsList.innerHTML = '<div style="color: #e74c3c; text-align: center;">Error loading rounds</div>';
