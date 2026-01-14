@@ -80,6 +80,12 @@
 **Session Date:** January 13, 2026
 
 **What We Did:**
+- ✅ **Export Shirt Order Feature (v1.9.4):** Added new export functionality to Coach Actions menu
+  - New "Export Shirt Order" button in Coach Actions modal
+  - Exports CSV formatted for custom jersey/apparel ordering
+  - Fields: Name on Jersey (LastName), Number (blank), Size (Gender-ShirtSize), Name on Front (Nickname/FirstName), Style ("archery 1/4 zip"), Note (blank)
+  - File downloads as `shirt-order-YYYY-MM-DD.csv`
+  - Handles missing data gracefully (empty sizes, missing nicknames)
 - ✅ **Shirt Sizes Entry List Feature:** Complete implementation of new shirt sizes entry list for Manage Archers module
   - Added "Shirt Sizes" button to selector strip (right side)
   - Created shirt sizes entry list view with 3-row button grid (L/XL/2X/3X, M, S/XS)
@@ -89,6 +95,10 @@
   - Updated style guide with new patterns
   - Fixed bug: Use extId/id to find archers instead of filtered list indices
   - Layout: Names on left, shirt sizes on right, avatar spans full height
+- ✅ **API Field Completeness Fix:** Fixed GET /v1/archers endpoint to return all fields
+  - Added shirtSize, pantSize, hatSize to SELECT statement
+  - Created verification scripts to ensure all database fields are properly exposed
+  - Fixed refresh functionality to load all archer data including shirt sizes
 - ✅ **Unsaved Changes Detection Fix:** Fixed false positive warnings in Edit Archer modal
   - Added unsaved changes check before navigating to next/previous archer
   - Improved comparison logic with normalizeValue() to handle null/undefined/empty consistently
@@ -96,8 +106,11 @@
   - Fixed false positive warnings when closing/navigating with no actual changes
 
 **Files Changed:**
-- `archer_list.html` - Shirt sizes entry list view, nickname modal, unsaved changes detection fixes
+- `archer_list.html` - Export Shirt Order button, shirt sizes entry list view, nickname modal, unsaved changes detection fixes
+- `js/archer_module.js` - Added exportShirtOrderCSV() function
+- `api/index.php` - Fixed GET /v1/archers to return size fields
 - `tests/components/style-guide.html` - Added Shirt Sizes Entry section with examples
+- `RELEASE_NOTES_v1.9.4.md` - New release notes document
 
 **Status:** ✅ Completed and deployed to production
 
