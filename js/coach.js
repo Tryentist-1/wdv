@@ -24,6 +24,19 @@
   let currentDivision = null; // Current division being configured
   let divisionRounds = {}; // Map of division -> roundId
 
+  /**
+   * Get today's date in local timezone as YYYY-MM-DD format
+   * Uses local date methods to avoid timezone issues with toISOString()
+   * @returns {string} Date string in YYYY-MM-DD format
+   */
+  function getLocalDateString() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   function persistCoachCredentials() {
     try {
       localStorage.setItem('coach_api_key', COACH_PASSCODE);
@@ -373,7 +386,7 @@
 
     // Set defaults
     nameInput.value = '';
-    dateInput.value = new Date().toISOString().split('T')[0];
+    dateInput.value = getLocalDateString(); // Use local timezone to avoid date offset issues
     statusSelect.value = 'Planned';
     codeInput.value = '';
 

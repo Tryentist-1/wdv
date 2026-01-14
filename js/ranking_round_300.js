@@ -1878,6 +1878,104 @@ document.addEventListener('DOMContentLoaded', () => {
         // Render archer list for selection
         renderManualArcherList();
 
+        // Attach search input handler
+        if (manualSetupControls.searchInput) {
+            manualSetupControls.searchInput.oninput = () => {
+                if (archerSelector) {
+                    archerSelector.setFilter(manualSetupControls.searchInput.value);
+                } else {
+                    renderManualArcherList();
+                }
+            };
+        }
+
+        // Attach start scoring button handler
+        if (manualSetupControls.startScoringBtn) {
+            manualSetupControls.startScoringBtn.onclick = async () => {
+                console.log('[START SCORING] Button clicked, archers:', state.archers.length);
+                console.log('[START SCORING] Archers:', state.archers.map(a => ({ id: a.id, name: `${a.firstName} ${a.lastName}` })));
+
+                if (state.archers.length === 0) {
+                    alert('Please select at least one archer to start scoring.');
+                    return;
+                }
+                
+                // Validate division is selected (required for both event-linked and standalone)
+                // Check both selectedDivision (user selection) and divisionCode (from round/event)
+                const hasDivision = state.selectedDivision || 
+                                   state.divisionCode || 
+                                   (eventDivisionControls.divisionSelect && eventDivisionControls.divisionSelect.value);
+                
+                if (!hasDivision) {
+                    alert('Please select a division before starting scoring.');
+                    if (eventDivisionControls.divisionSelect) {
+                        eventDivisionControls.divisionSelect.focus();
+                    }
+                    return;
+                }
+                
+                // For standalone rounds, validate archer metadata (level/gender required for entry code)
+                if (state.isStandalone || !state.selectedEventId) {
+                    console.log('[START SCORING] Standalone round - validating archer metadata');
+                    const validation = validateArcherMetadata();
+                    
+                    if (!validation.valid) {
+                        console.log('[START SCORING] ⚠️ Missing metadata for', validation.archersNeedingData.length, 'archers');
+                        try {
+                            await showArcherMetadataModal(validation.archersNeedingData);
+                            console.log('[START SCORING] ✅ Archer metadata updated');
+                            saveData(); // Save the updated archer data
+                        } catch (err) {
+                            console.log('[START SCORING] Metadata modal cancelled');
+                            return; // User cancelled, don't proceed
+                        }
+                    }
+                }
+
+                // Store original button text and show loading state
+                const originalText = manualSetupControls.startScoringBtn.textContent;
+                manualSetupControls.startScoringBtn.textContent = 'Loading...';
+                manualSetupControls.startScoringBtn.disabled = true;
+
+                try {
+                    console.log('[START SCORING] Loading existing scores...');
+                    // Load existing scores BEFORE initializing Live sync
+                    // This allows editing existing scorecards
+                    await loadExistingScoresForArchers();
+
+                    console.log('[START SCORING] Checking Live Updates enabled:', getLiveEnabled());
+                    if (getLiveEnabled()) {
+                        manualSetupControls.startScoringBtn.textContent = 'Syncing...';
+                        console.log('[START SCORING] Ensuring Live Round ready...');
+                        const success = await ensureLiveRoundReady({ promptForCode: true });
+                        console.log('[START SCORING] Live Round ready:', success);
+                        if (!success) {
+                            console.warn('[START SCORING] Live sync failed, continuing offline');
+                            // Don't alert - just continue, scores will sync when connectivity returns
+                        }
+                    }
+
+                    console.log('[START SCORING] Saving session...');
+                    // PHASE 0: Save session for recovery on page reload
+                    saveCurrentBaleSession();
+
+                    console.log('[START SCORING] Transitioning to scoring view...');
+                    manualSetupControls.startScoringBtn.textContent = 'Starting...';
+
+                    // Small delay to ensure UI updates
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    showScoringView();
+                    console.log('[START SCORING] ✅ Successfully transitioned to scoring view');
+                } catch (err) {
+                    console.error('[START SCORING] Error:', err);
+                    alert(`Error starting scoring: ${err.message}`);
+                    manualSetupControls.startScoringBtn.textContent = originalText;
+                    manualSetupControls.startScoringBtn.disabled = false;
+                }
+            };
+        }
+
         if (manualSetupControls.liveToggleBtn) {
             manualSetupControls.liveToggleBtn.onclick = async () => {
                 manualSetupControls.liveToggleBtn.disabled = true;
