@@ -2843,26 +2843,62 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/link-event$#i', $route, $m) && $method
     exit;
 }
 
-// Delete event
+// Delete event (with cascade deletion of rounds, round_archers, and end_events)
 if (preg_match('#^/v1/events/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
     require_api_key();
     $eventId = $m[1];
     try {
         $pdo = db();
-        // First unlink all rounds from this event
-        $unlink = $pdo->prepare('UPDATE rounds SET event_id=NULL WHERE event_id=?');
-        $unlink->execute([$eventId]);
+        $pdo->beginTransaction();
         
-        // Then delete the event
-        $delete = $pdo->prepare('DELETE FROM events WHERE id=?');
-        $delete->execute([$eventId]);
+        // Get all round IDs for this event
+        $roundStmt = $pdo->prepare('SELECT id FROM rounds WHERE event_id = ?');
+        $roundStmt->execute([$eventId]);
+        $roundIds = $roundStmt->fetchAll(PDO::FETCH_COLUMN);
         
-        if ($delete->rowCount() > 0) {
-            json_response(['message' => 'Event deleted successfully'], 200);
+        $summary = [
+            'rounds_deleted' => 0,
+            'round_archers_deleted' => 0,
+            'end_events_deleted' => 0
+        ];
+        
+        if (!empty($roundIds)) {
+            $placeholders = implode(',', array_fill(0, count($roundIds), '?'));
+            
+            // Delete end_events (scores) first
+            $endsStmt = $pdo->prepare("DELETE FROM end_events WHERE round_id IN ($placeholders)");
+            $endsStmt->execute($roundIds);
+            $summary['end_events_deleted'] = $endsStmt->rowCount();
+            
+            // Delete round_archers (scorecards) second
+            $archerStmt = $pdo->prepare("DELETE FROM round_archers WHERE round_id IN ($placeholders)");
+            $archerStmt->execute($roundIds);
+            $summary['round_archers_deleted'] = $archerStmt->rowCount();
+            
+            // Delete rounds third
+            $roundDelStmt = $pdo->prepare("DELETE FROM rounds WHERE id IN ($placeholders)");
+            $roundDelStmt->execute($roundIds);
+            $summary['rounds_deleted'] = $roundDelStmt->rowCount();
+        }
+        
+        // Finally delete the event
+        $eventDelStmt = $pdo->prepare('DELETE FROM events WHERE id = ?');
+        $eventDelStmt->execute([$eventId]);
+        
+        if ($eventDelStmt->rowCount() > 0) {
+            $pdo->commit();
+            json_response([
+                'message' => 'Event deleted successfully',
+                'summary' => $summary
+            ], 200);
         } else {
+            $pdo->rollBack();
             json_response(['error' => 'Event not found'], 404);
         }
     } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         error_log("Event deletion failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
