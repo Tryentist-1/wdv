@@ -1078,11 +1078,21 @@ const ArcherModule = {
   },
 
   // Export coach roster CSV with specific fields for USA Archery reporting
-  exportCoachRosterCSV() {
-    const list = this.loadList();
+  /**
+   * Export coach roster CSV with specific columns for USA Archery reporting.
+   * 
+   * @param {Object[]} [filteredList] - Optional array of filtered archers to export. If not provided, exports all archers.
+   * @returns {string} CSV content (also triggers download)
+   */
+  exportCoachRosterCSV(filteredList = null) {
+    const list = filteredList || this.loadList();
     if (!list.length) {
       alert('No archers to export.');
       return '';
+    }
+    
+    if (filteredList) {
+      console.log(`[Export Coach Roster] Using filtered list with ${list.length} archers`);
     }
     // Coach roster specific columns as requested
     const headers = [
@@ -1168,34 +1178,41 @@ const ArcherModule = {
    * - Size: Gender (W or M) + "-" + ShirtSize (e.g., "M-L" or "W-XL")
    * - Name on Front: Nickname (or FirstName if no Nickname)
    * - Style: "archery 1/4 zip"
-   * - Note: blank
+   * - Note: Gear Notes (notesGear field)
    * 
-   * Fetches fresh data from the API before exporting to ensure production data.
+   * If filteredList is provided, exports only those archers (respects current filters).
+   * Otherwise, fetches fresh data from the API.
    * 
+   * @param {Object[]} [filteredList] - Optional array of filtered archers to export. If not provided, exports all archers.
    * @returns {Promise<string>} CSV content (also triggers download)
    */
-  async exportShirtOrderCSV() {
-    // Fetch fresh data from API first to ensure we're exporting production data
-    let list = [];
-    try {
-      console.log('[Export Shirt Order] Fetching fresh data from API...');
-      list = await this.loadFromMySQL();
-      console.log(`[Export Shirt Order] Loaded ${list.length} archers from production database`);
-    } catch (error) {
-      console.warn('[Export Shirt Order] Failed to fetch from API, using cached data:', error);
-      // Fallback to localStorage if API fails
-      list = this.loadList();
-      if (list.length > 0) {
-        const useCached = confirm(
-          'Could not fetch fresh data from server.\n\n' +
-          'Using cached data. This may be from a different environment.\n\n' +
-          'Click "Refresh" button first to load production data, then try exporting again.\n\n' +
-          'Export cached data anyway?'
-        );
-        if (!useCached) {
-          return '';
+  async exportShirtOrderCSV(filteredList = null) {
+    let list = filteredList;
+    
+    // If no filtered list provided, fetch fresh data from API
+    if (!list || list.length === 0) {
+      try {
+        console.log('[Export Shirt Order] Fetching fresh data from API...');
+        list = await this.loadFromMySQL();
+        console.log(`[Export Shirt Order] Loaded ${list.length} archers from production database`);
+      } catch (error) {
+        console.warn('[Export Shirt Order] Failed to fetch from API, using cached data:', error);
+        // Fallback to localStorage if API fails
+        list = this.loadList();
+        if (list.length > 0) {
+          const useCached = confirm(
+            'Could not fetch fresh data from server.\n\n' +
+            'Using cached data. This may be from a different environment.\n\n' +
+            'Click "Refresh" button first to load production data, then try exporting again.\n\n' +
+            'Export cached data anyway?'
+          );
+          if (!useCached) {
+            return '';
+          }
         }
       }
+    } else {
+      console.log(`[Export Shirt Order] Using filtered list with ${list.length} archers`);
     }
     
     if (!list.length) {

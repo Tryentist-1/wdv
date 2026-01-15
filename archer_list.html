@@ -341,6 +341,69 @@
             let filteredArcherIndices = []; // For navigation
 
             /**
+             * Get the currently filtered/found set of archers based on active filters.
+             * This applies the same filtering logic used in renderList() and renderShirtSizesList().
+             * 
+             * @returns {Object[]} Array of filtered archer objects
+             */
+            function getFilteredArchers() {
+                const state = getRosterState();
+                const { list, selfExtId, friendSet } = state;
+                const filter = searchInput.value.toLowerCase();
+                const statusValue = statusFilter.value;
+                
+                let items = list.map((archer, index) => ({ archer, index }));
+                
+                // Apply status filter
+                if (statusValue !== 'all') {
+                    items = items.filter(item => (item.archer.status || 'active').toLowerCase() === statusValue);
+                }
+                
+                // Apply search filter
+                if (filter) {
+                    items = items.filter(({ archer }) =>
+                        `${archer.first} ${archer.last}`.toLowerCase().includes(filter) ||
+                        (archer.nickname || '').toLowerCase().includes(filter) ||
+                        (archer.school || '').toLowerCase().includes(filter)
+                    );
+                }
+                
+                // Apply favorites filter
+                if (showFavoritesOnly) {
+                    items = items.filter(({ archer }) => 
+                        friendSet.has(archer.extId) || (selfExtId && archer.extId === selfExtId)
+                    );
+                }
+                
+                // Apply same sorting as renderList()
+                items.sort((a, b) => {
+                    const priority = (item) => {
+                        if (selfExtId && item.archer.extId === selfExtId) return 0;
+                        if (friendSet.has(item.archer.extId)) return 1;
+                        return 2;
+                    };
+                    const aP = priority(a);
+                    const bP = priority(b);
+                    if (aP !== bP) return aP - bP;
+                    
+                    if (sortMode === 'level') {
+                        const levelOrder = ['VAR', 'JV', 'BEG'];
+                        const levelA = (a.archer.level || '').toUpperCase();
+                        const levelB = (b.archer.level || '').toUpperCase();
+                        const levelCompare = levelOrder.indexOf(levelA) - levelOrder.indexOf(levelB);
+                        if (levelCompare !== 0) return levelCompare;
+                    }
+                    
+                    const nameA = `${a.archer.first} ${a.archer.last}`.toLowerCase();
+                    const nameB = `${b.archer.first} ${b.archer.last}`.toLowerCase();
+                    return nameA.localeCompare(nameB);
+                });
+                
+                // Return just the archer objects (not the {archer, index} structure)
+                return items.map(item => item.archer);
+            }
+
+            /**
              * Check if current user is in coach mode.
              *
              * Coach auth can be present in multiple places depending on the page/flow:
@@ -2877,7 +2940,13 @@
                 coachActionExportRosterBtn.onclick = () => {
                     closeCoachActionsModal();
                     if (typeof ArcherModule.exportCoachRosterCSV === 'function') {
-                        ArcherModule.exportCoachRosterCSV();
+                        // Get filtered archers based on current view and filters
+                        const filteredArchers = getFilteredArchers();
+                        if (filteredArchers.length === 0) {
+                            alert('No archers match the current filters. Please adjust your search or filters.');
+                            return;
+                        }
+                        ArcherModule.exportCoachRosterCSV(filteredArchers);
                     } else {
                         alert('Export function not available.');
                     }
@@ -2924,7 +2993,13 @@
                     closeCoachActionsModal();
                     if (typeof ArcherModule.exportShirtOrderCSV === 'function') {
                         try {
-                            await ArcherModule.exportShirtOrderCSV();
+                            // Get filtered archers based on current view and filters
+                            const filteredArchers = getFilteredArchers();
+                            if (filteredArchers.length === 0) {
+                                alert('No archers match the current filters. Please adjust your search or filters.');
+                                return;
+                            }
+                            await ArcherModule.exportShirtOrderCSV(filteredArchers);
                         } catch (error) {
                             console.error('Export failed:', error);
                             alert('Failed to export shirt order: ' + error.message);
@@ -2941,7 +3016,13 @@
                 coachActionExportUSABtn.onclick = () => {
                     closeCoachActionsModal();
                     if (typeof ArcherModule.exportUSAArcheryCSV === 'function') {
-                        ArcherModule.exportUSAArcheryCSV();
+                        // Get filtered archers based on current view and filters
+                        const filteredArchers = getFilteredArchers();
+                        if (filteredArchers.length === 0) {
+                            alert('No archers match the current filters. Please adjust your search or filters.');
+                            return;
+                        }
+                        ArcherModule.exportUSAArcheryCSV(filteredArchers);
                     } else {
                         alert('Export function not available.');
                     }
