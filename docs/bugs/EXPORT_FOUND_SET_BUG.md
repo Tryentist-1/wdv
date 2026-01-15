@@ -243,6 +243,48 @@ const list = currentFilteredArchers.length > 0 ? currentFilteredArchers : this.l
 
 ---
 
+## ✅ Fix Applied
+
+**Date:** January 13, 2026  
+**Commits:** `7f846a6`, `a2ef7d1`
+
+### Implementation Summary
+
+1. **Created `getFilteredArchers()` helper function** in `archer_list.html`:
+   - Extracts filtered archers based on current view state
+   - Applies same filtering logic as `renderList()` and `renderShirtSizesList()`
+   - Respects: search filter, status filter, favorites filter, sort order
+
+2. **Updated all export functions** in `js/archer_module.js`:
+   - `exportShirtOrderCSV(filteredList = null)` - Accepts optional filtered list
+   - `exportCoachRosterCSV(filteredList = null)` - Accepts optional filtered list
+   - `exportUSAArcheryCSV(filteredList = null)` - Accepts optional filtered list
+   - All functions fall back to full list if no filtered list provided (backward compatible)
+
+3. **Updated export button handlers** in `archer_list.html`:
+   - All three export buttons now call `getFilteredArchers()` before exporting
+   - Shows alert if no archers match current filters
+   - Passes filtered list to export functions
+
+### Testing
+
+- ✅ Export with search filter active
+- ✅ Export with status filter active  
+- ✅ Export with favorites filter active
+- ✅ Export with multiple filters active
+- ✅ Export with no filters (exports all - backward compatible)
+- ✅ Export from shirt sizes view
+- ✅ Alert shown when no archers match filters
+
+### Files Changed
+
+- `archer_list.html` - Added `getFilteredArchers()` helper and updated button handlers
+- `js/archer_module.js` - Updated all three export functions to accept filtered list
+
+**Status:** ✅ Fixed and Deployed
+
+---
+
 ## References
 
 - Filtering logic: `archer_list.html` lines 436-502 (`renderList()`)
