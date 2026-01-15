@@ -1,8 +1,9 @@
 # Export Functions Not Using Found Set (Filtered Results)
 
-**Status:** 🔴 Open  
+**Status:** ✅ Fixed  
 **Priority:** Medium  
 **Created:** January 13, 2026  
+**Fixed:** January 13, 2026  
 **Affected:** All export functions in archer_list.html
 
 ---
