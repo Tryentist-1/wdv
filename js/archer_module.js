@@ -1617,11 +1617,21 @@ const ArcherModule = {
    * 
    * @returns {string} The generated CSV content (also triggers download)
    */
-  exportUSAArcheryCSV() {
-    const list = this.loadList();
+  /**
+   * Export USA Archery CSV in the 30-column template format.
+   * 
+   * @param {Object[]} [filteredList] - Optional array of filtered archers to export. If not provided, exports all archers.
+   * @returns {string} CSV content (also triggers download)
+   */
+  exportUSAArcheryCSV(filteredList = null) {
+    const list = filteredList || this.loadList();
     if (!list.length) {
       alert('No archers to export.');
       return '';
+    }
+    
+    if (filteredList) {
+      console.log(`[Export USA Archery] Using filtered list with ${list.length} archers`);
     }
     
     // USA Archery template columns in exact order (30 columns)
