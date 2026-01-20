@@ -735,23 +735,38 @@
             
             // Add each bracket assignment
             bracketAssignments.forEach(assignment => {
-              // Only show SOLO ELIMINATION brackets with an opponent
-              if (assignment.bracket_type === 'SOLO' && 
-                  assignment.bracket_format === 'ELIMINATION' && 
-                  assignment.opponent) {
-                
-                assignments.push({
-                  type: 'bracket',
-                  title: `${assignment.division} Elimination Bracket`,
-                  subtitle: `${assignment.event_name || 'Event'} • ${assignment.round}`,
-                  details: `You (Seed ${assignment.seed}) vs ${assignment.opponent.name} (Seed ${assignment.opponent.seed})`,
-                  link: `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`,
-                  icon: 'fas fa-trophy',
-                  color: 'bg-yellow-500 hover:bg-yellow-600',
-                  urgent: true,
-                  matchId: assignment.match_id,
-                  event_date: assignment.event_date
-                });
+              if (assignment.bracket_type === 'SOLO') {
+                if (assignment.bracket_format === 'ELIMINATION' && assignment.opponent) {
+                  // Elimination bracket with assigned opponent
+                  assignments.push({
+                    type: 'bracket',
+                    title: `${assignment.division} Elimination Bracket`,
+                    subtitle: `${assignment.event_name || 'Event'} • ${assignment.round}`,
+                    details: `You (Seed ${assignment.seed}) vs ${assignment.opponent.name} (Seed ${assignment.opponent.seed})`,
+                    link: `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`,
+                    icon: 'fas fa-trophy',
+                    color: 'bg-yellow-500 hover:bg-yellow-600',
+                    urgent: true,
+                    matchId: assignment.match_id,
+                    event_date: assignment.event_date
+                  });
+                } else if (assignment.bracket_format === 'SWISS') {
+                  // Swiss bracket - show bracket assignment
+                  const winLoss = assignment.swiss_wins || 0;
+                  const losses = assignment.swiss_losses || 0;
+                  const points = assignment.swiss_points || 0;
+                  assignments.push({
+                    type: 'bracket',
+                    title: `${assignment.division} Swiss Bracket`,
+                    subtitle: `${assignment.event_name || 'Event'} • Swiss Format`,
+                    details: `Your record: ${winLoss}-${losses} (${points > 0 ? '+' : ''}${points} points)`,
+                    link: `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`,
+                    icon: 'fas fa-trophy',
+                    color: 'bg-blue-500 hover:bg-blue-600',
+                    urgent: true,
+                    event_date: assignment.event_date
+                  });
+                }
               }
             });
           } else if (bracketRes.status !== 404) {

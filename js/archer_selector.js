@@ -297,7 +297,23 @@
             metaRow.className = 'text-xs text-gray-500 dark:text-gray-400 truncate';
             const school = archer.school || 'No school';
             const level = archer.level || '—';
-            metaRow.textContent = `${school} • ${level}`;
+            
+            // Build meta text with optional ranking score and bracket standings
+            let metaParts = [`${school} • ${level}`];
+            
+            // Add ranking score if available
+            if (typeof archer.rankingScore === 'number' && archer.rankingScore > 0) {
+                metaParts.push(`Rank: ${archer.rankingScore}`);
+            }
+            
+            // Add bracket standings if available
+            if (archer.bracketStandings) {
+                const standings = archer.bracketStandings;
+                const points = typeof archer.bracketPoints === 'number' ? ` (${archer.bracketPoints > 0 ? '+' : ''}${archer.bracketPoints})` : '';
+                metaParts.push(`Bracket: ${standings}${points}`);
+            }
+            
+            metaRow.textContent = metaParts.join(' • ');
 
             wrapper.appendChild(nameRow);
             wrapper.appendChild(metaRow);

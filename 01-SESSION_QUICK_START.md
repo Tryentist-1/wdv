@@ -68,18 +68,43 @@
 
 ---
 
-## 🚨 Status Update (January 13, 2026)
+## 🚨 Status Update (January 20, 2026)
 
 > **💡 Pro Tip:** For detailed change history, see [RELEASE_NOTES_FOR_LLMS.md](docs/RELEASE_NOTES_FOR_LLMS.md)  
 > Release notes provide context and "why" - much better for LLM onboarding than git commits alone!
 
 ### 📝 What Changed Since Last Session
 
-**Last Updated:** January 13, 2026
+**Last Updated:** January 20, 2026
 
-**Session Date:** January 13, 2026
+**Session Date:** January 20, 2026
 
 **What We Did:**
+- ✅ **Swiss Bracket Win/Loss Accuracy Fix:** Fixed double-counting bug in bracket standings
+  - Replaced increment-based logic with recalculation from actual match data
+  - Prevents multiple wins from repeated "Complete" clicks
+  - Handles match edits and verification correctly
+  - Standings recalculate automatically when matches are completed, unlocked, or verified
+- ✅ **Bracket Results Display Enhancements:**
+  - Added match status badges (Pending, In Progress, Complete, Verified) in top-right corner
+  - Fixed end scores to show match points (set_points: 0, 1, or 2) instead of just score
+  - Display full archer names in match results
+  - Added auto-refresh for Swiss brackets (every 5 seconds)
+  - Added manual refresh button with recycle icon
+  - Removed header navigation buttons, kept footer navigation
+- ✅ **Archer Selection Improvements for Solo Matches:**
+  - Enhanced archer filtering to show only event archers when bracket is selected
+  - For Open/Mixed brackets: Shows all archers assigned to the event
+  - For division-specific brackets: Shows archers from that division only
+  - Added ranking round scores display in archer list
+  - Added bracket standings (W-L record) for Swiss brackets
+  - Improved error handling with fallbacks
+- ✅ **Navigation Improvements:**
+  - Added "Brackets" button in coach console that links directly to bracket results
+  - Fixed bracket edit button on event dashboard
+  - Improved bracket results page navigation
+
+**Previous Session (January 13, 2026):**
 - ✅ **Export Shirt Order Feature (v1.9.4):** Added new export functionality to Coach Actions menu
   - New "Export Shirt Order" button in Coach Actions modal
   - Exports CSV formatted for custom jersey/apparel ordering
