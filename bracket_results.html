@@ -388,13 +388,16 @@
         const textClass = isWinner ? 'winner-text' : 'dark:text-white';
         const sets = archer.sets || [];
         
-        // Build end columns
+        // Build end columns - show set_points (0, 1, or 2) instead of just score
         let endCells = '';
         for (let i = 1; i <= 5; i++) {
           const set = sets.find(s => s.end === i);
           if (set) {
             const scoreClass = isWinner ? 'winner-text font-semibold' : 'dark:text-white';
-            endCells += `<td class="p-2 text-center ${scoreClass}">${set.display || `${set.score}(${set.xs})`}</td>`;
+            // Show set_points if available, otherwise show score
+            const setPoints = set.set_points !== undefined ? set.set_points : null;
+            const displayText = setPoints !== null ? `${set.score} (${setPoints})` : (set.display || `${set.score}(${set.xs})`);
+            endCells += `<td class="p-2 text-center ${scoreClass}">${displayText}</td>`;
           } else {
             endCells += `<td class="p-2 text-center dark:text-gray-400">-</td>`;
           }
@@ -432,6 +435,27 @@
         tbody.innerHTML = html;
       }
       
+      function getMatchStatusBadge(cardStatus, status) {
+        // card_status: PEND, COMP, VRFD, VOID
+        // status: Not Started, In Progress, Completed, Voided
+        const cardStatusUpper = (cardStatus || '').toUpperCase();
+        const statusUpper = (status || '').toUpperCase();
+        
+        if (cardStatusUpper === 'VRFD') {
+          return '<span class="px-2 py-1 bg-green-500 text-white rounded text-xs font-semibold">Verified</span>';
+        } else if (cardStatusUpper === 'COMP') {
+          return '<span class="px-2 py-1 bg-blue-500 text-white rounded text-xs font-semibold">Complete</span>';
+        } else if (statusUpper === 'IN PROGRESS') {
+          return '<span class="px-2 py-1 bg-yellow-500 text-white rounded text-xs font-semibold">In Progress</span>';
+        } else if (statusUpper === 'COMPLETED') {
+          return '<span class="px-2 py-1 bg-blue-500 text-white rounded text-xs font-semibold">Complete</span>';
+        } else if (cardStatusUpper === 'VOID' || statusUpper === 'VOIDED') {
+          return '<span class="px-2 py-1 bg-gray-500 text-white rounded text-xs font-semibold">Voided</span>';
+        } else {
+          return '<span class="px-2 py-1 bg-gray-400 text-white rounded text-xs font-semibold">Pending</span>';
+        }
+      }
+      
       function renderSwissMatches(matches) {
         const container = document.getElementById('swiss-matches');
         if (!matches || matches.length === 0) {
@@ -441,15 +465,19 @@
         
         let html = '';
         matches.forEach(match => {
-          const matchId = match.bracket_match_id || match.id;
+          const matchId = match.bracket_match_id || match.match_code || match.id;
           const a1 = match.archer1 || {};
           const a2 = match.archer2 || {};
           const a1IsWinner = match.winner_archer_id === a1.archer_id;
           const a2IsWinner = match.winner_archer_id === a2.archer_id;
+          const statusBadge = getMatchStatusBadge(match.card_status, match.status);
           
           html += `
             <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 transition-colors duration-200">
-              <div class="font-semibold text-lg mb-3 text-gray-800 dark:text-white">${matchId}</div>
+              <div class="flex justify-between items-center mb-3">
+                <div class="font-semibold text-lg text-gray-800 dark:text-white">${matchId}</div>
+                <div>${statusBadge}</div>
+              </div>
               <div class="overflow-x-auto -mx-4 px-4">
                 <table class="w-full text-sm border-collapse min-w-[600px]">
                   <thead>

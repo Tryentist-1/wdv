@@ -89,58 +89,159 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Refresh archer roster, filtering by bracket/event if selected
-     * When a bracket is selected, only shows archers in that bracket
-     * When an event (no bracket) is selected, shows archers from ranking rounds
+     * When a bracket is selected:
+     *   - For Open/Mixed brackets: Shows all archers assigned to the event
+     *   - For division-specific brackets: Shows archers from that division
+     * Includes ranking round scores and bracket standings (W-L record)
      */
     async function refreshArcherRoster() {
         if (!archerSelector || typeof ArcherModule === 'undefined') return;
         try {
-            let roster = ArcherModule.loadList() || [];
+            let roster = [];
             
-            // Filter by bracket if selected
-            if (state.bracketId) {
+            // If event is selected, fetch archers from event snapshot
+            if (state.eventId) {
                 try {
-                    console.log('[refreshArcherRoster] Filtering by bracket:', state.bracketId);
-                    // Try with API key if available
                     const API_KEY = localStorage.getItem('coach_api_key') || 'wdva26';
-                    const response = await fetch(`api/v1/brackets/${state.bracketId}/entries`, {
+                    const eventResponse = await fetch(`api/v1/events/${state.eventId}/snapshot`, {
                         headers: {
                             'X-API-Key': API_KEY
                         }
                     });
-                    if (response.ok) {
-                        const data = await response.json();
-                        const bracketEntries = data.entries || [];
+                    
+                    if (eventResponse.ok) {
+                        const eventData = await eventResponse.json();
+                        const allEventArchers = [];
                         
-                        // Get archer IDs from bracket entries
-                        const bracketArcherIds = new Set();
-                        bracketEntries.forEach(entry => {
-                            if (entry.archer_id) {
-                                bracketArcherIds.add(entry.archer_id);
+                        // Get all archers from event divisions
+                        if (eventData.divisions) {
+                            Object.keys(eventData.divisions).forEach(divKey => {
+                                const div = eventData.divisions[divKey];
+                                (div.archers || []).forEach(archer => {
+                                    const parts = (archer.archerName || '').split(' ');
+                                    allEventArchers.push({
+                                        id: archer.archerId || archer.id,
+                                        extId: archer.archerId || archer.id,
+                                        firstName: parts[0] || '',
+                                        lastName: parts.slice(1).join(' ') || '',
+                                        school: archer.school || '',
+                                        level: archer.level || '',
+                                        gender: archer.gender || '',
+                                        division: divKey,
+                                        rankingScore: archer.runningTotal || 0, // Final score from ranking round
+                                        rankingTens: archer.tens || 0,
+                                        rankingXs: archer.xs || 0
+                                    });
+                                });
+                            });
+                        }
+                        
+                        // If bracket is selected, filter by bracket type
+                        if (state.bracketId) {
+                            // Get bracket info to determine if it's Open/Mixed
+                            try {
+                                const bracketResponse = await fetch(`api/v1/brackets/${state.bracketId}`, {
+                                    headers: {
+                                        'X-API-Key': API_KEY
+                                    }
+                                });
+                                
+                                if (bracketResponse.ok) {
+                                    const bracketData = await bracketResponse.json();
+                                    const bracket = bracketData.bracket || {};
+                                    const bracketDivision = (bracket.division || '').toUpperCase();
+                                    const isOpenOrMixed = bracketDivision === 'OPEN' || bracketDivision.includes('MIXED');
+                                    
+                                    console.log('[refreshArcherRoster] Bracket division:', bracketDivision, 'isOpenOrMixed:', isOpenOrMixed);
+                                    
+                                    if (isOpenOrMixed) {
+                                        // Open/Mixed bracket: Show all event archers
+                                        roster = allEventArchers;
+                                        console.log('[refreshArcherRoster] Open/Mixed bracket - showing all', roster.length, 'event archers');
+                                    } else {
+                                        // Division-specific bracket: Filter by division
+                                        // Need to match division codes (bracket might be "BV" but event has "BVAR")
+                                        roster = allEventArchers.filter(a => {
+                                            const archerDiv = (a.division || '').toUpperCase();
+                                            // Match exact or partial (e.g., "BV" matches "BVAR")
+                                            return archerDiv === bracketDivision || 
+                                                   archerDiv.includes(bracketDivision) || 
+                                                   bracketDivision.includes(archerDiv);
+                                        });
+                                        console.log('[refreshArcherRoster] Division-specific bracket - showing', roster.length, 'archers from', bracketDivision);
+                                    }
+                                    
+                                    // Get bracket standings (W-L record for Swiss brackets)
+                                    if (bracket.bracket_format === 'SWISS') {
+                                        try {
+                                            const entriesResponse = await fetch(`api/v1/brackets/${state.bracketId}/entries`, {
+                                                headers: {
+                                                    'X-API-Key': API_KEY
+                                                }
+                                            });
+                                            
+                                            if (entriesResponse.ok) {
+                                                const entriesData = await entriesResponse.json();
+                                                const standingsMap = new Map();
+                                                
+                                                (entriesData.entries || []).forEach(entry => {
+                                                    if (entry.archer_id) {
+                                                        standingsMap.set(entry.archer_id, {
+                                                            wins: entry.swiss_wins || 0,
+                                                            losses: entry.swiss_losses || 0,
+                                                            points: entry.swiss_points || 0
+                                                        });
+                                                    }
+                                                });
+                                                
+                                                // Attach standings to archers
+                                                roster = roster.map(archer => {
+                                                    const standings = standingsMap.get(archer.id);
+                                                    if (standings) {
+                                                        archer.bracketStandings = `${standings.wins}-${standings.losses}`;
+                                                        archer.bracketPoints = standings.points;
+                                                    } else {
+                                                        archer.bracketStandings = '0-0';
+                                                        archer.bracketPoints = 0;
+                                                    }
+                                                    return archer;
+                                                });
+                                            }
+                                        } catch (entriesErr) {
+                                            console.warn('[refreshArcherRoster] Error loading bracket entries:', entriesErr);
+                                            // Continue without standings
+                                        }
+                                    }
+                                } else {
+                                    console.error('[refreshArcherRoster] Bracket API failed:', bracketResponse.status, bracketResponse.statusText);
+                                    // Fallback: show all event archers if bracket API fails
+                                    roster = allEventArchers;
+                                    console.log('[refreshArcherRoster] Bracket API failed - showing all', roster.length, 'event archers as fallback');
+                                }
+                            } catch (bracketErr) {
+                                console.error('[refreshArcherRoster] Error fetching bracket:', bracketErr);
+                                // Fallback: show all event archers if bracket fetch fails
+                                roster = allEventArchers;
+                                console.log('[refreshArcherRoster] Error fetching bracket - showing all', roster.length, 'event archers as fallback');
                             }
-                        });
-                        
-                        // Filter roster to only include archers in bracket
-                        // Match by extId or id
-                        roster = roster.filter(archer => {
-                            const archerId = archer.id || archer.extId;
-                            return bracketArcherIds.has(archerId);
-                        });
-                        
-                        console.log('[refreshArcherRoster] Filtered to', roster.length, 'archers from bracket');
-                    } else if (response.status === 401 || response.status === 403) {
-                        // Auth required - fall back to showing all archers
-                        console.warn('[refreshArcherRoster] Authentication required for bracket entries - showing all archers');
+                        } else {
+                            // Event selected but no bracket: Show all event archers
+                            roster = allEventArchers;
+                            console.log('[refreshArcherRoster] Event selected (no bracket) - showing all', roster.length, 'event archers');
+                        }
                     } else {
-                        console.warn('[refreshArcherRoster] Could not load bracket entries:', response.status);
+                        console.warn('[refreshArcherRoster] Could not load event snapshot:', eventResponse.status);
+                        // Fallback to full roster
+                        roster = ArcherModule.loadList() || [];
                     }
                 } catch (err) {
-                    console.warn('[refreshArcherRoster] Error loading bracket entries:', err);
+                    console.warn('[refreshArcherRoster] Error loading event data:', err);
+                    // Fallback to full roster
+                    roster = ArcherModule.loadList() || [];
                 }
-            } else if (state.eventId && !state.bracketId) {
-                // For events without bracket, show archers from ranking rounds
-                // For now, we'll show all archers (can be enhanced later to filter by ranking rounds)
-                console.log('[refreshArcherRoster] Event selected but no bracket - showing all archers');
+            } else {
+                // No event selected: Show all archers
+                roster = ArcherModule.loadList() || [];
             }
             
             const ctx = getSelectorContext();
