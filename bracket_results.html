@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Bracket Results</title>
   <link rel="stylesheet" href="css/tailwind-compiled.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
     .bg-primary { background-color: #0d6efd !important; }
     .bg-primary-dark { background-color: #0a58ca !important; }
@@ -57,7 +58,7 @@
     initTheme();
   </script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 min-h-screen p-4 transition-colors duration-200" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom));">
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen p-4 transition-colors duration-200" style="padding-bottom: calc(48px + env(safe-area-inset-bottom));">
   <div class="max-w-7xl mx-auto">
     <!-- Header -->
     <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
@@ -89,15 +90,15 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 overflow-x-auto transition-colors duration-200">
         <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Qualification Ranking (Top 8)</h2>
         <div class="overflow-x-auto -mx-4 px-4">
-          <table class="w-full text-sm border-collapse min-w-[600px]">
+          <table class="w-full text-xs sm:text-sm border-collapse min-w-[400px]">
             <thead>
               <tr class="border-b-2 border-gray-300 dark:border-gray-600 bg-primary dark:bg-primary-dark text-white">
-                <th class="text-left p-2 font-semibold">Rank</th>
-                <th class="text-left p-2 font-semibold">Name</th>
-                <th class="text-left p-2 font-semibold">School</th>
-                <th class="text-right p-2 font-semibold">Total Score</th>
-                <th class="text-right p-2 font-semibold">10s</th>
-                <th class="text-right p-2 font-semibold">Xs</th>
+                <th class="text-left px-1 py-2 font-semibold w-10">Rank</th>
+                <th class="text-left px-2 py-2 font-semibold min-w-[120px]">Name</th>
+                <th class="text-left px-2 py-2 font-semibold hidden sm:table-cell">School</th>
+                <th class="text-right px-2 py-2 font-semibold w-14">Total</th>
+                <th class="text-right px-1 py-2 font-semibold w-10">10s</th>
+                <th class="text-right px-1 py-2 font-semibold w-10">Xs</th>
               </tr>
             </thead>
             <tbody id="qual-table-body">
@@ -143,14 +144,14 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 transition-colors duration-200">
         <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Swiss Leaderboard</h2>
         <div class="overflow-x-auto -mx-4 px-4">
-          <table class="w-full text-sm border-collapse min-w-[600px]">
+          <table class="w-full text-xs sm:text-sm border-collapse min-w-[400px]">
             <thead>
               <tr class="border-b-2 border-gray-300 dark:border-gray-600 bg-primary dark:bg-primary-dark text-white">
-                <th class="text-left p-2 font-semibold">Rank</th>
-                <th class="text-left p-2 font-semibold">Name</th>
-                <th class="text-left p-2 font-semibold">School</th>
-                <th class="text-center p-2 font-semibold">W-L</th>
-                <th class="text-right p-2 font-semibold">Points</th>
+                <th class="text-left px-1 py-2 font-semibold w-10">Rank</th>
+                <th class="text-left px-2 py-2 font-semibold min-w-[120px]">Name</th>
+                <th class="text-left px-2 py-2 font-semibold hidden sm:table-cell">School</th>
+                <th class="text-center px-2 py-2 font-semibold w-12">W-L</th>
+                <th class="text-right px-1 py-2 font-semibold w-10">Pts</th>
               </tr>
             </thead>
             <tbody id="swiss-leaderboard-body">
@@ -182,14 +183,13 @@
   </div>
 
   <!-- Footer Navigation -->
-  <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 z-10 transition-colors duration-200" style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));">
-    <div class="max-w-7xl mx-auto flex justify-between items-center gap-2">
-      <a href="index.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
-        Home
-      </a>
-      <div id="footer-navigation" class="flex gap-2">
-        <!-- Footer navigation will be added here by JavaScript -->
-      </div>
+  <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
+    <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+      <i class="fas fa-home text-2xl"></i>
+    </a>
+    <div class="flex-1"></div>
+    <div id="footer-navigation" class="flex gap-2">
+      <!-- Footer navigation will be added here by JavaScript -->
     </div>
   </footer>
 
@@ -256,16 +256,16 @@
           if (eventId) {
             footerHtml += `
               <a href="event_dashboard.html?event=${eventId}" 
-                 class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
-                Event Dashboard
+                 class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center text-sm">
+                <i class="fas fa-calendar-alt mr-1"></i>Event
               </a>
             `;
           }
           
           footerHtml += `
             <a href="coach.html" 
-               class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
-              Coach Console
+               class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center text-sm">
+              <i class="fas fa-chalkboard-teacher mr-1"></i>Coach
             </a>
           `;
           
@@ -311,12 +311,12 @@
           const rowClass = isTop8 ? 'bg-yellow-50 dark:bg-yellow-900/20' : '';
           html += `
             <tr class="${rowClass} border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-              <td class="p-2 font-semibold dark:text-white">${entry.rank}</td>
-              <td class="p-2 dark:text-white">${entry.archer_name}</td>
-              <td class="p-2 dark:text-gray-300">${entry.school || ''}</td>
-              <td class="p-2 text-right font-semibold dark:text-white">${entry.total_score}</td>
-              <td class="p-2 text-right dark:text-white">${entry.total_10s}</td>
-              <td class="p-2 text-right dark:text-white">${entry.total_xs}</td>
+              <td class="px-1 py-2 font-semibold dark:text-white">${entry.rank}</td>
+              <td class="px-2 py-2 dark:text-white">${entry.archer_name}</td>
+              <td class="px-2 py-2 dark:text-gray-300 hidden sm:table-cell">${entry.school || ''}</td>
+              <td class="px-2 py-2 text-right font-semibold dark:text-white">${entry.total_score}</td>
+              <td class="px-1 py-2 text-right dark:text-white">${entry.total_10s}</td>
+              <td class="px-1 py-2 text-right dark:text-white">${entry.total_xs}</td>
             </tr>
           `;
         });
@@ -342,22 +342,22 @@
             <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 transition-colors duration-200">
               <div class="font-semibold text-lg mb-3 text-gray-800 dark:text-white">${matchId}</div>
               <div class="overflow-x-auto -mx-4 px-4">
-                <table class="w-full text-sm border-collapse min-w-[600px]">
+                <table class="w-full text-xs sm:text-sm border-collapse min-w-[450px]">
                   <thead>
                     <tr class="border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
-                      <th class="text-left p-2 font-semibold dark:text-white">Target</th>
-                      <th class="text-left p-2 font-semibold dark:text-white">Name (Rank)</th>
-                      <th class="text-center p-2 font-semibold dark:text-white">End 1</th>
-                      <th class="text-center p-2 font-semibold dark:text-white">End 2</th>
-                      <th class="text-center p-2 font-semibold dark:text-white">End 3</th>
-                      <th class="text-center p-2 font-semibold dark:text-white">End 4</th>
-                      <th class="text-center p-2 font-semibold dark:text-white">End 5</th>
-                      <th class="text-right p-2 font-semibold dark:text-white">Total Score</th>
+                      <th class="text-left px-1 py-2 font-semibold dark:text-white">Tgt</th>
+                      <th class="text-left px-2 py-2 font-semibold dark:text-white">Name</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">E1</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">E2</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">E3</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">E4</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">E5</th>
+                      <th class="text-right px-1 py-2 font-semibold dark:text-white">Total</th>
                     </tr>
                   </thead>
                   <tbody>
-                    ${renderMatchRow(a1, 1, a1IsWinner)}
-                    ${renderMatchRow(a2, 2, a2IsWinner)}
+                    ${renderMatchRow(a1, 1, a1IsWinner, false)}
+                    ${renderMatchRow(a2, 2, a2IsWinner, false)}
                   </tbody>
                 </table>
               </div>
@@ -367,26 +367,49 @@
         container.innerHTML = html;
       }
       
-      function renderMatchRow(archer, position, isWinner) {
+      function renderMatchRow(archer, position, isWinner, swissFormat = false) {
         if (!archer || !archer.name) {
-          return `
-            <tr class="border-b border-gray-200 dark:border-gray-600">
-              <td class="p-2">${position === 1 ? '15A' : '16A'}</td>
-              <td class="p-2 font-medium dark:text-white">-</td>
-              <td class="p-2 text-center dark:text-white">-</td>
-              <td class="p-2 text-center dark:text-white">-</td>
-              <td class="p-2 text-center dark:text-white">-</td>
-              <td class="p-2 text-center dark:text-white">-</td>
-              <td class="p-2 text-center dark:text-white">-</td>
-              <td class="p-2 text-right font-semibold dark:text-white">-</td>
-            </tr>
-          `;
+          if (swissFormat) {
+            return `
+              <tr class="border-b border-gray-200 dark:border-gray-600">
+                <td class="px-1 py-2 text-right font-semibold dark:text-white">-</td>
+                <td class="px-1 py-2 dark:text-white">${position === 1 ? '15A' : '16A'}</td>
+                <td class="px-2 py-2 font-medium dark:text-white">-</td>
+                <td class="px-1 py-2 text-center dark:text-white">-</td>
+                <td class="px-1 py-2 text-center dark:text-white">-</td>
+                <td class="px-1 py-2 text-center dark:text-white">-</td>
+                <td class="px-1 py-2 text-center dark:text-white">-</td>
+                <td class="px-1 py-2 text-center dark:text-white">-</td>
+              </tr>
+            `;
+          } else {
+            return `
+              <tr class="border-b border-gray-200 dark:border-gray-600">
+                <td class="px-1 py-2 dark:text-white">${position === 1 ? '15A' : '16A'}</td>
+                <td class="px-2 py-2 font-medium dark:text-white">-</td>
+                <td class="px-1 py-2 text-center dark:text-white">-</td>
+                <td class="px-1 py-2 text-center dark:text-white">-</td>
+                <td class="px-1 py-2 text-center dark:text-white">-</td>
+                <td class="px-1 py-2 text-center dark:text-white">-</td>
+                <td class="px-1 py-2 text-center dark:text-white">-</td>
+                <td class="px-1 py-2 text-right font-semibold dark:text-white">-</td>
+              </tr>
+            `;
+          }
         }
         
         const nameDisplay = archer.seed ? `${archer.name} (${archer.seed})` : archer.name;
         const rowClass = isWinner ? 'winner-row' : '';
         const textClass = isWinner ? 'winner-text' : 'dark:text-white';
         const sets = archer.sets || [];
+        
+        // Calculate total score from sets (sum of all end scores)
+        let totalScore = 0;
+        if (archer.total_score !== undefined) {
+          totalScore = archer.total_score;
+        } else if (sets.length > 0) {
+          totalScore = sets.reduce((sum, set) => sum + (set.score || 0), 0);
+        }
         
         // Build end columns - show set_points (0, 1, or 2) instead of just score
         let endCells = '';
@@ -397,20 +420,33 @@
             // Show set_points if available, otherwise show score
             const setPoints = set.set_points !== undefined ? set.set_points : null;
             const displayText = setPoints !== null ? `${set.score} (${setPoints})` : (set.display || `${set.score}(${set.xs})`);
-            endCells += `<td class="p-2 text-center ${scoreClass}">${displayText}</td>`;
+            endCells += `<td class="px-1 py-2 text-center ${scoreClass}">${displayText}</td>`;
           } else {
-            endCells += `<td class="p-2 text-center dark:text-gray-400">-</td>`;
+            endCells += `<td class="px-1 py-2 text-center dark:text-gray-400">-</td>`;
           }
         }
         
-        return `
-          <tr class="${rowClass} border-b border-gray-200 dark:border-gray-600">
-            <td class="p-2 dark:text-white">${position === 1 ? '15A' : '16A'}</td>
-            <td class="p-2 font-medium ${textClass}">${nameDisplay}</td>
-            ${endCells}
-            <td class="p-2 text-right font-semibold ${textClass}">${archer.total_set_points || 0}</td>
-          </tr>
-        `;
+        if (swissFormat) {
+          return `
+            <tr class="${rowClass} border-b border-gray-200 dark:border-gray-600">
+              <td class="px-1 py-2 text-right font-semibold ${textClass}">${totalScore}</td>
+              <td class="px-1 py-2 dark:text-white">${position === 1 ? '15A' : '16A'}</td>
+              <td class="px-2 py-2 font-medium ${textClass}">${nameDisplay}</td>
+              ${endCells}
+            </tr>
+          `;
+        } else {
+          // For elimination format, use total_set_points (match score)
+          const matchScore = archer.total_set_points || 0;
+          return `
+            <tr class="${rowClass} border-b border-gray-200 dark:border-gray-600">
+              <td class="px-1 py-2 dark:text-white">${position === 1 ? '15A' : '16A'}</td>
+              <td class="px-2 py-2 font-medium ${textClass}">${nameDisplay}</td>
+              ${endCells}
+              <td class="px-1 py-2 text-right font-semibold ${textClass}">${matchScore}</td>
+            </tr>
+          `;
+        }
       }
       
       function renderSwissLeaderboard(leaderboard) {
@@ -424,11 +460,11 @@
         leaderboard.forEach(entry => {
           html += `
             <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-              <td class="p-2 font-semibold dark:text-white">${entry.rank}</td>
-              <td class="p-2 dark:text-white">${entry.archer_name}</td>
-              <td class="p-2 dark:text-gray-300">${entry.school || ''}</td>
-              <td class="p-2 text-center dark:text-white">${entry.record}</td>
-              <td class="p-2 text-right font-semibold dark:text-white">${entry.points}</td>
+              <td class="px-1 py-2 font-semibold dark:text-white">${entry.rank}</td>
+              <td class="px-2 py-2 dark:text-white">${entry.archer_name}</td>
+              <td class="px-2 py-2 dark:text-gray-300 hidden sm:table-cell">${entry.school || ''}</td>
+              <td class="px-2 py-2 text-center dark:text-white">${entry.record}</td>
+              <td class="px-1 py-2 text-right font-semibold dark:text-white">${entry.points}</td>
             </tr>
           `;
         });
@@ -479,22 +515,22 @@
                 <div>${statusBadge}</div>
               </div>
               <div class="overflow-x-auto -mx-4 px-4">
-                <table class="w-full text-sm border-collapse min-w-[600px]">
+                <table class="w-full text-xs sm:text-sm border-collapse min-w-[450px]">
                   <thead>
                     <tr class="border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
-                      <th class="text-left p-2 font-semibold dark:text-white">Target</th>
-                      <th class="text-left p-2 font-semibold dark:text-white">Name (Rank)</th>
-                      <th class="text-center p-2 font-semibold dark:text-white">End 1</th>
-                      <th class="text-center p-2 font-semibold dark:text-white">End 2</th>
-                      <th class="text-center p-2 font-semibold dark:text-white">End 3</th>
-                      <th class="text-center p-2 font-semibold dark:text-white">End 4</th>
-                      <th class="text-center p-2 font-semibold dark:text-white">End 5</th>
-                      <th class="text-right p-2 font-semibold dark:text-white">Total Score</th>
+                      <th class="text-right px-1 py-2 font-semibold dark:text-white">Total</th>
+                      <th class="text-left px-1 py-2 font-semibold dark:text-white">Tgt</th>
+                      <th class="text-left px-2 py-2 font-semibold dark:text-white">Name</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">E1</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">E2</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">E3</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">E4</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">E5</th>
                     </tr>
                   </thead>
                   <tbody>
-                    ${renderMatchRow(a1, 1, a1IsWinner)}
-                    ${renderMatchRow(a2, 2, a2IsWinner)}
+                    ${renderMatchRow(a1, 1, a1IsWinner, true)}
+                    ${renderMatchRow(a2, 2, a2IsWinner, true)}
                   </tbody>
                 </table>
               </div>
