@@ -672,8 +672,115 @@ function process_round_archer_verification(PDO $pdo, string $roundArcherId, stri
     return $updated;
 }
 
+/**
+ * Recalculate Swiss bracket standings from actual match data.
+ * This ensures accuracy even if matches are edited, relocked, or marked complete multiple times.
+ * 
+ * @param PDO $pdo Database connection
+ * @param string $bracketId Bracket UUID
+ * @return void
+ */
+function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void {
+    // Verify bracket is Swiss format
+    $bracketStmt = $pdo->prepare('SELECT bracket_format FROM brackets WHERE id = ?');
+    $bracketStmt->execute([$bracketId]);
+    $bracket = $bracketStmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$bracket || $bracket['bracket_format'] !== 'SWISS') {
+        return; // Only recalculate Swiss brackets
+    }
+    
+    // Get all completed matches for this bracket
+    $matchesStmt = $pdo->prepare('
+        SELECT sm.id, sm.status, sm.card_status
+        FROM solo_matches sm
+        WHERE sm.bracket_id = ? 
+        AND sm.status = "Completed"
+        AND sm.card_status IN ("COMP", "VER")
+    ');
+    $matchesStmt->execute([$bracketId]);
+    $matches = $matchesStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Initialize win/loss counts for all archers in bracket
+    $standings = [];
+    
+    // Get all archers in bracket_entries
+    $entriesStmt = $pdo->prepare('SELECT archer_id FROM bracket_entries WHERE bracket_id = ? AND entry_type = "ARCHER"');
+    $entriesStmt->execute([$bracketId]);
+    $entries = $entriesStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    foreach ($entries as $entry) {
+        $standings[$entry['archer_id']] = ['wins' => 0, 'losses' => 0];
+    }
+    
+    // Count wins/losses from actual matches
+    foreach ($matches as $match) {
+        // Get match archers and determine winner based on sets won
+        $archersStmt = $pdo->prepare('
+            SELECT 
+                sma.archer_id,
+                sma.position,
+                COUNT(CASE WHEN sms.set_points = 2 THEN 1 END) as sets_won
+            FROM solo_match_archers sma
+            LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 5
+            WHERE sma.match_id = ?
+            GROUP BY sma.id, sma.position, sma.archer_id
+            ORDER BY sma.position
+        ');
+        $archersStmt->execute([$match['id']]);
+        $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (count($archers) === 2) {
+            $archer1Id = $archers[0]['archer_id'];
+            $archer2Id = $archers[1]['archer_id'];
+            $archer1SetsWon = (int)($archers[0]['sets_won'] ?? 0);
+            $archer2SetsWon = (int)($archers[1]['sets_won'] ?? 0);
+            
+            // Ensure both archers are in standings (in case they were added to match but not bracket_entries)
+            if (!isset($standings[$archer1Id])) {
+                $standings[$archer1Id] = ['wins' => 0, 'losses' => 0];
+            }
+            if (!isset($standings[$archer2Id])) {
+                $standings[$archer2Id] = ['wins' => 0, 'losses' => 0];
+            }
+            
+            // Determine winner and update standings
+            if ($archer1SetsWon > $archer2SetsWon) {
+                $standings[$archer1Id]['wins']++;
+                $standings[$archer2Id]['losses']++;
+            } elseif ($archer2SetsWon > $archer1SetsWon) {
+                $standings[$archer2Id]['wins']++;
+                $standings[$archer1Id]['losses']++;
+            }
+            // If tied, neither gets a win or loss (shouldn't happen in completed matches, but safe)
+        }
+    }
+    
+    // Update bracket_entries with recalculated values
+    foreach ($standings as $archerId => $stats) {
+        $wins = $stats['wins'];
+        $losses = $stats['losses'];
+        $points = $wins - $losses;
+        
+        // Ensure entry exists (create if missing)
+        $checkStmt = $pdo->prepare('SELECT id FROM bracket_entries WHERE bracket_id = ? AND archer_id = ?');
+        $checkStmt->execute([$bracketId, $archerId]);
+        if (!$checkStmt->fetch()) {
+            // Entry doesn't exist, create it
+            global $genUuid;
+            $entryId = $genUuid();
+            $insertStmt = $pdo->prepare('INSERT INTO bracket_entries (id, bracket_id, entry_type, archer_id, swiss_wins, swiss_losses, swiss_points) VALUES (?, ?, "ARCHER", ?, ?, ?, ?)');
+            $insertStmt->execute([$entryId, $bracketId, $archerId, $wins, $losses, $points]);
+        } else {
+            // Update existing entry
+            $updateStmt = $pdo->prepare('UPDATE bracket_entries SET swiss_wins = ?, swiss_losses = ?, swiss_points = ? WHERE bracket_id = ? AND archer_id = ?');
+            $updateStmt->execute([$wins, $losses, $points, $bracketId, $archerId]);
+        }
+    }
+}
+
 function process_solo_match_verification(PDO $pdo, string $matchId, string $action, string $verifiedBy = '', string $notes = ''): array {
-    $stmt = $pdo->prepare('SELECT id, event_id, status, locked, card_status, verified_by, verified_at, notes, lock_history FROM solo_matches WHERE id = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, event_id, bracket_id, status, locked, card_status, verified_by, verified_at, notes, lock_history FROM solo_matches WHERE id = ? LIMIT 1');
     $stmt->execute([$matchId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -733,10 +840,17 @@ function process_solo_match_verification(PDO $pdo, string $matchId, string $acti
         $update->execute(['VOID', $actor, $timestamp, $voidNotes, json_encode($history), $matchId]);
     }
 
-    $refetch = $pdo->prepare('SELECT id, event_id, status, locked, card_status, verified_by, verified_at, notes, lock_history FROM solo_matches WHERE id = ? LIMIT 1');
+    $refetch = $pdo->prepare('SELECT id, event_id, status, locked, card_status, bracket_id, verified_by, verified_at, notes, lock_history FROM solo_matches WHERE id = ? LIMIT 1');
     $refetch->execute([$matchId]);
     $updated = $refetch->fetch(PDO::FETCH_ASSOC);
     $updated['lock_history'] = decode_lock_history($updated['lock_history'] ?? null);
+    
+    // Recalculate Swiss bracket standings after unlock (in case match was edited)
+    // or after lock/void (to ensure accuracy)
+    if (!empty($updated['bracket_id']) && in_array($action, ['unlock', 'lock', 'void'])) {
+        recalculate_swiss_bracket_standings($pdo, $updated['bracket_id']);
+    }
+    
     return $updated;
 }
 
@@ -5830,7 +5944,7 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
         $pdo = db();
         
         // Check if match exists and get current state
-        $checkStmt = $pdo->prepare('SELECT id, event_id, status, locked, card_status FROM solo_matches WHERE id = ? LIMIT 1');
+        $checkStmt = $pdo->prepare('SELECT id, event_id, bracket_id, status, locked, card_status FROM solo_matches WHERE id = ? LIMIT 1');
         $checkStmt->execute([$matchId]);
         $match = $checkStmt->fetch(PDO::FETCH_ASSOC);
         
@@ -5919,12 +6033,15 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
             }
         }
         
+        // Check if match was already COMP to prevent double-counting bracket wins/losses
+        $wasAlreadyComplete = ($match['card_status'] === 'COMP');
+        
         // Update card_status
         $updateStmt = $pdo->prepare('UPDATE solo_matches SET card_status = ? WHERE id = ?');
         $updateStmt->execute([$newStatus, $matchId]);
         
-        // If setting to COMP, also update match status to Completed and set winner fields
-        if ($newStatus === 'COMP') {
+        // If setting to COMP (and it wasn't already COMP), also update match status to Completed and set winner fields
+        if ($newStatus === 'COMP' && !$wasAlreadyComplete) {
             $statusStmt = $pdo->prepare('UPDATE solo_matches SET status = ? WHERE id = ?');
             $statusStmt->execute(['Completed', $matchId]);
             
@@ -5955,6 +6072,18 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
                 $archer1SetsWon = (int)($archers[0]['sets_won'] ?? 0);
                 $archer2SetsWon = (int)($archers[1]['sets_won'] ?? 0);
                 
+                // Get archer IDs
+                $archer1IdStmt = $pdo->prepare('SELECT archer_id FROM solo_match_archers WHERE id = ?');
+                $archer1IdStmt->execute([$archers[0]['id']]);
+                $archer1Id = $archer1IdStmt->fetchColumn();
+                
+                $archer2IdStmt = $pdo->prepare('SELECT archer_id FROM solo_match_archers WHERE id = ?');
+                $archer2IdStmt->execute([$archers[1]['id']]);
+                $archer2Id = $archer2IdStmt->fetchColumn();
+                
+                // Get bracket_id from match for Swiss bracket updates
+                $bracketId = $match['bracket_id'] ?? null;
+                
                 // Determine winner based on sets won
                 if ($archer1SetsWon > $archer2SetsWon) {
                     // Archer 1 wins
@@ -5962,12 +6091,38 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
                     $winnerStmt->execute([$archers[0]['id']]);
                     $loserStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 0 WHERE id = ?');
                     $loserStmt->execute([$archers[1]['id']]);
+                    
+                    // Update Swiss bracket standings if bracket_id exists
+                    if ($bracketId && $archer1Id && $archer2Id) {
+                        // Check if bracket is Swiss format
+                        $bracketFormatStmt = $pdo->prepare('SELECT bracket_format FROM brackets WHERE id = ?');
+                        $bracketFormatStmt->execute([$bracketId]);
+                        $bracketFormat = $bracketFormatStmt->fetchColumn();
+                        
+                        if ($bracketFormat === 'SWISS') {
+                            // Recalculate standings from actual match data (ensures accuracy)
+                            recalculate_swiss_bracket_standings($pdo, $bracketId);
+                        }
+                    }
                 } elseif ($archer2SetsWon > $archer1SetsWon) {
                     // Archer 2 wins
                     $winnerStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 1 WHERE id = ?');
                     $winnerStmt->execute([$archers[1]['id']]);
                     $loserStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 0 WHERE id = ?');
                     $loserStmt->execute([$archers[0]['id']]);
+                    
+                    // Update Swiss bracket standings if bracket_id exists
+                    if ($bracketId && $archer1Id && $archer2Id) {
+                        // Check if bracket is Swiss format
+                        $bracketFormatStmt = $pdo->prepare('SELECT bracket_format FROM brackets WHERE id = ?');
+                        $bracketFormatStmt->execute([$bracketId]);
+                        $bracketFormat = $bracketFormatStmt->fetchColumn();
+                        
+                        if ($bracketFormat === 'SWISS') {
+                            // Recalculate standings from actual match data (ensures accuracy)
+                            recalculate_swiss_bracket_standings($pdo, $bracketId);
+                        }
+                    }
                 }
                 // If sets are equal (tied), leave winner field as-is (might be shoot-off scenario handled elsewhere)
             }

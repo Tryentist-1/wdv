@@ -87,10 +87,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function refreshArcherRoster() {
+    /**
+     * Refresh archer roster, filtering by bracket/event if selected
+     * When a bracket is selected, only shows archers in that bracket
+     * When an event (no bracket) is selected, shows archers from ranking rounds
+     */
+    async function refreshArcherRoster() {
         if (!archerSelector || typeof ArcherModule === 'undefined') return;
         try {
-            const roster = ArcherModule.loadList() || [];
+            let roster = ArcherModule.loadList() || [];
+            
+            // Filter by bracket if selected
+            if (state.bracketId) {
+                try {
+                    console.log('[refreshArcherRoster] Filtering by bracket:', state.bracketId);
+                    // Try with API key if available
+                    const API_KEY = localStorage.getItem('coach_api_key') || 'wdva26';
+                    const response = await fetch(`api/v1/brackets/${state.bracketId}/entries`, {
+                        headers: {
+                            'X-API-Key': API_KEY
+                        }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        const bracketEntries = data.entries || [];
+                        
+                        // Get archer IDs from bracket entries
+                        const bracketArcherIds = new Set();
+                        bracketEntries.forEach(entry => {
+                            if (entry.archer_id) {
+                                bracketArcherIds.add(entry.archer_id);
+                            }
+                        });
+                        
+                        // Filter roster to only include archers in bracket
+                        // Match by extId or id
+                        roster = roster.filter(archer => {
+                            const archerId = archer.id || archer.extId;
+                            return bracketArcherIds.has(archerId);
+                        });
+                        
+                        console.log('[refreshArcherRoster] Filtered to', roster.length, 'archers from bracket');
+                    } else if (response.status === 401 || response.status === 403) {
+                        // Auth required - fall back to showing all archers
+                        console.warn('[refreshArcherRoster] Authentication required for bracket entries - showing all archers');
+                    } else {
+                        console.warn('[refreshArcherRoster] Could not load bracket entries:', response.status);
+                    }
+                } catch (err) {
+                    console.warn('[refreshArcherRoster] Error loading bracket entries:', err);
+                }
+            } else if (state.eventId && !state.bracketId) {
+                // For events without bracket, show archers from ranking rounds
+                // For now, we'll show all archers (can be enhanced later to filter by ranking rounds)
+                console.log('[refreshArcherRoster] Event selected but no bracket - showing all archers');
+            }
+            
             const ctx = getSelectorContext();
             archerSelector.setContext(ctx);
             archerSelector.setRoster(roster);
@@ -99,7 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.warn('Failed to load archer roster for selector:', err);
-            archerSelector.setRoster([]);
+            if (archerSelector) {
+                archerSelector.setRoster([]);
+            }
         }
     }
 
@@ -532,11 +586,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- LOGIC ---
-    function renderSetupView(filter = '') {
+    async function renderSetupView(filter = '') {
         if (!archerSelector) {
             initializeArcherSelector();
         }
-        refreshArcherRoster();
+        await refreshArcherRoster();
         syncSelectorSelection();
         
         // Apply filter if provided
@@ -1513,6 +1567,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (bracketSelection) bracketSelection.classList.add('hidden');
         }
         
+        // Refresh archer roster (will filter by event/ranking rounds if no bracket)
+        await refreshArcherRoster();
+        
         updateMatchTypeIndicator();
         saveData();
     }
@@ -1558,6 +1615,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleBracketSelection() {
         state.bracketId = bracketSelect.value || null;
         updateMatchTypeIndicator();
+        
+        // Refresh archer roster to filter by bracket
+        await refreshArcherRoster();
         
         // For elimination brackets, check if archer has an assigned match
         if (state.bracketId && typeof ArcherModule !== 'undefined') {

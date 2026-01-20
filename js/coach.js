@@ -202,7 +202,7 @@
                 <i class="fas fa-pen-to-square"></i>
               </button>
             </div>
-            <!-- Line 2: Actions (QR Code, Dashboard, Results, Validate) -->
+            <!-- Line 2: Actions (QR Code, Dashboard, Results, Brackets, Validate) -->
             <div class="flex flex-wrap gap-2">
               <button class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center" onclick="coach.showQRCode('${eventData}')" title="QR Code">
                 <i class="fas fa-qrcode"></i>
@@ -212,6 +212,9 @@
               </button>
               <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center gap-1 whitespace-nowrap" onclick="coach.viewResults('${ev.id}')" title="View Results">
                 <i class="fas fa-list-ol"></i> Results
+              </button>
+              <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center gap-1 whitespace-nowrap" onclick="coach.viewBrackets('${ev.id}')" title="View Brackets">
+                <i class="fas fa-trophy"></i> Brackets
               </button>
               <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center gap-1 whitespace-nowrap" onclick="coach.verifyEvent('${eventData}')" title="Verify Scorecards">
                 <i class="fas fa-user-check"></i> Verify
@@ -488,6 +491,28 @@
 
   function viewDashboard(eventId) {
     window.location.href = `event_dashboard.html?event=${eventId}`;
+  }
+
+  async function viewBrackets(eventId) {
+    try {
+      // Fetch brackets for the event
+      const data = await req(`/events/${eventId}/brackets`);
+      const brackets = data.brackets || [];
+      
+      if (brackets.length === 0) {
+        // No brackets yet, go to event dashboard where they can create one
+        window.location.href = `event_dashboard.html?event=${eventId}`;
+        return;
+      }
+      
+      // Navigate to the first bracket's results page
+      const firstBracket = brackets[0];
+      window.location.href = `bracket_results.html?bracket=${firstBracket.id}`;
+    } catch (err) {
+      console.error('Error loading brackets:', err);
+      // On error, fallback to event dashboard
+      window.location.href = `event_dashboard.html?event=${eventId}`;
+    }
   }
 
   // ==================== Verification Workflow ====================
@@ -2504,16 +2529,49 @@
     
     modal.style.display = 'flex';
     
-    // Update size input based on format
-    formatSelect.onchange = () => {
+    // Update size input based on format and division
+    const updateSizeInput = async () => {
       if (formatSelect.value === 'ELIMINATION') {
         sizeInput.value = '8';
         sizeInput.disabled = true;
+        sizeInput.removeAttribute('max');
       } else {
+        // Swiss bracket - set max based on division archer count
         sizeInput.disabled = false;
+        sizeInput.min = '4';
+        
+        // Get archer count for selected division
+        try {
+          const eventResponse = await req(`/events/${currentEditEventId}`, 'GET');
+          const division = divisionSelect.value;
+          const divisionData = eventResponse.event?.divisions?.[division];
+          
+          if (divisionData && divisionData.archerCount) {
+            const maxArchers = divisionData.archerCount;
+            sizeInput.max = maxArchers;
+            // Update help text if it exists
+            const helpText = sizeInput.parentElement.querySelector('p');
+            if (helpText) {
+              helpText.textContent = `Elimination brackets are always 8. Swiss brackets limited to ${maxArchers} archers in ${division} division.`;
+            }
+          } else {
+            // Fallback: remove max if we can't determine count
+            sizeInput.removeAttribute('max');
+            const helpText = sizeInput.parentElement.querySelector('p');
+            if (helpText) {
+              helpText.textContent = 'Elimination brackets are always 8. Swiss brackets limited only by number of archers in the division.';
+            }
+          }
+        } catch (err) {
+          console.warn('Could not load division archer count:', err);
+          sizeInput.removeAttribute('max');
+        }
       }
     };
-    formatSelect.onchange(); // Initial call
+    
+    formatSelect.onchange = updateSizeInput;
+    divisionSelect.onchange = updateSizeInput;
+    updateSizeInput(); // Initial call
     
     document.getElementById('cancel-create-bracket-btn').onclick = () => {
       modal.style.display = 'none';
@@ -2707,6 +2765,7 @@
   window.coach = {
     viewResults,
     viewDashboard,
+    viewBrackets,
     addArchersToEvent,
     deleteEvent,
     editEvent,

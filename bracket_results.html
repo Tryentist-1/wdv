@@ -57,14 +57,14 @@
     initTheme();
   </script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 min-h-screen p-4 transition-colors duration-200">
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen p-4 transition-colors duration-200" style="padding-bottom: calc(4rem + env(safe-area-inset-bottom));">
   <div class="max-w-7xl mx-auto">
     <!-- Header -->
     <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
       <div class="flex justify-between items-center mb-2">
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Bracket Results</h1>
         <button onclick="toggleDarkMode()" 
-                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2">
+                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2 min-h-[44px]">
           <span class="dark:hidden">🌙 Dark</span>
           <span class="hidden dark:inline">☀️ Light</span>
         </button>
@@ -161,7 +161,12 @@
       </div>
       
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
-        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">All Matches</h2>
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold text-gray-800 dark:text-white">All Matches</h2>
+          <button id="refresh-swiss-matches-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Refresh Matches">
+            <i class="fas fa-recycle text-lg"></i>
+          </button>
+        </div>
         <div id="swiss-matches" class="space-y-4">
           <div class="text-gray-500 text-center p-4">Loading matches...</div>
         </div>
@@ -176,6 +181,18 @@
     </div>
   </div>
 
+  <!-- Footer Navigation -->
+  <footer class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 z-10 transition-colors duration-200" style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));">
+    <div class="max-w-7xl mx-auto flex justify-between items-center gap-2">
+      <a href="index.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
+        Home
+      </a>
+      <div id="footer-navigation" class="flex gap-2">
+        <!-- Footer navigation will be added here by JavaScript -->
+      </div>
+    </div>
+  </footer>
+
   <script>
     (() => {
       const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -185,7 +202,7 @@
       const API_KEY = localStorage.getItem('coach_api_key') || 'wdva26';
       
       const urlParams = new URLSearchParams(window.location.search);
-      const bracketId = urlParams.get('bracketId');
+      const bracketId = urlParams.get('bracket') || urlParams.get('bracketId'); // Support both 'bracket' and 'bracketId'
       
       if (!bracketId) {
         document.body.innerHTML = '<div class="p-8 text-center"><h1 class="text-2xl font-bold text-red-600 mb-4">Error</h1><p>No bracket ID provided. Please access this page from the Coach Console.</p></div>';
@@ -193,6 +210,7 @@
       }
       
       let bracketData = null;
+      let refreshInterval = null;
       
       async function req(endpoint, method = 'GET', data = null) {
         const options = {
@@ -225,10 +243,33 @@
           // Update header
           const bracket = data.bracket;
           const eventName = bracket.event_name || 'Event';
+          const eventId = bracket.event_id;
           document.getElementById('bracket-info').innerHTML = `
             <div class="text-lg font-semibold">${eventName}</div>
             <div>${bracket.bracket_type} ${bracket.bracket_format} - ${bracket.division} (${bracket.status})</div>
           `;
+          
+          // Add footer navigation
+          const footerNav = document.getElementById('footer-navigation');
+          let footerHtml = '';
+          
+          if (eventId) {
+            footerHtml += `
+              <a href="event_dashboard.html?event=${eventId}" 
+                 class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
+                Event Dashboard
+              </a>
+            `;
+          }
+          
+          footerHtml += `
+            <a href="coach.html" 
+               class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
+              Coach Console
+            </a>
+          `;
+          
+          footerNav.innerHTML = footerHtml;
           
           // Show appropriate view
           if (bracket.bracket_format === 'ELIMINATION') {
@@ -242,6 +283,8 @@
             document.getElementById('swiss-view').classList.remove('hidden');
             renderSwissLeaderboard(data.leaderboard || []);
             renderSwissMatches(data.rounds.swiss || []);
+            // Restart auto-refresh for Swiss brackets
+            startAutoRefresh();
           }
           
           // Show coach actions if authenticated
@@ -398,15 +441,34 @@
         
         let html = '';
         matches.forEach(match => {
+          const matchId = match.bracket_match_id || match.id;
           const a1 = match.archer1 || {};
           const a2 = match.archer2 || {};
+          const a1IsWinner = match.winner_archer_id === a1.archer_id;
+          const a2IsWinner = match.winner_archer_id === a2.archer_id;
+          
           html += `
             <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 transition-colors duration-200">
-              <div class="font-semibold mb-2 text-gray-800 dark:text-white">
-                ${a1.name || 'Archer 1'} vs ${a2.name || 'Archer 2'}
-              </div>
-              <div class="text-sm text-gray-600 dark:text-gray-400">
-                ${match.match_code || match.bracket_match_id || 'Match'}
+              <div class="font-semibold text-lg mb-3 text-gray-800 dark:text-white">${matchId}</div>
+              <div class="overflow-x-auto -mx-4 px-4">
+                <table class="w-full text-sm border-collapse min-w-[600px]">
+                  <thead>
+                    <tr class="border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                      <th class="text-left p-2 font-semibold dark:text-white">Target</th>
+                      <th class="text-left p-2 font-semibold dark:text-white">Name (Rank)</th>
+                      <th class="text-center p-2 font-semibold dark:text-white">End 1</th>
+                      <th class="text-center p-2 font-semibold dark:text-white">End 2</th>
+                      <th class="text-center p-2 font-semibold dark:text-white">End 3</th>
+                      <th class="text-center p-2 font-semibold dark:text-white">End 4</th>
+                      <th class="text-center p-2 font-semibold dark:text-white">End 5</th>
+                      <th class="text-right p-2 font-semibold dark:text-white">Total Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${renderMatchRow(a1, 1, a1IsWinner)}
+                    ${renderMatchRow(a2, 2, a2IsWinner)}
+                  </tbody>
+                </table>
               </div>
             </div>
           `;
@@ -454,8 +516,42 @@
         }
       });
       
+      // Auto-refresh for Swiss brackets (every 5 seconds)
+      function startAutoRefresh() {
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+        }
+        
+        // Check if we're viewing a Swiss bracket
+        const swissView = document.getElementById('swiss-view');
+        if (swissView && !swissView.classList.contains('hidden')) {
+          refreshInterval = setInterval(() => {
+            loadBracketResults();
+          }, 5000); // Refresh every 5 seconds
+        }
+      }
+      
+      // Refresh button handler
+      document.getElementById('refresh-swiss-matches-btn')?.addEventListener('click', () => {
+        loadBracketResults();
+      });
+      
+      // Stop auto-refresh when page is hidden
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          if (refreshInterval) {
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+          }
+        } else {
+          startAutoRefresh();
+        }
+      });
+      
       // Load data on page load
-      loadBracketResults();
+      loadBracketResults().then(() => {
+        startAutoRefresh();
+      });
     })();
   </script>
 </body>
