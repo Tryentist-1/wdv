@@ -1,6 +1,7 @@
 {
   "name": "wdv-tests",
   "version": "1.0.0",
+  
   "scripts": {
     "build:css": "./node_modules/.bin/postcss ./css/tailwind.css -o ./css/tailwind-compiled.css",
     "watch:css": "./node_modules/.bin/postcss ./css/tailwind.css -o ./css/tailwind-compiled.css --watch",
@@ -52,9 +53,11 @@
     "test": "tests"
   },
   "dependencies": {
-    "fsevents": "^2.3.2",
     "playwright": "^1.56.1",
     "playwright-core": "^1.56.1"
+  },
+  "optionalDependencies": {
+    "fsevents": "^2.3.2"
   },
   "keywords": [],
   "author": "",

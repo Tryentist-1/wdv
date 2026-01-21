@@ -13,6 +13,7 @@ const { defineConfig, devices } = require('@playwright/test');
  */
 module.exports = defineConfig({
   testDir: './tests',
+  testMatch: /.*\.spec\.js$/, // Only run .spec.js files (Playwright tests), exclude .test.js (Jest tests)
   fullyParallel: false, // Run sequentially for local testing
   retries: 0,
   reporter: 'list',
@@ -53,7 +54,7 @@ module.exports = defineConfig({
   
   // Start local PHP server before tests
   webServer: {
-    command: 'cd /Users/terry/web-mirrors/tryentist/wdv && php -S localhost:8001',
+    command: 'cd /Users/terry/makeitso/wdv && php -S localhost:8001',
     url: 'http://localhost:8001',
     reuseExistingServer: !process.env.CI,
     timeout: 10000,
