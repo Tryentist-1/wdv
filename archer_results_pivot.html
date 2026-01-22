@@ -213,6 +213,19 @@
     let filteredData = [];
     let viewMode = 'simple'; // 'simple' or 'advanced'
 
+    /**
+     * Build a stable deduplication key from name + school when archerId is not available.
+     * Trims and collapses whitespace so same archer across events matches.
+     * @param {string} [firstName] - Archer first name
+     * @param {string} [lastName] - Archer last name
+     * @param {string} [school] - School name
+     * @returns {string} Normalized key, lowercased
+     */
+    function normalizeKey(firstName, lastName, school) {
+      const n = (s) => (s != null ? String(s).trim().replace(/\s+/g, ' ') : '');
+      return `${n(firstName)}_${n(lastName)}_${n(school)}`.toLowerCase();
+    }
+
     // Load all events and their results
     async function loadAllData() {
       try {
@@ -226,8 +239,9 @@
         
         console.log('Loaded events:', allEvents);
         
-        // Fetch snapshots for each event
-        const archerMap = new Map(); // Map archer by unique key (name + school)
+        // Fetch snapshots for each event. Deduplicate by archerId when present,
+        // else by normalized name+school, so one row per archer in the pivot.
+        const archerMap = new Map();
         
         for (const event of allEvents) {
           try {
@@ -242,10 +256,14 @@
               const archers = divData.archers || [];
               
               for (const archer of archers) {
-                const key = `${archer.firstName || ''}_${archer.lastName || ''}_${archer.school || ''}`.toLowerCase();
+                const key = (archer.archerId != null && archer.archerId !== '')
+                  ? String(archer.archerId)
+                  : normalizeKey(archer.firstName, archer.lastName, archer.school);
                 
                 if (!archerMap.has(key)) {
                   archerMap.set(key, {
+                    id: archer.archerId || null,
+                    _dedupeKey: key,
                     firstName: archer.firstName || '',
                     lastName: archer.lastName || '',
                     school: archer.school || '',
@@ -262,6 +280,7 @@
                 
                 const roundKey = `${event.name}`;
                 archerData.rounds[roundKey] = {
+                  roundArcherId: archer.roundArcherId || null,
                   eventId: event.id,
                   eventName: event.name,
                   eventDate: event.date,
@@ -491,7 +510,8 @@
       filteredData.forEach((archer, index) => {
         const row = document.createElement('tr');
         row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors';
-        
+        if (archer._dedupeKey) row.dataset.archerDedupeKey = archer._dedupeKey;
+
         const rank = index + 1;
         const rankColor = rank === 1 ? 'text-rank-gold' : rank === 2 ? 'text-rank-silver' : rank === 3 ? 'text-rank-bronze' : 'text-gray-800 dark:text-white';
         
@@ -592,7 +612,8 @@
       filteredData.forEach((archer, index) => {
         const row = document.createElement('tr');
         row.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors';
-        
+        if (archer._dedupeKey) row.dataset.archerDedupeKey = archer._dedupeKey;
+
         const rank = index + 1;
         const rankColor = rank === 1 ? 'text-rank-gold' : rank === 2 ? 'text-rank-silver' : rank === 3 ? 'text-rank-bronze' : 'text-gray-800 dark:text-white';
         const fullName = `${archer.firstName} ${archer.lastName}`;
