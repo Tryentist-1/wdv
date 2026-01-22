@@ -1171,6 +1171,102 @@ const ArcherModule = {
   },
 
   /**
+   * Export Coach Roster Simple CSV based on roster_template.csv format.
+   * Exports archers with simplified fields: First Name, Last Name, Gender, VJV, SCHOOL, USAArcheryNo, Email1, Discipline, Disability, RankingAvg
+   * 
+   * If filteredList is provided, exports only those archers (respects current filters).
+   * Otherwise, uses the current list from localStorage.
+   * 
+   * @param {Object[]} [filteredList] - Optional array of filtered archers to export. If not provided, exports all archers.
+   * @returns {string} CSV content (also triggers download)
+   */
+  exportCoachRosterSimpleCSV(filteredList = null) {
+    const list = filteredList || this.loadList();
+    if (!list.length) {
+      alert('No archers to export.');
+      return '';
+    }
+    
+    if (filteredList) {
+      console.log(`[Export Coach Roster Simple] Using filtered list with ${list.length} archers`);
+    }
+    
+    // Template format: First Name,Last Name,Gender,VJV,SCHOOL,USAArcheryNo,Email1,Discipline,Disability,RankingAvg
+    const headers = [
+      'First Name',
+      'Last Name',
+      'Gender',
+      'VJV',
+      'SCHOOL',
+      'USAArcheryNo',
+      'Email1',
+      'Discipline',
+      'Disability',
+      'RankingAvg'
+    ];
+    
+    const rows = list.map(archer => {
+      const normalized = this._applyTemplate(archer);
+      
+      // Map fields to template format
+      const firstName = normalized.first || '';
+      const lastName = normalized.last || '';
+      const gender = (normalized.gender || 'M').toUpperCase();
+      const vjv = (normalized.level || 'VAR').toUpperCase();
+      const school = (normalized.school || '').toUpperCase();
+      const usaArcheryNo = normalized.usArcheryId || '';
+      const email1 = normalized.email || '';
+      const discipline = normalized.discipline || 'Recurve';
+      const disability = (normalized.disability || 'NO').toUpperCase();
+      
+      // RankingAvg: Use varPr for VAR level, jvPr for JV level, otherwise empty
+      let rankingAvg = '';
+      if (vjv === 'VAR' && normalized.varPr) {
+        rankingAvg = String(normalized.varPr);
+      } else if (vjv === 'JV' && normalized.jvPr) {
+        rankingAvg = String(normalized.jvPr);
+      }
+      
+      return [
+        firstName,
+        lastName,
+        gender,
+        vjv,
+        school,
+        usaArcheryNo,
+        email1,
+        discipline,
+        disability,
+        rankingAvg
+      ].map(value => {
+        const str = String(value || '');
+        // Quote values that contain commas, quotes, or newlines
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      }).join(',');
+    });
+    
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    try {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `coach-roster-simple-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Export Coach Roster Simple CSV failed', err);
+    }
+    return csv;
+  },
+
+  /**
    * Export shirt order CSV for custom jersey/apparel ordering.
    * Exports archers with fields formatted for shirt order forms:
    * - Name on Jersey: LastName
