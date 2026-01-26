@@ -4,7 +4,40 @@ This guide will help you set up a complete local development environment for the
 
 ---
 
-## 📋 Prerequisites
+
+---
+
+## 🐋 Quick Start with Docker (Recommended)
+
+The easiest way to get started is using Docker. This method handles the database and server setup automatically.
+
+### Prerequisites for Docker
+- Docker Desktop or Docker Engine + Docker Compose
+
+### Starting the Environment
+```bash
+# Start services in detached mode
+docker-compose up -d
+
+# Check status
+docker-compose ps
+```
+
+The application will be available at [http://localhost:8001](http://localhost:8001).
+
+### Stopping the Environment
+```bash
+docker-compose down
+```
+
+### Docker Troubleshooting
+- **Port Conflicts**: If port 8001 is in use, edit `docker-compose.yml` and change `8001:80` to another port.
+- **Database Persistence**: Data is persisted in the `mysql/` directory in the project root.
+
+---
+
+## 📋 Manual Prerequisites (Non-Docker)
+
 
 Before starting, ensure you have the following installed:
 

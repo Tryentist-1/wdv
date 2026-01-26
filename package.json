@@ -34,7 +34,11 @@
     "deploy": "bash ./scripts/deploy/DeployFTP.sh",
     "deploy:dry": "bash ./scripts/deploy/DeployFTP.sh --dry-run",
     "deploy:reset": "bash ./scripts/deploy/DeployFTP.sh --reset",
-    "deploy:fast": "bash ./scripts/deploy/DeployFTP.sh --no-local-backup"
+    "deploy:reset": "bash ./scripts/deploy/DeployFTP.sh --reset",
+    "deploy:fast": "bash ./scripts/deploy/DeployFTP.sh --no-local-backup",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
