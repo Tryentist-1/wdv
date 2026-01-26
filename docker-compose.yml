@@ -1,29 +1,40 @@
-version: '3.8'
-
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: wdv-mysql
+  web:
+    image: nginx:alpine
+    container_name: wdv_web
+    ports:
+      - 8001:80
+    volumes:
+      - ./:/var/www/html
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./config.docker.php:/var/www/html/api/config.local.php:ro
+    depends_on:
+      - php
+      - db
     restart: unless-stopped
+
+  php:
+    image: php:8.2-fpm-alpine
+    container_name: wdv_php
+    volumes:
+      - ./:/var/www/html
+      - ./config.docker.php:/var/www/html/api/config.local.php:ro
+    # Install pdo_mysql extension
+    command: /bin/sh -c "docker-php-ext-install pdo pdo_mysql && php-fpm"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: mariadb:10.6
+    container_name: wdv_db
     environment:
-      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: wdv
       MYSQL_USER: wdv_user
-      MYSQL_PASSWORD: wdv_dev_password
-    ports:
-      - "3306:3306"
+      MYSQL_PASSWORD: wdv_password
     volumes:
-      # Persist database data
-      - wdv_mysql_data:/var/lib/mysql
-      # Mount SQL files for easy import
-      - ./api/sql:/docker-entrypoint-initdb.d:ro
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psecret"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  wdv_mysql_data:
-    driver: local
+      - ./mysql:/var/lib/mysql
+      # Auto-init schema from source
+      - ./api/sql/schema.mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped

@@ -46,3 +46,6 @@ test-results/
 .agent/tmp/
 .agent/*.log
 .agent/*.tmp
+
+# Docker local data
+mysql/

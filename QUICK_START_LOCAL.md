@@ -6,6 +6,19 @@ This is a quick reference guide. For detailed instructions, see `docs/LOCAL_DEVE
 
 ## 🚀 Quick Setup (5 minutes)
 
+### Option 1: Docker (Recommended)
+The easiest way to get started is using Docker. This will create the database, configure PHP, and start the web server automatically.
+
+```bash
+docker-compose up -d
+```
+The app will be available at http://localhost:8001/index.html.
+
+To stop the environment: `docker-compose down`
+
+### Option 2: Manual Setup
+If you prefer not to use Docker, follow these steps:
+
 ### 1. Start MySQL
 ```bash
 # macOS
