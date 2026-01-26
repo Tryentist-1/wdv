@@ -30,7 +30,7 @@ mkdir -p "$BACKUP_DIR"
 
 # --- Build lftp exclude list from .gitignore and always-excluded files ---
 # Never deploy local app-imports to prod (coach uploads live CSVs there)
-EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob deploy_backups/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/** --exclude-glob app-imports/** --exclude-glob playwright-report/** --exclude-glob test-results/** --exclude-glob .vscode/** --exclude-glob .github/** --exclude-glob '*.md' --exclude-glob '.DS_Store'"
+EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob deploy_backups/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/** --exclude-glob app-imports/** --exclude-glob playwright-report/** --exclude-glob test-results/** --exclude-glob .vscode/** --exclude-glob .github/** --exclude-glob '*.md' --exclude-glob '.DS_Store' --exclude-glob docker-compose.yml --exclude-glob nginx.conf --exclude-glob config.docker.php"
 if [ -f .gitignore ]; then
   GITEXCLUDES=$(grep -v '^#' .gitignore | grep -v '^$' | awk '{print "--exclude-glob "$1}' | xargs)
   EXCLUDES="$EXCLUDES $GITEXCLUDES"
