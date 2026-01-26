@@ -113,10 +113,13 @@ npm install
 # 3. Build Tailwind CSS
 npm run build:css
 
-# 4. Run setup script
+# 4. Run setup script (MacOS/Linux)
 ./scripts/dev/setup_local.sh
 
-# 5. Start PHP server
+# OR using Docker (Recommended):
+npm run docker:up
+
+# 5. Start PHP server (if not using Docker)
 npm run serve
 
 # 6. Open browser
@@ -326,6 +329,7 @@ open https://archery.tryentist.com/
 ## 📚 Documentation Index
 
 ### 🎯 Start Here
+
 | Document | Purpose | Audience |
 |----------|---------|----------|
 | [APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](docs/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md) | **Master reference** - Full system overview | Developers |
@@ -335,6 +339,7 @@ open https://archery.tryentist.com/
 | [PRODUCT_REQUIREMENTS.md](docs/PRODUCT_REQUIREMENTS.md) | Original product vision | All |
 
 ### 🔧 Development
+
 | Document | Purpose |
 |----------|---------|
 | [QUICK_START_LOCAL.md](QUICK_START_LOCAL.md) | Local development setup |
@@ -343,6 +348,7 @@ open https://archery.tryentist.com/
 | [ROADMAP.md](docs/ROADMAP.md) | Development phases |
 
 ### 🔐 Security & Auth
+
 | Document | Purpose |
 |----------|---------|
 | [AUTHENTICATION_ANALYSIS.md](docs/AUTHENTICATION_ANALYSIS.md) | Complete auth system |
@@ -351,6 +357,7 @@ open https://archery.tryentist.com/
 | [STORAGE_TIER_AUDIT.md](docs/STORAGE_TIER_AUDIT.md) | 3-tier storage verification |
 
 ### 🎓 User Guides
+
 | Document | Purpose |
 |----------|---------|
 | [ARCHER_SCORING_WORKFLOW.md](docs/ARCHER_SCORING_WORKFLOW.md) | Archer instructions |
@@ -359,6 +366,7 @@ open https://archery.tryentist.com/
 | [COACH_CONSOLE_REDESIGN.md](docs/COACH_CONSOLE_REDESIGN.md) | Coach features |
 
 ### 🧪 Testing
+
 | Document | Purpose |
 |----------|---------|
 | [AUTOMATED_TESTING.md](docs/AUTOMATED_TESTING.md) | Test infrastructure |
@@ -366,6 +374,7 @@ open https://archery.tryentist.com/
 | [PHASE_0_TESTING_PLAN.md](docs/PHASE_0_TESTING_PLAN.md) | Initial testing phase |
 
 ### 🚢 Deployment & Operations
+
 | Document | Purpose |
 |----------|---------|
 | [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) | Pre-flight checklist |
@@ -373,6 +382,7 @@ open https://archery.tryentist.com/
 | [SETUP_REMOTE_DATABASE.md](SETUP_REMOTE_DATABASE.md) | Database setup |
 
 ### 📊 Analytics & Features
+
 | Document | Purpose |
 |----------|---------|
 | [ANALYTICS_PIVOT_ENHANCEMENTS.md](docs/ANALYTICS_PIVOT_ENHANCEMENTS.md) | Analytics features |
