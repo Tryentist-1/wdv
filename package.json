@@ -1,7 +1,6 @@
 {
   "name": "wdv-tests",
   "version": "1.0.0",
-  
   "scripts": {
     "build:css": "./node_modules/.bin/postcss ./css/tailwind.css -o ./css/tailwind-compiled.css",
     "watch:css": "./node_modules/.bin/postcss ./css/tailwind.css -o ./css/tailwind-compiled.css --watch",
@@ -30,7 +29,7 @@
     "test:api:integration": "jest tests/api/integration --verbose",
     "test:api:all": "jest tests/api --verbose",
     "test:api:coverage": "jest tests/api --coverage --verbose",
-    "serve": "php -S localhost:8001",
+    "serve": "php -S localhost:8001 router.php",
     "deploy": "bash ./scripts/deploy/DeployFTP.sh",
     "deploy:dry": "bash ./scripts/deploy/DeployFTP.sh --dry-run",
     "deploy:reset": "bash ./scripts/deploy/DeployFTP.sh --reset",

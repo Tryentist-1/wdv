@@ -16,36 +16,19 @@ The app will be available at http://localhost:8001/index.html.
 
 To stop the environment: `docker-compose down`
 
-### Option 2: Manual Setup
-If you prefer not to use Docker, follow these steps:
+### Option 2: Hybrid Setup (Local App + Docker DB)
+This is the **preferred method for active development**. It runs the database in Docker (clean, isolated) but runs the PHP application locally for faster feedback.
 
-### 1. Start MySQL
+### 1. Start Database (Docker Required)
+The database **MUST** be run via Docker to ensure compatibility and correct credentials.
+
 ```bash
-# macOS
-brew services start mysql
-
-# Linux
-sudo systemctl start mysql
+# Start only the database container
+docker-compose up -d db
 ```
 
-### 2. Create Database
-```bash
-mysql -u root -p
-```
-
-```sql
-CREATE DATABASE wdv CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-EXIT;
-```
-
-### 3. Import Schema
-```bash
-mysql -u root -p wdv < api/sql/schema.mysql.sql
-```
-
-### 4. Configure Local Database Connection
-
-Edit `api/config.local.php` and **comment out the production config, uncomment the local config**:
+### 2. Configure Local Connection
+Edit `api/config.local.php` and use the following verified credentials:
 
 ```php
 // ========================================================
@@ -56,14 +39,14 @@ Edit `api/config.local.php` and **comment out the production config, uncomment t
 // define('DB_PASS', 'Bigdistraction976');
 
 // ========================================================
-// OPTION 2: LOCAL DATABASE - UNCOMMENT THIS
+// OPTION 2: LOCAL DATABASE (Docker) - UNCOMMENT THIS
 // ========================================================
-define('DB_DSN', 'mysql:host=localhost;dbname=wdv;charset=utf8mb4');
-define('DB_USER', 'root');
-define('DB_PASS', '');  // Your MySQL root password here
+define('DB_DSN', 'mysql:host=127.0.0.1;port=3306;dbname=wdv;charset=utf8mb4');
+define('DB_USER', 'wdv_user');        // Confirmed Docker configuration
+define('DB_PASS', 'wdv_dev_password'); // Confirmed Docker configuration
 
 // Also update CORS for local development:
-define('CORS_ORIGIN', '*');  // Or 'http://localhost:8001'
+define('CORS_ORIGIN', '*');
 ```
 
 ### 5. Test Connection
@@ -84,6 +67,8 @@ npm run build:css
 **Dark Mode:** Dark mode is configured using Tailwind v4's `@custom-variant` directive. If dark mode isn't working, verify that `css/tailwind.css` contains the dark mode variant configuration.
 
 ### 7. Start Server
+Run the local development server (uses `router.php` for clean URLs):
+
 ```bash
 npm run serve
 ```

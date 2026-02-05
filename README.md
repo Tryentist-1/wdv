@@ -113,20 +113,17 @@ npm install
 # 3. Build Tailwind CSS
 npm run build:css
 
-# 4. Run setup script (MacOS/Linux)
-./scripts/dev/setup_local.sh
-
-# OR using Docker (Recommended):
+# 4. Start Development Environment (Docker DB is Required)
+# Option A: Full Docker (Database + App) - RECOMMENDED
 npm run docker:up
 
-# 5. Start PHP server (if not using Docker)
+# Option B: Hybrid (Docker DB + Local App)
+docker-compose up -d db
 npm run serve
 
-# 6. Open browser
+# 5. Open browser
 open http://localhost:8001
 
-# 7. View Style Guide (UI Components)
-open http://localhost:8001/tests/components/style-guide.html
 ```
 
 ### Detailed Setup
