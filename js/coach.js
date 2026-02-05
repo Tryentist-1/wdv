@@ -2517,7 +2517,7 @@
 
     const modal = document.getElementById('create-bracket-modal');
     const typeSelect = document.getElementById('bracket-type');
-    const formatSelect = document.getElementById('bracket-format');
+    let formatSelect = document.getElementById('bracket-format');
     const divisionSelect = document.getElementById('bracket-division');
     const sizeInput = document.getElementById('bracket-size');
 
@@ -2636,9 +2636,14 @@
         btn.disabled = false;
         btn.textContent = 'Create Bracket';
       } catch (err) {
-        alert('Error creating bracket: ' + (err.message || 'Unknown error'));
-        btn.disabled = false;
-        btn.textContent = 'Create Bracket';
+        console.error(err);
+        alert('Error creating bracket: ' + err.message);
+      } finally {
+        const btn = document.getElementById('submit-create-bracket-btn');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Create Bracket';
+        }
       }
     };
   }
