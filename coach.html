@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -16,7 +17,7 @@
       initDarkMode();
     } else {
       // Fallback if common.js not loaded yet
-      (function() {
+      (function () {
         const savedTheme = localStorage.getItem('theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
@@ -29,484 +30,673 @@
   </script>
   <style>
     /* Score color classes */
-    .score-gold { background-color: #FFD700 !important; color: #000 !important; }
-    .score-red { background-color: #FF0000 !important; color: #fff !important; }
-    .score-blue { background-color: #0000FF !important; color: #fff !important; }
-    .score-black { background-color: #000000 !important; color: #fff !important; }
-    .score-white { background-color: #FFFFFF !important; color: #000 !important; border: 1px solid #ddd !important; }
-    
+    .score-gold {
+      background-color: #FFD700 !important;
+      color: #000 !important;
+    }
+
+    .score-red {
+      background-color: #FF0000 !important;
+      color: #fff !important;
+    }
+
+    .score-blue {
+      background-color: #0000FF !important;
+      color: #fff !important;
+    }
+
+    .score-black {
+      background-color: #000000 !important;
+      color: #fff !important;
+    }
+
+    .score-white {
+      background-color: #FFFFFF !important;
+      color: #000 !important;
+      border: 1px solid #ddd !important;
+    }
+
     /* Custom color utilities for when CDN is down */
-    .bg-primary { background-color: #0d6efd !important; }
-    .bg-primary-dark { background-color: #0a58ca !important; }
-    .bg-success { background-color: #198754 !important; }
-    .bg-success-dark { background-color: #157347 !important; }
-    .bg-danger { background-color: #dc3545 !important; }
-    .text-primary { color: #0d6efd !important; }
-    .text-success { color: #198754 !important; }
-    .text-danger { color: #dc3545 !important; }
-    .hover\:bg-primary-dark:hover { background-color: #0a58ca !important; }
-    .hover\:bg-success-dark:hover { background-color: #157347 !important; }
+    .bg-primary {
+      background-color: #0d6efd !important;
+    }
+
+    .bg-primary-dark {
+      background-color: #0a58ca !important;
+    }
+
+    .bg-success {
+      background-color: #198754 !important;
+    }
+
+    .bg-success-dark {
+      background-color: #157347 !important;
+    }
+
+    .bg-danger {
+      background-color: #dc3545 !important;
+    }
+
+    .text-primary {
+      color: #0d6efd !important;
+    }
+
+    .text-success {
+      color: #198754 !important;
+    }
+
+    .text-danger {
+      color: #dc3545 !important;
+    }
+
+    .hover\:bg-primary-dark:hover {
+      background-color: #0a58ca !important;
+    }
+
+    .hover\:bg-success-dark:hover {
+      background-color: #157347 !important;
+    }
   </style>
 </head>
+
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
   <!-- Coach Authentication Modal -->
   <div id="coach-auth-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center">
     <div class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-md w-11/12 shadow-2xl">
       <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">🔐 Coach Access</h2>
       <p class="text-gray-600 dark:text-gray-400 mb-4">Enter the coach passcode to continue:</p>
-      <input type="password" id="coach-passcode-input" placeholder="Enter passcode" autocomplete="off" class="w-full px-3 py-3 my-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+      <input type="password" id="coach-passcode-input" placeholder="Enter passcode" autocomplete="off"
+        class="w-full px-3 py-3 my-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
       <div id="auth-error" class="hidden text-danger text-sm mt-2">Incorrect passcode. Please try again.</div>
       <div class="flex gap-2 mt-4">
-        <button id="auth-cancel-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-        <button id="auth-submit-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Submit</button>
+        <button id="auth-cancel-btn"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+        <button id="auth-submit-btn"
+          class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Submit</button>
       </div>
     </div>
   </div>
 
   <!-- Create Event Modal -->
-  <div id="create-event-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+  <div id="create-event-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
+    <div
+      class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
       <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Create New Event</h2>
-      
+
       <div class="mb-5">
         <label for="event-name" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Name</label>
-        <input type="text" id="event-name" placeholder="Fall Tournament" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        <input type="text" id="event-name" placeholder="Fall Tournament"
+          class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
       </div>
-      
+
       <!-- Date, Status, and Entry Code on one line -->
       <div class="grid grid-cols-3 gap-3 mb-5">
         <div>
           <label for="event-date" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Date</label>
-          <input type="date" id="event-date" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
-      </div>
+          <input type="date" id="event-date"
+            class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        </div>
         <div>
           <label for="event-status" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Status</label>
-          <select id="event-status" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
-          <option value="Planned">Planned</option>
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-        </select>
-      </div>
+          <select id="event-status"
+            class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+            <option value="Planned">Planned</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
         <div>
           <label for="event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry Code</label>
-          <input type="text" id="event-code" placeholder="FALL2024" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+          <input type="text" id="event-code" placeholder="FALL2024"
+            class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
         </div>
       </div>
-      
+
       <!-- Division Rounds Selection -->
       <div class="border-t-2 border-gray-200 dark:border-gray-700 pt-4 mt-6 mb-5">
         <label class="block mb-3 font-semibold text-gray-700 dark:text-gray-300">Division Rounds</label>
-        
+
         <!-- OPEN on its own line -->
         <div class="mb-3">
-          <label class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
-            <input type="checkbox" id="division-open" value="OPEN" checked class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+          <label
+            class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
+            <input type="checkbox" id="division-open" value="OPEN" checked
+              class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
             <span class="text-gray-800 dark:text-gray-200 font-medium">OPEN (Mixed - All Levels)</span>
           </label>
         </div>
-        
+
         <!-- VAR on left, JV on right -->
         <div class="grid grid-cols-2 gap-3">
           <!-- Varsity Column -->
           <div class="space-y-2">
-            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-bvar" value="BVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            <label
+              class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+              <input type="checkbox" id="division-bvar" value="BVAR"
+                class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
               <span class="text-gray-800 dark:text-gray-200">BVAR (Boys Varsity)</span>
-          </label>
-            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-gvar" value="GVAR" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            </label>
+            <label
+              class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+              <input type="checkbox" id="division-gvar" value="GVAR"
+                class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
               <span class="text-gray-800 dark:text-gray-200">GVAR (Girls Varsity)</span>
-          </label>
+            </label>
           </div>
-          
+
           <!-- JV Column -->
           <div class="space-y-2">
-            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-bjv" value="BJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            <label
+              class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+              <input type="checkbox" id="division-bjv" value="BJV"
+                class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
               <span class="text-gray-800 dark:text-gray-200">BJV (Boys JV)</span>
-          </label>
-            <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-gjv" value="GJV" class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            </label>
+            <label
+              class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
+              <input type="checkbox" id="division-gjv" value="GJV"
+                class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
               <span class="text-gray-800 dark:text-gray-200">GJV (Girls JV)</span>
-          </label>
+            </label>
           </div>
         </div>
-        
+
         <div class="mt-3 text-sm text-gray-600 dark:text-gray-400">
           Select divisions to create for this event. You'll add archers to each division next.
         </div>
       </div>
-      
+
       <div class="flex gap-2 mt-6">
-        <button id="cancel-event-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-        <button id="submit-event-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Create Event</button>
+        <button id="cancel-event-btn"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+        <button id="submit-event-btn"
+          class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Create
+          Event</button>
       </div>
     </div>
   </div>
 
   <!-- Add Archers Modal -->
-  <div id="add-archers-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
-    <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
-      <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4">Add Archers to <span id="division-title">Event</span></h2>
-      
+  <div id="add-archers-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
+    <div
+      class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+      <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4">Add Archers to <span
+          id="division-title">Event</span></h2>
+
       <!-- Search Box -->
       <div class="mb-4">
-        <input type="text" id="archer-search" placeholder="🔍 Search by name..." class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        <input type="text" id="archer-search" placeholder="🔍 Search by name..."
+          class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
       </div>
-      
+
       <!-- Filters -->
       <div class="flex flex-wrap gap-2 mb-4">
-        <select id="filter-status" class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
+        <select id="filter-status"
+          class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
           <option value="active" selected>Active Only</option>
           <option value="">All Status</option>
           <option value="inactive">Inactive Only</option>
         </select>
-        <select id="filter-school" class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
+        <select id="filter-school"
+          class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
           <option value="">All Schools</option>
         </select>
-        <select id="filter-gender" class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
+        <select id="filter-gender"
+          class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
           <option value="">All Genders</option>
           <option value="M">Boys</option>
           <option value="F">Girls</option>
         </select>
-        <select id="filter-level" class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
+        <select id="filter-level"
+          class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
           <option value="">All Levels</option>
           <option value="VAR">Varsity</option>
           <option value="JV">JV</option>
         </select>
       </div>
-      
+
       <div class="mb-2">
-        <button id="select-all-btn" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Select All Filtered</button>
+        <button id="select-all-btn"
+          class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Select
+          All Filtered</button>
       </div>
-      
+
       <!-- Archer Selector Container -->
-      <div id="archer-selection-container" class="max-h-[200px] md:max-h-[300px] overflow-y-auto border-2 border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 webkit-overflow-scrolling-touch">
+      <div id="archer-selection-container"
+        class="max-h-[200px] md:max-h-[300px] overflow-y-auto border-2 border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 webkit-overflow-scrolling-touch">
         <!-- ArcherSelector component will be initialized here -->
       </div>
-      
+
       <!-- Selection Summary -->
       <div class="mt-4 px-3 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg font-medium text-gray-800 dark:text-gray-200">
         Selected: <span id="selected-count">0</span> archer(s)
       </div>
-      
+
       <!-- Buttons -->
       <div class="flex gap-2 mt-6">
-        <button id="cancel-add-archers-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-        <button id="submit-add-archers-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Add to Event</button>
+        <button id="cancel-add-archers-btn"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+        <button id="submit-add-archers-btn"
+          class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Add
+          to Event</button>
       </div>
     </div>
   </div>
 
   <!-- Assignment Mode Modal -->
-  <div id="assignment-mode-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center">
+  <div id="assignment-mode-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center">
     <div class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-lg w-11/12 shadow-2xl">
       <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Bale Assignment Mode</h2>
       <p class="text-gray-600 dark:text-gray-400 mb-6">How should archers be assigned to bales?</p>
-      
+
       <div class="space-y-4 my-6">
-        <label class="flex items-start p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-primary dark:hover:border-primary transition-colors">
-          <input type="radio" name="assignment-mode" value="auto_assign" checked class="mt-1 mr-4 w-5 h-5 text-primary border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary" />
+        <label
+          class="flex items-start p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-primary dark:hover:border-primary transition-colors">
+          <input type="radio" name="assignment-mode" value="auto_assign" checked
+            class="mt-1 mr-4 w-5 h-5 text-primary border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary" />
           <div>
             <div class="font-medium text-gray-800 dark:text-white mb-1">Auto-Assign Bales</div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">Coach assigns archers to bales automatically (2-4 per bale, continuous numbering)</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">Coach assigns archers to bales automatically (2-4 per
+              bale, continuous numbering)</div>
           </div>
         </label>
-        <label class="flex items-start p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-primary dark:hover:border-primary transition-colors">
-          <input type="radio" name="assignment-mode" value="manual" class="mt-1 mr-4 w-5 h-5 text-primary border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary" />
+        <label
+          class="flex items-start p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-primary dark:hover:border-primary transition-colors">
+          <input type="radio" name="assignment-mode" value="manual"
+            class="mt-1 mr-4 w-5 h-5 text-primary border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary" />
           <div>
             <div class="font-medium text-gray-800 dark:text-white mb-1">Manual Signup</div>
-            <div class="text-sm text-gray-600 dark:text-gray-400">Archers select their own bales via the Ranking Round app</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">Archers select their own bales via the Ranking Round
+              app</div>
           </div>
         </label>
       </div>
-      
+
       <div class="flex gap-2 mt-6">
-        <button id="cancel-assignment-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-        <button id="submit-assignment-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Confirm</button>
+        <button id="cancel-assignment-btn"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+        <button id="submit-assignment-btn"
+          class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Confirm</button>
       </div>
     </div>
   </div>
 
   <!-- Import Summary Modal -->
-  <div id="import-summary-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center">
+  <div id="import-summary-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center">
     <div class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-md w-11/12 shadow-2xl">
       <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">✓ Import Complete</h2>
       <div id="import-summary" class="my-6 text-lg text-gray-800 dark:text-gray-200">
         <!-- Populated dynamically -->
       </div>
       <div class="mt-6">
-        <button id="close-import-btn" class="w-full px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Continue to Add Archers</button>
+        <button id="close-import-btn"
+          class="w-full px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Continue
+          to Add Archers</button>
       </div>
     </div>
   </div>
 
   <!-- Edit Event Modal -->
-  <div id="edit-event-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+  <div id="edit-event-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
+    <div
+      class="bg-white dark:bg-gray-800 p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
       <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Edit Event</h2>
-      
+
       <div class="mb-5">
         <label for="edit-event-name" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Name</label>
-        <input type="text" id="edit-event-name" placeholder="Fall Tournament" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        <input type="text" id="edit-event-name" placeholder="Fall Tournament"
+          class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
       </div>
-      
+
       <!-- Date, Status, and Entry Code on one line -->
       <div class="grid grid-cols-3 gap-3 mb-5">
         <div>
           <label for="edit-event-date" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Date</label>
-          <input type="date" id="edit-event-date" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
-      </div>
+          <input type="date" id="edit-event-date"
+            class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        </div>
         <div>
           <label for="edit-event-status" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Status</label>
-          <select id="edit-event-status" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
-          <option value="Planned">Planned</option>
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-        </select>
-      </div>
+          <select id="edit-event-status"
+            class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+            <option value="Planned">Planned</option>
+            <option value="Active">Active</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
         <div>
-          <label for="edit-event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry Code</label>
-          <input type="text" id="edit-event-code" placeholder="FALL2024" class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+          <label for="edit-event-code" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Entry
+            Code</label>
+          <input type="text" id="edit-event-code" placeholder="FALL2024"
+            class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
         </div>
       </div>
-      
+
       <div class="mb-5">
         <label class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Division Rounds</label>
         <div id="edit-event-rounds-list" class="p-3 bg-gray-50 dark:bg-gray-700 rounded min-h-[60px]">
           <div class="text-gray-500 dark:text-gray-400 text-center">Loading rounds...</div>
         </div>
       </div>
-      
+
       <!-- Brackets Section -->
       <div class="mb-5 border-t-2 border-gray-200 dark:border-gray-700 pt-5">
         <div class="flex justify-between items-center mb-3">
           <label class="block font-semibold text-gray-700 dark:text-gray-300">Brackets</label>
           <div class="flex gap-2">
-            <button id="create-bracket-btn" class="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors">
+            <button id="create-bracket-btn"
+              class="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors">
               ➕ Create Bracket
             </button>
-            <button id="refresh-brackets-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+            <button id="refresh-brackets-btn"
+              class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
               🔄 Refresh
             </button>
           </div>
         </div>
-        
+
         <!-- Brackets List -->
-        <div id="brackets-list" class="space-y-2 max-h-[300px] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-gray-700">
-          <div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No brackets yet. Create a bracket after ranking rounds are complete.</div>
+        <div id="brackets-list"
+          class="space-y-2 max-h-[300px] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-gray-50 dark:bg-gray-700">
+          <div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No brackets yet. Create a bracket after
+            ranking rounds are complete.</div>
         </div>
       </div>
-      
+
       <!-- Event Management Actions -->
       <div class="border-t-2 border-gray-200 dark:border-gray-700 pt-5 mt-6 mb-5">
         <label class="block mb-3 font-semibold text-gray-700 dark:text-gray-300">Event Management</label>
         <div class="grid grid-cols-1 gap-3">
-          <button id="edit-add-archers-btn" class="w-full px-4 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+          <button id="edit-add-archers-btn"
+            class="w-full px-4 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
             <span>➕</span>
             <span>Add Archers to Event</span>
           </button>
-          <button id="edit-bale-settings-btn" class="w-full px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+          <button id="edit-bale-settings-btn"
+            class="w-full px-4 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
             <span>⚙️</span>
             <span>Manage Bale Assignments</span>
           </button>
-          <button id="edit-delete-event-btn" class="w-full px-4 py-3 bg-danger hover:bg-red-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
+          <button id="edit-delete-event-btn"
+            class="w-full px-4 py-3 bg-danger hover:bg-red-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2">
             <span>🗑️</span>
             <span>Delete Event</span>
           </button>
         </div>
       </div>
-      
+
       <div class="flex gap-2 mt-6">
-        <button id="cancel-edit-event-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-        <button id="submit-edit-event-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Save Changes</button>
+        <button id="cancel-edit-event-btn"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+        <button id="submit-edit-event-btn"
+          class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Save
+          Changes</button>
       </div>
     </div>
   </div>
 
   <!-- QR Code Modal -->
-  <div id="qr-code-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
-    <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-lg w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+  <div id="qr-code-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
+    <div
+      class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-lg w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
       <h2 id="qr-event-name" class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-2">Event QR Code</h2>
       <p class="text-gray-600 dark:text-gray-400 mb-4 text-sm">Archers scan this code to access the event</p>
-      
+
       <div class="text-center mb-4">
         <div id="qr-code-container" class="inline-block p-2 bg-white border-2 border-gray-300 rounded-lg">
           <!-- QR code will be inserted here -->
         </div>
       </div>
-      
+
       <div class="mb-4">
         <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Event URL:</label>
-        <input type="text" id="qr-url-display" readonly class="w-full px-2 py-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white cursor-text" />
+        <input type="text" id="qr-url-display" readonly
+          class="w-full px-2 py-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white cursor-text" />
       </div>
-      
+
       <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-gray-800 dark:text-gray-200">
         <strong>📱 Instructions:</strong><br>
         • Scan with phone camera<br>
         • Goes to Ranking Round<br>
         • Or copy URL to share
       </div>
-      
+
       <div class="flex gap-2 mt-4">
-        <button id="copy-url-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">📋 Copy URL</button>
-        <button id="close-qr-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Close</button>
+        <button id="copy-url-btn"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">📋
+          Copy URL</button>
+        <button id="close-qr-btn"
+          class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Close</button>
       </div>
     </div>
   </div>
 
-<!-- Create Bracket Modal -->
-  <div id="create-bracket-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
-    <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-md w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+  <!-- Create Bracket Modal -->
+  <div id="create-bracket-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
+    <div
+      class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-md w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
       <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4">Create Bracket</h2>
-      
+
       <div class="mb-4">
-        <label for="bracket-type" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Bracket Type</label>
-        <select id="bracket-type" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+        <label for="bracket-type" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Bracket
+          Type</label>
+        <select id="bracket-type"
+          class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
           <option value="SOLO">Solo</option>
           <option value="TEAM">Team</option>
         </select>
       </div>
-      
+
       <div class="mb-4">
-        <label for="bracket-format" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Bracket Format</label>
-        <select id="bracket-format" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+        <label for="bracket-format" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Bracket
+          Format</label>
+        <select id="bracket-format"
+          class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
           <option value="ELIMINATION">Elimination (Top 8)</option>
           <option value="SWISS">Swiss</option>
         </select>
       </div>
-      
+
+      <!-- Swiss Mode Selection (Hidden by default) -->
+      <div id="bracket-mode-container" class="mb-4 hidden">
+        <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Assignment Mode</label>
+        <div class="flex gap-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="bracket-mode" value="OPEN" checked
+              class="w-4 h-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600">
+            <span class="text-sm text-gray-800 dark:text-gray-200">Open (Archers Select)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="bracket-mode" value="AUTO"
+              class="w-4 h-4 text-primary focus:ring-primary border-gray-300 dark:border-gray-600">
+            <span class="text-sm text-gray-800 dark:text-gray-200">Auto-Assign (Coach)</span>
+          </label>
+        </div>
+      </div>
+
       <div class="mb-4">
-        <label for="bracket-division" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Division</label>
-        <select id="bracket-division" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
-          <option value="BV">BV (Boys Varsity)</option>
-          <option value="BJV">BJV (Boys JV)</option>
-          <option value="GV">GV (Girls Varsity)</option>
+        <label for="bracket-division"
+          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Division</label>
+        <select id="bracket-division"
+          class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+          <option value="BVAR">BV (Boys Varsity)</option>
+          <option value="MJV">BJV (Boys JV)</option>
+          <option value="GVAR">GV (Girls Varsity)</option>
           <option value="GJV">GJV (Girls JV)</option>
           <option value="MIXED_VAR">MIXED_VAR (Mixed Varsity - Team only)</option>
         </select>
       </div>
-      
+
       <div class="mb-4">
-        <label for="bracket-size" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Bracket Size</label>
-        <input type="number" id="bracket-size" value="8" min="4" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Elimination brackets are always 8. Swiss brackets limited only by number of archers in the division.</p>
+        <label for="bracket-size" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Bracket
+          Size</label>
+        <input type="number" id="bracket-size" value="8" min="4"
+          class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Elimination brackets are always 8. Swiss brackets
+          limited only by number of archers in the division.</p>
       </div>
-      
+
       <div class="flex gap-2 mt-6">
-        <button id="cancel-create-bracket-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-        <button id="submit-create-bracket-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Create Bracket</button>
+        <button id="cancel-create-bracket-btn"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+        <button id="submit-create-bracket-btn"
+          class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Create
+          Bracket</button>
       </div>
     </div>
   </div>
 
   <!-- Edit Bracket Modal -->
-  <div id="edit-bracket-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
-    <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
-      <h2 id="edit-bracket-title" class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4">Edit Bracket</h2>
-      
+  <div id="edit-bracket-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto">
+    <div
+      class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-2xl w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+      <h2 id="edit-bracket-title" class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4">Edit Bracket
+      </h2>
+
       <div class="mb-4">
         <div class="flex justify-between items-center mb-2">
           <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Bracket Entries</span>
-          <button id="generate-bracket-btn" class="px-3 py-1 bg-success hover:bg-success-dark text-white rounded text-sm font-semibold transition-colors">
+          <button id="generate-bracket-btn"
+            class="px-3 py-1 bg-success hover:bg-success-dark text-white rounded text-sm font-semibold transition-colors">
             🎯 Generate from Top 8
           </button>
         </div>
-        <div id="bracket-entries-list" class="border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700 max-h-[300px] overflow-y-auto">
+        <div id="bracket-entries-list"
+          class="border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-gray-50 dark:bg-gray-700 max-h-[300px] overflow-y-auto">
           <div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No entries yet</div>
         </div>
       </div>
-      
+
       <div class="mb-4">
-        <label for="bracket-status" class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-        <select id="bracket-status" class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+        <label for="bracket-status"
+          class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+        <select id="bracket-status"
+          class="w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
           <option value="OPEN">OPEN</option>
           <option value="IN_PROGRESS">IN_PROGRESS</option>
           <option value="COMPLETED">COMPLETED</option>
         </select>
       </div>
-      
+
       <div class="flex gap-2 mt-6">
-        <button id="view-bracket-results-btn" class="flex-1 px-4 py-2 bg-success hover:bg-success-dark text-white rounded font-semibold transition-colors min-h-[44px]">📊 View Results</button>
-        <button id="cancel-edit-bracket-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Close</button>
-        <button id="delete-bracket-btn" class="px-4 py-2 bg-danger hover:bg-red-700 text-white rounded font-semibold transition-colors min-h-[44px]">🗑️ Delete</button>
+        <button id="view-bracket-results-btn"
+          class="flex-1 px-4 py-2 bg-success hover:bg-success-dark text-white rounded font-semibold transition-colors min-h-[44px]">📊
+          View Results</button>
+        <button id="cancel-edit-bracket-btn"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Close</button>
+        <button id="delete-bracket-btn"
+          class="px-4 py-2 bg-danger hover:bg-red-700 text-white rounded font-semibold transition-colors min-h-[44px]">🗑️
+          Delete</button>
       </div>
     </div>
   </div>
 
-<!-- Verify Scorecards Modal -->
-  <div id="verify-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
+  <!-- Verify Scorecards Modal -->
+  <div id="verify-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-40 flex items-center justify-center overflow-y-auto p-4">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
       <!-- Header -->
       <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 z-10">
         <div class="flex items-center justify-between">
           <h2 id="verify-modal-title" class="text-xl font-bold text-gray-800 dark:text-white">Verify Scorecards</h2>
-          <button id="verify-modal-close-btn" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
+          <button id="verify-modal-close-btn"
+            class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
             <i class="fas fa-times text-lg"></i>
           </button>
         </div>
       </div>
-      
+
       <!-- Content -->
       <div class="flex-1 overflow-y-auto px-4 py-4">
         <!-- Match Type Selection (Popup Dropdown) -->
         <div class="mb-4">
           <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Verification Type</label>
           <div class="relative">
-            <button id="verify-match-type-btn" class="w-full px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-left flex items-center justify-between hover:border-primary-dark transition-colors min-h-[44px]">
+            <button id="verify-match-type-btn"
+              class="w-full px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-left flex items-center justify-between hover:border-primary-dark transition-colors min-h-[44px]">
               <span id="verify-match-type-text">Ranking Rounds</span>
               <i class="fas fa-chevron-down text-sm"></i>
             </button>
-            <div id="verify-match-type-dropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-20">
-              <button class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700 first:rounded-t-lg" data-value="ranking-rounds">
+            <div id="verify-match-type-dropdown"
+              class="hidden absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-20">
+              <button
+                class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700 first:rounded-t-lg"
+                data-value="ranking-rounds">
                 <div class="font-medium text-gray-800 dark:text-white">Ranking Rounds</div>
                 <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Division & Bale</div>
               </button>
-              <button class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700" data-value="solo-matches">
+              <button
+                class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700"
+                data-value="solo-matches">
                 <div class="font-medium text-gray-800 dark:text-white">Solo Matches</div>
                 <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Event & Bracket</div>
               </button>
-              <button class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg" data-value="team-matches">
+              <button
+                class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg"
+                data-value="team-matches">
                 <div class="font-medium text-gray-800 dark:text-white">Team Matches</div>
                 <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Event & Bracket</div>
               </button>
             </div>
           </div>
         </div>
-        
+
         <!-- Selectors Container - Changes based on match type -->
         <div id="verify-selectors-container" class="flex flex-wrap gap-2 mb-4">
           <!-- Ranking Round Selectors (default) -->
           <div id="verify-ranking-selectors" class="contents w-full">
-            <select id="verify-division-select" class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
-            <select id="verify-bale-select" class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
+            <select id="verify-division-select"
+              class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
+            <select id="verify-bale-select"
+              class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
           </div>
           <!-- Solo/Team Match Selectors (hidden by default) -->
           <div id="verify-match-selectors" class="contents hidden w-full">
-            <select id="verify-event-select" class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
-            <select id="verify-bracket-select" class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
+            <select id="verify-event-select"
+              class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
+            <select id="verify-bracket-select"
+              class="flex-1 min-w-[120px] px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"></select>
           </div>
         </div>
-        
+
         <!-- Verified By, Notes, and Refresh in one row -->
         <div class="flex gap-2 mb-4">
-          <input type="text" id="verify-actor-input" placeholder="Verified by (name or passcode)" class="flex-1 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none min-h-[44px]" />
-          <input type="text" id="verify-notes-input" placeholder="Notes (optional)" class="flex-1 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none min-h-[44px]" />
-          <button id="verify-refresh-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Refresh">
+          <input type="text" id="verify-actor-input" placeholder="Verified by (name or passcode)"
+            class="flex-1 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none min-h-[44px]" />
+          <input type="text" id="verify-notes-input" placeholder="Notes (optional)"
+            class="flex-1 px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none min-h-[44px]" />
+          <button id="verify-refresh-btn"
+            class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Refresh">
             <i class="fas fa-recycle text-lg"></i>
           </button>
         </div>
-        
+
         <!-- Scorecard Table -->
-        <div id="verify-table-container" class="max-h-[50vh] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"></div>
+        <div id="verify-table-container"
+          class="max-h-[50vh] overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+        </div>
       </div>
-      
+
       <!-- Bottom Action Bar -->
       <div class="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
         <div class="flex items-center gap-3 flex-wrap">
           <span class="font-bold text-gray-800 dark:text-white">Verify:</span>
-          <button id="verify-this-bale-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px] whitespace-nowrap">This Bale</button>
-          <button id="verify-all-bales-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px] whitespace-nowrap">ALL Bales</button>
+          <button id="verify-this-bale-btn"
+            class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px] whitespace-nowrap">This
+            Bale</button>
+          <button id="verify-all-bales-btn"
+            class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px] whitespace-nowrap">ALL
+            Bales</button>
         </div>
       </div>
     </div>
@@ -518,20 +708,24 @@
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Coach Console</h1>
     </div>
-    
+
     <!-- Action Buttons -->
     <div class="flex flex-wrap items-center gap-2 mb-6">
-      <button id="create-event-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Create Event</button>
+      <button id="create-event-btn"
+        class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Create
+        Event</button>
       <span class="text-sm font-medium text-gray-700 dark:text-gray-300">CSV</span>
-      <label class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center cursor-pointer">
+      <label
+        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center cursor-pointer">
         Import
         <input id="csv-input" type="file" accept=".csv" class="hidden" />
       </label>
-      <button id="export-csv-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">
+      <button id="export-csv-btn"
+        class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">
         Export
       </button>
     </div>
-    
+
     <!-- Events List -->
     <div id="events-list" class="overflow-x-auto webkit-overflow-scrolling-touch">
       <!-- Events cards populated dynamically -->
@@ -540,31 +734,37 @@
 
   <!-- QR Code Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  
+
   <!-- jsPDF Library for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  
+
   <!-- Archer Management Scripts -->
   <script src="js/common.js"></script>
   <script src="js/archer_module.js"></script>
   <script src="js/archer_selector.js"></script>
   <script src="js/printable_scorecards.js"></script>
-  
+
   <script src="js/coach.js"></script>
-  
+
   <!-- Footer -->
-  <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
-    <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+  <footer
+    class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
+    <a href="index.html"
+      class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center"
+      aria-label="Home">
       <i class="fas fa-home text-2xl"></i>
     </a>
     <div class="flex-1"></div>
     <div class="flex gap-2">
-      <a href="archer_results_pivot.html" class="px-3 h-[44px] bg-primary text-white rounded font-semibold hover:bg-primary-dark transition-colors flex items-center justify-center"><i class="fas fa-table mr-1"></i> Pivot View</a>
-      <a href="api/data_admin.php?passcode=wdva26" class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center text-sm"><i class="fas fa-tools mr-1"></i> Admin</a>
+      <a href="archer_results_pivot.html"
+        class="px-3 h-[44px] bg-primary text-white rounded font-semibold hover:bg-primary-dark transition-colors flex items-center justify-center"><i
+          class="fas fa-table mr-1"></i> Pivot View</a>
+      <a href="api/data_admin.php?passcode=wdva26"
+        class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center text-sm"><i
+          class="fas fa-tools mr-1"></i> Admin</a>
     </div>
   </footer>
-  
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
+
 </body>
+
 </html>

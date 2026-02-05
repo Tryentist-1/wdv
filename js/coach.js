@@ -18,7 +18,7 @@
   let allArchers = [];
   let verifyState = null;
   let archerSelector = null; // ArcherSelector component instance
-  
+
   // PHASE 0: Division rounds workflow
   let pendingDivisions = []; // Divisions to configure after event creation
   let currentDivision = null; // Current division being configured
@@ -50,7 +50,7 @@
   }
 
   // ==================== Cookie Management ====================
-  
+
   function setCookie(name, value, days) {
     const expires = new Date();
     expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
@@ -73,7 +73,7 @@
   }
 
   // ==================== Authentication ====================
-  
+
   function checkAuthentication() {
     const auth = getCookie(COACH_COOKIE_NAME);
     if (auth === 'true') {
@@ -87,14 +87,14 @@
   function showAuthModal() {
     const modal = document.getElementById('coach-auth-modal');
     modal.style.display = 'flex';
-    
+
     const input = document.getElementById('coach-passcode-input');
     const errorDiv = document.getElementById('auth-error');
     const submitBtn = document.getElementById('auth-submit-btn');
     const cancelBtn = document.getElementById('auth-cancel-btn');
 
     input.focus();
-    
+
     // Handle submit
     const handleSubmit = () => {
       const passcode = input.value.trim();
@@ -123,7 +123,7 @@
   }
 
   // ==================== API Functions ====================
-  
+
   async function req(path, method = 'GET', body = null) {
     const headers = {
       'Content-Type': 'application/json',
@@ -134,7 +134,7 @@
     // Debug logging for auth
     if (method === 'PATCH') {
       console.log('[Coach Auth Debug] PATCH request to:', path);
-      console.log('[Coach Auth Debug] Headers:', { 
+      console.log('[Coach Auth Debug] Headers:', {
         'X-Passcode': headers['X-Passcode'],
         'X-API-Key': headers['X-API-Key']
       });
@@ -156,7 +156,7 @@
   }
 
   // ==================== Event Management ====================
-  
+
   async function loadEvents() {
     const container = document.getElementById('events-list');
     container.innerHTML = '<div class="loading">Loading events...</div>';
@@ -177,14 +177,14 @@
         // Format date without year: "Oct 15" instead of "2024-10-15"
         const dateObj = new Date(ev.date + 'T00:00:00');
         const shortDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        
+
         const statusColors = {
           'active': 'bg-success text-white',
           'planned': 'bg-gray-400 dark:bg-gray-500 text-white',
           'completed': 'bg-gray-600 dark:bg-gray-700 text-white'
         };
         const statusClass = statusColors[ev.status.toLowerCase()] || 'bg-gray-400 text-white';
-        
+
         html += `
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow p-4">
             <!-- Line 1: Event Name + Date + Status + Edit -->
@@ -285,13 +285,13 @@
             try {
               const list = await req(`/archers?division=${divCode}`);
               const select = addRow.querySelector('[data-role="add-archer-select"]');
-              (list.archers||[]).forEach(a => {
+              (list.archers || []).forEach(a => {
                 const opt = document.createElement('option');
                 opt.value = JSON.stringify(a);
                 opt.textContent = `${a.lastName}, ${a.firstName} (${a.school})`;
                 select.appendChild(opt);
               });
-            } catch(_) {}
+            } catch (_) { }
           })();
 
           addRow.querySelector('[data-role="add-confirm"]').onclick = async () => {
@@ -301,8 +301,8 @@
             if (!select.value) { alert('Select an archer'); return; }
             const ar = JSON.parse(select.value);
             const archerName = `${ar.firstName} ${ar.lastName}`.trim();
-            const baleNumber = parseInt(baleInp.value,10);
-            const targetAssignment = (tgtInp.value||'').toUpperCase().substring(0,1);
+            const baleNumber = parseInt(baleInp.value, 10);
+            const targetAssignment = (tgtInp.value || '').toUpperCase().substring(0, 1);
             if (!baleNumber || !targetAssignment) { alert('Enter Bale and Target'); return; }
             try {
               const targetSize = (ar.level === 'VAR') ? 122 : 80;
@@ -317,7 +317,7 @@
               });
               div.archers = div.archers || [];
               div.archers.push({
-                roundArcherId: 'temp_'+Math.random().toString(36).slice(2),
+                roundArcherId: 'temp_' + Math.random().toString(36).slice(2),
                 archerName,
                 school: ar.school,
                 gender: ar.gender,
@@ -329,16 +329,16 @@
               tgtInp.value = '';
               select.value = '';
               render();
-            } catch(e) { alert('Add failed: '+e.message); }
+            } catch (e) { alert('Add failed: ' + e.message); }
           };
-          (div.archers||[]).forEach(a => {
+          (div.archers || []).forEach(a => {
             const tr = document.createElement('tr');
             tr.className = 'border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors';
             tr.innerHTML = `
               <td class="px-3 py-2">${a.archerName}</td>
-              <td class="px-3 py-2">${a.school||''}</td>
-              <td class="px-3 py-2"><input type="number" min="1" value="${a.bale||''}" class="w-[70px] px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></td>
-              <td class="px-3 py-2"><input type="text" value="${a.target||''}" class="w-[70px] px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white" maxlength="1" /></td>
+              <td class="px-3 py-2">${a.school || ''}</td>
+              <td class="px-3 py-2"><input type="number" min="1" value="${a.bale || ''}" class="w-[70px] px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white" /></td>
+              <td class="px-3 py-2"><input type="text" value="${a.target || ''}" class="w-[70px] px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white" maxlength="1" /></td>
               <td class="px-3 py-2">
                 <button class="px-2 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors mr-1" data-act="save">Save</button>
                 <button class="px-2 py-1 bg-danger hover:bg-red-700 text-white rounded text-sm transition-colors" data-act="remove">Remove</button>
@@ -347,22 +347,22 @@
             tr.querySelector('[data-act="save"]').onclick = async () => {
               try {
                 await req(`/rounds/${div.roundId}/archers/${a.roundArcherId}`, 'PATCH', {
-                  baleNumber: parseInt(baleInp.value,10)||null,
-                  targetAssignment: (tgtInp.value||'').toUpperCase().substring(0,1)
+                  baleNumber: parseInt(baleInp.value, 10) || null,
+                  targetAssignment: (tgtInp.value || '').toUpperCase().substring(0, 1)
                 });
-                a.bale = parseInt(baleInp.value,10)||a.bale;
-                a.target = (tgtInp.value||'').toUpperCase().substring(0,1);
+                a.bale = parseInt(baleInp.value, 10) || a.bale;
+                a.target = (tgtInp.value || '').toUpperCase().substring(0, 1);
                 alert('Saved');
-              } catch(e) { alert('Save failed: '+e.message); }
+              } catch (e) { alert('Save failed: ' + e.message); }
             };
             tr.querySelector('[data-act="remove"]').onclick = async () => {
               if (!confirm('Remove this archer from the round?')) return;
               try {
                 await req(`/rounds/${div.roundId}/archers/${a.roundArcherId}`, 'DELETE');
                 // remove from local snapshot and re-render
-                div.archers = (div.archers||[]).filter(x => x.roundArcherId !== a.roundArcherId);
+                div.archers = (div.archers || []).filter(x => x.roundArcherId !== a.roundArcherId);
                 render();
-              } catch(e) { alert('Remove failed: '+e.message); }
+              } catch (e) { alert('Remove failed: ' + e.message); }
             };
             tb.appendChild(tr);
           });
@@ -498,13 +498,13 @@
       // Fetch brackets for the event
       const data = await req(`/events/${eventId}/brackets`);
       const brackets = data.brackets || [];
-      
+
       if (brackets.length === 0) {
         // No brackets yet, go to event dashboard where they can create one
         window.location.href = `event_dashboard.html?event=${eventId}`;
         return;
       }
-      
+
       // Navigate to the first bracket's results page
       const firstBracket = brackets[0];
       window.location.href = `bracket_results.html?bracket=${firstBracket.id}`;
@@ -588,7 +588,7 @@
     const normalized = (status || 'PENDING').toUpperCase();
     let color = '#f1c40f'; // Yellow for PENDING
     let displayText = normalized;
-    
+
     if (normalized === 'VER' || normalized === 'VERIFIED') {
       color = '#2ecc71'; // Green
       displayText = 'VER';
@@ -601,7 +601,7 @@
     } else {
       displayText = 'PEND';
     }
-    
+
     return `<span class="status-badge" style="background:${color};color:#fff;">${displayText}</span>`;
   }
 
@@ -618,13 +618,13 @@
 
   function renderVerifyTable() {
     const container = document.getElementById('verify-table-container');
-    
+
     // Handle solo/team matches
     if (verifyState?.matchType === 'solo-matches' || verifyState?.matchType === 'team-matches') {
       renderMatchesVerifyTable(container);
       return;
     }
-    
+
     // Handle ranking rounds (original logic)
     if (!verifyState || !verifyState.snapshot) {
       container.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">No data loaded.</p>';
@@ -647,8 +647,8 @@
 
     const baleNumber = verifyState.bale != null ? Number(verifyState.bale) : null;
     const archers = (division.archers || []).filter(a => {
-        if (baleNumber === null) return true;
-        return Number(a.bale) === baleNumber;
+      if (baleNumber === null) return true;
+      return Number(a.bale) === baleNumber;
     });
 
     if (archers.length === 0) {
@@ -687,7 +687,7 @@
       const locked = !!a.locked;
       const archerName = a.archerName || `${a.firstName || ''} ${a.lastName || ''}`.trim();
       const targetInfo = `Target ${a.target || '—'} • Bale ${a.bale || '—'}`;
-      
+
       // Status badge
       let statusBadge = '';
       if (status === 'VER' || status === 'VERIFIED') {
@@ -699,7 +699,7 @@
       } else {
         statusBadge = '<span class="inline-block px-2 py-1 rounded bg-warning-light text-warning-dark text-xs font-bold">PEND</span>';
       }
-      
+
       // Actions
       let actions = '';
       const editUrl = `scorecard_editor.html?id=${a.roundArcherId}&mode=coach`;
@@ -707,7 +707,7 @@
         <i class="fas fa-edit"></i>
         <span>Edit</span>
       </a>`;
-      
+
       if (status === 'VER' && locked) {
         actions = `
           <div class="flex gap-1 justify-center flex-wrap">
@@ -796,13 +796,13 @@
       container.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">Select an event and bracket to view matches.</p>';
       return;
     }
-    
+
     const matches = verifyState.matches || [];
     if (matches.length === 0) {
       container.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">No matches found for the selected filters.</p>';
       return;
     }
-    
+
     // Sort matches by status: PENDING/COMP first, then VER, then VOID
     const statusOrder = { 'PENDING': 0, 'COMP': 0, 'COMPLETED': 0, 'VER': 1, 'VERIFIED': 1, 'VOID': 2 };
     matches.sort((a, b) => {
@@ -813,9 +813,9 @@
       }
       return (a.match_display || '').localeCompare(b.match_display || '');
     });
-    
+
     const matchType = verifyState.matchType === 'solo-matches' ? 'solo' : 'team';
-    
+
     let html = `
       <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700">
         <thead class="bg-primary text-white sticky top-0 z-10">
@@ -830,16 +830,16 @@
         </thead>
         <tbody>
     `;
-    
+
     matches.forEach(match => {
       const cardStatus = (match.card_status || 'PENDING').toUpperCase();
       const locked = !!match.locked;
       const setsScore = match.archer1_sets_won !== undefined && match.archer2_sets_won !== undefined
         ? `${match.archer1_sets_won}-${match.archer2_sets_won}`
         : '—';
-      
+
       let actions = '';
-      
+
       // Add Edit button for solo matches (editor supports solo matches)
       let editButton = '';
       if (matchType === 'solo' && match.id) {
@@ -849,7 +849,7 @@
           <span>Edit</span>
         </a>`;
       }
-      
+
       if (cardStatus === 'VER' || cardStatus === 'VERIFIED') {
         actions = `
           ${editButton}
@@ -867,11 +867,11 @@
           <button class="px-3 py-1 bg-danger hover:bg-red-700 text-white rounded text-sm font-semibold transition-colors min-h-[44px]" data-action="void" data-match-id="${match.id}" data-match-type="${matchType}">Void</button>
         `;
       }
-      
+
       const verifiedInfo = match.verified_by
         ? `${match.verified_by}<br><span class="text-xs text-gray-500 dark:text-gray-400">${formatTimestamp(match.verified_at)}</span>`
         : '—';
-      
+
       html += `
         <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
           <td class="px-3 py-2">
@@ -890,10 +890,10 @@
         </tr>
       `;
     });
-    
+
     html += '</tbody></table>';
     container.innerHTML = html;
-    
+
     // Add action handlers for match verification
     container.querySelectorAll('[data-action]').forEach(btn => {
       btn.onclick = async (e) => {
@@ -901,7 +901,7 @@
         const matchId = e.currentTarget.dataset.matchId;
         const matchType = e.currentTarget.dataset.matchType;
         if (!matchId) return;
-        
+
         if (action === 'void') {
           const confirmVoid = confirm('Mark this match as VOID? This hides it from results until reopened.');
           if (!confirmVoid) return;
@@ -910,7 +910,7 @@
           const confirmUnlock = confirm('Unlock this match for edits? Verification status will reset.');
           if (!confirmUnlock) return;
         }
-        
+
         try {
           const { verifiedBy, notes } = getVerifyInputs();
           if (!verifiedBy && action !== 'unlock') {
@@ -930,7 +930,7 @@
       };
     });
   }
-  
+
   function formatMatchStatus(status) {
     const statusMap = {
       'Not Started': '<span class="px-2 py-1 bg-gray-400 text-white rounded text-xs font-semibold">Not Started</span>',
@@ -1045,19 +1045,19 @@
     const matchTypeBtn = document.getElementById('verify-match-type-btn');
     const matchTypeDropdown = document.getElementById('verify-match-type-dropdown');
     const matchTypeOptions = document.querySelectorAll('.verify-match-type-option');
-    
+
     matchTypeBtn.onclick = (e) => {
       e.stopPropagation();
       matchTypeDropdown.classList.toggle('hidden');
     };
-    
+
     // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
       if (!matchTypeBtn.contains(e.target) && !matchTypeDropdown.contains(e.target)) {
         matchTypeDropdown.classList.add('hidden');
       }
     });
-    
+
     // Option click handlers
     matchTypeOptions.forEach(option => {
       option.onclick = (e) => {
@@ -1160,15 +1160,15 @@
   // Update verification UI based on match type selection
   async function updateVerifyMatchType(matchType) {
     if (!verifyState) return;
-    
+
     verifyState.matchType = matchType;
     const rankingSelectors = document.getElementById('verify-ranking-selectors');
     const matchSelectors = document.getElementById('verify-match-selectors');
-    
+
     if (matchType === 'ranking-rounds') {
       rankingSelectors.classList.remove('hidden');
       matchSelectors.classList.add('hidden');
-      
+
       // Load ranking round data
       try {
         await loadVerifySnapshot();
@@ -1181,11 +1181,11 @@
       // Solo or Team matches
       rankingSelectors.classList.add('hidden');
       matchSelectors.classList.remove('hidden');
-      
+
       // Load events with brackets
       await loadEventsWithBrackets();
       populateMatchSelectors();
-      
+
       // Load matches for current event/bracket
       if (verifyState.eventIdForMatches) {
         await loadMatchesForVerification();
@@ -1199,7 +1199,7 @@
     try {
       const eventsRes = await req('/events/recent', 'GET');
       const events = eventsRes.events || [];
-      
+
       // Filter to only events with brackets
       const eventsWithBrackets = [];
       for (const event of events) {
@@ -1218,9 +1218,9 @@
           console.error(`Error loading brackets for event ${event.id}:`, err);
         }
       }
-      
+
       verifyState.eventsWithBrackets = eventsWithBrackets;
-      
+
       // Set default event if not set
       if (!verifyState.eventIdForMatches && eventsWithBrackets.length > 0) {
         verifyState.eventIdForMatches = eventsWithBrackets[0].id;
@@ -1235,9 +1235,9 @@
   function populateMatchSelectors() {
     const eventSelect = document.getElementById('verify-event-select');
     const bracketSelect = document.getElementById('verify-bracket-select');
-    
+
     if (!eventSelect || !bracketSelect) return;
-    
+
     // Populate event selector
     eventSelect.innerHTML = '<option value="">Select Event...</option>';
     const events = verifyState.eventsWithBrackets || [];
@@ -1250,7 +1250,7 @@
       }
       eventSelect.appendChild(option);
     });
-    
+
     // Populate bracket selector
     populateBracketSelector();
   }
@@ -1262,16 +1262,16 @@
       if (bracketSelect) bracketSelect.innerHTML = '<option value="">Select Event First</option>';
       return;
     }
-    
+
     const event = verifyState.eventsWithBrackets?.find(e => e.id === verifyState.eventIdForMatches);
     if (!event || !event.brackets) {
       bracketSelect.innerHTML = '<option value="">No Brackets Found</option>';
       return;
     }
-    
+
     const matchType = verifyState.matchType === 'solo-matches' ? 'SOLO' : 'TEAM';
     const brackets = event.brackets.filter(b => b.bracket_type === matchType);
-    
+
     bracketSelect.innerHTML = '<option value="">All Brackets</option>';
     brackets.forEach(bracket => {
       const option = document.createElement('option');
@@ -1283,7 +1283,7 @@
       }
       bracketSelect.appendChild(option);
     });
-    
+
     // Set default bracket if not set
     if (!verifyState.bracketId && brackets.length > 0) {
       verifyState.bracketId = brackets[0].id;
@@ -1297,7 +1297,7 @@
       verifyState.matches = [];
       return;
     }
-    
+
     try {
       const matchType = verifyState.matchType === 'solo-matches' ? 'solo' : 'team';
       const url = `/events/${verifyState.eventIdForMatches}/${matchType}-matches`;
@@ -1306,7 +1306,7 @@
         params.append('bracket_id', verifyState.bracketId);
       }
       params.append('status', 'Completed'); // Only show completed matches for verification
-      
+
       const queryString = params.toString();
       const fullUrl = queryString ? `${url}?${queryString}` : url;
       const matchesRes = await req(fullUrl, 'GET');
@@ -1320,7 +1320,7 @@
   }
 
   // ==================== PHASE 0: Division Round Management ====================
-  
+
   async function processNextDivision(eventName) {
     if (pendingDivisions.length === 0) {
       // All divisions configured!
@@ -1427,7 +1427,7 @@
       selectAllBtn.replaceWith(selectAllBtn.cloneNode(true));
       const newSelectAllBtn = document.getElementById('select-all-btn');
 
-      newSelectAllBtn.addEventListener('click', function(e) {
+      newSelectAllBtn.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -1436,7 +1436,7 @@
         const selection = archerSelector.getSelection();
         const currentSelected = selection.selected || [];
         const filteredArchers = applyFiltersToArchers();
-        
+
         // Check if all filtered archers are selected
         const allSelected = filteredArchers.every(archer => {
           const archerId = archer.id || archer.extId;
@@ -1501,7 +1501,7 @@
           console.log('[Phase 0 Debug] Mode is not auto_assign, skipping event update');
         }
 
-        const summary = result.baleAssignments ? 
+        const summary = result.baleAssignments ?
           `\n\nBale Assignments:\n${result.baleAssignments.map(b => `Bale ${b.baleNumber}: ${b.archers.join(', ')}`).join('\n')}` :
           '';
 
@@ -1523,7 +1523,7 @@
   }
 
   // ==================== Archer Management ====================
-  
+
   async function loadMasterArcherList() {
     try {
       const data = await req('/archers');
@@ -1612,7 +1612,7 @@
   }
 
   // ==================== ArcherSelector Integration ====================
-  
+
   /**
    * Apply filters to archer list and return filtered array
    * Note: Search filtering is handled by ArcherSelector internally
@@ -1631,16 +1631,16 @@
         const archerStatus = (archer.status || 'active').toLowerCase();
         if (archerStatus !== statusFilter.toLowerCase()) return false;
       }
-      
+
       // School filter
       if (schoolFilter && archer.school !== schoolFilter) return false;
-      
+
       // Gender filter
       if (genderFilter && archer.gender !== genderFilter) return false;
-      
+
       // Level filter
       if (levelFilter && archer.level !== levelFilter) return false;
-      
+
       return true;
     });
 
@@ -1668,12 +1668,12 @@
 
     // Multi-select configuration for coach module
     const COACH_SELECTOR_GROUPS = [
-      { 
-        id: 'selected', 
-        label: 'Selected Archers', 
-        buttonText: 'Selected', 
+      {
+        id: 'selected',
+        label: 'Selected Archers',
+        buttonText: 'Selected',
         max: null, // No limit for multi-select
-        accentClass: 'bg-primary text-white' 
+        accentClass: 'bg-primary text-white'
       }
     ];
 
@@ -1712,10 +1712,10 @@
    */
   function updateArcherSelectorRoster() {
     if (!archerSelector) return;
-    
+
     const filtered = applyFiltersToArchers();
     archerSelector.setRoster(filtered);
-    
+
     // Apply search filter to ArcherSelector (it has built-in search)
     const searchInput = document.getElementById('archer-search');
     if (searchInput && searchInput.value) {
@@ -1730,11 +1730,11 @@
    */
   function handleSelectorChange() {
     if (!archerSelector) return;
-    
+
     const selection = archerSelector.getSelection();
     // Map to selectedArchers array format (archer IDs)
     selectedArchers = (selection.selected || []).map(archer => archer.id || archer.extId).filter(Boolean);
-    
+
     // Update selection count display
     const countEl = document.getElementById('selected-count');
     if (countEl) {
@@ -1781,7 +1781,7 @@
 
     document.getElementById('submit-assignment-btn').onclick = async () => {
       const mode = document.querySelector('input[name="assignment-mode"]:checked').value;
-      
+
       try {
         const btn = document.getElementById('submit-assignment-btn');
         btn.disabled = true;
@@ -1792,10 +1792,10 @@
           archerIds: selectedArchers,
           assignmentMode: mode
         });
-        
+
         const modeText = mode === 'auto_assign' ? 'Auto-Assigned to bales' : 'Added (manual signup)';
         alert(`✓ ${result.added} archers added to "${eventName}"!\n\n${modeText}`);
-        
+
         modal.style.display = 'none';
         loadEvents();
       } catch (err) {
@@ -1809,11 +1809,11 @@
   }
 
   // ==================== CSV Import ====================
-  
+
   function setupCSVImport() {
     const csvInput = document.getElementById('csv-input');
     const exportCsvBtn = document.getElementById('export-csv-btn');
-    
+
     csvInput.onchange = async (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -1821,7 +1821,7 @@
       try {
         const text = await file.text();
         const result = parseCSV(text);
-        
+
         if (result.errors.length > 0) {
           alert(`CSV parsing errors:\n${result.errors.join('\n')}`);
           return;
@@ -1830,7 +1830,7 @@
         // Upsert archers
         const summary = await upsertArchers(result.archers);
         showImportSummary(summary);
-        
+
         // Reset input
         csvInput.value = '';
       } catch (err) {
@@ -1845,7 +1845,7 @@
         try {
           exportCsvBtn.disabled = true;
           exportCsvBtn.textContent = 'Exporting...';
-          
+
           // Get all archers from database
           let response;
           try {
@@ -1857,9 +1857,9 @@
             exportCsvBtn.innerHTML = '<i class="fas fa-file-export"></i> Export CSV from Database';
             return;
           }
-          
+
           const archers = response.archers || [];
-          
+
           if (archers.length === 0) {
             alert('No archers found in database.');
             exportCsvBtn.disabled = false;
@@ -1913,7 +1913,7 @@
           const rows = archers.map(archer => {
             // Map database field names to CSV format
             const faves = Array.isArray(archer.faves) ? archer.faves.join(';') : (archer.faves || '');
-            
+
             return headers.map(header => {
               let value = '';
               switch (header) {
@@ -2172,20 +2172,20 @@
   }
 
   // ==================== Initialization ====================
-  
+
   function init() {
     console.log('Coach Console initialized');
-    
+
     // Setup event handlers
     document.getElementById('create-event-btn').onclick = showCreateEventModal;
     setupCSVImport();
-    
+
     // Load events
     loadEvents();
   }
 
   // ==================== Page Load ====================
-  
+
   document.addEventListener('DOMContentLoaded', () => {
     // Check authentication
     if (checkAuthentication()) {
@@ -2194,36 +2194,36 @@
   });
 
   // ==================== Edit Event ====================
-  
+
   let currentEditEventId = null;
-  
+
   async function loadEventRounds(eventId) {
     const roundsList = document.getElementById('edit-event-rounds-list');
-    
+
     try {
       // Fetch event data (for event_type) and rounds separately
       const [eventData, roundsData] = await Promise.all([
         req(`/events/${eventId}/snapshot`).catch(() => ({ event: {} })),
         req(`/events/${eventId}/rounds`).catch(() => ({ rounds: [] }))
       ]);
-      
+
       const event = eventData.event || {};
       const rounds = roundsData.rounds || [];
-      
+
       if (rounds.length === 0) {
         roundsList.innerHTML = '<div style="color: #7f8c8d; text-align: center;">No rounds configured for this event.</div>';
         return;
       }
-      
+
       // Display rounds
       let roundsHTML = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
       rounds.forEach(round => {
         const eventType = event.event_type || event.eventType || 'manual';
         const assignmentType = eventType === 'auto_assign' ? 'Auto-Assigned' : 'Manual';
-        const assignmentBadge = eventType === 'auto_assign' 
+        const assignmentBadge = eventType === 'auto_assign'
           ? '<span style="background: #3498db; color: white; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-left: 0.5rem;">Auto</span>'
           : '<span style="background: #95a5a6; color: white; padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-left: 0.5rem;">Manual</span>';
-        
+
         const roundId = round.roundId || round.id;
         roundsHTML += `
           <div style="padding: 0.5rem; background: white; border: 1px solid #ddd; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
@@ -2241,30 +2241,30 @@
         `;
       });
       roundsHTML += '</div>';
-      
+
       roundsList.innerHTML = roundsHTML;
-      
+
       // Wire up print scorecards buttons
       roundsList.querySelectorAll('.print-scorecards-btn').forEach(btn => {
         btn.onclick = async () => {
           const roundId = btn.getAttribute('data-round-id');
           const division = btn.getAttribute('data-round-division');
           const roundType = btn.getAttribute('data-round-type');
-          
+
           if (!roundId) {
             alert('Round ID missing');
             return;
           }
-          
+
           try {
             btn.disabled = true;
             btn.textContent = 'Generating...';
-            
+
             if (typeof PrintableScorecards === 'undefined' || typeof PrintableScorecards.generateScorecardsPDF !== 'function') {
               alert('Print scorecards module not loaded. Please refresh the page.');
               return;
             }
-            
+
             await PrintableScorecards.generateScorecardsPDF(
               roundId,
               eventId,
@@ -2290,36 +2290,36 @@
       roundsList.innerHTML = '<div style="color: #e74c3c; text-align: center;">Error loading rounds</div>';
     }
   }
-  
+
   async function editEvent(encodedEventData) {
     const event = JSON.parse(decodeURIComponent(encodedEventData));
     currentEditEventId = event.id;
-    
+
     const modal = document.getElementById('edit-event-modal');
     const nameInput = document.getElementById('edit-event-name');
     const dateInput = document.getElementById('edit-event-date');
     const statusSelect = document.getElementById('edit-event-status');
     const codeInput = document.getElementById('edit-event-code');
-    
+
     // Populate with current values
     nameInput.value = event.name || '';
     dateInput.value = event.date || '';
     statusSelect.value = event.status || 'Planned';
     codeInput.value = event.entry_code || '';
-    
+
     modal.style.display = 'flex';
-    
+
     // Load and display rounds
     await loadEventRounds(event.id);
-    
+
     // Load and display matches
     await loadEventBrackets(event.id);
-    
+
     document.getElementById('cancel-edit-event-btn').onclick = () => {
       modal.style.display = 'none';
       currentEditEventId = null;
     };
-    
+
     // Add Archers button - opens Add Archers modal
     const addArchersBtn = document.getElementById('edit-add-archers-btn');
     if (addArchersBtn) {
@@ -2336,37 +2336,37 @@
         }
       };
     }
-    
+
     // Bale Settings button - opens Bale Settings modal
     document.getElementById('edit-bale-settings-btn').onclick = () => {
       manageBales(event.id, event.name);
     };
-    
+
     // Delete Event button
     document.getElementById('edit-delete-event-btn').onclick = () => {
       deleteEvent(event.id, event.name);
     };
-    
+
     // Match management buttons
     document.getElementById('create-bracket-btn').onclick = () => openCreateBracketModal();
     document.getElementById('refresh-brackets-btn').onclick = () => loadEventBrackets(event.id);
-    
+
     document.getElementById('submit-edit-event-btn').onclick = async () => {
       const name = nameInput.value.trim();
       const date = dateInput.value;
       const status = statusSelect.value;
       const entryCode = codeInput.value.trim();
-      
+
       if (!name) {
         alert('Please enter an event name');
         return;
       }
-      
+
       try {
         const btn = document.getElementById('submit-edit-event-btn');
         btn.disabled = true;
         btn.textContent = 'Saving...';
-        
+
         // Call API to update event
         await req(`/events/${currentEditEventId}`, 'PATCH', {
           name,
@@ -2374,7 +2374,7 @@
           status,
           entryCode
         });
-        
+
         modal.style.display = 'none';
         alert(`Event "${name}" updated successfully!`);
         loadEvents();
@@ -2388,39 +2388,39 @@
       }
     };
   }
-  
+
   // ==================== QR Code Display ====================
-  
+
   function showQRCode(encodedEventData) {
     const event = JSON.parse(decodeURIComponent(encodedEventData));
-    
+
     // Check if event has an entry code
     if (!event.entry_code) {
       alert('This event does not have an entry code.\n\nPlease edit the event and add an entry code first.');
       return;
     }
-    
+
     const modal = document.getElementById('qr-code-modal');
     const qrContainer = document.getElementById('qr-code-container');
     const urlDisplay = document.getElementById('qr-url-display');
     const eventNameDisplay = document.getElementById('qr-event-name');
-    
+
     // Build the URL
     const baseUrl = window.location.origin + window.location.pathname.replace('coach.html', '');
     const fullUrl = `${baseUrl}ranking_round_300.html?event=${event.id}&code=${event.entry_code}`;
-    
+
     // Update displays
     eventNameDisplay.textContent = `${event.name} - QR Code`;
     urlDisplay.value = fullUrl;
-    
+
     // Clear previous QR code
     qrContainer.innerHTML = '';
-    
+
     // Generate QR code (responsive size)
     try {
       const isMobile = window.innerWidth < 768;
       const qrSize = isMobile ? 200 : 256;
-      
+
       new QRCode(qrContainer, {
         text: fullUrl,
         width: qrSize,
@@ -2433,14 +2433,14 @@
       console.error('QR Code generation error:', err);
       qrContainer.innerHTML = '<p style="color: red;">Error generating QR code</p>';
     }
-    
+
     modal.style.display = 'flex';
-    
+
     // Copy URL button
     document.getElementById('copy-url-btn').onclick = () => {
       urlDisplay.select();
       document.execCommand('copy');
-      
+
       const btn = document.getElementById('copy-url-btn');
       const originalText = btn.textContent;
       btn.textContent = '✓ Copied!';
@@ -2448,17 +2448,17 @@
         btn.textContent = originalText;
       }, 2000);
     };
-    
+
     // Close button
     document.getElementById('close-qr-btn').onclick = () => {
       modal.style.display = 'none';
     };
   }
-  
+
   // ==================== Bracket Management ====================
-  
+
   let currentBracketId = null;
-  
+
   async function loadEventBrackets(eventId) {
     try {
       const response = await req(`/events/${eventId}/brackets`, 'GET');
@@ -2468,20 +2468,20 @@
       document.getElementById('brackets-list').innerHTML = '<div class="text-red-500 text-sm py-2">Error loading brackets</div>';
     }
   }
-  
+
   function renderBrackets(brackets) {
     const container = document.getElementById('brackets-list');
     if (!brackets || brackets.length === 0) {
       container.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No brackets yet. Create a bracket after ranking rounds are complete.</div>';
       return;
     }
-    
+
     let html = '';
     brackets.forEach(bracket => {
       const status = bracket.status || 'OPEN';
       const statusColor = status === 'COMPLETED' ? 'text-success' : status === 'IN_PROGRESS' ? 'text-primary' : 'text-gray-600';
       const entryCount = bracket.entry_count || 0;
-      
+
       html += `
         <div class="p-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
           <div class="flex justify-between items-start mb-2">
@@ -2505,30 +2505,30 @@
         </div>
       `;
     });
-    
+
     container.innerHTML = html;
   }
-  
+
   function openCreateBracketModal() {
     if (!currentEditEventId) {
       alert('No event selected');
       return;
     }
-    
+
     const modal = document.getElementById('create-bracket-modal');
     const typeSelect = document.getElementById('bracket-type');
     const formatSelect = document.getElementById('bracket-format');
     const divisionSelect = document.getElementById('bracket-division');
     const sizeInput = document.getElementById('bracket-size');
-    
+
     // Reset form
     typeSelect.value = 'SOLO';
     formatSelect.value = 'ELIMINATION';
     divisionSelect.value = 'BV';
     sizeInput.value = '8';
-    
+
     modal.style.display = 'flex';
-    
+
     // Update size input based on format and division
     const updateSizeInput = async () => {
       if (formatSelect.value === 'ELIMINATION') {
@@ -2539,13 +2539,13 @@
         // Swiss bracket - set max based on division archer count
         sizeInput.disabled = false;
         sizeInput.min = '4';
-        
+
         // Get archer count for selected division
         try {
           const eventResponse = await req(`/events/${currentEditEventId}`, 'GET');
           const division = divisionSelect.value;
           const divisionData = eventResponse.event?.divisions?.[division];
-          
+
           if (divisionData && divisionData.archerCount) {
             const maxArchers = divisionData.archerCount;
             sizeInput.max = maxArchers;
@@ -2568,45 +2568,71 @@
         }
       }
     };
-    
-    formatSelect.onchange = updateSizeInput;
-    divisionSelect.onchange = updateSizeInput;
-    updateSizeInput(); // Initial call
-    
+
+
+    // Mode toggle logic
+    formatSelect = document.getElementById('bracket-format');
+    const modeContainer = document.getElementById('bracket-mode-container');
+    if (formatSelect && modeContainer) {
+      formatSelect.addEventListener('change', () => {
+        if (formatSelect.value === 'SWISS') {
+          modeContainer.classList.remove('hidden');
+        } else {
+          modeContainer.classList.add('hidden');
+        }
+      });
+    }
+
+    document.getElementById('create-bracket-btn').onclick = () => {
+      // Reset mode visibility
+      if (formatSelect && modeContainer) {
+        formatSelect.value = 'ELIMINATION';
+        modeContainer.classList.add('hidden');
+      }
+      openCreateBracketModal();
+    };
+
     document.getElementById('cancel-create-bracket-btn').onclick = () => {
       modal.style.display = 'none';
     };
-    
+
     document.getElementById('submit-create-bracket-btn').onclick = async () => {
       const bracketType = typeSelect.value;
       const bracketFormat = formatSelect.value;
       const division = divisionSelect.value;
       const bracketSize = parseInt(sizeInput.value);
-      
+
+      let mode = 'OPEN';
+      if (bracketFormat === 'SWISS') {
+        const modeEl = document.querySelector('input[name="bracket-mode"]:checked');
+        if (modeEl) mode = modeEl.value;
+      }
+
       if (bracketFormat === 'ELIMINATION' && bracketSize !== 8) {
         alert('Elimination brackets must be size 8');
         return;
       }
-      
+
       try {
         const btn = document.getElementById('submit-create-bracket-btn');
         btn.disabled = true;
         btn.textContent = 'Creating...';
-        
+
         const response = await req(`/events/${currentEditEventId}/brackets`, 'POST', {
           bracketType,
           bracketFormat,
           division,
           bracketSize,
+          mode,
           createdBy: 'Coach'
         });
-        
+
         modal.style.display = 'none';
         alert('Bracket created successfully!');
-        
+
         // Refresh brackets list
         await loadEventBrackets(currentEditEventId);
-        
+
         btn.disabled = false;
         btn.textContent = 'Create Bracket';
       } catch (err) {
@@ -2616,42 +2642,42 @@
       }
     };
   }
-  
+
   async function editBracket(bracketId) {
     currentBracketId = bracketId;
-    
+
     try {
       // Load bracket details
       const bracketResponse = await req(`/brackets/${bracketId}`, 'GET');
       const bracket = bracketResponse.bracket;
-      
+
       // Load bracket entries
       const entriesResponse = await req(`/brackets/${bracketId}/entries`, 'GET');
       const entries = entriesResponse.entries || [];
-      
+
       // Update modal
       const modal = document.getElementById('edit-bracket-modal');
       const title = document.getElementById('edit-bracket-title');
       const statusSelect = document.getElementById('bracket-status');
       const entriesList = document.getElementById('bracket-entries-list');
-      
+
       title.textContent = `${bracket.bracket_type} ${bracket.bracket_format} - ${bracket.division}`;
       statusSelect.value = bracket.status || 'OPEN';
-      
+
       // Render entries
       if (entries.length === 0) {
         entriesList.innerHTML = '<div class="text-gray-500 dark:text-gray-400 text-center text-sm py-4">No entries yet</div>';
       } else {
         let html = '';
         entries.forEach(entry => {
-          const name = entry.entry_type === 'ARCHER' 
+          const name = entry.entry_type === 'ARCHER'
             ? `${entry.first_name || ''} ${entry.last_name || ''}`.trim() || 'Unknown Archer'
             : entry.school_id || 'Unknown Team';
           const seed = entry.seed_position ? `Seed ${entry.seed_position}` : '';
-          const swiss = bracket.bracket_format === 'SWISS' 
+          const swiss = bracket.bracket_format === 'SWISS'
             ? ` • W-L: ${entry.swiss_wins || 0}-${entry.swiss_losses || 0} (${entry.swiss_points || 0} pts)`
             : '';
-          
+
           html += `
             <div class="p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded mb-2 flex justify-between items-center">
               <div>
@@ -2668,37 +2694,37 @@
         });
         entriesList.innerHTML = html;
       }
-      
+
       modal.style.display = 'flex';
-      
+
       // Set up event handlers
       document.getElementById('cancel-edit-bracket-btn').onclick = () => {
         modal.style.display = 'none';
         currentBracketId = null;
       };
-      
+
       document.getElementById('generate-bracket-btn').onclick = async () => {
         if (bracket.bracket_format !== 'ELIMINATION') {
           alert('Auto-generation only available for ELIMINATION brackets');
           return;
         }
-        
+
         if (!confirm('This will generate bracket entries from Top 8 ranking scores. Continue?')) {
           return;
         }
-        
+
         try {
           const btn = document.getElementById('generate-bracket-btn');
           btn.disabled = true;
           btn.textContent = 'Generating...';
-          
+
           await req(`/brackets/${bracketId}/generate`, 'POST', {});
-          
+
           alert('Bracket generated successfully!');
-          
+
           // Refresh bracket data
           await editBracket(bracketId);
-          
+
           btn.disabled = false;
           btn.textContent = '🎯 Generate from Top 8';
         } catch (err) {
@@ -2707,7 +2733,7 @@
           btn.textContent = '🎯 Generate from Top 8';
         }
       };
-      
+
       document.getElementById('bracket-status').onchange = async () => {
         const newStatus = statusSelect.value;
         try {
@@ -2717,16 +2743,16 @@
           alert('Error updating status: ' + (err.message || 'Unknown error'));
         }
       };
-      
+
       document.getElementById('view-bracket-results-btn').onclick = () => {
         window.location.href = `bracket_results.html?bracketId=${bracketId}`;
       };
-      
+
       document.getElementById('delete-bracket-btn').onclick = async () => {
         if (!confirm('Are you sure you want to delete this bracket? This cannot be undone.')) {
           return;
         }
-        
+
         try {
           await req(`/brackets/${bracketId}`, 'DELETE');
           alert('Bracket deleted');
@@ -2736,17 +2762,17 @@
           alert('Error deleting bracket: ' + (err.message || 'Unknown error'));
         }
       };
-      
+
     } catch (err) {
       alert('Error loading bracket: ' + (err.message || 'Unknown error'));
     }
   }
-  
+
   async function removeBracketEntry(bracketId, entryId) {
     if (!confirm('Remove this entry from the bracket?')) {
       return;
     }
-    
+
     try {
       await req(`/brackets/${bracketId}/entries/${entryId}`, 'DELETE');
       await editBracket(bracketId); // Refresh
@@ -2754,14 +2780,14 @@
       alert('Error removing entry: ' + (err.message || 'Unknown error'));
     }
   }
-  
+
   // Expose functions globally
   window.coach = window.coach || {};
   window.coach.editBracket = editBracket;
   window.coach.removeBracketEntry = removeBracketEntry;
-  
+
   // ==================== Global Functions (for inline onclick) ====================
-  
+
   window.coach = {
     viewResults,
     viewDashboard,

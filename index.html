@@ -7,11 +7,11 @@
   <meta name="theme-color" content="#2563eb">
   <meta name="description" content="Archery scoring and team management tools for OAS">
   <title>OAS Score & Tools</title>
-  
+
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-  
+
   <!-- Use compiled Tailwind CSS file (works offline, no CDN dependency) -->
   <link rel="stylesheet" href="css/tailwind-compiled.css">
   <link rel="stylesheet" href="css/unified-scorecard-list.css">
@@ -24,7 +24,7 @@
       initDarkMode();
     } else {
       // Fallback if common.js not loaded yet
-      (function() {
+      (function () {
         const savedTheme = localStorage.getItem('theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
@@ -60,182 +60,213 @@
       </div>
 
       <!-- Open Assignments Section -->
-      <div id="open-assignments" class="hidden space-y-3">
+      <!-- Open Assignments Sections -->
+      <!-- Ranking Rounds -->
+      <div id="ranking-section" class="hidden space-y-3">
         <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
-          <i class="fas fa-tasks mr-2 text-blue-600 dark:text-blue-400"></i>
-          Your Open Assignments
+          <i class="fas fa-trophy mr-2 text-teal-600 dark:text-teal-400"></i>
+          Ranking Rounds
         </h2>
-        <div id="assignments-list" class="space-y-2">
-          <!-- Assignments will be populated here -->
+        <div id="ranking-assignments-list" class="space-y-2"></div>
+      </div>
+
+      <!-- Solo Matches -->
+      <div id="solo-section" class="hidden space-y-3">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+          <i class="fas fa-user-friends mr-2 text-yellow-600 dark:text-yellow-400"></i>
+          Solo Matches
+        </h2>
+        <div id="solo-assignments-list" class="space-y-2"></div>
+      </div>
+
+      <!-- Team Matches -->
+      <div id="team-section" class="hidden space-y-3">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+          <i class="fas fa-users mr-2 text-purple-600 dark:text-purple-400"></i>
+          Team Matches
+        </h2>
+        <div id="team-assignments-list" class="space-y-2"></div>
+      </div>
+
+      <!-- Recent Activity Section -->
+      <div id="recent-activity" class="hidden space-y-3">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+          <i class="fas fa-history mr-2 text-purple-600 dark:text-purple-400"></i>
+          Recent Activity
+        </h2>
+        <div id="recent-activity-list" class="space-y-2">
+          <!-- Recent activity will be populated here -->
+        </div>
+
+        <!-- Manage Archers Button - access full archer list for editing -->
+        <a href="archer_list.html" id="archer-details-btn"
+          class="block w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium transition-colors text-center"
+          title="View and manage the archer list">
+          <i class="fas fa-users mr-2"></i>Manage Archers
+        </a>
+
+        <!-- Main Modules -->
+        <div class="grid grid-cols-2 gap-4">
+          <a href="ranking_round_300.html" id="ranking-round-link"
+            class="block px-4 py-4 bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
+            title="Score competitive ranking rounds with multiple archers">
+            <i class="fas fa-trophy block mb-2 text-xl"></i>Ranking
+          </a>
+          <a href="solo_card.html"
+            class="block px-4 py-4 bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-400 dark:hover:bg-yellow-500 text-gray-900 rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
+            title="Track 1v1 matches (first to 6 set points wins)">
+            <i class="fas fa-user-friends block mb-2 text-xl"></i>Solo
+          </a>
+          <a href="team_card.html"
+            class="block px-4 py-4 bg-orange-500 hover:bg-orange-600 dark:bg-orange-400 dark:hover:bg-orange-500 text-gray-900 rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
+            title="Score team vs team matches (first to 5 set points wins)">
+            <i class="fas fa-users-cog block mb-2 text-xl"></i>Team
+          </a>
+          <a href="gemini-oneshot.html"
+            class="block px-4 py-4 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
+            title="Practice sessions with arrow grouping analysis">
+            <i class="fas fa-bullseye block mb-2 text-xl"></i>Practice
+          </a>
         </div>
       </div>
 
-      <!-- Manage Archers Button - access full archer list for editing -->
-      <a href="archer_list.html" id="archer-details-btn"
-        class="block w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg font-medium transition-colors text-center"
-        title="View and manage the archer list">
-        <i class="fas fa-users mr-2"></i>Manage Archers
-      </a>
-
-      <!-- Main Modules -->
-      <div class="grid grid-cols-2 gap-4">
-        <a href="ranking_round_300.html" id="ranking-round-link"
-          class="block px-4 py-4 bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
-          title="Score competitive ranking rounds with multiple archers">
-          <i class="fas fa-trophy block mb-2 text-xl"></i>Ranking
+      <!-- Footer -->
+      <footer
+        class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
+        <a href="index.html"
+          class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center"
+          aria-label="Home">
+          <i class="fas fa-home text-2xl"></i>
         </a>
-        <a href="solo_card.html"
-          class="block px-4 py-4 bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-400 dark:hover:bg-yellow-500 text-gray-900 rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
-          title="Track 1v1 matches (first to 6 set points wins)">
-          <i class="fas fa-user-friends block mb-2 text-xl"></i>Solo
-        </a>
-        <a href="team_card.html"
-          class="block px-4 py-4 bg-orange-500 hover:bg-orange-600 dark:bg-orange-400 dark:hover:bg-orange-500 text-gray-900 rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
-          title="Score team vs team matches (first to 5 set points wins)">
-          <i class="fas fa-users-cog block mb-2 text-xl"></i>Team
-        </a>
-        <a href="gemini-oneshot.html"
-          class="block px-4 py-4 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 shadow-lg text-center"
-          title="Practice sessions with arrow grouping analysis">
-          <i class="fas fa-bullseye block mb-2 text-xl"></i>Practice
-        </a>
-      </div>
+        <div class="flex-1"></div>
+        <div class="flex gap-2">
+          <a href="coach.html"
+            class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center text-sm"
+            title="Coach console: events and live scoring">
+            <i class="fas fa-chalkboard-teacher mr-1"></i>Coaches
+          </a>
+          <button id="clear-cache-btn"
+            class="px-3 h-[44px] bg-danger text-white rounded font-semibold hover:bg-red-700 transition-colors flex items-center justify-center text-sm"
+            title="Clear cached archers, events, and scoring data on this device">
+            <i class="fas fa-broom mr-1"></i>Reset Data
+          </button>
+        </div>
+      </footer>
     </div>
 
-    <!-- Footer -->
-    <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
-      <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
-        <i class="fas fa-home text-2xl"></i>
-      </a>
-      <div class="flex-1"></div>
-      <div class="flex gap-2">
-        <a href="coach.html"
-          class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center text-sm"
-          title="Coach console: events and live scoring">
-          <i class="fas fa-chalkboard-teacher mr-1"></i>Coaches
-        </a>
-        <button id="clear-cache-btn"
-          class="px-3 h-[44px] bg-danger text-white rounded font-semibold hover:bg-red-700 transition-colors flex items-center justify-center text-sm"
-          title="Clear cached archers, events, and scoring data on this device">
-          <i class="fas fa-broom mr-1"></i>Reset Data
-        </button>
-      </div>
-    </footer>
-  </div>
+    <script src="js/common.js"></script>
+    <script src="js/archer_module.js"></script>
+    <script src="js/unified_scorecard_list.js"></script>
+    <script>
+      // Inline archer picker state
+      let archerPickerVisible = false;
+      let archerList = [];
+      let filteredArchers = [];
 
-  <script src="js/common.js"></script>
-  <script src="js/archer_module.js"></script>
-  <script src="js/unified_scorecard_list.js"></script>
-  <script>
-    // Inline archer picker state
-    let archerPickerVisible = false;
-    let archerList = [];
-    let filteredArchers = [];
-    
-    /**
-     * Load archer list from server or localStorage
-     * Prefers ArcherModule if available for consistency
-     */
-    async function loadArcherList() {
-      // Try ArcherModule first (most consistent with archer_list.html)
-      if (window.ArcherModule && typeof window.ArcherModule.loadList === 'function') {
+      /**
+       * Load archer list from server or localStorage
+       * Prefers ArcherModule if available for consistency
+       */
+      async function loadArcherList() {
+        // Try ArcherModule first (most consistent with archer_list.html)
+        if (window.ArcherModule && typeof window.ArcherModule.loadList === 'function') {
+          try {
+            const moduleList = window.ArcherModule.loadList();
+            if (moduleList && moduleList.length > 0) {
+              // Convert ArcherModule format to index.html format
+              archerList = moduleList.map(a => ({
+                id: a.id || a.extId,
+                extId: a.extId || a.id,
+                first: a.first || '',
+                last: a.last || '',
+                school: a.school || '',
+                level: a.level || '',
+                gender: a.gender || '',
+                photoUrl: a.photoUrl || null,
+                nickname: a.nickname || ''
+              }));
+              filteredArchers = archerList.slice(0, 50);
+              return archerList;
+            }
+          } catch (e) {
+            console.log('[index] Could not load from ArcherModule:', e.message);
+          }
+        }
+
+        // Fallback: Try localStorage cache
+        const cached = localStorage.getItem('archerList');
+        if (cached) {
+          try {
+            archerList = JSON.parse(cached) || [];
+          } catch (e) {
+            archerList = [];
+          }
+        }
+
+        // Fallback: Fetch fresh list from server
         try {
-          const moduleList = window.ArcherModule.loadList();
-          if (moduleList && moduleList.length > 0) {
-            // Convert ArcherModule format to index.html format
-            archerList = moduleList.map(a => ({
-              id: a.id || a.extId,
-              extId: a.extId || a.id,
-              first: a.first || '',
-              last: a.last || '',
+          const res = await fetch('api/v1/archers');
+          if (res.ok) {
+            const data = await res.json();
+            archerList = (data.archers || []).map(a => ({
+              id: a.id,
+              extId: a.id,
+              first: a.first_name || a.firstName || '',
+              last: a.last_name || a.lastName || '',
               school: a.school || '',
               level: a.level || '',
               gender: a.gender || '',
-              photoUrl: a.photoUrl || null,
+              photoUrl: a.photo_url || a.photoUrl || null,
               nickname: a.nickname || ''
             }));
-            filteredArchers = archerList.slice(0, 50);
-            return archerList;
+            localStorage.setItem('archerList', JSON.stringify(archerList));
           }
         } catch (e) {
-          console.log('[index] Could not load from ArcherModule:', e.message);
+          console.log('[index] Could not fetch archer list:', e.message);
         }
+
+        filteredArchers = archerList.slice(0, 50); // Show first 50 by default
+        return archerList;
       }
-      
-      // Fallback: Try localStorage cache
-      const cached = localStorage.getItem('archerList');
-      if (cached) {
-        try {
-          archerList = JSON.parse(cached) || [];
-        } catch (e) {
-          archerList = [];
+
+      /**
+       * Filter archer list based on search query
+       */
+      function filterArchers(query) {
+        if (!query || query.length < 1) {
+          filteredArchers = archerList.slice(0, 50);
+        } else {
+          const q = query.toLowerCase();
+          filteredArchers = archerList.filter(a =>
+            `${a.first} ${a.last}`.toLowerCase().includes(q) ||
+            (a.nickname && a.nickname.toLowerCase().includes(q))
+          ).slice(0, 20);
         }
+        renderArcherPickerList();
       }
-      
-      // Fallback: Fetch fresh list from server
-      try {
-        const res = await fetch('api/v1/archers');
-        if (res.ok) {
-          const data = await res.json();
-          archerList = (data.archers || []).map(a => ({
-            id: a.id,
-            extId: a.id,
-            first: a.first_name || a.firstName || '',
-            last: a.last_name || a.lastName || '',
-            school: a.school || '',
-            level: a.level || '',
-            gender: a.gender || '',
-            photoUrl: a.photo_url || a.photoUrl || null,
-            nickname: a.nickname || ''
-          }));
-          localStorage.setItem('archerList', JSON.stringify(archerList));
-        }
-      } catch (e) {
-        console.log('[index] Could not fetch archer list:', e.message);
-      }
-      
-      filteredArchers = archerList.slice(0, 50); // Show first 50 by default
-      return archerList;
-    }
-    
-    /**
-     * Filter archer list based on search query
-     */
-    function filterArchers(query) {
-      if (!query || query.length < 1) {
-        filteredArchers = archerList.slice(0, 50);
-      } else {
-        const q = query.toLowerCase();
-        filteredArchers = archerList.filter(a => 
-          `${a.first} ${a.last}`.toLowerCase().includes(q) ||
-          (a.nickname && a.nickname.toLowerCase().includes(q))
-        ).slice(0, 20);
-      }
-      renderArcherPickerList();
-    }
-    
-    /**
-     * Render just the archer list portion of the picker
-     */
-    function renderArcherPickerList() {
-      const listEl = document.getElementById('archer-picker-list');
-      if (!listEl) return;
-      
-      if (filteredArchers.length === 0) {
-        listEl.innerHTML = `
+
+      /**
+       * Render just the archer list portion of the picker
+       */
+      function renderArcherPickerList() {
+        const listEl = document.getElementById('archer-picker-list');
+        if (!listEl) return;
+
+        if (filteredArchers.length === 0) {
+          listEl.innerHTML = `
           <div class="text-center py-4 text-gray-500 dark:text-gray-400">
             <i class="fas fa-search text-2xl mb-2"></i>
             <p class="text-sm">No archers found. Try a different search.</p>
           </div>
         `;
-        return;
-      }
-      
-      listEl.innerHTML = filteredArchers.map(archer => {
-        const initials = ((archer.first || '').charAt(0) + (archer.last || '').charAt(0)).toUpperCase();
-        const details = [archer.school, archer.level, archer.gender].filter(Boolean).join(' • ');
-        
-        return `
+          return;
+        }
+
+        listEl.innerHTML = filteredArchers.map(archer => {
+          const initials = ((archer.first || '').charAt(0) + (archer.last || '').charAt(0)).toUpperCase();
+          const details = [archer.school, archer.level, archer.gender].filter(Boolean).join(' • ');
+
+          return `
           <button onclick="selectSelfArcher('${archer.extId || archer.id}')" 
                   class="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-gray-700 active:bg-blue-100 dark:active:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-600 transition-colors text-left">
             <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
@@ -248,82 +279,84 @@
             <i class="fas fa-chevron-right text-gray-400"></i>
           </button>
         `;
-      }).join('');
-    }
-    
-    /**
-     * Select an archer as "self"
-     */
-    async function selectSelfArcher(archerId) {
-      const archer = archerList.find(a => (a.extId || a.id) === archerId);
-      if (!archer) return;
-      
-      // Use ArcherModule to set self (this handles localStorage and consistency)
-      if (window.ArcherModule && typeof window.ArcherModule.setSelfExtId === 'function') {
-        await window.ArcherModule.setSelfExtId(archerId);
-      } else {
-        // Fallback to direct localStorage if ArcherModule not available
-        localStorage.setItem('archerSelfExtId', archerId);
+        }).join('');
       }
-      
-      // Re-render to show profile view
-      renderIdentitySection();
-      
-      // Load assignments for the selected archer
-      loadOpenAssignments();
-    }
-    
-    /**
-     * Render the identity section based on state
-     * - No archer selected: Show inline picker
-     * - Archer selected: Show profile card
-     */
-    async function renderIdentitySection() {
-      const section = document.getElementById('identity-section');
-      if (!section) return;
-      
-      // Check if we have a selected archer
-      let archer = null;
-      
-      // Try ArcherModule first (this is the source of truth)
-      if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
-        archer = window.ArcherModule.getSelfArcher();
-      }
-      
-      // Fallback: Try to find archer by extId from localStorage
-      if (!archer) {
-        const extId = window.ArcherModule && typeof window.ArcherModule.getSelfExtId === 'function' 
-          ? window.ArcherModule.getSelfExtId()
-          : localStorage.getItem('archerSelfExtId') || '';
-        
-        if (extId) {
-          // First try ArcherModule list (most reliable)
-          if (window.ArcherModule && typeof window.ArcherModule.loadList === 'function') {
-            const moduleList = window.ArcherModule.loadList();
-            archer = moduleList.find(a => (a.extId === extId || a.id === extId));
-          }
-          
-          // Fallback to local archerList
-          if (!archer && archerList.length > 0) {
-            archer = archerList.find(a => (a.extId || a.id) === extId || `${(a.first || '').trim()}-${(a.last || '').trim()}` === extId);
-          }
-        }
-      }
-      
-      if (archer) {
-        // SELECTED STATE: Show profile card
-        const nickname = archer.nickname ? ` "${archer.nickname}"` : '';
-        const initials = ((archer.first || '').charAt(0) + (archer.last || '').charAt(0)).toUpperCase();
-        const archerId = archer.extId || archer.id || '';
-        
-        let avatarHTML = '';
-        if (archer.photoUrl) {
-          avatarHTML = `<img src="${archer.photoUrl}" alt="${archer.first} ${archer.last}" class="w-16 h-16 rounded-full object-cover border-[3px] border-white dark:border-gray-700 shadow-md">`;
+
+      /**
+       * Select an archer as "self"
+       */
+      async function selectSelfArcher(archerId) {
+        const archer = archerList.find(a => (a.extId || a.id) === archerId);
+        if (!archer) return;
+
+        // Use ArcherModule to set self (this handles localStorage and consistency)
+        if (window.ArcherModule && typeof window.ArcherModule.setSelfExtId === 'function') {
+          await window.ArcherModule.setSelfExtId(archerId);
         } else {
-          avatarHTML = `<div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-[3px] border-white dark:border-gray-700 shadow-md"><span class="text-xl font-bold text-white">${initials}</span></div>`;
+          // Fallback to direct localStorage if ArcherModule not available
+          localStorage.setItem('archerSelfExtId', archerId);
         }
-        
-        section.innerHTML = `
+
+        // Re-render to show profile view
+        renderIdentitySection();
+
+        // Load assignments for the selected archer
+        loadOpenAssignments();
+        // Load recent activity
+        loadRecentActivity();
+      }
+
+      /**
+       * Render the identity section based on state
+       * - No archer selected: Show inline picker
+       * - Archer selected: Show profile card
+       */
+      async function renderIdentitySection() {
+        const section = document.getElementById('identity-section');
+        if (!section) return;
+
+        // Check if we have a selected archer
+        let archer = null;
+
+        // Try ArcherModule first (this is the source of truth)
+        if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
+          archer = window.ArcherModule.getSelfArcher();
+        }
+
+        // Fallback: Try to find archer by extId from localStorage
+        if (!archer) {
+          const extId = window.ArcherModule && typeof window.ArcherModule.getSelfExtId === 'function'
+            ? window.ArcherModule.getSelfExtId()
+            : localStorage.getItem('archerSelfExtId') || '';
+
+          if (extId) {
+            // First try ArcherModule list (most reliable)
+            if (window.ArcherModule && typeof window.ArcherModule.loadList === 'function') {
+              const moduleList = window.ArcherModule.loadList();
+              archer = moduleList.find(a => (a.extId === extId || a.id === extId));
+            }
+
+            // Fallback to local archerList
+            if (!archer && archerList.length > 0) {
+              archer = archerList.find(a => (a.extId || a.id) === extId || `${(a.first || '').trim()}-${(a.last || '').trim()}` === extId);
+            }
+          }
+        }
+
+        if (archer) {
+          // SELECTED STATE: Show profile card
+          const nickname = archer.nickname ? ` "${archer.nickname}"` : '';
+          const initials = ((archer.first || '').charAt(0) + (archer.last || '').charAt(0)).toUpperCase();
+          const archerId = archer.extId || archer.id || '';
+
+          let avatarHTML = '';
+          if (archer.photoUrl) {
+            avatarHTML = `<img src="${archer.photoUrl}" alt="${archer.first} ${archer.last}" class="w-16 h-16 rounded-full object-cover border-[3px] border-white dark:border-gray-700 shadow-md">`;
+          } else {
+            avatarHTML = `<div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-[3px] border-white dark:border-gray-700 shadow-md"><span class="text-xl font-bold text-white">${initials}</span></div>`;
+          }
+
+          section.innerHTML = `
           <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-4">
               ${avatarHTML}
@@ -346,11 +379,11 @@
             </div>
           </div>
         `;
-      } else {
-        // NOT SELECTED STATE: Show inline picker
-        await loadArcherList();
-        
-        section.innerHTML = `
+        } else {
+          // NOT SELECTED STATE: Show inline picker
+          await loadArcherList();
+
+          section.innerHTML = `
           <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
             <!-- Header -->
             <div class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 px-4 py-4 text-white">
@@ -393,27 +426,27 @@
             </div>
           </div>
         `;
-        
-        // Render the initial list
-        renderArcherPickerList();
+
+          // Render the initial list
+          renderArcherPickerList();
+        }
       }
-    }
-    
-    /**
-     * Show the archer picker (for switching archers)
-     */
-    function showArcherPicker() {
-      localStorage.removeItem('archerSelfExtId');
-      renderIdentitySection();
-    }
-    
-    /**
-     * Skip identity selection
-     */
-    function skipIdentity() {
-      const section = document.getElementById('identity-section');
-      if (section) {
-        section.innerHTML = `
+
+      /**
+       * Show the archer picker (for switching archers)
+       */
+      function showArcherPicker() {
+        localStorage.removeItem('archerSelfExtId');
+        renderIdentitySection();
+      }
+
+      /**
+       * Skip identity selection
+       */
+      function skipIdentity() {
+        const section = document.getElementById('identity-section');
+        if (section) {
+          section.innerHTML = `
           <div class="text-center py-4">
             <button onclick="renderIdentitySection()" 
                     class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
@@ -421,741 +454,914 @@
             </button>
           </div>
         `;
+        }
       }
-    }
 
-    /**
-     * Create simplified 2-column assignments list
-     * Layout: Assignment (name + details, wide) | Progress (score/sets)
-     * Optimized for mobile with larger text and touch targets
-     */
-    function createAssignmentsList(items, options) {
-      const container = document.createElement('div');
-      container.className = 'flex flex-col w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700';
+      /**
+       * Create simplified 2-column assignments list
+       * Layout: Assignment (name + details, wide) | Progress (score/sets)
+       * Optimized for mobile with larger text and touch targets
+       */
+      function createAssignmentsList(items, options) {
+        const container = document.createElement('div');
+        container.className = 'flex flex-col w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700';
 
-      // Header row
-      const header = document.createElement('div');
-      header.className = 'grid gap-2 px-3 py-2.5 bg-gray-100 dark:bg-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide items-center';
-      header.style.gridTemplateColumns = 'minmax(0, 1fr) minmax(80px, auto)';
-      header.innerHTML = `
+        // Header row
+        const header = document.createElement('div');
+        header.className = 'grid gap-2 px-3 py-2.5 bg-gray-100 dark:bg-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide items-center';
+        header.style.gridTemplateColumns = 'minmax(0, 1fr) minmax(80px, auto)';
+        header.innerHTML = `
         <div>Assignment</div>
         <div class="text-right">Progress</div>
       `;
-      container.appendChild(header);
+        container.appendChild(header);
 
-      // Items
-      items.forEach((item, index) => {
-        const row = document.createElement('div');
-        row.className = 'grid gap-2 px-3 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600 items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors min-h-[60px]';
-        row.style.gridTemplateColumns = 'minmax(0, 1fr) minmax(80px, auto)';
-        
-        if (options.onItemClick) {
-          row.onclick = () => options.onItemClick(item, index);
-        }
+        // Items
+        items.forEach((item, index) => {
+          const row = document.createElement('div');
+          row.className = 'grid gap-2 px-3 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600 items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors min-h-[60px]';
+          row.style.gridTemplateColumns = 'minmax(0, 1fr) minmax(80px, auto)';
 
-        // Get values
-        const eventName = options.getEventName ? options.getEventName(item) : item.event_name;
-        const progress = options.getTotal ? options.getTotal(item) : '';
-        const roundType = options.getAvg ? options.getAvg(item) : item.round_type || '';
-        
-        // Format date
-        let dateStr = '';
-        if (item.event_date) {
-          const date = new Date(item.event_date);
-          if (!isNaN(date.getTime())) {
-            dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+          if (options.onItemClick) {
+            row.onclick = () => options.onItemClick(item, index);
           }
-        }
-        
-        // Build subtitle with date, round type, and division
-        const subtitleParts = [dateStr, roundType, item.division].filter(p => p && p.trim());
-        const subtitle = subtitleParts.join(' • ');
 
-        // Determine progress color based on type
-        let progressClass = 'text-blue-600 dark:text-blue-400';
-        if (item.isSolo) {
-          progressClass = 'text-green-600 dark:text-green-400';
-        } else if (item.isBracket) {
-          progressClass = 'text-yellow-600 dark:text-yellow-400';
-        }
+          // Get values
+          const eventName = options.getEventName ? options.getEventName(item) : item.event_name;
+          const progress = options.getTotal ? options.getTotal(item) : '';
+          const roundType = options.getAvg ? options.getAvg(item) : item.round_type || '';
 
-        row.innerHTML = `
+          // Format date
+          let dateStr = '';
+          if (item.event_date) {
+            const date = new Date(item.event_date);
+            if (!isNaN(date.getTime())) {
+              dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+            }
+          }
+
+          // Build subtitle with date, round type, and division
+          const subtitleParts = [dateStr, roundType, item.division].filter(p => p && p.trim());
+          const subtitle = subtitleParts.join(' • ');
+
+          // Determine progress color based on type
+          let progressClass = 'text-blue-600 dark:text-blue-400';
+          if (item.isSolo) {
+            progressClass = 'text-green-600 dark:text-green-400';
+          } else if (item.isBracket) {
+            progressClass = 'text-yellow-600 dark:text-yellow-400';
+          }
+
+          // Void Button Logic
+          let voidBtnHtml = '';
+          if (options.canVoid && item.id) {
+            // Prevent bubbling
+            voidBtnHtml = `
+               <button onclick="event.stopPropagation(); voidMatch('${item.id}', '${item.isSolo ? 'solo' : 'team'}')" 
+                       class="ml-2 p-2 text-gray-400 hover:text-red-500 transition-colors z-10 relative" 
+                       title="Void Match">
+                   <i class="fas fa-trash-alt"></i>
+               </button>
+               `;
+          }
+
+          row.innerHTML = `
           <div class="flex flex-col gap-1 min-w-0 overflow-hidden">
-            <div class="text-base font-semibold text-gray-900 dark:text-white overflow-hidden text-ellipsis whitespace-nowrap leading-tight">${eventName}</div>
+            <div class="text-base font-semibold text-gray-900 dark:text-white overflow-hidden text-ellipsis whitespace-nowrap leading-tight flex items-center gap-2">
+                ${eventName}
+            </div>
             <div class="text-sm text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis whitespace-nowrap leading-tight">${subtitle}</div>
           </div>
-          <div class="text-lg font-bold ${progressClass} text-right whitespace-nowrap">${progress}</div>
+          <div class="flex items-center justify-end">
+              <div class="text-lg font-bold ${progressClass} whitespace-nowrap">${progress}</div>
+              ${voidBtnHtml}
+          </div>
         `;
-        
-        container.appendChild(row);
-      });
 
-      return container;
-    }
-
-    // Load open assignments for the current archer
-    async function loadOpenAssignments() {
-      try {
-        // Get current archer
-        let archer = null;
-        if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
-          archer = window.ArcherModule.getSelfArcher();
-        }
-
-        if (!archer) {
-          console.log('[index] No archer set - cannot load assignments');
-          return;
-        }
-
-        // Get archer ID - need UUID for history endpoint
-        // UUID format: 36 chars with dashes (e.g., "3c7533af-eda1-48c7-b688-3279e75cc697")
-        // Check multiple possible ID fields
-        let archerId = archer.id || archer.archerId || archer.databaseId || null;
-        let isUUID = archerId && archerId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-
-        console.log('[index] Archer object:', {
-          first: archer.first,
-          last: archer.last,
-          id: archer.id,
-          archerId: archer.archerId,
-          databaseId: archer.databaseId,
-          extId: archer.extId,
-          allKeys: Object.keys(archer)
+          container.appendChild(row);
         });
 
-        // If we don't have a UUID, try to find it by searching
-        if (!isUUID && archer.first && archer.last) {
-          try {
-            console.log('[index] Searching for UUID by name:', archer.first, archer.last);
-            const searchRes = await fetch(`api/v1/archers/search?q=${encodeURIComponent(archer.first + ' ' + archer.last)}`);
-            if (searchRes.ok) {
-              const searchData = await searchRes.json();
-              console.log('[index] Search results:', searchData);
-              // The search API returns results in a different format
-              if (searchData.results && searchData.results.length > 0) {
-                const match = searchData.results.find(r =>
-                  r.archer.firstName.toLowerCase() === archer.first.toLowerCase() &&
-                  r.archer.lastName.toLowerCase() === archer.last.toLowerCase()
-                );
-                if (match && match.archer.id) {
-                  archerId = match.archer.id;
-                  isUUID = true;
-                  console.log('[index] Found UUID for archer:', archerId);
+        return container;
+      }
+
+      // Load open assignments for the current archer
+      async function loadOpenAssignments() {
+        try {
+          // Get current archer
+          let archer = null;
+          if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
+            archer = window.ArcherModule.getSelfArcher();
+          }
+
+          if (!archer) {
+            console.log('[index] No archer set - cannot load assignments');
+            return;
+          }
+
+          // Get archer ID - need UUID for history endpoint
+          // UUID format: 36 chars with dashes (e.g., "3c7533af-eda1-48c7-b688-3279e75cc697")
+          // Check multiple possible ID fields
+          let archerId = archer.id || archer.archerId || archer.databaseId || null;
+          let isUUID = archerId && archerId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
+          console.log('[index] Archer object:', {
+            first: archer.first,
+            last: archer.last,
+            id: archer.id,
+            archerId: archer.archerId,
+            databaseId: archer.databaseId,
+            extId: archer.extId,
+            allKeys: Object.keys(archer)
+          });
+
+          // If we don't have a UUID, try to find it by searching
+          if (!isUUID && archer.first && archer.last) {
+            try {
+              console.log('[index] Searching for UUID by name:', archer.first, archer.last);
+              const searchRes = await fetch(`api/v1/archers/search?q=${encodeURIComponent(archer.first + ' ' + archer.last)}`);
+              if (searchRes.ok) {
+                const searchData = await searchRes.json();
+                console.log('[index] Search results:', searchData);
+                // The search API returns results in a different format
+                if (searchData.results && searchData.results.length > 0) {
+                  const match = searchData.results.find(r =>
+                    r.archer.firstName.toLowerCase() === archer.first.toLowerCase() &&
+                    r.archer.lastName.toLowerCase() === archer.last.toLowerCase()
+                  );
+                  if (match && match.archer.id) {
+                    archerId = match.archer.id;
+                    isUUID = true;
+                    console.log('[index] Found UUID for archer:', archerId);
+                  } else {
+                    console.log('[index] No exact name match found in search results');
+                  }
                 } else {
-                  console.log('[index] No exact name match found in search results');
+                  console.log('[index] No search results returned');
                 }
               } else {
-                console.log('[index] No search results returned');
+                console.log('[index] Search request failed:', searchRes.status, searchRes.statusText);
               }
-            } else {
-              console.log('[index] Search request failed:', searchRes.status, searchRes.statusText);
+            } catch (e) {
+              console.log('[index] Could not search for archer UUID:', e.message);
+            }
+          }
+
+          if (!archerId || !isUUID) {
+            console.log('[index] No valid UUID found - cannot load assignments. Final archerId:', archerId, 'isUUID:', isUUID);
+            return;
+          }
+
+          console.log('[index] Loading assignments for archer UUID:', archerId);
+
+          const assignments = [];
+
+          // Check for open ranking rounds
+          try {
+            const historyRes = await fetch(`api/v1/archers/${archerId}/history`);
+            console.log('[index] History API response status:', historyRes.status);
+            if (historyRes.ok) {
+              const historyData = await historyRes.json();
+              console.log('[index] History data:', historyData);
+              const rounds = historyData.history || historyData.rounds || [];
+              console.log('[index] Total rounds found:', rounds.length);
+
+              // Separate ranking rounds and solo/team matches
+              const rankingRounds = rounds.filter(r => r.type === 'ranking' || !r.type);
+              const soloMatches = rounds.filter(r => r.type === 'solo');
+              const teamMatches = rounds.filter(r => r.type === 'team');
+
+              // Find ranking rounds to show in assignments
+              // Show only PENDING (incomplete work) and COMP (completed today)
+              const openRounds = rankingRounds.filter(round => {
+                // Only show rounds where this archer is actually assigned
+                if (!round.round_id) {
+                  console.warn('[index] Round missing round_id, skipping:', round);
+                  return false;
+                }
+
+                const cardStatus = (round.card_status || round.cardStatus || 'PENDING').toUpperCase();
+                const endsCompleted = parseInt(round.ends_completed || 0);
+                const isToday = round.event_date === new Date().toISOString().slice(0, 10);
+
+                // Normalize status (handle both PENDING/PEND and COMPLETED/COMP)
+                const normalizedStatus = cardStatus === 'PEND' ? 'PENDING' :
+                  cardStatus === 'COMP' ? 'COMPLETED' :
+                    cardStatus === 'VRFD' ? 'VERIFIED' : cardStatus;
+
+                // Show if PENDING/PEND (incomplete work)
+                if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && endsCompleted < 10) {
+                  return true;
+                }
+
+                // Show if COMPLETED/COMP and today (completed today, may need review)
+                if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
+                  return isToday;
+                }
+
+                // Don't show VERIFIED/VRFD or VOID
+                return false;
+              });
+
+              // Find solo matches to show in assignments
+              // Show only PENDING/PEND (incomplete work) and COMPLETED/COMP (completed today)
+              const openSoloMatches = soloMatches.filter(match => {
+                const cardStatus = (match.card_status || 'PENDING').toUpperCase();
+                const isToday = match.event_date === new Date().toISOString().slice(0, 10);
+                const setsWon = parseInt(match.sets_won || 0);
+                const opponentSetsWon = parseInt(match.opponent_sets_won || 0);
+                const isMatchComplete = setsWon >= 6 || opponentSetsWon >= 6;
+
+                // Normalize status (handle both PENDING/PEND and COMPLETED/COMP)
+                const normalizedStatus = cardStatus === 'PEND' ? 'PENDING' :
+                  cardStatus === 'COMP' ? 'COMPLETED' :
+                    cardStatus === 'VRFD' ? 'VERIFIED' : cardStatus;
+
+                // Show if PENDING/PEND (incomplete work)
+                if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && !isMatchComplete) {
+                  return true;
+                }
+
+                // Show if COMPLETED/COMP and today (completed today, may need review)
+                if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
+                  return isToday;
+                }
+
+                // Don't show VERIFIED/VRFD or VOID
+                return false;
+              });
+
+              console.log('[index] Open rounds found:', openRounds.length);
+              console.log('[index] Open solo matches found:', openSoloMatches.length);
+
+              // Build links for ranking rounds
+              openRounds.forEach(round => {
+                const isStarted = (round.ends_completed || 0) > 0;
+
+                // Build link with entry code for standalone rounds
+                // For event-linked rounds, entry code will be fetched from event snapshot in handleDirectLink
+                // For standalone rounds, include entry code in URL so it works across browser sessions
+                const eventParam = round.event_id ? round.event_id : 'null';
+                let link = `ranking_round_300.html?event=${eventParam}&round=${round.round_id}&archer=${archerId}`;
+
+                // Include entry_code in URL for standalone rounds (so link works across browser sessions)
+                if (round.is_standalone && round.entry_code) {
+                  link += `&code=${encodeURIComponent(round.entry_code)}`;
+                }
+
+                console.log('[index] Building resume link:', {
+                  round_id: round.round_id,
+                  event_id: round.event_id,
+                  is_standalone: round.is_standalone,
+                  entry_code: round.entry_code ? 'present' : 'missing',
+                  archerId: archerId,
+                  link: link
+                });
+
+                // Build event name - always show event name, add "Resume" prefix if in progress
+                const eventName = round.event_name || 'Ranking Round';
+                const title = isStarted ? `${eventName} - Resume` : eventName;
+
+                assignments.push({
+                  type: 'ranking',
+                  title: title,
+                  subtitle: `${round.round_type || 'R300'} • ${round.division || 'Unknown Division'}`,
+                  details: `Bale ${round.bale_number || '?'} • ${round.ends_completed || 0}/10 ends`,
+                  link: link,
+                  icon: isStarted ? 'fas fa-play-circle' : 'fas fa-trophy',
+                  color: isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-teal-600 hover:bg-teal-700',
+                  urgent: isStarted && (round.ends_completed || 0) < 10, // Has started but not finished
+                  event_date: round.event_date || round.eventDate || null,
+                  card_status: round.card_status || round.cardStatus || 'PENDING',
+                  ends_completed: round.ends_completed || 0,
+                  round_type: round.round_type || 'R300'
+                });
+              });
+
+              // Build links for solo matches
+              openSoloMatches.forEach(match => {
+                const setsWon = parseInt(match.sets_won || 0);
+                const opponentSetsWon = parseInt(match.opponent_sets_won || 0);
+                const isStarted = setsWon > 0 || opponentSetsWon > 0;
+                const isComplete = setsWon >= 6 || opponentSetsWon >= 6;
+
+                // Build link to solo card with match ID
+                const link = `solo_card.html?match=${match.match_id}`;
+
+                // Build event name
+                const eventName = match.event_name || 'Solo Match';
+                const title = isStarted ? (isComplete ? `${eventName} - View` : `${eventName} - Resume`) : eventName;
+
+                assignments.push({
+                  type: 'solo',
+                  title: title,
+                  subtitle: `Solo Match vs ${match.opponent_name || 'Opponent'}`,
+                  details: `Sets: ${setsWon}-${opponentSetsWon}${match.is_winner ? ' 🏆' : ''}`,
+                  link: link,
+                  icon: isComplete ? 'fas fa-trophy' : (isStarted ? 'fas fa-play-circle' : 'fas fa-user-friends'),
+                  color: isComplete ? 'bg-yellow-500 hover:bg-yellow-600' : (isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-500 hover:bg-yellow-600'),
+                  urgent: isStarted && !isComplete,
+                  event_date: match.event_date || null,
+                  card_status: match.card_status || 'PENDING',
+                  match_id: match.match_id,
+                  opponent_name: match.opponent_name,
+                  sets_won: setsWon,
+                  opponent_sets_won: opponentSetsWon,
+                  is_winner: match.is_winner
+                });
+              });
             }
           } catch (e) {
-            console.log('[index] Could not search for archer UUID:', e.message);
+            console.log('Could not load ranking round history:', e.message);
           }
-        }
 
-        if (!archerId || !isUUID) {
-          console.log('[index] No valid UUID found - cannot load assignments. Final archerId:', archerId, 'isUUID:', isUUID);
-          return;
-        }
+          // Check for bracket assignments - use efficient single-query endpoint
+          try {
+            console.log('[index] Checking for bracket assignments...');
+            const bracketRes = await fetch(`api/v1/archers/${archerId}/bracket-assignments`);
 
-        console.log('[index] Loading assignments for archer UUID:', archerId);
+            if (bracketRes.ok) {
+              const bracketData = await bracketRes.json();
+              const bracketAssignments = bracketData.assignments || [];
+              console.log('[index] Bracket assignments found:', bracketAssignments.length);
 
-        const assignments = [];
-
-        // Check for open ranking rounds
-        try {
-          const historyRes = await fetch(`api/v1/archers/${archerId}/history`);
-          console.log('[index] History API response status:', historyRes.status);
-          if (historyRes.ok) {
-            const historyData = await historyRes.json();
-            console.log('[index] History data:', historyData);
-            const rounds = historyData.history || historyData.rounds || [];
-            console.log('[index] Total rounds found:', rounds.length);
-
-            // Separate ranking rounds and solo/team matches
-            const rankingRounds = rounds.filter(r => r.type === 'ranking' || !r.type);
-            const soloMatches = rounds.filter(r => r.type === 'solo');
-            const teamMatches = rounds.filter(r => r.type === 'team');
-
-            // Find ranking rounds to show in assignments
-            // Show only PENDING (incomplete work) and COMP (completed today)
-            const openRounds = rankingRounds.filter(round => {
-              // Only show rounds where this archer is actually assigned
-              if (!round.round_id) {
-                console.warn('[index] Round missing round_id, skipping:', round);
-                return false;
-              }
-              
-              const cardStatus = (round.card_status || round.cardStatus || 'PENDING').toUpperCase();
-              const endsCompleted = parseInt(round.ends_completed || 0);
-              const isToday = round.event_date === new Date().toISOString().slice(0, 10);
-              
-              // Normalize status (handle both PENDING/PEND and COMPLETED/COMP)
-              const normalizedStatus = cardStatus === 'PEND' ? 'PENDING' : 
-                                      cardStatus === 'COMP' ? 'COMPLETED' :
-                                      cardStatus === 'VRFD' ? 'VERIFIED' : cardStatus;
-              
-              // Show if PENDING/PEND (incomplete work)
-              if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && endsCompleted < 10) {
-                return true;
-              }
-              
-              // Show if COMPLETED/COMP and today (completed today, may need review)
-              if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
-                return isToday;
-              }
-              
-              // Don't show VERIFIED/VRFD or VOID
-              return false;
-            });
-
-            // Find solo matches to show in assignments
-            // Show only PENDING/PEND (incomplete work) and COMPLETED/COMP (completed today)
-            const openSoloMatches = soloMatches.filter(match => {
-              const cardStatus = (match.card_status || 'PENDING').toUpperCase();
-              const isToday = match.event_date === new Date().toISOString().slice(0, 10);
-              const setsWon = parseInt(match.sets_won || 0);
-              const opponentSetsWon = parseInt(match.opponent_sets_won || 0);
-              const isMatchComplete = setsWon >= 6 || opponentSetsWon >= 6;
-              
-              // Normalize status (handle both PENDING/PEND and COMPLETED/COMP)
-              const normalizedStatus = cardStatus === 'PEND' ? 'PENDING' : 
-                                      cardStatus === 'COMP' ? 'COMPLETED' :
-                                      cardStatus === 'VRFD' ? 'VERIFIED' : cardStatus;
-              
-              // Show if PENDING/PEND (incomplete work)
-              if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && !isMatchComplete) {
-                return true;
-              }
-              
-              // Show if COMPLETED/COMP and today (completed today, may need review)
-              if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
-                return isToday;
-              }
-              
-              // Don't show VERIFIED/VRFD or VOID
-              return false;
-            });
-
-            console.log('[index] Open rounds found:', openRounds.length);
-            console.log('[index] Open solo matches found:', openSoloMatches.length);
-
-            // Build links for ranking rounds
-            openRounds.forEach(round => {
-              const isStarted = (round.ends_completed || 0) > 0;
-              
-              // Build link with entry code for standalone rounds
-              // For event-linked rounds, entry code will be fetched from event snapshot in handleDirectLink
-              // For standalone rounds, include entry code in URL so it works across browser sessions
-              const eventParam = round.event_id ? round.event_id : 'null';
-              let link = `ranking_round_300.html?event=${eventParam}&round=${round.round_id}&archer=${archerId}`;
-              
-              // Include entry_code in URL for standalone rounds (so link works across browser sessions)
-              if (round.is_standalone && round.entry_code) {
-                link += `&code=${encodeURIComponent(round.entry_code)}`;
-              }
-              
-              console.log('[index] Building resume link:', { 
-                round_id: round.round_id, 
-                event_id: round.event_id, 
-                is_standalone: round.is_standalone,
-                entry_code: round.entry_code ? 'present' : 'missing',
-                archerId: archerId,
-                link: link
+              // Add each bracket assignment
+              bracketAssignments.forEach(assignment => {
+                if (assignment.bracket_type === 'SOLO') {
+                  if (assignment.bracket_format === 'ELIMINATION' && assignment.opponent) {
+                    // Elimination bracket with assigned opponent
+                    assignments.push({
+                      type: 'bracket',
+                      title: `${assignment.division} Elimination Bracket`,
+                      subtitle: `${assignment.event_name || 'Event'} • ${assignment.round}`,
+                      details: `You (Seed ${assignment.seed}) vs ${assignment.opponent.name} (Seed ${assignment.opponent.seed})`,
+                      link: `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`,
+                      icon: 'fas fa-trophy',
+                      color: 'bg-yellow-500 hover:bg-yellow-600',
+                      urgent: true,
+                      matchId: assignment.match_id,
+                      event_date: assignment.event_date
+                    });
+                  } else if (assignment.bracket_format === 'SWISS') {
+                    // Swiss bracket - show bracket assignment
+                    const winLoss = assignment.swiss_wins || 0;
+                    const losses = assignment.swiss_losses || 0;
+                    const points = assignment.swiss_points || 0;
+                    assignments.push({
+                      type: 'bracket',
+                      title: `${assignment.division} Swiss Bracket`,
+                      subtitle: `${assignment.event_name || 'Event'} • Swiss Format`,
+                      details: `Your record: ${winLoss}-${losses} (${points > 0 ? '+' : ''}${points} points)`,
+                      link: `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`,
+                      icon: 'fas fa-trophy',
+                      color: 'bg-blue-500 hover:bg-blue-600',
+                      urgent: true,
+                      event_date: assignment.event_date
+                    });
+                  }
+                }
               });
-              
-              // Build event name - always show event name, add "Resume" prefix if in progress
-              const eventName = round.event_name || 'Ranking Round';
-              const title = isStarted ? `${eventName} - Resume` : eventName;
-              
-              assignments.push({
-                type: 'ranking',
-                title: title,
-                subtitle: `${round.round_type || 'R300'} • ${round.division || 'Unknown Division'}`,
-                details: `Bale ${round.bale_number || '?'} • ${round.ends_completed || 0}/10 ends`,
-                link: link,
-                icon: isStarted ? 'fas fa-play-circle' : 'fas fa-trophy',
-                color: isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-teal-600 hover:bg-teal-700',
-                urgent: isStarted && (round.ends_completed || 0) < 10, // Has started but not finished
-                event_date: round.event_date || round.eventDate || null,
-                card_status: round.card_status || round.cardStatus || 'PENDING',
-                ends_completed: round.ends_completed || 0,
-                round_type: round.round_type || 'R300'
-              });
-            });
-
-            // Build links for solo matches
-            openSoloMatches.forEach(match => {
-              const setsWon = parseInt(match.sets_won || 0);
-              const opponentSetsWon = parseInt(match.opponent_sets_won || 0);
-              const isStarted = setsWon > 0 || opponentSetsWon > 0;
-              const isComplete = setsWon >= 6 || opponentSetsWon >= 6;
-              
-              // Build link to solo card with match ID
-              const link = `solo_card.html?match=${match.match_id}`;
-              
-              // Build event name
-              const eventName = match.event_name || 'Solo Match';
-              const title = isStarted ? (isComplete ? `${eventName} - View` : `${eventName} - Resume`) : eventName;
-              
-              assignments.push({
-                type: 'solo',
-                title: title,
-                subtitle: `Solo Match vs ${match.opponent_name || 'Opponent'}`,
-                details: `Sets: ${setsWon}-${opponentSetsWon}${match.is_winner ? ' 🏆' : ''}`,
-                link: link,
-                icon: isComplete ? 'fas fa-trophy' : (isStarted ? 'fas fa-play-circle' : 'fas fa-user-friends'),
-                color: isComplete ? 'bg-yellow-500 hover:bg-yellow-600' : (isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-500 hover:bg-yellow-600'),
-                urgent: isStarted && !isComplete,
-                event_date: match.event_date || null,
-                card_status: match.card_status || 'PENDING',
-                match_id: match.match_id,
-                opponent_name: match.opponent_name,
-                sets_won: setsWon,
-                opponent_sets_won: opponentSetsWon,
-                is_winner: match.is_winner
-              });
-            });
+            } else if (bracketRes.status !== 404) {
+              // 404 means no assignments - that's fine, don't log
+              console.warn('[index] Error loading bracket assignments:', bracketRes.status);
+            }
+          } catch (e) {
+            console.log('Could not load bracket assignments:', e.message);
           }
+
+          // NOTE: Removed "Active Event" links section
+          // These links only had event ID, missing round and archer parameters
+          // This caused wrong archer to load (used stale cookie instead of URL param)
+          // "Resume Ranking Round" links (above) already show active rounds with complete parameters
+
+          // Display assignments in split sections
+          const rankingSection = document.getElementById('ranking-section');
+          const rankingList = document.getElementById('ranking-assignments-list');
+          const soloSection = document.getElementById('solo-section');
+          const soloList = document.getElementById('solo-assignments-list');
+          const teamSection = document.getElementById('team-section');
+          const teamList = document.getElementById('team-assignments-list');
+
+          // Reset all
+          if (rankingSection) rankingSection.classList.add('hidden');
+          if (soloSection) soloSection.classList.add('hidden');
+          if (teamSection) teamSection.classList.add('hidden');
+          if (rankingList) rankingList.innerHTML = '';
+          if (soloList) soloList.innerHTML = '';
+          if (teamList) teamList.innerHTML = '';
+
+          if (assignments.length === 0) {
+            return;
+          }
+
+          // Sort by urgency (urgent first)
+          assignments.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+
+          // Bucket assignments
+          const rankingItems = assignments.filter(a => a.type === 'ranking');
+          const soloItems = assignments.filter(a => a.type === 'solo' || (a.type === 'bracket' && !a.isTeam));
+          // Note: isTeam needs to be set if we have team brackets. Currently assuming bracket defaults to solo.
+          const teamItems = assignments.filter(a => a.type === 'team' || (a.type === 'bracket' && a.isTeam));
+
+          // Helper to create list options
+          const createOptions = (isMatch) => ({
+            columns: ['Assignment', 'Progress'],
+            twoColumnLayout: true,
+            onItemClick: (item) => window.location.href = item.link,
+            getEventName: (item) => item.event_name,
+            getTotal: (item) => {
+              if (item.isBracket) return item.ends_completed; // "vs Opponent"
+              if (item.isSolo) return item.ends_completed; // "Sets: x-y"
+              return `${item.ends_completed}/10`; // Ranking
+            },
+            getAvg: (item) => item.round_type,
+            canVoid: isMatch // Enable void for matches
+          });
+
+          // Render Ranking
+          if (rankingItems.length > 0 && rankingList) {
+            const items = rankingItems.map(a => ({
+              event_name: a.title,
+              event_date: a.event_date,
+              round_type: a.round_type || 'Ranking',
+              division: (a.subtitle || '').split(' • ')[1] || '',
+              link: a.link,
+              ends_completed: a.ends_completed || 0,
+              id: a.match_id || a.round_id // Ensure ID?
+            }));
+            rankingList.appendChild(createAssignmentsList(items, createOptions(false)));
+            rankingSection.classList.remove('hidden');
+          }
+
+          // Render Solo
+          if (soloItems.length > 0 && soloList) {
+            const items = soloItems.map(a => {
+              // Handle bracket vs solo item structure
+              let progress = '';
+              if (a.type === 'bracket') {
+                const detailsMatch = a.details.match(/vs (.+?) \(Seed/);
+                progress = detailsMatch ? `vs ${detailsMatch[1]}` : `vs ${a.details.split('vs ')[1] || 'Opponent'}`;
+              } else {
+                progress = a.details || '0-0';
+              }
+
+              return {
+                event_name: a.title,
+                event_date: a.event_date,
+                round_type: 'Solo',
+                division: (a.subtitle || '').split(' • ')[1] || '', // Fix division parsing
+                link: a.link,
+                ends_completed: progress,
+                isSolo: true,
+                isBracket: a.type === 'bracket',
+                id: a.match_id || a.matchId // Ensure Match ID for void
+              };
+            });
+            soloList.appendChild(createAssignmentsList(items, createOptions(true)));
+            soloSection.classList.remove('hidden');
+          }
+
+          // Render Team (if any)
+          if (teamItems.length > 0 && teamList) {
+            const items = teamItems.map(a => {
+              return {
+                event_name: a.title,
+                event_date: a.event_date,
+                round_type: 'Team',
+                division: '',
+                link: a.link,
+                ends_completed: a.details,
+                isTeam: true,
+                id: a.match_id || a.matchId
+              };
+            });
+            teamList.appendChild(createAssignmentsList(items, createOptions(true)));
+            teamSection.classList.remove('hidden');
+          }
+
         } catch (e) {
-          console.log('Could not load ranking round history:', e.message);
+          console.log('Could not load open assignments:', e.message);
         }
+      }
 
-        // Check for bracket assignments - use efficient single-query endpoint
+      // Load recent activity history
+      async function loadRecentActivity() {
+        const container = document.getElementById('recent-activity');
+        const list = document.getElementById('recent-activity-list');
+
+        if (!container || !list) return;
+
         try {
-          console.log('[index] Checking for bracket assignments...');
-          const bracketRes = await fetch(`api/v1/archers/${archerId}/bracket-assignments`);
-          
-          if (bracketRes.ok) {
-            const bracketData = await bracketRes.json();
-            const bracketAssignments = bracketData.assignments || [];
-            console.log('[index] Bracket assignments found:', bracketAssignments.length);
-            
-            // Add each bracket assignment
-            bracketAssignments.forEach(assignment => {
-              if (assignment.bracket_type === 'SOLO') {
-                if (assignment.bracket_format === 'ELIMINATION' && assignment.opponent) {
-                  // Elimination bracket with assigned opponent
-                  assignments.push({
-                    type: 'bracket',
-                    title: `${assignment.division} Elimination Bracket`,
-                    subtitle: `${assignment.event_name || 'Event'} • ${assignment.round}`,
-                    details: `You (Seed ${assignment.seed}) vs ${assignment.opponent.name} (Seed ${assignment.opponent.seed})`,
-                    link: `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`,
-                    icon: 'fas fa-trophy',
-                    color: 'bg-yellow-500 hover:bg-yellow-600',
-                    urgent: true,
-                    matchId: assignment.match_id,
-                    event_date: assignment.event_date
-                  });
-                } else if (assignment.bracket_format === 'SWISS') {
-                  // Swiss bracket - show bracket assignment
-                  const winLoss = assignment.swiss_wins || 0;
-                  const losses = assignment.swiss_losses || 0;
-                  const points = assignment.swiss_points || 0;
-                  assignments.push({
-                    type: 'bracket',
-                    title: `${assignment.division} Swiss Bracket`,
-                    subtitle: `${assignment.event_name || 'Event'} • Swiss Format`,
-                    details: `Your record: ${winLoss}-${losses} (${points > 0 ? '+' : ''}${points} points)`,
-                    link: `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`,
-                    icon: 'fas fa-trophy',
-                    color: 'bg-blue-500 hover:bg-blue-600',
-                    urgent: true,
-                    event_date: assignment.event_date
-                  });
+          // Get current archer
+          let archer = null;
+          if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
+            archer = window.ArcherModule.getSelfArcher();
+          }
+
+          if (!archer) {
+            container.classList.add('hidden');
+            return;
+          }
+
+          // Resolve Archer UUID (reusing logic from loadOpenAssignments)
+          let archerId = archer.id || archer.archerId || archer.databaseId || null;
+          let isUUID = archerId && archerId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+
+          // If not UUID, try search (simplified fallback)
+          if (!isUUID && archer.first && archer.last) {
+            try {
+              const searchRes = await fetch(`api/v1/archers/search?q=${encodeURIComponent(archer.first + ' ' + archer.last)}`);
+              if (searchRes.ok) {
+                const searchData = await searchRes.json();
+                if (searchData.results && searchData.results.length > 0) {
+                  const match = searchData.results.find(r =>
+                    r.archer.firstName.toLowerCase() === archer.first.toLowerCase() &&
+                    r.archer.lastName.toLowerCase() === archer.last.toLowerCase()
+                  );
+                  if (match) archerId = match.archer.id;
                 }
               }
-            });
-          } else if (bracketRes.status !== 404) {
-            // 404 means no assignments - that's fine, don't log
-            console.warn('[index] Error loading bracket assignments:', bracketRes.status);
+            } catch (e) { console.warn('History ID lookup failed', e); }
           }
-        } catch (e) {
-          console.log('Could not load bracket assignments:', e.message);
-        }
 
-        // NOTE: Removed "Active Event" links section
-        // These links only had event ID, missing round and archer parameters
-        // This caused wrong archer to load (used stale cookie instead of URL param)
-        // "Resume Ranking Round" links (above) already show active rounds with complete parameters
+          if (!archerId) return;
 
-        // Display assignments
-        const assignmentsSection = document.getElementById('open-assignments');
-        const assignmentsList = document.getElementById('assignments-list');
+          // Fetch history
+          const res = await fetch(`api/v1/archers/${archerId}/history`);
+          if (!res.ok) return;
 
-        if (assignments.length === 0) {
-          assignmentsSection.classList.add('hidden');
-          return;
-        }
+          const data = await res.json();
+          const history = data.history || []; // history array from API
 
-        // Sort by urgency (urgent first)
-        assignments.sort((a, b) => (b.urgent ? 1 : 0) - (a.urgent ? 1 : 0));
+          // Filter for COMPLETED, VERIFIED, or VOID (basically not PENDING)
+          // Also ensure we show items that are technically "Open" but have data, if they are not in the Open Assignments list?
+          // Actually, let's just show the last 5 items that are marked as COMP/VER/VOID.
+          const completed = history.filter(item => {
+            const status = (item.card_status || 'PENDING').toUpperCase();
+            return status === 'COMP' || status === 'COMPLETED' || status === 'VER' || status === 'VERIFIED';
+          });
 
-        // Convert assignments to unified scorecard list format
-        const assignmentItems = assignments.map(assignment => {
-          // Handle bracket assignments differently
-          if (assignment.type === 'bracket') {
-            // Extract opponent name from details for shorter display
-            // Details format: "You (Seed 1) vs Caio Lalau (Seed 8)"
-            const detailsMatch = assignment.details.match(/vs (.+?) \(Seed/);
-            const opponentName = detailsMatch ? detailsMatch[1] : assignment.details.split('vs ')[1] || 'Opponent';
+          // Sort by event_date desc
+          completed.sort((a, b) => new Date(b.event_date || 0) - new Date(a.event_date || 0));
+
+          // Take top 5
+          const recent = completed.slice(0, 5);
+
+          if (recent.length === 0) {
+            container.classList.add('hidden');
+            return;
+          }
+
+          // Render
+          const items = recent.map(item => {
+            const dateStr = item.event_date ? new Date(item.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+            let title = item.event_name || 'Event';
+            let subtitle = '';
+            let score = '';
+            let isSolo = false;
+            let isBracket = false;
+            let link = '#';
+
+            if (item.type === 'solo') {
+              title = 'Solo Match';
+              subtitle = `${dateStr} • vs ${item.opponent_name || 'Opponent'}`;
+              score = `${item.sets_won}-${item.opponent_sets_won}`;
+              if (item.is_winner) score += ' 🏆';
+              isSolo = true;
+              link = `solo_card.html?match=${item.match_id}`;
+            } else if (item.type === 'ranking') {
+              title = item.event_name || 'Ranking Round';
+              subtitle = `${dateStr} • ${item.round_type || 'R300'}`;
+              score = item.final_score || 0;
+              link = `ranking_round_300.html?event=${item.event_id || 'null'}&round=${item.round_id}&archer=${archerId}&view=readonly`; // Hypothetical readonly view param
+            } else {
+              // Bracket or other?
+              subtitle = `${dateStr}`;
+              score = item.final_score || '-';
+            }
 
             return {
-              event_name: assignment.title,
-              event_date: new Date().toISOString(),
-              round_type: assignment.matchId || 'Bracket Match', // This goes in "Type" column
-              division: assignment.subtitle.split(' • ')[0] || '',
-              bale_number: '',
-              card_status: 'PEND', // Bracket matches are pending until completed (not started = PEND)
-              final_score: 0,
-              ends_completed: opponentName, // Store opponent name for progress column
-              total_xs: 0,
-              total_tens: 0,
-              link: assignment.link,
-              urgent: assignment.urgent,
-              isBracket: true,
-              matchDetails: assignment.details // Store full details for reference
+              event_name: title,
+              subtitle: subtitle, // We'll hijack division field in createAssignmentsList or just use subtitle
+              progress: score,
+              link: link,
+              isSolo: isSolo,
+              isBracket: isBracket,
+              // Helper props for createAssignmentsList custom getters
+              raw_subtitle: subtitle,
+              raw_score: score
             };
-          }
-          
-          // Handle solo matches
-          if (assignment.type === 'solo') {
-            return {
-              event_name: assignment.title,
-              event_date: assignment.event_date || new Date().toISOString(),
-              round_type: 'Solo Match', // Type column
-              division: assignment.subtitle || '', // "Solo Match vs Opponent"
-              bale_number: '',
-              card_status: assignment.card_status || 'PENDING',
-              final_score: 0,
-              ends_completed: assignment.details || `Sets: ${assignment.sets_won || 0}-${assignment.opponent_sets_won || 0}`, // Progress column shows sets
-              total_xs: 0,
-              total_tens: 0,
-              link: assignment.link,
-              urgent: assignment.urgent,
-              isSolo: true,
-              match_id: assignment.match_id,
-              opponent_name: assignment.opponent_name
-            };
-          }
-          
-          // Regular ranking round assignments
-          // Note: card_status should come from the round data (PENDING, VER, VOID)
-          // This represents the card lifecycle as defined in results.html
-          return {
-            event_name: assignment.title,
-            event_date: assignment.event_date || new Date().toISOString(), // Use actual event date from round if available
-            round_type: assignment.round_type || assignment.subtitle.split(' • ')[0] || 'Assignment',
-            division: assignment.subtitle.split(' • ')[1] || '',
-            bale_number: assignment.details.match(/Bale (\d+)/)?.[1] || '',
-            // card_status represents card lifecycle: PENDING (in progress), VER (verified), VOID (voided)
-            // Pass through from assignment (which comes from round data)
-            card_status: assignment.card_status || 'PENDING',
-            final_score: 0,
-            ends_completed: assignment.ends_completed || assignment.details.match(/(\d+)\/10 ends/)?.[1] || 0,
-            total_xs: 0,
-            total_tens: 0,
-            link: assignment.link,
-            urgent: assignment.urgent
+          });
+
+          // Reuse createAssignmentsList
+          const options = {
+            onItemClick: (item) => window.location.href = item.link,
+            getEventName: (item) => item.event_name,
+            getTotal: (item) => item.raw_score,
+            getAvg: (item) => item.raw_subtitle, // Hijack the subtitle slot
           };
+
+          // We need to adapt createAssignmentsList slightly or just build HTML manually if it's too rigid.
+          // createAssignmentsList uses: item.event_name (via getter), date/roundType/division (via getter/props) for subtitle.
+          // Let's just manually build the list for maximum control and simplicity, avoiding the complexity of adapting the other function.
+
+          list.innerHTML = items.map(item => `
+            <a href="${item.link}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm flex items-center justify-between">
+                <div class="flex flex-col min-w-0">
+                    <span class="font-semibold text-gray-900 dark:text-white truncate">${item.event_name}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 truncate">${item.subtitle}</span>
+                </div>
+                <div class="font-bold text-gray-800 dark:text-white pl-3 whitespace-nowrap">
+                    ${item.progress}
+                </div>
+            </a>
+        `).join('');
+
+          container.classList.remove('hidden');
+
+        } catch (e) {
+          console.warn('Error displaying recent activity:', e);
+        }
+      }
+
+
+      async function clearAppData() {
+        const confirmed = confirm('Reset local app data? This clears cached archers, events, and scoring sessions stored on this device.');
+        if (!confirmed) return;
+
+        const exactKeys = [
+          'archerList',
+          'archerListMeta',
+          'archerListPendingUpserts',
+          'archerSelfExtId',
+          'live_updates_config',
+          'coach_api_key',
+          'event_entry_code',
+          'archery_master_list',
+          'archery_tools_onboarding_complete',
+          // Active in-progress sessions that drive "Resume Round" / reconnect flows
+          // If we leave these behind, the app will try to auto-restore old rounds
+          // immediately after a reset, which is what you are seeing.
+          'current_bale_session'
+        ];
+        const keyPrefixes = [
+          'rankingRound_',
+          'rankingRound300_',
+          'event:',
+          'LiveUpdates:',
+          // LiveUpdates round-scoped sessions (used for resume/reconnect)
+          // Example key: "live_updates_session:<roundId>"
+          'live_updates_session:',
+          // Solo card sessions (daily local solo scorecard state)
+          // Example key: "soloCard_session_2025-11-29"
+          'soloCard_session_',
+          'cachedRound:',
+          'coachSession:',
+          'manualBale:'
+        ];
+
+        try {
+          const keys = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key) continue;
+            keys.push(key);
+          }
+          keys.forEach(key => {
+            if (exactKeys.includes(key) || keyPrefixes.some(prefix => key.startsWith(prefix))) {
+              localStorage.removeItem(key);
+            }
+          });
+        } catch (err) {
+          console.warn('Local storage clear failed:', err);
+        }
+
+        try { sessionStorage.clear(); } catch (err) { console.warn('Session storage clear failed:', err); }
+
+        if (window.caches && typeof window.caches.keys === 'function') {
+          try {
+            const cacheNames = await window.caches.keys();
+            await Promise.all(cacheNames.map(name => window.caches.delete(name)));
+          } catch (err) {
+            console.warn('Cache API clear failed:', err);
+          }
+        }
+
+        // Clear cookies - explicitly delete known cookies with multiple paths/domains
+        const knownCookies = ['oas_archer_id', 'coach_auth'];
+        const paths = ['/'];
+        const domains = [window.location.hostname, '.' + window.location.hostname, ''];
+
+        try {
+          // First, explicitly clear known cookies with all path/domain combinations
+          knownCookies.forEach(cookieName => {
+            paths.forEach(path => {
+              domains.forEach(domain => {
+                if (domain) {
+                  document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path};domain=${domain}`;
+                } else {
+                  document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path}`;
+                }
+              });
+            });
+          });
+
+          // Then, clear all other cookies visible in document.cookie
+          document.cookie.split(';').forEach(cookieStr => {
+            const cookie = cookieStr.trim();
+            if (!cookie) return;
+            const eqPos = cookie.indexOf('=');
+            const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
+            if (!name) return;
+            // Try multiple paths to ensure deletion
+            paths.forEach(path => {
+              document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path}`;
+            });
+          });
+        } catch (err) {
+          console.warn('Cookie clear failed:', err);
+        }
+
+        // Clear IndexedDB if it exists
+        if (window.indexedDB && window.indexedDB.databases) {
+          try {
+            const databases = await window.indexedDB.databases();
+            await Promise.all(databases.map(db => {
+              return new Promise((resolve, reject) => {
+                const deleteReq = window.indexedDB.deleteDatabase(db.name);
+                deleteReq.onsuccess = () => resolve();
+                deleteReq.onerror = () => reject(deleteReq.error);
+                deleteReq.onblocked = () => resolve(); // Resolve anyway if blocked
+              });
+            }));
+          } catch (err) {
+            console.warn('IndexedDB clear failed:', err);
+          }
+        }
+
+        alert('Local app data cleared. The page will reload now.');
+        // Force hard reload to clear page cache (bypass cache)
+        // Using href assignment with timestamp to force cache bypass
+        window.location.href = window.location.pathname + '?nocache=' + Date.now();
+      }
+
+      // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
+      initDarkMode();
+
+      // Register Service Worker for PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js', { scope: '/' })
+            .then((registration) => {
+              console.log('[PWA] Service Worker registered:', registration.scope);
+
+              // Listen for messages from service worker (e.g., flush queues)
+              navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'FLUSH_QUEUES') {
+                  console.log('[PWA] Service worker requested queue flush');
+                  // Flush all queues if LiveUpdates is available
+                  if (window.LiveUpdates) {
+                    try {
+                      // Flush ranking round queue
+                      if (window.LiveUpdates.flushQueue) {
+                        window.LiveUpdates.flushQueue().catch(e =>
+                          console.warn('[PWA] Ranking queue flush failed:', e)
+                        );
+                      }
+                      // Note: Solo and team queues are flushed by their respective modules
+                      // when they detect online status or receive flush requests
+                    } catch (e) {
+                      console.warn('[PWA] Queue flush error:', e);
+                    }
+                  }
+                }
+              });
+
+              // Notify service worker when online status changes
+              window.addEventListener('online', () => {
+                if (registration.active) {
+                  registration.active.postMessage({
+                    type: 'ONLINE_STATUS',
+                    online: true
+                  });
+                }
+              });
+
+              window.addEventListener('offline', () => {
+                if (registration.active) {
+                  registration.active.postMessage({
+                    type: 'ONLINE_STATUS',
+                    online: false
+                  });
+                }
+              });
+
+              // Check for updates periodically
+              setInterval(() => {
+                registration.update();
+              }, 60 * 60 * 1000); // Check every hour
+
+              // Handle updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                  newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      // New service worker available
+                      console.log('[PWA] New service worker available. Reload to update.');
+                      // Optionally show a notification to the user
+                    }
+                  });
+                }
+              });
+            })
+            .catch((error) => {
+              console.warn('[PWA] Service Worker registration failed:', error);
+            });
+        });
+      }
+
+      // Initialize the app
+      document.addEventListener('DOMContentLoaded', function () {
+        const clearBtn = document.getElementById('clear-cache-btn');
+        if (clearBtn) {
+          clearBtn.addEventListener('click', () => {
+            clearAppData();
+          });
+        }
+
+        // Load archer list first (needed for identity section)
+        loadArcherList().then(() => {
+          // Render identity section (inline archer picker or profile)
+          renderIdentitySection();
+          loadOpenAssignments();
+          loadRecentActivity();
         });
 
-        // Simplified 2-column layout: Assignment (wide) + Progress
-        // Removed Status and Type columns for cleaner mobile display
-        const options = {
-          columns: ['Assignment', 'Progress'],
-          twoColumnLayout: true, // Custom flag for simplified layout
-          onItemClick: (item) => {
-            window.location.href = item.link;
-          },
-          getEventName: (item) => item.event_name,
-          getTotal: (item) => {
-            // Progress column: For brackets, show just "vs Opponent Name"
-            if (item.isBracket) {
-              return `vs ${item.ends_completed}`;
+        // Intercept Ranking Round link to check for local in-progress cards
+        const rankingRoundLink = document.getElementById('ranking-round-link');
+        if (rankingRoundLink) {
+          rankingRoundLink.addEventListener('click', (e) => {
+            // Check for local in-progress session
+            const sessionData = localStorage.getItem('current_bale_session');
+            if (sessionData) {
+              try {
+                const session = JSON.parse(sessionData);
+                // Check if session is recent (within 24 hours)
+                const sessionAge = Date.now() - new Date(session.lastSaved || 0).getTime();
+                const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+                if (sessionAge <= maxAge && session.roundId && session.baleNumber) {
+                  // Session exists and is recent - let ranking_round_300.html handle the resume dialog
+                  // Just navigate normally, the resume dialog will show automatically
+                  console.log('[index] Local in-progress session found, navigating to ranking round (resume dialog will show)');
+                  return; // Allow normal navigation
+                } else {
+                  // Session too old, clear it
+                  localStorage.removeItem('current_bale_session');
+                  console.log('[index] Local session too old, cleared');
+                }
+              } catch (err) {
+                console.warn('[index] Error checking local session:', err);
+                // Continue with normal navigation
+              }
             }
-            // For solo matches, show sets score with color coding
-            if (item.isSolo) {
-              return item.ends_completed || '0-0';
+            // No local session or invalid - allow normal navigation
+          });
+        }
+
+        // Dark mode toggle functionality (only on home screen)
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        if (darkModeToggle) {
+          darkModeToggle.addEventListener('click', () => {
+            toggleDarkMode();
+          });
+        }
+        // Expose voidMatch globally for inline onclick handlers
+        window.voidMatch = async (matchId, type) => {
+          if (!confirm('Are you sure you want to void this match? This cannot be undone.')) return;
+
+          try {
+            const res = await fetch(`api/v1/solo-matches/${matchId}/void`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (res.ok) {
+              alert('Match voided successfully.');
+              // Reload assignments
+              loadOpenAssignments();
+            } else {
+              const data = await res.json();
+              alert('Failed to void match: ' + (data.error || 'Unknown error'));
             }
-            // For ranking rounds, show ends completed
-            return `${item.ends_completed}/10`;
-          },
-          getAvg: (item) => item.round_type, // Still used for type info in subtitle
-          getXs: (item) => '', // Not displayed
-          getTens: (item) => '', // Not displayed
-          getStatus: (item) => item.card_status || 'PEND' // Not displayed but used internally
+          } catch (e) {
+            console.error('Void error:', e);
+            alert('Error voiding match');
+          }
         };
 
-        // Create custom simplified list for assignments (2 columns, bigger text)
-        const listContainer = createAssignmentsList(assignmentItems, options);
-        assignmentsList.innerHTML = '';
-        assignmentsList.appendChild(listContainer);
-
-        assignmentsSection.classList.remove('hidden');
-
-      } catch (e) {
-        console.log('Could not load open assignments:', e.message);
-      }
-    }
-
-
-    async function clearAppData() {
-      const confirmed = confirm('Reset local app data? This clears cached archers, events, and scoring sessions stored on this device.');
-      if (!confirmed) return;
-
-      const exactKeys = [
-        'archerList',
-        'archerListMeta',
-        'archerListPendingUpserts',
-        'archerSelfExtId',
-        'live_updates_config',
-        'coach_api_key',
-        'event_entry_code',
-        'archery_master_list',
-        'archery_tools_onboarding_complete',
-        // Active in-progress sessions that drive "Resume Round" / reconnect flows
-        // If we leave these behind, the app will try to auto-restore old rounds
-        // immediately after a reset, which is what you are seeing.
-        'current_bale_session'
-      ];
-      const keyPrefixes = [
-        'rankingRound_',
-        'rankingRound300_',
-        'event:',
-        'LiveUpdates:',
-        // LiveUpdates round-scoped sessions (used for resume/reconnect)
-        // Example key: "live_updates_session:<roundId>"
-        'live_updates_session:',
-        // Solo card sessions (daily local solo scorecard state)
-        // Example key: "soloCard_session_2025-11-29"
-        'soloCard_session_',
-        'cachedRound:',
-        'coachSession:',
-        'manualBale:'
-      ];
-
-      try {
-        const keys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (!key) continue;
-          keys.push(key);
-        }
-        keys.forEach(key => {
-          if (exactKeys.includes(key) || keyPrefixes.some(prefix => key.startsWith(prefix))) {
-            localStorage.removeItem(key);
-          }
-        });
-      } catch (err) {
-        console.warn('Local storage clear failed:', err);
-      }
-
-      try { sessionStorage.clear(); } catch (err) { console.warn('Session storage clear failed:', err); }
-
-      if (window.caches && typeof window.caches.keys === 'function') {
-        try {
-          const cacheNames = await window.caches.keys();
-          await Promise.all(cacheNames.map(name => window.caches.delete(name)));
-        } catch (err) {
-          console.warn('Cache API clear failed:', err);
-        }
-      }
-
-      // Clear cookies - explicitly delete known cookies with multiple paths/domains
-      const knownCookies = ['oas_archer_id', 'coach_auth'];
-      const paths = ['/'];
-      const domains = [window.location.hostname, '.' + window.location.hostname, ''];
-
-      try {
-        // First, explicitly clear known cookies with all path/domain combinations
-        knownCookies.forEach(cookieName => {
-          paths.forEach(path => {
-            domains.forEach(domain => {
-              if (domain) {
-                document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path};domain=${domain}`;
-              } else {
-                document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path}`;
-              }
-            });
-          });
-        });
-
-        // Then, clear all other cookies visible in document.cookie
-        document.cookie.split(';').forEach(cookieStr => {
-          const cookie = cookieStr.trim();
-          if (!cookie) return;
-          const eqPos = cookie.indexOf('=');
-          const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
-          if (!name) return;
-          // Try multiple paths to ensure deletion
-          paths.forEach(path => {
-            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=${path}`;
-          });
-        });
-      } catch (err) {
-        console.warn('Cookie clear failed:', err);
-      }
-
-      // Clear IndexedDB if it exists
-      if (window.indexedDB && window.indexedDB.databases) {
-        try {
-          const databases = await window.indexedDB.databases();
-          await Promise.all(databases.map(db => {
-            return new Promise((resolve, reject) => {
-              const deleteReq = window.indexedDB.deleteDatabase(db.name);
-              deleteReq.onsuccess = () => resolve();
-              deleteReq.onerror = () => reject(deleteReq.error);
-              deleteReq.onblocked = () => resolve(); // Resolve anyway if blocked
-            });
-          }));
-        } catch (err) {
-          console.warn('IndexedDB clear failed:', err);
-        }
-      }
-
-      alert('Local app data cleared. The page will reload now.');
-      // Force hard reload to clear page cache (bypass cache)
-      // Using href assignment with timestamp to force cache bypass
-      window.location.href = window.location.pathname + '?nocache=' + Date.now();
-    }
-
-    // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
-    initDarkMode();
-
-    // Register Service Worker for PWA
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js', { scope: '/' })
-          .then((registration) => {
-            console.log('[PWA] Service Worker registered:', registration.scope);
-            
-            // Listen for messages from service worker (e.g., flush queues)
-            navigator.serviceWorker.addEventListener('message', (event) => {
-              if (event.data && event.data.type === 'FLUSH_QUEUES') {
-                console.log('[PWA] Service worker requested queue flush');
-                // Flush all queues if LiveUpdates is available
-                if (window.LiveUpdates) {
-                  try {
-                    // Flush ranking round queue
-                    if (window.LiveUpdates.flushQueue) {
-                      window.LiveUpdates.flushQueue().catch(e => 
-                        console.warn('[PWA] Ranking queue flush failed:', e)
-                      );
-                    }
-                    // Note: Solo and team queues are flushed by their respective modules
-                    // when they detect online status or receive flush requests
-                  } catch (e) {
-                    console.warn('[PWA] Queue flush error:', e);
-                  }
-                }
-              }
-            });
-            
-            // Notify service worker when online status changes
-            window.addEventListener('online', () => {
-              if (registration.active) {
-                registration.active.postMessage({
-                  type: 'ONLINE_STATUS',
-                  online: true
-                });
-              }
-            });
-            
-            window.addEventListener('offline', () => {
-              if (registration.active) {
-                registration.active.postMessage({
-                  type: 'ONLINE_STATUS',
-                  online: false
-                });
-              }
-            });
-            
-            // Check for updates periodically
-            setInterval(() => {
-              registration.update();
-            }, 60 * 60 * 1000); // Check every hour
-            
-            // Handle updates
-            registration.addEventListener('updatefound', () => {
-              const newWorker = registration.installing;
-              if (newWorker) {
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    // New service worker available
-                    console.log('[PWA] New service worker available. Reload to update.');
-                    // Optionally show a notification to the user
-                  }
-                });
-              }
-            });
-          })
-          .catch((error) => {
-            console.warn('[PWA] Service Worker registration failed:', error);
-          });
       });
-    }
-
-    // Initialize the app
-    document.addEventListener('DOMContentLoaded', function () {
-      const clearBtn = document.getElementById('clear-cache-btn');
-      if (clearBtn) {
-        clearBtn.addEventListener('click', () => {
-          clearAppData();
-        });
-      }
-
-      // Load archer list first (needed for identity section)
-      loadArcherList().then(() => {
-        // Render identity section (inline archer picker or profile)
-        renderIdentitySection();
-        loadOpenAssignments();
-      });
-      
-      // Intercept Ranking Round link to check for local in-progress cards
-      const rankingRoundLink = document.getElementById('ranking-round-link');
-      if (rankingRoundLink) {
-        rankingRoundLink.addEventListener('click', (e) => {
-          // Check for local in-progress session
-          const sessionData = localStorage.getItem('current_bale_session');
-          if (sessionData) {
-            try {
-              const session = JSON.parse(sessionData);
-              // Check if session is recent (within 24 hours)
-              const sessionAge = Date.now() - new Date(session.lastSaved || 0).getTime();
-              const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-              
-              if (sessionAge <= maxAge && session.roundId && session.baleNumber) {
-                // Session exists and is recent - let ranking_round_300.html handle the resume dialog
-                // Just navigate normally, the resume dialog will show automatically
-                console.log('[index] Local in-progress session found, navigating to ranking round (resume dialog will show)');
-                return; // Allow normal navigation
-              } else {
-                // Session too old, clear it
-                localStorage.removeItem('current_bale_session');
-                console.log('[index] Local session too old, cleared');
-              }
-            } catch (err) {
-              console.warn('[index] Error checking local session:', err);
-              // Continue with normal navigation
-            }
-          }
-          // No local session or invalid - allow normal navigation
-        });
-      }
-
-      // Dark mode toggle functionality (only on home screen)
-      const darkModeToggle = document.getElementById('dark-mode-toggle');
-      if (darkModeToggle) {
-        darkModeToggle.addEventListener('click', () => {
-          toggleDarkMode();
-        });
-      }
-    });
-  </script>
+    </script>
 </body>
 
 </html>

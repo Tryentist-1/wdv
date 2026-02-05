@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showAvatars: true,
             showFavoriteToggle: true
         });
-        
+
         // If we have pending bracket sync, do it now
         if (state.pendingBracketSync && state.archer1 && state.archer2) {
             console.log('[SoloCard] Syncing bracket assignment now that selector is ready');
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!archerSelector || typeof ArcherModule === 'undefined') return;
         try {
             let roster = [];
-            
+
             // If event is selected, fetch archers from event snapshot
             if (state.eventId) {
                 try {
@@ -108,11 +108,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             'X-API-Key': API_KEY
                         }
                     });
-                    
+
                     if (eventResponse.ok) {
                         const eventData = await eventResponse.json();
                         const allEventArchers = [];
-                        
+
                         // Get all archers from event divisions
                         if (eventData.divisions) {
                             Object.keys(eventData.divisions).forEach(divKey => {
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 });
                             });
                         }
-                        
+
                         // If bracket is selected, filter by bracket type
                         if (state.bracketId) {
                             // Get bracket info to determine if it's Open/Mixed
@@ -145,15 +145,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                         'X-API-Key': API_KEY
                                     }
                                 });
-                                
+
                                 if (bracketResponse.ok) {
                                     const bracketData = await bracketResponse.json();
                                     const bracket = bracketData.bracket || {};
                                     const bracketDivision = (bracket.division || '').toUpperCase();
                                     const isOpenOrMixed = bracketDivision === 'OPEN' || bracketDivision.includes('MIXED');
-                                    
+
                                     console.log('[refreshArcherRoster] Bracket division:', bracketDivision, 'isOpenOrMixed:', isOpenOrMixed);
-                                    
+
                                     if (isOpenOrMixed) {
                                         // Open/Mixed bracket: Show all event archers
                                         roster = allEventArchers;
@@ -164,13 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                         roster = allEventArchers.filter(a => {
                                             const archerDiv = (a.division || '').toUpperCase();
                                             // Match exact or partial (e.g., "BV" matches "BVAR")
-                                            return archerDiv === bracketDivision || 
-                                                   archerDiv.includes(bracketDivision) || 
-                                                   bracketDivision.includes(archerDiv);
+                                            return archerDiv === bracketDivision ||
+                                                archerDiv.includes(bracketDivision) ||
+                                                bracketDivision.includes(archerDiv);
                                         });
                                         console.log('[refreshArcherRoster] Division-specific bracket - showing', roster.length, 'archers from', bracketDivision);
                                     }
-                                    
+
                                     // Get bracket standings (W-L record for Swiss brackets)
                                     if (bracket.bracket_format === 'SWISS') {
                                         try {
@@ -179,11 +179,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                                     'X-API-Key': API_KEY
                                                 }
                                             });
-                                            
+
                                             if (entriesResponse.ok) {
                                                 const entriesData = await entriesResponse.json();
                                                 const standingsMap = new Map();
-                                                
+
                                                 (entriesData.entries || []).forEach(entry => {
                                                     if (entry.archer_id) {
                                                         standingsMap.set(entry.archer_id, {
@@ -193,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                                         });
                                                     }
                                                 });
-                                                
+
                                                 // Attach standings to archers
                                                 roster = roster.map(archer => {
                                                     const standings = standingsMap.get(archer.id);
@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // No event selected: Show all archers
                 roster = ArcherModule.loadList() || [];
             }
-            
+
             const ctx = getSelectorContext();
             archerSelector.setContext(ctx);
             archerSelector.setRoster(roster);
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getSelectorContext() {
         if (typeof ArcherModule === 'undefined') return { favorites: new Set(), selfExtId: '' };
         const selfExtId = ArcherModule.getSelfExtId() || '';
-        
+
         // Get favorites from self archer's faves array
         let favorites = new Set();
         if (selfExtId) {
@@ -270,14 +270,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 favorites = new Set(selfArcher.faves);
             }
         }
-        
+
         return {
             favorites,
             selfExtId,
             selfArcher: typeof ArcherModule !== 'undefined' ? ArcherModule.getSelfArcher() : null
         };
     }
-    
+
     // Store self archer reference
     let selfArcher = null;
 
@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Convert ArcherSelector format back to Solo module format
         const a1Selection = selectionMap.a1 && selectionMap.a1.length > 0 ? selectionMap.a1[0] : null;
         const a2Selection = selectionMap.a2 && selectionMap.a2.length > 0 ? selectionMap.a2[0] : null;
-        
+
         // Update state
         state.archer1 = a1Selection ? {
             id: `${a1Selection.first}-${a1Selection.last}`,
@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
             school: a1Selection.school,
             gender: a1Selection.gender
         } : null;
-        
+
         state.archer2 = a2Selection ? {
             id: `${a2Selection.first}-${a2Selection.last}`,
             extId: a2Selection.extId,
@@ -328,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
             school: a2Selection.school,
             gender: a2Selection.gender
         } : null;
-        
+
         saveData();
         updateStartButtonState();
     }
@@ -409,12 +409,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-    
+
     // =====================================================
     // PHASE 0: Centralized Data Hydration Functions
     // Following DATA_SYNCHRONIZATION_STRATEGY.md rules
     // =====================================================
-    
+
     /**
      * Validate UUID format
      * Rule 5: UUID-Only for Entity Identification
@@ -423,25 +423,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!str || typeof str !== 'string') return false;
         return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
     }
-    
+
     /**
      * Normalize entity ID to UUID format
      * Rule 5: UUID-Only for Entity Identification
      */
     function normalizeEntityId(entity, fieldName = 'id') {
         const id = typeof entity === 'string' ? entity : (entity?.id || entity?.matchId);
-        
+
         if (!id) {
             throw new Error(`Entity missing ${fieldName}`);
         }
-        
+
         if (!isValidUUID(id)) {
             throw new Error(`Invalid UUID format: ${id}`);
         }
-        
+
         return id;
     }
-    
+
     /**
      * Clear Solo Match state before hydration
      * Rule 4: Clear State Before Hydration
@@ -459,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.syncStatus = {};
         state.currentView = 'setup';
     }
-    
+
     /**
      * Validate Solo Match integrity
      * Rule 3: Atomic Data Units - Verify all data belongs to this match
@@ -470,35 +470,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!matchData || !matchData.match) {
             throw new Error('Match data is missing');
         }
-        
+
         const match = matchData.match;
-        
+
         // Verify MatchID matches
         if (match.id && match.id !== expectedMatchId) {
             throw new Error(`Match ID mismatch: expected ${expectedMatchId}, got ${match.id}`);
         }
-        
+
         // Verify we have exactly 2 archers
         if (!match.archers || !Array.isArray(match.archers) || match.archers.length < 2) {
             throw new Error('Match must have exactly 2 archers');
         }
-        
+
         // Verify archers have valid positions
         const positions = match.archers.map(a => a.position).sort();
         if (positions[0] !== 1 || positions[1] !== 2) {
             throw new Error('Match archers must have positions 1 and 2');
         }
-        
+
         // Verify archers have UUIDs
         match.archers.forEach((archer, index) => {
             if (!archer.archer_id || !isValidUUID(archer.archer_id)) {
                 console.warn(`[validateSoloMatch] Archer ${index + 1} has invalid UUID: ${archer.archer_id}`);
             }
         });
-        
+
         console.log('[validateSoloMatch] ✅ Validation passed');
     }
-    
+
     /**
      * Fetch Solo Match from server
      * Rule 3: Atomic Data Units - Fetch Complete Units from Server
@@ -507,31 +507,31 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function fetchSoloMatch(matchId) {
         console.log('[fetchSoloMatch] Fetching Solo Match:', matchId);
-        
+
         // Validate input
         if (!matchId || !isValidUUID(matchId)) {
             throw new Error(`Invalid matchId: ${matchId}`);
         }
-        
+
         if (!window.LiveUpdates) {
             throw new Error('LiveUpdates is not available');
         }
-        
+
         const matchData = await window.LiveUpdates.request(`/solo-matches/${matchId}`, 'GET');
-        
+
         if (!matchData || !matchData.match) {
             throw new Error(`Match not found: ${matchId}`);
         }
-        
+
         console.log('[fetchSoloMatch] ✅ Fetched Solo Match:', {
             matchId: matchData.match.id,
             status: matchData.match.status,
             archerCount: matchData.match.archers?.length || 0
         });
-        
+
         return matchData;
     }
-    
+
     /**
      * Centralized hydration function for Solo Match
      * Rule 6: Centralized Hydration Function
@@ -545,43 +545,45 @@ document.addEventListener('DOMContentLoaded', () => {
     async function hydrateSoloMatch(matchId, options = {}) {
         console.log('[hydrateSoloMatch] ========== START ==========');
         console.log('[hydrateSoloMatch] Parameters:', { matchId, options });
-        
+
         try {
             // 1. Clear state first (Rule 4)
             if (options.clearStateFirst !== false) {
                 clearSoloMatchState();
             }
-            
+
             // 2. Validate inputs (Rule 5)
             const normalizedMatchId = normalizeEntityId(matchId, 'matchId');
-            
+
             // 3. Fetch atomic unit from server (Rule 3)
             const matchData = await fetchSoloMatch(normalizedMatchId);
-            
+
             // 4. Validate atomic unit integrity (Rule 3)
             validateSoloMatch(matchData, normalizedMatchId);
-            
+
             const match = matchData.match;
-            
+
             // 5. Populate metadata from server (Rule 1)
             state.matchId = normalizedMatchId;
             state.eventId = match.event_id || null;
             state.bracketId = match.bracket_id || null;
             state.location = match.location || '';
-            
+            state.cardStatus = match.card_status || match.status || 'PENDING';
+            state.locked = match.locked || (state.cardStatus === 'VERIFIED' || state.cardStatus === 'VER' || state.cardStatus === 'COMPLETED' || state.cardStatus === 'COMP');
+
             // 6. Build archers from match data (use UUIDs, not names)
             const matchArchers = match.archers || [];
             if (matchArchers.length < 2) {
                 throw new Error('Match must have at least 2 archers');
             }
-            
+
             const a1Data = matchArchers.find(a => a.position === 1);
             const a2Data = matchArchers.find(a => a.position === 2);
-            
+
             if (!a1Data || !a2Data) {
                 throw new Error('Match missing archer at position 1 or 2');
             }
-            
+
             // Find archers in master list by UUID (preferred) or fallback to name
             const masterList = ArcherModule.loadList();
             let a1 = masterList.find(a => {
@@ -592,41 +594,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 const archerId = a.id || a.archerId;
                 return archerId && archerId === a2Data.archer_id;
             });
-            
+
             // Fallback to name matching if UUID not found
             if (!a1) {
-                a1 = masterList.find(a => 
+                a1 = masterList.find(a =>
                     `${a.first} ${a.last}`.toLowerCase() === a1Data.archer_name.toLowerCase()
                 );
             }
             if (!a2) {
-                a2 = masterList.find(a => 
+                a2 = masterList.find(a =>
                     `${a.first} ${a.last}`.toLowerCase() === a2Data.archer_name.toLowerCase()
                 );
             }
-            
+
             if (!a1 || !a2) {
                 throw new Error(`Could not find archers in master list: ${a1Data.archer_name}, ${a2Data.archer_name}`);
             }
-            
+
             // Ensure archer IDs are set
             a1.id = a1.id || `${a1.first}-${a1.last}`;
             a2.id = a2.id || `${a2.first}-${a2.last}`;
-            
+
             state.archer1 = a1;
             state.archer2 = a2;
             state.matchArcherIds = {
                 a1: a1Data.id,
                 a2: a2Data.id
             };
-            
+
             // 7. Build scores from server data
             state.scores = {
                 a1: Array(5).fill(null).map(() => ['', '', '']),
                 a2: Array(5).fill(null).map(() => ['', '', '']),
                 so: { a1: '', a2: '' }
             };
-            
+
             matchArchers.forEach(archerData => {
                 const archerKey = archerData.position === 1 ? 'a1' : 'a2';
                 if (archerData.sets && Array.isArray(archerData.sets)) {
@@ -645,13 +647,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             });
-            
+
+            // 7b. Hydrate Shoot-off Winner (Rule: Derived from archer winner flag)
+            const hasShootOff = state.scores.so.a1 !== '' || state.scores.so.a2 !== '';
+            if (hasShootOff) {
+                const winnerArcher = matchArchers.find(a => a.winner === 1 || a.winner === true);
+                if (winnerArcher) {
+                    state.shootOffWinner = winnerArcher.position === 1 ? 'a1' : 'a2';
+                }
+            }
+
             // 8. Set current view
             state.currentView = 'scoring';
-            
+
             // 9. Save session for recovery
             saveData();
-            
+
             console.log('[hydrateSoloMatch] ✅ Hydration complete:', {
                 matchId: state.matchId,
                 archer1: `${state.archer1?.first} ${state.archer1?.last}`,
@@ -659,20 +670,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 setsScored: state.scores.a1.filter(s => s.some(v => v)).length
             });
             console.log('[hydrateSoloMatch] ========== END ==========');
-            
+
             return state;
-            
+
         } catch (error) {
             console.error('[hydrateSoloMatch] ❌ Error:', error);
             throw error;
         }
     }
-    
+
     // Phase 2: Restore match from database if matchId exists
     // Now uses centralized hydration function (Phase 0)
     async function restoreMatchFromDatabase() {
         if (!state.matchId) return false;
-        
+
         try {
             console.log('[restoreMatchFromDatabase] Using centralized hydrateSoloMatch()');
             await hydrateSoloMatch(state.matchId, {
@@ -693,7 +704,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         await refreshArcherRoster();
         syncSelectorSelection();
-        
+
         // Apply filter if provided
         if (filter && archerSelector) {
             archerSelector.setFilter(filter);
@@ -712,28 +723,28 @@ document.addEventListener('DOMContentLoaded', () => {
             startScoringBtn.classList.remove('btn-primary');
         }
     }
-    
+
     // Phase 2: Create match in database before starting
     async function startScoring() {
         if (!state.archer1 || !state.archer2) {
             alert("Please select two archers to start the match.");
             return;
         }
-        
+
         // Check if LiveUpdates is available
         if (!window.LiveUpdates || !window.LiveUpdates.ensureSoloMatch) {
             console.error('LiveUpdates API not available');
             alert('Database connection not available. Please refresh the page.');
             return;
         }
-        
+
         try {
             // Get event ID and bracket ID from URL or localStorage (if available)
             const urlParams = new URLSearchParams(window.location.search);
             const eventId = urlParams.get('event') || state.eventId || null;
             const bracketId = urlParams.get('bracket') || state.bracketId || null;
             const today = new Date().toISOString().split('T')[0];
-            
+
             // Create match in database (force new match - don't reuse cache)
             console.log('Creating solo match in database...');
             const matchId = await window.LiveUpdates.ensureSoloMatch({
@@ -744,31 +755,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxSets: 5,
                 forceNew: true  // Always create a new match when starting scoring
             });
-            
+
             if (!matchId) {
                 throw new Error('Failed to create match in database');
             }
-            
+
             state.matchId = matchId;
             state.eventId = eventId;
-            
+
             // Add archers to match
             console.log('Adding archers to match...');
             const a1Id = state.archer1.id;
             const a2Id = state.archer2.id;
-            
+
             const matchArcherId1 = await window.LiveUpdates.ensureSoloArcher(matchId, a1Id, state.archer1, 1);
             const matchArcherId2 = await window.LiveUpdates.ensureSoloArcher(matchId, a2Id, state.archer2, 2);
-            
+
             if (!matchArcherId1 || !matchArcherId2) {
                 throw new Error('Failed to add archers to match');
             }
-            
+
             state.matchArcherIds = {
                 a1: matchArcherId1,
                 a2: matchArcherId2
             };
-            
+
             // Initialize scores
             if (!state.scores.a1 || state.scores.a1.length !== 5) {
                 state.scores.a1 = Array(5).fill(null).map(() => ['', '', '']);
@@ -779,17 +790,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!state.scores.so) {
                 state.scores.so = { a1: '', a2: '' };
             }
-            
+
             // Initialize sync status
             state.syncStatus = { a1: {}, a2: {} };
-            
+
             state.currentView = 'scoring';
             saveData();
             renderScoringView();
             renderView();
-            
+
             console.log('✅ Solo match started successfully:', matchId);
-            
+
             // Flush any pending queue
             if (window.LiveUpdates.flushSoloQueue) {
                 window.LiveUpdates.flushSoloQueue(matchId).catch(e => console.warn('Queue flush failed:', e));
@@ -825,17 +836,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!archer) {
             return '<span>Archer</span>';
         }
-        
+
         const displayName = archer.nickname || archer.first || 'Archer';
         const initials = `${(archer.first || '?').charAt(0)}${(archer.last || '').charAt(0)}`.toUpperCase();
-        
+
         let avatarHTML = '';
         if (archer.photoUrl) {
             avatarHTML = `<img src="${archer.photoUrl}" alt="${archer.first} ${archer.last}" class="w-8 h-8 rounded-full object-cover border-2 border-white/50">`;
         } else {
             avatarHTML = `<div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold border-2 border-white/50">${initials}</div>`;
         }
-        
+
         return `
             <div class="flex flex-row items-center justify-center gap-2">
                 ${avatarHTML}
@@ -861,7 +872,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.scores.a2[i] = ['', '', ''];
             }
         }
-        
+
         let tableHTML = `<table class="w-full border-collapse text-sm bg-white dark:bg-gray-700" id="solo_round_table">
             <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
                 <tr>
@@ -895,26 +906,26 @@ document.addEventListener('DOMContentLoaded', () => {
             const syncStatusA1 = state.syncStatus?.a1?.[setNumber] || '';
             const syncStatusA2 = state.syncStatus?.a2?.[setNumber] || '';
             const syncIcon = getSyncStatusIcon(syncStatusA1, syncStatusA2);
-            
-            tableHTML += `<tr id="end-${i+1}" class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
-                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">End ${i+1}</td>
+
+            tableHTML += `<tr id="end-${i + 1}" class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
+                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">End ${i + 1}</td>
                 <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a1[i][0])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a1" data-end="${i}" data-arrow="0" value="${state.scores.a1[i][0]}" readonly></td>
                 <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a1[i][1])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a1" data-end="${i}" data-arrow="1" value="${state.scores.a1[i][1]}" readonly></td>
                 <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a1[i][2])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a1" data-end="${i}" data-arrow="2" value="${state.scores.a1[i][2]}" readonly></td>
                 <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a2[i][0])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a2" data-end="${i}" data-arrow="0" value="${state.scores.a2[i][0]}" readonly></td>
                 <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a2[i][1])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a2" data-end="${i}" data-arrow="1" value="${state.scores.a2[i][1]}" readonly></td>
                 <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a2[i][2])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a2" data-end="${i}" data-arrow="2" value="${state.scores.a2[i][2]}" readonly></td>
-                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a1-e${i+1}-total"></td>
-                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a2-e${i+1}-total"></td>
-                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a1-e${i+1}-setpts"></td>
-                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a2-e${i+1}-setpts"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a1-e${i + 1}-total"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a2-e${i + 1}-total"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a1-e${i + 1}-setpts"></td>
+                <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a2-e${i + 1}-setpts"></td>
             </tr>`;
         }
 
         const soSyncStatusA1 = state.syncStatus?.a1?.[6] || '';
         const soSyncStatusA2 = state.syncStatus?.a2?.[6] || '';
         const soSyncIcon = getSyncStatusIcon(soSyncStatusA1, soSyncStatusA2);
-        
+
         tableHTML += `
                 <tr id="shoot-off" class="hidden border-b border-gray-200 dark:border-gray-600">
                 <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">S.O.</td>
@@ -952,7 +963,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < 5; i++) {
             const endScoresA1 = state.scores.a1[i];
             const endScoresA2 = state.scores.a2[i];
-            
+
             const isCompleteA1 = endScoresA1.every(s => s !== '' && s !== null);
             const isCompleteA2 = endScoresA2.every(s => s !== '' && s !== null);
             const endComplete = isCompleteA1 && isCompleteA2;
@@ -960,8 +971,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const a1EndTotal = isCompleteA1 ? endScoresA1.reduce((sum, s) => sum + parseScoreValue(s), 0) : 0;
             const a2EndTotal = isCompleteA2 ? endScoresA2.reduce((sum, s) => sum + parseScoreValue(s), 0) : 0;
 
-            document.getElementById(`a1-e${i+1}-total`).textContent = isCompleteA1 ? a1EndTotal : '';
-            document.getElementById(`a2-e${i+1}-total`).textContent = isCompleteA2 ? a2EndTotal : '';
+            document.getElementById(`a1-e${i + 1}-total`).textContent = isCompleteA1 ? a1EndTotal : '';
+            document.getElementById(`a2-e${i + 1}-total`).textContent = isCompleteA2 ? a2EndTotal : '';
 
             let a1SetPoints = 0;
             let a2SetPoints = 0;
@@ -977,13 +988,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     winner = a1MatchScore > a2MatchScore ? 'a1' : 'a2';
                 }
             }
-            document.getElementById(`a1-e${i+1}-setpts`).textContent = endComplete ? a1SetPoints : '';
-            document.getElementById(`a2-e${i+1}-setpts`).textContent = endComplete ? a2SetPoints : '';
+            document.getElementById(`a1-e${i + 1}-setpts`).textContent = endComplete ? a1SetPoints : '';
+            document.getElementById(`a2-e${i + 1}-setpts`).textContent = endComplete ? a2SetPoints : '';
         }
 
         document.getElementById('a1-match-score').textContent = a1MatchScore;
         document.getElementById('a2-match-score').textContent = a2MatchScore;
-        
+
         const shootOffRow = document.getElementById('shoot-off');
         const soWinnerText = document.getElementById('so-winner-text');
         const tieBreakerControls = document.querySelector('.tie-breaker-controls');
@@ -1013,11 +1024,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     tieBreakerControls.classList.remove('inline-block');
                 } else {
                     if (state.shootOffWinner) {
-                         winner = state.shootOffWinner;
-                         matchOver = true;
-                         soWinnerText.textContent = `S.O. Tied! ${winner === 'a1' ? 'A1' : 'A2'} Wins (Closest)`;
-                         tieBreakerControls.classList.add('hidden');
-                    tieBreakerControls.classList.remove('inline-block');
+                        winner = state.shootOffWinner;
+                        matchOver = true;
+                        soWinnerText.textContent = `S.O. Tied! ${winner === 'a1' ? 'A1' : 'A2'} Wins (Closest)`;
+                        tieBreakerControls.classList.add('hidden');
+                        tieBreakerControls.classList.remove('inline-block');
                     } else {
                         soWinnerText.textContent = 'Tied! Judge Call:';
                         tieBreakerControls.classList.remove('hidden');
@@ -1111,7 +1122,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const allInputs = Array.from(document.querySelectorAll('#scoring-view input[type="text"]'));
             // Find the index of the *current* input by its unique data attributes,
             // not by object reference, which can be stale.
-            const currentIndex = allInputs.findIndex(el => 
+            const currentIndex = allInputs.findIndex(el =>
                 el.dataset.archer === input.dataset.archer &&
                 el.dataset.end === input.dataset.end &&
                 el.dataset.arrow === input.dataset.arrow
@@ -1122,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // If it's the last input, close the keypad
                 keypadElement.classList.add('hidden');
-            keypadElement.classList.remove('grid');
+                keypadElement.classList.remove('grid');
                 document.body.classList.remove('keypad-visible');
             }
         }
@@ -1142,19 +1153,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // Re-render the entire view to ensure consistency
         renderScoringView();
         saveData();
-        
+
         // Phase 2: Post to database if match is active
         if (state.matchId && state.matchArcherIds[archer] && window.LiveUpdates && window.LiveUpdates.postSoloSet) {
             const setNumber = end === 'so' ? 6 : (parseInt(end, 10) + 1);
             const matchArcherId = state.matchArcherIds[archer];
-            
+
             // Calculate set totals and points
-            const setScores = end === 'so' 
-                ? [state.scores.so[archer], '', ''] 
+            const setScores = end === 'so'
+                ? [state.scores.so[archer], '', '']
                 : state.scores[archer][parseInt(end, 10)];
-            
+
             const setTotal = setScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
-            
+
             // Calculate set points (compare with opponent)
             let setPoints = 0;
             let runningPoints = 0;
@@ -1162,11 +1173,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const opponentArcher = archer === 'a1' ? 'a2' : 'a1';
                 const opponentScores = state.scores[opponentArcher][parseInt(end, 10)];
                 const opponentTotal = opponentScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
-                
+
                 if (setTotal > opponentTotal) setPoints = 2;
                 else if (setTotal < opponentTotal) setPoints = 0;
                 else setPoints = 1;
-                
+
                 // Calculate running points (sum of all previous sets)
                 const currentSet = parseInt(end, 10);
                 for (let i = 0; i <= currentSet; i++) {
@@ -1178,16 +1189,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (myTotal === oppTotal) runningPoints += 1;
                 }
             }
-            
+
             // Count tens and Xs
             const tens = setScores.filter(s => parseScoreValue(s) === 10).length;
             const xs = setScores.filter(s => String(s).toUpperCase() === 'X').length;
-            
+
             // Only post if all 3 arrows are entered (or shoot-off with 1 arrow)
-            const isComplete = end === 'so' 
+            const isComplete = end === 'so'
                 ? (state.scores.so.a1 !== '' && state.scores.so.a2 !== '')
                 : setScores.every(s => s !== '' && s !== null);
-            
+
             if (isComplete) {
                 try {
                     updateSyncStatus(archer, setNumber, 'pending');
@@ -1209,12 +1220,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-    
+
     // Phase 2: Update sync status for UI feedback
     function updateSyncStatus(archer, setNumber, status) {
         if (!state.syncStatus[archer]) state.syncStatus[archer] = {};
         state.syncStatus[archer][setNumber] = status;
-        
+
         // Update UI indicator - find the cell for this set
         const setId = setNumber === 6 ? 'so' : setNumber;
         const syncCell = document.getElementById(`sync-e${setId}`);
@@ -1224,7 +1235,7 @@ document.addEventListener('DOMContentLoaded', () => {
             syncCell.innerHTML = getSyncStatusIcon(syncStatusA1, syncStatusA2);
         }
     }
-    
+
     // Phase 2: Get sync status icon (shows worst status if both archers have status)
     function getSyncStatusIcon(statusA1, statusA2) {
         // Determine overall status (failed > pending > synced > none)
@@ -1236,7 +1247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (statusA1 === 'synced' || statusA2 === 'synced') {
             overallStatus = 'synced';
         }
-        
+
         const icons = {
             'synced': '<span class="sync-status-icon" style="color: #4caf50; font-size: 1.2em;" title="Synced">✓</span>',
             'pending': '<span class="sync-status-icon" style="color: #ff9800; font-size: 1.2em;" title="Pending">⟳</span>',
@@ -1245,10 +1256,20 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         return icons[overallStatus] || icons[''];
     }
-    
+
     // Phase 2: Reset clears session state (database match remains for coach visibility)
     function resetMatch() {
-        if(confirm("Are you sure you want to start a new match? This will clear all scores.")) {
+        // Skip confirmation if match is already complete/verified
+        const isFinished = state.cardStatus === 'COMPLETED' || state.cardStatus === 'COMP' || state.cardStatus === 'VERIFIED' || state.cardStatus === 'VER';
+
+        if (isFinished || confirm("Are you sure you want to start a new match? This will clear all scores.")) {
+            // 1. Clear URL parameters (removes ?match=...)
+            if (window.history.pushState) {
+                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.pushState({ path: newUrl }, '', newUrl);
+            }
+            window.location.hash = ''; // Explicitly clear hash
+
             // Clear cached match from localStorage so a new match will be created
             const oldMatchId = state.matchId;
             if (oldMatchId) {
@@ -1264,10 +1285,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const eventId = urlParams.get('event') || state.eventId || null;
             const matchKey = `solo_match:${eventId || 'standalone'}:${today}`;
             localStorage.removeItem(matchKey);
-            
+
             state.archer1 = null;
             state.archer2 = null;
-            state.scores = {};
+            state.scores = {
+                a1: Array(5).fill(null).map(() => ['', '', '']),
+                a2: Array(5).fill(null).map(() => ['', '', '']),
+                so: { a1: '', a2: '' }
+            };
             state.shootOffWinner = null;
             state.currentView = 'setup';
             // Phase 2: Clear database references (match remains in DB for coach)
@@ -1275,12 +1300,21 @@ document.addEventListener('DOMContentLoaded', () => {
             state.matchArcherIds = {};
             state.eventId = null;
             state.syncStatus = {};
+            state.locked = false;
+            state.cardStatus = 'PENDING';
+
             localStorage.removeItem(sessionKey);
+
+            // Reset selections in selector if available
+            if (typeof archerSelector !== 'undefined' && archerSelector) {
+                archerSelector.clearSelection();
+            }
+
             renderSetupView();
             renderView();
         }
     }
-    
+
     function editSetup() {
         state.currentView = 'setup';
         renderView();
@@ -1314,7 +1348,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const link = document.createElement('a');
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
             const filename = `solo_match_${state.archer1?.first}_vs_${state.archer2?.first}_${timestamp}.png`;
-            
+
             link.download = filename;
             link.href = canvas.toDataURL('image/png');
             link.click();
@@ -1368,10 +1402,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const blob = new Blob([jsonData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        
+
         const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
         const filename = `solo_match_${state.archer1?.first}_vs_${state.archer2?.first}_${timestamp}.json`;
-        
+
         link.href = url;
         link.download = filename;
         link.click();
@@ -1392,7 +1426,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const jsonData = exportJSON();
         const subject = `Solo Match - ${state.archer1?.first} vs ${state.archer2?.first}`;
         const body = `Please find attached the solo match data.\n\nArcher 1: ${state.archer1?.first} ${state.archer1?.last}\nArcher 2: ${state.archer2?.first} ${state.archer2?.last}\n\nJSON Data:\n${jsonData}`;
-        
+
         window.location.href = `mailto:davinciarchers@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     }
 
@@ -1405,7 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < 5; i++) {
             const endScoresA1 = state.scores.a1[i];
             const endScoresA2 = state.scores.a2[i];
-            
+
             const isCompleteA1 = endScoresA1.every(s => s !== '' && s !== null);
             const isCompleteA2 = endScoresA2.every(s => s !== '' && s !== null);
             const endComplete = isCompleteA1 && isCompleteA2;
@@ -1416,11 +1450,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let a1SetPoints = 0;
                 let a2SetPoints = 0;
-                
+
                 if (a1EndTotal > a2EndTotal) a1SetPoints = 2;
                 else if (a2EndTotal > a1EndTotal) a2SetPoints = 2;
                 else { a1SetPoints = 1; a2SetPoints = 1; }
-                
+
                 a1MatchScore += a1SetPoints;
                 a2MatchScore += a2SetPoints;
 
@@ -1489,18 +1523,18 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function showCompleteMatchModal() {
         const modal = document.getElementById('complete-match-modal');
-        
+
         if (!modal) {
             console.error('[showCompleteMatchModal] Modal not found');
             return;
         }
-        
+
         // Check if match is actually complete
         if (!isMatchComplete()) {
             alert('Match is not complete. Please finish all sets and determine a winner before marking as complete.');
             return;
         }
-        
+
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
@@ -1522,20 +1556,20 @@ document.addEventListener('DOMContentLoaded', () => {
             hideCompleteMatchModal();
             return;
         }
-        
+
         // Check if match is actually complete
         if (!isMatchComplete()) {
             alert('Match is not complete. Please finish all sets and determine a winner before marking as complete.');
             hideCompleteMatchModal();
             return;
         }
-        
+
         try {
             // Build headers
             const headers = {
                 'Content-Type': 'application/json'
             };
-            
+
             // Add event code if match is part of an event
             if (state.eventId) {
                 const entryCode = localStorage.getItem('event_entry_code') || localStorage.getItem('coach_passcode');
@@ -1543,35 +1577,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers['X-Passcode'] = entryCode;
                 }
             }
-            
+
+            // Prepare payload
+            const payload = {
+                cardStatus: 'COMP'
+            };
+
+            // If we have a shoot-off winner, include it
+            if (state.shootOffWinner) {
+                const winnerObj = state.shootOffWinner === 'a1' ? state.archer1 : state.archer2;
+                if (winnerObj) {
+                    // Use extId (UUID) if available, otherwise id
+                    payload.winnerArcherId = winnerObj.extId || winnerObj.id;
+                }
+            }
+
             const response = await fetch(`api/v1/solo-matches/${state.matchId}/status`, {
                 method: 'PATCH',
                 headers: headers,
-                body: JSON.stringify({
-                    cardStatus: 'COMP'
-                })
+                body: JSON.stringify(payload)
             });
-            
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
                 throw new Error(errorData.error || `HTTP ${response.status}`);
             }
-            
+
             const result = await response.json();
-            
+
             // Update local state
             state.cardStatus = result.cardStatus || 'COMP';
             state.status = result.status || 'Completed';
             state.locked = result.locked || false;
-            
+
             console.log('[completeMatch] Status updated:', result);
-            
+
             // Update UI to show completed status
             updateCompleteMatchButton();
-            
+
             // Show success message
             alert('Match marked as complete! Ready for coach verification.');
-            
+
             hideCompleteMatchModal();
             return true;
         } catch (err) {
@@ -1587,12 +1633,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateCompleteMatchButton() {
         const completeBtn = document.getElementById('complete-match-btn');
         if (!completeBtn) return;
-        
+
         const isComplete = isMatchComplete();
         const isAlreadyCompleted = state.cardStatus === 'COMP';
         const isVerified = state.cardStatus === 'VRFD';
         const isLocked = state.locked || isVerified;
-        
+
         if (isLocked) {
             completeBtn.disabled = true;
             completeBtn.innerHTML = '<i class="fas fa-lock mr-1"></i> Verified';
@@ -1633,12 +1679,12 @@ document.addEventListener('DOMContentLoaded', () => {
             renderEventSelect();
         }
     }
-    
+
     function renderEventSelect() {
         if (!eventSelect) return;
-        
+
         eventSelect.innerHTML = '<option value="">Standalone Match (No Event)</option>';
-        
+
         // Only show active events
         const activeEvents = state.events.filter(e => e.status === 'Active');
         activeEvents.forEach(event => {
@@ -1647,34 +1693,34 @@ document.addEventListener('DOMContentLoaded', () => {
             option.textContent = `${event.name} - ${event.date}`;
             eventSelect.appendChild(option);
         });
-        
+
         // Set selected value if we have one
         if (state.eventId) {
             eventSelect.value = state.eventId;
             loadBrackets(state.eventId);
         }
     }
-    
+
     async function handleEventSelection() {
         const eventId = eventSelect.value;
         state.eventId = eventId || null;
         state.bracketId = null;
         state.brackets = [];
-        
+
         if (eventId) {
             await loadBrackets(eventId);
             if (bracketSelection) bracketSelection.classList.remove('hidden');
         } else {
             if (bracketSelection) bracketSelection.classList.add('hidden');
         }
-        
+
         // Refresh archer roster (will filter by event/ranking rounds if no bracket)
         await refreshArcherRoster();
-        
+
         updateMatchTypeIndicator();
         saveData();
     }
-    
+
     async function loadBrackets(eventId) {
         try {
             const response = await fetch(`api/v1/events/${eventId}/brackets`);
@@ -1693,12 +1739,12 @@ document.addEventListener('DOMContentLoaded', () => {
             renderBracketSelect();
         }
     }
-    
+
     function renderBracketSelect() {
         if (!bracketSelect) return;
-        
+
         bracketSelect.innerHTML = '<option value="">No Bracket (Standalone)</option>';
-        
+
         state.brackets.forEach(bracket => {
             const option = document.createElement('option');
             option.value = bracket.id;
@@ -1706,20 +1752,20 @@ document.addEventListener('DOMContentLoaded', () => {
             option.textContent = `${bracket.division} ${formatText} (${bracket.status})`;
             bracketSelect.appendChild(option);
         });
-        
+
         // Set selected value if we have one
         if (state.bracketId) {
             bracketSelect.value = state.bracketId;
         }
     }
-    
+
     async function handleBracketSelection() {
         state.bracketId = bracketSelect.value || null;
         updateMatchTypeIndicator();
-        
+
         // Refresh archer roster to filter by bracket
         await refreshArcherRoster();
-        
+
         // For elimination brackets, check if archer has an assigned match
         if (state.bracketId && typeof ArcherModule !== 'undefined') {
             const selfArcher = ArcherModule.getSelfArcher();
@@ -1737,16 +1783,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('[SoloCard] No self archer found');
             }
         }
-        
+
         saveData();
     }
-    
+
     async function loadBracketAssignment(archerId) {
         if (!state.bracketId || !archerId) {
             console.log('[SoloCard] Cannot load assignment - missing bracketId or archerId:', { bracketId: state.bracketId, archerId });
             return;
         }
-        
+
         // Try to get database UUID from archer, or use name-based lookup
         let url;
         if (typeof ArcherModule !== 'undefined') {
@@ -1754,7 +1800,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selfArcher) {
                 const firstName = selfArcher.first || '';
                 const lastName = selfArcher.last || '';
-                
+
                 // First try UUID if it looks like one
                 if (archerId.length === 36 && archerId.includes('-')) {
                     url = `api/v1/brackets/${state.bracketId}/archer-assignment/${archerId}`;
@@ -1771,36 +1817,36 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             url = `api/v1/brackets/${state.bracketId}/archer-assignment/${archerId}`;
         }
-        
+
         try {
             console.log('[SoloCard] Fetching bracket assignment from:', url);
             const response = await fetch(url);
             console.log('[SoloCard] Assignment response status:', response.status);
-            
+
             if (response.ok) {
                 const data = await response.json();
                 console.log('[SoloCard] Assignment data:', data);
-                
+
                 if (data.assignment && data.assignment.opponent) {
                     // Pre-populate opponent for elimination bracket
                     const opponent = data.assignment.opponent;
-                    
-                        // Find opponent in archer list
-                        if (typeof ArcherModule !== 'undefined') {
-                            // Refresh roster to ensure we have latest archers
-                            refreshArcherRoster();
-                            const roster = ArcherModule.loadList() || [];
-                            const currentSelfArcher = ArcherModule.getSelfArcher();
-                        
+
+                    // Find opponent in archer list
+                    if (typeof ArcherModule !== 'undefined') {
+                        // Refresh roster to ensure we have latest archers
+                        refreshArcherRoster();
+                        const roster = ArcherModule.loadList() || [];
+                        const currentSelfArcher = ArcherModule.getSelfArcher();
+
                         console.log('[SoloCard] Looking for opponent in roster:', opponent.name, 'ID:', opponent.id);
                         console.log('[SoloCard] Roster size:', roster.length);
-                        
+
                         // Try to find opponent by ID first, then by name
                         let opponentArcher = roster.find(a => {
                             const aId = a.id || a.archerId || `${a.first}-${a.last}`;
                             return aId === opponent.id;
                         });
-                        
+
                         if (!opponentArcher) {
                             console.log('[SoloCard] Opponent not found by ID, trying name match...');
                             // Try by name match (case insensitive, handle variations)
@@ -1810,7 +1856,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const opponentName = opponent.name.toLowerCase().trim();
                                 return fullName === opponentName;
                             });
-                            
+
                             if (!opponentArcher) {
                                 // Try partial match (first name + last name initial)
                                 const opponentParts = opponent.name.toLowerCase().trim().split(' ');
@@ -1818,29 +1864,29 @@ document.addEventListener('DOMContentLoaded', () => {
                                     opponentArcher = roster.find(a => {
                                         if (!a.first || !a.last) return false;
                                         return a.first.toLowerCase() === opponentParts[0] &&
-                                               a.last.toLowerCase().startsWith(opponentParts[1]);
+                                            a.last.toLowerCase().startsWith(opponentParts[1]);
                                     });
                                 }
                             }
                         }
-                        
+
                         if (opponentArcher) {
                             console.log('[SoloCard] Found opponent in roster:', opponentArcher);
                         } else {
                             console.log('[SoloCard] Opponent NOT found in roster. Available archers:', roster.map(a => `${a.first} ${a.last}`).slice(0, 10));
                         }
-                        
+
                         // Set archer 1 (self) if not already set
                         if (!state.archer1 && currentSelfArcher) {
                             state.archer1 = normalizeArcher(currentSelfArcher);
                             console.log('[SoloCard] Set archer1 (self):', state.archer1);
                         }
-                        
+
                         if (opponentArcher) {
                             // Set archer 2 (opponent)
                             state.archer2 = normalizeArcher(opponentArcher);
                             console.log('[SoloCard] Set archer2 (opponent):', state.archer2);
-                            
+
                             // Sync selection if selector is ready
                             if (archerSelector) {
                                 syncSelectorSelection();
@@ -1853,7 +1899,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         } else {
                             console.log('[SoloCard] Opponent not found in roster:', opponent.name);
                         }
-                        
+
                         // Show assignment info in match type indicator
                         if (matchTypeText) {
                             const matchInfo = data.assignment.match_id || `Quarter Final ${data.assignment.match_number}`;
@@ -1861,7 +1907,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const event = state.events.find(e => e.id === state.eventId);
                             const formatText = bracket?.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
                             const eventName = event?.name || 'Event';
-                            
+
                             matchTypeText.textContent = `${formatText} bracket: ${matchInfo} - You (Seed ${data.archer.seed}) vs ${opponent.name} (Seed ${opponent.seed})`;
                             matchTypeText.classList.add('font-semibold', 'text-primary');
                             console.log('[SoloCard] Updated match type indicator with assignment');
@@ -1878,10 +1924,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Could not load bracket assignment:', error);
         }
     }
-    
+
     function updateMatchTypeIndicator() {
         if (!matchTypeText) return;
-        
+
         if (state.eventId && state.bracketId) {
             const bracket = state.brackets.find(b => b.id === state.bracketId);
             const event = state.events.find(e => e.id === state.eventId);
@@ -1914,11 +1960,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('⚠️ Failed to load from MySQL, falling back to CSV:', e);
             await ArcherModule.loadDefaultCSVIfNeeded();
         }
-        
+
         loadData();
         renderKeypad();
         initializeArcherSelector();
-        
+
         // After selector is initialized, sync any pending bracket assignment
         // Use setTimeout to ensure selector is fully ready
         setTimeout(() => {
@@ -1928,7 +1974,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.pendingBracketSync = false;
             }
         }, 200);
-        
+
         // Phase 2: Restore match from database if matchId exists
         if (state.matchId && window.LiveUpdates) {
             const restored = await restoreMatchFromDatabase();
@@ -1936,7 +1982,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('✅ Match restored from database');
                 // Flush any pending queue
                 if (window.LiveUpdates.flushSoloQueue) {
-                    window.LiveUpdates.flushSoloQueue(state.matchId).catch(e => 
+                    window.LiveUpdates.flushSoloQueue(state.matchId).catch(e =>
                         console.warn('Queue flush failed:', e)
                     );
                 }
@@ -1952,21 +1998,33 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof ArcherModule !== 'undefined') {
             selfArcher = ArcherModule.getSelfArcher();
         }
-        
+
         // Load events and set up event/bracket selection
         await loadEvents();
-        
+
         // Set up event listeners for event/bracket selection
         if (eventSelect) eventSelect.addEventListener('change', handleEventSelection);
         if (bracketSelect) bracketSelect.addEventListener('change', handleBracketSelection);
         if (refreshEventsBtn) refreshEventsBtn.addEventListener('click', loadEvents);
-        
+
         // Check for URL parameters (for QR code access or bracket assignments)
         const urlParams = new URLSearchParams(window.location.search);
-        const matchId = urlParams.get('match');
+        let matchId = urlParams.get('match');
+
+        // Parse Hash for matchId if not in query params
+        if (!matchId && window.location.hash) {
+            // Support #matchId=UUID or just #UUID
+            const hashVal = window.location.hash.substring(1);
+            if (hashVal.startsWith('matchId=')) {
+                matchId = hashVal.split('=')[1];
+            } else if (isValidUUID && isValidUUID(hashVal)) {
+                matchId = hashVal;
+            }
+        }
+
         const eventId = urlParams.get('event');
         const bracketId = urlParams.get('bracket');
-        
+
         // If match ID is in URL, load that match using centralized hydration
         if (matchId) {
             try {
@@ -1979,7 +2037,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderScoringView();
                 // Flush any pending queue
                 if (window.LiveUpdates && window.LiveUpdates.flushSoloQueue) {
-                    window.LiveUpdates.flushSoloQueue(state.matchId).catch(e => 
+                    window.LiveUpdates.flushSoloQueue(state.matchId).catch(e =>
                         console.warn('Queue flush failed:', e)
                     );
                 }
@@ -1994,25 +2052,25 @@ document.addEventListener('DOMContentLoaded', () => {
             if (eventSelect) {
                 eventSelect.value = eventId;
             }
-            
+
             // Load brackets for this event
             await loadBrackets(eventId);
             if (bracketSelection) bracketSelection.classList.remove('hidden');
-            
+
             if (bracketId) {
                 state.bracketId = bracketId;
                 // Set bracket in dropdown (after brackets are loaded)
                 if (bracketSelect) {
                     bracketSelect.value = bracketId;
                 }
-                
+
                 // Load bracket assignment and auto-populate archers
                 if (typeof ArcherModule !== 'undefined') {
                     const selfArcher = ArcherModule.getSelfArcher();
                     if (selfArcher) {
                         // Try multiple ID formats
                         let archerId = selfArcher.id || selfArcher.archerId || selfArcher.extId || null;
-                        
+
                         // If we have extId but not UUID, try to find UUID
                         if (archerId && !archerId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
                             const firstName = selfArcher.first || '';
@@ -2023,7 +2081,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     if (searchRes.ok) {
                                         const searchData = await searchRes.json();
                                         if (searchData.results && searchData.results.length > 0) {
-                                            const match = searchData.results.find(r => 
+                                            const match = searchData.results.find(r =>
                                                 r.archer.firstName.toLowerCase() === firstName.toLowerCase() &&
                                                 r.archer.lastName.toLowerCase() === lastName.toLowerCase()
                                             );
@@ -2037,7 +2095,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                             }
                         }
-                        
+
                         if (archerId) {
                             console.log('[SoloCard] Loading bracket assignment from URL params for archer:', archerId);
                             await loadBracketAssignment(archerId);
@@ -2050,7 +2108,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
+
         updateMatchTypeIndicator();
 
         if (state.currentView === 'scoring' && state.archer1 && state.archer2) {
@@ -2060,13 +2118,13 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSetupView();
         }
         renderView();
-        
+
         // Phase 2: Set up offline/online listeners
         if (window.LiveUpdates && window.LiveUpdates.flushSoloQueue) {
             window.addEventListener('online', () => {
                 if (state.matchId) {
                     console.log('🌐 Online - flushing solo match queue...');
-                    window.LiveUpdates.flushSoloQueue(state.matchId).catch(e => 
+                    window.LiveUpdates.flushSoloQueue(state.matchId).catch(e =>
                         console.warn('Queue flush failed:', e)
                     );
                 }
@@ -2081,24 +2139,33 @@ document.addEventListener('DOMContentLoaded', () => {
         startScoringBtn.addEventListener('click', startScoring);
         editSetupBtn.addEventListener('click', editSetup);
         newMatchBtn.addEventListener('click', resetMatch);
-        
+
         document.body.addEventListener('focusin', (e) => {
             if (e.target.matches('#scoring-view input[type="text"]')) {
+                // Debug locking
+                console.log('[focusin] Input focused. Locked:', state.locked, 'Status:', state.cardStatus, 'ReadOnly:', e.target.readOnly);
+
+                // Prevent editing if match is locked (completed/verified) OR input is readonly
+                if (state.locked || e.target.readOnly) {
+                    console.log('[focusin] Editing blocked');
+                    e.target.blur();
+                    return;
+                }
                 keypad.currentlyFocusedInput = e.target;
                 keypadElement.classList.remove('hidden');
                 keypadElement.classList.add('grid');
                 document.body.classList.add('keypad-visible');
             }
         });
-        
+
         keypadElement.addEventListener('click', handleKeypadClick);
-        
+
         scoreTableContainer.addEventListener('input', (e) => {
-            if(e.target.matches('input[type="text"]')) {
+            if (e.target.matches('input[type="text"]')) {
                 handleScoreInput(e);
             }
         });
-        
+
         scoreTableContainer.addEventListener('click', (e) => {
             if (e.target.matches('.tie-breaker-controls button')) {
                 state.shootOffWinner = e.target.dataset.winner;

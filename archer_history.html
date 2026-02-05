@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +16,7 @@
       initDarkMode();
     } else {
       // Fallback if common.js not loaded yet
-      (function() {
+      (function () {
         const savedTheme = localStorage.getItem('theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
@@ -28,17 +29,21 @@
   </script>
   <script src="js/scorecard_view.js"></script>
   <script src="js/solo_match_view.js"></script>
+  <script src="js/team_match_view.js"></script>
   <script src="js/unified_scorecard_list.js"></script>
 </head>
+
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
   <div class="max-w-6xl mx-auto px-4 py-6 pb-[calc(48px+env(safe-area-inset-bottom))]">
     <!-- Header -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200 flex justify-between items-center">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200 flex justify-between items-center">
       <h1 id="page-title" class="text-3xl font-bold text-gray-800 dark:text-white">Archer History</h1>
     </div>
 
     <!-- Archer Info -->
-    <div id="archer-info" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200 hidden">
+    <div id="archer-info"
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200 hidden">
       <h2 id="archer-name" class="text-2xl font-bold text-gray-800 dark:text-white mb-3">-</h2>
       <div class="flex gap-6 flex-wrap text-gray-600 dark:text-gray-400 text-sm">
         <span>🏫 School: <strong id="archer-school" class="text-gray-800 dark:text-white">-</strong></span>
@@ -51,14 +56,17 @@
 
     <!-- Loading/Error States -->
     <div id="loading" class="text-center py-12 text-gray-600 dark:text-gray-400">Loading history...</div>
-    <div id="error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg my-6 hidden"></div>
+    <div id="error"
+      class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg my-6 hidden">
+    </div>
 
     <!-- History List -->
     <div id="history-container" class="mb-6 hidden">
       <div class="scorecard-list-container">
-        <div class="scorecard-list-header grid gap-1.5 px-2.5 py-2 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-[11px] font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide items-center sticky top-0 z-10 min-w-0 sm:gap-2 sm:px-3 sm:py-2.5 sm:text-xs"
-             style="grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr);"
-             data-columns="6">
+        <div
+          class="scorecard-list-header grid gap-1.5 px-2.5 py-2 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-[11px] font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide items-center sticky top-0 z-10 min-w-0 sm:gap-2 sm:px-3 sm:py-2.5 sm:text-xs"
+          style="grid-template-columns: minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr);"
+          data-columns="6">
           <div class="text-center">Event</div>
           <div class="text-center">Status</div>
           <div class="text-center">Total</div>
@@ -78,13 +86,18 @@
     </div>
   </div>
 
-  <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
+  <footer
+    class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
     <div class="max-w-6xl mx-auto flex items-center h-full px-4 gap-2">
-      <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+      <a href="index.html"
+        class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center"
+        aria-label="Home">
         <i class="fas fa-home text-2xl"></i>
       </a>
       <div class="flex-1"></div>
-      <a href="archer_list.html" class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"><i class="fas fa-arrow-left mr-1"></i> Back to Archer List</a>
+      <a href="archer_list.html"
+        class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"><i
+          class="fas fa-arrow-left mr-1"></i> Back to Archer List</a>
     </div>
   </footer>
 
@@ -95,7 +108,7 @@
       : 'https://archery.tryentist.com/api/v1';
     const urlParams = new URLSearchParams(window.location.search);
     const archerId = urlParams.get('archer') || urlParams.get('id') || urlParams.get('extId');
-    
+
     // Store archer data globally so it can be accessed when viewing scorecards
     let currentArcherData = null;
     let historyData = []; // Store history for win/loss calculation
@@ -119,7 +132,7 @@
       const wins = soloMatches.filter(m => m.is_winner === true || m.is_winner === 1).length;
       const losses = soloMatches.filter(m => m.is_winner === false || m.is_winner === 0).length;
       const total = soloMatches.length;
-      
+
       return {
         wins,
         losses,
@@ -137,7 +150,7 @@
       try {
         // Try with the provided ID first (could be UUID or external ID)
         let res = await fetch(`${API_BASE}/archers/${encodeURIComponent(archerId)}/history`);
-        
+
         // If 404 and looks like external ID (contains hyphens but not UUID format), try searching by external ID
         if (!res.ok && res.status === 404 && archerId.includes('-') && !archerId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
           console.log('First attempt failed, trying to find archer by external ID...');
@@ -145,7 +158,7 @@
           const archersRes = await fetch(`${API_BASE}/archers`);
           if (archersRes.ok) {
             const archersData = await archersRes.json();
-            const archer = (archersData.archers || []).find(a => 
+            const archer = (archersData.archers || []).find(a =>
               (a.extId || '').toLowerCase() === archerId.toLowerCase() ||
               `${a.first_name}-${a.last_name}`.toLowerCase().replace(/\s+/g, '-') === archerId.toLowerCase()
             );
@@ -155,7 +168,7 @@
             }
           }
         }
-        
+
         if (!res.ok) {
           if (res.status === 404) {
             showError('Archer not found. They may not have scored any rounds yet.');
@@ -164,10 +177,10 @@
           }
           return;
         }
-        
+
         const data = await res.json();
         console.log('Archer history:', data);
-        
+
         // Store archer data globally for scorecard viewing
         currentArcherData = data.archer;
 
@@ -177,14 +190,14 @@
         document.getElementById('archer-level').textContent = data.archer.level || 'N/A';
         document.getElementById('archer-gender').textContent = data.archer.gender === 'M' ? 'Male' : data.archer.gender === 'F' ? 'Female' : 'N/A';
         document.getElementById('total-rounds').textContent = data.totalRounds;
-        
+
         // Store history for win/loss calculation
         historyData = data.history || [];
-        
+
         // Calculate and display win/loss ratio
         const { wins, losses, ratio } = calculateWinLossRatio(historyData);
         document.getElementById('solo-record').textContent = ratio || '0-0';
-        
+
         document.getElementById('archer-info').classList.remove('hidden');
 
         // Render history
@@ -213,7 +226,7 @@
 
       const divisionNames = {
         'BVAR': 'Boys Varsity',
-        'GVAR': 'Girls Varsity', 
+        'GVAR': 'Girls Varsity',
         'BJV': 'Boys JV',
         'GJV': 'Girls JV'
       };
@@ -223,11 +236,11 @@
         row.className = 'scorecard-list-item grid gap-1.5 items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 px-2.5 py-2 min-h-[2.75rem] min-w-0 transition-all duration-200 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 sm:gap-2 sm:px-3 sm:py-2.5 sm:min-h-[3rem]';
         row.style.gridTemplateColumns = 'minmax(0, 2fr) minmax(55px, 1fr) minmax(65px, 1fr) minmax(55px, 1fr) minmax(35px, 0.5fr) minmax(35px, 0.5fr)';
         row.setAttribute('data-columns', '6');
-        
+
         // Status text - prioritize card_status from database
         let statusText = '';
         const cardStatus = (item.card_status || '').toUpperCase();
-        
+
         if (cardStatus === 'VER' || cardStatus === 'VERIFIED') {
           statusText = 'VER';
         } else if (cardStatus === 'VOID') {
@@ -239,14 +252,14 @@
         } else {
           statusText = 'PEND';
         }
-        
+
         // Format date
-        const eventDate = item.event_date ? new Date(item.event_date).toLocaleDateString('en-US', { 
-          month: 'short', day: 'numeric', year: '2-digit' 
+        const eventDate = item.event_date ? new Date(item.event_date).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: '2-digit'
         }) : 'N/A';
-        
+
         let eventName, subtitle, totalScore, avgScore, xs, tens;
-        
+
         if (item.type === 'ranking') {
           // Ranking round display
           const roundTypeDisplay = item.round_type === 'PRACTICE' ? 'Practice' : (item.round_type || 'R300');
@@ -254,7 +267,7 @@
           const baleInfo = item.bale_number ? ` • Bale ${item.bale_number}` : '';
           subtitle = `${eventDate} • ${roundTypeDisplay} • ${divisionNames[item.division] || item.division || 'Open'}${baleInfo}`;
           totalScore = item.final_score || 0;
-          avgScore = item.final_score && item.ends_completed ? 
+          avgScore = item.final_score && item.ends_completed ?
             (item.final_score / (item.ends_completed * 3)).toFixed(1) : '0.0';
           xs = item.total_xs || 0;
           tens = item.total_tens || 0;
@@ -285,7 +298,7 @@
           xs = item.total_xs || 0;
           tens = item.total_tens || 0;
         }
-        
+
         row.innerHTML = `
           <div class="flex flex-col gap-0.5 min-w-0 overflow-hidden">
             <div class="text-[13px] font-semibold text-gray-900 dark:text-white overflow-hidden text-ellipsis whitespace-nowrap leading-tight sm:text-sm">${eventName}</div>
@@ -306,8 +319,7 @@
           } else if (item.type === 'solo') {
             showSoloMatchScorecard(item);
           } else if (item.type === 'team') {
-            // TODO: Show team match scorecard
-            console.log('Team match clicked:', item);
+            showTeamMatchScorecard(item);
           }
         };
 
@@ -315,19 +327,71 @@
       });
     }
 
+    async function showTeamMatchScorecard(match) {
+      if (!match || !match.match_id) {
+        console.error('Invalid match data:', match);
+        alert('Unable to load match. Missing match ID.');
+        return;
+      }
+
+      try {
+        // Check if TeamCard viewer is loaded (we might need to check for it or dynamically load it)
+        // For now, we'll try to use a generic approach or reuse SoloMatchView if possible, 
+        // but Team matches have different structure (3 archers vs 3 archers).
+        // Let's assume we need to fetch details first.
+
+        console.log('Loading team match:', match.match_id);
+
+        // Get authentication headers
+        const headers = getAuthHeaders(match.match_id);
+
+        const response = await fetch(`${API_BASE}/team-matches/${match.match_id}`, {
+          headers: headers
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            alert('Match not found.');
+          } else {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return;
+        }
+
+        const data = await response.json();
+        const matchData = data.match;
+
+        // TODO: We need a TeamMatchView similar to SoloMatchView. 
+        // For now, let's show a simple alert or modal with basic info until we build the full view.
+        // Or better, let's create a basic modal here if TeamMatchView doesn't exist.
+
+        if (typeof TeamMatchView !== 'undefined') {
+          TeamMatchView.showMatchModal(matchData);
+        } else {
+          // Fallback: Simple alert for now, or we can inject a basic modal
+          alert(`Team Match Details:\n\n${matchData.event_name}\n${matchData.team1_name} vs ${matchData.team2_name}\nScore: ${matchData.sets_won_t1}-${matchData.sets_won_t2}\n\n(Full team scorecard view coming soon)`);
+          console.log('Full match data:', matchData);
+        }
+
+      } catch (error) {
+        console.error('Error loading team match:', error);
+        alert('Unable to load team match details: ' + error.message);
+      }
+    }
+
     function showError(message) {
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('error').textContent = message;
       document.getElementById('error').classList.remove('hidden');
     }
-    
+
     /**
      * Get authentication headers for API requests
      * Tries coach API key first, then event entry code, then match code
      */
     function getAuthHeaders(matchId = null, matchCode = null) {
       const headers = { 'Content-Type': 'application/json' };
-      
+
       // Try coach API key first
       const coachKey = localStorage.getItem('coach_api_key') || localStorage.getItem('coach_passcode') || '';
       if (coachKey) {
@@ -335,20 +399,20 @@
         headers['X-Passcode'] = coachKey;
         return headers;
       }
-      
+
       // Fall back to event entry code
       const entryCode = localStorage.getItem('event_entry_code') || '';
       if (entryCode) {
         headers['X-Passcode'] = entryCode;
         return headers;
       }
-      
+
       // Try match code (for standalone matches)
       if (matchCode) {
         headers['X-Passcode'] = matchCode;
         return headers;
       }
-      
+
       // Try to get match code from localStorage if matchId provided
       if (matchId) {
         const storedMatchCode = localStorage.getItem(`solo_match_code:${matchId}`);
@@ -357,7 +421,7 @@
           return headers;
         }
       }
-      
+
       // No auth available - return headers without auth (may fail for protected endpoints)
       return headers;
     }
@@ -382,7 +446,7 @@
 
         // Get match code from history data or localStorage
         const matchCode = match.match_code || localStorage.getItem(`solo_match_code:${match.match_id}`);
-        
+
         // Store match code in localStorage if we got it from history (for future use)
         if (match.match_code && !localStorage.getItem(`solo_match_code:${match.match_id}`)) {
           localStorage.setItem(`solo_match_code:${match.match_id}`, match.match_code);
@@ -442,20 +506,20 @@
           alert('Scorecard viewer is not loaded. Please refresh the page.');
           return;
         }
-        
+
         console.log('Round data received:', round);
-        
+
         // Extract the correct field names (API might return different field names)
         const roundId = round.round_id || round.roundId || round.id;
         const archerIdForRequest = round.archer_id || round.archerId;
-        
+
         // Check if we need to fetch from API or if we have the data already
         if (!roundId || !archerIdForRequest) {
           console.error('Missing round or archer information. Round data:', round);
           alert('Missing round or archer information. Round ID: ' + roundId + ', Archer ID: ' + archerIdForRequest);
           return;
         }
-        
+
         console.log('Fetching scorecard for round:', roundId, 'archer:', archerIdForRequest);
         const res = await fetch(`${API_BASE}/rounds/${roundId}/archers/${archerIdForRequest}/scorecard`);
         if (!res.ok) {
@@ -466,17 +530,17 @@
           }
           return;
         }
-        
+
         const scorecardData = await res.json();
         console.log('Scorecard data:', scorecardData);
-        
+
         // Extract scores from ends
         const scores = (scorecardData.ends || []).map(end => [
           end.a1 || '',
           end.a2 || '',
           end.a3 || ''
         ]);
-        
+
         // Use globally stored archer data for name and details
         // Pass cardStatus from round data (history API) or scorecardData (scorecard API)
         // This ensures the status badge matches what's shown in the list
@@ -492,14 +556,14 @@
           verified: scorecardData.verified || false,
           completed: (scorecardData.ends_completed >= 10)
         };
-        
+
         const roundData = {
           totalEnds: 10,
           eventName: round.event_name || '',
           division: round.division || '',
           roundType: round.round_type || 'R300'
         };
-        
+
         // Build editUrl for Scorecard Editor (coach-only)
         // roundArcherId might be in round object or scorecardData
         let editUrl = null;
@@ -507,7 +571,7 @@
         if (roundArcherId) {
           editUrl = `scorecard_editor.html?id=${roundArcherId}&mode=coach`;
         }
-        
+
         ScorecardView.showScorecardModal(archerData, roundData, { editUrl });
       } catch (err) {
         console.error('Error loading scorecard:', err);
@@ -519,39 +583,39 @@
       if (!confirm(`Delete this abandoned scorecard from "${eventName}"?\n\nThis action cannot be undone.`)) {
         return;
       }
-      
+
       try {
         // Disable button during request
         buttonElement.disabled = true;
         buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        
+
         // Check if current user is the owner of this scorecard
         const isOwner = currentArcherData && currentArcherData.id === archerId;
-        
+
         let headers = {
           'Content-Type': 'application/json'
         };
-        
+
         if (isOwner) {
           // Archer deleting their own scorecard - use archer authentication
           headers['X-Archer-ID'] = archerId;
           headers['X-Archer-Self'] = 'true';
         } else {
           // Coach or other user - use coach credentials
-          const coachApiKey = localStorage.getItem('coach_api_key') || 
-                             localStorage.getItem('coach_passcode') || 
-                             getCookie('coach_auth') || 
-                             'wdva26'; // Default coach passcode
-          
+          const coachApiKey = localStorage.getItem('coach_api_key') ||
+            localStorage.getItem('coach_passcode') ||
+            getCookie('coach_auth') ||
+            'wdva26'; // Default coach passcode
+
           headers['X-Passcode'] = coachApiKey;
           headers['X-API-Key'] = coachApiKey;
         }
-        
+
         const response = await fetch(`${API_BASE}/rounds/${roundId}/archers/${roundArcherId}`, {
           method: 'DELETE',
           headers: headers
         });
-        
+
         if (!response.ok) {
           if (response.status === 401 || response.status === 403) {
             if (isOwner) {
@@ -563,7 +627,7 @@
           const errorText = await response.text().catch(() => 'Unknown error');
           throw new Error(`Failed to delete scorecard (HTTP ${response.status}): ${errorText}`);
         }
-        
+
         const result = await response.json();
         if (result.ok) {
           alert('Scorecard deleted successfully!');
@@ -575,13 +639,13 @@
       } catch (error) {
         console.error('Delete scorecard error:', error);
         alert('Failed to delete scorecard: ' + error.message);
-        
+
         // Re-enable button on error
         buttonElement.disabled = false;
         buttonElement.innerHTML = '<i class="fas fa-trash-alt"></i>';
       }
     }
-    
+
     // Helper function to get cookie value
     function getCookie(name) {
       const nameEQ = name + '=';
@@ -600,5 +664,5 @@
     });
   </script>
 </body>
-</html>
 
+</html>
