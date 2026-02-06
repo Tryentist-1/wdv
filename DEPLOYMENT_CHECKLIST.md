@@ -49,7 +49,7 @@ npm run test:api:all
 - [ ] No console errors on key pages
 - [ ] No lint errors (if linter configured)
 - [ ] Changes committed to git
-- [ ] Branch: `Development` up to date
+- [ ] Branch: `main` up to date (merge feature/fix branch before deploy)
 
 ## Deployment Steps
 
@@ -73,9 +73,11 @@ npm run deploy:fast
 - [ ] https://archery.tryentist.com/api/test_harness.html → Opens correctly
 
 **Frontend Check:**
+- [ ] https://archery.tryentist.com/ (index.html) → Loads, archer list loads
 - [ ] https://archery.tryentist.com/coach.html → Loads, can log in
 - [ ] https://archery.tryentist.com/ranking_round_300.html → Loads, modal shows
 - [ ] https://archery.tryentist.com/results.html → Loads (even without event param)
+- [ ] Solo/Team “Complete Match” → No 404 (optional smoke test)
 
 **Full Flow (Live on Production):**
 1. Coach creates event: "Prod Test {timestamp}"

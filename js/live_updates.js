@@ -601,6 +601,10 @@
 
         setConfig(config);
         loadPersistedState();  // Restore roundId and archerIds from previous session
+        // Flush any queued ends from previous session (e.g. after reconnect or refresh)
+        if (state.roundId && state.config.enabled) {
+            flushQueue().catch(e => console.warn('[LiveUpdates] Init flushQueue failed:', e));
+        }
     }
 
     // =====================================================

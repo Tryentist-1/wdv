@@ -31,6 +31,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sessionKey = `soloCard_session_${new Date().toISOString().split('T')[0]}`;
 
+    /**
+     * API base URL for fetch calls. On localhost use api/index.php/v1 so PHP built-in server routes correctly.
+     * @returns {string}
+     */
+    function getApiBase() {
+        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            const port = window.location.port || '8001';
+            return `${window.location.protocol}//${window.location.hostname}:${port}/api/index.php/v1`;
+        }
+        return 'https://archery.tryentist.com/api/v1';
+    }
+
     // --- DOM ELEMENT REFERENCES ---
     const views = {
         setup: document.getElementById('setup-view'),
@@ -103,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (state.eventId) {
                 try {
                     const API_KEY = localStorage.getItem('coach_api_key') || 'wdva26';
-                    const eventResponse = await fetch(`api/v1/events/${state.eventId}/snapshot`, {
+                    const eventResponse = await fetch(`${getApiBase()}/events/${state.eventId}/snapshot`, {
                         headers: {
                             'X-API-Key': API_KEY
                         }
@@ -140,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (state.bracketId) {
                             // Get bracket info to determine if it's Open/Mixed
                             try {
-                                const bracketResponse = await fetch(`api/v1/brackets/${state.bracketId}`, {
+                                const bracketResponse = await fetch(`${getApiBase()}/brackets/${state.bracketId}`, {
                                     headers: {
                                         'X-API-Key': API_KEY
                                     }
@@ -174,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     // Get bracket standings (W-L record for Swiss brackets)
                                     if (bracket.bracket_format === 'SWISS') {
                                         try {
-                                            const entriesResponse = await fetch(`api/v1/brackets/${state.bracketId}/entries`, {
+                                            const entriesResponse = await fetch(`${getApiBase()}/brackets/${state.bracketId}/entries`, {
                                                 headers: {
                                                     'X-API-Key': API_KEY
                                                 }
@@ -1663,7 +1675,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- EVENT/BRACKET MANAGEMENT ---
     async function loadEvents() {
         try {
-            const response = await fetch('api/v1/events/recent');
+            const response = await fetch(`${getApiBase()}/events/recent`);
             if (response.ok) {
                 const data = await response.json();
                 state.events = data.events || [];
@@ -1723,7 +1735,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadBrackets(eventId) {
         try {
-            const response = await fetch(`api/v1/events/${eventId}/brackets`);
+            const response = await fetch(`${getApiBase()}/events/${eventId}/brackets`);
             if (response.ok) {
                 const data = await response.json();
                 state.brackets = (data.brackets || []).filter(b => b.bracket_type === 'SOLO');
@@ -1803,19 +1815,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // First try UUID if it looks like one
                 if (archerId.length === 36 && archerId.includes('-')) {
-                    url = `api/v1/brackets/${state.bracketId}/archer-assignment/${archerId}`;
+                    url = `${getApiBase()}/brackets/${state.bracketId}/archer-assignment/${archerId}`;
                 } else if (firstName && lastName) {
                     // Use name-based lookup
-                    url = `api/v1/brackets/${state.bracketId}/archer-assignment/by-name/${encodeURIComponent(firstName)}/${encodeURIComponent(lastName)}`;
+                    url = `${getApiBase()}/brackets/${state.bracketId}/archer-assignment/by-name/${encodeURIComponent(firstName)}/${encodeURIComponent(lastName)}`;
                     console.log('[SoloCard] Using name-based lookup:', firstName, lastName);
                 } else {
-                    url = `api/v1/brackets/${state.bracketId}/archer-assignment/${archerId}`;
+                    url = `${getApiBase()}/brackets/${state.bracketId}/archer-assignment/${archerId}`;
                 }
             } else {
-                url = `api/v1/brackets/${state.bracketId}/archer-assignment/${archerId}`;
+                url = `${getApiBase()}/brackets/${state.bracketId}/archer-assignment/${archerId}`;
             }
         } else {
-            url = `api/v1/brackets/${state.bracketId}/archer-assignment/${archerId}`;
+            url = `${getApiBase()}/brackets/${state.bracketId}/archer-assignment/${archerId}`;
         }
 
         try {
@@ -2077,7 +2089,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const lastName = selfArcher.last || '';
                             if (firstName && lastName) {
                                 try {
-                                    const searchRes = await fetch(`api/v1/archers/search?q=${encodeURIComponent(firstName + ' ' + lastName)}`);
+                                    const searchRes = await fetch(`${getApiBase()}/archers/search?q=${encodeURIComponent(firstName + ' ' + lastName)}`);
                                     if (searchRes.ok) {
                                         const searchData = await searchRes.json();
                                         if (searchData.results && searchData.results.length > 0) {

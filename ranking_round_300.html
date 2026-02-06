@@ -323,7 +323,7 @@
                     <!-- Left: Event Name & Division Info -->
                     <div class="flex-1 min-w-0">
                         <!-- Line 1: Event Name + Sync Status -->
-                        <div class="flex items-center gap-2 mb-1">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
                             <div id="scoring-header-event" class="text-lg font-bold text-gray-800 dark:text-white truncate">
                                 Event Name
                             </div>
@@ -361,7 +361,8 @@
                     class="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded hover:bg-gray-500 dark:hover:bg-gray-500 font-semibold transition-colors h-10">Next
                     →</button>
                 <button id="sync-end-btn"
-                    class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark font-semibold transition-colors h-10 hidden">Sync
+                    class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark font-semibold transition-colors h-10 hidden"
+                    title="Send this end to the server for all archers (running totals updated). Tap if header shows LOCAL Only or if sync failed.">Sync
                     End</button>
                 <button id="complete-round-btn"
                     class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors h-10 hidden">Complete
