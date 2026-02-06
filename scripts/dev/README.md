@@ -1,107 +1,37 @@
-# WDV Development Server Scripts
+# WDV Development Scripts
 
-Quick commands to manage your local development environment.
+**WDV dev runs only in OrbStack (Docker Compose).** Use `docker compose up -d` from the repo root. See [docs/core/DEVELOPMENT_ENVIRONMENT.md](../../docs/core/DEVELOPMENT_ENVIRONMENT.md).
 
-## 🚀 Quick Commands
+---
 
-After running `./scripts/dev/setup-aliases.sh`, you can use these shortcuts anywhere in your terminal:
+## Primary: Docker Compose
 
-### Start Servers
+From repo root:
+
 ```bash
-wdv-start
-```
-Starts MySQL (Docker) and PHP development server. Opens on http://localhost:8001
-
-### Stop Servers
-```bash
-wdv-stop          # Stops PHP server only (MySQL keeps running)
-wdv-stop --all    # Stops both PHP server and MySQL
+docker compose up -d    # Start (wdv_web, wdv_php, wdv_db)
+docker compose down    # Stop
+docker compose logs -f # Logs
 ```
 
-### Restart Servers
-```bash
-wdv-restart       # Restarts PHP server (MySQL stays running)
-wdv-restart --all # Restarts both PHP and MySQL
-```
+- **App:** http://localhost:8001  
+- **DB:** container `wdv_db` (MariaDB), credentials in `config.docker.php`.
 
-### Check Status
-```bash
-wdv-status
-```
-Shows if MySQL and PHP server are running.
+---
 
-## 📁 Script Files
+## Scripts in this folder
 
-All scripts are in `scripts/dev/`:
+- **docker-start.sh** – Can start the Docker stack (alternative to `docker compose up -d`).
+- **reset-from-prod.sh** – Reset local DB from a prod backup (restore into OrbStack `wdv_db`; see workflow docs).
+- **setup-aliases.sh** – Optional shell aliases; if you use them, point `wdv-start` at `docker compose up -d` and `wdv-stop` at `docker compose down`.
 
-- `start.sh` - Start MySQL and PHP server
-- `stop.sh` - Stop PHP server (optionally MySQL)
-- `restart.sh` - Restart servers
-- `status.sh` - Check server status
-- `reset-from-prod.sh` - Reset local database from production backup
-- `restore-prod.sh` - Legacy restore script (use `reset-from-prod.sh` instead)
-- `setup-aliases.sh` - Install terminal shortcuts (run once)
-- `docker-start.sh` - Legacy script (use `start.sh` instead)
+Do not use host MySQL or `npm run serve` for WDV dev.
 
-## 🔧 First Time Setup
+---
 
-Run this once to set up the shortcuts:
-```bash
-./scripts/dev/setup-aliases.sh
-```
+## Access points
 
-Then reload your shell:
-```bash
-source ~/.zshrc
-```
-
-Or just open a new terminal window.
-
-## 💡 Usage Tips
-
-1. **Daily workflow:**
-   ```bash
-   wdv-start    # Start working
-   # ... make changes ...
-   # Press Ctrl+C to stop PHP server when done
-   ```
-
-2. **Check if servers are running:**
-   ```bash
-   wdv-status
-   ```
-
-3. **Restart after config changes:**
-   ```bash
-   wdv-restart
-   ```
-
-4. **Clean shutdown:**
-   ```bash
-   wdv-stop --all  # Stops everything
-   ```
-
-5. **Reset database from production backup:**
-   ```bash
-   ./scripts/dev/reset-from-prod.sh
-   # Or with a specific backup file:
-   ./scripts/dev/reset-from-prod.sh backups/db_backup_20260121_135139.sql
-   # Or auto-confirm (useful for automation):
-   ./scripts/dev/reset-from-prod.sh --yes
-   ```
-
-## 🌐 Access Points
-
-Once started, access:
-- **Main app:** http://localhost:8001/index.html
-- **Coach console:** http://localhost:8001/coach.html
-- **Style guide:** http://localhost:8001/tests/components/style-guide.html
-- **API test:** http://localhost:8001/tests/api/harness/test_harness.html
-
-## 🐳 Docker Notes
-
-- MySQL runs in Docker container `wdv-mysql`
-- Data persists in Docker volume `wdv_mysql_data`
-- Container auto-starts when you run `wdv-start`
-- Use `docker-compose stop mysql` to stop MySQL manually
-- Use `docker-compose down -v` to remove MySQL and all data
+- **Main app:** http://localhost:8001/index.html  
+- **Coach console:** http://localhost:8001/coach.html  
+- **Style guide:** http://localhost:8001/tests/components/style-guide.html  
+- **API test:** http://localhost:8001/tests/api/harness/test_harness.html  

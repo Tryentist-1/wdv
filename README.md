@@ -92,14 +92,12 @@ This document explains:
 
 ## 🚀 Local Development Setup
 
+**Dev runs only in OrbStack (Docker).** Do not use Homebrew MySQL, Homebrew PHP, or `npm run serve`. See [docs/core/DEVELOPMENT_ENVIRONMENT.md](docs/core/DEVELOPMENT_ENVIRONMENT.md).
+
 ### Prerequisites
-```bash
-# Required
-- PHP 8.0+
-- MySQL 8.0+
-- Node.js 16+ (for dev tools)
+- [OrbStack](https://orbstack.dev/) (or Docker Desktop)
+- Node.js 16+ (for Tailwind build and dev tools)
 - Git
-```
 
 ### Quick Setup
 ```bash
@@ -107,30 +105,21 @@ This document explains:
 git clone <repo-url>
 cd wdv
 
-# 2. Install dependencies
+# 2. Install dependencies & build Tailwind
 npm install
-
-# 3. Build Tailwind CSS
 npm run build:css
 
-# 4. Run setup script (MacOS/Linux)
-./scripts/dev/setup_local.sh
+# 3. Start the stack (OrbStack/Docker)
+docker compose up -d
 
-# OR using Docker (Recommended):
-npm run docker:up
-
-# 5. Start PHP server (if not using Docker)
-npm run serve
-
-# 6. Open browser
+# 4. Open browser
 open http://localhost:8001
-
-# 7. View Style Guide (UI Components)
 open http://localhost:8001/tests/components/style-guide.html
 ```
 
 ### Detailed Setup
-See [QUICK_START_LOCAL.md](QUICK_START_LOCAL.md) for full instructions.
+- [QUICK_START_LOCAL.md](QUICK_START_LOCAL.md) – quick reference  
+- [docs/guides/LOCAL_DEVELOPMENT_SETUP.md](docs/guides/LOCAL_DEVELOPMENT_SETUP.md) – full guide
 
 ### 🎨 Style Guide
 **`style-guide.html`** - Complete UI style guide and component library with:
@@ -342,6 +331,7 @@ open https://archery.tryentist.com/
 
 | Document | Purpose |
 |----------|---------|
+| [DEVELOPMENT_ENVIRONMENT.md](docs/core/DEVELOPMENT_ENVIRONMENT.md) | **How we run dev** (OrbStack/Docker only) |
 | [QUICK_START_LOCAL.md](QUICK_START_LOCAL.md) | Local development setup |
 | [DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) | Git workflow & conventions |
 | [TECHNICAL_DOCUMENTATION.md](docs/TECHNICAL_DOCUMENTATION.md) | Legacy code analysis |

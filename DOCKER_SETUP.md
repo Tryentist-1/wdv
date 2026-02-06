@@ -1,144 +1,56 @@
-# Docker Setup for WDV Project
+# Docker (OrbStack) Setup for WDV
 
-This project uses Docker for local MySQL database management. This keeps your database isolated from other projects and makes it easy to start/stop.
+**WDV local dev runs only in OrbStack (Docker Compose).** One stack provides web, PHP, and DB. See [docs/core/DEVELOPMENT_ENVIRONMENT.md](docs/core/DEVELOPMENT_ENVIRONMENT.md) for the single source of truth.
 
-## 🚀 Quick Start
+---
 
-### First Time Setup
+## Stack
 
-1. **Make sure Docker Desktop is running**
+| Service | Container | Port / Role |
+|---------|-----------|-------------|
+| Web     | `wdv_web` | nginx, **8001** → 80 |
+| PHP     | `wdv_php` | PHP 8.2 FPM (used by nginx) |
+| DB      | `wdv_db`  | MariaDB 10.6 (internal) |
 
-2. **Start the development servers:**
-   ```bash
-   ./scripts/dev/docker-start.sh
-   ```
+- **App URL:** http://localhost:8001  
+- **Config:** `config.docker.php` is mounted as `api/config.local.php` (DB host `db`, database `wdv`, user `wdv_user`, password `wdv_password`).
 
-   This will:
-   - Start MySQL in Docker (if not already running)
-   - Wait for MySQL to be ready
-   - Import the database schema (if needed)
-   - Start the PHP development server on http://localhost:8001
+---
 
-3. **Access the application:**
-   - Main app: http://localhost:8001/index.html
-   - Coach console: http://localhost:8001/coach.html
-   - Style guide: http://localhost:8001/tests/components/style-guide.html
+## Commands
 
-### Daily Development
-
-Just run:
 ```bash
-./scripts/dev/docker-start.sh
+# Start
+docker compose up -d
+
+# Stop (keeps data in ./mysql)
+docker compose down
+
+# Logs
+docker compose logs -f
+
+# DB shell
+docker exec -it wdv_db mysql -u wdv_user -pwdv_password wdv
+
+# Restore prod snapshot (tables-only SQL)
+docker exec -i wdv_db mysql -u root -prootpassword wdv < /path/to/wdv_tables_only.sql
 ```
 
-The MySQL container will persist between sessions, so you don't need to re-import data.
+---
 
-## 🐳 Docker Commands
+## Data
 
-### Start MySQL only
-```bash
-docker-compose up -d mysql
-```
+- DB data: persisted in `./mysql` (bind mount in `docker-compose.yml`).  
+- Code: project root is mounted; edit locally and refresh the browser.
 
-### Stop MySQL (keeps data)
-```bash
-docker-compose stop mysql
-```
+---
 
-### Start MySQL again
-```bash
-docker-compose start mysql
-```
+## Troubleshooting
 
-### Stop and remove MySQL (⚠️ deletes data)
-```bash
-docker-compose down
-```
+- **Port 8001 in use:** Another process is using it; stop it or change `ports: "8001:80"` in `docker-compose.yml`.  
+- **DB connection fails:** Ensure containers are up (`docker ps`), then check `config.docker.php` and that `wdv_db` is healthy.  
+- **Reset DB:** Remove `./mysql` (or the volume), then `docker compose up -d` again; schema is applied from `api/sql/schema.mysql.sql` on first init.
 
-### View MySQL logs
-```bash
-docker-compose logs -f mysql
-```
+---
 
-### Access MySQL command line
-```bash
-docker exec -it wdv-mysql mysql -uroot -psecret wdv
-```
-
-### Import SQL file manually
-```bash
-docker exec -i wdv-mysql mysql -uroot -psecret wdv < api/sql/schema.mysql.sql
-```
-
-## 📊 Database Configuration
-
-The Docker MySQL setup uses:
-- **Host:** `127.0.0.1` (or `localhost`)
-- **Port:** `3306`
-- **Database:** `wdv`
-- **Root user:** `root`
-- **Root password:** `secret`
-- **Database user:** `wdv_user`
-- **Database password:** `wdv_dev_password`
-
-These match the settings in `api/config.local.php`.
-
-## 💾 Data Persistence
-
-Database data is stored in a Docker volume named `wdv_mysql_data`. This means:
-- ✅ Data persists when you stop the container
-- ✅ Data persists when you restart your computer
-- ✅ Data is isolated to this project
-- ⚠️ Data is deleted if you run `docker-compose down -v`
-
-## 🔄 Working with Multiple Projects
-
-Each project should have its own `docker-compose.yml` file. Docker Compose automatically:
-- Creates separate containers for each project
-- Uses different volume names (based on project directory)
-- Keeps databases completely isolated
-
-**Example:** If you have another project in `/Users/terry/makeitso/other-project`, it can also use port 3306 because Docker containers are isolated. Just make sure each project's `docker-compose.yml` uses a unique container name.
-
-## 🛠️ Troubleshooting
-
-### MySQL container won't start
-```bash
-# Check if port 3306 is already in use
-lsof -i :3306
-
-# If something else is using it, stop it or change the port in docker-compose.yml
-```
-
-### Database connection fails
-1. Check if container is running: `docker ps | grep wdv-mysql`
-2. Check container logs: `docker-compose logs mysql`
-3. Verify config: Check `api/config.local.php` matches Docker settings
-
-### Need to reset the database
-```bash
-# Stop and remove container + data
-docker-compose down -v
-
-# Start fresh
-docker-compose up -d mysql
-
-# Wait for MySQL to be ready, then import schema
-docker exec -i wdv-mysql mysql -uroot -psecret wdv < api/sql/schema.mysql.sql
-```
-
-### Container name conflicts
-If you get "container name already in use" errors:
-```bash
-# Remove the old container
-docker rm -f wdv-mysql
-
-# Start fresh
-docker-compose up -d mysql
-```
-
-## 📚 More Information
-
-- **Docker Compose docs:** https://docs.docker.com/compose/
-- **MySQL Docker image:** https://hub.docker.com/_/mysql
-- **Project setup:** See `QUICK_START_LOCAL.md` for full setup instructions
+**Related:** [QUICK_START_LOCAL.md](QUICK_START_LOCAL.md), [.agent/workflows/start-dev-servers.md](.agent/workflows/start-dev-servers.md)

@@ -2,7 +2,9 @@
 
 **Purpose:** Rapidly onboard into development session without derailing  
 **Use Case:** Start of every AI-assisted session or new developer onboarding  
-**Last Updated:** December 15, 2025
+**Last Updated:** February 2026
+
+> **Dev environment:** WDV runs **only in OrbStack (Docker)**. Use `docker compose up -d`; do not use Homebrew MySQL/PHP or `npm run serve`. See [docs/core/DEVELOPMENT_ENVIRONMENT.md](docs/core/DEVELOPMENT_ENVIRONMENT.md).
 
 ---
 
@@ -825,9 +827,9 @@ Cookies
 ### Local Development
 
 ```bash
-# Start PHP server
-npm run serve
-# → http://localhost:3000
+# Start dev stack (OrbStack/Docker only)
+docker compose up -d
+# → http://localhost:8001
 
 # Run tests
 npm test
@@ -919,8 +921,8 @@ open https://archery.tryentist.com/coach.html
 ### Database
 
 ```bash
-# Connect to local MySQL
-mysql -u root -p wdv_local
+# Connect to dev DB (OrbStack container)
+docker exec -it wdv_db mysql -u wdv_user -pwdv_password wdv
 
 # Connect to production (if needed)
 mysql -h tryentist.com -u USERNAME -p wdv_production

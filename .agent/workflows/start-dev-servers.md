@@ -1,41 +1,53 @@
 ---
-description: Start PHP and MySQL dev servers
+description: Start WDV dev environment (OrbStack/Docker only)
 ---
 
 # Start Development Servers
 
-This workflow starts the local PHP development server and ensures MySQL is running for the wdv project.
+WDV dev runs **only in OrbStack** (Docker): one stack for web, PHP, and MySQL. Do not use Homebrew MySQL or `npm run serve` for this project.
 
 ## Steps
 
-// turbo-all
-
-1. **Start MySQL service**
+1. **Start the OrbStack stack**
    ```bash
-   brew services start mysql
+   cd /path/to/wdv
+   docker compose up -d
+   ```
+   Or use the project script if you have one:
+   ```bash
+   ./scripts/dev/docker-start.sh
    ```
 
-2. **Verify MySQL is running**
+2. **Verify services**
    ```bash
-   mysqladmin ping -h localhost
+   docker ps
    ```
+   You should see `wdv_web` (port 8001), `wdv_php`, and `wdv_db` running.
 
-3. **Start PHP development server (background)**
+3. **Optional: check DB**
    ```bash
-   npm run serve
+   docker exec wdv_db mysql -u wdv_user -pwdv_password wdv -e "SELECT COUNT(*) FROM archers;"
    ```
 
 ## Notes
 
-- The PHP server will run on http://localhost:8001
-- MySQL will continue running in the background
-- To stop MySQL: `brew services stop mysql`
-- The PHP server will stay running until you terminate it
-- Access the main app at: http://localhost:8001/index.html
-- Access the coach console at: http://localhost:8001/coach.html
+- **App URL:** http://localhost:8001 (nginx → PHP → MariaDB in containers)
+- **DB:** MariaDB in container `wdv_db`; credentials in `config.docker.php` (wdv_user / wdv_password, database `wdv`)
+- **Code:** Project directory is mounted into the containers; edit locally and refresh the browser
+- **Stop:** `docker compose down` (data in `./mysql` is kept unless you remove the volume)
+- **Coach console:** http://localhost:8001/coach.html
+
+## Restore prod snapshot into OrbStack
+
+If you have a prod backup and want it in dev:
+
+1. Fix UUID defaults and strip view INSERTs (see earlier restore steps), then:
+   ```bash
+   docker exec -i wdv_db mysql -u root -prootpassword wdv < /tmp/wdv_tables_only.sql
+   ```
 
 ## Related Workflows
 
-- **Coach Testing:** [Coach Login Start](coach-login-start.md) - After starting servers, test coach features
-- **Bug Fixes:** [Bug Fix Workflow](bug-workflow.md) - If you encounter issues during development
-- **Post-Deployment:** [Post-Deployment Testing](post-deployment-testing.md) - Testing after deploying changes
+- **Coach Testing:** [Coach Login Start](coach-login-start.md)
+- **Bug Fixes:** [Bug Fix Workflow](bug-workflow.md)
+- **Post-Deployment:** [Post-Deployment Testing](post-deployment-testing.md)

@@ -1,42 +1,43 @@
 # Local Development Environment Setup Guide
 
-This guide will help you set up a complete local development environment for the WDV (West Des Moines) archery scoring application. You'll be able to develop and test changes locally before deploying to production.
+WDV local development runs **only in OrbStack (Docker)**. Do not use Homebrew MySQL, Homebrew PHP, or `npm run serve`. See [core/DEVELOPMENT_ENVIRONMENT.md](../core/DEVELOPMENT_ENVIRONMENT.md) for the single source of truth.
 
 ---
 
+## 🐋 OrbStack / Docker (Only Supported Setup)
 
----
+### Prerequisites
+- [OrbStack](https://orbstack.dev/) (or Docker Desktop) and Docker Compose
+- Node.js (for `npm run build:css` and dev tools)
+- Git
 
-## 🐋 Quick Start with Docker (Recommended)
-
-The easiest way to get started is using Docker. This method handles the database and server setup automatically.
-
-### Prerequisites for Docker
-- Docker Desktop or Docker Engine + Docker Compose
-
-### Starting the Environment
+### Start the stack
 ```bash
-# Start services in detached mode
-docker-compose up -d
-
-# Check status
-docker-compose ps
+# From repo root
+docker compose up -d
 ```
 
-The application will be available at [http://localhost:8001](http://localhost:8001).
+- **App:** [http://localhost:8001](http://localhost:8001)  
+- **Coach:** http://localhost:8001/coach.html  
+- **Style guide:** http://localhost:8001/tests/components/style-guide.html  
 
-### Stopping the Environment
+Containers: `wdv_web` (nginx, port 8001), `wdv_php` (PHP 8.2 FPM), `wdv_db` (MariaDB). Config: `config.docker.php` → DB `wdv`, user `wdv_user`.
+
+### Stop
 ```bash
-docker-compose down
+docker compose down
 ```
+Data in `./mysql` is kept unless you remove the volume.
 
-### Docker Troubleshooting
-- **Port Conflicts**: If port 8001 is in use, edit `docker-compose.yml` and change `8001:80` to another port.
-- **Database Persistence**: Data is persisted in the `mysql/` directory in the project root.
+### Restore prod snapshot
+```bash
+docker exec -i wdv_db mysql -u root -prootpassword wdv < /path/to/wdv_tables_only.sql
+```
+Use a tables-only backup (no view INSERTs); fix `DEFAULT uuid()` → `DEFAULT (UUID())` if needed for your MySQL/MariaDB version.
 
 ---
 
-## 📋 Manual Prerequisites (Non-Docker)
+## 📋 Legacy: Manual Prerequisites (Not Used)
 
 
 Before starting, ensure you have the following installed:

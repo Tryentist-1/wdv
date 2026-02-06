@@ -22,10 +22,10 @@ This directory contains step-by-step workflows for common development tasks in t
 
 ### 🚀 Development Workflows
 
-- **[Start Development Servers](workflows/start-dev-servers.md)** - Start PHP and MySQL for local development
-  - MySQL service startup
-  - PHP development server
-  - Port configuration
+- **[Start Development Servers](workflows/start-dev-servers.md)** - Start WDV dev (OrbStack/Docker only)
+  - `docker compose up -d` (wdv_web, wdv_php, wdv_db)
+  - App at http://localhost:8001
+  - Do not use Homebrew MySQL/PHP or `npm run serve`
 
 - **[Coach Login Start](workflows/coach-login-start.md)** - Step-by-step guide to log in as coach
   - Navigate to application

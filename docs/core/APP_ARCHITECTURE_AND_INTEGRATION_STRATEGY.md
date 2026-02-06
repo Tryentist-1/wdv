@@ -519,6 +519,12 @@ function checkForLegacyData() {
 
 ---
 
+## Development Environment
+
+Local development runs **only in OrbStack (Docker Compose)**: one stack with nginx (`wdv_web`, port 8001), PHP 8.2 FPM (`wdv_php`), and MariaDB (`wdv_db`). Do not use Homebrew MySQL, Homebrew PHP, or `npm run serve`. See [DEVELOPMENT_ENVIRONMENT.md](DEVELOPMENT_ENVIRONMENT.md) for commands and references.
+
+---
+
 ## Appendix A: File Inventory
 
 ### HTML Pages

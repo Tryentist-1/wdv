@@ -23,6 +23,7 @@
 ### 🔑 Core Reference (Essential System Docs)
 
 **Master References:**
+- [core/DEVELOPMENT_ENVIRONMENT.md](core/DEVELOPMENT_ENVIRONMENT.md) - **How we run dev** (OrbStack/Docker only)
 - [core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md) - Complete system architecture
 - [core/BALE_GROUP_SCORING_WORKFLOW.md](core/BALE_GROUP_SCORING_WORKFLOW.md) - Core scoring workflow
 - [core/AUTHENTICATION_ANALYSIS.md](core/AUTHENTICATION_ANALYSIS.md) - Authentication system
@@ -48,6 +49,7 @@
 - [guides/VIBE_CODING_GIT_WORKFLOW.md](guides/VIBE_CODING_GIT_WORKFLOW.md) - Git workflow details
 - [guides/LOCAL_DEVELOPMENT_SETUP.md](guides/LOCAL_DEVELOPMENT_SETUP.md) - Local dev setup
 - [guides/DEV_SERVER_MANAGEMENT.md](guides/DEV_SERVER_MANAGEMENT.md) - Dev server management
+- [guides/DATA_INTEGRITY_RANKING_ROUNDS.md](guides/DATA_INTEGRITY_RANKING_ROUNDS.md) - Ranking round data integrity (blanks, report, prompt)
 - [guides/DEPLOYMENT_v1.8.0.md](guides/DEPLOYMENT_v1.8.0.md) - Deployment guide
 
 **Documentation:**
