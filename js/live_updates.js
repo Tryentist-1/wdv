@@ -4,13 +4,8 @@
 (function (window) {
     // --- PRIVATE STATE ---
     // Detect localhost and use local API, otherwise use production
-    const getApiBase = () => {
-        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-            const port = window.location.port || '8001';
-            return `${window.location.protocol}//${window.location.hostname}:${port}/api/index.php/v1`;
-        }
-        return 'https://archery.tryentist.com/api/v1';
-    };
+    // Detect localhost and use local API, otherwise use production
+    const getApiBase = () => '/api/v1';
 
     const state = {
         roundId: null,
@@ -360,7 +355,7 @@
                 }
                 state.roundId = json.roundId;
                 state.eventId = eventId;  // Store the eventId (null for standalone rounds)
-                
+
                 // Store entry code if provided (for standalone rounds)
                 if (json.entryCode) {
                     state.roundEntryCode = json.entryCode;
@@ -374,7 +369,7 @@
                     } catch (_) { }
                     console.log('✅ Standalone round created with entry code:', json.entryCode);
                 }
-                
+
                 // Handle atomic archer creation response
                 if (json.archers && Array.isArray(json.archers)) {
                     console.log('✅ Atomic archer creation: pre-populating archerIds mapping');
@@ -385,7 +380,7 @@
                         }
                     });
                 }
-                
+
                 persistState();  // Save roundId, eventId, and entryCode for recovery
                 if (eventId) {
                     console.log('Round created and linked to event:', eventId, 'roundId:', state.roundId);
@@ -619,22 +614,22 @@
      */
     function generateClientSoloMatchCode(archer1, archer2, date) {
         if (!archer1 || !archer2 || !date) return null;
-        
+
         const getInitials = (archer) => {
             const first = (archer.first || archer.firstName || '').charAt(0).toUpperCase();
             const last = (archer.last || archer.lastName || '').charAt(0).toUpperCase();
             return first + last;
         };
-        
+
         const initials1 = getInitials(archer1);
         const initials2 = getInitials(archer2);
-        
+
         // Get MMDD from date (YYYY-MM-DD format)
         const dateParts = date.split('-');
         const mmdd = (dateParts[1] || '') + (dateParts[2] || '');
-        
+
         if (!initials1 || !initials2 || !mmdd) return null;
-        
+
         return `solo-${initials1}${initials2}-${mmdd}`;
     }
 
@@ -645,16 +640,16 @@
      */
     function generateClientTeamMatchCode(team1, team2, date) {
         if (!team1 || !team2 || !Array.isArray(team1) || !Array.isArray(team2) || !date) return null;
-        
+
         const getInitials = (archer) => {
             const first = (archer.first || archer.firstName || '').charAt(0).toUpperCase();
             const last = (archer.last || archer.lastName || '').charAt(0).toUpperCase();
             return first + last;
         };
-        
+
         let initials1 = '';
         let initials2 = '';
-        
+
         // Get up to 3 archers per team (5 chars max per team)
         for (let i = 0; i < Math.min(team1.length, 3); i++) {
             const initials = getInitials(team1[i]);
@@ -662,20 +657,20 @@
                 initials1 += initials;
             }
         }
-        
+
         for (let i = 0; i < Math.min(team2.length, 3); i++) {
             const initials = getInitials(team2[i]);
             if (initials && initials2.length < 5) {
                 initials2 += initials;
             }
         }
-        
+
         // Get MMDD from date
         const dateParts = date.split('-');
         const mmdd = (dateParts[1] || '') + (dateParts[2] || '');
-        
+
         if (!initials1 || !initials2 || !mmdd) return null;
-        
+
         // Limit to 20 chars total: "team-" (5) + initials (max 10) + "-" (1) + MMDD (4) = 20
         const code = `team-${initials1}${initials2}-${mmdd}`;
         return code.substring(0, 20);
