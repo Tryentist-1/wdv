@@ -2521,6 +2521,84 @@ if (preg_match('#^/v1/rounds/recent$#', $route) && $method === 'GET') {
     exit;
 }
 
+// GET /v1/reports/ranking-blank-cards - List scorecards in process with a blank arrow in any end before end 8 (data integrity).
+// Coach/API key required.
+if (preg_match('#^/v1/reports/ranking-blank-cards$#', $route) && $method === 'GET') {
+    require_api_key();
+    $pdo = db();
+    $cards = $pdo->query("
+        SELECT
+            ra.id AS round_archer_id,
+            ra.archer_name,
+            ra.bale_number,
+            r.id AS round_id,
+            r.division,
+            r.round_type,
+            e.id AS event_id,
+            e.name AS event_name,
+            e.date AS event_date
+        FROM round_archers ra
+        JOIN rounds r ON r.id = ra.round_id
+        JOIN events e ON e.id = r.event_id
+        WHERE ra.id IN (
+            SELECT ee.round_archer_id
+            FROM end_events ee
+            WHERE ee.end_number <= 7
+            GROUP BY ee.round_archer_id
+            HAVING MAX(
+                CASE
+                    WHEN TRIM(COALESCE(ee.a1, '')) = ''
+                      OR TRIM(COALESCE(ee.a2, '')) = ''
+                      OR TRIM(COALESCE(ee.a3, '')) = ''
+                    THEN 1
+                    ELSE 0
+                END
+            ) = 1
+            OR COUNT(DISTINCT ee.end_number) < 7
+        )
+        ORDER BY e.date DESC, e.name, r.division, ra.bale_number, ra.archer_name
+    ")->fetchAll(PDO::FETCH_ASSOC);
+    $out = [];
+    foreach ($cards as $c) {
+        $rid = $c['round_archer_id'];
+        $ends = $pdo->prepare('SELECT end_number, a1, a2, a3 FROM end_events WHERE round_archer_id = ? AND end_number <= 7 ORDER BY end_number');
+        $ends->execute([$rid]);
+        $rows = $ends->fetchAll(PDO::FETCH_ASSOC);
+        $blankEnds = [];
+        $hasRow = [];
+        foreach ($rows as $row) {
+            $hasRow[(int)$row['end_number']] = true;
+            $a1 = trim($row['a1'] ?? '');
+            $a2 = trim($row['a2'] ?? '');
+            $a3 = trim($row['a3'] ?? '');
+            if ($a1 === '' || $a2 === '' || $a3 === '') {
+                $blankEnds[] = (int)$row['end_number'];
+            }
+        }
+        for ($n = 1; $n <= 7; $n++) {
+            if (empty($hasRow[$n])) {
+                $blankEnds[] = $n;
+            }
+        }
+        $blankEnds = array_values(array_unique($blankEnds));
+        sort($blankEnds);
+        $out[] = [
+            'roundArcherId' => $c['round_archer_id'],
+            'archerName' => $c['archer_name'],
+            'baleNumber' => (int)$c['bale_number'],
+            'roundId' => $c['round_id'],
+            'division' => $c['division'],
+            'roundType' => $c['round_type'],
+            'eventId' => $c['event_id'],
+            'eventName' => $c['event_name'],
+            'eventDate' => $c['event_date'],
+            'blankEnds' => $blankEnds,
+        ];
+    }
+    json_response(['cards' => $out]);
+    exit;
+}
+
 // Create an event (and optionally seed 12 rounds)
 if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
     require_api_key();
