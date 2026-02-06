@@ -283,3 +283,22 @@ php -S localhost:8002
 
 See `docs/LOCAL_DEVELOPMENT_SETUP.md` for complete setup instructions.
 
+---
+
+## 📌 Ranking Round Sync (fix/ranking-round-dropped-arrow-sync)
+
+Recent work on ranking round scoring focuses on **sync reliability and UI clarity**. This is independent of how you run the app (Docker vs manual).
+
+### Server / environment setup (separate from sync)
+
+- **Server setup** (Docker, MySQL, PHP, nginx, `config.local.php`) is unchanged. Use `docker compose up -d` or manual MySQL + `npm run serve` as in the sections above.
+- **Sync optimizations** are client- and API-side: debounced POSTs, queue flush on init, correct running totals, and UI feedback. No extra server configuration is required for these fixes.
+
+### Sync and UI changes (this branch)
+
+- **Header:** One status alert only — **LOCAL Only** (red), **Syncing** (yellow), **Synced** (green). No “Check server” button; comparison with server runs automatically in the background.
+- **Footer:** **Sync End** is the scorer action. Validates missing arrows before sync; shows “All Arrows Synced” on success or “Error [description]” on failure. Running total sent is the sum of complete ends 1..current.
+- **Missing Arrow:** Empty arrow cells show “Missing” and a dashed border so archers see unfilled slots.
+- **Bug doc:** `docs/bugs/RANKING_ROUND_DROPPED_ARROW_SYNC_BUG.md`
+- **Data integrity:** `docs/guides/DATA_INTEGRITY_RANKING_ROUNDS.md`, `api/sql/check_ranking_round_integrity.sql`
+

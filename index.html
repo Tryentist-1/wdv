@@ -123,10 +123,11 @@
     </footer>
   </div>
 
-  <script src="js/common.js"></script>
   <script src="js/archer_module.js"></script>
   <script src="js/unified_scorecard_list.js"></script>
   <script>
+    // API base for local dev: PHP built-in server serves api/index.php, not api/v1/...
+    const API_BASE = 'api/index.php/v1';
     // Inline archer picker state
     let archerPickerVisible = false;
     let archerList = [];
@@ -174,7 +175,7 @@
       
       // Fallback: Fetch fresh list from server
       try {
-        const res = await fetch('api/v1/archers');
+        const res = await fetch(`${API_BASE}/archers`);
         if (res.ok) {
           const data = await res.json();
           archerList = (data.archers || []).map(a => ({
@@ -527,7 +528,7 @@
         if (!isUUID && archer.first && archer.last) {
           try {
             console.log('[index] Searching for UUID by name:', archer.first, archer.last);
-            const searchRes = await fetch(`api/v1/archers/search?q=${encodeURIComponent(archer.first + ' ' + archer.last)}`);
+            const searchRes = await fetch(`${API_BASE}/archers/search?q=${encodeURIComponent(archer.first + ' ' + archer.last)}`);
             if (searchRes.ok) {
               const searchData = await searchRes.json();
               console.log('[index] Search results:', searchData);
@@ -566,7 +567,7 @@
 
         // Check for open ranking rounds
         try {
-          const historyRes = await fetch(`api/v1/archers/${archerId}/history`);
+          const historyRes = await fetch(`${API_BASE}/archers/${archerId}/history`);
           console.log('[index] History API response status:', historyRes.status);
           if (historyRes.ok) {
             const historyData = await historyRes.json();
@@ -726,7 +727,7 @@
         // Check for bracket assignments - use efficient single-query endpoint
         try {
           console.log('[index] Checking for bracket assignments...');
-          const bracketRes = await fetch(`api/v1/archers/${archerId}/bracket-assignments`);
+          const bracketRes = await fetch(`${API_BASE}/archers/${archerId}/bracket-assignments`);
           
           if (bracketRes.ok) {
             const bracketData = await bracketRes.json();

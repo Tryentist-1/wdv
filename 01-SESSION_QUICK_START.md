@@ -68,6 +68,19 @@
 
 ---
 
+## 🚨 Status Update (February 3, 2026)
+
+### ✅ Ranking Round Sync Fixes (fix/ranking-round-dropped-arrow-sync)
+
+- **Header:** Single alert — LOCAL Only (red) / Syncing (yellow) / Synced (green). Removed “Check server”; automatic background comparison with server.
+- **Footer:** Sync End validated (missing-arrow check), “All Arrows Synced” or “Error [desc]” feedback, event delegation so button always fires. Running total = sum of complete ends 1..current.
+- **Missing Arrow** indicator in scoring table and scorecard view (placeholder “Missing” + dashed border).
+- **Style guide:** Preference added — headers for information and alerts only; actions in footer or content. See `tests/components/style-guide.html` → Headers & Layouts.
+
+**Note:** Server setup (Docker, MySQL, PHP) is unchanged and separate from these sync optimizations. See `QUICK_START_LOCAL.md` → “Ranking Round Sync” for details.
+
+---
+
 ## 🚨 Status Update (January 26, 2026)
 
 ### ✅ Docker Environment Integration

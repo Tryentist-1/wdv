@@ -36,6 +36,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const ARROWS_PER_ARCHER = 2;
     const SHOOT_OFF_KEY = 'so';
 
+    /**
+     * API base URL for fetch calls. On localhost use api/index.php/v1 so PHP built-in server routes correctly.
+     * @returns {string}
+     */
+    function getApiBase() {
+        if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            const port = window.location.port || '8001';
+            return `${window.location.protocol}//${window.location.hostname}:${port}/api/index.php/v1`;
+        }
+        return 'https://archery.tryentist.com/api/v1';
+    }
+
     // --- DOM ELEMENT REFERENCES ---
     const views = {
         setup: document.getElementById('setup-view'),
@@ -747,7 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            const response = await fetch(`api/v1/team-matches/${state.matchId}/status`, {
+            const response = await fetch(`${getApiBase()}/team-matches/${state.matchId}/status`, {
                 method: 'PATCH',
                 headers: headers,
                 body: JSON.stringify({
@@ -1370,7 +1382,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- EVENT/BRACKET MANAGEMENT ---
     async function loadEvents() {
         try {
-            const response = await fetch('api/v1/events/recent');
+            const response = await fetch(`${getApiBase()}/events/recent`);
             if (response.ok) {
                 const data = await response.json();
                 state.events = data.events || [];
@@ -1431,7 +1443,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     async function loadBrackets(eventId) {
         try {
-            const response = await fetch(`api/v1/events/${eventId}/brackets`);
+            const response = await fetch(`${getApiBase()}/events/${eventId}/brackets`);
             if (response.ok) {
                 const data = await response.json();
                 state.brackets = (data.brackets || []).filter(b => b.bracket_type === 'TEAM');
