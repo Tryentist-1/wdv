@@ -88,13 +88,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Standalone round support
         roundId: null, // Database round ID (created when starting scoring)
         roundEntryCode: null, // Generated entry code for standalone rounds
-        isStandalone: false // Flag for standalone mode
+        isStandalone: false, // Flag for standalone mode
+        /** Set by automatic server check: true when local has data server does not (archer should tap Sync End). */
+        localAheadOfServer: false
     };
 
 
     const sessionKey = `rankingRound300_${new Date().toISOString().split('T')[0]}`;
     /** Delay (ms) before sending end to server after last score input (tap). Prevents dropped arrows from out-of-order POSTs. */
     const SYNC_DEBOUNCE_MS = 500;
+    /** Interval id for automatic server check (compare local vs server without archer action). Cleared when leaving scoring view. */
+    let serverCheckIntervalId = null;
+    const SERVER_CHECK_INTERVAL_MS = 45000;
 
     /** @param {string} s - String to escape for safe HTML */
     function escapeHtml(s) {
@@ -363,8 +368,10 @@ document.addEventListener('DOMContentLoaded', () => {
         updateEventHeader();
         if (state.currentView === 'scoring') {
             showScoringBanner();
+            startAutomaticServerCheck();
         } else {
             hideScoringBanner();
+            stopAutomaticServerCheck();
         }
         if (state.currentView === 'setup') {
             renderSetupForm();
@@ -598,9 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (uiWired) return;
         uiWired = true;
 
-        // End navigation
-        if (scoringControls.prevEndBtn) scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
-        if (scoringControls.nextEndBtn) scoringControls.nextEndBtn.onclick = () => changeEnd(1);
+        // End navigation (also handled by delegated footer handler below for robustness)
 
         // Primary navigation
         const setupBaleBtn = document.getElementById('setup-bale-btn');
@@ -692,6 +697,35 @@ document.addEventListener('DOMContentLoaded', () => {
             // Only handle clicks inside the keypad
             if (keypad.element && keypad.element.contains(e.target)) {
                 handleKeypadClick(e);
+            }
+        });
+
+        // Delegated handler for scoring footer buttons (Sync End, Prev/Next End, Complete Round)
+        // Ensures clicks work even when view was shown after init (e.g. resume) or if something blocks the button
+        document.body.addEventListener('click', (e) => {
+            const btn = e.target.closest && e.target.closest('#sync-end-btn, #prev-end-btn, #next-end-btn, #complete-round-btn');
+            if (!btn || state.currentView !== 'scoring' || btn.disabled) return;
+            switch (btn.id) {
+                case 'sync-end-btn':
+                    e.preventDefault();
+                    syncCurrentEnd();
+                    break;
+                case 'prev-end-btn':
+                    e.preventDefault();
+                    changeEnd(-1);
+                    break;
+                case 'next-end-btn':
+                    e.preventDefault();
+                    changeEnd(1);
+                    break;
+                case 'complete-round-btn':
+                    e.preventDefault();
+                    if (confirm('Are you sure you want to complete this round? This will mark all archers as finished.')) {
+                        completeRound();
+                    }
+                    break;
+                default:
+                    break;
             }
         });
     }
@@ -3877,8 +3911,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Ensure navigation button labels and handlers
         const prevBtn = document.getElementById('prev-end-btn');
         const nextBtn = document.getElementById('next-end-btn');
-        if (prevBtn) { prevBtn.textContent = '← Back'; prevBtn.onclick = () => changeEnd(-1); }
-        if (nextBtn) { nextBtn.textContent = 'Next →'; nextBtn.onclick = () => changeEnd(1); }
+        if (prevBtn) prevBtn.textContent = '← Back';
+        if (nextBtn) nextBtn.textContent = 'Next →';
+        // Clicks handled by delegated footer handler in wireCoreHandlers
 
         // Update live status display and complete button after rendering
         updateLiveStatusDisplay();
@@ -4342,17 +4377,21 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (u === 'M') { /* zero */ }
             else if (/^[0-9]$|^10$/.test(u)) { endTotal += parseInt(u, 10); }
         });
+        // Running total: sum of end totals for all COMPLETE ends from 1 through endNumber (correct RUN for server).
         let running = 0;
         for (let i = 0; i < endNumber; i++) {
             const scores = archer.scores[i];
-            if (!Array.isArray(scores)) continue;
+            if (!Array.isArray(scores) || scores.length < 3) continue;
+            const allFilled = scores.every(s => s !== '' && s !== null && s !== undefined);
+            if (!allFilled) continue;
+            let et = 0;
             scores.forEach(s => {
                 const u = String(s).toUpperCase();
-                if (!u) return;
-                if (u === 'X' || u === '10') { running += 10; }
-                else if (u === 'M') { /* zero */ }
-                else if (/^[0-9]$|^10$/.test(u)) { running += parseInt(u, 10); }
+                if (u === 'X' || u === '10') et += 10;
+                else if (u === 'M') { /* 0 */ }
+                else if (/^[0-9]$|^10$/.test(u)) et += parseInt(u, 10);
             });
+            running += et;
         }
         if (!isLiveUpdatesReady() || typeof LiveUpdates === 'undefined') {
             updateSyncStatus(archerId, endNumber, 'failed');
@@ -4564,34 +4603,78 @@ document.addEventListener('DOMContentLoaded', () => {
         try { ensureOfflineBanner(); } catch (_) { }
     }
 
+    /**
+     * Sync current end for all archers with scores. Archer/scorer action.
+     * 1) Validates no missing arrows on this end; prompts and aborts if any.
+     * 2) On success shows "All Arrows Synced"; on failure shows "Error [description]".
+     * Ensures each archer's running total sent is correct (sum of complete ends 1..current).
+     */
     function syncCurrentEnd() {
         const currentEnd = state.currentEnd;
-        const promises = [];
+        const syncBtn = document.getElementById('sync-end-btn');
 
+        // 1) Check for missing arrows on this end (any archer with at least one score but not all three)
+        const missingArrowArchers = [];
+        state.archers.forEach(archer => {
+            const endScores = archer.scores[currentEnd - 1];
+            if (!Array.isArray(endScores) || endScores.length < 3) return;
+            const filled = endScores.filter(s => s !== '' && s !== null && s !== undefined).length;
+            if (filled > 0 && filled < 3) {
+                missingArrowArchers.push(archer.firstName + ' ' + archer.lastName);
+            }
+        });
+        if (missingArrowArchers.length > 0) {
+            const names = missingArrowArchers.join(', ');
+            alert(
+                'Please enter every arrow for this end before syncing.\n\n' +
+                'Archers with missing arrows: ' + names + '\n\n' +
+                'Enter a score or M for each arrow, then tap Sync End again.'
+            );
+            return;
+        }
+
+        const promises = [];
         state.archers.forEach(archer => {
             const endScores = archer.scores[currentEnd - 1];
             if (!endScores || !endScores.some(score => score !== '' && score !== null)) {
                 return;
             }
             updateSyncStatus(archer.id, currentEnd, 'pending');
-            promises.push(postEndForArcherNow(archer.id, currentEnd));
+            promises.push(
+                postEndForArcherNow(archer.id, currentEnd).catch(err => ({ archer, err }))
+            );
         });
 
-        // Show progress
-        const completeBtn = document.getElementById('complete-round-btn');
-        if (completeBtn) {
-            completeBtn.disabled = true;
-            completeBtn.textContent = 'Syncing...';
+        if (promises.length === 0) {
+            alert('No scores to sync for this end. Enter at least one arrow for an archer, then tap Sync End.');
+            return;
         }
 
-        // Wait for all syncs to complete
-        Promise.allSettled(promises).then(() => {
-            if (completeBtn) {
-                completeBtn.disabled = false;
-                completeBtn.textContent = 'Sync End';
+        if (syncBtn) {
+            syncBtn.disabled = true;
+            syncBtn.textContent = 'Syncing...';
+        }
+
+        Promise.all(promises).then((results) => {
+            const failed = results.filter(r => r && r.archer && r.err);
+            if (syncBtn) {
+                syncBtn.disabled = false;
+                syncBtn.textContent = 'Sync End';
             }
             updateCompleteButton();
             updateLiveStatusDisplay();
+
+            if (failed.length > 0) {
+                const msg = failed[0].err?.message || String(failed[0].err);
+                const names = failed.map(f => f.archer.firstName + ' ' + f.archer.lastName).join(', ');
+                alert(
+                    'Error ' + (failed.length === 1 ? names + ': ' + msg : '(' + failed.length + ' archers: ' + names + ') ' + msg) +
+                    '\n\nYour scores are saved on this device. Check your connection and try Sync End again.'
+                );
+            } else {
+                alert('All Arrows Synced');
+                runAutomaticServerCheck(); // Refresh badge to Synced once server has data
+            }
         });
     }
 
@@ -4963,32 +5046,61 @@ document.addEventListener('DOMContentLoaded', () => {
         return names[code] || code;
     }
 
+    /**
+     * Update header badge: one alert only — LOCAL Only (red), Syncing (yellow), Synced (green), or Live Off (gray).
+     * Uses computeSyncSummary() and state.localAheadOfServer (set by automatic server check).
+     */
     function updateLiveStatusDisplay() {
         const summary = computeSyncSummary();
         const badge = document.getElementById('live-status-badge');
         if (badge) {
             if (!summary.enabled) {
-                badge.textContent = 'Live Updates Off';
-                badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300';
-            } else if (summary.failed > 0) {
-                badge.textContent = 'Retry Needed';
-                badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-danger-light text-danger-dark';
+                badge.textContent = 'Live Off';
+                badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 flex-shrink-0';
             } else {
                 const pendingTotal = summary.pending + summary.queueSize;
                 if (pendingTotal > 0) {
-                    badge.textContent = 'Syncing...';
-                    badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark';
-                } else if (summary.currentEndSynced) {
-                    badge.textContent = 'Synced';
-                    badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-success-light text-success-dark';
+                    badge.textContent = 'Syncing';
+                    badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark flex-shrink-0';
+                } else if (summary.failed > 0 || state.localAheadOfServer || !summary.currentEndSynced) {
+                    badge.textContent = 'LOCAL Only';
+                    badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-danger-light text-danger-dark flex-shrink-0';
                 } else {
-                    badge.textContent = 'Pending Sync';
-                    badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark';
+                    badge.textContent = 'Synced';
+                    badge.className = 'inline-block px-2 py-1 text-xs font-bold rounded bg-success-light text-success-dark flex-shrink-0';
                 }
             }
         }
 
         updateManualLiveControls(summary);
+    }
+
+    /**
+     * Run automatic local-vs-server check (no archer action). Updates state.localAheadOfServer and badge.
+     */
+    async function runAutomaticServerCheck() {
+        if (!state.roundId || !getLiveEnabled() || state.currentView !== 'scoring') return;
+        try {
+            const { same } = await checkLocalVsServer();
+            state.localAheadOfServer = !same;
+            updateLiveStatusDisplay();
+        } catch (_) {
+            // Keep previous state on network error
+        }
+    }
+
+    function startAutomaticServerCheck() {
+        stopAutomaticServerCheck();
+        if (!state.roundId || !getLiveEnabled()) return;
+        runAutomaticServerCheck(); // run once soon
+        serverCheckIntervalId = setInterval(runAutomaticServerCheck, SERVER_CHECK_INTERVAL_MS);
+    }
+
+    function stopAutomaticServerCheck() {
+        if (serverCheckIntervalId != null) {
+            clearInterval(serverCheckIntervalId);
+            serverCheckIntervalId = null;
+        }
     }
 
     // Offline banner + manual flush
@@ -7339,54 +7451,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // Complete round button
-        const completeBtn = document.getElementById('complete-round-btn');
-        if (completeBtn) {
-            completeBtn.onclick = () => {
-                // Complete round for final verification
-                if (confirm('Are you sure you want to complete this round? This will mark all archers as finished.')) {
-                    completeRound();
-                }
-            };
-        }
-
-        // Sync end button (for live mode)
-        const syncBtn = document.getElementById('sync-end-btn');
-        if (syncBtn) {
-            syncBtn.onclick = () => {
-                syncCurrentEnd();
-            };
-        }
-
-        // Check server: compare local vs server and show mismatch banner if different
-        const checkServerBtn = document.getElementById('check-server-btn');
-        if (checkServerBtn) {
-            checkServerBtn.onclick = async () => {
-                if (!state.roundId || !state.baleNumber) {
-                    alert('Start scoring first, then check server.');
-                    return;
-                }
-                checkServerBtn.disabled = true;
-                try {
-                    const { same, diffArchers } = await checkLocalVsServer();
-                    if (same) {
-                        const badge = document.getElementById('live-status-badge');
-                        if (badge) {
-                            const prev = badge.textContent;
-                            badge.textContent = 'Matches server';
-                            badge.className = 'inline-block px-2 py-0.5 text-xs font-bold rounded flex-shrink-0 status-badge status-synced';
-                            setTimeout(() => { badge.textContent = prev; updateManualLiveControls(); }, 2000);
-                        }
-                    } else {
-                        showMismatchBanner(diffArchers);
-                    }
-                } catch (e) {
-                    console.error('Check server failed:', e);
-                    alert('Could not compare with server. Check connection and try again.');
-                }
-                checkServerBtn.disabled = false;
-            };
-        }
+        // Complete round and Sync End buttons are handled by delegated footer handler above
 
         if (setupControls.subheader) {
             setupControls.subheader.innerHTML = '';
@@ -7599,23 +7664,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = e.detail.archerId;
                 const row = document.querySelector(`tr[data-archer-id="${id}"]`);
                 if (row) row.classList.add('sync-pending');
-                const badge = document.getElementById('live-status-badge');
-                if (badge) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
+                // Let updateLiveStatusDisplay control the header badge text/state
+                updateLiveStatusDisplay();
             });
             window.addEventListener('liveSyncSuccess', (e) => {
                 const id = e.detail.archerId;
                 const row = document.querySelector(`tr[data-archer-id="${id}"]`);
                 if (row) { row.classList.remove('sync-pending'); row.classList.add('sync-ok'); setTimeout(() => row.classList.remove('sync-ok'), 1200); }
-                const badge = document.getElementById('live-status-badge');
-                if (badge) { badge.textContent = 'Synced'; badge.className = 'status-badge status-ok'; }
+                updateLiveStatusDisplay();
             });
-            // Initialize badge if live is on
-            const badge = document.getElementById('live-status-badge');
-            const liveOn = !!isEnabled;
-            if (badge) {
-                if (liveOn) { badge.textContent = 'Not Synced'; badge.className = 'status-badge status-pending'; }
-                else { badge.textContent = 'Not Live Scoring'; badge.className = 'status-badge status-off'; }
-            }
+            // Initialize badge based on full sync summary
+            updateLiveStatusDisplay();
         } catch (e) { /* noop */ }
     }
 
