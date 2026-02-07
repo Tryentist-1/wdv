@@ -65,8 +65,7 @@
             window.archerModule = archerModule;
 
             // Load archers
-            await archerModule.init();
-            await archerModule.loadArchers();
+            await archerModule.loadFromMySQL();
 
             renderArcherGrid();
         }
@@ -78,7 +77,7 @@
 
             loadingState.classList.add('hidden');
 
-            const archers = archerModule.getAll();
+            const archers = archerModule.loadList();
 
             if (archers.length === 0) {
                 emptyState.classList.remove('hidden');
@@ -181,7 +180,8 @@
         }
 
         window.setAssignment = async function (extId, assignment) {
-            const archer = archerModule.getByExtId(extId);
+            const archers = archerModule.loadList();
+            const archer = archers.find(a => a.extId === extId);
             if (!archer) return;
 
             // Update local data
@@ -210,7 +210,8 @@
             try {
                 // Save all modified archers
                 const archersToSave = Array.from(modifiedArchers.values());
-                await archerModule.bulkUpsert(archersToSave);
+                const payloads = archersToSave.map(a => archerModule._prepareForSync(a));
+                await archerModule._sendUpsert(payloads);
 
                 // Clear modified set
                 modifiedArchers.clear();
