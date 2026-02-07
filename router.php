@@ -3,6 +3,11 @@
 
 $uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
+// Serve index.html for root path
+if ($uri === '/') {
+    $uri = '/index.html';
+}
+
 // Serve existing files directly
 if ($uri !== '/' && file_exists(__DIR__ . $uri)) {
     return false;
