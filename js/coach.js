@@ -84,7 +84,8 @@
 
   function showAuthModal() {
     const modal = document.getElementById('coach-auth-modal');
-    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
 
     const input = document.getElementById('coach-passcode-input');
     const errorDiv = document.getElementById('auth-error');
@@ -100,7 +101,8 @@
         // Correct passcode
         setCookie(COACH_COOKIE_NAME, 'true', COOKIE_DAYS);
         persistCoachCredentials();
-        modal.style.display = 'none';
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
         init(); // Initialize the coach console
       } else {
         // Incorrect passcode
@@ -2242,6 +2244,26 @@
     document.getElementById('create-event-btn').onclick = showCreateEventModal;
     setupCSVImport();
 
+    // Check for query params
+    const urlParams = new URLSearchParams(window.location.search);
+    const bracketToEdit = urlParams.get('editBracket');
+    if (bracketToEdit) {
+      editBracket(bracketToEdit);
+    }
+
+    const rosterRoundId = urlParams.get('manageRoster');
+    if (rosterRoundId) {
+      const roundName = urlParams.get('roundName') || 'Round Roster';
+      // Clean up URL without reload
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      window.history.pushState({ path: newUrl }, '', newUrl);
+
+      openManageRoster(rosterRoundId, roundName);
+    }
+
+    // Setup roster modal event listeners
+    setupRosterModalListeners();
+
     // Load events
     loadEvents();
   }
@@ -2855,6 +2877,255 @@
 
   // ==================== Global Functions (for inline onclick) ====================
 
+  // ==================== Manage Roster (Phase 7: Bracket Workflow) ====================
+
+  let currentRosterRoundId = null;
+
+  /**
+   * Opens the roster management modal for a specific round/bracket
+   * Allows coaches to view, add, remove archers and generate matches
+   * @param {string} roundId - UUID of the round to manage
+   * @param {string} roundName - Display name of the round
+   */
+  async function openManageRoster(roundId, roundName) {
+    currentRosterRoundId = roundId;
+    const modal = document.getElementById('manage-roster-modal');
+    document.getElementById('roster-round-name').textContent = roundName;
+
+    // Show/Hide Generate Matches based on round type (simple check for now)
+    // We can check if it's SWISS by name or fetch round details
+    const isSwiss = roundName.toUpperCase().includes('SWISS');
+    const genBtn = document.getElementById('generate-matches-btn');
+    if (isSwiss) {
+      genBtn.classList.remove('hidden');
+    } else {
+      genBtn.classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    await loadRoster(roundId);
+  }
+
+  /**
+   * Loads and displays the roster of archers for a given round
+   * Fetches from API and renders archer cards with remove buttons
+   * @param {string} roundId - UUID of the round
+   */
+  async function loadRoster(roundId) {
+    const list = document.getElementById('roster-list');
+    list.innerHTML = '<div class="text-center py-8 text-gray-500">Loading archers...</div>';
+
+    try {
+      // Use existing endpoint to get roster
+      const roster = await req(`/rounds/${roundId}/roster`);
+      document.getElementById('roster-count').textContent = `${roster.length} Archers`;
+
+      if (roster.length === 0) {
+        list.innerHTML = '<div class="text-center py-8 text-gray-400">No archers in this round.<br>Import from Ranking to begin.</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+      roster.sort((a, b) => a.archer_name.localeCompare(b.archer_name));
+
+      roster.forEach(ra => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700';
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+             <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+               ${ra.archer_name.charAt(0)}
+             </div>
+             <div>
+               <div class="font-medium text-gray-900 dark:text-white">${ra.archer_name}</div>
+               <div class="text-xs text-gray-500">${ra.school || ''} • ${ra.gender || ''}${ra.level || ''}</div>
+             </div>
+          </div>
+          <button onclick="coach.removeRosterArcher('${ra.id}')" class="text-gray-400 hover:text-red-500 transition-colors" title="Remove">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        `;
+        list.appendChild(div);
+      });
+
+    } catch (err) {
+      list.innerHTML = `<div class="text-center py-8 text-red-500">Error loading roster: ${err.message}</div>`;
+    }
+  }
+
+  /**
+   * Removes an archer from the round roster
+   * Prompts for confirmation before deletion
+   * @param {string} id - UUID of the round_archer entry to remove
+   */
+  async function removeRosterArcher(id) {
+    if (!confirm('Remove this archer from the round?')) return;
+    try {
+      await req(`/round_archers/${id}`, 'DELETE');
+      loadRoster(currentRosterRoundId);
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  /**
+   * Sets up event listeners for roster management modals
+   * Called once during initialization to wire up all roster UI interactions
+   */
+  function setupRosterModalListeners() {
+    // Check if roster modals exist
+    const rosterModal = document.getElementById('manage-roster-modal');
+    if (!rosterModal) {
+      console.log('[Roster] Roster modals not found in DOM, skipping setup');
+      return;
+    }
+    
+    console.log('[Roster] Setting up roster modal event listeners');
+    
+    // Add Archer button - opens modal and loads master archer list
+    document.getElementById('add-archer-roster-btn').onclick = async () => {
+      const modal = document.getElementById('add-archer-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      const select = document.getElementById('add-archer-select');
+      select.innerHTML = '<option>Loading...</option>';
+
+      try {
+        const res = await req('/archers');
+        const archers = res.archers || [];
+
+        archers.sort((a, b) => (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName));
+
+        select.innerHTML = '';
+        if (archers.length === 0) {
+          select.innerHTML = '<option disabled>No archers found in master list</option>';
+        } else {
+          archers.forEach(a => {
+            const opt = document.createElement('option');
+            opt.value = JSON.stringify(a);
+            opt.textContent = `${a.lastName}, ${a.firstName} (${a.school}) - ${a.division || 'No Div'}`;
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) {
+        select.innerHTML = '<option disabled>Error loading list</option>';
+        console.error(e);
+      }
+    };
+
+    // Cancel add archer
+    document.getElementById('cancel-add-archer-btn').onclick = () => {
+      document.getElementById('add-archer-modal').classList.add('hidden');
+      document.getElementById('add-archer-modal').classList.remove('flex');
+    };
+
+    // Confirm add archer - adds selected archer to round roster
+    document.getElementById('confirm-add-archer-btn').onclick = async () => {
+      const select = document.getElementById('add-archer-select');
+      if (!select.value) return;
+
+      try {
+        const archer = JSON.parse(select.value);
+        await req(`/rounds/${currentRosterRoundId}/archers`, 'POST', {
+          firstName: archer.firstName,
+          lastName: archer.lastName,
+          school: archer.school,
+          level: archer.level,
+          gender: archer.gender,
+          baleNumber: null
+        });
+
+        alert('Archer added.');
+        document.getElementById('add-archer-modal').classList.add('hidden');
+        document.getElementById('add-archer-modal').classList.remove('flex');
+        loadRoster(currentRosterRoundId);
+      } catch (e) {
+        alert('Failed to add: ' + e.message);
+      }
+    };
+
+    // Import from ranking button - opens import source selection modal
+    document.getElementById('import-roster-btn').onclick = async () => {
+      const modal = document.getElementById('import-source-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      try {
+        const round = await req(`/rounds/${currentRosterRoundId}`);
+        const rounds = await req(`/events/${round.event_id}/rounds`);
+
+        const select = document.getElementById('import-source-select');
+        select.innerHTML = '';
+
+        rounds.forEach(r => {
+          if (r.id === currentRosterRoundId) return;
+          const opt = document.createElement('option');
+          opt.value = r.id;
+          opt.textContent = `${r.division} - ${r.round_type}`;
+          select.appendChild(opt);
+        });
+
+        if (rounds.length <= 1) {
+          select.innerHTML = '<option disabled>No other rounds available in this event</option>';
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Error loading source rounds');
+      }
+    };
+
+    // Close roster modal buttons
+    const closeRosterModal = () => {
+      document.getElementById('manage-roster-modal').classList.add('hidden');
+      document.getElementById('manage-roster-modal').classList.remove('flex');
+      currentRosterRoundId = null;
+    };
+    document.getElementById('close-roster-btn').onclick = closeRosterModal;
+    document.getElementById('close-roster-footer-btn').onclick = closeRosterModal;
+
+    // Cancel import
+    document.getElementById('cancel-import-btn').onclick = () => {
+      document.getElementById('import-source-modal').classList.add('hidden');
+      document.getElementById('import-source-modal').classList.remove('flex');
+    };
+
+    // Confirm import - imports archers from selected ranking round
+    document.getElementById('confirm-import-btn').onclick = async () => {
+      const sourceId = document.getElementById('import-source-select').value;
+      if (!sourceId) return;
+
+      const limit = document.querySelector('input[name="import-limit"]:checked').value;
+
+      try {
+        await req(`/rounds/${currentRosterRoundId}/import`, 'POST', { 
+          sourceRoundId: sourceId, 
+          limit: parseInt(limit) 
+        });
+        alert('Import successful');
+        document.getElementById('import-source-modal').classList.add('hidden');
+        document.getElementById('import-source-modal').classList.remove('flex');
+        loadRoster(currentRosterRoundId);
+      } catch (e) {
+        alert('Import failed: ' + e.message);
+      }
+    };
+
+    // Generate matches button - creates Swiss round pairings
+    document.getElementById('generate-matches-btn').onclick = async () => {
+      if (!confirm('Generate match pairings for this round? Existing matches may be cleared.')) return;
+      try {
+        const result = await req(`/rounds/${currentRosterRoundId}/generate`, 'POST');
+        alert(`Generated ${result.matches || 0} matches.`);
+      } catch (e) {
+        alert('Generation failed: ' + e.message);
+      }
+    };
+  }
+
+
   window.coach = {
     viewResults,
     viewDashboard,
@@ -2866,7 +3137,9 @@
     showQRCode,
     verifyEvent,
     editBracket,
-    removeBracketEntry
+    removeBracketEntry,
+    openManageRoster, // New
+    removeRosterArcher // New
   };
 
 })();

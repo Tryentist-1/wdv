@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -14,7 +15,7 @@
       initDarkMode();
     } else {
       // Fallback if common.js not loaded yet
-      (function() {
+      (function () {
         const savedTheme = localStorage.getItem('theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
@@ -27,23 +28,54 @@
   </script>
   <style>
     /* Custom color utilities */
-    .bg-primary { background-color: #0d6efd !important; }
-    .bg-primary-dark { background-color: #0a58ca !important; }
-    .bg-success { background-color: #198754 !important; }
-    .bg-success-dark { background-color: #157347 !important; }
-    .bg-danger { background-color: #dc3545 !important; }
-    .text-primary { color: #0d6efd !important; }
-    .text-success { color: #198754 !important; }
-    .text-danger { color: #dc3545 !important; }
-    .hover\:bg-primary-dark:hover { background-color: #0a58ca !important; }
-    .hover\:bg-success-dark:hover { background-color: #157347 !important; }
+    .bg-primary {
+      background-color: #0d6efd !important;
+    }
+
+    .bg-primary-dark {
+      background-color: #0a58ca !important;
+    }
+
+    .bg-success {
+      background-color: #198754 !important;
+    }
+
+    .bg-success-dark {
+      background-color: #157347 !important;
+    }
+
+    .bg-danger {
+      background-color: #dc3545 !important;
+    }
+
+    .text-primary {
+      color: #0d6efd !important;
+    }
+
+    .text-success {
+      color: #198754 !important;
+    }
+
+    .text-danger {
+      color: #dc3545 !important;
+    }
+
+    .hover\:bg-primary-dark:hover {
+      background-color: #0a58ca !important;
+    }
+
+    .hover\:bg-success-dark:hover {
+      background-color: #157347 !important;
+    }
   </style>
 </head>
+
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-4 py-6 pb-[calc(48px+env(safe-area-inset-bottom))]">
     <!-- Event Header -->
-    <div id="event-header" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
+    <div id="event-header"
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
       <div class="flex justify-between items-start mb-4">
         <div>
           <h1 id="event-name" class="text-3xl font-bold text-gray-800 dark:text-white mb-2">Loading...</h1>
@@ -54,10 +86,12 @@
           </div>
         </div>
         <div class="flex gap-2">
-          <button id="refresh-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors">🔄 Refresh</button>
+          <button id="refresh-btn"
+            class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors">🔄
+            Refresh</button>
         </div>
       </div>
-      
+
       <!-- Overall Progress Bar -->
       <div class="mb-4">
         <div class="flex justify-between items-center mb-2">
@@ -65,10 +99,11 @@
           <span id="overall-progress-text" class="text-sm font-semibold text-gray-800 dark:text-white">0%</span>
         </div>
         <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-          <div id="overall-progress-bar" class="bg-primary h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+          <div id="overall-progress-bar" class="bg-primary h-4 rounded-full transition-all duration-300"
+            style="width: 0%"></div>
         </div>
       </div>
-      
+
       <!-- Quick Stats -->
       <div id="quick-stats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
         <!-- Populated dynamically -->
@@ -79,7 +114,8 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Ranking Rounds</h2>
-        <button id="toggle-rounds" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+        <button id="toggle-rounds"
+          class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
           <span id="rounds-toggle-text">Collapse All</span>
         </button>
       </div>
@@ -92,7 +128,8 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Brackets</h2>
-        <button id="toggle-brackets" class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+        <button id="toggle-brackets"
+          class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
           <span id="brackets-toggle-text">Collapse All</span>
         </button>
       </div>
@@ -103,14 +140,21 @@
   </div>
 
   <!-- Footer -->
-  <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
+  <footer
+    class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
     <div class="max-w-7xl mx-auto flex items-center h-full px-4 gap-2">
-      <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+      <a href="index.html"
+        class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center"
+        aria-label="Home">
         <i class="fas fa-home text-2xl"></i>
       </a>
       <div class="flex-1"></div>
-      <a href="coach.html" class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"><i class="fas fa-arrow-left mr-1"></i> Back to Coach Console</a>
-      <button id="footer-refresh-btn" class="px-3 h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
+      <a href="coach.html"
+        class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"><i
+          class="fas fa-arrow-left mr-1"></i> Back to Coach Console</a>
+      <button id="footer-refresh-btn"
+        class="px-3 h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center"><i
+          class="fas fa-sync-alt mr-1"></i> Refresh</button>
     </div>
   </footer>
 
@@ -127,17 +171,17 @@
 
     const API_BASE = getApiBase();
     const COACH_PASSCODE = 'wdva26'; // Coach passcode for API authentication
-    
+
     // Get event ID from URL
     const urlParams = new URLSearchParams(window.location.search);
     const eventId = urlParams.get('event');
-    
+
     // State
     let overviewData = null;
     let autoRefreshInterval = null;
     let roundsExpanded = true;
     let bracketsExpanded = true;
-    
+
     // Division names mapping
     const DIVISION_NAMES = {
       'OPEN': 'Open (Mixed)',
@@ -146,7 +190,7 @@
       'BJV': 'Boys JV',
       'GJV': 'Girls JV'
     };
-    
+
     // API request helper
     async function apiRequest(path, method = 'GET') {
       const headers = {
@@ -154,20 +198,20 @@
         'X-Passcode': COACH_PASSCODE,
         'X-API-Key': COACH_PASSCODE
       };
-      
+
       const res = await fetch(`${API_BASE}${path}`, {
         method,
         headers
       });
-      
+
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`HTTP ${res.status}: ${text}`);
       }
-      
+
       return res.json();
     }
-    
+
     // Load event overview
     async function loadOverview() {
       if (!eventId) {
@@ -175,7 +219,7 @@
         window.location.href = 'coach.html';
         return;
       }
-      
+
       try {
         const data = await apiRequest(`/events/${eventId}/overview`);
         console.log('[Dashboard] API Response:', data);
@@ -191,17 +235,17 @@
         document.getElementById('brackets-list').innerHTML = `<div class="text-center text-red-500 py-8">Error: ${err.message}</div>`;
       }
     }
-    
+
     // Render dashboard
     function renderDashboard(data) {
       const { event, summary, rounds, brackets } = data;
-      
+
       // Update event header
       document.getElementById('event-name').textContent = event.name;
-      document.getElementById('event-date').textContent = new Date(event.date + 'T00:00:00').toLocaleDateString('en-US', { 
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+      document.getElementById('event-date').textContent = new Date(event.date + 'T00:00:00').toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
       });
-      
+
       // Status badge
       const statusColors = {
         'Planned': 'bg-gray-400 dark:bg-gray-500',
@@ -211,21 +255,21 @@
       const statusEl = document.getElementById('event-status');
       statusEl.textContent = event.status;
       statusEl.className = `font-semibold px-2 py-1 rounded text-xs text-white ${statusColors[event.status] || 'bg-gray-400'}`;
-      
+
       // Overall progress
       const progress = summary.overall_progress || 0;
       document.getElementById('overall-progress-text').textContent = `${progress}%`;
       document.getElementById('overall-progress-bar').style.width = `${progress}%`;
-      
+
       // Quick stats
       renderQuickStats(summary);
-      
+
       // Rounds
       renderRounds(rounds);
-      
+
       // Brackets
       renderBrackets(brackets);
-      
+
       // Setup auto-refresh if event is Active
       if (event.status === 'Active') {
         startAutoRefresh();
@@ -233,7 +277,7 @@
         stopAutoRefresh();
       }
     }
-    
+
     // Render quick stats
     function renderQuickStats(summary) {
       const container = document.getElementById('quick-stats');
@@ -268,22 +312,22 @@
         </div>
       `;
     }
-    
+
     // Render rounds
     function renderRounds(rounds) {
       const container = document.getElementById('rounds-list');
-      
+
       if (!rounds || rounds.length === 0) {
         container.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8">No rounds configured for this event yet.</div>';
         return;
       }
-      
+
       container.innerHTML = rounds.map(round => {
         const divisionName = DIVISION_NAMES[round.division] || round.division;
         const progress = round.progress_percentage || 0;
         const progressColor = progress >= 90 ? 'bg-success' : progress >= 50 ? 'bg-yellow-500' : 'bg-orange-500';
         const isExpanded = roundsExpanded;
-        
+
         return `
           <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors" onclick="toggleRound('${round.id}')">
@@ -342,6 +386,9 @@
                 <a href="results.html?event=${eventId}&division=${round.division}" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors">
                   📊 View Results
                 </a>
+                <a href="coach.html?manageRoster=${round.id}&roundName=${encodeURIComponent(divisionName + ' - ' + round.round_type)}" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-semibold text-sm transition-colors">
+                  👥 Manage Roster
+                </a>
                 <a href="coach.html" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
                   🛡️ Verify
                 </a>
@@ -351,16 +398,16 @@
         `;
       }).join('');
     }
-    
+
     // Render brackets
     function renderBrackets(brackets) {
       const container = document.getElementById('brackets-list');
-      
+
       if (!brackets || brackets.length === 0) {
         container.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8">No brackets created for this event yet.</div>';
         return;
       }
-      
+
       container.innerHTML = brackets.map(bracket => {
         const progress = bracket.progress_percentage || 0;
         const progressColor = progress >= 90 ? 'bg-success' : progress >= 50 ? 'bg-yellow-500' : 'bg-orange-500';
@@ -368,7 +415,7 @@
         const bracketTypeName = bracket.bracket_type === 'SOLO' ? 'Solo' : 'Team';
         const formatName = bracket.format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
         const divisionName = DIVISION_NAMES[bracket.division] || bracket.division;
-        
+
         return `
           <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors" onclick="toggleBracket('${bracket.id}')">
@@ -430,7 +477,7 @@
         `;
       }).join('');
     }
-    
+
     // Toggle round expansion
     function toggleRound(roundId) {
       const element = document.getElementById(`round-${roundId}`);
@@ -438,7 +485,7 @@
         element.classList.toggle('hidden');
       }
     }
-    
+
     // Toggle bracket expansion
     function toggleBracket(bracketId) {
       const element = document.getElementById(`bracket-${bracketId}`);
@@ -446,7 +493,7 @@
         element.classList.toggle('hidden');
       }
     }
-    
+
     // Toggle all rounds
     function toggleAllRounds() {
       roundsExpanded = !roundsExpanded;
@@ -462,7 +509,7 @@
         }
       });
     }
-    
+
     // Toggle all brackets
     function toggleAllBrackets() {
       bracketsExpanded = !bracketsExpanded;
@@ -478,14 +525,14 @@
         }
       });
     }
-    
+
     // Update last updated timestamp
     function updateLastUpdated() {
       const now = new Date();
       const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       document.getElementById('last-updated').textContent = `Last updated: ${timeStr}`;
     }
-    
+
     // Start auto-refresh
     function startAutoRefresh() {
       stopAutoRefresh(); // Clear any existing interval
@@ -493,7 +540,7 @@
         loadOverview();
       }, 30000); // 30 seconds
     }
-    
+
     // Stop auto-refresh
     function stopAutoRefresh() {
       if (autoRefreshInterval) {
@@ -501,24 +548,24 @@
         autoRefreshInterval = null;
       }
     }
-    
+
     // Generate bracket from Top 8
     async function generateBracket(bracketId) {
       if (!confirm('This will generate bracket entries from Top 8 ranking scores. Continue?')) {
         return;
       }
-      
+
       const btn = document.getElementById(`generate-btn-${bracketId}`);
       if (!btn) return;
-      
+
       try {
         btn.disabled = true;
         btn.textContent = 'Generating...';
-        
+
         await apiRequest(`/brackets/${bracketId}/generate`, 'POST');
-        
+
         alert('Bracket generated successfully!');
-        
+
         // Refresh dashboard data
         await loadOverview();
       } catch (err) {
@@ -527,26 +574,26 @@
         btn.textContent = '🎯 Generate from Top 8';
       }
     }
-    
+
     // Event listeners
     document.addEventListener('DOMContentLoaded', () => {
       // Refresh buttons
       document.getElementById('refresh-btn').addEventListener('click', loadOverview);
       document.getElementById('footer-refresh-btn').addEventListener('click', loadOverview);
-      
+
       // Toggle buttons
       document.getElementById('toggle-rounds').addEventListener('click', toggleAllRounds);
       document.getElementById('toggle-brackets').addEventListener('click', toggleAllBrackets);
-      
+
       // Initial load
       loadOverview();
     });
-    
+
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
       stopAutoRefresh();
     });
   </script>
 </body>
-</html>
 
+</html>
