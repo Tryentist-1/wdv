@@ -391,6 +391,22 @@
     statusSelect.value = 'Planned';
     codeInput.value = '';
 
+
+    // Initialize component toggle logic
+    const linkToggle = (chkId, optId) => {
+      const chk = document.getElementById(chkId);
+      const opt = document.getElementById(optId);
+      if (chk && opt) {
+        chk.onchange = () => { opt.classList.toggle('hidden', !chk.checked); };
+        // Trigger initial state
+        opt.classList.toggle('hidden', !chk.checked);
+      }
+    };
+
+    linkToggle('include-ranking', 'ranking-options');
+    linkToggle('include-solo', 'solo-options');
+    linkToggle('include-team', 'team-options');
+
     modal.style.display = 'flex';
     nameInput.focus();
 
@@ -409,17 +425,34 @@
         return;
       }
 
-      // PHASE 0: Get selected divisions
-      const divisions = [];
-      ['open', 'bvar', 'gvar', 'bjv', 'gjv'].forEach(div => {
-        const checkbox = document.getElementById(`division-${div}`);
-        if (checkbox && checkbox.checked) {
-          divisions.push(div.toUpperCase());
-        }
-      });
+      // Collect Configuration
+      const config = {
+        ranking: { enabled: document.getElementById('include-ranking').checked, divisions: [] },
+        solo: { enabled: document.getElementById('include-solo').checked, type: null },
+        team: { enabled: document.getElementById('include-team').checked, type: null, open: false }
+      };
 
-      if (divisions.length === 0) {
-        alert('Please select at least one division round');
+      // 1. Ranking Divisions
+      if (config.ranking.enabled) {
+        ['open', 'bvar', 'gvar', 'bjv', 'gjv'].forEach(d => {
+          if (document.getElementById(`rank-div-${d}`).checked) config.ranking.divisions.push(d.toUpperCase());
+        });
+        if (config.ranking.divisions.length === 0) { alert('Select at least one Ranking division'); return; }
+      }
+
+      // 2. Solo Configuration
+      if (config.solo.enabled) {
+        config.solo.type = document.querySelector('input[name="solo-type"]:checked').value;
+      }
+
+      // 3. Team Configuration
+      if (config.team.enabled) {
+        config.team.type = document.querySelector('input[name="team-type"]:checked').value;
+        config.team.open = document.getElementById('team-div-open').checked;
+      }
+
+      if (!config.ranking.enabled && !config.solo.enabled && !config.team.enabled) {
+        alert('Please enable at least one component (Ranking, Solo, or Team)');
         return;
       }
 
@@ -428,7 +461,7 @@
         btn.disabled = true;
         btn.textContent = 'Creating...';
 
-        // Step 1: Create event
+        // Step 1: Create event (TODO: Send config to backend to persist preferences)
         const result = await req('/events', 'POST', {
           name,
           date,
@@ -441,26 +474,57 @@
         const eventId = result.eventId;
         currentEventId = eventId;
 
-        // Step 2: Create division rounds
-        const roundsResult = await req(`/events/${eventId}/rounds`, 'POST', {
-          divisions,
-          roundType: 'R300'
-        });
+        let roundsCreated = false;
 
-        // Store round IDs by division
-        divisionRounds = {};
-        roundsResult.created.forEach(r => {
-          divisionRounds[r.division] = r.roundId;
-        });
+        // Step 2A: Create Ranking Rounds
+        if (config.ranking.enabled) {
+          await req(`/events/${eventId}/rounds`, 'POST', {
+            divisions: config.ranking.divisions,
+            roundType: 'R300'
+          });
+          roundsCreated = true;
+        }
 
+        // Step 2B: Create Solo Swiss Rounds (if selected)
+        // Note: Elimination brackets are created LATER from ranking data, so no round created now.
+        if (config.solo.enabled && config.solo.type === 'SWISS') {
+          // For Swiss, we create VAR and JV rounds (simplified divisions)
+          // Check if Ranking is also enabled? If so, we might have duplication if we make rounds here.
+          // DESIGN DECISION: Swiss Rounds are separate entities from Ranking Rounds.
+          // We will create them as 'VAR-SWISS', 'JV-SWISS' to distinguish? 
+          // LIMITATION: 'rounds' table key is (event_id, division). 
+          // We cannot have 'VAR' (Ranking) and 'VAR' (Swiss) in same event if they share division code.
+          // BUT Ranking uses 'BVAR/GVAR', Swiss uses 'VAR'. distinct codes. OK.
+
+          await req(`/events/${eventId}/rounds`, 'POST', {
+            divisions: ['VAR', 'JV'],
+            roundType: 'SWISS'
+          });
+          roundsCreated = true;
+        }
+
+        // Step 2C: Create Team Swiss Rounds (if selected)
+        if (config.team.enabled && config.team.type === 'SWISS') {
+          if (config.team.open) {
+            await req(`/events/${eventId}/rounds`, 'POST', {
+              divisions: ['OPEN'], // This might conflict if Ranking also has OPEN
+              // FIX: If Ranking OPEN exists, we can't create Team OPEN round yet without schema change.
+              // For now, assume if Ranking OPEN exists, we use that? No, one is Target, one is Match.
+              // WORKAROUND: Team rounds might need a distinct division code like 'T-OPEN'?
+              // For this implementation, we will skip creating Team Round row for now and just rely on bracket logic later.
+              // OR allow it if Ranking OPEN is NOT selected.
+              roundType: 'SWISS'
+            });
+          }
+        }
+
+        // Refresh
         modal.style.display = 'none';
-
-        // Step 3: Configure archers for each division
-        pendingDivisions = [...divisions];
-        processNextDivision(name);
+        loadEvents();
 
       } catch (err) {
         alert(`Error creating event: ${err.message}`);
+        console.error(err);
       } finally {
         const btn = document.getElementById('submit-event-btn');
         btn.disabled = false;

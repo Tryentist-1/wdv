@@ -3236,7 +3236,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/rounds$#i', $route, $m) && $method ===
 
         foreach ($divisions as $division) {
             $division = strtoupper(trim($division));
-            if (!in_array($division, ['OPEN', 'BVAR', 'GVAR', 'BJV', 'GJV'])) {
+            if (!in_array($division, ['OPEN', 'BVAR', 'GVAR', 'BJV', 'GJV', 'VAR', 'JV'])) {
                 $errors[] = "Invalid division: $division";
                 continue;
             }
@@ -3253,13 +3253,21 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/rounds$#i', $route, $m) && $method ===
 
             // Parse division code to extract gender and level
             // Database requires gender and level (NOT NULL), so provide defaults for OPEN
-            $gender = 'M'; // Default to M for OPEN division
-            $level = 'VAR'; // Default to VAR for OPEN division
+            $gender = 'M'; // Default to M for OPEN/VAR/JV (mixed possible)
+            $level = 'VAR'; // Default to VAR for OPEN
 
             if ($division === 'OPEN') {
                 // OPEN division: mixed gender/level, use defaults
                 $gender = 'M'; // Default
                 $level = 'VAR'; // Default
+            } elseif ($division === 'VAR') {
+                // Varsity (Mixed)
+                $gender = 'M';
+                $level = 'VAR';
+            } elseif ($division === 'JV') {
+                // JV (Mixed)
+                $gender = 'M';
+                $level = 'JV';
             } else {
                 // Parse division code: BVAR, GVAR, BJV, GJV
                 if (strpos($division, 'B') === 0) {

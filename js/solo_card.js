@@ -828,7 +828,10 @@ document.addEventListener('DOMContentLoaded', () => {
         renderScoreTable();
         updateScoreHighlightsAndTotals();
         updateCompleteMatchButton();
+        updateVoidMatchButton();
     }
+
+
 
     function renderMatchSummary() {
         if (!state.archer1 || !state.archer2) return;
@@ -1666,9 +1669,65 @@ document.addEventListener('DOMContentLoaded', () => {
             completeBtn.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Complete';
             completeBtn.classList.remove('bg-gray-500', 'hover:bg-gray-600', 'bg-blue-500', 'hover:bg-blue-600');
             completeBtn.classList.add('bg-primary', 'hover:bg-primary-dark');
+        }
+    }
+
+    /**
+     * Check if match has started (any scores entered)
+     */
+    function isMatchStarted() {
+        if (!state.scores.a1 || !state.scores.a2) return false;
+
+        // Check if any arrow has a value
+        const a1Started = state.scores.a1.some(end => end.some(arrow => arrow !== '' && arrow !== null));
+        const a2Started = state.scores.a2.some(end => end.some(arrow => arrow !== '' && arrow !== null));
+
+        return a1Started || a2Started;
+    }
+
+    /**
+     * Update Void Match button visibility
+     */
+    function updateVoidMatchButton() {
+        const voidBtn = document.getElementById('void-match-btn');
+        if (!voidBtn) return;
+
+        // Only show if:
+        // 1. Match exists (has ID)
+        // 2. Not locked/completed
+        // 3. Match hasn't started (no scores)
+        if (state.matchId && !state.locked && state.cardStatus !== 'COMP' && state.cardStatus !== 'VRFD' && !isMatchStarted()) {
+            voidBtn.classList.remove('hidden');
         } else {
-            completeBtn.disabled = true;
-            completeBtn.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Complete';
+            voidBtn.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Void the current match
+     */
+    async function voidMatch() {
+        if (!state.matchId) return;
+
+        if (!confirm('Are you sure you want to VOID this match? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${getApiBase()}/solo-matches/${state.matchId}/void`, {
+                method: 'POST'
+            });
+
+            if (response.ok) {
+                alert('Match voided successfully.');
+                window.location.href = 'index.html';
+            } else {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to void match');
+            }
+        } catch (error) {
+            console.error('Void match failed:', error);
+            alert('Error voiding match: ' + error.message);
         }
     }
 
@@ -2191,6 +2250,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (completeMatchBtn) {
             completeMatchBtn.addEventListener('click', showCompleteMatchModal);
         }
+
+        // Void Match functionality
+        const voidMatchBtn = document.getElementById('void-match-btn');
+        if (voidMatchBtn) {
+            voidMatchBtn.addEventListener('click', voidMatch);
+        }
+
+
 
         // Complete Match modal handlers
         const completeMatchConfirmBtn = document.getElementById('complete-match-confirm-btn');

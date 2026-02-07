@@ -153,57 +153,103 @@
         </div>
       </div>
 
-      <!-- Division Rounds Selection -->
-      <div class="border-t-2 border-gray-200 dark:border-gray-700 pt-4 mt-6 mb-5">
-        <label class="block mb-3 font-semibold text-gray-700 dark:text-gray-300">Division Rounds</label>
 
-        <!-- OPEN on its own line -->
-        <div class="mb-3">
-          <label
-            class="flex items-center gap-2 cursor-pointer p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded transition-colors">
-            <input type="checkbox" id="division-open" value="OPEN" checked
-              class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-            <span class="text-gray-800 dark:text-gray-200 font-medium">OPEN (Mixed - All Levels)</span>
+
+      <!-- MODULAR EVENT SECTIONS -->
+
+      <!-- 1. Ranking Rounds (Optional) -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <label class="flex items-center gap-2 cursor-pointer mb-3">
+          <input type="checkbox" id="include-ranking" checked
+            class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+          <span class="font-bold text-gray-800 dark:text-gray-200 text-lg">Ranking Rounds</span>
+        </label>
+
+        <div id="ranking-options" class="ml-7 space-y-3">
+          <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">Standard 300 Round (Official Divisions)</div>
+          <!-- OPEN -->
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="rank-div-open" value="OPEN" checked
+              class="w-4 h-4 text-primary rounded border-gray-300">
+            <span class="text-gray-700 dark:text-gray-300">OPEN (Mixed)</span>
           </label>
-        </div>
-
-        <!-- VAR on left, JV on right -->
-        <div class="grid grid-cols-2 gap-3">
-          <!-- Varsity Column -->
-          <div class="space-y-2">
-            <label
-              class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-bvar" value="BVAR"
-                class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-              <span class="text-gray-800 dark:text-gray-200">BVAR (Boys Varsity)</span>
+          <!-- VARSITY -->
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="rank-div-bvar" value="BVAR"
+                class="w-4 h-4 text-primary rounded border-gray-300">
+              <span class="text-gray-700 dark:text-gray-300">Boys Varsity</span>
             </label>
-            <label
-              class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-gvar" value="GVAR"
-                class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-              <span class="text-gray-800 dark:text-gray-200">GVAR (Girls Varsity)</span>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="rank-div-gvar" value="GVAR"
+                class="w-4 h-4 text-primary rounded border-gray-300">
+              <span class="text-gray-700 dark:text-gray-300">Girls Varsity</span>
             </label>
           </div>
-
-          <!-- JV Column -->
-          <div class="space-y-2">
-            <label
-              class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-bjv" value="BJV"
-                class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-              <span class="text-gray-800 dark:text-gray-200">BJV (Boys JV)</span>
+          <!-- JV -->
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="rank-div-bjv" value="BJV" class="w-4 h-4 text-primary rounded border-gray-300">
+              <span class="text-gray-700 dark:text-gray-300">Boys JV</span>
             </label>
-            <label
-              class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors">
-              <input type="checkbox" id="division-gjv" value="GJV"
-                class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-              <span class="text-gray-800 dark:text-gray-200">GJV (Girls JV)</span>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="rank-div-gjv" value="GJV" class="w-4 h-4 text-primary rounded border-gray-300">
+              <span class="text-gray-700 dark:text-gray-300">Girls JV</span>
             </label>
           </div>
         </div>
+      </div>
 
-        <div class="mt-3 text-sm text-gray-600 dark:text-gray-400">
-          Select divisions to create for this event. You'll add archers to each division next.
+      <!-- 2. Solo Brackets (Optional) -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+        <label class="flex items-center gap-2 cursor-pointer mb-3">
+          <input type="checkbox" id="include-solo"
+            class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+          <span class="font-bold text-gray-800 dark:text-gray-200 text-lg">Solo Brackets</span>
+        </label>
+
+        <div id="solo-options" class="ml-7 hidden">
+          <div class="flex flex-col gap-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="solo-type" value="ELIMINATION" checked
+                class="w-4 h-4 text-primary border-gray-300">
+              <span class="text-gray-700 dark:text-gray-300">Elimination (Top 8 from Ranking)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="solo-type" value="SWISS" class="w-4 h-4 text-primary border-gray-300">
+              <span class="text-gray-700 dark:text-gray-300">Swiss (Varsity / JV)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Team Brackets (Optional) -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 mb-2">
+        <label class="flex items-center gap-2 cursor-pointer mb-3">
+          <input type="checkbox" id="include-team"
+            class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+          <span class="font-bold text-gray-800 dark:text-gray-200 text-lg">Team Brackets</span>
+        </label>
+
+        <div id="team-options" class="ml-7 hidden">
+          <div class="flex flex-col gap-2 mb-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="team-type" value="ELIMINATION" checked
+                class="w-4 h-4 text-primary border-gray-300">
+              <span class="text-gray-700 dark:text-gray-300">Elimination (Top Schools)</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="team-type" value="SWISS" class="w-4 h-4 text-primary border-gray-300">
+              <span class="text-gray-700 dark:text-gray-300">Swiss (Head-to-Head)</span>
+            </label>
+          </div>
+
+          <!-- Divisions for Team -->
+          <div class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Team Divisions</div>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" id="team-div-open" checked class="w-4 h-4 text-primary rounded border-gray-300">
+            <span class="text-gray-700 dark:text-gray-300">OPEN (Mixed Gender)</span>
+          </label>
         </div>
       </div>
 

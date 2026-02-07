@@ -1,0 +1,4 @@
+Route: [/v1/events/10d3a164-2c23-4b0a-9d52-dfc60f811a94/overview]
+URI: [/api/index.php/v1/events/10d3a164-2c23-4b0a-9d52-dfc60f811a94/overview]
+Script: [/api/index.php]
+Base: [/api]

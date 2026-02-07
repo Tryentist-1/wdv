@@ -1,0 +1,1 @@
+ALTER TABLE archers ADD COLUMN ranking_avg DECIMAL(5,2) NULL;
