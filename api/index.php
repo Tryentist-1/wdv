@@ -169,6 +169,9 @@ if (strpos($route, $scriptName) === 1) {
     $route = '/' . ltrim(substr($route, strlen('/' . $scriptName)), '/');
 }
 
+// DEBUG
+file_put_contents(__DIR__ . '/route_debug.txt', "Route: [$route]\nURI: [{$_SERVER['REQUEST_URI']}]\nScript: [{$_SERVER['SCRIPT_NAME']}]\nBase: [$base]\n");
+
 // Basic router
 if ($route === '/v1/health') {
     $key = $_SERVER['HTTP_X_API_KEY'] ?? '';
@@ -2641,12 +2644,12 @@ if (preg_match('#^/v1/reports/ranking-blank-cards$#', $route) && $method === 'GE
         $blankEnds = [];
         $hasRow = [];
         foreach ($rows as $row) {
-            $hasRow[(int)$row['end_number']] = true;
+            $hasRow[(int) $row['end_number']] = true;
             $a1 = trim($row['a1'] ?? '');
             $a2 = trim($row['a2'] ?? '');
             $a3 = trim($row['a3'] ?? '');
             if ($a1 === '' || $a2 === '' || $a3 === '') {
-                $blankEnds[] = (int)$row['end_number'];
+                $blankEnds[] = (int) $row['end_number'];
             }
         }
         for ($n = 1; $n <= 7; $n++) {
@@ -2659,7 +2662,7 @@ if (preg_match('#^/v1/reports/ranking-blank-cards$#', $route) && $method === 'GE
         $out[] = [
             'roundArcherId' => $c['round_archer_id'],
             'archerName' => $c['archer_name'],
-            'baleNumber' => (int)$c['bale_number'],
+            'baleNumber' => (int) $c['bale_number'],
             'roundId' => $c['round_id'],
             'division' => $c['division'],
             'roundType' => $c['round_type'],
@@ -4732,6 +4735,51 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
     exit;
 }
 
+// DELETE /v1/archers/:id - Delete single archer
+if (preg_match('#^/v1/archers/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
+    require_api_key();
+    $id = $m[1];
+    try {
+        $pdo = db();
+        $stmt = $pdo->prepare('DELETE FROM archers WHERE id = ?');
+        $stmt->execute([$id]);
+
+        if ($stmt->rowCount() > 0) {
+            json_response(['ok' => true, 'id' => $id], 200);
+        } else {
+            json_response(['error' => 'Archer not found'], 404);
+        }
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/archers/bulk_delete - Delete multiple archers
+if (preg_match('#^/v1/archers/bulk_delete$#i', $route) && $method === 'POST') {
+    require_api_key();
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $ids = $input['ids'] ?? [];
+
+    if (!is_array($ids) || empty($ids)) {
+        json_response(['error' => 'No IDs provided'], 400);
+        exit;
+    }
+
+    try {
+        $pdo = db();
+        // Create placeholders for prepared statement
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $pdo->prepare("DELETE FROM archers WHERE id IN ($placeholders)");
+        $stmt->execute($ids);
+
+        json_response(['ok' => true, 'deleted' => $stmt->rowCount()], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // GET /v1/archers - Load all archers from master list
 // PUBLIC ENDPOINT - No authentication required
 // Archers need access to roster for profile selection on first app open
@@ -4802,6 +4850,7 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
             shirt_size as shirtSize,
             pant_size as pantSize,
             hat_size as hatSize,
+            ranking_avg as rankingAvg,
             created_at as createdAt, 
             updated_at as updatedAt
         FROM archers WHERE 1=1';

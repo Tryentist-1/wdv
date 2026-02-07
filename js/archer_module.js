@@ -81,6 +81,7 @@ const DEFAULT_ARCHER_TEMPLATE = {
   shirtSize: '',
   pantSize: '',
   hatSize: '',
+  rankingAvg: '',
   // Legacy local-only fields kept for backward compatibility until scoring apps migrate
   bale: '',
   target: '',
@@ -156,9 +157,10 @@ const ArcherModule = {
   _normalizeLevel(level) {
     if (!level) return 'VAR'; // default
     const l = String(level).toUpperCase().trim();
-    if (l === 'JV' || l === 'JUNIOR VARSITY' || l === 'JUNIOR') return 'JV';
-    if (l === 'BEG' || l === 'BEGINNER') return 'BEG';
-    // V, VAR, VARSITY all become VAR
+    if (l === 'JV' || l === 'JUNIOR VARSITY' || l === 'JUNIOR' || l === 'J') return 'JV';
+    if (l === 'MS' || l === 'MIDDLE SCHOOL' || l === 'MIDDLE') return 'MS';
+    if (l === 'ELEM' || l === 'ELEMENTARY' || l === 'YE') return 'ELEM';
+    if (l === 'ADULT' || l === 'A') return 'ADULT';
     return 'VAR';
   },
 
@@ -169,8 +171,31 @@ const ArcherModule = {
   },
 
   _normalizeSchool(school) {
-    if (!school) return 'UNK'; // Unknown
-    return String(school).substring(0, 3).toUpperCase().trim();
+    if (!school) return 'UNK';
+    const s = String(school).toUpperCase().trim();
+
+    // If it's already a 3 or 4 letter code (and not a full name like "WOODINVILLE"), keep it
+    if (s.length >= 2 && s.length <= 4 && /^[A-Z0-9]+$/.test(s)) {
+      return s;
+    }
+
+    // Quick map for full names
+    const map = {
+      'WOODINVILLE': 'WHS', 'INGLEMOOR': 'IHS', 'NORTH CREEK': 'NCHS', 'BOTHELL': 'BHS',
+      'REDMOND': 'RHS', 'EASTLAKE': 'EHS', 'SKYLINE': 'SHS', 'MOUNT SI': 'MSHS',
+      'NEWPORT': 'NHS', 'INTERLAKE': 'INT', 'BELLEVUE': 'BEL', 'SAMMAMISH': 'SAM',
+      'ISSAQUAH': 'ISS', 'LIBERTY': 'LIB', 'HAZEN': 'HAZ', 'LINDBERGH': 'LIN',
+      'RENTON': 'REN', 'CEDAR PARK': 'CPC', 'OVERLAKE': 'OVR', 'BEAR CREEK': 'BCS',
+      'HERO HIGH': 'HRO', 'HISTORY HIGH': 'HST'
+    };
+
+    // Check map
+    for (const [name, code] of Object.entries(map)) {
+      if (s.includes(name)) return code;
+    }
+
+    // Fallback: first 3 chars
+    return s.substring(0, 3);
   },
 
   _normalizeDom(value) {
@@ -333,7 +358,7 @@ const ArcherModule = {
     try {
       const direct = localStorage.getItem('event_entry_code') || '';
       if (direct && direct.trim()) return direct.trim();
-    } catch (_) {}
+    } catch (_) { }
 
     try {
       for (let i = 0; i < localStorage.length; i++) {
@@ -346,7 +371,7 @@ const ArcherModule = {
           } catch (_) { /* ignore bad meta */ }
         }
       }
-    } catch (_) {}
+    } catch (_) { }
 
     return '';
   },
@@ -355,7 +380,7 @@ const ArcherModule = {
     if (!code) return;
     const trimmed = String(code).trim();
     if (!trimmed) return;
-    try { localStorage.setItem('event_entry_code', trimmed); } catch (_) {}
+    try { localStorage.setItem('event_entry_code', trimmed); } catch (_) { }
   },
 
   _ensureArcherApiAccess(options = {}) {
@@ -365,7 +390,7 @@ const ArcherModule = {
       const config = JSON.parse(configRaw);
       const coachKey = (config && config.apiKey) || localStorage.getItem('coach_api_key') || '';
       if (coachKey && coachKey.trim()) return true;
-    } catch (_) {}
+    } catch (_) { }
 
     const existingCode = this._getStoredEventCode();
     if (existingCode) return true;
@@ -430,9 +455,9 @@ const ArcherModule = {
     if (!extId) return null;
     const list = this._readRawList();
     // Match on extId, id (UUID), or built extId
-    const found = Array.isArray(list) ? list.find(a => 
-      a.extId === extId || 
-      a.id === extId || 
+    const found = Array.isArray(list) ? list.find(a =>
+      a.extId === extId ||
+      a.id === extId ||
       this._buildExtId(a) === extId
     ) : null;
     if (!found) return null;
@@ -527,7 +552,7 @@ const ArcherModule = {
     if (!window.LiveUpdates || !window.LiveUpdates.request) {
       throw new Error('Live Updates API is not available');
     }
-    
+
     // Use the new self-update endpoint that doesn't require authentication
     const payload = this._prepareForSync(archer);
     const result = await window.LiveUpdates.request('/archers/self', 'POST', payload);
@@ -593,22 +618,80 @@ const ArcherModule = {
     return flushPromise;
   },
 
+  /**
+   * Delete a single archer by ID.
+   * @param {string} id - The archer's UUID
+   * @returns {Promise<boolean>} True if successful
+   */
+  async deleteArcher(id) {
+    if (!id) return false;
+
+    // 1. Remove from local list
+    const list = this.loadList();
+    const newList = list.filter(a => a.id !== id);
+    if (list.length === newList.length) return false; // Not found locally
+
+    this.saveList(newList);
+
+    // 2. Call API to delete from server
+    if (window.LiveUpdates && window.LiveUpdates.request) {
+      try {
+        await window.LiveUpdates.request(`/archers/${id}`, 'DELETE');
+      } catch (e) {
+        console.error('Failed to delete archer from server:', e);
+        alert('Deleted from local cache, but server delete failed: ' + e.message);
+        // We do NOT revert local change, as that would be confusing. 
+        // The archer will likely reappear on next sync if server delete truly failed.
+      }
+    }
+    return true;
+  },
+
+  /**
+   * Delete multiple archers by ID.
+   * @param {string[]} ids - Array of archer UUIDs
+   * @returns {Promise<number>} Number of deleted archers
+   */
+  async deleteArchers(ids) {
+    if (!Array.isArray(ids) || ids.length === 0) return 0;
+
+    // 1. Remove from local list
+    const list = this.loadList();
+    const beforeCount = list.length;
+    const newList = list.filter(a => !ids.includes(a.id));
+    const deletedCount = beforeCount - newList.length;
+
+    if (deletedCount === 0) return 0;
+    this.saveList(newList);
+
+    // 2. Call API to delete from server
+    if (window.LiveUpdates && window.LiveUpdates.request) {
+      try {
+        await window.LiveUpdates.request('/archers/bulk_delete', 'POST', { ids });
+      } catch (e) {
+        console.error('Failed to bulk delete archers from server:', e);
+        alert(`Deleted ${deletedCount} archers locally, but server sync failed: ${e.message}`);
+      }
+    }
+    return deletedCount;
+  },
+
   // Sync current master list to DB via API bulk upsert
   async bulkUpsertMasterList() {
     if (!window.LiveUpdates || !window.LiveUpdates.request) {
       alert('Live Updates API is not available. Please ensure live_updates.js is loaded.');
       return { ok: false };
     }
-    
+
     const list = this.loadList();
     if (!Array.isArray(list) || list.length === 0) {
       alert('No master list found in local storage to sync.');
       return { ok: false };
     }
-    
+
     // Normalize data before sending to database
     const payload = list.map(a => this._prepareForSync(a));
-    
+
     try {
       const result = await window.LiveUpdates.request('/archers/bulk_upsert', 'POST', payload);
       this._setLastSynced();
@@ -624,15 +707,15 @@ const ArcherModule = {
     if (!window.LiveUpdates || !window.LiveUpdates.request) {
       throw new Error('Live Updates API is not available');
     }
-    
+
     try {
       const result = await window.LiveUpdates.request('/archers', 'GET');
       console.log('API Response:', result); // Debug logging
-      
+
       if (!result) {
         throw new Error('API returned null/undefined response');
       }
-      
+
       if (!result.archers) {
         console.error('Unexpected API response format:', result);
         throw new Error('API response missing "archers" property');
@@ -646,7 +729,7 @@ const ArcherModule = {
     } catch (error) {
       const err = (error instanceof Error) ? error : new Error(String(error));
       console.error('Load from MySQL failed:', err);
-      
+
       // Reading the master list is public - no authentication prompt
       // If there's an error, just throw it without prompting for credentials
       throw err;
@@ -828,7 +911,7 @@ const ArcherModule = {
     return { archer: list[index], sync };
   },
 
-  // Delete an archer by index
+  // Delete an archer by index (local only, legacy)
   deleteArcher(index) {
     const list = this.loadList();
     if (index >= 0 && index < list.length) {
@@ -837,17 +920,96 @@ const ArcherModule = {
     }
   },
 
+  // Delete an archer by ID (API-backed)
+  async deleteArcherById(id) {
+    if (!id) throw new Error('Archer ID is required');
+
+    const apiKey = localStorage.getItem('coach_api_key') || '';
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey) {
+      headers['X-API-Key'] = apiKey;
+      headers['X-Passcode'] = apiKey;
+    }
+
+    try {
+      const response = await fetch(`/api/v1/archers/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Delete failed' }));
+        throw new Error(error.error || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // Remove from local list
+      const list = this.loadList();
+      const index = list.findIndex(a => a.id === id || a.extId === id);
+      if (index >= 0) {
+        list.splice(index, 1);
+        this.saveList(list);
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Delete archer failed:', err);
+      throw err;
+    }
+  },
+
+  // Delete multiple archers by IDs (bulk delete, API-backed)
+  async deleteArchersByIds(ids) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new Error('Array of archer IDs is required');
+    }
+
+    const apiKey = localStorage.getItem('coach_api_key') || '';
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey) {
+      headers['X-API-Key'] = apiKey;
+      headers['X-Passcode'] = apiKey;
+    }
+
+    try {
+      const response = await fetch('/api/v1/archers/bulk_delete', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ ids })
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Bulk delete failed' }));
+        throw new Error(error.error || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // Remove from local list
+      const list = this.loadList();
+      const idsSet = new Set(ids);
+      const filtered = list.filter(a => !idsSet.has(a.id) && !idsSet.has(a.extId));
+      this.saveList(filtered);
+
+      return result.deleted || 0;
+    } catch (err) {
+      console.error('Bulk delete archers failed:', err);
+      throw err;
+    }
+  },
+
   // Import from CSV (overwrites current list)
   importCSV(csvText) {
     if (!csvText) throw new Error('CSV text is required');
     const rows = csvText.trim().split(/\r?\n/);
     if (rows.length < 2) return [];
-    
+
     // Detect delimiter (tab or comma)
     const firstLine = rows[0];
     const hasTabs = firstLine.includes('\t');
     const delimiter = hasTabs ? '\t' : ',';
-    
+
     // Parse CSV/TSV line with proper quote handling
     const parseCSVLine = (line) => {
       const result = [];
@@ -872,11 +1034,11 @@ const ArcherModule = {
       result.push(current.trim()); // Add last field
       return result;
     };
-    
+
     // Parse headers - preserve original case for mapping, but also store lowercase for lookup
     const rawHeaders = parseCSVLine(rows[0]).map(h => h.replace(/^"|"$/g, '').trim());
     const headers = rawHeaders.map(h => h.toLowerCase());
-    
+
     const list = rows
       .slice(1)
       .map(line => {
@@ -912,7 +1074,7 @@ const ArcherModule = {
         key === 'first name' ? 'first' : null,
         key === 'last name' ? 'last' : null
       ].filter(Boolean);
-      
+
       for (const variant of variations) {
         if (row[variant] !== undefined && row[variant] !== null && row[variant] !== '') {
           return String(row[variant]).trim();
@@ -937,12 +1099,12 @@ const ArcherModule = {
       status: lookup('status') || 'active',
       email: lookup('email') || lookup('email 2') || lookup('email2'), // Handle "Email 2" column
       phone: lookup('phone'),
-        usArcheryId: lookup('usa_archery_id') || lookup('usaarcheryid') || lookup('usaarchery'),
-        jvPr: lookup('jv_pr') || lookup('jvpr'),
-        varPr: lookup('var_pr') || lookup('varpr'),
-        shirtSize: lookup('shirt_size') || lookup('shirtsize'),
-        pantSize: lookup('pant_size') || lookup('pantsize'),
-        hatSize: lookup('hat_size') || lookup('hatsize'),
+      usArcheryId: lookup('usa_archery_id') || lookup('usaarcheryid') || lookup('usaarchery'),
+      jvPr: lookup('jv_pr') || lookup('jvpr'),
+      varPr: lookup('var_pr') || lookup('varpr'),
+      shirtSize: lookup('shirt_size') || lookup('shirtsize'),
+      pantSize: lookup('pant_size') || lookup('pantsize'),
+      hatSize: lookup('hat_size') || lookup('hatsize'),
       domEye: lookup('dom_eye') || lookup('domeye'),
       domHand: lookup('dom_hand') || lookup('domhand'),
       heightIn: lookup('height') || lookup('height_in'),
@@ -1090,7 +1252,7 @@ const ArcherModule = {
       alert('No archers to export.');
       return '';
     }
-    
+
     if (filteredList) {
       console.log(`[Export Coach Roster] Using filtered list with ${list.length} archers`);
     }
@@ -1115,7 +1277,7 @@ const ArcherModule = {
       'Disability',
       'Camp'
     ];
-    
+
     // Map internal field names to CSV headers
     const fieldMap = {
       'First Name': 'first',
@@ -1186,11 +1348,11 @@ const ArcherModule = {
       alert('No archers to export.');
       return '';
     }
-    
+
     if (filteredList) {
       console.log(`[Export Coach Roster Simple] Using filtered list with ${list.length} archers`);
     }
-    
+
     // Template format: First Name,Last Name,Gender,VJV,SCHOOL,USAArcheryNo,Email1,Discipline,Disability,RankingAvg
     const headers = [
       'First Name',
@@ -1204,10 +1366,10 @@ const ArcherModule = {
       'Disability',
       'RankingAvg'
     ];
-    
+
     const rows = list.map(archer => {
       const normalized = this._applyTemplate(archer);
-      
+
       // Map fields to template format
       const firstName = normalized.first || '';
       const lastName = normalized.last || '';
@@ -1218,7 +1380,7 @@ const ArcherModule = {
       const email1 = normalized.email || '';
       const discipline = normalized.discipline || 'Recurve';
       const disability = (normalized.disability || 'NO').toUpperCase();
-      
+
       // RankingAvg: Use varPr for VAR level, jvPr for JV level, otherwise empty
       let rankingAvg = '';
       if (vjv === 'VAR' && normalized.varPr) {
@@ -1226,7 +1388,7 @@ const ArcherModule = {
       } else if (vjv === 'JV' && normalized.jvPr) {
         rankingAvg = String(normalized.jvPr);
       }
-      
+
       return [
         firstName,
         lastName,
@@ -1247,7 +1409,7 @@ const ArcherModule = {
         return str;
       }).join(',');
     });
-    
+
     const csv = [headers.join(','), ...rows].join('\n');
 
     try {
@@ -1284,7 +1446,7 @@ const ArcherModule = {
    */
   async exportShirtOrderCSV(filteredList = null) {
     let list = filteredList;
-    
+
     // If no filtered list provided, fetch fresh data from API
     if (!list || list.length === 0) {
       try {
@@ -1310,12 +1472,12 @@ const ArcherModule = {
     } else {
       console.log(`[Export Shirt Order] Using filtered list with ${list.length} archers`);
     }
-    
+
     if (!list.length) {
       alert('No archers to export. Please refresh the list first.');
       return '';
     }
-    
+
     // Shirt order columns matching the form format
     const headers = [
       'Name on Jersey',
@@ -1325,30 +1487,30 @@ const ArcherModule = {
       'Style',
       'Note'
     ];
-    
+
     const rows = list.map(archer => {
       const normalized = this._applyTemplate(archer);
-      
+
       // Name on Jersey: LastName
       const nameOnJersey = this._safeString(normalized.last) || '';
-      
+
       // Number: blank
       const number = '';
-      
+
       // Size: Gender (W or M) + "-" + ShirtSize
       const genderPrefix = (normalized.gender === 'F' || normalized.gender === 'W') ? 'W' : 'M';
       const shirtSize = this._safeString(normalized.shirtSize) || '';
       const size = shirtSize ? `${genderPrefix}-${shirtSize}` : '';
-      
+
       // Name on Front: Nickname (or FirstName if no Nickname)
       const nameOnFront = this._safeString(normalized.nickname) || this._safeString(normalized.first) || '';
-      
+
       // Style: "archery 1/4 zip"
       const style = 'archery 1/4 zip';
-      
+
       // Note: Gear Notes (notesGear field)
       const note = this._safeString(normalized.notesGear) || '';
-      
+
       // Build row with proper CSV escaping
       const row = [
         nameOnJersey,
@@ -1365,12 +1527,12 @@ const ArcherModule = {
         }
         return str;
       });
-      
+
       return row.join(',');
     });
-    
+
     const csv = [headers.join(','), ...rows].join('\n');
-    
+
     try {
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -1431,7 +1593,7 @@ const ArcherModule = {
       result.push(current.trim()); // Add last field
       return result;
     };
-    
+
     const rows = csvText.split('\n').filter(line => line.trim());
     if (rows.length < 2) {
       return { list: [], errors: ['CSV must have at least a header row and one data row'] };
@@ -1439,7 +1601,7 @@ const ArcherModule = {
 
     // Parse header row - USA Archery template has specific column names
     const headers = parseCSVLine(rows[0]).map(h => h.replace(/^"|"$/g, '').trim());
-    
+
     // Map USA Archery column names to our field names
     // Includes official names AND common alternatives/variations
     const headerToFieldMap = {
@@ -1447,7 +1609,7 @@ const ArcherModule = {
       'Email': 'email',
       'Email 2': 'email',
       'email': 'email',
-      
+
       // Name variations
       'First Name': 'first',
       'First': 'first',
@@ -1457,115 +1619,122 @@ const ArcherModule = {
       'Last': 'last',
       'last': 'last',
       'LastName': 'last',
-      
+
       // Gender variations
       'Gender': 'gender',
       'Gener': 'gender', // Common typo
       'gender': 'gender',
-      
+
       // DOB variations
       'DOB': 'dob',
       'dob': 'dob',
       'Date of Birth': 'dob',
       'Birth Date': 'dob',
       'Birthdate': 'dob',
-      
+
       // USA Archery ID
       'Membership Number Look Up': 'usArcheryId',
       'Membership Number': 'usArcheryId',
       'Member ID': 'usArcheryId',
       'USA Archery ID': 'usArcheryId',
-      
+
       'Valid From': 'validFrom',
-      
+
       // State/Club
       'State': 'clubState',
       'Clubs': 'schoolFullName',
       'Club': 'schoolFullName',
-      
+
       'Membership Type': 'membershipType',
-      
+
       // Discipline variations
       'What is your Primary Discipline?': 'discipline',
       'Discipline': 'discipline',
       'discipline': 'discipline',
       'Primary Discipline': 'discipline',
-      
+
       // Ethnicity variations
       'Race/Ethnicity': 'ethnicity',
       'Ethnicity': 'ethnicity',
       'ethnicity': 'ethnicity',
       'Race': 'ethnicity',
-      
+
       // Address variations
       'Address - Addr 1': 'streetAddress',
       'Address1': 'streetAddress',
       'Address 1': 'streetAddress',
       'Street Address': 'streetAddress',
       'Address': 'streetAddress',
-      
+
       'Address - Addr 2': 'streetAddress2',
       'Address2': 'streetAddress2',
       'Address 2': 'streetAddress2',
-      
+
       'Address - Addr 3': 'addressLine3',
       'Address3': 'addressLine3',
-      
+
       'Address - Addr City': 'city',
       'City': 'city',
       'city': 'city',
-      
+
       'Address - Addr State': 'state',
       // Note: 'State' maps to clubState above; use context
-      
+
       'Address - Addr Zip Code': 'postalCode',
       'PostalCode': 'postalCode',
       'Postal Code': 'postalCode',
       'Zip': 'postalCode',
       'Zip Code': 'postalCode',
-      
+
       'Address - Addr Country': 'addressCountry',
       'Address_Country': 'addressCountry',
       'Country': 'addressCountry',
-      
+
       // Phone variations
       'Primary Phone Number': 'phone',
       'Phone': 'phone',
       'phone': 'phone',
       'Phone Number': 'phone',
-      
+
       // Disability variations
       'Do you consider yourself to have a disability?': 'disability',
       'Disability?': 'disability',
       'Disability': 'disability',
       'Please select all that apply.': 'disabilityList',
-      
+
       // Military
       'Have you ever served in the US Armed Forces?': 'militaryService',
       'Military Service': 'militaryService',
-      
+
       // Introduction to archery
       'Please tell us where you were first introduced to archery.': 'introductionSource',
       'Intro_to_Archery': 'introductionSource',
       'Introduction to Archery': 'introductionSource',
       'How Introduced': 'introductionSource',
       'Other': 'introductionOther',
-      
+
       // Nationality
       'Select Your Citizenship Country': 'nationality',
       'Nationality': 'nationality',
       'Citizenship': 'nationality',
-      
+
       // NFAA
       'NFAA Membership Number': 'nfaaMemberNo',
       'NFAA Number': 'nfaaMemberNo',
-      
+
       // School
       'School Type': 'schoolType',
       'Grade in School': 'grade',
       'Grade': 'grade',
       'School Name': 'schoolFullName',
-      'School': 'schoolFullName'
+      'School': 'schoolFullName',
+      'SCHOOL': 'schoolFullName', // Case variation
+
+      // Additional aliases for test data / alternate formats
+      'Email1': 'email',
+      'RankingAvg': 'rankingAvg',
+      'Ranking Ranking': 'rankingAvg',
+      'VJV': 'level'
     };
 
     const list = [];
@@ -1574,7 +1743,7 @@ const ArcherModule = {
       if (!line.trim()) continue;
 
       const cols = parseCSVLine(line).map(col => col.replace(/^"|"$/g, '').trim());
-      
+
       // Build row object from headers
       const row = {};
       headers.forEach((header, idx) => {
@@ -1583,7 +1752,7 @@ const ArcherModule = {
 
       // Map to our field names
       const archerData = Object.assign({}, DEFAULT_ARCHER_TEMPLATE);
-      
+
       // Map each field
       headers.forEach(header => {
         const fieldName = headerToFieldMap[header];
@@ -1591,6 +1760,12 @@ const ArcherModule = {
           archerData[fieldName] = String(row[header]).trim();
         }
       });
+
+      // Explicitly map RankingAvg (case insensitive check)
+      const rankingAvgIndex = headers.findIndex(h => h.toLowerCase() === 'rankingavg' || h.toLowerCase() === 'ranking average');
+      if (rankingAvgIndex >= 0) {
+        archerData.rankingAvg = cols[rankingAvgIndex] || '';
+      }
 
       // Validate required fields
       if (!archerData.first || !archerData.last) {
@@ -1611,6 +1786,20 @@ const ArcherModule = {
         archerData.extId = this._buildExtId(archerData);
       }
 
+      // Pre-process school to handle 3-letter code vs full name
+      const rawSchool = (archerData.schoolFullName || archerData.school || '').trim();
+      if (rawSchool.length <= 3 && rawSchool.length > 0) {
+        archerData.school = rawSchool.toUpperCase();
+        // If schoolFullName matches the code, clear it so we don't store code as name
+        if (archerData.schoolFullName && archerData.schoolFullName.toUpperCase() === archerData.school) {
+          archerData.schoolFullName = '';
+        }
+      } else if (rawSchool.length > 3) {
+        // Assume it's a full name
+        archerData.schoolFullName = rawSchool;
+        archerData.school = this._normalizeSchool(rawSchool); // Will likely be 'UNK' or truncated 3 letters
+      }
+
       // Normalize fields
       archerData.gender = this._normalizeGender(archerData.gender);
       archerData.level = this._normalizeLevel(archerData.level);
@@ -1620,28 +1809,29 @@ const ArcherModule = {
       list.push(archerData);
     }
 
+    let addedCount = 0;
+    let updatedCount = 0;
+
     if (list.length > 0) {
       // MERGE with existing archers instead of replacing
       const existingList = this.loadList();
       const mergedList = [...existingList];
-      let addedCount = 0;
-      let updatedCount = 0;
-      
+
       list.forEach(imported => {
         // Find existing archer by extId, email, or name match
         const existingIndex = mergedList.findIndex(existing => {
           if (imported.extId && existing.extId === imported.extId) return true;
           if (imported.email && existing.email && imported.email.toLowerCase() === existing.email.toLowerCase()) return true;
           if (imported.first && imported.last && existing.first && existing.last &&
-              imported.first.toLowerCase() === existing.first.toLowerCase() &&
-              imported.last.toLowerCase() === existing.last.toLowerCase()) return true;
+            imported.first.toLowerCase() === existing.first.toLowerCase() &&
+            imported.last.toLowerCase() === existing.last.toLowerCase()) return true;
           return false;
         });
-        
+
         if (existingIndex >= 0) {
           // Merge: update existing archer with imported data, preserving existing fields
           const existing = mergedList[existingIndex];
-          mergedList[existingIndex] = Object.assign({}, existing, 
+          mergedList[existingIndex] = Object.assign({}, existing,
             // Only overwrite with non-empty imported values
             Object.fromEntries(
               Object.entries(imported).filter(([k, v]) => v !== '' && v !== null && v !== undefined)
@@ -1654,10 +1844,10 @@ const ArcherModule = {
           addedCount++;
         }
       });
-      
+
       this.saveList(mergedList, { source: 'usa-archery-csv-import', lastImportedAt: Date.now() });
       console.log(`[Import] Added ${addedCount} new archers, updated ${updatedCount} existing archers`);
-      
+
       // Sync imported/updated archers to MySQL (the master database)
       // This is async but we don't block the UI - it will sync in background
       this._syncImportedToMySQL(list).then(result => {
@@ -1673,7 +1863,7 @@ const ArcherModule = {
 
     return { list, errors, addedCount, updatedCount };
   },
-  
+
   /**
    * Sync imported archers to MySQL database via bulk_upsert API.
    * Called automatically after CSV import to persist data to server.
@@ -1692,7 +1882,7 @@ const ArcherModule = {
       console.warn('[Import] Live Updates not available - cannot sync to MySQL');
       return { ok: false, error: 'Live Updates not available' };
     }
-    
+
     try {
       const payload = importedList.map(a => this._prepareForSync(a));
       const result = await window.LiveUpdates.request('/archers/bulk_upsert', 'POST', payload);
@@ -1725,11 +1915,11 @@ const ArcherModule = {
       alert('No archers to export.');
       return '';
     }
-    
+
     if (filteredList) {
       console.log(`[Export USA Archery] Using filtered list with ${list.length} archers`);
     }
-    
+
     // USA Archery template columns in exact order (30 columns)
     const headers = [
       'Email',
@@ -1763,7 +1953,7 @@ const ArcherModule = {
       'Grade in School',
       'School Name'
     ];
-    
+
     // Map USA Archery columns to our internal field names
     const fieldMap = {
       'Email': 'email',
@@ -1812,7 +2002,7 @@ const ArcherModule = {
         return str;
       }).join(',');
     });
-    
+
     const csv = [headers.join(','), ...rows].join('\n');
 
     try {
@@ -1833,7 +2023,7 @@ const ArcherModule = {
   },
 
   // Load default CSV if localStorage is empty
-  loadDefaultCSVIfNeeded: async function(force = false) {
+  loadDefaultCSVIfNeeded: async function (force = false) {
     if (!force && localStorage.getItem(ARCHER_LIST_KEY)) return; // Already loaded
     try {
       const url = force ? `app-imports/listimport-01.csv?v=${Date.now()}` : 'app-imports/listimport-01.csv';

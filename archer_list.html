@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -20,44 +21,56 @@
             background-color: white;
             transition: background-color 0.2s;
         }
+
         .dark .archer-select-row {
             border-bottom: 1px solid #374151;
             background-color: #1f2937;
         }
+
         .archer-select-row:hover {
             background-color: #f8f9fa;
         }
+
         .dark .archer-select-row:hover {
             background-color: #374151;
         }
+
         /* Highlight "Me" record - override default styles */
         .archer-select-row.bg-blue-50 {
             background-color: #eff6ff !important;
         }
+
         .dark .archer-select-row.bg-blue-900\/20 {
             background-color: rgba(30, 58, 138, 0.2) !important;
         }
+
         .archer-select-row.bg-blue-50:hover {
             background-color: #dbeafe !important;
         }
+
         .dark .archer-select-row.bg-blue-900\/20:hover {
             background-color: rgba(30, 58, 138, 0.3) !important;
         }
+
         .archer-name-label {
             font-size: 1.1em;
             font-weight: 500;
             color: #1f2937;
         }
+
         .dark .archer-name-label {
             color: #f9fafb;
         }
+
         .archer-details-label {
             font-size: 0.9em;
             color: #6c757d;
         }
+
         .dark .archer-details-label {
             color: #9ca3af;
         }
+
         .favorite-star {
             font-size: 1.4em;
             margin-right: 0.8rem;
@@ -65,79 +78,123 @@
             text-align: center;
             cursor: pointer;
         }
+
         /* Success feedback animations */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translate(-50%, -10px); }
-            to { opacity: 1; transform: translate(-50%, 0); }
+            from {
+                opacity: 0;
+                transform: translate(-50%, -10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
         }
+
         @keyframes fadeOut {
-            from { opacity: 1; transform: translate(-50%, 0); }
-            to { opacity: 0; transform: translate(-50%, -10px); }
+            from {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+
+            to {
+                opacity: 0;
+                transform: translate(-50%, -10px);
+            }
         }
     </style>
 </head>
+
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
     <div id="app-container" class="flex flex-col min-h-screen">
 
-        <header class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200 flex justify-between items-center">
+        <header
+            class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200 flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Archer List</h1>
         </header>
 
-        <div class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-2 transition-colors duration-200">
-            <div class="flex-1 flex items-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 focus-within:ring-2 focus-within:ring-primary transition-colors">
-                <input class="flex-1 px-3 py-2 bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none border-none" type="text" id="search-input" placeholder="Find an Archer">
-                <button id="clear-search-btn" class="px-3 py-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors hidden" type="button" title="Clear search" aria-label="Clear search">
+        <div
+            class="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-2 transition-colors duration-200">
+            <div
+                class="flex-1 flex items-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 focus-within:ring-2 focus-within:ring-primary transition-colors">
+                <input
+                    class="flex-1 px-3 py-2 bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none border-none"
+                    type="text" id="search-input" placeholder="Find an Archer">
+                <button id="clear-search-btn"
+                    class="px-3 py-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors hidden"
+                    type="button" title="Clear search" aria-label="Clear search">
                     <i class="fas fa-times-circle"></i>
                 </button>
             </div>
-            <button id="add-archer-btn" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]"><i class="fas fa-plus"></i> Add</button>
+            <button id="add-archer-btn"
+                class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]"><i
+                    class="fas fa-plus"></i> Add</button>
         </div>
-        
-        <div class="px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-2 flex-wrap transition-colors duration-200">
-            <button id="sort-by-name-btn" class="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px] flex items-center gap-1">
+
+        <div
+            class="px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex gap-2 flex-wrap transition-colors duration-200">
+            <button id="sort-by-name-btn"
+                class="px-4 py-2 bg-gray-400 dark:bg-gray-600 text-white rounded font-semibold hover:bg-gray-500 dark:hover:bg-gray-500 transition-colors min-h-[44px] flex items-center gap-1">
                 <i class="fas fa-sort text-lg"></i>
                 <span>A-Z</span>
             </button>
-            <button id="gender-filter-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Filter by Gender">
+            <button id="gender-filter-btn"
+                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                title="Filter by Gender">
                 <i class="fas fa-venus-mars text-lg"></i>
             </button>
-            <select id="level-filter" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-w-[100px] min-h-[44px] cursor-pointer">
+            <select id="level-filter"
+                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-w-[100px] min-h-[44px] cursor-pointer">
                 <option value="all">All</option>
                 <option value="VAR">VAR</option>
                 <option value="JV">JV</option>
             </select>
-            <button id="show-favorites-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
+            <button id="show-favorites-btn"
+                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
                 <i class="fas fa-heart text-red-500 text-lg"></i>
             </button>
-            <select id="school-filter" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-w-[120px] min-h-[44px] cursor-pointer">
+            <select id="school-filter"
+                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-w-[120px] min-h-[44px] cursor-pointer">
                 <option value="all">All Schools</option>
             </select>
-            <select id="status-filter" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-w-[140px] min-h-[44px] cursor-pointer">
+            <select id="status-filter"
+                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-w-[140px] min-h-[44px] cursor-pointer">
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
                 <option value="all">All</option>
             </select>
-            <button id="shirt-sizes-btn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Shirt Sizes">
+            <button id="shirt-sizes-btn"
+                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                title="Shirt Sizes">
                 <i class="fas fa-tshirt text-lg"></i>
             </button>
         </div>
 
-        <div id="archer-list-container" class="flex-1 px-2 pb-[calc(84px+env(safe-area-inset-bottom)+24px)] overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
+        <div id="archer-list-container"
+            class="flex-1 px-2 pb-[calc(84px+env(safe-area-inset-bottom)+24px)] overflow-y-auto bg-white dark:bg-gray-800 transition-colors duration-200">
             <!-- Archer list will be rendered here -->
         </div>
 
-        <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-30 safe-area-bottom">
+        <footer
+            class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg transition-colors duration-200 z-30 safe-area-bottom">
             <div class="flex items-center h-full px-4 gap-2">
-                <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+                <a href="index.html"
+                    class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center"
+                    aria-label="Home">
                     <i class="fas fa-home text-2xl"></i>
                 </a>
                 <!-- Keep coach actions near Home so it doesn't get pushed off-screen on small widths -->
-                <button id="coach-actions-btn" class="hidden px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark min-w-[44px] min-h-[44px] font-semibold transition-colors flex items-center justify-center" title="Coach Actions">
+                <button id="coach-actions-btn"
+                    class="hidden px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark min-w-[44px] min-h-[44px] font-semibold transition-colors flex items-center justify-center"
+                    title="Coach Actions">
                     <i class="fas fa-user-shield mr-1"></i>
                     <span class="hidden sm:inline">Coach</span>
                 </button>
                 <div class="flex-1"></div>
-                <button id="load-from-mysql-btn" class="px-3 h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center" aria-label="Refresh from server">
+                <button id="load-from-mysql-btn"
+                    class="px-3 h-[44px] bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors flex items-center justify-center"
+                    aria-label="Refresh from server">
                     <i class="fas fa-sync-alt mr-1"></i><span class="hidden sm:inline">Refresh</span>
                 </button>
             </div>
@@ -146,7 +203,9 @@
     </div>
 
     <!-- Sync Status Bar (above footer) - MUST be outside flex container for fixed positioning to work -->
-    <div id="sync-status-bar" class="fixed bottom-[calc(48px+env(safe-area-inset-bottom))] left-0 right-0 px-4 py-1 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-20" style="position: fixed !important; bottom: calc(48px + env(safe-area-inset-bottom)) !important;">
+    <div id="sync-status-bar"
+        class="fixed bottom-[calc(48px+env(safe-area-inset-bottom))] left-0 right-0 px-4 py-1 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-20"
+        style="position: fixed !important; bottom: calc(48px + env(safe-area-inset-bottom)) !important;">
         <div id="sync-status"></div>
     </div>
 
@@ -160,69 +219,94 @@
                 </h3>
             </div>
             <div class="px-6 py-4 flex flex-col gap-3">
-                <button id="coach-action-import-usa-btn" class="w-full px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
+                <button id="coach-action-import-usa-btn"
+                    class="w-full px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
                     <i class="fas fa-upload"></i>
                     <span>Import USA Archery CSV</span>
                 </button>
-                <button id="coach-action-export-usa-btn" class="w-full px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
+                <button id="coach-action-export-usa-btn"
+                    class="w-full px-4 py-2 bg-orange text-white rounded hover:bg-orange-dark min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
                     <i class="fas fa-download"></i>
                     <span>Export USA Archery CSV</span>
                 </button>
-                <button id="coach-action-export-roster-btn" class="w-full px-4 py-2 bg-warning text-gray-800 rounded hover:bg-warning-dark min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
+                <button id="coach-action-export-roster-btn"
+                    class="w-full px-4 py-2 bg-warning text-gray-800 rounded hover:bg-warning-dark min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
                     <i class="fas fa-file-csv"></i>
                     <span>Export Coach Roster CSV</span>
                 </button>
-                <button id="coach-action-export-roster-simple-btn" class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
+                <button id="coach-action-export-roster-simple-btn"
+                    class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
                     <i class="fas fa-file-export"></i>
                     <span>Export Coach Roster Simple</span>
                 </button>
-                <button id="coach-action-export-shirt-order-btn" class="w-full px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
+                <button id="coach-action-export-shirt-order-btn"
+                    class="w-full px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
                     <i class="fas fa-tshirt"></i>
                     <span>Export Shirt Order</span>
                 </button>
+                <button id="coach-action-delete-found-btn"
+                    class="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 min-h-[44px] font-semibold transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-trash-alt"></i>
+                    <span id="coach-action-delete-found-text">Delete Found Set</span>
+                </button>
             </div>
             <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                <button id="close-coach-actions-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Close</button>
+                <button id="close-coach-actions-btn"
+                    class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Close</button>
             </div>
         </div>
     </div>
 
     <!-- Add/Edit Archer Modal -->
-    <div id="archer-modal" class="fixed inset-0 bg-black/60 flex items-start justify-center z-50 hidden p-0 pt-[48px] overscroll-none">
-        <div class="bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl w-full h-[calc(100vh-48px)] flex flex-col transition-all duration-300 transform" style="max-height: calc(100vh - 48px);">
+    <div id="archer-modal"
+        class="fixed inset-0 bg-black/60 flex items-start justify-center z-50 hidden p-0 pt-[48px] overscroll-none">
+        <div class="bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl w-full h-[calc(100vh-48px)] flex flex-col transition-all duration-300 transform"
+            style="max-height: calc(100vh - 48px);">
             <!-- Compact Header with Avatar Preview -->
-            <div class="flex-shrink-0 bg-gradient-to-r from-primary to-primary-dark px-4 py-3 rounded-t-2xl sm:rounded-t-lg">
+            <div
+                class="flex-shrink-0 bg-gradient-to-r from-primary to-primary-dark px-4 py-3 rounded-t-2xl sm:rounded-t-lg">
                 <div class="flex items-center gap-3">
                     <!-- Avatar in Header (larger to match form) -->
-                    <div id="header-avatar" class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/40 flex-shrink-0">
+                    <div id="header-avatar"
+                        class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/40 flex-shrink-0">
                         <span id="header-initials" class="text-xl font-bold text-white">?</span>
                         <img id="header-avatar-img" class="hidden w-full h-full object-cover" alt="">
                     </div>
                     <div class="flex-1 min-w-0">
                         <h2 id="modal-title" class="text-lg font-bold text-white truncate">Add Archer</h2>
                         <div id="archer-navigation" class="hidden items-center gap-1 mt-0.5">
-                            <button type="button" id="prev-archer-btn" class="w-6 h-6 flex items-center justify-center text-white hover:text-white hover:bg-white/30 rounded transition-colors border border-white/30" title="Previous">
+                            <button type="button" id="prev-archer-btn"
+                                class="w-6 h-6 flex items-center justify-center text-white hover:text-white hover:bg-white/30 rounded transition-colors border border-white/30"
+                                title="Previous">
                                 <i class="fas fa-chevron-left text-xs"></i>
                             </button>
                             <span id="archer-position" class="text-xs text-white px-1">1/25</span>
-                            <button type="button" id="next-archer-btn" class="w-6 h-6 flex items-center justify-center text-white hover:text-white hover:bg-white/30 rounded transition-colors border border-white/30" title="Next">
+                            <button type="button" id="next-archer-btn"
+                                class="w-6 h-6 flex items-center justify-center text-white hover:text-white hover:bg-white/30 rounded transition-colors border border-white/30"
+                                title="Next">
                                 <i class="fas fa-chevron-right text-xs"></i>
                             </button>
                         </div>
                     </div>
-                    <button type="button" id="close-modal-btn" class="w-8 h-8 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-colors" title="Close">
+                    <button type="button" id="close-modal-btn"
+                        class="w-8 h-8 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/20 rounded-full transition-colors"
+                        title="Close">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
             </div>
             <!-- Scrollable Form Content -->
-            <form id="archer-form" class="flex-1 overflow-y-auto min-h-0 overscroll-contain" style="-webkit-overflow-scrolling: touch; touch-action: pan-y; will-change: scroll-position;">
+            <form id="archer-form" class="flex-1 overflow-y-auto min-h-0 overscroll-contain"
+                style="-webkit-overflow-scrolling: touch; touch-action: pan-y; will-change: scroll-position;">
                 <!-- Form content will be injected by JS -->
             </form>
             <!-- Fixed Button Container (outside scrollable area) -->
-            <div id="archer-form-buttons" class="flex-shrink-0 px-3 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2 safe-area-bottom">
-                <button type="button" id="cancel-archer-btn-fixed" class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-                <button type="submit" form="archer-form" class="flex-1 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors min-h-[44px] shadow-sm">
+            <div id="archer-form-buttons"
+                class="flex-shrink-0 px-3 py-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex gap-2 safe-area-bottom">
+                <button type="button" id="cancel-archer-btn-fixed"
+                    class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+                <button type="submit" form="archer-form"
+                    class="flex-1 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors min-h-[44px] shadow-sm">
                     <i class="fas fa-check mr-1"></i>Save
                 </button>
             </div>
@@ -230,7 +314,8 @@
     </div>
 
     <!-- Warning Modal for Changing "You" Setting -->
-    <div id="change-self-warning-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[70] hidden">
+    <div id="change-self-warning-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[70] hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-colors duration-200">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -240,21 +325,26 @@
             </div>
             <div class="px-6 py-4">
                 <p class="text-gray-700 dark:text-gray-300 mb-4">
-                    You already have yourself set as <strong id="current-self-name" class="text-gray-900 dark:text-white"></strong>.
+                    You already have yourself set as <strong id="current-self-name"
+                        class="text-gray-900 dark:text-white"></strong>.
                 </p>
                 <p class="text-gray-700 dark:text-gray-300 mb-4">
                     Are you sure you want to change this to a different archer?
                 </p>
             </div>
             <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                <button id="cancel-change-self-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-                <button id="confirm-change-self-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Yes, Change It</button>
+                <button id="cancel-change-self-btn"
+                    class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+                <button id="confirm-change-self-btn"
+                    class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Yes,
+                    Change It</button>
             </div>
         </div>
     </div>
 
     <!-- No "Me" Record Modal -->
-    <div id="no-me-record-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[80] hidden">
+    <div id="no-me-record-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[80] hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full transition-colors duration-200">
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -268,7 +358,8 @@
                 </p>
             </div>
             <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                <button id="close-no-me-modal-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">OK</button>
+                <button id="close-no-me-modal-btn"
+                    class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">OK</button>
             </div>
         </div>
     </div>
@@ -283,15 +374,17 @@
                 </h3>
             </div>
             <div class="px-6 py-4">
-                <input type="text" id="nickname-modal-input" 
-                       class="w-full px-4 py-2 text-base border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary" 
-                       placeholder="Enter nickname">
+                <input type="text" id="nickname-modal-input"
+                    class="w-full px-4 py-2 text-base border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                    placeholder="Enter nickname">
             </div>
             <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                <button id="nickname-modal-cancel" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
+                <button id="nickname-modal-cancel"
+                    class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center">
                     <i class="fas fa-times mr-2"></i>Cancel
                 </button>
-                <button id="nickname-modal-save" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded font-semibold transition-colors min-h-[44px] flex items-center justify-center">
+                <button id="nickname-modal-save"
+                    class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded font-semibold transition-colors min-h-[44px] flex items-center justify-center">
                     <i class="fas fa-check mr-2"></i>Save
                 </button>
             </div>
@@ -299,7 +392,8 @@
     </div>
 
     <!-- Image Crop Modal -->
-    <div id="crop-modal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[60] hidden">
+    <div id="crop-modal"
+        class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-[60] hidden">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full transition-colors duration-200">
             <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
                 <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Crop Photo</h3>
@@ -311,8 +405,10 @@
                 </div>
             </div>
             <div class="flex gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                <button type="button" id="cancel-crop-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
-                <button type="button" id="apply-crop-btn" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded font-semibold transition-colors min-h-[44px]">
+                <button type="button" id="cancel-crop-btn"
+                    class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
+                <button type="button" id="apply-crop-btn"
+                    class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded font-semibold transition-colors min-h-[44px]">
                     <i class="fas fa-crop mr-2"></i>Crop & Upload
                 </button>
             </div>
@@ -326,7 +422,7 @@
         // Initialize dark mode immediately (before DOMContentLoaded) to prevent flash
         // Dark mode preference is set from the home screen (index.html)
         initDarkMode();
-        
+
         document.addEventListener('DOMContentLoaded', () => {
             const SCHOOL_EMAIL_DOMAIN = '@student.davincischools.org';
             const modal = document.getElementById('archer-modal');
@@ -337,7 +433,7 @@
             const levelFilter = document.getElementById('level-filter');
             const loadFromMySQLBtn = document.getElementById('load-from-mysql-btn');
             const sortByNameBtn = document.getElementById('sort-by-name-btn');
-            
+
             // Track unsaved changes
             let originalFormState = null;
             let hasUnsavedChanges = false;
@@ -359,17 +455,17 @@
             function populateSchoolFilter() {
                 const state = getRosterState();
                 const { list } = state;
-                
+
                 // Get unique school codes, sorted alphabetically
                 const uniqueSchools = [...new Set(
                     list
                         .map(archer => (archer.school || '').trim().toUpperCase())
                         .filter(school => school !== '')
                 )].sort();
-                
+
                 // Clear existing options except "All Schools"
                 schoolFilter.innerHTML = '<option value="all">All Schools</option>';
-                
+
                 // Add each unique school as an option
                 uniqueSchools.forEach(school => {
                     const option = document.createElement('option');
@@ -392,35 +488,35 @@
                 const statusValue = statusFilter.value;
                 const schoolValue = schoolFilter.value;
                 const levelValue = levelFilter.value;
-                
+
                 let items = list.map((archer, index) => ({ archer, index }));
-                
+
                 // Apply status filter
                 if (statusValue !== 'all') {
                     items = items.filter(item => (item.archer.status || 'active').toLowerCase() === statusValue);
                 }
-                
+
                 // Apply school filter
                 if (schoolValue !== 'all') {
-                    items = items.filter(item => 
+                    items = items.filter(item =>
                         (item.archer.school || '').trim().toUpperCase() === schoolValue.toUpperCase()
                     );
                 }
-                
+
                 // Apply level filter
                 if (levelValue !== 'all') {
-                    items = items.filter(item => 
+                    items = items.filter(item =>
                         (item.archer.level || 'VAR').toUpperCase() === levelValue.toUpperCase()
                     );
                 }
-                
+
                 // Apply gender filter
                 if (genderFilterValue !== 'all') {
-                    items = items.filter(item => 
+                    items = items.filter(item =>
                         (item.archer.gender || 'M').toUpperCase() === genderFilterValue.toUpperCase()
                     );
                 }
-                
+
                 // Apply search filter
                 if (filter) {
                     items = items.filter(({ archer }) =>
@@ -429,14 +525,14 @@
                         (archer.school || '').toLowerCase().includes(filter)
                     );
                 }
-                
+
                 // Apply favorites filter
                 if (showFavoritesOnly) {
-                    items = items.filter(({ archer }) => 
+                    items = items.filter(({ archer }) =>
                         friendSet.has(archer.extId) || (selfExtId && archer.extId === selfExtId)
                     );
                 }
-                
+
                 // Apply same sorting as renderList() - sort by first name ascending
                 items.sort((a, b) => {
                     const priority = (item) => {
@@ -447,13 +543,13 @@
                     const aP = priority(a);
                     const bP = priority(b);
                     if (aP !== bP) return aP - bP;
-                    
+
                     // Sort by first name ascending
                     const firstNameA = (a.archer.first || '').toLowerCase();
                     const firstNameB = (b.archer.first || '').toLowerCase();
                     return firstNameA.localeCompare(firstNameB);
                 });
-                
+
                 // Return just the archer objects (not the {archer, index} structure)
                 return items.map(item => item.archer);
             }
@@ -543,8 +639,8 @@
             function getRosterState() {
                 const list = ArcherModule.loadList();
                 // Use getSelfArcher() which has the correct matching logic (extId, id, or built extId)
-                const selfArcher = (typeof ArcherModule.getSelfArcher === 'function') 
-                    ? ArcherModule.getSelfArcher() 
+                const selfArcher = (typeof ArcherModule.getSelfArcher === 'function')
+                    ? ArcherModule.getSelfArcher()
                     : null;
                 const selfExtId = selfArcher ? (selfArcher.extId || ArcherModule.getSelfExtId() || '') : '';
                 const friendSet = new Set((selfArcher?.faves || []).filter(Boolean));
@@ -556,13 +652,13 @@
                     stateOverride = null;
                 }
                 const container = document.getElementById('archer-list-container');
-                
+
                 // Check view mode and render accordingly
                 if (viewMode === 'shirtSizes') {
                     renderShirtSizesList(stateOverride);
                     return;
                 }
-                
+
                 const filter = searchInput.value.toLowerCase();
                 container.innerHTML = '';
 
@@ -578,20 +674,20 @@
 
                 const schoolValue = schoolFilter.value;
                 if (schoolValue !== 'all') {
-                    items = items.filter(item => 
+                    items = items.filter(item =>
                         (item.archer.school || '').trim().toUpperCase() === schoolValue.toUpperCase()
                     );
                 }
 
                 const levelValue = levelFilter.value;
                 if (levelValue !== 'all') {
-                    items = items.filter(item => 
+                    items = items.filter(item =>
                         (item.archer.level || 'VAR').toUpperCase() === levelValue.toUpperCase()
                     );
                 }
 
                 if (genderFilterValue !== 'all') {
-                    items = items.filter(item => 
+                    items = items.filter(item =>
                         (item.archer.gender || 'M').toUpperCase() === genderFilterValue.toUpperCase()
                     );
                 }
@@ -606,7 +702,7 @@
 
                 // Filter to show only favorites if filter is active (includes "Me" record)
                 if (showFavoritesOnly) {
-                    items = items.filter(({ archer }) => 
+                    items = items.filter(({ archer }) =>
                         friendSet.has(archer.extId) || (selfExtId && archer.extId === selfExtId)
                     );
                 }
@@ -647,14 +743,14 @@
                     }
 
                     const isFriend = friendSet.has(archer.extId);
-                    
+
                     // Only show plus badges if NO self is selected at all
                     const showPlusBadge = !selfExtId && !isSelf;
 
                     // Avatar OR Icon (show avatar if photo exists, otherwise show icon)
                     const avatarOrIcon = document.createElement('div');
                     avatarOrIcon.className = 'relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center mr-3 flex-shrink-0';
-                    
+
                     if (archer.photoUrl) {
                         // Show photo avatar
                         avatarOrIcon.className += ' bg-gray-200 dark:bg-gray-700';
@@ -663,7 +759,7 @@
                         avatarImg.alt = `${archer.first} ${archer.last}`;
                         avatarImg.className = 'w-full h-full object-cover';
                         avatarOrIcon.appendChild(avatarImg);
-                        
+
                         // Add visual cue badge ONLY when no self is selected at all
                         if (showPlusBadge) {
                             const badge = document.createElement('div');
@@ -672,7 +768,7 @@
                             badge.title = 'Tap to set as me';
                             avatarOrIcon.appendChild(badge);
                         }
-                        
+
                         // Make it clickable to set as "me"
                         avatarOrIcon.style.cursor = 'pointer';
                         avatarOrIcon.title = isSelf ? 'This is you (tap to clear)' : 'Tap to set as me';
@@ -707,7 +803,7 @@
                             avatarOrIcon.title = 'Tap to set as me';
                             avatarOrIcon.style.cursor = 'pointer';
                             avatarOrIcon.classList.add('hover:ring-2', 'hover:ring-primary', 'hover:ring-offset-2', 'transition-all');
-                            
+
                             // Add visual cue badge ONLY when no self is selected at all
                             if (showPlusBadge) {
                                 const badge = document.createElement('div');
@@ -716,7 +812,7 @@
                                 badge.title = 'Tap to set as me';
                                 avatarOrIcon.appendChild(badge);
                             }
-                            
+
                             avatarOrIcon.onclick = async (e) => {
                                 e.stopPropagation();
                                 await handleSetSelf(archer);
@@ -734,13 +830,13 @@
                     nameLabel.style.alignItems = 'center';
                     nameLabel.style.gap = '0.5rem';
                     nameLabel.style.flexWrap = 'wrap';
-                    
+
                     const nameText = document.createElement('span');
                     // Show nickname instead of first name if nickname exists
                     const displayName = archer.nickname ? archer.nickname : archer.first;
                     nameText.textContent = `${displayName} ${archer.last}`;
                     nameLabel.appendChild(nameText);
-                    
+
                     // Add "You" badge inline
                     if (isSelf) {
                         const youBadge = document.createElement('span');
@@ -753,7 +849,7 @@
                         youBadge.style.borderRadius = '0.25rem';
                         nameLabel.appendChild(youBadge);
                     }
-                    
+
                     // Add Friend heart inline
                     if (isFriend && !isSelf) {
                         const friendHeart = document.createElement('span');
@@ -764,10 +860,10 @@
 
                     const detailsLabel = document.createElement('div');
                     const statusBadge = (archer.status || 'active').toUpperCase() === 'ACTIVE' ? 'Active' : 'Inactive';
-                    
+
                     // Build details with PR info
                     let detailsText = `${(archer.school || 'N/A').toUpperCase()} • Grade ${archer.grade || '-'} • ${archer.level || 'VAR'} / ${archer.gender || 'M'} • ${statusBadge}`;
-                    
+
                     // Add PR info if available
                     const jvPr = archer.jvPr ? parseInt(archer.jvPr) : null;
                     const varPr = archer.varPr ? parseInt(archer.varPr) : null;
@@ -777,18 +873,22 @@
                         if (varPr) prParts.push(`VAR PR: ${varPr}`);
                         detailsText += ` • ${prParts.join(' • ')}`;
                     }
-                    
+
                     detailsLabel.textContent = detailsText;
                     detailsLabel.className = 'archer-details-label';
-                    
+
                     nameDiv.appendChild(nameLabel);
                     nameDiv.appendChild(detailsLabel);
+
+                    // Append avatar and name to row
+                    row.appendChild(avatarOrIcon);
+                    row.appendChild(nameDiv);
 
                     // Friend toggle button (for non-self archers)
                     const friendToggle = document.createElement('span');
                     if (!isSelf) {
-                    friendToggle.className = 'favorite-star';
-                    friendToggle.style.marginRight = '0.5rem';
+                        friendToggle.className = 'favorite-star';
+                        friendToggle.style.marginRight = '0.5rem';
                         friendToggle.innerHTML = isFriend ? '<i class="fas fa-heart" style="color: #e63946;"></i>' : '<i class="far fa-heart" style="color: #ccc;"></i>';
                         friendToggle.title = isFriend ? 'Remove from friends' : 'Add as friend';
                         friendToggle.onclick = async (e) => {
@@ -818,17 +918,45 @@
                         e.stopPropagation();
                     };
 
-                    row.appendChild(avatarOrIcon);
-                    row.appendChild(nameDiv);
                     if (!isSelf) row.appendChild(friendToggle);
                     row.appendChild(historyBtn);
+
+                    // Coach Mode: Delete Button
+                    // Check coach mode (standard check + URL override)
+                    const params = new URLSearchParams(window.location.search || '');
+                    const isCoach = (typeof isCoachMode === 'function' && isCoachMode()) || params.get('showCoachActions') === '1';
+
+                    if (isCoach && !isSelf) {
+                        const deleteBtn = document.createElement('div');
+                        deleteBtn.className = 'ml-2 p-1 text-gray-400 hover:text-red-600 transition-colors cursor-pointer';
+                        deleteBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                        deleteBtn.title = 'Delete archer';
+                        deleteBtn.onclick = async (e) => {
+                            e.stopPropagation();
+                            if (confirm(`Are you sure you want to delete ${archer.first} ${archer.last}?\n\nThis cannot be undone.`)) {
+                                try {
+                                    const success = await ArcherModule.deleteArcherById(archer.id);
+                                    if (success) {
+                                        // Visual feedback
+                                        row.style.opacity = '0';
+                                        setTimeout(() => renderList(), 300);
+                                    } else {
+                                        alert('Failed to delete archer.');
+                                    }
+                                } catch (err) {
+                                    alert('Error deleting archer: ' + err.message);
+                                }
+                            }
+                        };
+                        row.appendChild(deleteBtn);
+                    }
 
                     row.onclick = () => editArcher(index);
 
                     container.appendChild(row);
                 });
                 updateSyncStatus();
-                
+
                 // Check and show modal if no "Me" record after render
                 checkAndShowNoMeModal();
             }
@@ -854,20 +982,20 @@
 
                 const schoolValue = schoolFilter.value;
                 if (schoolValue !== 'all') {
-                    items = items.filter(item => 
+                    items = items.filter(item =>
                         (item.archer.school || '').trim().toUpperCase() === schoolValue.toUpperCase()
                     );
                 }
 
                 const levelValue = levelFilter.value;
                 if (levelValue !== 'all') {
-                    items = items.filter(item => 
+                    items = items.filter(item =>
                         (item.archer.level || 'VAR').toUpperCase() === levelValue.toUpperCase()
                     );
                 }
 
                 if (genderFilterValue !== 'all') {
-                    items = items.filter(item => 
+                    items = items.filter(item =>
                         (item.archer.gender || 'M').toUpperCase() === genderFilterValue.toUpperCase()
                     );
                 }
@@ -881,7 +1009,7 @@
                 }
 
                 if (showFavoritesOnly) {
-                    items = items.filter(({ archer }) => 
+                    items = items.filter(({ archer }) =>
                         friendSet.has(archer.extId) || (selfExtId && archer.extId === selfExtId)
                     );
                 }
@@ -918,7 +1046,7 @@
                 items.forEach(({ archer, index }) => {
                     const row = document.createElement('div');
                     row.className = 'px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors';
-                    
+
                     const isSelf = !!selfExtId && archer.extId === selfExtId;
                     if (isSelf) {
                         row.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'border-l-4', 'border-l-primary');
@@ -934,7 +1062,7 @@
                     avatarDiv.className = 'relative flex-shrink-0';
                     avatarDiv.style.width = '60px';
                     avatarDiv.style.height = '100px'; // Matches 3 name rows with spacing
-                    
+
                     if (archer.photoUrl) {
                         avatarDiv.className += ' rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700';
                         const avatarImg = document.createElement('img');
@@ -945,7 +1073,7 @@
                     } else {
                         avatarDiv.className += ' rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center';
                         const icon = document.createElement('i');
-                        icon.className = isSelf 
+                        icon.className = isSelf
                             ? 'fas fa-user-check text-primary dark:text-primary-light text-3xl'
                             : 'far fa-user text-gray-400 dark:text-gray-500 text-3xl';
                         avatarDiv.appendChild(icon);
@@ -987,26 +1115,25 @@
                     shirtSizes.forEach((sizeRow, rowIdx) => {
                         const rowDiv = document.createElement('div');
                         rowDiv.className = 'flex gap-1';
-                        
+
                         sizeRow.forEach(size => {
                             const button = document.createElement('button');
                             button.type = 'button';
                             button.textContent = size;
                             const isSelected = archer.shirtSize === size;
-                            button.className = `px-3 py-1.5 text-sm font-semibold rounded min-h-[36px] min-w-[44px] transition-colors ${
-                                isSelected 
-                                    ? 'bg-primary text-white hover:bg-primary-dark' 
-                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                            }`;
-                            
+                            button.className = `px-3 py-1.5 text-sm font-semibold rounded min-h-[36px] min-w-[44px] transition-colors ${isSelected
+                                ? 'bg-primary text-white hover:bg-primary-dark'
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                }`;
+
                             button.onclick = async (e) => {
                                 e.stopPropagation();
                                 await handleShirtSizeSelect(archer, index, size);
                             };
-                            
+
                             rowDiv.appendChild(button);
                         });
-                        
+
                         sizeGrid.appendChild(rowDiv);
                     });
 
@@ -1031,21 +1158,21 @@
                 try {
                     const list = ArcherModule.loadList();
                     // Find archer in full list by extId or id
-                    const archerIndex = list.findIndex(a => 
-                        (a.extId && a.extId === archer.extId) || 
+                    const archerIndex = list.findIndex(a =>
+                        (a.extId && a.extId === archer.extId) ||
                         (a.id && a.id === archer.id)
                     );
-                    
+
                     if (archerIndex >= 0) {
                         list[archerIndex].shirtSize = size;
                         ArcherModule.saveList(list);
-                        
+
                         // Check if this is a self-edit (no auth required)
                         const state = getRosterState();
-                        const isSelfEdit = state.selfArcher && 
+                        const isSelfEdit = state.selfArcher &&
                             ((archer.extId && archer.extId === state.selfArcher.extId) ||
-                             (archer.id && archer.id === state.selfArcher.id));
-                        
+                                (archer.id && archer.id === state.selfArcher.id));
+
                         if (isSelfEdit) {
                             // Use self-update endpoint (no auth required!)
                             try {
@@ -1076,7 +1203,7 @@
                                         syncResult = { ok: false, error: syncError.message };
                                     }
                                 }
-                                
+
                                 if (syncResult?.ok && syncResult.processed > 0 && syncResult.pending === 0) {
                                     showSaveSuccess('Shirt size saved to database! 💾');
                                 } else if (syncResult?.ok && syncResult.pending > 0) {
@@ -1097,7 +1224,7 @@
                                 showSaveSuccess('Shirt size saved locally (offline - will retry) 📱');
                             }
                         }
-                        
+
                         // Re-render to show updated selection
                         renderList();
                     }
@@ -1117,35 +1244,35 @@
                 const input = document.getElementById('nickname-modal-input');
                 const saveBtn = document.getElementById('nickname-modal-save');
                 const cancelBtn = document.getElementById('nickname-modal-cancel');
-                
+
                 if (!modal || !input) return;
-                
+
                 input.value = archer.nickname || '';
                 modal.classList.remove('hidden');
                 input.focus();
                 input.select();
-                
+
                 // Save handler
                 const saveHandler = async () => {
                     const newNickname = input.value.trim();
                     try {
                         const list = ArcherModule.loadList();
                         // Find archer in full list by extId or id
-                        const archerIndex = list.findIndex(a => 
-                            (a.extId && a.extId === archer.extId) || 
+                        const archerIndex = list.findIndex(a =>
+                            (a.extId && a.extId === archer.extId) ||
                             (a.id && a.id === archer.id)
                         );
-                        
+
                         if (archerIndex >= 0) {
                             list[archerIndex].nickname = newNickname;
                             ArcherModule.saveList(list);
-                            
+
                             // Check if this is a self-edit (no auth required)
                             const state = getRosterState();
-                            const isSelfEdit = state.selfArcher && 
+                            const isSelfEdit = state.selfArcher &&
                                 ((archer.extId && archer.extId === state.selfArcher.extId) ||
-                                 (archer.id && archer.id === state.selfArcher.id));
-                            
+                                    (archer.id && archer.id === state.selfArcher.id));
+
                             if (isSelfEdit) {
                                 // Use self-update endpoint (no auth required!)
                                 try {
@@ -1176,7 +1303,7 @@
                                             syncResult = { ok: false, error: syncError.message };
                                         }
                                     }
-                                    
+
                                     if (syncResult?.ok && syncResult.processed > 0 && syncResult.pending === 0) {
                                         showSaveSuccess('Nickname saved to database! 💾');
                                     } else if (syncResult?.ok && syncResult.pending > 0) {
@@ -1197,7 +1324,7 @@
                                     showSaveSuccess('Nickname saved locally (offline - will retry) 📱');
                                 }
                             }
-                            
+
                             modal.classList.add('hidden');
                             renderList();
                         }
@@ -1206,16 +1333,16 @@
                         alert('Failed to update nickname: ' + err.message);
                     }
                 };
-                
+
                 // Cancel handler
                 const cancelHandler = () => {
                     modal.classList.add('hidden');
                 };
-                
+
                 // Remove old listeners by replacing onclick
                 saveBtn.onclick = saveHandler;
                 cancelBtn.onclick = cancelHandler;
-                
+
                 // Handle backdrop click - only close if clicking the backdrop itself
                 const backdropHandler = (e) => {
                     if (e.target === modal) {
@@ -1223,7 +1350,7 @@
                     }
                 };
                 modal.onclick = backdropHandler;
-                
+
                 // Prevent inner content clicks from closing modal
                 const innerContent = modal.querySelector('div.bg-white, div.dark\\:bg-gray-800');
                 if (innerContent) {
@@ -1231,7 +1358,7 @@
                         e.stopPropagation();
                     };
                 }
-                
+
                 // Handle Enter and Escape keys
                 const keyHandler = (e) => {
                     if (e.key === 'Enter') {
@@ -1249,7 +1376,7 @@
 
             // Store expanded sections state for persistence across navigation
             let expandedSections = new Set();
-            
+
             function openModal(index = null) {
                 // Save which sections are currently expanded (if modal is already open)
                 const existingForm = document.getElementById('archer-form');
@@ -1268,11 +1395,11 @@
                     // Reset on first open or when adding new archer
                     expandedSections.clear();
                 }
-                
+
                 editingIndex = index;
                 const form = document.getElementById('archer-form');
                 form.innerHTML = createFormFieldsHTML();
-                
+
                 // Prevent body scroll when modal is open
                 // Store current scroll position
                 const scrollY = window.scrollY;
@@ -1280,10 +1407,10 @@
                 document.body.style.top = `-${scrollY}px`;
                 document.body.style.width = '100%';
                 document.body.style.overflow = 'hidden';
-                
+
                 // Store scroll position for restoration
                 modal.dataset.scrollY = scrollY;
-                
+
                 // Ensure form is scrollable - reset scroll position and ensure proper height
                 setTimeout(() => {
                     form.scrollTop = 0;
@@ -1294,7 +1421,7 @@
                     if (formScrollHeight > formHeight) {
                         form.style.overflowY = 'auto';
                     }
-                    
+
                     // Ensure all nested elements allow touch events for scrolling
                     const allElements = form.querySelectorAll('*');
                     allElements.forEach(el => {
@@ -1304,7 +1431,7 @@
                         }
                     });
                 }, 100);
-                
+
                 // Restore expanded sections
                 if (expandedSections.size > 0) {
                     const detailsElements = form.querySelectorAll('details');
@@ -1318,11 +1445,11 @@
                         }
                     });
                 }
-                
+
                 // Wire up the fixed cancel button (outside the form)
                 const cancelBtn = document.getElementById('cancel-archer-btn-fixed');
                 if (cancelBtn) cancelBtn.onclick = closeModal;
-                
+
                 // Close button in header
                 const closeModalBtn = document.getElementById('close-modal-btn');
                 if (closeModalBtn) closeModalBtn.onclick = closeModal;
@@ -1330,7 +1457,7 @@
                 // Store original form state for change detection
                 originalFormState = null;
                 hasUnsavedChanges = false;
-                
+
                 // Set up change tracking after form is populated
                 setTimeout(() => {
                     storeOriginalFormState(form);
@@ -1446,21 +1573,21 @@
                 }
 
                 modal.classList.remove('hidden');
-                
+
                 // Initialize avatar upload functionality
                 initializeAvatarUpload(form);
-                
+
                 // Update avatar preview based on current data
                 updateAvatarPreview(form);
-                
+
                 // Initialize notes history functionality
                 initializeNotesHistory(form);
-                
+
                 // Initialize navigation if editing
                 if (index !== null) {
                     initializeArcherNavigation(index);
                 }
-                
+
                 // Conditional field: introductionOther (show/hide based on introductionSource)
                 const introductionSourceSelect = form.querySelector('#introductionSource');
                 const introductionOtherWrapper = form.querySelector('#introductionOtherWrapper');
@@ -1478,87 +1605,87 @@
                     toggleIntroductionOther(); // Initial state
                 }
             }
-            
+
             function initializeAvatarUpload(form) {
                 const uploadBtn = form.querySelector('#upload-avatar-btn');
                 const fileInput = form.querySelector('#avatar-file');
                 const photoUrlInput = form.querySelector('#photoUrl');
                 const uploadProgress = form.querySelector('#upload-progress');
-                
+
                 if (!uploadBtn || !fileInput) return;
-                
+
                 // Click upload button to trigger file picker
                 uploadBtn.onclick = (e) => {
                     e.preventDefault();
                     fileInput.click();
                 };
-                
+
                 // Handle file selection - open crop modal
                 fileInput.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
-                    
+
                     // Validate file type
                     if (!file.type.startsWith('image/')) {
                         alert('Please select an image file');
                         fileInput.value = '';
                         return;
                     }
-                    
+
                     // Validate file size (10MB max)
                     if (file.size > 10 * 1024 * 1024) {
                         alert('File too large. Maximum size is 10MB');
                         fileInput.value = '';
                         return;
                     }
-                    
+
                     // Open crop modal
                     openCropModal(file, uploadBtn, uploadProgress, photoUrlInput, form);
                 };
-                
+
                 // Update preview when URL changes
                 photoUrlInput.addEventListener('input', () => {
                     updateAvatarPreview(form);
                 });
-                
+
                 // Update preview when name changes (for initials)
                 form.querySelector('#first')?.addEventListener('input', () => updateAvatarPreview(form));
                 form.querySelector('#last')?.addEventListener('input', () => updateAvatarPreview(form));
             }
-            
+
             function updateAvatarPreview(form) {
                 const photoUrlInput = form.querySelector('#photoUrl');
                 const avatarImage = form.querySelector('#avatar-image');
                 const avatarInitials = form.querySelector('#avatar-initials');
                 const firstInput = form.querySelector('#first');
                 const lastInput = form.querySelector('#last');
-                
+
                 // Header avatar elements
                 const headerAvatarImg = document.getElementById('header-avatar-img');
                 const headerInitials = document.getElementById('header-initials');
-                
+
                 if (!avatarImage || !avatarInitials) return;
-                
+
                 const photoUrl = photoUrlInput?.value.trim();
                 const first = firstInput?.value.trim() || '';
                 const last = lastInput?.value.trim() || '';
-                
+
                 if (photoUrl) {
                     // Debug: log the photo URL being used
                     console.log('Setting avatar image src to:', photoUrl);
-                    
+
                     // Show photo in form
                     avatarImage.src = photoUrl;
                     avatarImage.classList.remove('hidden');
                     avatarInitials.classList.add('hidden');
-                    
+
                     // Show photo in header
                     if (headerAvatarImg && headerInitials) {
                         headerAvatarImg.src = photoUrl;
                         headerAvatarImg.classList.remove('hidden');
                         headerInitials.classList.add('hidden');
                     }
-                    
+
                     // Handle image load error
                     avatarImage.onerror = (e) => {
                         console.error('Failed to load avatar image:', photoUrl, e);
@@ -1576,7 +1703,7 @@
                     avatarImage.classList.add('hidden');
                     avatarInitials.classList.remove('hidden');
                     showInitials(avatarInitials, first, last);
-                    
+
                     // Show initials in header
                     if (headerAvatarImg && headerInitials) {
                         headerAvatarImg.classList.add('hidden');
@@ -1585,7 +1712,7 @@
                     }
                 }
             }
-            
+
             function showInitials(element, first, last) {
                 if (first || last) {
                     const initials = (first.charAt(0) + last.charAt(0)).toUpperCase();
@@ -1594,82 +1721,82 @@
                     element.textContent = '?';
                 }
             }
-            
+
             function initializeNotesHistory(form) {
                 const moveToHistoryBtn = form.querySelector('#move-to-history-btn');
                 const currentNotesInput = form.querySelector('#notesCurrent');
                 const archiveNotesInput = form.querySelector('#notesArchive');
-                
+
                 if (!moveToHistoryBtn || !currentNotesInput || !archiveNotesInput) return;
-                
+
                 moveToHistoryBtn.onclick = (e) => {
                     e.preventDefault();
-                    
+
                     const currentNote = currentNotesInput.value.trim();
                     if (!currentNote) {
                         alert('No current note to move to history.');
                         return;
                     }
-                    
+
                     // Create timestamp (short format at end)
                     const now = new Date();
-                    const timestamp = now.toLocaleDateString('en-US', { 
-                        month: 'numeric', 
-                        day: 'numeric', 
-                        year: '2-digit' 
+                    const timestamp = now.toLocaleDateString('en-US', {
+                        month: 'numeric',
+                        day: 'numeric',
+                        year: '2-digit'
                     });
-                    
+
                     // Format: "Note text (11/22/25)"
                     const timestampedNote = `${currentNote} (${timestamp})`;
-                    
+
                     // Get existing archive
                     const existingArchive = archiveNotesInput.value.trim();
-                    
+
                     // Prepend new note to archive (most recent first)
-                    const newArchive = existingArchive 
+                    const newArchive = existingArchive
                         ? `${timestampedNote}\n${existingArchive}`
                         : timestampedNote;
-                    
+
                     // Update fields
                     archiveNotesInput.value = newArchive;
                     currentNotesInput.value = '';
-                    
+
                     // Focus back to current notes for next entry
                     currentNotesInput.focus();
                 };
             }
-            
+
             function initializeArcherNavigation(currentIndex) {
                 const navigationDiv = document.getElementById('archer-navigation');
                 const prevBtn = document.getElementById('prev-archer-btn');
                 const nextBtn = document.getElementById('next-archer-btn');
                 const positionSpan = document.getElementById('archer-position');
-                
+
                 if (!navigationDiv || !prevBtn || !nextBtn || !positionSpan) return;
-                
+
                 // Find current position in filtered list
                 const currentPosition = filteredArcherIndices.indexOf(currentIndex);
                 const totalArchers = filteredArcherIndices.length;
-                
+
                 if (currentPosition === -1 || totalArchers <= 1) {
                     navigationDiv.classList.add('hidden');
                     navigationDiv.classList.remove('flex');
                     return;
                 }
-                
+
                 // Show navigation with flex
                 navigationDiv.classList.remove('hidden');
                 navigationDiv.classList.add('flex');
-                
+
                 // Update position display (compact format)
                 positionSpan.textContent = `${currentPosition + 1}/${totalArchers}`;
-                
+
                 // Update button states
                 prevBtn.disabled = currentPosition === 0;
                 nextBtn.disabled = currentPosition === totalArchers - 1;
                 prevBtn.style.opacity = currentPosition === 0 ? '0.3' : '1';
                 nextBtn.style.opacity = currentPosition === totalArchers - 1 ? '0.3' : '1';
-                
+
                 // Add click handlers with unsaved changes check
                 prevBtn.onclick = () => {
                     if (currentPosition > 0) {
@@ -1685,7 +1812,7 @@
                         openModal(prevIndex);
                     }
                 };
-                
+
                 nextBtn.onclick = () => {
                     if (currentPosition < totalArchers - 1) {
                         // Check for unsaved changes before navigating
@@ -1701,7 +1828,7 @@
                     }
                 };
             }
-            
+
             // Crop modal functionality
             let cropperInstance = null;
             let currentCropFile = null;
@@ -1709,31 +1836,31 @@
             let currentUploadProgress = null;
             let currentPhotoUrlInput = null;
             let currentForm = null;
-            
+
             function openCropModal(file, uploadBtn, uploadProgress, photoUrlInput, form) {
                 const cropModal = document.getElementById('crop-modal');
                 const cropImage = document.getElementById('crop-image');
                 const cancelCropBtn = document.getElementById('cancel-crop-btn');
                 const applyCropBtn = document.getElementById('apply-crop-btn');
-                
+
                 // Store references
                 currentCropFile = file;
                 currentUploadBtn = uploadBtn;
                 currentUploadProgress = uploadProgress;
                 currentPhotoUrlInput = photoUrlInput;
                 currentForm = form;
-                
+
                 // Load image
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     cropImage.src = e.target.result;
                     cropModal.classList.remove('hidden');
-                    
+
                     // Initialize cropper
                     if (cropperInstance) {
                         cropperInstance.destroy();
                     }
-                    
+
                     cropperInstance = new Cropper(cropImage, {
                         aspectRatio: 1, // Square crop
                         viewMode: 2, // Restrict crop box to canvas
@@ -1754,18 +1881,18 @@
                     });
                 };
                 reader.readAsDataURL(file);
-                
+
                 // Cancel button
                 cancelCropBtn.onclick = () => {
                     closeCropModal();
                     // Reset file input
                     document.getElementById('avatar-file').value = '';
                 };
-                
+
                 // Apply crop button
                 applyCropBtn.onclick = async () => {
                     if (!cropperInstance) return;
-                    
+
                     // Get cropped canvas
                     const canvas = cropperInstance.getCroppedCanvas({
                         width: 1024,
@@ -1773,7 +1900,7 @@
                         imageSmoothingEnabled: true,
                         imageSmoothingQuality: 'high'
                     });
-                    
+
                     // Convert to blob
                     canvas.toBlob(async (blob) => {
                         closeCropModal();
@@ -1781,54 +1908,54 @@
                     }, currentCropFile.type, 0.95);
                 };
             }
-            
+
             function closeCropModal() {
                 const cropModal = document.getElementById('crop-modal');
                 cropModal.classList.add('hidden');
-                
+
                 if (cropperInstance) {
                     cropperInstance.destroy();
                     cropperInstance = null;
                 }
             }
-            
+
             async function uploadCroppedImage(blob) {
                 // Show progress
                 currentUploadBtn.classList.add('hidden');
                 currentUploadProgress.classList.remove('hidden');
-                
+
                 try {
                     // Create form data
                     const formData = new FormData();
                     formData.append('avatar', blob, currentCropFile.name);
-                    
+
                     const response = await fetch('api/upload_avatar.php', {
                         method: 'POST',
                         body: formData
                     });
-                    
+
                     if (!response.ok) {
                         throw new Error('Upload failed');
                     }
-                    
+
                     const result = await response.json();
-                    
+
                     if (result.success && result.photoUrl) {
                         // Debug: log the returned URL
                         console.log('Avatar upload successful. photoUrl:', result.photoUrl);
                         console.log('Full response:', result);
-                        
+
                         // Update photoUrl field
                         currentPhotoUrlInput.value = result.photoUrl;
-                        
+
                         // Update preview
                         updateAvatarPreview(currentForm);
-                        
+
                         // Show success feedback
                         currentUploadProgress.innerHTML = '<i class="fas fa-check mr-1"></i>Uploaded!';
                         currentUploadProgress.classList.remove('text-gray-600', 'dark:text-gray-400');
                         currentUploadProgress.classList.add('text-green-600', 'dark:text-green-400');
-                        
+
                         setTimeout(() => {
                             currentUploadProgress.classList.add('hidden');
                             currentUploadProgress.classList.remove('text-green-600', 'dark:text-green-400');
@@ -1845,11 +1972,11 @@
                     currentUploadProgress.classList.add('hidden');
                     currentUploadBtn.classList.remove('hidden');
                 }
-                
+
                 // Reset file input
                 document.getElementById('avatar-file').value = '';
             }
-            
+
             function createFormFieldsHTML() {
                 return `
                     <input type="hidden" id="extId">
@@ -2302,7 +2429,7 @@
                     .split(/[,;]+/)
                     .map(s => s.trim())
                     .filter(Boolean);
-                
+
                 originalFormState = {
                     extId: form.querySelector('#extId')?.value.trim() || '',
                     first: form.querySelector('#first')?.value.trim() || '',
@@ -2352,24 +2479,24 @@
                     nfaaMemberNo: form.querySelector('#nfaaMemberNo')?.value.trim() || ''
                 };
             }
-            
+
             /**
              * Set up change tracking for form fields
              */
             function setupFormChangeTracking(form) {
                 // Use a single delegated event listener for better performance
                 const changeHandler = () => checkForChanges(form);
-                
+
                 // Remove any existing listeners by cloning the form (clean slate)
                 // But preserve the form's innerHTML and re-attach listeners
                 form.removeEventListener('input', changeHandler);
                 form.removeEventListener('change', changeHandler);
-                
+
                 // Use event delegation on the form itself
                 form.addEventListener('input', changeHandler, true);
                 form.addEventListener('change', changeHandler, true);
             }
-            
+
             /**
              * Check if form has unsaved changes
              * @param {HTMLFormElement} form - The form element to check
@@ -2381,7 +2508,7 @@
                     hasUnsavedChanges = false;
                     return false;
                 }
-                
+
                 const parseList = (value) => {
                     if (!value || typeof value !== 'string') return [];
                     return value
@@ -2389,13 +2516,13 @@
                         .map(s => s.trim())
                         .filter(Boolean);
                 };
-                
+
                 // Normalize value for comparison (handle null, undefined, empty string consistently)
                 const normalizeValue = (value) => {
                     if (value === null || value === undefined) return '';
                     return String(value).trim();
                 };
-                
+
                 const currentState = {
                     extId: normalizeValue(form.querySelector('#extId')?.value),
                     first: normalizeValue(form.querySelector('#first')?.value),
@@ -2444,7 +2571,7 @@
                     introductionOther: normalizeValue(form.querySelector('#introductionOther')?.value),
                     nfaaMemberNo: normalizeValue(form.querySelector('#nfaaMemberNo')?.value)
                 };
-                
+
                 // Normalize originalFormState values for comparison
                 const normalizedOriginal = {};
                 Object.keys(originalFormState).forEach(key => {
@@ -2454,16 +2581,16 @@
                         normalizedOriginal[key] = normalizeValue(originalFormState[key]);
                     }
                 });
-                
+
                 // Compare arrays for faves
                 const favesChanged = JSON.stringify(currentState.faves.sort()) !== JSON.stringify(normalizedOriginal.faves.sort());
-                
+
                 // Check all fields for changes (excluding faves which we already checked)
                 hasUnsavedChanges = favesChanged || Object.keys(currentState).some(key => {
                     if (key === 'faves') return false; // Already checked
                     return currentState[key] !== normalizedOriginal[key];
                 });
-                
+
                 // Set up/remove beforeunload handler
                 if (hasUnsavedChanges && !beforeUnloadHandler) {
                     beforeUnloadHandler = (e) => {
@@ -2476,10 +2603,10 @@
                     window.removeEventListener('beforeunload', beforeUnloadHandler);
                     beforeUnloadHandler = null;
                 }
-                
+
                 return hasUnsavedChanges;
             }
-            
+
             function closeModal() {
                 // Check for unsaved changes (only if originalFormState has been set)
                 const form = document.getElementById('archer-form');
@@ -2489,17 +2616,17 @@
                         return; // Don't close if user cancels
                     }
                 }
-                
+
                 // Remove beforeunload handler
                 if (beforeUnloadHandler) {
                     window.removeEventListener('beforeunload', beforeUnloadHandler);
                     beforeUnloadHandler = null;
                 }
-                
+
                 // Reset change tracking
                 originalFormState = null;
                 hasUnsavedChanges = false;
-                
+
                 modal.classList.add('hidden');
                 // Restore body scroll when modal is closed
                 const scrollY = modal.dataset.scrollY || '0';
@@ -2519,7 +2646,7 @@
 
             // Handle setting self with success feedback and warning modal
             let pendingSelfChange = null;
-            
+
             async function handleSetSelf(archer) {
                 // Check if there's already a self selected
                 const currentState = getRosterState();
@@ -2534,29 +2661,29 @@
                     }
                     return;
                 }
-                
+
                 // No existing self or same archer, proceed directly
                 await confirmSetSelf(archer);
             }
-            
+
             async function confirmSetSelf(archer) {
                 await ArcherModule.setSelf(archer.extId);
-                
+
                 // Show success feedback
                 showSuccessFeedback(archer);
-                
+
                 // Hide "No Me Record" modal if shown
                 const noMeRecordModal = document.getElementById('no-me-record-modal');
                 if (noMeRecordModal) noMeRecordModal.classList.add('hidden');
-                
+
                 // Force refresh state and re-render to ensure badges are updated
                 const freshState = getRosterState();
                 renderList(freshState);
-                
+
                 // Clear pending change
                 pendingSelfChange = null;
             }
-            
+
             // Show delightful save success feedback
             function showSaveSuccess(message) {
                 const successMsg = document.createElement('div');
@@ -2567,7 +2694,7 @@
                     <p class="font-semibold">${message}</p>
                 `;
                 document.body.appendChild(successMsg);
-                
+
                 setTimeout(() => {
                     successMsg.style.animation = 'fadeOut 0.3s ease-out';
                     successMsg.style.opacity = '0';
@@ -2595,7 +2722,7 @@
                     </div>
                 `;
                 document.body.appendChild(successMsg);
-                
+
                 // Remove after 3 seconds with fade out
                 setTimeout(() => {
                     successMsg.style.animation = 'fadeOut 0.3s ease-out';
@@ -2607,53 +2734,53 @@
                     }, 300);
                 }, 3000);
             }
-            
-            
+
+
             // Note: "Edit My Profile" and "Clear Self" buttons removed from header
             // Users can edit their profile by clicking on their name in the list
             // Users can clear "Me" by clicking on their avatar/icon in the list
-            
+
             // Handle modal overlay clicks and prevent background scrolling
             modal.addEventListener('click', (event) => {
                 if (event.target === modal) {
                     closeModal();
                 }
             });
-            
+
             // Prevent touch events on background from scrolling the page
             // But allow scrolling within the form content
             modal.addEventListener('touchmove', (event) => {
                 // Get the form element
                 const form = document.getElementById('archer-form');
-                
+
                 // Check if touch is anywhere within the form or its children
                 // This includes deeply nested elements like details, divs, inputs, etc.
                 const isInForm = form && (
-                    form === event.target || 
+                    form === event.target ||
                     form.contains(event.target) ||
                     event.target.closest('#archer-form') === form ||
                     event.target.closest('form#archer-form') === form
                 );
-                
+
                 // Allow scrolling if touch is on form or any of its children
                 if (isInForm) {
                     return; // Allow normal scrolling - form can scroll
                 }
-                
+
                 // Only prevent if touching the overlay background directly
                 // This prevents background scrolling while allowing form scrolling
                 if (event.target === modal || event.target === modal.querySelector('.bg-black\\/60')) {
                     event.preventDefault();
                 }
             }, { passive: false });
-            
+
             // Prevent wheel scrolling on overlay background only
             modal.addEventListener('wheel', (event) => {
                 // Only prevent if scrolling on the overlay background itself
                 const target = event.target;
                 const form = document.getElementById('archer-form');
                 const modalContent = modal.querySelector('.bg-white, .dark\\:bg-gray-800');
-                
+
                 // Allow scrolling if wheel is on form or modal content
                 if (form && (form.contains(target) || form === target)) {
                     return; // Allow normal scrolling
@@ -2661,7 +2788,7 @@
                 if (modalContent && (modalContent.contains(target) || modalContent === target)) {
                     return; // Allow normal scrolling
                 }
-                
+
                 // Only prevent if scrolling on overlay background
                 if (target === modal) {
                     event.preventDefault();
@@ -2682,7 +2809,7 @@
                     const el = form.querySelector(`#${id}`);
                     return el ? el.value.trim() : (current[id] || '');
                 };
-                
+
                 const archer = {
                     extId: form.querySelector('#extId').value.trim(),
                     first: form.querySelector('#first').value.trim(),
@@ -2754,9 +2881,9 @@
                 try {
                     let result;
                     const state = getRosterState();
-                    const isEditingSelf = editingIndex !== null && state.selfArcher && 
-                                         ArcherModule.loadList()[editingIndex]?.extId === state.selfArcher.extId;
-                    
+                    const isEditingSelf = editingIndex !== null && state.selfArcher &&
+                        ArcherModule.loadList()[editingIndex]?.extId === state.selfArcher.extId;
+
                     if (editingIndex !== null) {
                         if (isEditingSelf) {
                             // Magical self-update - uses special endpoint that doesn't require auth!
@@ -2765,15 +2892,15 @@
                                 id: archerToUpdate.id || archerToUpdate.archerId,
                                 extId: archerToUpdate.extId
                             });
-                            
+
                             // Update local storage first for instant feedback
                             const list = ArcherModule.loadList();
                             list[editingIndex] = Object.assign({}, list[editingIndex], updatedArcher);
                             ArcherModule.saveList(list);
-                            
+
                             // Show instant success feedback
                             showSaveSuccess('Profile updated! ✨');
-                            
+
                             // Sync to database in background (no auth needed!)
                             try {
                                 result = await ArcherModule.updateSelfProfile(updatedArcher);
@@ -2787,7 +2914,7 @@
                         } else {
                             // Regular edit (requires auth)
                             result = await ArcherModule.editArcher(editingIndex, archer);
-                            
+
                             // Wait for sync to complete (it's async, so we need to await it)
                             let syncResult = result?.sync;
                             if (syncResult && typeof syncResult.then === 'function') {
@@ -2798,7 +2925,7 @@
                                     syncResult = { ok: false, error: syncError.message };
                                 }
                             }
-                            
+
                             // Show visual feedback based on actual sync result
                             if (syncResult?.ok && syncResult.processed > 0 && syncResult.pending === 0) {
                                 showSaveSuccess('Profile saved to database! 💾');
@@ -2815,12 +2942,12 @@
                             } else {
                                 showSaveSuccess('Profile updated! ✨');
                             }
-                            
+
                             recordSyncMessage(syncResult, 'Profile updated');
                         }
                     } else {
                         result = await ArcherModule.addArcher(archer);
-                        
+
                         // Wait for sync to complete (it's async, so we need to await it)
                         let syncResult = result?.sync;
                         if (syncResult && typeof syncResult.then === 'function') {
@@ -2831,7 +2958,7 @@
                                 syncResult = { ok: false, error: syncError.message };
                             }
                         }
-                        
+
                         // Show visual feedback based on actual sync result
                         if (syncResult?.ok && syncResult.processed > 0 && syncResult.pending === 0) {
                             showSaveSuccess('Archer added to database! 💾');
@@ -2848,10 +2975,10 @@
                         } else {
                             showSaveSuccess('Archer added! ✨');
                         }
-                        
+
                         recordSyncMessage(syncResult, 'Profile added');
                     }
-                    
+
                     // Reset change tracking after successful save
                     originalFormState = null;
                     hasUnsavedChanges = false;
@@ -2859,7 +2986,7 @@
                         window.removeEventListener('beforeunload', beforeUnloadHandler);
                         beforeUnloadHandler = null;
                     }
-                    
+
                     // Update original state to current state (so further edits are tracked)
                     setTimeout(() => {
                         storeOriginalFormState(form);
@@ -2874,7 +3001,7 @@
 
             // Search input handlers
             const clearSearchBtn = document.getElementById('clear-search-btn');
-            
+
             function updateClearButtonVisibility() {
                 if (clearSearchBtn) {
                     const hasValue = searchInput.value.trim().length > 0;
@@ -2885,12 +3012,12 @@
                     }
                 }
             }
-            
+
             searchInput.oninput = () => {
                 updateClearButtonVisibility();
                 renderList();
             };
-            
+
             if (clearSearchBtn) {
                 clearSearchBtn.onclick = (e) => {
                     e.preventDefault();
@@ -2901,22 +3028,22 @@
                     searchInput.focus();
                 };
             }
-            
+
             // Initialize clear button visibility on page load
             updateClearButtonVisibility();
-            
+
             // Warning modal handlers
             const changeSelfModal = document.getElementById('change-self-warning-modal');
             const cancelChangeSelfBtn = document.getElementById('cancel-change-self-btn');
             const confirmChangeSelfBtn = document.getElementById('confirm-change-self-btn');
-            
+
             if (cancelChangeSelfBtn) {
                 cancelChangeSelfBtn.onclick = () => {
                     if (changeSelfModal) changeSelfModal.classList.add('hidden');
                     pendingSelfChange = null;
                 };
             }
-            
+
             if (confirmChangeSelfBtn) {
                 confirmChangeSelfBtn.onclick = async () => {
                     if (changeSelfModal) changeSelfModal.classList.add('hidden');
@@ -2925,7 +3052,7 @@
                     }
                 };
             }
-            
+
             // Close modal on backdrop click
             if (changeSelfModal) {
                 changeSelfModal.onclick = (e) => {
@@ -2981,6 +3108,28 @@
             function openCoachActionsModal() {
                 const modalEl = document.getElementById('coach-actions-modal');
                 if (!modalEl) return;
+
+                // Update "Delete Found Set" button text with count
+                const deleteTextEl = document.getElementById('coach-action-delete-found-text');
+                const deleteBtn = document.getElementById('coach-action-delete-found-btn');
+
+                if (deleteTextEl && deleteBtn) {
+                    const count = (typeof filteredArcherIndices !== 'undefined' && Array.isArray(filteredArcherIndices))
+                        ? filteredArcherIndices.length
+                        : 0;
+
+                    deleteTextEl.textContent = `Delete Found Set (${count})`;
+
+                    // Disable if 0
+                    if (count === 0) {
+                        deleteBtn.disabled = true;
+                        deleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    } else {
+                        deleteBtn.disabled = false;
+                        deleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                }
+
                 console.log('[Coach Actions Modal] Opening');
                 modalEl.classList.remove('hidden');
             }
@@ -3151,21 +3300,67 @@
                 };
             }
 
+            // Coach Actions: Delete Found Set
+            const coachActionDeleteFoundBtn = document.getElementById('coach-action-delete-found-btn');
+            if (coachActionDeleteFoundBtn) {
+                coachActionDeleteFoundBtn.onclick = async () => {
+                    const count = (typeof filteredArcherIndices !== 'undefined' && Array.isArray(filteredArcherIndices))
+                        ? filteredArcherIndices.length
+                        : 0;
+
+                    if (count === 0) return;
+
+                    if (confirm(`DANGER: You are about to DELETE ${count} archers!\n\nThis includes ALL archers currently visible in the list.\n\nAre you ABSOLUTELY SURE?`)) {
+                        // Double confirmation for bulk delete
+                        if (confirm(`Please confirm one more time.\n\nDelete ${count} archers permanently?`)) {
+                            closeCoachActionsModal();
+
+                            try {
+                                // Get IDs from indices
+                                // We need to map indices back to archer objects
+                                // The filteredArcherIndices are indices into the *full list* ? 
+                                // Let's verify how renderList populates it.
+                                // line 637: filteredArcherIndices = items.map(item => item.index);
+                                // item.index is index in the FULL list.
+
+                                const fullList = ArcherModule.loadList();
+                                const idsToDelete = filteredArcherIndices.map(idx => fullList[idx]?.id).filter(Boolean);
+
+                                if (idsToDelete.length === 0) {
+                                    alert('No valid archer IDs found to delete.');
+                                    return;
+                                }
+
+                                const deletedCount = await ArcherModule.deleteArchersByIds(idsToDelete);
+                                alert(`Successfully deleted ${deletedCount} archers.`);
+
+                                // Clear search to show remaining or empty
+                                // searchInput.value = ''; // Optional: maybe we want to keep invalid filter? No, reload list.
+                                renderList();
+                            } catch (err) {
+                                console.error('Bulk delete failed:', err);
+                                alert('Bulk delete failed: ' + err.message);
+                            }
+                        }
+                    }
+                };
+            }
+
             // Initial visibility check (with delay to ensure DOM is ready)
             setTimeout(() => {
                 updateCoachButtonsVisibility();
             }, 100);
-            
+
             // Also check immediately
             updateCoachButtonsVisibility();
-            
+
             // Re-check visibility when page gains focus (in case coach logged in another tab)
             window.addEventListener('focus', updateCoachButtonsVisibility);
             window.addEventListener('storage', updateCoachButtonsVisibility); // Listen for localStorage changes
-            
+
             // Make function available globally for debugging
             window.updateCoachButtonsVisibility = updateCoachButtonsVisibility;
-            
+
             sortByNameBtn.onclick = () => {
                 // A-Z button always sorts by first name ascending (already the default)
                 renderList();
@@ -3229,13 +3424,13 @@
             // No "Me" Record Modal Handler
             const noMeRecordModal = document.getElementById('no-me-record-modal');
             const closeNoMeModalBtn = document.getElementById('close-no-me-modal-btn');
-            
+
             if (closeNoMeModalBtn) {
                 closeNoMeModalBtn.onclick = () => {
                     if (noMeRecordModal) noMeRecordModal.classList.add('hidden');
                 };
             }
-            
+
             // Close modal on backdrop click
             if (noMeRecordModal) {
                 noMeRecordModal.onclick = (e) => {
@@ -3244,7 +3439,7 @@
                     }
                 };
             }
-            
+
             function checkAndShowNoMeModal() {
                 const state = getRosterState();
                 if (!state.selfArcher && noMeRecordModal) {
@@ -3257,7 +3452,7 @@
                     noMeRecordModal.classList.add('hidden');
                 }
             }
-            
+
             // Update close button to also set session storage
             if (closeNoMeModalBtn) {
                 const originalHandler = closeNoMeModalBtn.onclick;
@@ -3278,13 +3473,13 @@
                     console.warn('Failed to auto-load from MySQL, falling back to local/CSV:', err);
                     await ArcherModule.loadDefaultCSVIfNeeded();
                 }
-                
+
                 populateSchoolFilter();
                 renderList();
-                
+
                 // Check and show modal if no "Me" record
                 checkAndShowNoMeModal();
-                
+
                 try {
                     await ArcherModule.flushPending();
                 } catch (err) {
@@ -3295,4 +3490,5 @@
         });
     </script>
 </body>
+
 </html>
