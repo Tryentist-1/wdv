@@ -52,7 +52,7 @@
                     <h1 class="text-xl font-bold text-gray-900 dark:text-white">Team Positions</h1>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="window.archerModule.refresh()"
+                    <button onclick="refreshArchers()"
                         class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg min-w-[44px] min-h-[44px] transition-colors"
                         title="Refresh" aria-label="Refresh archers">
                         <i class="fas fa-sync-alt"></i>
@@ -95,12 +95,12 @@
     <script src="js/archer_module.js"></script>
     <script>
         let archerModule;
+        let archerList = []; // Local copy of archers for editing
         let modifiedArchers = new Map(); // Track modified archers
 
         async function init() {
             // Initialize archer module
             archerModule = window.ArcherModule;
-            window.archerModule = archerModule;
 
             // Load archers - try MySQL first, fall back to local storage
             try {
@@ -110,7 +110,18 @@
                 // Data is already in localStorage, just proceed
             }
 
+            // Load local copy for editing
+            archerList = archerModule.loadList();
             renderArcherGrid();
+        }
+
+        function refreshArchers() {
+            // Reload from localStorage
+            archerList = archerModule.loadList();
+            modifiedArchers.clear();
+            document.getElementById('footer').classList.add('hidden');
+            renderArcherGrid();
+            showToast('Refreshed!', 'success');
         }
 
         function renderArcherGrid() {
@@ -120,15 +131,15 @@
 
             loadingState.classList.add('hidden');
 
-            const archers = archerModule.loadList();
-
-            if (archers.length === 0) {
+            if (archerList.length === 0) {
                 emptyState.classList.remove('hidden');
                 return;
             }
 
+            emptyState.classList.add('hidden');
+
             // Sort by Gender, Level, then Assignment
-            const sorted = archers.sort((a, b) => {
+            const sorted = [...archerList].sort((a, b) => {
                 // Gender: M before F
                 if (a.gender !== b.gender) {
                     return a.gender === 'M' ? -1 : 1;
@@ -220,16 +231,16 @@
             `;
         }
 
-        window.setAssignment = async function (extId, assignment) {
-            const archers = archerModule.loadList();
-            const archer = archers.find(a => a.extId === extId);
+        window.setAssignment = function (extId, assignment) {
+            // Find archer in our local list
+            const archer = archerList.find(a => a.extId === extId);
             if (!archer) return;
 
             // Update local data
             archer.assignment = assignment;
             modifiedArchers.set(extId, archer);
 
-            // Update UI
+            // Re-render to show updated highlight
             renderArcherGrid();
 
             // Show footer
@@ -249,10 +260,25 @@
             saveBtn.disabled = true;
 
             try {
-                // Save all modified archers
+                // Prepare payloads for API
                 const archersToSave = Array.from(modifiedArchers.values());
                 const payloads = archersToSave.map(a => archerModule._prepareForSync(a));
-                await archerModule._sendUpsert(payloads);
+
+                // Save to database via direct API call
+                const response = await fetch('/api/v1/archers/bulk_upsert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payloads)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                // Also update localStorage
+                archerModule.saveList(archerList);
 
                 // Clear modified set
                 modifiedArchers.clear();
@@ -263,19 +289,19 @@
                 saveBtn.disabled = false;
 
                 // Show success feedback
-                showToast('Assignments saved successfully!', 'success');
+                showToast('Assignments saved!', 'success');
             } catch (error) {
                 console.error('Failed to save assignments:', error);
                 saveBtn.innerHTML = originalHTML;
                 saveBtn.disabled = false;
-                showToast('Failed to save assignments', 'error');
+                showToast('Save failed: ' + error.message, 'error');
             }
         }
 
         function showToast(message, type = 'info') {
             // Simple toast notification
             const toast = document.createElement('div');
-            toast.className = `fixed bottom-24 right-4 px-4 py-3 rounded-lg shadow-lg text-white transition-opacity ${type === 'success' ? 'bg-success' : 'bg-danger'}`;
+            toast.className = `fixed bottom-24 right-4 px-4 py-3 rounded-lg shadow-lg text-white transition-opacity ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
             toast.textContent = message;
             document.body.appendChild(toast);
 
