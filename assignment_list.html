@@ -3,31 +3,58 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Assignment List - WDV Archery</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Safe area insets for iOS */
+        .safe-top {
+            padding-top: env(safe-area-inset-top, 0);
+        }
+
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+    </style>
+    <script>
+        // Dark mode initialization
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        }
+
+        // Run on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initTheme);
+        } else {
+            initTheme();
+        }
+    </script>
 </head>
 
-<body class="h-full bg-gray-50 dark:bg-gray-900">
+<body class="h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
     <div class="flex flex-col h-full">
         <!-- Header -->
-        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <header
+            class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 safe-top transition-colors duration-200">
             <div class="flex items-center justify-between px-4 py-3">
                 <div class="flex items-center gap-3">
                     <button onclick="window.history.back()"
-                        class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg min-w-[44px] min-h-[44px] transition-colors"
+                        aria-label="Go back">
                         <i class="fas fa-arrow-left"></i>
                     </button>
                     <h1 class="text-xl font-bold text-gray-900 dark:text-white">Team Positions</h1>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button id="save-all-btn"
-                        class="hidden px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors">
-                        <i class="fas fa-save mr-1"></i>Save All
-                    </button>
                     <button onclick="window.archerModule.refresh()"
-                        class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg min-w-[44px] min-h-[44px] transition-colors"
+                        title="Refresh" aria-label="Refresh archers">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
@@ -35,7 +62,7 @@
         </header>
 
         <!-- Main Content -->
-        <main class="flex-1 overflow-auto p-4">
+        <main class="flex-1 overflow-auto p-4 pb-20 transition-colors duration-200">
             <div id="archer-grid" class="space-y-2">
                 <!-- Archer rows will be inserted here -->
             </div>
@@ -52,6 +79,17 @@
                 <p class="mt-4 text-gray-500 dark:text-gray-400">Loading archers...</p>
             </div>
         </main>
+
+        <!-- Footer with Save Button -->
+        <footer id="footer"
+            class="hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg safe-bottom transition-colors duration-200">
+            <div class="px-4 py-3">
+                <button id="save-all-btn" onclick="saveAll()"
+                    class="w-full px-4 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold min-h-[44px] transition-colors flex items-center justify-center gap-2">
+                    <i class="fas fa-save"></i>Save All Changes
+                </button>
+            </div>
+        </footer>
     </div>
 
     <script src="js/archer_module.js"></script>
@@ -128,57 +166,55 @@
             const assignment = archer.assignment || '';
 
             return `
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center gap-3">
-                        <!-- Archer Info (40%) -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700 transition-colors duration-200">
+                    <div class="flex items-start gap-3">
+                        <!-- Archer Info -->
                         <div class="flex-1 min-w-0">
                             <div class="font-semibold text-gray-900 dark:text-white truncate">
                                 ${archer.first} ${archer.last}
                             </div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                 ${archer.gender || 'M'} / ${archer.level || 'VAR'} • ${archer.school || 'N/A'}
                             </div>
                         </div>
                         
-                        <!-- Solo Assignment Buttons -->
-                        <div class="flex gap-1">
-                            <div class="text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">Solo</div>
-                        </div>
-                        <div class="flex gap-1">
-                            ${['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'].map(val => `
+                        <!-- Assignment Buttons Container -->
+                        <div class="flex flex-col gap-1 flex-shrink-0">
+                            <!-- Solo Label + Buttons -->
+                            <div class="flex items-center gap-1">
+                                <div class="text-[10px] text-gray-400 dark:text-gray-500 w-8">Solo</div>
+                                ${['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'].map(val => `
+                                    <button 
+                                        onclick="setAssignment('${archer.extId}', '${val}')"
+                                        class="w-8 h-8 rounded text-xs font-semibold transition-colors min-h-[36px] min-w-[36px] ${assignment === val ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                                        aria-label="Assign to ${val}">
+                                        ${val}
+                                    </button>
+                                `).join('')}
+                            </div>
+                            
+                            <!-- Team Label + Buttons -->
+                            <div class="flex items-center gap-1">
+                                <div class="text-[10px] text-gray-400 dark:text-gray-500 w-8">Team</div>
+                                ${['T1', 'T2', 'T3', 'T4', 'T5', 'T6'].map(val => `
+                                    <button 
+                                        onclick="setAssignment('${archer.extId}', '${val}')"
+                                        class="w-8 h-8 rounded text-xs font-semibold transition-colors min-h-[36px] min-w-[36px] ${assignment === val ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+                                        aria-label="Assign to ${val}">
+                                        ${val}
+                                    </button>
+                                `).join('')}
+                                
+                                <!-- Clear Button -->
                                 <button 
-                                    onclick="setAssignment('${archer.extId}', '${val}')"
-                                    class="assignment-btn w-9 h-9 rounded ${assignment === val ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'} text-xs font-medium transition-colors"
-                                    data-archer-id="${archer.extId}"
-                                    data-assignment="${val}">
-                                    ${val}
+                                    onclick="setAssignment('${archer.extId}', '')"
+                                    class="w-8 h-8 rounded transition-colors min-h-[36px] min-w-[36px] ${assignment === '' ? 'bg-gray-300 dark:bg-gray-600' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'} text-gray-600 dark:text-gray-300"
+                                    title="Clear assignment"
+                                    aria-label="Clear assignment">
+                                    <i class="fas fa-times text-xs"></i>
                                 </button>
-                            `).join('')}
+                            </div>
                         </div>
-                        
-                        <!-- Team Assignment Buttons -->
-                        <div class="flex gap-1">
-                            <div class="text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">Team</div>
-                        </div>
-                        <div class="flex gap-1">
-                            ${['T1', 'T2', 'T3', 'T4', 'T5', 'T6'].map(val => `
-                                <button 
-                                    onclick="setAssignment('${archer.extId}', '${val}')"
-                                    class="assignment-btn w-9 h-9 rounded ${assignment === val ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'} text-xs font-medium transition-colors"
-                                    data-archer-id="${archer.extId}"
-                                    data-assignment="${val}">
-                                    ${val}
-                                </button>
-                            `).join('')}
-                        </div>
-                        
-                        <!-- Clear Button -->
-                        <button 
-                            onclick="setAssignment('${archer.extId}', '')"
-                            class="w-9 h-9 rounded ${assignment === '' ? 'bg-gray-300 dark:bg-gray-600' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'} text-gray-600 dark:text-gray-300 text-xs transition-colors"
-                            title="Clear assignment">
-                            <i class="fas fa-times"></i>
-                        </button>
                     </div>
                 </div>
             `;
@@ -196,20 +232,20 @@
             // Update UI
             renderArcherGrid();
 
-            // Show save button
-            document.getElementById('save-all-btn').classList.remove('hidden');
+            // Show footer
+            document.getElementById('footer').classList.remove('hidden');
 
             // Auto-save after short delay
             clearTimeout(window.autoSaveTimeout);
-            window.autoSaveTimeout = setTimeout(() => saveAll(), 1000);
+            window.autoSaveTimeout = setTimeout(() => saveAll(), 1500);
         };
 
         async function saveAll() {
             if (modifiedArchers.size === 0) return;
 
             const saveBtn = document.getElementById('save-all-btn');
-            const originalText = saveBtn.innerHTML;
-            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
+            const originalHTML = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
             saveBtn.disabled = true;
 
             try {
@@ -221,16 +257,16 @@
                 // Clear modified set
                 modifiedArchers.clear();
 
-                // Hide save button
-                saveBtn.classList.add('hidden');
-                saveBtn.innerHTML = originalText;
+                // Hide footer
+                document.getElementById('footer').classList.add('hidden');
+                saveBtn.innerHTML = originalHTML;
                 saveBtn.disabled = false;
 
                 // Show success feedback
                 showToast('Assignments saved successfully!', 'success');
             } catch (error) {
                 console.error('Failed to save assignments:', error);
-                saveBtn.innerHTML = originalText;
+                saveBtn.innerHTML = originalHTML;
                 saveBtn.disabled = false;
                 showToast('Failed to save assignments', 'error');
             }
@@ -239,7 +275,7 @@
         function showToast(message, type = 'info') {
             // Simple toast notification
             const toast = document.createElement('div');
-            toast.className = `fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} transition-opacity`;
+            toast.className = `fixed bottom-24 right-4 px-4 py-3 rounded-lg shadow-lg text-white transition-opacity ${type === 'success' ? 'bg-success' : 'bg-danger'}`;
             toast.textContent = message;
             document.body.appendChild(toast);
 
@@ -248,9 +284,6 @@
                 setTimeout(() => toast.remove(), 300);
             }, 2000);
         }
-
-        // Expose save function
-        document.getElementById('save-all-btn').onclick = saveAll;
 
         // Initialize on load
         init();
