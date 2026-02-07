@@ -64,8 +64,13 @@
             archerModule = window.ArcherModule;
             window.archerModule = archerModule;
 
-            // Load archers
-            await archerModule.loadFromMySQL();
+            // Load archers - try MySQL first, fall back to local storage
+            try {
+                await archerModule.loadFromMySQL();
+            } catch (e) {
+                console.log('MySQL load failed, using local storage:', e.message);
+                // Data is already in localStorage, just proceed
+            }
 
             renderArcherGrid();
         }
