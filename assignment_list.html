@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assignment List - WDV Archery</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="h-full bg-gray-50 dark:bg-gray-900">
+    <div class="flex flex-col h-full">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between px-4 py-3">
+                <div class="flex items-center gap-3">
+                    <button onclick="window.history.back()"
+                        class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h1 class="text-xl font-bold text-gray-900 dark:text-white">Team Positions</h1>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="save-all-btn"
+                        class="hidden px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors">
+                        <i class="fas fa-save mr-1"></i>Save All
+                    </button>
+                    <button onclick="window.archerModule.refresh()"
+                        class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-auto p-4">
+            <div id="archer-grid" class="space-y-2">
+                <!-- Archer rows will be inserted here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden text-center py-12">
+                <i class="fas fa-users text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                <p class="text-gray-500 dark:text-gray-400">No archers found</p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-gray-400 dark:text-gray-500"></i>
+                <p class="mt-4 text-gray-500 dark:text-gray-400">Loading archers...</p>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { ArcherModule } from './js/archer_module.js';
+
+        let archerModule;
+        let modifiedArchers = new Map(); // Track modified archers
+
+        async function init() {
+            // Initialize archer module
+            archerModule = new ArcherModule();
+            window.archerModule = archerModule;
+
+            // Load archers
+            await archerModule.init();
+            await archerModule.loadArchers();
+
+            renderArcherGrid();
+        }
+
+        function renderArcherGrid() {
+            const grid = document.getElementById('archer-grid');
+            const loadingState = document.getElementById('loading-state');
+            const emptyState = document.getElementById('empty-state');
+
+            loadingState.classList.add('hidden');
+
+            const archers = archerModule.getAll();
+
+            if (archers.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            // Sort by Gender, Level, then Assignment
+            const sorted = archers.sort((a, b) => {
+                // Gender: M before F
+                if (a.gender !== b.gender) {
+                    return a.gender === 'M' ? -1 : 1;
+                }
+
+                // Level: VAR > JV > BEG
+                const levelOrder = { 'VAR': 0, 'JV': 1, 'BEG': 2 };
+                const aLevel = levelOrder[a.level] ?? 999;
+                const bLevel = levelOrder[b.level] ?? 999;
+                if (aLevel !== bLevel) {
+                    return aLevel - bLevel;
+                }
+
+                // Assignment: S1-S8, then T1-T6, then blanks
+                const getAssignmentOrder = (val) => {
+                    if (!val) return 999;
+                    if (val.startsWith('S')) return parseInt(val.substring(1));
+                    if (val.startsWith('T')) return 100 + parseInt(val.substring(1));
+                    return 999;
+                };
+                const aOrder = getAssignmentOrder(a.assignment);
+                const bOrder = getAssignmentOrder(b.assignment);
+                if (aOrder !== bOrder) {
+                    return aOrder - bOrder;
+                }
+
+                // Finally by last name
+                return (a.last || '').localeCompare(b.last || '');
+            });
+
+            grid.innerHTML = sorted.map(archer => createArcherRow(archer)).join('');
+        }
+
+        function createArcherRow(archer) {
+            const assignment = archer.assignment || '';
+
+            return `
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <!-- Archer Info (40%) -->
+                        <div class="flex-1 min-w-0">
+                            <div class="font-semibold text-gray-900 dark:text-white truncate">
+                                ${archer.first} ${archer.last}
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                ${archer.gender || 'M'} / ${archer.level || 'VAR'} • ${archer.school || 'N/A'}
+                            </div>
+                        </div>
+                        
+                        <!-- Solo Assignment Buttons -->
+                        <div class="flex gap-1">
+                            <div class="text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">Solo</div>
+                        </div>
+                        <div class="flex gap-1">
+                            ${['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'].map(val => `
+                                <button 
+                                    onclick="setAssignment('${archer.extId}', '${val}')"
+                                    class="assignment-btn w-9 h-9 rounded ${assignment === val ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'} text-xs font-medium transition-colors"
+                                    data-archer-id="${archer.extId}"
+                                    data-assignment="${val}">
+                                    ${val}
+                                </button>
+                            `).join('')}
+                        </div>
+                        
+                        <!-- Team Assignment Buttons -->
+                        <div class="flex gap-1">
+                            <div class="text-[10px] text-gray-400 dark:text-gray-500 mb-0.5">Team</div>
+                        </div>
+                        <div class="flex gap-1">
+                            ${['T1', 'T2', 'T3', 'T4', 'T5', 'T6'].map(val => `
+                                <button 
+                                    onclick="setAssignment('${archer.extId}', '${val}')"
+                                    class="assignment-btn w-9 h-9 rounded ${assignment === val ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'} text-xs font-medium transition-colors"
+                                    data-archer-id="${archer.extId}"
+                                    data-assignment="${val}">
+                                    ${val}
+                                </button>
+                            `).join('')}
+                        </div>
+                        
+                        <!-- Clear Button -->
+                        <button 
+                            onclick="setAssignment('${archer.extId}', '')"
+                            class="w-9 h-9 rounded ${assignment === '' ? 'bg-gray-300 dark:bg-gray-600' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'} text-gray-600 dark:text-gray-300 text-xs transition-colors"
+                            title="Clear assignment">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.setAssignment = async function (extId, assignment) {
+            const archer = archerModule.getByExtId(extId);
+            if (!archer) return;
+
+            // Update local data
+            archer.assignment = assignment;
+            modifiedArchers.set(extId, archer);
+
+            // Update UI
+            renderArcherGrid();
+
+            // Show save button
+            document.getElementById('save-all-btn').classList.remove('hidden');
+
+            // Auto-save after short delay
+            clearTimeout(window.autoSaveTimeout);
+            window.autoSaveTimeout = setTimeout(() => saveAll(), 1000);
+        };
+
+        async function saveAll() {
+            if (modifiedArchers.size === 0) return;
+
+            const saveBtn = document.getElementById('save-all-btn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Saving...';
+            saveBtn.disabled = true;
+
+            try {
+                // Save all modified archers
+                const archersToSave = Array.from(modifiedArchers.values());
+                await archerModule.bulkUpsert(archersToSave);
+
+                // Clear modified set
+                modifiedArchers.clear();
+
+                // Hide save button
+                saveBtn.classList.add('hidden');
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+
+                // Show success feedback
+                showToast('Assignments saved successfully!', 'success');
+            } catch (error) {
+                console.error('Failed to save assignments:', error);
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+                showToast('Failed to save assignments', 'error');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            // Simple toast notification
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} transition-opacity`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        // Expose save function
+        document.getElementById('save-all-btn').onclick = saveAll;
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+
+</html>
