@@ -54,15 +54,14 @@
         </main>
     </div>
 
-    <script type="module">
-        import { ArcherModule } from './js/archer_module.js';
-
+    <script src="js/archer_module.js"></script>
+    <script>
         let archerModule;
         let modifiedArchers = new Map(); // Track modified archers
 
         async function init() {
             // Initialize archer module
-            archerModule = new ArcherModule();
+            archerModule = window.ArcherModule;
             window.archerModule = archerModule;
 
             // Load archers
