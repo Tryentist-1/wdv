@@ -1,21 +1,28 @@
-# Dependencies
+# Node modules
 node_modules/
-package-lock.json
+
+# Test files
+test-*.js
+test-*.png
+*-test.png
+coach-diagnostic.png
+init-test.png
+load-events-test.png
 
 # Environment files
 .env
 .env.local
-.env.*.local
-
-# IDE files
-.idea/
-.vscode/
-*.swp
-*.swo
+config.local.php
 
 # OS files
 .DS_Store
 Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Logs
 *.log
@@ -23,29 +30,24 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Debug files
+api/route_debug.txt
+
 # Build output
 dist/
-build/ 
+build/
 
-# API local config (do not commit or deploy)
-api/config.local.php
+# Coverage
+coverage/
+.nyc_output/
 
-# Deployment artifacts
-deploy_backups/
+# Playwright
 playwright-report/
 test-results/
 
-# Cursor IDE - ignore cache/temp files, but allow rules
-.cursor/cache/
-.cursor/tmp/
-.cursor/*.log
-.cursor/*.tmp
-
-# Agent workflows - ignore cache/temp files, but allow workflows
-.agent/cache/
-.agent/tmp/
-.agent/*.log
-.agent/*.tmp
-
-# Docker local data
+# MySQL data
 mysql/
+
+# Backup files
+*.backup
+*.bak
