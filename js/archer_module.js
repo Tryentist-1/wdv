@@ -33,6 +33,7 @@ const DEFAULT_ARCHER_TEMPLATE = {
   grade: '',
   gender: 'M',
   level: 'VAR',
+  assignment: '', // Team position: Solo1-3, Team1-2
   status: 'active',
   coachFavorite: false,
   fave: false, // legacy convenience flag (mirrors coachFavorite)
@@ -498,6 +499,7 @@ const ArcherModule = {
       grade: this._safeString(data.grade),
       gender: this._normalizeGender(data.gender),
       level: this._normalizeLevel(data.level),
+      assignment: this._safeString(data.assignment),
       status: this._normalizeStatus(data.status),
       faves: data.faves.filter(Boolean),
       domEye: this._normalizeDom(data.domEye),
@@ -751,6 +753,7 @@ const ArcherModule = {
       grade: this._safeString(apiArcher.grade),
       gender: this._safeString(apiArcher.gender || 'M'),
       level: this._safeString(apiArcher.level || 'VAR'),
+      assignment: this._safeString(apiArcher.assignment || ''),
       status: this._safeString(apiArcher.status || 'active'),
       faves: this._parseFaves(apiArcher.faves),
       domEye: this._safeString(apiArcher.domEye),
