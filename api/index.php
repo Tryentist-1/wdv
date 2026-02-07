@@ -2122,6 +2122,285 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)$#i', $route, $m) && $method ===
     exit;
 }
 
+// =====================================================
+// ROSTER MANAGEMENT ENDPOINTS (Phase 7: Bracket Workflow)
+// =====================================================
+
+// GET /v1/rounds/{id}/roster - Get all archers in a round
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)/roster$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $roundId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        $stmt = $pdo->prepare('
+            SELECT 
+                id,
+                archer_id,
+                archer_name,
+                school,
+                level,
+                gender,
+                bale_number,
+                target_assignment,
+                card_status,
+                locked,
+                completed
+            FROM round_archers
+            WHERE round_id = ?
+            ORDER BY archer_name ASC
+        ');
+        $stmt->execute([$roundId]);
+        $roster = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        json_response($roster);
+    } catch (Exception $e) {
+        error_log("GET /v1/rounds/{id}/roster error: " . $e->getMessage());
+        json_response(['error' => $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// GET /v1/rounds/{id} - Get round details
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)$#i', $route, $m) && $method === 'GET') {
+    require_api_key();
+    $roundId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        $stmt = $pdo->prepare('
+            SELECT 
+                r.*,
+                e.name as event_name,
+                e.date as event_date
+            FROM rounds r
+            LEFT JOIN events e ON r.event_id = e.id
+            WHERE r.id = ?
+            LIMIT 1
+        ');
+        $stmt->execute([$roundId]);
+        $round = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$round) {
+            json_response(['error' => 'Round not found'], 404);
+            exit;
+        }
+        
+        json_response($round);
+    } catch (Exception $e) {
+        error_log("GET /v1/rounds/{id} error: " . $e->getMessage());
+        json_response(['error' => $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/rounds/{id}/archers - Add an archer to a round roster
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $roundId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $firstName = $input['firstName'] ?? '';
+    $lastName = $input['lastName'] ?? '';
+    $school = $input['school'] ?? null;
+    $level = $input['level'] ?? null;
+    $gender = $input['gender'] ?? null;
+    $baleNumber = $input['baleNumber'] ?? null;
+    
+    if (!$firstName || !$lastName) {
+        json_response(['error' => 'firstName and lastName required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Check if round exists
+        $roundStmt = $pdo->prepare('SELECT id, event_id FROM rounds WHERE id = ? LIMIT 1');
+        $roundStmt->execute([$roundId]);
+        $round = $roundStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$round) {
+            json_response(['error' => 'Round not found'], 404);
+            exit;
+        }
+        
+        // Try to find archer in master list
+        $archerStmt = $pdo->prepare('SELECT id FROM archers WHERE first_name = ? AND last_name = ? LIMIT 1');
+        $archerStmt->execute([$firstName, $lastName]);
+        $archer = $archerStmt->fetch(PDO::FETCH_ASSOC);
+        $archerId = $archer ? $archer['id'] : null;
+        
+        // Create round_archer entry
+        $roundArcherId = $genUuid();
+        $archerName = trim("$firstName $lastName");
+        
+        $insertStmt = $pdo->prepare('
+            INSERT INTO round_archers (
+                id, round_id, archer_id, archer_name, school, level, gender, 
+                bale_number, card_status, locked, completed
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "PENDING", 0, 0)
+        ');
+        
+        $insertStmt->execute([
+            $roundArcherId,
+            $roundId,
+            $archerId,
+            $archerName,
+            $school,
+            $level,
+            $gender,
+            $baleNumber
+        ]);
+        
+        json_response([
+            'success' => true,
+            'id' => $roundArcherId,
+            'archer_name' => $archerName
+        ]);
+    } catch (Exception $e) {
+        error_log("POST /v1/rounds/{id}/archers error: " . $e->getMessage());
+        json_response(['error' => $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// DELETE /v1/round_archers/{id} - Remove an archer from roster
+if (preg_match('#^/v1/round_archers/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
+    require_api_key();
+    $roundArcherId = $m[1];
+    
+    try {
+        $pdo = db();
+        
+        // Check if round_archer exists and is not locked/completed
+        $checkStmt = $pdo->prepare('SELECT locked, completed FROM round_archers WHERE id = ? LIMIT 1');
+        $checkStmt->execute([$roundArcherId]);
+        $roundArcher = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$roundArcher) {
+            json_response(['error' => 'Archer not found in roster'], 404);
+            exit;
+        }
+        
+        if ((bool)$roundArcher['locked'] || (bool)$roundArcher['completed']) {
+            json_response(['error' => 'Cannot remove locked or completed scorecard'], 403);
+            exit;
+        }
+        
+        // Delete the round_archer entry
+        $deleteStmt = $pdo->prepare('DELETE FROM round_archers WHERE id = ?');
+        $deleteStmt->execute([$roundArcherId]);
+        
+        json_response(['success' => true, 'message' => 'Archer removed from roster']);
+    } catch (Exception $e) {
+        error_log("DELETE /v1/round_archers/{id} error: " . $e->getMessage());
+        json_response(['error' => $e->getMessage()], 500);
+    }
+    exit;
+}
+
+// POST /v1/rounds/{id}/import - Import archers from another round (Top 8 or All)
+if (preg_match('#^/v1/rounds/([0-9a-f-]+)/import$#i', $route, $m) && $method === 'POST') {
+    require_api_key();
+    $targetRoundId = $m[1];
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    
+    $sourceRoundId = $input['sourceRoundId'] ?? null;
+    $limit = isset($input['limit']) ? (int)$input['limit'] : 0; // 0 = all, 8 = top 8
+    
+    if (!$sourceRoundId) {
+        json_response(['error' => 'sourceRoundId required'], 400);
+        exit;
+    }
+    
+    try {
+        $pdo = db();
+        
+        // Check if both rounds exist
+        $checkStmt = $pdo->prepare('SELECT id, event_id, division FROM rounds WHERE id IN (?, ?) ORDER BY id');
+        $checkStmt->execute([$sourceRoundId, $targetRoundId]);
+        $rounds = $checkStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (count($rounds) < 2) {
+            json_response(['error' => 'Source or target round not found'], 404);
+            exit;
+        }
+        
+        // Get top archers from source round (ordered by total score)
+        $query = '
+            SELECT 
+                ra.archer_id,
+                ra.archer_name,
+                ra.school,
+                ra.level,
+                ra.gender,
+                COALESCE(SUM(ee.end_total), 0) as total_score
+            FROM round_archers ra
+            LEFT JOIN end_events ee ON ee.round_archer_id = ra.id
+            WHERE ra.round_id = ?
+            GROUP BY ra.id, ra.archer_id, ra.archer_name, ra.school, ra.level, ra.gender
+            ORDER BY total_score DESC
+        ';
+        
+        if ($limit > 0) {
+            $query .= " LIMIT $limit";
+        }
+        
+        $sourceStmt = $pdo->prepare($query);
+        $sourceStmt->execute([$sourceRoundId]);
+        $archers = $sourceStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        if (empty($archers)) {
+            json_response(['error' => 'No archers found in source round'], 404);
+            exit;
+        }
+        
+        // Insert archers into target round
+        $insertStmt = $pdo->prepare('
+            INSERT INTO round_archers (
+                id, round_id, archer_id, archer_name, school, level, gender,
+                card_status, locked, completed
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, "PENDING", 0, 0)
+        ');
+        
+        $imported = 0;
+        foreach ($archers as $archer) {
+            // Check if archer already exists in target round
+            $existsStmt = $pdo->prepare('SELECT id FROM round_archers WHERE round_id = ? AND archer_name = ? LIMIT 1');
+            $existsStmt->execute([$targetRoundId, $archer['archer_name']]);
+            if ($existsStmt->fetch()) {
+                continue; // Skip if already in roster
+            }
+            
+            $roundArcherId = $genUuid();
+            $insertStmt->execute([
+                $roundArcherId,
+                $targetRoundId,
+                $archer['archer_id'],
+                $archer['archer_name'],
+                $archer['school'],
+                $archer['level'],
+                $archer['gender']
+            ]);
+            $imported++;
+        }
+        
+        json_response([
+            'success' => true,
+            'imported' => $imported,
+            'available' => count($archers),
+            'message' => "$imported archer(s) imported successfully"
+        ]);
+    } catch (Exception $e) {
+        error_log("POST /v1/rounds/{id}/import error: " . $e->getMessage());
+        json_response(['error' => $e->getMessage()], 500);
+    }
+    exit;
+}
+
 // PUT /v1/round_archers/{id}/scores - Update scorecard scores
 if (preg_match('#^/v1/round_archers/([0-9a-f-]+)/scores$#i', $route, $m) && $method === 'PUT') {
     $roundArcherId = $m[1];
