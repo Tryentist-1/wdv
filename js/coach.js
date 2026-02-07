@@ -10,6 +10,33 @@
   const COACH_PASSCODE = 'wdva26'; // The actual passcode
   const COOKIE_DAYS = 90;
 
+  // ==================== Modal Helper Functions ====================
+
+  /**
+   * Shows a modal by removing 'hidden' class and adding 'flex' class
+   * Handles Tailwind's !important on 'hidden' class
+   * @param {HTMLElement|string} modalOrId - Modal element or ID
+   */
+  function showModal(modalOrId) {
+    const modal = typeof modalOrId === 'string' ? document.getElementById(modalOrId) : modalOrId;
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  /**
+   * Hides a modal by removing 'flex' class and adding 'hidden' class
+   * @param {HTMLElement|string} modalOrId - Modal element or ID
+   */
+  function hideModal(modalOrId) {
+    const modal = typeof modalOrId === 'string' ? document.getElementById(modalOrId) : modalOrId;
+    if (modal) {
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+    }
+  }
+
   // State
   let currentEventId = null;
   let selectedArchers = [];
