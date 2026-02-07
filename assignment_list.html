@@ -37,66 +37,98 @@
     </script>
 </head>
 
-<body class="h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-    <div class="flex flex-col h-full">
-        <!-- Header -->
-        <header
-            class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 safe-top transition-colors duration-200">
-            <div class="flex items-center justify-between px-4 py-3">
-                <div class="flex items-center gap-3">
-                    <button onclick="window.history.back()"
-                        class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg min-w-[44px] min-h-[44px] transition-colors"
-                        aria-label="Go back">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
-                    <h1 class="text-xl font-bold text-gray-900 dark:text-white">Team Positions</h1>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="refreshArchers()"
-                        class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg min-w-[44px] min-h-[44px] transition-colors"
-                        title="Refresh" aria-label="Refresh archers">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
-                </div>
+<body class="h-full bg-gray-50 dark:bg-gray-900 transition-colors duration-200 flex flex-col">
+    <!-- Header -->
+    <header
+        class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 safe-top transition-colors duration-200 z-20">
+        <div class="flex items-center justify-between px-4 py-3">
+            <div class="flex items-center gap-3">
+                <button onclick="window.history.back()"
+                    class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg min-w-[44px] min-h-[44px] transition-colors"
+                    aria-label="Go back">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white">Team Positions</h1>
             </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="flex-1 overflow-auto p-4 pb-20 transition-colors duration-200">
-            <div id="archer-grid" class="space-y-2">
-                <!-- Archer rows will be inserted here -->
-            </div>
-
-            <!-- Empty State -->
-            <div id="empty-state" class="hidden text-center py-12">
-                <i class="fas fa-users text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                <p class="text-gray-500 dark:text-gray-400">No archers found</p>
-            </div>
-
-            <!-- Loading State -->
-            <div id="loading-state" class="text-center py-12">
-                <i class="fas fa-spinner fa-spin text-4xl text-gray-400 dark:text-gray-500"></i>
-                <p class="mt-4 text-gray-500 dark:text-gray-400">Loading archers...</p>
-            </div>
-        </main>
-
-        <!-- Footer with Save Button -->
-        <footer id="footer"
-            class="hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg safe-bottom transition-colors duration-200">
-            <div class="px-4 py-3">
-                <button id="save-all-btn" onclick="saveAll()"
-                    class="w-full px-4 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold min-h-[44px] transition-colors flex items-center justify-center gap-2">
-                    <i class="fas fa-save"></i>Save All Changes
+            <div class="flex items-center gap-2">
+                <button onclick="refreshArchers()"
+                    class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg min-w-[44px] min-h-[44px] transition-colors"
+                    title="Refresh" aria-label="Refresh archers">
+                    <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
-        </footer>
-    </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="px-4 pb-3 flex flex-wrap gap-2">
+            <!-- Search -->
+            <div class="flex-1 min-w-[150px] relative">
+                <input type="text" id="search-input" placeholder="Search archers..."
+                    class="w-full pl-9 pr-3 py-2 bg-gray-100 dark:bg-gray-700 border-none rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-primary focus:outline-none transition-colors"
+                    oninput="applyFilters()">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+
+            <!-- Gender Filter -->
+            <button id="gender-filter-btn" onclick="toggleGenderFilter()"
+                class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors min-h-[36px]"
+                title="Filter by Gender">
+                <span id="gender-label">All</span>
+            </button>
+
+            <!-- Level Filter -->
+            <select id="level-filter" onchange="applyFilters()"
+                class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium border-none focus:ring-2 focus:ring-primary focus:outline-none transition-colors min-h-[36px] cursor-pointer">
+                <option value="all">All Levels</option>
+                <option value="VAR">Varsity</option>
+                <option value="JV">JV</option>
+            </select>
+
+            <!-- School Filter -->
+            <select id="school-filter" onchange="applyFilters()"
+                class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium border-none focus:ring-2 focus:ring-primary focus:outline-none transition-colors min-h-[36px] cursor-pointer max-w-[120px]">
+                <option value="all">All Schools</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-auto p-4 pb-20 transition-colors duration-200">
+        <div id="archer-grid" class="space-y-2">
+            <!-- Archer rows will be inserted here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-12">
+            <i class="fas fa-users text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+            <p class="text-gray-500 dark:text-gray-400">No archers found</p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading-state" class="text-center py-12">
+            <i class="fas fa-spinner fa-spin text-4xl text-gray-400 dark:text-gray-500"></i>
+            <p class="mt-4 text-gray-500 dark:text-gray-400">Loading archers...</p>
+        </div>
+    </main>
+
+    <!-- Footer with Save Button -->
+    <footer id="footer"
+        class="hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg safe-bottom transition-colors duration-200 z-30">
+        <div class="px-4 py-3">
+            <button id="save-all-btn" onclick="saveAll()"
+                class="w-full px-4 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold min-h-[44px] transition-colors flex items-center justify-center gap-2">
+                <i class="fas fa-save"></i>Save All Changes
+            </button>
+        </div>
+    </footer>
 
     <script src="js/archer_module.js"></script>
     <script>
         let archerModule;
-        let archerList = []; // Local copy of archers for editing
+        let archerList = []; // Local copy of all archers
+        let filteredArchers = []; // Currently displayed archers
         let modifiedArchers = new Map(); // Track modified archers
+        let genderFilter = 'all'; // all, M, F
 
         async function init() {
             // Initialize archer module
@@ -112,7 +144,51 @@
 
             // Load local copy for editing
             archerList = archerModule.loadList();
-            renderArcherGrid();
+
+            // Initialize school filter
+            populateSchoolFilter();
+
+            // Initial render
+            applyFilters();
+        }
+
+        function populateSchoolFilter() {
+            const schoolSelect = document.getElementById('school-filter');
+            const schools = new Set(archerList.map(a => a.school).filter(s => s));
+            const sortedSchools = Array.from(schools).sort();
+
+            // Keep "All Schools" and remove others
+            while (schoolSelect.options.length > 1) {
+                schoolSelect.remove(1);
+            }
+
+            sortedSchools.forEach(school => {
+                const option = document.createElement('option');
+                option.value = school;
+                option.textContent = school;
+                schoolSelect.appendChild(option);
+            });
+        }
+
+        function toggleGenderFilter() {
+            const btn = document.getElementById('gender-filter-btn');
+            const label = document.getElementById('gender-label');
+
+            if (genderFilter === 'all') {
+                genderFilter = 'M';
+                label.textContent = 'Men';
+                btn.className = 'px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded-lg text-sm font-medium transition-colors min-h-[36px]';
+            } else if (genderFilter === 'M') {
+                genderFilter = 'F';
+                label.textContent = 'Women';
+                btn.className = 'px-3 py-2 bg-pink-100 dark:bg-pink-900 text-pink-700 dark:text-pink-200 rounded-lg text-sm font-medium transition-colors min-h-[36px]';
+            } else {
+                genderFilter = 'all';
+                label.textContent = 'All';
+                btn.className = 'px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors min-h-[36px]';
+            }
+
+            applyFilters();
         }
 
         function refreshArchers() {
@@ -120,8 +196,42 @@
             archerList = archerModule.loadList();
             modifiedArchers.clear();
             document.getElementById('footer').classList.add('hidden');
-            renderArcherGrid();
+            populateSchoolFilter(); // Schools might have changed
+            applyFilters();
             showToast('Refreshed!', 'success');
+        }
+
+        function applyFilters() {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const level = document.getElementById('level-filter').value;
+            const school = document.getElementById('school-filter').value;
+
+            filteredArchers = archerList.filter(archer => {
+                // Search
+                if (search && !((archer.first + ' ' + archer.last).toLowerCase().includes(search) ||
+                    (archer.school || '').toLowerCase().includes(search))) {
+                    return false;
+                }
+
+                // Gender
+                if (genderFilter !== 'all' && archer.gender !== genderFilter) {
+                    return false;
+                }
+
+                // Level
+                if (level !== 'all' && archer.level !== level) {
+                    return false;
+                }
+
+                // School
+                if (school !== 'all' && archer.school !== school) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            renderArcherGrid();
         }
 
         function renderArcherGrid() {
@@ -131,15 +241,16 @@
 
             loadingState.classList.add('hidden');
 
-            if (archerList.length === 0) {
+            if (filteredArchers.length === 0) {
                 emptyState.classList.remove('hidden');
+                grid.innerHTML = '';
                 return;
             }
 
             emptyState.classList.add('hidden');
 
-            // Sort by Gender, Level, then Assignment
-            const sorted = [...archerList].sort((a, b) => {
+            // Sort by Gender, Level, then Assignment, then Name
+            const sorted = [...filteredArchers].sort((a, b) => {
                 // Gender: M before F
                 if (a.gender !== b.gender) {
                     return a.gender === 'M' ? -1 : 1;
@@ -264,14 +375,24 @@
                 const archersToSave = Array.from(modifiedArchers.values());
                 const payloads = archersToSave.map(a => archerModule._prepareForSync(a));
 
+                // Get auth headers
+                const apiKey = localStorage.getItem('coach_api_key') || '';
+                const passcode = localStorage.getItem('coach_passcode') || '';
+
                 // Save to database via direct API call
                 const response = await fetch('/api/v1/archers/bulk_upsert', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-API-KEY': apiKey,
+                        'X-PASSCODE': passcode
                     },
                     body: JSON.stringify(payloads)
                 });
+
+                if (response.status === 401) {
+                    throw new Error('Not authorized. Are you logged in as coach?');
+                }
 
                 if (!response.ok) {
                     throw new Error(`API error: ${response.status}`);
@@ -294,21 +415,34 @@
                 console.error('Failed to save assignments:', error);
                 saveBtn.innerHTML = originalHTML;
                 saveBtn.disabled = false;
-                showToast('Save failed: ' + error.message, 'error');
+
+                // Even if API fails, we save to local storage so work isn't lost
+                archerModule.saveList(archerList);
+
+                if (error.message.includes('Not authorized')) {
+                    showToast('Saved locally only (Not logged in)', 'warning');
+                } else {
+                    showToast('Saved locally (API Error)', 'warning');
+                }
             }
         }
 
         function showToast(message, type = 'info') {
             // Simple toast notification
             const toast = document.createElement('div');
-            toast.className = `fixed bottom-24 right-4 px-4 py-3 rounded-lg shadow-lg text-white transition-opacity ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`;
+            let bgClass = 'bg-gray-800';
+            if (type === 'success') bgClass = 'bg-green-600';
+            if (type === 'warning') bgClass = 'bg-yellow-600';
+            if (type === 'error') bgClass = 'bg-red-600';
+
+            toast.className = `fixed bottom-24 right-4 px-4 py-3 rounded-lg shadow-lg text-white transition-opacity ${bgClass} z-50`;
             toast.textContent = message;
             document.body.appendChild(toast);
 
             setTimeout(() => {
                 toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
-            }, 2000);
+            }, 3000); // 3 seconds
         }
 
         // Initialize on load
