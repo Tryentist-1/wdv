@@ -49,6 +49,11 @@
   let currentDivision = null; // Current division being configured
   let divisionRounds = {}; // Map of division -> roundId
 
+  // Roster management state
+  let rosterArcherSelector = null; // ArcherSelector for roster modal
+  let rosterAllArchers = []; // Full archer list for roster modal
+  let rosterSelectedArchers = []; // Selected archers for roster modal
+
   /**
    * Get today's date in local timezone as YYYY-MM-DD format
    * Uses local date methods to avoid timezone issues with toISOString()
@@ -512,6 +517,26 @@
             roundType: 'R300'
           });
           roundsCreated = true;
+          
+          // Get created rounds to map division -> roundId
+          const roundsResp = await req(`/events/${eventId}/rounds`, 'GET');
+          const rounds = (roundsResp && roundsResp.rounds) || [];
+          
+          // Populate pendingDivisions for loop workflow
+          pendingDivisions = config.ranking.divisions.slice(); // Copy array
+          
+          // Map division -> roundId
+          divisionRounds = {};
+          rounds.forEach(r => { 
+            divisionRounds[r.division] = r.id || r.roundId; 
+          });
+          
+          // Close create event modal
+          modal.style.display = 'none';
+          
+          // Start division loop workflow to add archers
+          await processNextDivision(name);
+          return; // Don't call loadEvents() yet - processNextDivision will call it when loop completes
         }
 
         // Step 2B: Create Solo Swiss Rounds (if selected)
@@ -547,7 +572,7 @@
           }
         }
 
-        // Refresh
+        // Refresh (if no ranking rounds were created, or if ranking workflow finished)
         modal.style.display = 'none';
         loadEvents();
 
@@ -3011,35 +3036,71 @@
     
     console.log('[Roster] Setting up roster modal event listeners');
     
-    // Add Archer button - opens modal and loads master archer list
+    // Add Archer button - opens modal and initializes ArcherSelector
     document.getElementById('add-archer-roster-btn').onclick = async () => {
       const modal = document.getElementById('add-archer-modal');
       modal.classList.remove('hidden');
       modal.classList.add('flex');
 
-      const select = document.getElementById('add-archer-select');
-      select.innerHTML = '<option>Loading...</option>';
+      // Set modal title
+      try {
+        const round = await req(`/rounds/${currentRosterRoundId}`);
+        document.getElementById('roster-modal-title').textContent = `${round.division} Round`;
+      } catch (e) {
+        document.getElementById('roster-modal-title').textContent = 'Round';
+      }
 
+      // Load master archer list
       try {
         const res = await req('/archers');
-        const archers = res.archers || [];
+        rosterAllArchers = res.archers || [];
 
-        archers.sort((a, b) => (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName));
+        // Populate school filter
+        const schools = [...new Set(rosterAllArchers.map(a => a.school).filter(Boolean))].sort();
+        const schoolFilter = document.getElementById('roster-filter-school');
+        schoolFilter.innerHTML = '<option value="">All Schools</option>';
+        schools.forEach(school => {
+          const opt = document.createElement('option');
+          opt.value = school;
+          opt.textContent = school;
+          schoolFilter.appendChild(opt);
+        });
 
-        select.innerHTML = '';
-        if (archers.length === 0) {
-          select.innerHTML = '<option disabled>No archers found in master list</option>';
-        } else {
-          archers.forEach(a => {
-            const opt = document.createElement('option');
-            opt.value = JSON.stringify(a);
-            opt.textContent = `${a.lastName}, ${a.firstName} (${a.school}) - ${a.division || 'No Div'}`;
-            select.appendChild(opt);
-          });
-        }
+        // Initialize ArcherSelector with single selection group
+        const container = document.getElementById('roster-archer-selection-container');
+        rosterArcherSelector = new window.ArcherSelector(container, {
+          groups: [{
+            id: 'selected',
+            label: 'Selected Archers',
+            max: null // No limit on selection
+          }],
+          emptyMessage: 'No archers match your filters.',
+          onSelectionChange: (selectionMap) => {
+            rosterSelectedArchers = selectionMap['selected'] || [];
+            updateRosterSelectionCount();
+          },
+          onFavoriteToggle: (archer, isFavorite) => {
+            // Optional: Handle favorite toggle if needed
+            console.log('Favorite toggled:', archer, isFavorite);
+          },
+          showAvatars: true,
+          showFavoriteToggle: true
+        });
+
+        // Set initial roster and context
+        rosterArcherSelector.setRoster(rosterAllArchers);
+        rosterArcherSelector.setContext({
+          favorites: [], // Could load from localStorage if needed
+          selfExtId: ''
+        });
+
+        // Apply initial filters
+        applyRosterFilters();
+
       } catch (e) {
-        select.innerHTML = '<option disabled>Error loading list</option>';
-        console.error(e);
+        console.error('Failed to load archers:', e);
+        document.getElementById('roster-archer-selection-container').innerHTML = 
+          '<div class="text-center py-8 text-red-500">Error loading archer list</div>';
       }
     };
 
@@ -3047,31 +3108,84 @@
     document.getElementById('cancel-add-archer-btn').onclick = () => {
       document.getElementById('add-archer-modal').classList.add('hidden');
       document.getElementById('add-archer-modal').classList.remove('flex');
+      rosterSelectedArchers = [];
+      if (rosterArcherSelector) {
+        rosterArcherSelector.setSelection({ selected: [] });
+      }
     };
 
-    // Confirm add archer - adds selected archer to round roster
+    // Confirm add archer - adds selected archers to round roster
     document.getElementById('confirm-add-archer-btn').onclick = async () => {
-      const select = document.getElementById('add-archer-select');
-      if (!select.value) return;
+      if (rosterSelectedArchers.length === 0) {
+        alert('Please select at least one archer.');
+        return;
+      }
 
       try {
-        const archer = JSON.parse(select.value);
-        await req(`/rounds/${currentRosterRoundId}/archers`, 'POST', {
-          firstName: archer.firstName,
-          lastName: archer.lastName,
-          school: archer.school,
-          level: archer.level,
-          gender: archer.gender,
-          baleNumber: null
-        });
+        // Add each selected archer to the roster
+        let addedCount = 0;
+        let errorCount = 0;
 
-        alert('Archer added.');
+        for (const archer of rosterSelectedArchers) {
+          try {
+            await req(`/rounds/${currentRosterRoundId}/archers`, 'POST', {
+              firstName: archer.first || archer.firstName,
+              lastName: archer.last || archer.lastName,
+              school: archer.school,
+              level: archer.level,
+              gender: archer.gender,
+              baleNumber: null
+            });
+            addedCount++;
+          } catch (e) {
+            console.error('Failed to add archer:', archer, e);
+            errorCount++;
+          }
+        }
+
+        // Show summary
+        if (addedCount > 0) {
+          alert(`Successfully added ${addedCount} archer(s)` + (errorCount > 0 ? ` (${errorCount} failed)` : ''));
+        } else {
+          alert('Failed to add archers. They may already be in the roster.');
+        }
+
+        // Close modal and refresh roster
         document.getElementById('add-archer-modal').classList.add('hidden');
         document.getElementById('add-archer-modal').classList.remove('flex');
+        rosterSelectedArchers = [];
+        if (rosterArcherSelector) {
+          rosterArcherSelector.setSelection({ selected: [] });
+        }
         loadRoster(currentRosterRoundId);
       } catch (e) {
-        alert('Failed to add: ' + e.message);
+        alert('Failed to add archers: ' + e.message);
       }
+    };
+
+    // Search filter
+    document.getElementById('roster-archer-search').addEventListener('input', (e) => {
+      if (rosterArcherSelector) {
+        rosterArcherSelector.setFilter(e.target.value);
+      }
+    });
+
+    // Filter dropdowns
+    ['roster-filter-status', 'roster-filter-school', 'roster-filter-gender', 'roster-filter-level'].forEach(id => {
+      document.getElementById(id).addEventListener('change', applyRosterFilters);
+    });
+
+    // Select All Filtered button
+    document.getElementById('roster-select-all-btn').onclick = () => {
+      if (!rosterArcherSelector) return;
+      
+      // Get currently filtered/visible archers
+      const filtered = getFilteredRosterArchers();
+      
+      // Add all filtered archers to selection
+      rosterArcherSelector.setSelection({
+        selected: filtered
+      });
     };
 
     // Import from ranking button - opens import source selection modal
@@ -3152,6 +3266,53 @@
     };
   }
 
+
+  /**
+   * Updates the selection count display for roster modal
+   */
+  function updateRosterSelectionCount() {
+    const count = rosterSelectedArchers.length;
+    document.getElementById('roster-selected-count').textContent = count;
+  }
+
+  /**
+   * Applies filters to the roster archer list
+   * Filters by status, school, gender, and level
+   */
+  function applyRosterFilters() {
+    if (!rosterArcherSelector) return;
+
+    const filtered = getFilteredRosterArchers();
+    rosterArcherSelector.setRoster(filtered);
+  }
+
+  /**
+   * Gets filtered list of archers based on current filter settings
+   * @returns {Array} Filtered archer list
+   */
+  function getFilteredRosterArchers() {
+    const statusFilter = document.getElementById('roster-filter-status').value;
+    const schoolFilter = document.getElementById('roster-filter-school').value;
+    const genderFilter = document.getElementById('roster-filter-gender').value;
+    const levelFilter = document.getElementById('roster-filter-level').value;
+
+    return rosterAllArchers.filter(archer => {
+      // Status filter
+      if (statusFilter === 'active' && archer.status !== 'active') return false;
+      if (statusFilter === 'inactive' && archer.status === 'active') return false;
+
+      // School filter
+      if (schoolFilter && archer.school !== schoolFilter) return false;
+
+      // Gender filter
+      if (genderFilter && archer.gender !== genderFilter) return false;
+
+      // Level filter
+      if (levelFilter && archer.level !== levelFilter) return false;
+
+      return true;
+    });
+  }
 
   window.coach = {
     viewResults,

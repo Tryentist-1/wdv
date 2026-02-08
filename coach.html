@@ -897,25 +897,69 @@
     </div>
   </div>
 
-  <!-- Add Archer Modal (Nested) -->
+  <!-- Add Archers to Roster Modal (Nested) - Enhanced with ArcherSelector -->
   <div id="add-archer-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[60]">
-    <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full mx-4 p-6 shadow-xl leading-normal text-left">
-      <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Add Archer to Round</h3>
+    <div class="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full mx-4 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-4">
+        Add Archers to <span id="roster-modal-title">Round</span>
+      </h2>
 
+      <!-- Search Box -->
       <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Archer</label>
-        <select id="add-archer-select"
-          class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg p-2.5">
-          <option value="">Loading master list...</option>
-        </select>
-        <p class="text-xs text-gray-500 mt-1">Select from master list</p>
+        <input type="text" id="roster-archer-search" placeholder="🔍 Search by name..."
+          class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
       </div>
 
-      <div class="flex justify-end gap-2">
+      <!-- Filters -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        <select id="roster-filter-status"
+          class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
+          <option value="active" selected>Active Only</option>
+          <option value="">All Status</option>
+          <option value="inactive">Inactive Only</option>
+        </select>
+        <select id="roster-filter-school"
+          class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
+          <option value="">All Schools</option>
+        </select>
+        <select id="roster-filter-gender"
+          class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
+          <option value="">All Genders</option>
+          <option value="M">Boys</option>
+          <option value="F">Girls</option>
+        </select>
+        <select id="roster-filter-level"
+          class="flex-1 min-w-[120px] px-3 py-3 border-2 border-primary dark:border-primary rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white cursor-pointer hover:border-primary-dark hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:border-primary-dark focus:ring-2 focus:ring-primary/20 transition-all">
+          <option value="">All Levels</option>
+          <option value="VAR">Varsity</option>
+          <option value="JV">JV</option>
+        </select>
+      </div>
+
+      <div class="mb-2">
+        <button id="roster-select-all-btn"
+          class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Select
+          All Filtered</button>
+      </div>
+
+      <!-- Archer Selector Container -->
+      <div id="roster-archer-selection-container"
+        class="max-h-[200px] md:max-h-[300px] overflow-y-auto border-2 border-gray-300 dark:border-gray-600 rounded-lg p-2 bg-white dark:bg-gray-700 webkit-overflow-scrolling-touch">
+        <!-- ArcherSelector component will be initialized here -->
+      </div>
+
+      <!-- Selection Summary -->
+      <div class="mt-4 px-3 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg font-medium text-gray-800 dark:text-gray-200">
+        Selected: <span id="roster-selected-count">0</span> archer(s)
+      </div>
+
+      <!-- Buttons -->
+      <div class="flex gap-2 mt-6">
         <button id="cancel-add-archer-btn"
-          class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">Cancel</button>
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]">Cancel</button>
         <button id="confirm-add-archer-btn"
-          class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg">Add</button>
+          class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Add
+          to Round</button>
       </div>
     </div>
   </div>
