@@ -605,6 +605,234 @@ if (!empty($filters['name_like'])) {
             </div>
         </div>
 
+        <!-- Seed Test Data Section -->
+        <div class="collapsible-section">
+            <div class="collapsible-header" onclick="toggleSection(this)">
+                <span>🎯 Seed Test Data for Bracket Testing</span>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="collapsible-content">
+                <p>Generate completed ranking round scores for testing bracket seeding and match generation. This creates realistic score data for archers from specified schools.</p>
+
+                <?php
+                // Handle seed test data action
+                if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'seed_test_data') {
+                    $targetEventId = trim($_POST['seed_event_id'] ?? '');
+                    $schools = array_filter(array_map('trim', explode(',', $_POST['seed_schools'] ?? 'HRO,HST')));
+                    $minVarsityScore = (int)($_POST['min_varsity_score'] ?? 6);
+                    $minJvScore = (int)($_POST['min_jv_score'] ?? 3);
+                    
+                    if (empty($targetEventId)) {
+                        echo '<div class="error"><p>❌ Please select an event.</p></div>';
+                    } else {
+                        try {
+                            $pdo->beginTransaction();
+                            
+                            // Get event info
+                            $eventStmt = $pdo->prepare("SELECT id, name FROM events WHERE id = ? LIMIT 1");
+                            $eventStmt->execute([$targetEventId]);
+                            $event = $eventStmt->fetch(PDO::FETCH_ASSOC);
+                            
+                            if (!$event) {
+                                throw new Exception("Event not found");
+                            }
+                            
+                            // Get R300 rounds for this event
+                            $roundsStmt = $pdo->prepare("SELECT division, id FROM rounds WHERE event_id = ? AND round_type = 'R300'");
+                            $roundsStmt->execute([$targetEventId]);
+                            $rounds = $roundsStmt->fetchAll(PDO::FETCH_KEY_PAIR);
+                            
+                            if (empty($rounds)) {
+                                throw new Exception("No R300 ranking rounds found for this event");
+                            }
+                            
+                            // Get archers from specified schools
+                            $placeholders = implode(',', array_fill(0, count($schools), '?'));
+                            $archerStmt = $pdo->prepare("SELECT id, first_name, last_name, gender, level, school FROM archers WHERE school IN ($placeholders) AND status='active'");
+                            $archerStmt->execute($schools);
+                            $archers = $archerStmt->fetchAll(PDO::FETCH_ASSOC);
+                            
+                            if (empty($archers)) {
+                                throw new Exception("No active archers found from schools: " . implode(', ', $schools));
+                            }
+                            
+                            $assignedCount = 0;
+                            $skippedCount = 0;
+                            
+                            foreach ($archers as $archer) {
+                                // Determine target round
+                                $targetDiv = '';
+                                if ($archer['level'] === 'VAR') {
+                                    $targetDiv = ($archer['gender'] === 'M') ? 'BVAR' : 'GVAR';
+                                } else {
+                                    $targetDiv = ($archer['gender'] === 'M') ? 'BJV' : 'GJV';
+                                }
+                                
+                                // Fallback to OPEN if specific division not active
+                                if (!isset($rounds[$targetDiv])) {
+                                    if (isset($rounds['OPEN'])) {
+                                        $targetDiv = 'OPEN';
+                                    } else {
+                                        $skippedCount++;
+                                        continue;
+                                    }
+                                }
+                                
+                                $roundId = $rounds[$targetDiv];
+                                
+                                // Check if already assigned
+                                $existsStmt = $pdo->prepare("SELECT id FROM round_archers WHERE round_id = ? AND archer_id = ?");
+                                $existsStmt->execute([$roundId, $archer['id']]);
+                                if ($existsStmt->fetch()) {
+                                    $skippedCount++;
+                                    continue;
+                                }
+                                
+                                // Assign archer with random bale
+                                $baleNum = rand(1, 20);
+                                
+                                $raStmt = $pdo->prepare("INSERT INTO round_archers (id, round_id, archer_id, archer_name, school, level, gender, bale_number) VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?)");
+                                $raStmt->execute([
+                                    $roundId,
+                                    $archer['id'],
+                                    $archer['first_name'] . ' ' . $archer['last_name'],
+                                    $archer['school'],
+                                    $archer['level'],
+                                    $archer['gender'],
+                                    $baleNum
+                                ]);
+                                
+                                // Get the inserted round_archer ID
+                                $idStmt = $pdo->prepare("SELECT id FROM round_archers WHERE round_id = ? AND archer_id = ?");
+                                $idStmt->execute([$roundId, $archer['id']]);
+                                $roundArcherId = $idStmt->fetchColumn();
+                                
+                                // Generate scores (30 arrows, 10 ends of 3)
+                                $minScore = ($archer['level'] === 'VAR') ? $minVarsityScore : $minJvScore;
+                                $runningTotal = 0;
+                                
+                                for ($end = 1; $end <= 10; $end++) {
+                                    $a1 = rand($minScore, 10);
+                                    $a2 = rand($minScore, 10);
+                                    $a3 = rand($minScore, 10);
+                                    
+                                    $endTotal = $a1 + $a2 + $a3;
+                                    $runningTotal += $endTotal;
+                                    $tens = ($a1 == 10 ? 1 : 0) + ($a2 == 10 ? 1 : 0) + ($a3 == 10 ? 1 : 0);
+                                    
+                                    $scoreStmt = $pdo->prepare("INSERT INTO end_events (id, round_id, round_archer_id, end_number, a1, a2, a3, end_total, running_total, tens, xs) VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)");
+                                    $scoreStmt->execute([
+                                        $roundId,
+                                        $roundArcherId,
+                                        $end,
+                                        (string)$a1,
+                                        (string)$a2,
+                                        (string)$a3,
+                                        $endTotal,
+                                        $runningTotal,
+                                        $tens
+                                    ]);
+                                }
+                                
+                                // Mark as completed and verified
+                                $updateStmt = $pdo->prepare("UPDATE round_archers SET completed = 1, verified_at = NOW(), card_status = 'VER' WHERE id = ?");
+                                $updateStmt->execute([$roundArcherId]);
+                                
+                                $assignedCount++;
+                            }
+                            
+                            $pdo->commit();
+                            
+                            echo '<div class="success" style="background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 15px; border-radius: 4px; margin-bottom: 20px; color: #1b5e20;">';
+                            echo '<h3>✅ Test Data Seeded Successfully!</h3>';
+                            echo '<ul>';
+                            echo '<li><strong>' . $assignedCount . '</strong> archer(s) added and scored</li>';
+                            echo '<li><strong>' . $skippedCount . '</strong> archer(s) skipped (already assigned or no matching round)</li>';
+                            echo '<li>Event: <strong>' . h($event['name']) . '</strong></li>';
+                            echo '<li>Schools: <strong>' . implode(', ', $schools) . '</strong></li>';
+                            echo '<li>All scorecards marked as <strong>completed and verified</strong></li>';
+                            echo '</ul>';
+                            echo '<p style="margin-top: 15px;">You can now test bracket creation and seeding!</p>';
+                            echo '</div>';
+                            
+                        } catch (Exception $e) {
+                            $pdo->rollBack();
+                            echo '<div class="error" style="background: #fee; border-left: 4px solid #f44336; padding: 15px; border-radius: 4px; color: #c00;">';
+                            echo '<h3>❌ Seeding Failed</h3>';
+                            echo '<p>' . h($e->getMessage()) . '</p>';
+                            echo '</div>';
+                        }
+                    }
+                }
+                
+                // Get all events for dropdown
+                $eventsStmt = $pdo->query("SELECT id, name, date, status FROM events ORDER BY date DESC, name ASC LIMIT 100");
+                $allEvents = $eventsStmt->fetchAll(PDO::FETCH_ASSOC);
+                ?>
+
+                <?php if (!empty($allEvents)): ?>
+                <form method="post" style="margin-top: 20px;">
+                    <input type="hidden" name="passcode" value="<?= h($passcode) ?>">
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label for="seed_event_id"><strong>Select Event:</strong></label>
+                        <select id="seed_event_id" name="seed_event_id" required style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                            <option value="">-- Select an event --</option>
+                            <?php foreach ($allEvents as $evt): ?>
+                                <option value="<?= h($evt['id']) ?>">
+                                    <?= h($evt['name']) ?> (<?= h($evt['date']) ?>) - <?= h($evt['status']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small>Choose an event with ranking rounds (R300)</small>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label for="seed_schools"><strong>Schools (comma-separated):</strong></label>
+                        <input type="text" id="seed_schools" name="seed_schools" value="HRO,HST" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                        <small>Enter school codes separated by commas (e.g., HRO,HST,WDV)</small>
+                    </div>
+                    
+                    <details style="margin-bottom: 20px;">
+                        <summary style="cursor: pointer; font-weight: 600; margin-bottom: 10px;">⚙️ Advanced Options</summary>
+                        <div style="margin-left: 20px; margin-top: 10px;">
+                            <div style="margin-bottom: 15px;">
+                                <label for="min_varsity_score"><strong>Min Varsity Score per Arrow:</strong></label>
+                                <input type="number" id="min_varsity_score" name="min_varsity_score" value="6" min="0" max="10" style="width: 100px; padding: 6px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                                <small>(0-10, higher = better scores)</small>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label for="min_jv_score"><strong>Min JV Score per Arrow:</strong></label>
+                                <input type="number" id="min_jv_score" name="min_jv_score" value="3" min="0" max="10" style="width: 100px; padding: 6px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                                <small>(0-10, higher = better scores)</small>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <div class="info" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 15px; color: #856404;">
+                        <p><strong>📋 What this does:</strong></p>
+                        <ul style="margin: 10px 0 0 20px;">
+                            <li>Finds all active archers from specified schools</li>
+                            <li>Assigns them to appropriate ranking rounds (BVAR, GVAR, BJV, GJV, or OPEN)</li>
+                            <li>Generates random scores for 10 ends (30 arrows total)</li>
+                            <li>Marks all scorecards as completed and verified</li>
+                            <li>Skips archers already in the event</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="table-actions">
+                        <button type="submit" name="action" value="seed_test_data" class="btn-primary" 
+                                onclick="return confirm('Seed test data for this event?\n\nThis will add archers and generate completed scores for bracket testing.');">
+                            🎯 Seed Test Data
+                        </button>
+                    </div>
+                </form>
+                <?php else: ?>
+                <p style="color: #d32f2f; font-weight: bold;">❌ No events found. Create an event with ranking rounds first.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <!-- Clean Up Unstarted Scorecards Section -->
         <div class="collapsible-section">
             <div class="collapsible-header" onclick="toggleSection(this)">
