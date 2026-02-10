@@ -2025,6 +2025,213 @@ const ArcherModule = {
     return csv;
   },
 
+  /**
+   * Import Roster Games CSV - simplified format for Games Events.
+   * Expected columns: First Name, Last Name, Gender, VJV, Position, Discipline, School, email, Active
+   * 
+   * @param {string} csvText - Raw CSV text content to parse
+   * @returns {{imported: number, errors: string[]}} Result object with count and any errors
+   */
+  importRosterGamesCSV(csvText) {
+    if (!csvText || !csvText.trim()) {
+      return { imported: 0, errors: ['Empty CSV content'] };
+    }
+
+    const errors = [];
+    const warnings = [];
+    
+    // CSV parser function (handles quoted fields)
+    const parseCSVLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            current += '"';
+            i++; // Skip escaped quote
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    };
+
+    const rows = csvText.split('\n').filter(line => line.trim());
+    if (rows.length < 2) {
+      return { imported: 0, errors: ['CSV must have at least a header row and one data row'] };
+    }
+
+    // Parse header row
+    const rawHeaders = parseCSVLine(rows[0]).map(h => h.replace(/^"|"$/g, '').trim());
+    
+    // Map column names to our field names (case-insensitive, flexible matching)
+    const headerMap = {};
+    rawHeaders.forEach((header, index) => {
+      const h = header.toLowerCase().trim();
+      
+      if (h.includes('first') && h.includes('name')) headerMap.firstName = index;
+      else if (h.includes('last') && h.includes('name')) headerMap.lastName = index;
+      else if (h === 'first name' || h === 'firstname' || h === 'first') headerMap.firstName = index;
+      else if (h === 'last name' || h === 'lastname' || h === 'last') headerMap.lastName = index;
+      else if (h === 'gender' || h === 'gener') headerMap.gender = index;
+      else if (h === 'vjv' || h === 'level' || h === 'var/jv') headerMap.level = index;
+      else if (h === 'position' || h === 'pos' || h === 'assignment') headerMap.position = index;
+      else if (h === 'discipline' || h === 'dicipline' || h === 'disc') headerMap.discipline = index;
+      else if (h === 'school' || h === 'sch') headerMap.school = index;
+      else if (h === 'email' || h === 'e-mail') headerMap.email = index;
+      else if (h === 'active' || h === 'status') headerMap.status = index;
+    });
+
+    // Validate required fields
+    const required = ['firstName', 'lastName', 'school'];
+    const missing = required.filter(field => headerMap[field] === undefined);
+    if (missing.length > 0) {
+      return { 
+        imported: 0, 
+        errors: [`Missing required columns: ${missing.join(', ')}. Found headers: ${rawHeaders.join(', ')}`] 
+      };
+    }
+
+    // Parse data rows
+    const currentList = this.loadList();
+    let added = 0;
+    let updated = 0;
+    const archersToSync = []; // Track archers for MySQL sync
+
+    for (let i = 1; i < rows.length; i++) {
+      const row = parseCSVLine(rows[i]);
+      if (row.length === 0 || row.every(cell => !cell.trim())) continue; // Skip empty rows
+
+      try {
+        // Extract values from row
+        const firstName = (row[headerMap.firstName] || '').trim();
+        const lastName = (row[headerMap.lastName] || '').trim();
+        const gender = (row[headerMap.gender] || 'M').trim().toUpperCase();
+        const levelRaw = (row[headerMap.level] || 'VAR').trim().toUpperCase();
+        const position = (row[headerMap.position] || '').trim().toUpperCase();
+        const discipline = (row[headerMap.discipline] || '').trim();
+        const school = (row[headerMap.school] || '').trim().toUpperCase().substring(0, 3);
+        const email = (row[headerMap.email] || '').trim();
+        const statusRaw = (row[headerMap.status] || 'active').trim().toLowerCase();
+
+        // Validate required fields
+        if (!firstName || !lastName) {
+          warnings.push(`Row ${i + 1}: Missing first or last name, skipping`);
+          continue;
+        }
+        if (!school) {
+          warnings.push(`Row ${i + 1}: Missing school for ${firstName} ${lastName}, skipping`);
+          continue;
+        }
+
+        // Normalize level (VJV format: V=VAR, JV=JV)
+        let level = 'VAR';
+        if (levelRaw === 'JV' || levelRaw === 'J') level = 'JV';
+        else if (levelRaw === 'VAR' || levelRaw === 'V' || levelRaw === 'VARSITY') level = 'VAR';
+        else if (levelRaw === 'BEG' || levelRaw === 'BEGINNER') level = 'BEG';
+
+        // Normalize gender
+        const normalizedGender = (gender === 'F' || gender === 'FEMALE' || gender === 'GIRL' || gender === 'W' || gender === 'WOMAN') ? 'F' : 'M';
+
+        // Normalize position (S1-S8, T1-T6)
+        const validPositions = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6'];
+        const normalizedPosition = validPositions.includes(position) ? position : '';
+
+        // Normalize status
+        const status = (statusRaw === 'inactive' || statusRaw === 'i' || statusRaw === 'no') ? 'inactive' : 'active';
+
+        // Check if archer already exists (match by first + last + school)
+        const existing = currentList.find(a =>
+          (a.first || '').toLowerCase() === firstName.toLowerCase() &&
+          (a.last || '').toLowerCase() === lastName.toLowerCase() &&
+          (a.school || '').toUpperCase() === school.toUpperCase()
+        );
+
+        if (existing) {
+          // Update existing archer
+          existing.gender = normalizedGender;
+          existing.level = level;
+          existing.assignment = normalizedPosition;
+          existing.discipline = discipline || existing.discipline || '';
+          existing.school = school;
+          existing.email = email || existing.email || '';
+          existing.status = status;
+          archersToSync.push(existing); // Queue for sync
+          updated++;
+        } else {
+          // Add new archer
+          const newArcher = this._applyTemplate({
+            extId: this._buildExtId({ first: firstName, last: lastName, school }),
+            first: firstName,
+            last: lastName,
+            gender: normalizedGender,
+            level: level,
+            assignment: normalizedPosition,
+            discipline: discipline,
+            school: school,
+            email: email,
+            status: status,
+            grade: '',
+            nickname: ''
+          });
+          currentList.push(newArcher);
+          archersToSync.push(newArcher); // Queue for sync
+          added++;
+        }
+
+      } catch (err) {
+        warnings.push(`Row ${i + 1}: Error parsing - ${err.message}`);
+      }
+    }
+
+    // Save updated list to localStorage
+    this.saveList(currentList);
+
+    // Queue all imported archers for MySQL sync
+    console.log(`[Import Roster Games] Queuing ${archersToSync.length} archers for MySQL sync...`);
+    
+    const syncPromises = [];
+    archersToSync.forEach(archer => {
+      try {
+        syncPromises.push(this.queueUpsert(archer));
+      } catch (err) {
+        console.warn('[Import Roster Games] Failed to queue archer for sync:', archer.first, archer.last, err);
+      }
+    });
+
+    // Wait for all sync operations
+    Promise.all(syncPromises).then(() => {
+      console.log(`[Import Roster Games] MySQL sync complete for ${syncPromises.length} archers`);
+    }).catch(err => {
+      console.warn('[Import Roster Games] MySQL sync failed:', err);
+      warnings.push('Note: Archers saved locally but MySQL sync failed. They will sync on next refresh.');
+    });
+
+    const imported = added + updated;
+    const summary = [];
+    if (added > 0) summary.push(`${added} new archer(s) added`);
+    if (updated > 0) summary.push(`${updated} archer(s) updated`);
+    if (warnings.length > 0) summary.push(`${warnings.length} warning(s)`);
+
+    console.log(`[Import Roster Games] ${summary.join(', ')}`);
+
+    return {
+      imported,
+      added,
+      updated,
+      errors: warnings.length > 0 ? warnings : []
+    };
+  },
+
   // Load default CSV if localStorage is empty
   loadDefaultCSVIfNeeded: async function (force = false) {
     if (!force && localStorage.getItem(ARCHER_LIST_KEY)) return; // Already loaded

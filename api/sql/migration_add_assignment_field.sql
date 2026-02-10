@@ -16,9 +16,9 @@ SELECT IF(
     ),
     'SELECT 1',
     'ALTER TABLE archers
-        ADD COLUMN assignment ENUM(\'Solo1\', \'Solo2\', \'Solo3\', \'Team1\', \'Team2\', \'\') 
+        ADD COLUMN assignment ENUM(\'S1\',\'S2\',\'S3\',\'S4\',\'S5\',\'S6\',\'S7\',\'S8\',\'T1\',\'T2\',\'T3\',\'T4\',\'T5\',\'T6\',\'\') 
             NULL DEFAULT \'\'
-            COMMENT \'Team position assignment: S1-S8 for solos, T1-T6 for teams\'
+            COMMENT \'Position assignment: S1-S8 for solo brackets, T1-T6 for team brackets\'
             AFTER level;'
 ) INTO @sql_assignment;
 PREPARE stmt_assignment FROM @sql_assignment;

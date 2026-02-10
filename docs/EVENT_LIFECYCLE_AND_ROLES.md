@@ -12,13 +12,17 @@
 **Access:** `coach.html` (requires passcode: `wdva26`)
 
 **Responsibilities:**
-- Create and manage events
-- Add archers to events and rounds
+- Create Archer Records and School Roster in Archerlist using the "Import" or "Add Archer"
+- Select Positions for Brackets using the http://localhost:8001/assignment_list.html
+- Create and manage events, Ranking Rounds, Solo Brackets and Team Brackets.
+- Add archers to events, Ranking rounds, Solo Brackets and Team Brackets
 - Assign bales and targets
 - Verify scorecards and match results
-- Generate brackets and matches
+- Generate Elimination Brackets if needed
 - Manage event lifecycle (Planned → Active → Completed)
 - View analytics and results
+- Determine Winners and Medals
+- Medals for Ranking Rounds by Division, Solos by Division, Teams by Division and Overall School/Team score.
 
 **Permissions:**
 - ✅ Full read/write access to all data
@@ -36,10 +40,12 @@
 
 **Responsibilities:**
 - Select own profile from master list
+- Find their Opponents and Bale Assignment in the Home Screen
 - Join events using entry codes
 - Score ranking rounds (300 Round)
 - Score solo matches (Olympic Round)
 - Score team matches (Olympic Team Round)
+- Find Updates as Solo and Olympic Rounds progress through rounds ie new opponents and new bale assignements
 - View own history and stats
 - Select bales (if manual signup enabled)
 - Challenge opponents (if Swiss bracket is Open mode)
@@ -62,6 +68,8 @@
 **Location:** `coach.html` → "Create Event"
 
 #### Steps:
+0. All Archer Profiles loaded into the ArcherList, and set to "Active" by Coaches
+
 1. **Coach clicks "Create Event"**
    - Enter event name (e.g., "State Championships 2026")
    - Select date
@@ -139,7 +147,7 @@
 #### Archer Steps:
 1. **Join event**
    - Scan QR code OR enter event code manually
-   - Select own profile from list
+   - Select own profile from list via modal if no cookie set yet
    - Confirm bale assignment
 
 2. **Score ranking round**

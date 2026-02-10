@@ -89,6 +89,14 @@
                 class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium border-none focus:ring-2 focus:ring-primary focus:outline-none transition-colors min-h-[36px] cursor-pointer max-w-[120px]">
                 <option value="all">All Schools</option>
             </select>
+
+            <!-- Status Filter -->
+            <select id="status-filter" onchange="applyFilters()"
+                class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium border-none focus:ring-2 focus:ring-primary focus:outline-none transition-colors min-h-[36px] cursor-pointer">
+                <option value="all">All Status</option>
+                <option value="active" selected>Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
         </div>
     </header>
 
@@ -205,6 +213,7 @@
             const search = document.getElementById('search-input').value.toLowerCase();
             const level = document.getElementById('level-filter').value;
             const school = document.getElementById('school-filter').value;
+            const status = document.getElementById('status-filter').value;
 
             filteredArchers = archerList.filter(archer => {
                 // Search
@@ -228,6 +237,14 @@
                     return false;
                 }
 
+                // Status
+                if (status !== 'all') {
+                    const archerStatus = (archer.status || 'active').toLowerCase();
+                    if (archerStatus !== status) {
+                        return false;
+                    }
+                }
+
                 return true;
             });
 
@@ -249,14 +266,21 @@
 
             emptyState.classList.add('hidden');
 
-            // Sort by Gender, Level, then Assignment, then Name
+            // Sort by School, Gender, Level (VJV), Position
             const sorted = [...filteredArchers].sort((a, b) => {
-                // Gender: M before F
+                // 1. School (alphabetically)
+                const schoolA = (a.school || '').toUpperCase();
+                const schoolB = (b.school || '').toUpperCase();
+                if (schoolA !== schoolB) {
+                    return schoolA.localeCompare(schoolB);
+                }
+
+                // 2. Gender: M before F
                 if (a.gender !== b.gender) {
                     return a.gender === 'M' ? -1 : 1;
                 }
 
-                // Level: VAR > JV > BEG
+                // 3. Level: VAR > JV > BEG
                 const levelOrder = { 'VAR': 0, 'JV': 1, 'BEG': 2 };
                 const aLevel = levelOrder[a.level] ?? 999;
                 const bLevel = levelOrder[b.level] ?? 999;
@@ -264,7 +288,7 @@
                     return aLevel - bLevel;
                 }
 
-                // Assignment: S1-S8, then T1-T6, then blanks
+                // 4. Position/Assignment: S1-S8, then T1-T6, then blanks
                 const getAssignmentOrder = (val) => {
                     if (!val) return 999;
                     if (val.startsWith('S')) return parseInt(val.substring(1));
@@ -277,7 +301,7 @@
                     return aOrder - bOrder;
                 }
 
-                // Finally by last name
+                // 5. Finally by last name
                 return (a.last || '').localeCompare(b.last || '');
             });
 

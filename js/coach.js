@@ -3171,7 +3171,7 @@
     });
 
     // Filter dropdowns
-    ['roster-filter-status', 'roster-filter-school', 'roster-filter-gender', 'roster-filter-level'].forEach(id => {
+    ['roster-filter-status', 'roster-filter-school', 'roster-filter-gender', 'roster-filter-level', 'roster-filter-position'].forEach(id => {
       document.getElementById(id).addEventListener('change', applyRosterFilters);
     });
 
@@ -3295,6 +3295,7 @@
     const schoolFilter = document.getElementById('roster-filter-school').value;
     const genderFilter = document.getElementById('roster-filter-gender').value;
     const levelFilter = document.getElementById('roster-filter-level').value;
+    const positionFilter = document.getElementById('roster-filter-position').value;
 
     return rosterAllArchers.filter(archer => {
       // Status filter
@@ -3309,6 +3310,9 @@
 
       // Level filter
       if (levelFilter && archer.level !== levelFilter) return false;
+
+      // Position filter
+      if (positionFilter && archer.assignment !== positionFilter) return false;
 
       return true;
     });

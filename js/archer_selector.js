@@ -297,9 +297,13 @@
             metaRow.className = 'text-xs text-gray-500 dark:text-gray-400 truncate';
             const school = archer.school || 'No school';
             const level = archer.level || '—';
+            const assignment = archer.assignment || '';
             
-            // Build meta text with optional ranking score and bracket standings
+            // Build meta text with optional position assignment, ranking score, and bracket standings
             let metaParts = [`${school} • ${level}`];
+            if (assignment) {
+                metaParts[0] += ` • ${assignment}`;
+            }
             
             // Add ranking score if available
             if (typeof archer.rankingScore === 'number' && archer.rankingScore > 0) {
