@@ -9,6 +9,8 @@
 
 ## 🎯 Start Here
 
+- **[QUICK_START_INDEX.md](QUICK_START_INDEX.md)** - Index of all quick start guides
+
 ### Essential Reading (In Order)
 1. **[core/BALE_GROUP_SCORING_WORKFLOW.md](core/BALE_GROUP_SCORING_WORKFLOW.md)** - Critical workflow (2 min)
 2. **[core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md](core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md)** - System architecture (5 min)
@@ -49,6 +51,8 @@
 - [guides/LOCAL_DEVELOPMENT_SETUP.md](guides/LOCAL_DEVELOPMENT_SETUP.md) - Local dev setup
 - [guides/DEV_SERVER_MANAGEMENT.md](guides/DEV_SERVER_MANAGEMENT.md) - Dev server management
 - [guides/DEPLOYMENT_v1.8.0.md](guides/DEPLOYMENT_v1.8.0.md) - Deployment guide
+- [CONFIG_SETUP.md](CONFIG_SETUP.md) - Config file best practices
+- [PROD_CLEANUP_AND_CONFIG.md](PROD_CLEANUP_AND_CONFIG.md) - Production cleanup & config
 
 **Documentation:**
 - [guides/DOCUMENTATION_ORGANIZATION_GUIDE.md](guides/DOCUMENTATION_ORGANIZATION_GUIDE.md) - Root vs docs/ organization
@@ -128,8 +132,9 @@
 
 ### 📅 Planning & Roadmaps
 
-- [planning/FUTURE_VISION_AND_ROADMAP.md](planning/FUTURE_VISION_AND_ROADMAP.md) - Long-term vision
+- [planning/ITEMS_LEFT_TO_COMPLETE.md](planning/ITEMS_LEFT_TO_COMPLETE.md) - **Items left to complete**
 - [planning/ROADMAP.md](planning/ROADMAP.md) - Development roadmap
+- [planning/FUTURE_VISION_AND_ROADMAP.md](planning/FUTURE_VISION_AND_ROADMAP.md) - Long-term vision
 - [planning/API_TESTING_ROADMAP.md](planning/API_TESTING_ROADMAP.md) - API testing roadmap
 - [planning/Feature_EventPlanning_Product.md](planning/Feature_EventPlanning_Product.md) - Event planning feature
 - [planning/Feature_ArcherProfile.md](planning/Feature_ArcherProfile.md) - Archer profile feature

@@ -1,11 +1,12 @@
 # Archery Score Management Suite: Development Roadmap
 
 **Version:** 2.0
-**Date:** November 17, 2025
-**Status:** Updated with Extended Vision
+**Date:** February 2026
+**Status:** Updated with Feb 2026 work
 
 ---
 
+> **📋 Items left to complete:** See [ITEMS_LEFT_TO_COMPLETE.md](ITEMS_LEFT_TO_COMPLETE.md)  
 > **📚 For detailed future vision (2026+)**, see [FUTURE_VISION_AND_ROADMAP.md](FUTURE_VISION_AND_ROADMAP.md)
 
 This document outlines the planned phases for developing the Archery Score Management Suite.
@@ -94,6 +95,18 @@ This document outlines the planned phases for developing the Archery Score Manag
 
 **Production Release:** v1.4.0 (November 2025)  
 **Tailwind Migration Complete:** v1.6.0 (December 2025)
+
+## Phase 2.4: Games Events Enhancements ✅ COMPLETE (Feb 2026)
+
+**Goal:** Position filter and Import Roster Games for Games Events.
+
+**Status:** ✅ Complete (February 2026)
+
+**Delivered:**
+- ✅ Position filter (S1–S8, T1–T6) in Add Archers modal for Games Events
+- ✅ Import Roster Games CSV (column mapping, MySQL sync)
+- ✅ Assignment list: Active/Inactive/All filter, sort by School → Gender → VJV → Position
+- ✅ Deploy script safety (exclude dev folders, config), config best practices
 
 ## Phase 2.5: Event Tracking Dashboard 🚧 IN PLANNING (2026 Q1)
 

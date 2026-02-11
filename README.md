@@ -13,7 +13,8 @@
 ## 🚀 For Developers
 
 > **Starting a development session?**  
-> → See **[01-SESSION_QUICK_START.md](01-SESSION_QUICK_START.md)** for current state, active work, and session onboarding
+> → See **[01-SESSION_QUICK_START.md](01-SESSION_QUICK_START.md)** for current state and session onboarding  
+> **Quick starts:** [docs/QUICK_START_INDEX.md](docs/QUICK_START_INDEX.md) | **Items left:** [docs/planning/ITEMS_LEFT_TO_COMPLETE.md](docs/planning/ITEMS_LEFT_TO_COMPLETE.md)
 
 ---
 
@@ -342,7 +343,7 @@ open https://archery.tryentist.com/
 | [QUICK_START_LOCAL.md](QUICK_START_LOCAL.md) | Local development setup |
 | [DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md) | Git workflow & conventions |
 | [TECHNICAL_DOCUMENTATION.md](docs/TECHNICAL_DOCUMENTATION.md) | Legacy code analysis |
-| [ROADMAP.md](docs/ROADMAP.md) | Development phases |
+| [ROADMAP.md](docs/planning/ROADMAP.md) | Development phases |
 
 ### 🔐 Security & Auth
 
@@ -456,7 +457,7 @@ open https://archery.tryentist.com/
 - ⏳ Offline-first PWA
 - ⏳ Mobile native apps
 
-**Full Roadmap:** [ROADMAP.md](docs/ROADMAP.md)
+**Full Roadmap:** [ROADMAP.md](docs/planning/ROADMAP.md) | **Items Left:** [ITEMS_LEFT_TO_COMPLETE.md](docs/planning/ITEMS_LEFT_TO_COMPLETE.md)
 
 ---
 

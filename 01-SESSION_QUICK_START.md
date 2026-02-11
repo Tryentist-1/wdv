@@ -68,9 +68,18 @@
 
 ---
 
-## 🚨 Status Update (February 3, 2026)
+## 🚨 Status Update (February 2026)
 
-### ✅ Ranking Round Sync Fixes (fix/ranking-round-dropped-arrow-sync)
+### ✅ Games Events: Position Filter & Import Roster Games
+- **Position filter:** S1–S8, T1–T6 for Games Events in Add Archers modal
+- **Import Roster Games:** CSV import with column mapping, MySQL sync
+- **Assignment list:** Active/Inactive/All filter, sort by School → Gender → VJV → Position
+- **Deploy safety:** Excludes `.cursor`, `.agent`, `config.local.php`; `WDV_DEPLOY_SOURCE` env var
+- **Config:** `config.local.php.example`, `docs/CONFIG_SETUP.md`, prod cleanup guides
+
+**Items left:** [docs/planning/ITEMS_LEFT_TO_COMPLETE.md](docs/planning/ITEMS_LEFT_TO_COMPLETE.md)
+
+### ✅ Ranking Round Sync Fixes (February 3, 2026)
 
 - **Header:** Single alert — LOCAL Only (red) / Syncing (yellow) / Synced (green). Removed “Check server”; automatic background comparison with server.
 - **Footer:** Sync End validated (missing-arrow check), “All Arrows Synced” or “Error [desc]” feedback, event delegation so button always fires. Running total = sum of complete ends 1..current.
@@ -616,19 +625,15 @@
   - Fixed score colors in tables
   - Updated setup screens with consistent styling
 
-### 📅 What's Planned (Phase 2.5 & 3-6)
+### 📅 What's Planned
 
-**Phase 2.5: Event Tracking Dashboard** (Current Priority)
-- Holistic event overview with real-time progress tracking
-- See: [docs/EVENT_TRACKING_DETAILS_ENHANCEMENT_EVALUATION.md](docs/EVENT_TRACKING_DETAILS_ENHANCEMENT_EVALUATION.md)
+**See:** [docs/planning/ITEMS_LEFT_TO_COMPLETE.md](docs/planning/ITEMS_LEFT_TO_COMPLETE.md)
 
-**Phase 3-6:**
-See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
+- Phase 2.5: Event Tracking Dashboard
+- Phase 3: Coach-Athlete collaboration
+- Phase 4-6: Brackets, team season, mobile apps
 
-- Phase 3: Coach-Athlete collaboration (progress tracking, notes, goals)
-- Phase 4: Tournament brackets (auto-generation, live updates)
-- Phase 5: Team season management (dual meets, standings)
-- Phase 6: Mobile apps, advanced analytics
+**Full vision:** [docs/planning/FUTURE_VISION_AND_ROADMAP.md](docs/planning/FUTURE_VISION_AND_ROADMAP.md)
 
 ---
 
@@ -638,13 +643,14 @@ See: [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 
 ```
 /
-├── SESSION_QUICK_START.md          ← You are here! Start every session here
+├── 01-SESSION_QUICK_START.md       ← You are here! Start every session here
 ├── README.md                        ← Project overview
-└── docs/
-    ├── BALE_GROUP_SCORING_WORKFLOW.md              ← CRITICAL workflow
-    ├── APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md ← Master architecture
-    ├── FUTURE_VISION_AND_ROADMAP.md                ← Long-term vision
-    └── MODULE_COMPARISON_SUMMARY.md                ← Quick visual reference
+├── QUICK_START_LOCAL.md             ← Local dev setup
+├── docs/
+│   ├── QUICK_START_INDEX.md         ← Quick start guide index
+│   ├── core/BALE_GROUP_SCORING_WORKFLOW.md         ← CRITICAL workflow
+│   ├── core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md ← Master architecture
+│   └── planning/ITEMS_LEFT_TO_COMPLETE.md          ← Items left to do
 ```
 
 ### When Working On
