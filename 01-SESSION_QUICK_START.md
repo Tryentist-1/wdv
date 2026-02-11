@@ -79,6 +79,9 @@
 
 **Items left:** [docs/planning/ITEMS_LEFT_TO_COMPLETE.md](docs/planning/ITEMS_LEFT_TO_COMPLETE.md)
 
+**Open (when convenient):**
+- **Local PHP 8.5 vs prod 8.3:** Downgrade local to 8.3 to match prod (prod is capped at 8.3 in control panel). Reduces "works on my machine" surprises. Not blocking.
+
 ### ✅ Ranking Round Sync Fixes (February 3, 2026)
 
 - **Header:** Single alert — LOCAL Only (red) / Syncing (yellow) / Synced (green). Removed “Check server”; automatic background comparison with server.

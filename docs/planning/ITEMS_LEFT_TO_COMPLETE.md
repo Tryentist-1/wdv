@@ -18,6 +18,9 @@
 
 ## 🎯 Near-Term (Q1–Q2 2026)
 
+### Environment / DevOps
+- **Local PHP version alignment:** Downgrade local from 8.5 to 8.3 to match prod (prod capped at 8.3 in control panel). Not blocking; do when convenient.
+
 ### Event Dashboard (Phase 2.5)
 - Core dashboard with overview
 - Real-time updates and auto-refresh

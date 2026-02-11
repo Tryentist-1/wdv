@@ -2478,6 +2478,11 @@
       manageBales(event.id, event.name);
     };
 
+    // Print Bale Assignments button
+    document.getElementById('edit-print-bale-assignments-btn').onclick = () => {
+      showBaleAssignmentsPrint(event.id, event.name, event.date);
+    };
+
     // Delete Event button
     document.getElementById('edit-delete-event-btn').onclick = () => {
       deleteEvent(event.id, event.name);
@@ -2523,6 +2528,163 @@
         currentEditEventId = null;
       }
     };
+  }
+
+  // ==================== Bale Assignments Print ====================
+
+  /** Division code to display name mapping */
+  const DIVISION_LABELS = {
+    BVAR: 'Boys Varsity',
+    GVAR: 'Girls Varsity',
+    BJV: 'Boys JV',
+    GJV: 'Girls JV',
+    OPEN: 'Open (Mixed)'
+  };
+
+  /**
+   * Build a slot block HTML (photo + name when available).
+   * @param {string} target - A, B, C, or D
+   * @param {string} name - Archer name
+   * @param {string|null} photoUrl - Full URL to photo (or null)
+   * @param {string} baseUrl - Origin for relative URLs
+   * @returns {string} HTML string
+   */
+  function buildSlotHtml(target, name, photoUrl, baseUrl) {
+    const n = name || '—';
+    const imgSrc = photoUrl ? (photoUrl.startsWith('http') ? photoUrl : baseUrl + photoUrl) : '';
+    const imgHtml = imgSrc
+      ? `<img src="${imgSrc}" alt="${n}" class="bale-slot-photo" onerror="this.style.display='none'">`
+      : '';
+    return `
+      <div class="bale-slot">
+        <div class="bale-slot-label">${target}</div>
+        ${imgHtml}
+        <div class="bale-slot-name">${escapeHtml(n)}</div>
+      </div>
+    `;
+  }
+
+  /** Escape HTML for safe insertion */
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  /**
+   * Open bale assignments in a new window (standalone HTML) for correct print output.
+   * Includes photos when available. Similar to ScoreCards PDF approach but outputs HTML.
+   * @param {string} eventId - Event ID
+   * @param {string} eventName - Event name
+   * @param {string} eventDate - Event date (YYYY-MM-DD)
+   */
+  async function showBaleAssignmentsPrint(eventId, eventName, eventDate) {
+    const baseUrl = window.location.origin;
+
+    try {
+      const [data, archersResp] = await Promise.all([
+        req(`/events/${eventId}/snapshot`),
+        fetch(`${API_BASE}/archers`).then(r => r.ok ? r.json() : { archers: [] })
+      ]);
+
+      const divisions = data.divisions || {};
+      const photoUrlMap = {};
+      (archersResp.archers || []).forEach(a => {
+        if (a.id && a.photoUrl) photoUrlMap[a.id] = a.photoUrl;
+      });
+
+      if (Object.keys(divisions).length === 0) {
+        alert('No divisions with archers yet. Add archers to see bale assignments.');
+        return;
+      }
+
+      const dateStr = eventDate ? new Date(eventDate + 'T00:00:00').toLocaleDateString() : '';
+
+      let bodyHtml = '';
+      for (const [divCode, divData] of Object.entries(divisions)) {
+        const label = DIVISION_LABELS[divCode] || divCode;
+        const archers = divData.archers || [];
+
+        const bales = {};
+        for (const a of archers) {
+          const bale = a.bale || a.baleNumber || a.bale_number || 0;
+          if (!bales[bale]) bales[bale] = { A: {}, B: {}, C: {}, D: {} };
+          const target = (a.target || a.targetAssignment || a.target_assignment || 'A').toUpperCase().charAt(0);
+          const name = a.archerName || [a.firstName || a.first_name, a.lastName || a.last_name].filter(Boolean).join(' ') || '—';
+          const archerId = a.archerId || a.archer_id;
+          if (['A', 'B', 'C', 'D'].includes(target)) {
+            bales[bale][target] = { name, photoUrl: photoUrlMap[archerId] || null };
+          }
+        }
+
+        const baleNumbers = Object.keys(bales).map(Number).sort((a, b) => a - b);
+        bodyHtml += `<div class="division-section">`;
+        bodyHtml += `<h2 class="division-title">DIVISION ${escapeHtml(label.toUpperCase())}</h2>`;
+        bodyHtml += `<div class="bales-grid">`;
+
+        for (const baleNum of baleNumbers) {
+          const slots = bales[baleNum];
+          bodyHtml += `<div class="bale-block">`;
+          bodyHtml += `<div class="bale-header">BALE ${baleNum}</div>`;
+          bodyHtml += `<div class="bale-slots">`;
+          for (const t of ['A', 'B', 'C', 'D']) {
+            const s = slots[t] || {};
+            bodyHtml += buildSlotHtml(t, s.name, s.photoUrl || null, baseUrl);
+          }
+          bodyHtml += `</div></div>`;
+        }
+        bodyHtml += `</div></div>`;
+      }
+
+      const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bale Assignments - ${escapeHtml(eventName || 'Event')}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; margin: 1rem; color: #1f2937; max-width: 100%; }
+    .header { margin-bottom: 1.5rem; }
+    .header h1 { font-size: 1.5rem; margin: 0; }
+    .header .date { font-size: 1rem; color: #6b7280; margin-top: 0.25rem; }
+    .division-section { margin-bottom: 2rem; break-inside: avoid; }
+    .division-title { font-size: 1rem; font-weight: 700; border-bottom: 2px solid #9ca3af; padding-bottom: 0.5rem; margin: 0 0 1rem; }
+    .bales-grid { display: flex; flex-wrap: wrap; gap: 1rem; }
+    .bale-block { flex: 0 0 160px; width: 160px; min-width: 0; overflow: hidden; border: 2px solid #9ca3af; border-radius: 0.5rem; padding: 0.5rem; background: #f9fafb; }
+    .bale-header { font-size: 0.75rem; font-weight: 700; color: #6b7280; margin-bottom: 0.5rem; }
+    .bale-slots { display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem; }
+    .bale-slot { min-width: 0; overflow: hidden; border: 1px solid #d1d5db; border-radius: 0.25rem; padding: 0.375rem; text-align: center; min-height: 2.5rem; background: white; }
+    .bale-slot-label { font-size: 0.7rem; color: #6b7280; }
+    .bale-slot-photo { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin: 0.25rem auto; display: block; }
+    .bale-slot-name { font-size: 0.75rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .print-actions { margin-top: 1.5rem; display: flex; gap: 0.5rem; }
+    .btn { padding: 0.5rem 1rem; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; font-size: 0.875rem; }
+    .btn-print { background: #2563eb; color: white; }
+    .btn-close { background: #e5e7eb; color: #374151; }
+    @media print { .print-actions { display: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>${escapeHtml(eventName || 'Event')}</h1>
+    <div class="date">${escapeHtml(dateStr)}</div>
+  </div>
+  ${bodyHtml}
+  <div class="print-actions">
+    <button class="btn btn-print" onclick="window.print()">Print</button>
+    <button class="btn btn-close" onclick="window.close()">Close</button>
+  </div>
+</body>
+</html>`;
+
+      const win = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+      win.document.write(fullHtml);
+      win.document.close();
+    } catch (err) {
+      console.error('Error loading bale assignments:', err);
+      alert('Error loading bale assignments: ' + err.message);
+    }
   }
 
   // ==================== QR Code Display ====================
