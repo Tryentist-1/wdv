@@ -4,7 +4,7 @@
  */
 
 class TestDataManager {
-    constructor(apiBase = 'http://localhost:8001/api/v1') {
+    constructor(apiBase = process.env.API_BASE_URL || 'http://localhost:8001/api/index.php/v1') {
         this.apiBase = apiBase;
         this.createdResources = {
             archers: [],
@@ -150,7 +150,7 @@ class TestDataManager {
 
 // API Client utility
 class APIClient {
-    constructor(baseURL = 'http://localhost:8001/api/v1', defaultHeaders = {}) {
+    constructor(baseURL = process.env.API_BASE_URL || 'http://localhost:8001/api/index.php/v1', defaultHeaders = {}) {
         this.baseURL = baseURL;
         this.defaultHeaders = {
             'Content-Type': 'application/json',

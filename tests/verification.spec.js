@@ -303,7 +303,7 @@ test.describe('Verification API Endpoints', () => {
     // Get API base URL
     const apiBase = page.url().includes('localhost') 
       ? 'http://localhost:8001/api/index.php/v1'
-      : 'https://tryentist.com/wdv/api/v1';
+      : 'https://archery.tryentist.com/api/v1';
     
     // Note: This would need actual roundId and roundArcherId
     // For now, we'll test the endpoint structure exists

@@ -11,7 +11,7 @@ The WDV testing suite provides comprehensive testing coverage for the Archery Sc
 npm run serve
 
 # Component library (visual testing)
-open http://localhost:8001/style-guide.html
+open http://localhost:8001/tests/components/style-guide.html
 
 # Run all E2E tests
 npm test
@@ -46,9 +46,10 @@ npm run test:headed        # Visible browser testing
 # Component Tests
 open http://localhost:8001/style-guide.html  # Visual component library
 
-# API Tests
-./test_api.sh              # Production API health check
-./test_phase1_local.sh     # Local API testing
+# API Tests (start server first: npm run serve)
+./tests/scripts/test_api.sh           # Production API health check
+./tests/scripts/test_phase1_local.sh  # Local API testing
+npm run test:api:archers              # Jest API tests (requires server)
 
 # Manual Tests
 cat tests/manual_sanity_check.md  # Pre-deployment checklist
@@ -231,7 +232,7 @@ All tests are designed to work with the new UI/UX design and validate:
 ## 🔧 Configuration
 
 ### Playwright Configurations
-- **Production:** `playwright.config.js` → `https://tryentist.com/wdv`
+- **Production:** `playwright.config.js` → `https://archery.tryentist.com`
 - **Local:** `playwright.config.local.js` → `http://localhost:8001`
 
 ### Browser Matrix

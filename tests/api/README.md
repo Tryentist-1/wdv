@@ -15,8 +15,11 @@ This test suite provides comprehensive coverage of all 63 API endpoints with:
 
 ### Prerequisites
 ```bash
-# Start local development server
+# Start local development server (REQUIRED - API tests hit localhost)
 npm run serve
+
+# Optional: Set API base URL if different from default
+# export API_BASE_URL=http://localhost:8001/api/index.php/v1
 
 # Install test dependencies (if not already installed)
 npm install --save-dev jest supertest node-fetch
@@ -52,7 +55,6 @@ tests/api/
 ├── rounds/                  # Round management
 ├── events/                  # Event management
 ├── matches/                 # Solo/Team matches
-├── brackets/                # Bracket management
 ├── integration/             # Integration tests
 └── helpers/                 # Test utilities
     ├── test-data.js        # Test data management
@@ -91,13 +93,7 @@ tests/api/
 - Match verification
 - Set scoring
 
-### 6. Bracket Tests (`tests/api/brackets/`)
-- Bracket creation and management
-- Entry management
-- Bracket generation
-- Results tracking
-
-### 7. Integration Tests (`tests/api/integration/`)
+### 6. Integration Tests (`tests/api/integration/`)
 - Full workflow testing
 - Cross-entity relationships
 - Concurrent access testing

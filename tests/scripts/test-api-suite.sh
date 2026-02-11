@@ -65,10 +65,6 @@ run_test_suite() {
             print_header "RUNNING MATCH API TESTS"
             npm run test:api:matches
             ;;
-        "brackets")
-            print_header "RUNNING BRACKET API TESTS"
-            npm run test:api:brackets
-            ;;
         "integration")
             print_header "RUNNING INTEGRATION API TESTS"
             npm run test:api:integration
@@ -91,7 +87,6 @@ run_test_suite() {
             echo "  rounds      - Round management APIs"
             echo "  events      - Event management APIs"
             echo "  matches     - Solo/Team match APIs"
-            echo "  brackets    - Bracket management APIs"
             echo "  integration - Integration tests"
             echo "  all         - All API tests"
             echo "  coverage    - All tests with coverage report"

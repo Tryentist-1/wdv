@@ -1,3 +1,8 @@
+/**
+ * Jest config for API tests.
+ * API tests require a running server. Start with: npm run serve
+ * Optional: API_BASE_URL env var (default: http://localhost:8001/api/index.php/v1)
+ */
 module.exports = {
   testEnvironment: 'node',
   testMatch: [

@@ -3,7 +3,8 @@
 ## Pre-Deployment Verification
 
 ### 1. API Test Harness ✅
-- [ ] Open `https://archery.tryentist.com/api/test_harness.html` (or local)
+- [ ] **Prod:** Open `https://archery.tryentist.com/api/test_harness.html`
+- [ ] **Local:** Open `http://localhost:8001/api/test_harness.html` (with `npm run serve`)
 - [ ] Toggle to "Use Event Code"
 - [ ] Run Test 1: Health Check → ✅ 200 OK
 - [ ] Run Test 6: Full Workflow → ✅ All steps pass

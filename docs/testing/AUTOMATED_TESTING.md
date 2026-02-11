@@ -18,7 +18,7 @@ This project uses **Playwright** for automated browser testing to ensure the Ran
 ## 📋 **Test Coverage**
 
 ### Remote Tests (Production)
-Tests the live site: `https://tryentist.com/wdv`
+Tests the live site: `https://archery.tryentist.com`
 
 **Event Modal Tests:**
 - ✅ Shows modal on fresh start
@@ -44,17 +44,17 @@ Tests the live site: `https://tryentist.com/wdv`
 
 ## 🚀 **How to Run Tests**
 
-### **Before Deploying** (Local - Not Working Yet)
+### **Before Deploying** (Local)
 ```bash
+npm run serve   # Start server first
 npm run test:local
 ```
-> ⚠️ **Note**: Local testing requires disabling authentication on localhost:8000. Currently skipped.
 
 ### **After Deploying** (Remote - Production)
 ```bash
 npm test
 ```
-This runs tests against `https://tryentist.com/wdv` and is the **primary testing mode**.
+This runs tests against `https://archery.tryentist.com` and is the **primary testing mode**.
 
 ### **Interactive UI Mode**
 ```bash

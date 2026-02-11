@@ -12,52 +12,49 @@ tests/
 ├── README.md                     # Quick test commands and status
 ├── manual_sanity_check.md        # Pre-deployment checklist
 │
-├── e2e/                          # Playwright E2E Tests
+├── *.spec.js                     # Playwright E2E Tests (root)
 │   ├── ranking_round.spec.js     # Production ranking round tests
 │   ├── ranking_round.local.spec.js # Local development tests
 │   ├── ranking_round_setup_sections.spec.js # UI component tests
 │   ├── verification.spec.js      # Data validation tests
 │   └── diagnostic-ranking-round.spec.js # Diagnostic tests
 │
-├── unit/                         # QUnit Unit Tests
-│   ├── index.html               # QUnit test runner
-│   ├── test.js                  # Main unit test file
-│   ├── test_suites.js           # Test suite organization
-│   ├── qunit-2.20.0.js          # QUnit framework
-│   └── qunit-2.20.0.css         # QUnit styling
-│
-├── api/                          # API Testing
-│   ├── test_harness.html        # Interactive API testing UI
-│   ├── test_harness.php         # CLI API testing
-│   └── endpoints/               # Individual endpoint tests
+├── api/                          # Jest API Tests (require: npm run serve)
+│   ├── core/                     # Health, auth
+│   ├── archers/                  # Archer CRUD, search, bulk
+│   ├── rounds/                   # Round CRUD
+│   ├── events/                   # Event CRUD
+│   ├── matches/                  # Solo/Team matches
+│   ├── integration/              # Workflow tests
+│   ├── verification/             # Verification workflows
+│   └── helpers/test-data.js      # APIClient, TestAssertions
 │
 ├── components/                   # Component Testing
-│   ├── style-guide.html     # Visual component library
-│   ├── component-tests.md       # Component testing checklist
-│   └── mobile-testing.md        # Mobile-specific component tests
+│   └── style-guide.html          # Visual component library
 │
 ├── helpers/                      # Test Utilities
-│   ├── ranking_round_utils.js   # Ranking round test helpers
-│   ├── test-data-creation.js    # Test data generation
-│   └── mobile-test-utils.js     # Mobile testing utilities
+│   └── ranking_round_utils.js    # Ranking round test helpers
 │
-└── reports/                      # Test Reports & Results
-    ├── playwright-report/        # Playwright HTML reports
-    ├── test-results/            # Failed test artifacts
-    └── coverage/                # Code coverage reports
+├── scripts/                      # Test Scripts
+│   ├── test_api.sh               # Production API health
+│   ├── test_phase1_local.sh      # Local API smoke test
+│   ├── test-api-suite.sh         # Jest API runner
+│   └── test-workflow.sh          # Dev/pre/post deploy workflow
+│
+└── (playwright-report/, test-results/ - gitignored)
 ```
 
 ---
 
 ## 🎯 Test Categories & Responsibilities
 
-### 1. **E2E Tests** (`tests/e2e/`)
+### 1. **E2E Tests** (`tests/*.spec.js`)
 **Framework:** Playwright  
 **Purpose:** End-to-end user journey validation  
 **Scope:** Full application workflows
 
 **Files:**
-- `ranking_round.spec.js` - Production tests (42 tests)
+- `ranking_round.spec.js` - Production tests
 - `ranking_round.local.spec.js` - Local development tests
 - `ranking_round_setup_sections.spec.js` - UI component integration
 - `verification.spec.js` - Data validation and integrity
@@ -72,40 +69,24 @@ tests/
 - ✅ Mobile responsiveness
 - ✅ Cross-browser compatibility
 
-### 2. **Unit Tests** (`tests/unit/`)
-**Framework:** QUnit  
-**Purpose:** JavaScript function and logic testing  
-**Scope:** Individual functions and utilities
-
-**Files:**
-- `index.html` - QUnit test runner interface
-- `test.js` - Main unit test implementations
-- `test_suites.js` - Test suite organization
-
-**Coverage:**
-- JavaScript utility functions
-- Score calculations
-- Data processing logic
-- Component state management
-
-### 3. **API Tests** (`tests/api/`)
-**Framework:** Custom scripts + curl  
+### 2. **API Tests** (`tests/api/`)
+**Framework:** Jest + supertest  
 **Purpose:** Backend API validation  
 **Scope:** REST endpoints and data integrity
 
+**Requires:** Server running (`npm run serve`). Uses `API_BASE_URL` env (default: `http://localhost:8001/api/index.php/v1`).
+
 **Files:**
-- `test_harness.html` - Interactive browser-based API testing
-- `test_harness.php` - CLI-based API testing
-- Individual endpoint test files
+- `api/test_harness.html` - Interactive browser-based API testing
+- `tests/api/core/`, `archers/`, `rounds/`, etc. - Jest test files
 
 **Coverage:**
 - Authentication endpoints
 - CRUD operations
 - Data validation
 - Error handling
-- Performance testing
 
-### 4. **Component Tests** (`tests/components/`)
+### 3. **Component Tests** (`tests/components/`)
 **Framework:** Manual + Visual  
 **Purpose:** UI component validation  
 **Scope:** Visual consistency and mobile usability
@@ -134,29 +115,29 @@ npm run serve
 # 2. Component library check
 open http://localhost:8001/tests/components/style-guide.html
 
-# 3. Unit tests (fast feedback)
-open http://localhost:8001/tests/unit/index.html
-
-# 4. Local E2E tests
+# 3. Local E2E tests
 npm run test:local
 
-# 5. API tests
-./test_phase1_local.sh
+# 4. API tests (server must be running)
+./tests/scripts/test_phase1_local.sh
+npm run test:api:archers
 ```
 
 ### Pre-Deployment Workflow
 ```bash
 # 1. Full E2E test suite
-npm test
+npm run test:setup-sections
+npm run test:ranking-round
 
-# 2. API production health check
-./test_api.sh
+# 2. API tests (with server)
+npm run serve  # In another terminal
+npm run test:api:archers
 
-# 3. Manual sanity check
+# 3. Test harness (manual)
+open https://archery.tryentist.com/api/test_harness.html
+
+# 4. Manual sanity check
 cat tests/manual_sanity_check.md
-
-# 4. Component library verification
-open http://localhost:8001/tests/components/style-guide.html
 ```
 
 ### Post-Deployment Workflow
@@ -165,13 +146,10 @@ open http://localhost:8001/tests/components/style-guide.html
 npm run test:remote
 
 # 2. Production API check
-./test_api.sh
+./tests/scripts/test_api.sh
 
-# 3. Production component library
-open https://tryentist.com/wdv/style-guide.html
-
-# 4. Test report generation
-./scripts/test-summary.sh
+# 3. Production test harness
+open https://archery.tryentist.com/api/test_harness.html
 ```
 
 ---
@@ -290,7 +268,7 @@ open http://localhost:8001/tests/components/style-guide.html
 
 ### Playwright Configurations
 - **Production:** `playwright.config.js`
-  - Base URL: `https://tryentist.com/wdv`
+  - Base URL: `https://archery.tryentist.com`
   - Full browser matrix
   - Production-ready settings
 
