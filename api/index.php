@@ -3825,7 +3825,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
     $divisions = [];
 
     foreach ($rs as $r) {
-        $divCode = $r['division'];
+        $divCode = $r['division'] ?? 'UNKNOWN'; // Avoid null array key (PHP 8.1+ deprecation)
 
         // Get archers for this division round
         // IMPORTANT: If duplicates exist (same archer_id), prefer the one WITH bale/target
