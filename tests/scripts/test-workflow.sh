@@ -70,7 +70,7 @@ development_workflow() {
     # 2. Component library verification
     print_info "Step 2: Component library verification"
     echo "Opening component library for visual verification..."
-    echo "URL: http://localhost:8001/style-guide.html"
+    echo "URL: http://localhost:8001/tests/components/style-guide.html"
     echo "Please verify:"
     echo "  - All components render correctly"
     echo "  - Dark/light mode toggle works"
@@ -82,7 +82,7 @@ development_workflow() {
     # 3. Unit tests
     print_info "Step 3: Running unit tests"
     echo "Opening QUnit test runner..."
-    echo "URL: http://localhost:8001/tests/unit/index.html"
+    echo "URL: http://localhost:8001/tests/index.html"
     echo "Please verify all unit tests pass"
     read -p "Press Enter when unit tests are verified..."
     print_success "Unit tests verified"
@@ -99,7 +99,7 @@ development_workflow() {
     
     # 5. API tests
     print_info "Step 5: Running local API tests"
-    if ./test_phase1_local.sh; then
+    if ./tests/scripts/test_phase1_local.sh; then
         print_success "Local API tests passed"
     else
         print_error "Local API tests failed"
@@ -112,7 +112,7 @@ development_workflow() {
     echo "Next steps:"
     echo "  - Continue development"
     echo "  - Run pre-deployment tests before deploying"
-    echo "  - Use './test-workflow.sh pre-deployment' when ready"
+    echo "  - Use 'npm run test:workflow:pre' or './tests/scripts/test-workflow.sh pre-deployment' when ready"
 }
 
 # Pre-deployment workflow
@@ -142,7 +142,7 @@ pre_deployment_workflow() {
     
     # 3. API health check
     print_info "Step 3: Running API health check"
-    if ./test_api.sh; then
+    if ./tests/scripts/test_api.sh; then
         print_success "API health check passed"
     else
         print_error "API health check failed"
@@ -166,7 +166,7 @@ pre_deployment_workflow() {
     # 5. Component library production check
     print_info "Step 5: Component library production verification"
     echo "Please verify component library on production:"
-    echo "URL: https://archery.tryentist.com/style-guide.html"
+    echo "URL: https://archery.tryentist.com/tests/components/style-guide.html (local: http://localhost:8001/tests/components/style-guide.html)"
     read -p "Press Enter when production component library is verified..."
     print_success "Production component library verified"
     
@@ -175,7 +175,7 @@ pre_deployment_workflow() {
     echo "✅ Ready for deployment!"
     echo "Next steps:"
     echo "  - Deploy: ./DeployFTP.sh"
-    echo "  - Run post-deployment tests: './test-workflow.sh post-deployment'"
+    echo "  - Run post-deployment tests: npm run test:workflow:post"
 }
 
 # Post-deployment workflow
@@ -197,7 +197,7 @@ post_deployment_workflow() {
     
     # 2. Production API health check
     print_info "Step 2: Running production API health check"
-    if ./test_api.sh; then
+    if ./tests/scripts/test_api.sh; then
         print_success "Production API health check passed"
     else
         print_error "Production API health check failed"
@@ -208,7 +208,7 @@ post_deployment_workflow() {
     # 3. Production component library
     print_info "Step 3: Production component library verification"
     echo "Verifying production component library..."
-    echo "URL: https://archery.tryentist.com/style-guide.html"
+    echo "URL: https://archery.tryentist.com/tests/components/style-guide.html"
     echo "Please verify:"
     echo "  - All components load correctly"
     echo "  - Styling is consistent"
@@ -219,8 +219,8 @@ post_deployment_workflow() {
     
     # 4. Cache purge (if available)
     print_info "Step 4: Cache purge"
-    if [ -f "./test_cloudflare.sh" ]; then
-        if ./test_cloudflare.sh; then
+    if [ -f "./tests/scripts/test_cloudflare.sh" ]; then
+        if ./tests/scripts/test_cloudflare.sh; then
             print_success "Cloudflare cache purged successfully"
         else
             print_warning "Cache purge failed - may need manual intervention"
@@ -245,7 +245,7 @@ post_deployment_workflow() {
     echo "Production URLs:"
     echo "  - Main app: https://archery.tryentist.com/"
     echo "  - Coach console: https://archery.tryentist.com/coach.html"
-    echo "  - Component library: https://archery.tryentist.com/style-guide.html"
+    echo "  - Component library: https://archery.tryentist.com/tests/components/style-guide.html"
     echo "  - Live results: https://archery.tryentist.com/results.html"
 }
 
@@ -276,9 +276,8 @@ main() {
             echo "  ./test-workflow.sh post-deployment"
             echo ""
             echo "For more information, see:"
-            echo "  - TESTING_STRATEGY.md"
+            echo "  - docs/testing/TESTING_GUIDE.md"
             echo "  - tests/TEST_ORGANIZATION.md"
-            echo "  - tests/README.md"
             ;;
     esac
 }

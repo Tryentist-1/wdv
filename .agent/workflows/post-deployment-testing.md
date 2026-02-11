@@ -57,7 +57,7 @@ Verify API endpoints are working:
 
 ### 3. Production Component Library Verification
 
-**URL:** https://archery.tryentist.com/style-guide.html
+**URL:** https://archery.tryentist.com/tests/components/style-guide.html (if deployed; tests/ is excluded from deploy by default)
 
 **Verify:**
 - [ ] All components load correctly
@@ -73,7 +73,7 @@ Verify API endpoints are working:
 If Cloudflare cache purge script is available:
 
 ```bash
-./test_cloudflare.sh
+./tests/scripts/test_cloudflare.sh
 ```
 
 **Or manually purge cache via Cloudflare dashboard**
@@ -87,6 +87,8 @@ If Cloudflare cache purge script is available:
 ```bash
 ./tests/scripts/test-summary.sh
 ```
+
+**Note:** Run from project root.
 
 **What it does:** Generates a summary report of all test results
 
@@ -317,8 +319,8 @@ After successful deployment:
 
 ## References
 
+- **Canonical:** [docs/testing/TESTING_GUIDE.md](../docs/testing/TESTING_GUIDE.md)
 - **Deployment Checklist:** `DEPLOYMENT_CHECKLIST.md`
-- **Testing Strategy:** `docs/testing/TESTING_STRATEGY.md`
 - **Manual Testing:** `docs/testing/MANUAL_TESTING_CHECKLIST.md`
 - **Automated Tests:** `tests/README.md`
 - **Test Workflow Script:** `tests/scripts/test-workflow.sh`

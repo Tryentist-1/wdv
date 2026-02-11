@@ -39,7 +39,8 @@ appliesTo: "*"
 - [ ] Checked `tests/components/style-guide.html` before adding new UI
 
 ### 6. Testing ✅
-- [ ] Automated tests pass (if applicable)
+- [ ] Pre-deploy suite passes: `npm run test:pre-deploy`
+- [ ] API tests pass when server running (if backend changed): `npm run test:api:archers`
 - [ ] Tested on actual mobile device
 - [ ] Tested in dark mode and light mode
 - [ ] Edge cases handled (empty inputs, invalid data, etc.)
@@ -101,6 +102,7 @@ appliesTo: "*"
 - **Tech Stack:** `.cursor/rules/tech-stack-constraints.mdc`
 - **Git Workflow:** `.cursor/rules/git-workflow.mdc`
 - **Testing:** `.cursor/rules/testing-requirements.mdc`
+- **Testing Guide (canonical):** `docs/testing/TESTING_GUIDE.md`
 - **Deployment:** `DEPLOYMENT_CHECKLIST.md`
 
 ---

@@ -5,28 +5,49 @@ appliesTo: "*.js,*.php,*.html"
 
 # Testing Requirements
 
+## Single Source of Truth
+
+**MANDATORY:** [docs/testing/TESTING_GUIDE.md](../../docs/testing/TESTING_GUIDE.md) is the canonical testing reference. When tests or scripts change, that document MUST be updated. Do not skip.
+
+## Document Sync Rule (MANDATORY)
+
+**When you add, move, or remove tests:**
+1. Update `docs/testing/TESTING_GUIDE.md` — add/remove test files, fix commands.
+2. Update `tests/TEST_ORGANIZATION.md` if structure changed.
+3. Update `package.json` if adding/changing scripts.
+
+**When you add or change test scripts:**
+- Use path `./tests/scripts/<script>.sh` (never `./test_xyz.sh` at root).
+- Document in TESTING_GUIDE.md.
+
+---
+
 ## Testing Philosophy
 
 **QA Lead Mindset:** All changes must be reviewed with testing in mind before production.
 
 ### Before Deployment
 
-1. **Local Tests:**
+1. **Pre-deploy suite (MANDATORY):**
    ```bash
-   npm run test:setup-sections  # Setup sections tests
-   npm run test:ranking-round   # Ranking round tests
-   npm run serve               # Start server (required for API tests)
-   npm run test:api:archers     # API tests (or test:api:all)
+   npm run test:pre-deploy
+   ```
+   Runs: Playwright setup + ranking round + production API health check.
+
+2. **Full local tests (when changing API/backend):**
+   ```bash
+   npm run serve               # Terminal 1: Start server (REQUIRED for API tests)
+   npm run test:api:archers    # Terminal 2: API tests (or test:api:all)
    ```
    **Note:** API tests require a running server. Use `API_BASE_URL` env if your local API differs from `http://localhost:8001/api/index.php/v1`.
 
-2. **Manual Smoke Test:**
+3. **Manual Smoke Test:**
    - Test on actual mobile device (iPhone SE minimum)
    - Test full workflow from setup to verification
    - Test offline/online sync behavior
    - Test dark mode and light mode
 
-3. **Code Quality:**
+4. **Code Quality:**
    - No console errors on key pages
    - No lint errors
    - All changes committed to git
@@ -38,21 +59,21 @@ appliesTo: "*.js,*.php,*.html"
 - Located in `tests/` directory
 - Use Jest or QUnit as appropriate
 
-### Integration Tests
-- API endpoints tested via `tests/api/`
-- Use test harness: `api/test_harness.html`
+### Integration Tests (API)
+- API endpoints tested via `tests/api/**/*.test.js` (Jest)
+- Test harness (local): `http://localhost:8001/tests/api/harness/test_harness.html`
 - Test full workflows, not just individual endpoints
 
 ### E2E Tests
-- Playwright tests in `tests/` directory
+- Playwright tests in `tests/*.spec.js`
 - Test user workflows end-to-end
 - Test mobile interactions
 
 ## Testing Checklist
 
 Before marking feature complete:
-- [ ] Unit tests pass
-- [ ] Integration tests pass
+- [ ] Pre-deploy suite passes: `npm run test:pre-deploy`
+- [ ] API tests pass (if server running): `npm run test:api:archers`
 - [ ] Tested on mobile device
 - [ ] Tested in dark mode
 - [ ] Tested offline behavior
@@ -71,10 +92,7 @@ Before marking feature complete:
 
 ## References
 
-- Test organization: `tests/TEST_ORGANIZATION.md`
-- Deployment checklist: `DEPLOYMENT_CHECKLIST.md`
-- Testing strategy: `docs/testing/TESTING_STRATEGY.md`
-
-
-
-
+- **Canonical:** [docs/testing/TESTING_GUIDE.md](../../docs/testing/TESTING_GUIDE.md)
+- **Test lifecycle:** [.agent/workflows/test-lifecycle.md](../../.agent/workflows/test-lifecycle.md)
+- **Test structure:** [tests/TEST_ORGANIZATION.md](../../tests/TEST_ORGANIZATION.md)
+- **Deployment:** [DEPLOYMENT_CHECKLIST.md](../../DEPLOYMENT_CHECKLIST.md)

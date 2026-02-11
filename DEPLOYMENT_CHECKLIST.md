@@ -3,27 +3,24 @@
 ## Pre-Deployment Verification
 
 ### 1. API Test Harness ✅
-- [ ] **Prod:** Open `https://archery.tryentist.com/api/test_harness.html`
-- [ ] **Local:** Open `http://localhost:8001/api/test_harness.html` (with `npm run serve`)
+- [ ] **Prod:** Open `https://archery.tryentist.com/api/test_harness.html` (if deployed)
+- [ ] **Local:** Open `http://localhost:8001/tests/api/harness/test_harness.html` (with `npm run serve`)
 - [ ] Toggle to "Use Event Code"
 - [ ] Run Test 1: Health Check → ✅ 200 OK
 - [ ] Run Test 6: Full Workflow → ✅ All steps pass
 
 ### 2. Local Tests ✅
 ```bash
-# Setup sections tests
-npm run test:setup-sections
-# Expected: 42/42 passed
+# Pre-deploy suite (MANDATORY)
+npm run test:pre-deploy
+# Runs: setup sections + ranking round + production API health
 
-# Main ranking round tests  
-npm run test:ranking-round
-# Expected: Most pass (3 QR code tests may need event setup)
-
-# API tests (CRITICAL for field validation)
-npm run test:api:archers
+# API tests (CRITICAL for field validation — start server first)
+npm run serve  # Terminal 1
+npm run test:api:archers  # Terminal 2
 # Expected: All archer endpoint tests pass, including self-update
 
-# Field completeness check (if available)
+# Full API suite (optional)
 npm run test:api:all
 # Expected: No missing field errors
 ```

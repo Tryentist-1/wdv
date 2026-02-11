@@ -2,14 +2,7 @@
 
 Comprehensive testing for WDV Archery Score Management API endpoints.
 
-## Overview
-
-This test suite provides comprehensive coverage of all 63 API endpoints with:
-- **Core functionality testing** (health, authentication)
-- **CRUD operation testing** (create, read, update, delete)
-- **Error scenario testing** (validation, authorization)
-- **Integration testing** (full workflows)
-- **Performance testing** (response times, load)
+**Canonical reference:** [docs/testing/TESTING_GUIDE.md](../../docs/testing/TESTING_GUIDE.md)
 
 ## Quick Start
 
@@ -20,207 +13,77 @@ npm run serve
 
 # Optional: Set API base URL if different from default
 # export API_BASE_URL=http://localhost:8001/api/index.php/v1
-
-# Install test dependencies (if not already installed)
-npm install --save-dev jest supertest node-fetch
 ```
 
 ### Run Tests
 ```bash
 # Run all API tests
-./scripts/test-api-suite.sh all
+./tests/scripts/test-api-suite.sh all
 
 # Run specific test categories
-./scripts/test-api-suite.sh core      # Health & authentication
-./scripts/test-api-suite.sh archers   # Archer management
-./scripts/test-api-suite.sh rounds    # Round management
-./scripts/test-api-suite.sh events    # Event management
+./tests/scripts/test-api-suite.sh core      # Health & authentication
+./tests/scripts/test-api-suite.sh archers   # Archer management
+./tests/scripts/test-api-suite.sh rounds    # Round management
+./tests/scripts/test-api-suite.sh events    # Event management
+./tests/scripts/test-api-suite.sh matches   # Solo/Team matches
+./tests/scripts/test-api-suite.sh scoring   # Match scoring
+./tests/scripts/test-api-suite.sh verification # Verification workflows
+./tests/scripts/test-api-suite.sh integration # Integration tests
 
-# Run with coverage report
-./scripts/test-api-suite.sh coverage
+# Or use npm scripts
+npm run test:api:core
+npm run test:api:archers
+npm run test:api:all
 ```
 
 ## Test Structure
 
 ```
 tests/api/
-├── core/                    # Core functionality
-│   ├── health.test.js      # Health check endpoint
-│   ├── authentication.test.js # Auth & authorization
-│   └── error-handling.test.js # Error scenarios
-├── archers/                 # Archer management
-│   ├── archer-crud.test.js # CRUD operations
-│   ├── archer-search.test.js # Search functionality
-│   └── archer-bulk-operations.test.js # Bulk operations
-├── rounds/                  # Round management
-├── events/                  # Event management
-├── matches/                 # Solo/Team matches
-├── integration/             # Integration tests
-└── helpers/                 # Test utilities
-    ├── test-data.js        # Test data management
-    └── api-client.js       # API client utilities
+├── core/                    # Health, authentication
+│   ├── health.test.js
+│   └── authentication.test.js
+├── archers/                  # Archer CRUD, search, bulk, self-update
+│   ├── archer-crud.test.js
+│   ├── archer-crud-extended.test.js
+│   ├── archer-search.test.js
+│   ├── archer-bulk-operations.test.js
+│   └── archer-self-update.test.js
+├── rounds/                   # Round CRUD
+│   ├── round-crud.test.js
+│   └── round-archers.test.js
+├── events/                   # Event CRUD, verification
+│   ├── event-crud.test.js
+│   └── event-verification.test.js
+├── matches/                  # Solo/Team matches
+│   ├── solo-matches.test.js
+│   ├── team-matches.test.js
+│   └── match-integration.test.js
+├── scoring/                  # Match scoring
+│   ├── match-scoring.test.js
+│   ├── scoring-validation.test.js
+│   ├── scoring-workflows.test.js
+│   └── scoring-performance.test.js
+├── verification/             # Verification workflows
+│   ├── solo-match-verification-smoke.test.js
+│   ├── verification-workflows.test.js
+│   └── verification-security.test.js
+├── integration/              # Workflow tests
+│   ├── event-round-integration.test.js
+│   └── workflow-validation.test.js
+├── helpers/
+│   └── test-data.js         # APIClient, TestAssertions, TestDataManager
+├── harness/
+│   └── test_harness.html    # Browser-based API testing (local)
+└── setup.js                 # Jest setup
 ```
 
-## Test Categories
+## Environment Variables
 
-### 1. Core Tests (`tests/api/core/`)
-- Health check endpoint
-- Authentication methods (API key, passcode)
-- Authorization validation
-- Error handling
-
-### 2. Archer Tests (`tests/api/archers/`)
-- Archer CRUD operations
-- Search functionality
-- Bulk operations
-- Data validation
-
-### 3. Round Tests (`tests/api/rounds/`)
-- Round creation and management
-- Archer assignment
-- Scoring workflows
-- Verification processes
-
-### 4. Event Tests (`tests/api/events/`)
-- Event creation and management
-- Event-round relationships
-- Event snapshots
-- QR code generation
-
-### 5. Match Tests (`tests/api/matches/`)
-- Solo match workflows
-- Team match workflows
-- Match verification
-- Set scoring
-
-### 6. Integration Tests (`tests/api/integration/`)
-- Full workflow testing
-- Cross-entity relationships
-- Concurrent access testing
-- Performance validation
-
-## Test Utilities
-
-### TestDataManager
-Provides consistent test data creation:
-```javascript
-const testData = new TestDataManager();
-const archer = testData.createTestArcher();
-const round = testData.createTestRound();
-```
-
-### APIClient
-Simplified API interaction:
-```javascript
-const client = new APIClient();
-const authClient = client.withPasscode('wdva26');
-const response = await authClient.post('/rounds', roundData);
-```
-
-### TestAssertions
-Common test assertions:
-```javascript
-TestAssertions.expectSuccess(response);
-TestAssertions.expectValidationError(response);
-TestAssertions.expectValidUUID(id);
-```
-
-## Coverage Goals
-
-### Current Status
-- **Endpoint Coverage:** 15% (10/63 endpoints)
-- **Scenario Coverage:** Basic happy path only
-- **Error Coverage:** Limited
-
-### Target Status
-- **Endpoint Coverage:** 100% (63/63 endpoints)
-- **Scenario Coverage:** 85% (happy path + error scenarios)
-- **Error Coverage:** 80% (all major error cases)
-
-## Running Individual Tests
-
-```bash
-# Run specific test file
-npx jest tests/api/core/health.test.js
-
-# Run tests matching pattern
-npx jest --testNamePattern="authentication"
-
-# Run with verbose output
-npx jest tests/api/archers --verbose
-
-# Run with coverage
-npx jest tests/api --coverage
-```
-
-## Configuration
-
-### Jest Configuration (`jest.config.js`)
-- Test environment: Node.js
-- Test timeout: 30 seconds
-- Coverage reporting: HTML, LCOV, text
-- Test pattern: `tests/api/**/*.test.js`
-
-### Environment Variables
-- `API_BASE_URL` - API base URL (default: http://localhost:8001/api/v1)
-- `API_KEY` - API key for authenticated tests
-- `PASSCODE` - Passcode for authenticated tests
-
-## Best Practices
-
-### Test Data
-- Use TestDataManager for consistent data
-- Clean up created resources after tests
-- Use unique identifiers to avoid conflicts
-
-### Assertions
-- Use TestAssertions for common validations
-- Test both success and error scenarios
-- Validate response structure and data types
-
-### Performance
-- Set reasonable timeouts (30 seconds)
-- Test response times for critical endpoints
-- Monitor memory usage during bulk operations
+- `API_BASE_URL` - API base URL (default: `http://localhost:8001/api/index.php/v1`)
 
 ## Troubleshooting
 
-### Common Issues
+**"fetch failed" / ECONNREFUSED:** Server not running. Run `npm run serve` in another terminal.
 
-**Server not running:**
-```bash
-npm run serve
-```
-
-**Tests timing out:**
-- Check server is responding
-- Increase timeout in jest.config.js
-- Check for infinite loops in test code
-
-**Authentication failures:**
-- Verify API key and passcode in test configuration
-- Check server authentication configuration
-
-**Database conflicts:**
-- Ensure test data cleanup is working
-- Use unique identifiers for test data
-- Consider using test database
-
-## Contributing
-
-### Adding New Tests
-1. Create test file in appropriate category directory
-2. Use TestDataManager for test data
-3. Use APIClient for API calls
-4. Use TestAssertions for validations
-5. Add cleanup in afterAll hooks
-
-### Test Naming
-- Use descriptive test names
-- Group related tests in describe blocks
-- Use consistent naming patterns
-
-### Documentation
-- Document complex test scenarios
-- Update coverage goals when adding tests
-- Keep README updated with new test categories
+**401 on endpoints:** Tests that create rounds/events need auth. Use `withPasscode()` or `withApiKey()` on APIClient.

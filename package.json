@@ -13,6 +13,7 @@
     "docker:up": "docker-compose up -d",
     "serve": "php -S localhost:8001 router.php",
     "test": "playwright test --grep-invert 'LOCAL'",
+    "test:pre-deploy": "npm run test:setup-sections && npm run test:ranking-round && ./tests/scripts/test_api.sh",
     "test:all": "playwright test",
     "test:api:all": "jest tests/api --verbose",
     "test:api:archers": "jest tests/api/archers --verbose",

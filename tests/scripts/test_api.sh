@@ -1,15 +1,28 @@
 #!/bin/bash
-echo "=== Testing Ranking Round API Endpoints ==="
+# Production API health check
+# Tests: https://archery.tryentist.com/api/v1/
+# Usage: ./tests/scripts/test_api.sh (run from project root)
 
-echo -e "\n1. Testing /events/recent (public)..."
-curl -s "https://tryentist.com/wdv/api/v1/events/recent" | python3 -m json.tool | head -20
+API_BASE="${API_BASE_URL:-https://archery.tryentist.com/api/v1}"
+set -e
 
-echo -e "\n2. Testing /events/verify with 'tuesday' code..."
-curl -s -X POST "https://tryentist.com/wdv/api/v1/events/verify" \
-  -H "Content-Type: application/json" \
-  -d '{"eventId":"2e43821b-7b2f-4341-87e2-f85fe0831d76","entryCode":"tuesday"}' | python3 -m json.tool
+echo "=== Production API Health Check ==="
+echo "Base: $API_BASE"
+echo ""
 
-echo -e "\n3. Testing event snapshot..."
-curl -s "https://tryentist.com/wdv/api/v1/events/2e43821b-7b2f-4341-87e2-f85fe0831d76/snapshot" | python3 -m json.tool | head -30
+echo "1. GET /health..."
+HTTP=$(curl -s -o /dev/null -w "%{http_code}" "$API_BASE/health")
+if [ "$HTTP" = "200" ]; then
+  echo "   ✅ 200 OK"
+  curl -s "$API_BASE/health" | python3 -m json.tool 2>/dev/null || curl -s "$API_BASE/health"
+else
+  echo "   ❌ $HTTP (expected 200)"
+  exit 1
+fi
 
-echo -e "\n=== All tests complete ==="
+echo ""
+echo "2. GET /events/recent (public)..."
+curl -s "$API_BASE/events/recent" | python3 -m json.tool | head -25
+
+echo ""
+echo "=== All checks complete ==="

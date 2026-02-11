@@ -2,6 +2,8 @@
 
 **Purpose:** Organize and structure all testing approaches for WDV Archery Score Management
 
+**Canonical reference:** [docs/testing/TESTING_GUIDE.md](../docs/testing/TESTING_GUIDE.md) — single source of truth. Update this file when structure changes.
+
 ---
 
 ## 📁 Test Directory Structure
@@ -14,20 +16,28 @@ tests/
 │
 ├── *.spec.js                     # Playwright E2E Tests (root)
 │   ├── ranking_round.spec.js     # Production ranking round tests
-│   ├── ranking_round.local.spec.js # Local development tests
-│   ├── ranking_round_setup_sections.spec.js # UI component tests
-│   ├── verification.spec.js      # Data validation tests
-│   └── diagnostic-ranking-round.spec.js # Diagnostic tests
+│   ├── ranking_round.local.spec.js # Local development tests (@LOCAL)
+│   ├── ranking_round_setup_sections.spec.js # Setup UI components
+│   ├── ranking_round_archer_selector.spec.js # Archer selector
+│   ├── ranking_round_live_sync.spec.js # Live sync E2E
+│   ├── resume_round_flow.spec.js # Resume from index
+│   ├── resume_round_standalone_flow.spec.js # Standalone round resume
+│   ├── verification.spec.js      # Verification, locking
+│   ├── smart_reconnect.spec.js   # Reconnect flow
+│   ├── archer_results_pivot.spec.js # Results pivot
+│   └── diagnostic-ranking-round.spec.js # Diagnostics
 │
 ├── api/                          # Jest API Tests (require: npm run serve)
 │   ├── core/                     # Health, auth
-│   ├── archers/                  # Archer CRUD, search, bulk
+│   ├── archers/                  # Archer CRUD, search, bulk, self-update
 │   ├── rounds/                   # Round CRUD
 │   ├── events/                   # Event CRUD
 │   ├── matches/                  # Solo/Team matches
+│   ├── scoring/                  # Match scoring, validation, workflows
 │   ├── integration/              # Workflow tests
 │   ├── verification/             # Verification workflows
-│   └── helpers/test-data.js      # APIClient, TestAssertions
+│   ├── helpers/test-data.js      # APIClient, TestAssertions, TestDataManager
+│   └── harness/test_harness.html # Browser-based API testing (local)
 │
 ├── components/                   # Component Testing
 │   └── style-guide.html          # Visual component library
@@ -35,11 +45,12 @@ tests/
 ├── helpers/                      # Test Utilities
 │   └── ranking_round_utils.js    # Ranking round test helpers
 │
-├── scripts/                      # Test Scripts
+├── scripts/                      # Test Scripts (run from project root)
 │   ├── test_api.sh               # Production API health
 │   ├── test_phase1_local.sh      # Local API smoke test
 │   ├── test-api-suite.sh         # Jest API runner
-│   └── test-workflow.sh          # Dev/pre/post deploy workflow
+│   ├── test-workflow.sh          # Dev/pre/post deploy workflow
+│   └── test-summary.sh           # Test summary report
 │
 └── (playwright-report/, test-results/ - gitignored)
 ```
@@ -77,8 +88,8 @@ tests/
 **Requires:** Server running (`npm run serve`). Uses `API_BASE_URL` env (default: `http://localhost:8001/api/index.php/v1`).
 
 **Files:**
-- `api/test_harness.html` - Interactive browser-based API testing
-- `tests/api/core/`, `archers/`, `rounds/`, etc. - Jest test files
+- `tests/api/harness/test_harness.html` - Interactive browser-based API testing (local only)
+- `tests/api/core/`, `archers/`, `rounds/`, `events/`, `matches/`, `scoring/`, `integration/`, `verification/` - Jest test files
 
 **Coverage:**
 - Authentication endpoints
@@ -92,9 +103,7 @@ tests/
 **Scope:** Visual consistency and mobile usability
 
 **Files:**
-- `style-guide.html` - Complete component showcase
-- `component-tests.md` - Component testing checklist
-- `mobile-testing.md` - Mobile-specific testing guide
+- `tests/components/style-guide.html` - Complete component showcase
 
 **Coverage:**
 - All UI components
@@ -125,16 +134,15 @@ npm run test:api:archers
 
 ### Pre-Deployment Workflow
 ```bash
-# 1. Full E2E test suite
-npm run test:setup-sections
-npm run test:ranking-round
+# 1. Pre-deploy suite (MANDATORY)
+npm run test:pre-deploy
 
-# 2. API tests (with server)
+# 2. API tests (with server, when changing backend)
 npm run serve  # In another terminal
 npm run test:api:archers
 
-# 3. Test harness (manual)
-open https://archery.tryentist.com/api/test_harness.html
+# 3. Test harness (manual, local)
+open http://localhost:8001/tests/api/harness/test_harness.html
 
 # 4. Manual sanity check
 cat tests/manual_sanity_check.md
@@ -217,8 +225,8 @@ open http://localhost:8001/tests/components/style-guide.html
 # Verify components before E2E tests
 npm test
 
-# Production component verification
-open https://tryentist.com/wdv/style-guide.html
+# Production component verification (if deployed)
+open https://archery.tryentist.com/tests/components/style-guide.html
 ```
 
 ---
@@ -256,7 +264,7 @@ reports/
 npx playwright show-report
 
 # Generate test summary
-./scripts/test-summary.sh
+./tests/scripts/test-summary.sh
 
 # View component library
 open http://localhost:8001/tests/components/style-guide.html
@@ -349,6 +357,9 @@ npm run test:headed        # See tests execute
 
 ### Essential Commands
 ```bash
+# Pre-deploy (MANDATORY)
+npm run test:pre-deploy
+
 # Start development
 npm run serve
 
@@ -362,17 +373,17 @@ npm test
 npm run test:ui
 
 # Test summary
-./scripts/test-summary.sh
+./tests/scripts/test-summary.sh
 ```
 
 ### Key Files
-- `TESTING_STRATEGY.md` - Complete testing overview
+- **[docs/testing/TESTING_GUIDE.md](../docs/testing/TESTING_GUIDE.md)** - Canonical testing reference (MANDATORY)
+- **[.agent/workflows/test-lifecycle.md](../.agent/workflows/test-lifecycle.md)** - Creating, running, troubleshooting
 - `tests/manual_sanity_check.md` - Pre-deployment checklist
-- `style-guide.html` - Component library
 - `tests/README.md` - Test suite documentation
 
 ---
 
-**Last Updated:** November 21, 2025  
+**Last Updated:** February 2026  
 **Status:** Test Organization Complete  
 **Next:** Documentation integration and workflow refinement

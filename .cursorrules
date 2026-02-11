@@ -35,7 +35,7 @@ Before suggesting ANY code changes or commits, you MUST verify:
 Before suggesting deployment:
 
 1. **Code Review Checklist:** Complete `.cursor/rules/code-review-checklist.mdc`
-2. **Testing:** All tests pass, mobile tested, dark mode tested
+2. **Testing:** Run `npm run test:pre-deploy`; all tests pass; mobile tested; dark mode tested. See `docs/testing/TESTING_GUIDE.md`.
 3. **Standards:** All `.cursor/rules/*.mdc` standards followed
 4. **Documentation:** All changes documented
 
@@ -49,6 +49,7 @@ Before suggesting deployment:
 - ❌ Use JavaScript frameworks
 - ❌ Bypass coach verification workflow
 - ❌ Deploy without testing
+- ❌ Add/move tests without updating `docs/testing/TESTING_GUIDE.md`
 
 ## ✅ ALWAYS DO THESE
 
@@ -78,6 +79,8 @@ Before suggesting deployment:
 
 - **All Standards:** `.cursor/rules/*.mdc`
 - **Code Review:** `.cursor/rules/code-review-checklist.mdc`
+- **Testing (canonical):** `docs/testing/TESTING_GUIDE.md` — update when tests change
+- **Test lifecycle:** `.agent/workflows/test-lifecycle.md`
 - **Workflows:** `.agent/workflows/*.md`
 - **Deployment:** `DEPLOYMENT_CHECKLIST.md`
 

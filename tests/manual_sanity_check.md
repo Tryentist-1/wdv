@@ -3,7 +3,7 @@
 ## Quick Test Checklist
 
 ### M0: API Test Harness ✓
-- [ ] Open `api/test_harness.html` in browser
+- [ ] Open `http://localhost:8001/tests/api/harness/test_harness.html` in browser (with `npm run serve`)
 - [ ] Toggle to "Use Event Code (Archer)"
 - [ ] Enter code: `E2EUI`
 - [ ] Run Test 1: Health Check → Should pass with 200 OK

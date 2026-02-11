@@ -263,7 +263,10 @@ The application uses a **three-tier storage pattern**:
 
 ### Quick Test Commands
 ```bash
-# Run all E2E tests (primary)
+# Pre-deploy (MANDATORY)
+npm run test:pre-deploy
+
+# Run all E2E tests
 npm test
 
 # Interactive test UI
@@ -279,15 +282,14 @@ npm run test:local
 cat tests/manual_sanity_check.md
 ```
 
-### Testing Strategy
-- **📋 [TESTING_STRATEGY.md](TESTING_STRATEGY.md)** - Complete testing overview and workflow
-- **🎨 [style-guide.html](tests/components/style-guide.html)** - UI style guide and component library for visual testing
-- **📁 [tests/TEST_ORGANIZATION.md](tests/TEST_ORGANIZATION.md)** - Test structure and organization
+### Testing (Canonical)
+- **📋 [docs/testing/TESTING_GUIDE.md](docs/testing/TESTING_GUIDE.md)** - Single source of truth (MANDATORY; update when tests change)
+- **📁 [tests/TEST_ORGANIZATION.md](tests/TEST_ORGANIZATION.md)** - Test structure
+- **🎨 [style-guide.html](tests/components/style-guide.html)** - UI component library
 
 ### Test Documentation
-- [AUTOMATED_TESTING.md](docs/AUTOMATED_TESTING.md) - Playwright E2E testing
 - [MANUAL_TESTING_CHECKLIST.md](docs/MANUAL_TESTING_CHECKLIST.md) - Manual test procedures
-- [tests/README.md](tests/README.md) - Test suite commands and status
+- [tests/README.md](tests/README.md) - Test suite commands
 
 ---
 
@@ -306,7 +308,7 @@ This is the main script for deploying to production via FTP. It supports several
 - `--remote-backup` - Create backup on remote server
 ```bash
 # 1. Test locally
-npm run test:e2e
+npm run test:pre-deploy
 
 # 2. Deploy to production
 ./scripts/deploy/DeployFTP.sh
