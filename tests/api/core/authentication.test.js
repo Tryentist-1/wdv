@@ -28,8 +28,9 @@ describe('Authentication API', () => {
     });
 
     describe('Protected Endpoints', () => {
-        test('POST /v1/rounds should require authentication', async () => {
-            const roundData = testData.createTestRound();
+        test('POST /v1/rounds should require authentication when linked to event', async () => {
+            // API allows standalone rounds without auth; event-linked rounds require auth
+            const roundData = testData.createTestRound({ eventId: '00000000-0000-0000-0000-000000000001' });
             const response = await client.post('/rounds', roundData);
             TestAssertions.expectAuthError(response);
         });
@@ -44,7 +45,7 @@ describe('Authentication API', () => {
     describe('API Key Authentication', () => {
         test('should reject invalid API key', async () => {
             const authClient = client.withApiKey('invalid-api-key');
-            const roundData = testData.createTestRound();
+            const roundData = testData.createTestRound({ eventId: '00000000-0000-0000-0000-000000000001' });
             const response = await authClient.post('/rounds', roundData);
             TestAssertions.expectAuthError(response);
         });
@@ -61,7 +62,7 @@ describe('Authentication API', () => {
     describe('Passcode Authentication', () => {
         test('should reject invalid passcode', async () => {
             const authClient = client.withPasscode('invalid-passcode');
-            const roundData = testData.createTestRound();
+            const roundData = testData.createTestRound({ eventId: '00000000-0000-0000-0000-000000000001' });
             const response = await authClient.post('/rounds', roundData);
             TestAssertions.expectAuthError(response);
         });
