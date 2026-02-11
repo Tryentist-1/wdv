@@ -54,13 +54,28 @@ npm run test:api:all
 ## Deployment Steps
 
 ### 1. Deploy Files
+
+**Deploy source:** Backup, verify, and FTP upload all use one folder. The script prints `Deploy source: <path>` at start.
+
+- **Default:** Uses `LOCAL_DIR` in the script (`/Users/terry/web-mirrors/tryentist/wdv`). If that folder is empty or out of date, set the folder you want to deploy:
+- **From this repo (e.g. Cursor):**  
+  `WDV_DEPLOY_SOURCE=/Users/terry/makeitso/wdv npm run deploy:fast`
+- **From other machine's copy (mounted):**  
+  `WDV_DEPLOY_SOURCE=/Volumes/terry/web-mirrors/tryentist/wdv npm run deploy:fast`
+
+Run from any directory; the script reads `.env` and files from the deploy source.
+
 ```bash
+# From the folder you want to deploy (e.g. mirror or repo):
 cd /Users/terry/web-mirrors/tryentist/wdv
 npm run deploy:fast
+
+# Or from this repo with explicit source:
+WDV_DEPLOY_SOURCE=/Users/terry/makeitso/wdv npm run deploy:fast
 ```
 
 **What gets deployed:**
-- `api/` - Backend PHP files
+- `api/` - Backend PHP files (except `api/config.local.php` — never deployed; prod credentials live only on the server)
 - `js/` - Frontend JavaScript
 - `*.html` - All HTML pages
 - `css/` - Stylesheets

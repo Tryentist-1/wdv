@@ -1,0 +1,134 @@
+# Deployment Safety Rules
+
+## 🚨 CRITICAL: Never Deploy Dev Files to Production
+
+### Files That MUST NEVER Be Deployed
+
+These files/folders contain development tools, local config, or sensitive data and MUST be excluded from production deployments:
+
+**Dev Tools & Config:**
+- `.cursor/` - Cursor IDE configuration
+- `.agent/` - Agent workflows and config
+- `.vscode/` - VS Code configuration
+- `.git/` - Git repository data
+- `.github/` - GitHub Actions/workflows
+- `node_modules/` - NPM dependencies
+- `docs/` - Documentation files
+- `tests/` - Test files
+- `playwright-report/` - Test reports
+- `test-results/` - Test results
+- `deploy_backups/` - Local backup archives
+- `backups/` - Backup folders
+- `app-imports/` - Local CSV uploads
+
+**Sensitive Config Files:**
+- `.env*` - Environment variables (all variants)
+- `api/config.local.php` - **CRITICAL: Contains production MySQL credentials**
+- `config.docker.php` - Docker-specific config
+- `docker-compose.yml` - Docker config
+- `nginx.conf` - Server config
+
+**Other:**
+- `*.md` - Markdown documentation
+- `.DS_Store` - macOS metadata
+
+### Why This Matters
+
+1. **Security:** `api/config.local.php` contains production database credentials. If deployed from a local machine with Docker config, production breaks.
+2. **Performance:** Dev folders (`.cursor`, `.agent`, `node_modules`, etc.) are large and unnecessary on production.
+3. **Privacy:** `.env` files may contain API keys, passwords, and other secrets.
+
+## 🔴 MANDATORY Pre-Deployment Checks
+
+Before ANY deployment suggestion, you MUST:
+
+1. **Verify Deploy Script Excludes:**
+   - Check `scripts/deploy/DeployFTP.sh` includes all dev folders in `EXCLUDES`
+   - Ensure `api/config.local.php` is explicitly excluded
+   - Verify `.cursor` and `.agent` are excluded
+
+2. **Verify Deploy Source:**
+   - Confirm which folder is being deployed (`SOURCE_DIR` or `LOCAL_DIR`)
+   - Warn if deploying from a folder that contains dev files
+   - Suggest using `WDV_DEPLOY_SOURCE` environment variable if needed
+
+3. **Verify Config Protection:**
+   - Confirm `api/config.local.php` is in `.gitignore`
+   - Confirm `api/config.local.php` is in deploy script excludes
+   - Warn that production config must exist ONLY on the server
+
+4. **Check for Accidental Inclusions:**
+   - Scan deploy script for any patterns that might include dev files
+   - Verify `.gitignore` patterns are respected in deploy excludes
+
+## ⚠️ When User Asks to Deploy
+
+**ALWAYS do these checks first:**
+
+1. **Check deploy script excludes:**
+   ```bash
+   grep -E "EXCLUDES|exclude-glob" scripts/deploy/DeployFTP.sh
+   ```
+
+2. **Verify config.local.php protection:**
+   ```bash
+   grep "config.local.php" scripts/deploy/DeployFTP.sh
+   grep "config.local.php" .gitignore
+   ```
+
+3. **Warn about deploy source:**
+   - If deploying from repo: "Deploying from `/Users/terry/makeitso/wdv` - ensure dev folders are excluded"
+   - If deploying from mirror: "Deploying from mirror - verify it's up to date"
+
+4. **Remind about production config:**
+   - "Remember: `api/config.local.php` on production must have production MySQL credentials, not Docker/local config"
+
+## 🚫 NEVER Do These
+
+- ❌ Suggest deploying without checking deploy script excludes
+- ❌ Suggest deploying `api/config.local.php` from local machine
+- ❌ Skip verification of which folder is being deployed
+- ❌ Deploy without confirming dev folders are excluded
+- ❌ Override deploy script excludes "just this once"
+
+## ✅ ALWAYS Do These
+
+- ✅ Check deploy script excludes before suggesting deployment
+- ✅ Verify `api/config.local.php` is excluded
+- ✅ Confirm deploy source folder
+- ✅ Warn if deploying from a folder with dev files
+- ✅ Remind that production config lives only on server
+- ✅ Suggest running `check_prod_files.sh` after deployment to verify
+
+## 📋 Deployment Checklist
+
+Before suggesting deployment, verify:
+
+- [ ] Deploy script excludes `.cursor`, `.agent`, `.git`, `node_modules`, `docs`, `tests`
+- [ ] Deploy script excludes `api/config.local.php`
+- [ ] Deploy script excludes `.env*` files
+- [ ] `.gitignore` includes `api/config.local.php`
+- [ ] Deploy source is clear and correct
+- [ ] Production `api/config.local.php` exists on server with correct credentials
+- [ ] User understands dev files won't be uploaded
+
+## 🔧 If Deploy Script Needs Updates
+
+If you need to add excludes to the deploy script:
+
+1. Add to `EXCLUDES` variable in `scripts/deploy/DeployFTP.sh`
+2. Use pattern: `--exclude-glob folder_name/**` for folders
+3. Use pattern: `--exclude-glob file_name` for files
+4. Test with `--dry-run` flag first
+5. Document the exclude in this rule file
+
+## 📚 Related Files
+
+- Deploy script: `scripts/deploy/DeployFTP.sh`
+- Production cleanup guide: `docs/PROD_CLEANUP_AND_CONFIG.md`
+- Config fix guide: `docs/FIX_PROD_CONFIG_NOW.md`
+- Check scripts: `scripts/deploy/check_prod_files.sh`, `scripts/deploy/check_prod_config.sh`
+
+---
+
+**Remember:** One accidental deployment of `api/config.local.php` with Docker config can break production. Always verify excludes before deploying.

@@ -1,23 +1,29 @@
 #!/bin/bash
 
 # Deployment script for Tryentist WDV (FTP-SSL, with local and remote backup)
-# Loads FTP_PASSWORD from .env (which should be in .gitignore)
-
-# --- LOAD ENV VARIABLES ---
-if [ -f .env ]; then
-  set +H
-  set -a
-  source .env
-  set +a
-  set -H
-fi
+# Loads FTP_PASSWORD from .env in the deploy source folder (which should be in .gitignore)
+#
+# Deploy source: Set WDV_DEPLOY_SOURCE to the path of the tree to deploy (backup, verify, and
+# upload all use this folder). If unset, uses LOCAL_DIR below. Examples:
+#   WDV_DEPLOY_SOURCE=/Volumes/terry/web-mirrors/tryentist/wdv   # other machine's copy (mounted)
+#   WDV_DEPLOY_SOURCE=/Users/terry/makeitso/wdv                   # this repo (e.g. Cursor workspace)
 
 HOST="da100.is.cc"
 USER="terry@tryentist.com"
 REMOTE_DIR="public_html/wdv"
 LOCAL_DIR="/Users/terry/web-mirrors/tryentist/wdv"
+SOURCE_DIR="${WDV_DEPLOY_SOURCE:-$LOCAL_DIR}"
 DATESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="$LOCAL_DIR/deploy_backups"
+BACKUP_DIR="$SOURCE_DIR/deploy_backups"
+
+# --- LOAD ENV VARIABLES from deploy source ---
+if [ -f "$SOURCE_DIR/.env" ]; then
+  set +H
+  set -a
+  source "$SOURCE_DIR/.env"
+  set +a
+  set -H
+fi
 LOCAL_BACKUP_ARCHIVE="$BACKUP_DIR/wdv_backup_$DATESTAMP.tar.gz"
 REMOTE_BACKUP="public_html/wdv_backup_$DATESTAMP"
 REMOTE_BACKUP_LOCAL="$BACKUP_DIR/remote_backup_$DATESTAMP"
@@ -28,17 +34,17 @@ REMOTE_BACKUP_SUMMARY="(skipped)"
 # Create backup directory if it doesn't exist
 mkdir -p "$BACKUP_DIR"
 
-# --- Build lftp exclude list from .gitignore and always-excluded files ---
-# Never deploy local app-imports to prod (coach uploads live CSVs there)
-EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob deploy_backups/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/** --exclude-glob app-imports/** --exclude-glob playwright-report/** --exclude-glob test-results/** --exclude-glob .vscode/** --exclude-glob .github/** --exclude-glob '*.md' --exclude-glob '.DS_Store' --exclude-glob docker-compose.yml --exclude-glob nginx.conf --exclude-glob config.docker.php"
-if [ -f .gitignore ]; then
-  GITEXCLUDES=$(grep -v '^#' .gitignore | grep -v '^$' | awk '{print "--exclude-glob "$1}' | xargs)
+echo "Deploy source: $SOURCE_DIR"
+echo "---"
+
+# --- Build lftp exclude list from .gitignore and always-excluded files (in deploy source) ---
+# Never deploy local app-imports to prod (coach uploads live CSVs there).
+# Never deploy config.local.php so prod credentials on the server are never overwritten.
+EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob .cursor/** --exclude-glob .agent/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob deploy_backups/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/** --exclude-glob app-imports/** --exclude-glob playwright-report/** --exclude-glob test-results/** --exclude-glob .vscode/** --exclude-glob .github/** --exclude-glob '*.md' --exclude-glob '.DS_Store' --exclude-glob docker-compose.yml --exclude-glob nginx.conf --exclude-glob config.docker.php --exclude-glob api/config.local.php"
+if [ -f "$SOURCE_DIR/.gitignore" ]; then
+  GITEXCLUDES=$(grep -v '^#' "$SOURCE_DIR/.gitignore" | grep -v '^$' | awk '{print "--exclude-glob "$1}' | xargs)
   EXCLUDES="$EXCLUDES $GITEXCLUDES"
 fi
-
-echo "Debug: Exclude patterns being used:"
-echo "$EXCLUDES"
-echo "---"
 
 # --- Parse command-line arguments ---
 RESET_MODE=0
@@ -66,7 +72,7 @@ if [[ $SKIP_LOCAL_BACKUP -eq 0 ]]; then
     --exclude='./playwright-report' \
     --exclude='./test-results' \
     --exclude='./app-imports' \
-    -C "$LOCAL_DIR" . || { echo "Local backup failed."; exit 1; }
+    -C "$SOURCE_DIR" . || { echo "Local backup failed."; exit 1; }
   echo "Local backup written to $LOCAL_BACKUP_ARCHIVE"
   LOCAL_BACKUP_SUMMARY="$LOCAL_BACKUP_ARCHIVE"
 else
@@ -97,11 +103,11 @@ fi
 # --- Step 3: Verify files to be uploaded ---
 echo -e "\n--- Step 3: Verifying files to be uploaded ---"
 echo "Files that would be uploaded (excluding sensitive files):"
-cd "$LOCAL_DIR"
+cd "$SOURCE_DIR"
 find . -type f -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/docs/*" -not -path "*/tests/*" -not -path "*/backups/*" -not -path "*/deploy_backups/*" -not -path "*/app-imports/*" | sort
 cd - > /dev/null
 
-# --- Step 4: Deploy to FTP ---
+# --- Step 4: Deploy to FTP (from SOURCE_DIR so backup, verify, and upload use same tree) ---
 echo -e "\n--- Step 4: Deploying to FTP ---"
 if [[ $RESET_MODE -eq 1 ]]; then
   # Full reset: force upload and delete remote files not present locally
@@ -117,6 +123,7 @@ if [[ $DRY_RUN -eq 1 ]]; then
   echo "DRY RUN: showing planned changes. No files will be uploaded."
 fi
 
+cd "$SOURCE_DIR" || { echo "Cannot cd to $SOURCE_DIR"; exit 1; }
 lftp -c "set cmd:fail-exit yes; set ssl:verify-certificate no; set net:timeout 20; set net:max-retries 2; set net:reconnect-interval-base 5; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ftp:prefer-epsv true; open -u $USER,$FTP_PASSWORD $HOST; $LFTP_CMD"
 
 # Clean up
