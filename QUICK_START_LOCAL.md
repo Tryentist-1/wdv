@@ -31,21 +31,11 @@ docker-compose up -d db
 Edit `api/config.local.php` and use the following verified credentials:
 
 ```php
-// ========================================================
-// OPTION 1: PRODUCTION DATABASE (tryentist.com) - COMMENT THIS OUT
-// ========================================================
-// define('DB_DSN', 'mysql:host=da100.is.cc;dbname=aelectri_wdv;charset=utf8mb4');
-// define('DB_USER', 'aelectri_wdv_remote');
-// define('DB_PASS', 'Bigdistraction976');
-
-// ========================================================
-// OPTION 2: LOCAL DATABASE (Docker) - UNCOMMENT THIS
-// ========================================================
+// Copy from api/config.local.php.example for full template.
+// LOCAL DATABASE (Docker):
 define('DB_DSN', 'mysql:host=127.0.0.1;port=3306;dbname=wdv;charset=utf8mb4');
-define('DB_USER', 'wdv_user');        // Confirmed Docker configuration
-define('DB_PASS', 'wdv_dev_password'); // Confirmed Docker configuration
-
-// Also update CORS for local development:
+define('DB_USER', 'wdv_user');
+define('DB_PASS', 'wdv_dev_password');
 define('CORS_ORIGIN', '*');
 ```
 

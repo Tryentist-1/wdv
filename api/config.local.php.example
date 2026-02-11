@@ -1,0 +1,37 @@
+<?php
+/**
+ * Local configuration template
+ *
+ * Copy this file to config.local.php and fill in your values.
+ * config.local.php is in .gitignore - your credentials will never be committed.
+ *
+ *   cp api/config.local.php.example api/config.local.php
+ *
+ * For production: create config.local.php on the server with production credentials.
+ * Never commit config.local.php or any file containing real credentials.
+ */
+
+// ========================================================
+// DATABASE - Choose one option, comment out the other
+// ========================================================
+
+// Option A: Local development (Docker MySQL)
+define('DB_DSN', 'mysql:host=127.0.0.1;port=3306;dbname=wdv;charset=utf8mb4');
+define('DB_USER', 'wdv_user');
+define('DB_PASS', 'wdv_dev_password');
+
+// Option B: Production (replace with your actual credentials from hosting panel)
+// define('DB_DSN', 'mysql:host=localhost;dbname=YOUR_DB_NAME;charset=utf8mb4');
+// define('DB_USER', 'YOUR_DB_USER');
+// define('DB_PASS', 'YOUR_DB_PASSWORD');
+
+// ========================================================
+// API Security (override defaults from config.php)
+// ========================================================
+// define('API_KEY', 'your-api-key');
+// define('PASSCODE', 'wdva26');
+
+// ========================================================
+// CORS - For local dev, use '*' or your localhost URL
+// ========================================================
+define('CORS_ORIGIN', '*');  // Or 'http://localhost:8001'

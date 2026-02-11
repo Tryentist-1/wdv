@@ -9,10 +9,11 @@ coach-diagnostic.png
 init-test.png
 load-events-test.png
 
-# Environment files
+# Environment files and config with credentials
 .env
 .env.local
 config.local.php
+api/config.local.php.production
 
 # OS files
 .DS_Store

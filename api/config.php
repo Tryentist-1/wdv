@@ -1,4 +1,11 @@
 <?php
+/**
+ * Application configuration - defaults and local overrides.
+ *
+ * For local dev: copy config.local.php.example to config.local.php and edit.
+ * For production: create config.local.php on the server with real credentials.
+ * See docs/CONFIG_SETUP.md for details.
+ */
 // Load local overrides if present
 if (file_exists(__DIR__ . '/config.local.php')) {
     require __DIR__ . '/config.local.php';
