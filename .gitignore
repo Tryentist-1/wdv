@@ -5,6 +5,11 @@ node_modules/
 test-*.js
 test-*.png
 *-test.png
+test_*.html
+test_*.sql
+test_*.php
+*_TEST_RESULTS.md
+*_TESTING.md
 coach-diagnostic.png
 init-test.png
 load-events-test.png
