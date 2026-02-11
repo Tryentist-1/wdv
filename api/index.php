@@ -3728,7 +3728,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/rounds/([0-9a-f-]+)/archers$#i', $rout
             exit;
         }
 
-        // AUTO-ASSIGN MODE
+        // AUTO-ASSIGN MODE (2-4 per bale, continuous numbering)
 
         // Get next available bale number for this event
         $maxBaleStmt = $pdo->prepare('
@@ -3741,39 +3741,18 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/rounds/([0-9a-f-]+)/archers$#i', $rout
         $maxBaleRow = $maxBaleStmt->fetch();
         $startBale = ($maxBaleRow && $maxBaleRow['maxBale']) ? (int) $maxBaleRow['maxBale'] + 1 : 1;
 
-        // Auto-assign algorithm
-        $numArchers = count($archers);
-        $archersPerBale = 4; // Default: A, B, C, D
+        // Use canonical bale assignment algorithm (2-4 per bale, no singles)
+        $baleArrays = $assignArchersToBales($archers, $startBale);
         $targetLetters = ['A', 'B', 'C', 'D'];
-
-        // Calculate number of bales needed
-        $numBales = (int) ceil($numArchers / $archersPerBale);
-
-        // Check if last bale would have < 2 archers (minimum)
-        if ($numBales > 1) {
-            $lastBaleCount = $numArchers - (($numBales - 1) * $archersPerBale);
-            if ($lastBaleCount < 2) {
-                // Redistribute to avoid having only 1 archer on last bale
-                $numBales--;
-            }
-        }
-
-        // Distribute archers across bales evenly
-        $basePerBale = (int) floor($numArchers / $numBales);
-        $extraArchers = $numArchers % $numBales;
-
-        // Create round_archers entries
-        $currentBale = $startBale;
-        $archerIndex = 0;
         $baleAssignments = [];
+        $currentBale = $startBale;
 
-        for ($i = 0; $i < $numBales; $i++) {
-            $archersInThisBale = $basePerBale + ($i < $extraArchers ? 1 : 0);
-            $baleArchers = [];
+        foreach ($baleArrays as $baleArchers) {
+            $displayNames = [];
 
-            for ($j = 0; $j < $archersInThisBale && $archerIndex < $numArchers; $j++) {
-                $archer = $archers[$archerIndex];
-                $targetLetter = $targetLetters[$j % 4]; // A, B, C, D (cycle if > 4)
+            foreach ($baleArchers as $targetIdx => $archer) {
+                $targetLetter = $targetLetters[$targetIdx] ?? 'A';
+                $lastInitial = $archer['last_name'] ? substr($archer['last_name'], 0, 1) . '.' : '';
 
                 $pdo->prepare('INSERT INTO round_archers (id, round_id, archer_id, archer_name, school, level, gender, bale_number, target_assignment, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())')
                     ->execute([
@@ -3788,19 +3767,19 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/rounds/([0-9a-f-]+)/archers$#i', $rout
                         $targetLetter
                     ]);
 
-                $baleArchers[] = trim($archer['first_name'] . ' ' . $archer['last_name'][0] . '.');
-                $archerIndex++;
+                $displayNames[] = trim($archer['first_name'] . ' ' . $lastInitial);
             }
 
             $baleAssignments[] = [
                 'baleNumber' => $currentBale,
-                'archers' => $baleArchers,
-                'count' => count($baleArchers)
+                'archers' => $displayNames,
+                'count' => count($displayNames)
             ];
 
             $currentBale++;
         }
 
+        $numArchers = count($archers);
         json_response([
             'roundArchersCreated' => $numArchers,
             'division' => $round['division'],
