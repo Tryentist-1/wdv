@@ -367,6 +367,9 @@
                 <button id="complete-round-btn"
                     class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors h-10 hidden">Complete
                     Round</button>
+                <button id="finalize-score-cards-btn"
+                    class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors h-10 hidden"
+                    title="All arrows entered for last end. Verify paper cards and mark each complete.">Finalize Score Cards</button>
             </div>
         </div>
 
@@ -491,23 +494,58 @@
             </div>
         </div>
 
+        <!-- Finalize Score Cards: verification instructions (shown when last end is complete) -->
+        <div id="finalize-scorecards-modal"
+            class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto hidden">
+            <div
+                class="bg-white dark:bg-gray-800 p-6 rounded-md shadow-lg w-11/12 max-w-md max-h-[90vh] overflow-y-auto flex flex-col transition-colors duration-200">
+                <h2 class="text-xl font-bold text-center text-gray-800 dark:text-white mb-4">Verify Score Cards</h2>
+                <p class="text-gray-600 dark:text-gray-300 mb-4 text-center">
+                    Please verify each archer’s paper card matches the digital card, then press <strong>Complete</strong> for each archer.
+                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center">
+                    After all cards are complete, take them to a coach to <strong>Verify</strong>.
+                </p>
+                <div class="flex gap-3 justify-end">
+                    <button id="finalize-scorecards-start-btn"
+                        class="flex-1 px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">Start verification</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Complete Card Confirmation Modal -->
         <div id="complete-card-modal"
             class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto hidden">
             <div
                 class="bg-white dark:bg-gray-800 p-6 rounded-md shadow-lg w-11/12 max-w-md max-h-[90vh] overflow-y-auto flex flex-col transition-colors duration-200">
                 <h2 class="text-xl font-bold text-center text-gray-800 dark:text-white mb-4">Complete Scorecard</h2>
-                <p class="text-gray-600 dark:text-gray-300 mb-6 text-center">
-                    Mark this scorecard as Complete?
+                <p class="text-gray-600 dark:text-gray-300 mb-4 text-center">
+                    Verify this archer’s paper card matches the digital card, then mark as Complete.
                 </p>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 text-center">
-                    This indicates you have verified the digital card matches the paper card. Coaches can then verify it.
+                    Coaches can then verify the card.
                 </p>
                 <div class="flex gap-3 justify-end">
                     <button id="complete-card-cancel-btn"
                         class="px-4 py-2 bg-secondary-light dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold transition-colors min-h-[44px]">Cancel</button>
                     <button id="complete-card-confirm-btn"
-                        class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark font-semibold transition-colors min-h-[44px]">Confirm</button>
+                        class="px-4 py-2 bg-success text-white rounded hover:bg-success-dark font-semibold transition-colors min-h-[44px]">Complete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- All score cards complete confirmation -->
+        <div id="all-cards-complete-modal"
+            class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-40 overflow-y-auto hidden">
+            <div
+                class="bg-white dark:bg-gray-800 p-6 rounded-md shadow-lg w-11/12 max-w-md max-h-[90vh] overflow-y-auto flex flex-col transition-colors duration-200">
+                <h2 class="text-xl font-bold text-center text-gray-800 dark:text-white mb-4">Score Cards Complete</h2>
+                <p class="text-gray-600 dark:text-gray-300 mb-6 text-center">
+                    Score cards are complete and sent to Coaches for verification.
+                </p>
+                <div class="flex gap-3 justify-end">
+                    <button id="all-cards-complete-ok-btn"
+                        class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark font-semibold transition-colors min-h-[44px]">OK</button>
                 </div>
             </div>
         </div>

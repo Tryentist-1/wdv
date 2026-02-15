@@ -62,9 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const newMatchBtn = document.getElementById('new-match-btn');
     const matchSummaryDisplay = document.getElementById('match-summary-display');
 
-    let keypad = {
-        currentlyFocusedInput: null
-    };
+    /** @type {ReturnType<ScoreKeypad.init>|null} Shared keypad instance */
+    let scoreKeypad = null;
 
     // --- ARCHER SELECTOR SETUP ---
     let archerSelector = null;
@@ -575,6 +574,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const match = matchData.match;
 
+            // 4b. Restore match code for authenticated writes (e.g. postSoloSet)
+            if (match.match_code) {
+                localStorage.setItem(`solo_match_code:${normalizedMatchId}`, match.match_code);
+                if (window.LiveUpdates) {
+                    window.LiveUpdates.setSoloMatchCode(match.match_code);
+                }
+                console.log('[hydrateSoloMatch] 🔑 Match code restored');
+            }
+
             // 5. Populate metadata from server (Rule 1)
             state.matchId = normalizedMatchId;
             state.eventId = match.event_id || null;
@@ -923,7 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const syncIcon = getSyncStatusIcon(syncStatusA1, syncStatusA2);
 
             tableHTML += `<tr id="end-${i + 1}" class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
-                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">End ${i + 1}</td>
+                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">End ${i + 1}<span id="sync-e${setNumber}" class="ml-1">${syncIcon}</span></td>
                 <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a1[i][0])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a1" data-end="${i}" data-arrow="0" value="${state.scores.a1[i][0]}" readonly></td>
                 <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a1[i][1])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a1" data-end="${i}" data-arrow="1" value="${state.scores.a1[i][1]}" readonly></td>
                 <td class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.a1[i][2])}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a1" data-end="${i}" data-arrow="2" value="${state.scores.a1[i][2]}" readonly></td>
@@ -943,7 +951,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tableHTML += `
                 <tr id="shoot-off" class="hidden border-b border-gray-200 dark:border-gray-600">
-                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">S.O.</td>
+                <td class="px-2 py-1 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">S.O.<span id="sync-eso" class="ml-1">${soSyncIcon}</span></td>
                 <td colspan="2" class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.so.a1)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a1" data-end="so" data-arrow="0" value="${state.scores.so.a1}" readonly></td><td class="border-r border-gray-200 dark:border-gray-600"></td>
                 <td colspan="2" class="p-0 border-r border-gray-200 dark:border-gray-600 ${getScoreColor(state.scores.so.a2)}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-archer="a2" data-end="so" data-arrow="0" value="${state.scores.so.a2}" readonly></td><td class="border-r border-gray-200 dark:border-gray-600"></td>
                 <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="a1-so-total"></td>
@@ -1075,83 +1083,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderKeypad() {
-        if (!keypadElement) return;
-        // New 4x3 layout: Tailwind CSS, no gaps, no navigation buttons, no rounded corners, edge-to-edge borders
-        keypadElement.innerHTML = `
-            <div class="grid grid-cols-4 gap-0 w-full">
-                <!-- Row 1: X, 10, 9, M -->
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="X">X</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="10">10</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="9">9</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-200 text-black dark:text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="M">M</button>
-                
-                <!-- Row 2: 8, 7, 6, 5 -->
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="8">8</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="7">7</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="6">6</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="5">5</button>
-                
-                <!-- Row 3: 4, 3, 2, 1 -->
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="4">4</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="3">3</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="2">2</button>
-                <button class="keypad-btn p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 rounded-none" style="border-radius: 0 !important;" data-value="1">1</button>
-                
-                <!-- Row 4: CLOSE (left), CLEAR (right) -->
-                <button class="keypad-btn p-4 text-lg font-bold border-r border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2 rounded-none" style="border-radius: 0 !important;" data-action="close">CLOSE</button>
-                <button class="keypad-btn p-4 text-lg font-bold cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger-light dark:bg-danger-dark text-danger-dark dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2 rounded-none" style="border-radius: 0 !important;" data-action="clear">CLEAR</button>
-            </div>
-        `;
-    }
-
-    function handleKeypadClick(e) {
-        const button = e.target.closest('.keypad-btn');
-        if (!button || !keypad.currentlyFocusedInput) return;
-
-        const action = button.dataset.action;
-        const value = button.dataset.value;
-        const input = keypad.currentlyFocusedInput;
-
-        // --- Close action ---
-        if (action === 'close') {
-            keypadElement.classList.add('hidden');
-            keypadElement.classList.remove('grid');
-            document.body.classList.remove('keypad-visible');
-            return;
-        }
-
-        // --- Score Entry ---
-        if (action === 'clear') {
-            input.value = '';
-        } else if (value) {
-            input.value = value;
-        }
-
-        // Dispatch an event to trigger the update
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-
-        // Auto-advance focus after score entry (but not for clear)
-        if (value) {
-            // Re-fetch the list of inputs as the DOM may have been updated
-            const allInputs = Array.from(document.querySelectorAll('#scoring-view input[type="text"]'));
-            // Find the index of the *current* input by its unique data attributes,
-            // not by object reference, which can be stale.
-            const currentIndex = allInputs.findIndex(el =>
-                el.dataset.archer === input.dataset.archer &&
-                el.dataset.end === input.dataset.end &&
-                el.dataset.arrow === input.dataset.arrow
-            );
-
-            if (currentIndex !== -1 && currentIndex < allInputs.length - 1) {
-                allInputs[currentIndex + 1].focus();
-            } else {
-                // If it's the last input, close the keypad
-                keypadElement.classList.add('hidden');
-                keypadElement.classList.remove('grid');
-                document.body.classList.remove('keypad-visible');
-            }
-        }
+    /**
+     * Initialize the shared ScoreKeypad module for score entry.
+     * Uses the same module as team_card to avoid keypad divergences.
+     */
+    function initializeKeypad() {
+        if (!keypadElement || typeof ScoreKeypad === 'undefined') return;
+        scoreKeypad = ScoreKeypad.init(keypadElement, {
+            inputSelector: '#scoring-view input[type="text"]',
+            getInputKey: (input) => {
+                if (!input || !input.dataset) return '';
+                return [
+                    input.dataset.archer || '',
+                    input.dataset.end || '',
+                    input.dataset.arrow || ''
+                ].join('|');
+            },
+            onShow: () => document.body.classList.add('keypad-visible'),
+            onHide: () => document.body.classList.remove('keypad-visible')
+        });
     }
 
     // Phase 2: Post scores to database when entered
@@ -1562,6 +1512,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function showSoloCompleteSuccessModal() {
+        const modal = document.getElementById('solo-complete-success-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function hideSoloCompleteSuccessModal() {
+        const modal = document.getElementById('solo-complete-success-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
     /**
      * Mark the current match as Complete
      */
@@ -1627,13 +1593,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log('[completeMatch] Status updated:', result);
 
-            // Update UI to show completed status
             updateCompleteMatchButton();
-
-            // Show success message
-            alert('Match marked as complete! Ready for coach verification.');
-
             hideCompleteMatchModal();
+            showSoloCompleteSuccessModal();
             return true;
         } catch (err) {
             console.error('[completeMatch] Failed:', err);
@@ -2033,7 +1995,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         loadData();
-        renderKeypad();
+        initializeKeypad();
         initializeArcherSelector();
 
         // After selector is initialized, sync any pending bracket assignment
@@ -2211,25 +2173,21 @@ document.addEventListener('DOMContentLoaded', () => {
         editSetupBtn.addEventListener('click', editSetup);
         newMatchBtn.addEventListener('click', resetMatch);
 
+        // Show shared keypad when a score input receives focus or is tapped.
+        // Block only locked inputs; readOnly is intentional (suppresses native keyboard).
         document.body.addEventListener('focusin', (e) => {
-            if (e.target.matches('#scoring-view input[type="text"]')) {
-                // Debug locking
-                console.log('[focusin] Input focused. Locked:', state.locked, 'Status:', state.cardStatus, 'ReadOnly:', e.target.readOnly);
-
-                // Prevent editing if match is locked (completed/verified) OR input is readonly
-                if (state.locked || e.target.readOnly) {
-                    console.log('[focusin] Editing blocked');
-                    e.target.blur();
-                    return;
-                }
-                keypad.currentlyFocusedInput = e.target;
-                keypadElement.classList.remove('hidden');
-                keypadElement.classList.add('grid');
-                document.body.classList.add('keypad-visible');
+            if (e.target.matches('#scoring-view input[type="text"]') && scoreKeypad) {
+                if (state.locked) { e.target.blur(); return; }
+                scoreKeypad.showForInput(e.target);
             }
         });
 
-        keypadElement.addEventListener('click', handleKeypadClick);
+        // On mobile, readonly inputs may not fire focusin on tap. Use click as fallback.
+        scoreTableContainer.addEventListener('click', (e) => {
+            const input = e.target.closest('#scoring-view input[type="text"]');
+            if (!input || state.locked || !scoreKeypad) return;
+            scoreKeypad.showForInput(input);
+        });
 
         scoreTableContainer.addEventListener('input', (e) => {
             if (e.target.matches('input[type="text"]')) {
@@ -2269,6 +2227,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (completeMatchCancelBtn) {
             completeMatchCancelBtn.addEventListener('click', hideCompleteMatchModal);
+        }
+
+        const soloCompleteSuccessOkBtn = document.getElementById('solo-complete-success-ok-btn');
+        if (soloCompleteSuccessOkBtn) {
+            soloCompleteSuccessOkBtn.addEventListener('click', hideSoloCompleteSuccessModal);
         }
 
         // Export modal button handlers

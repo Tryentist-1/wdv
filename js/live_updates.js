@@ -1121,6 +1121,10 @@
         flushTeamQueue,
         request,
         clearSession: clearPersistedState,  // Expose for debugging/new events
+        /** @param {string} code - Solo match code for authenticated writes */
+        setSoloMatchCode(code) { state.soloMatchCode = code; },
+        /** @param {string} code - Team match code for authenticated writes */
+        setTeamMatchCode(code) { state.teamMatchCode = code; },
         _state: state,
     };
 

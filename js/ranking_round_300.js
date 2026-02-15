@@ -695,10 +695,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Delegated handler for scoring footer buttons (Sync End, Prev/Next End, Complete Round)
-        // Ensures clicks work even when view was shown after init (e.g. resume) or if something blocks the button
+        // Delegated handler for scoring footer buttons (Sync End, Prev/Next End, Complete Round, Finalize Score Cards)
         document.body.addEventListener('click', (e) => {
-            const btn = e.target.closest && e.target.closest('#sync-end-btn, #prev-end-btn, #next-end-btn, #complete-round-btn');
+            const btn = e.target.closest && e.target.closest('#sync-end-btn, #prev-end-btn, #next-end-btn, #complete-round-btn, #finalize-score-cards-btn');
             if (!btn || state.currentView !== 'scoring' || btn.disabled) return;
             switch (btn.id) {
                 case 'sync-end-btn':
@@ -718,6 +717,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (confirm('Are you sure you want to complete this round? This will mark all archers as finished.')) {
                         completeRound();
                     }
+                    break;
+                case 'finalize-score-cards-btn':
+                    e.preventDefault();
+                    startFinalizationFlow();
                     break;
                 default:
                     break;
@@ -4700,28 +4703,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateCompleteButton() {
         const completeBtn = document.getElementById('complete-round-btn');
+        const finalizeBtn = document.getElementById('finalize-score-cards-btn');
         const syncBtn = document.getElementById('sync-end-btn');
         const nextBtn = document.getElementById('next-end-btn');
 
         if (!completeBtn) return;
 
         const isLiveEnabled = getLiveEnabled();
+        const allTenEndsComplete = state.archers.length > 0 && state.archers.every(archer => {
+            if (!Array.isArray(archer.scores) || archer.scores.length !== state.totalEnds) return false;
+            return archer.scores.every(end => Array.isArray(end) && end.length === 3 && end.every(v => v !== '' && v !== null && v !== undefined));
+        });
+        const onLastEnd = state.currentEnd === state.totalEnds;
 
         if (!isLiveEnabled) {
             // Live sync is off - show "Complete Round" only when every archer has 10 fully scored ends
-            const allComplete = state.archers.length > 0 && state.archers.every(archer => {
-                if (!Array.isArray(archer.scores) || archer.scores.length !== state.totalEnds) return false;
-                return archer.scores.every(end => Array.isArray(end) && end.length === 3 && end.every(v => v !== '' && v !== null && v !== undefined));
-            });
-            if (allComplete) {
+            if (allTenEndsComplete) {
                 completeBtn.style.display = 'inline-block';
                 if (nextBtn) nextBtn.style.display = 'none';
             } else {
                 completeBtn.style.display = 'none';
             }
             if (syncBtn) syncBtn.style.display = 'none';
+            if (finalizeBtn) finalizeBtn.style.display = 'none';
         } else {
-            // Live sync is on - show "Sync End" for current end if any archer has input for this end
+            // Live sync is on - show "Sync End" for current end when any archer has input; show "Finalize Score Cards" when last end is fully scored
             const currentEndHasScores = state.archers.some(archer => {
                 const endScores = archer.scores[state.currentEnd - 1];
                 return Array.isArray(endScores) && endScores.some(score => score !== '' && score !== null && score !== undefined);
@@ -4732,6 +4738,61 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (syncBtn) {
                 syncBtn.style.display = 'none';
             }
+            if (finalizeBtn) {
+                if (onLastEnd && allTenEndsComplete) {
+                    finalizeBtn.style.display = 'inline-block';
+                    if (nextBtn) nextBtn.style.display = 'none';
+                } else {
+                    finalizeBtn.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    /**
+     * Start score card finalization: hide keypad, go to Archer 1, show verification instructions modal.
+     * Called when last end is complete and user taps "Finalize Score Cards".
+     */
+    function startFinalizationFlow() {
+        if (keypad.element) {
+            keypad.element.classList.add('hidden');
+        }
+        document.body.classList.remove('keypad-visible');
+        state.currentView = 'card';
+        state.activeArcherId = state.archers.length > 0 ? state.archers[0].id : null;
+        showFinalizeScorecardsModal();
+        renderView();
+    }
+
+    function showFinalizeScorecardsModal() {
+        const modal = document.getElementById('finalize-scorecards-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function hideFinalizeScorecardsModal() {
+        const modal = document.getElementById('finalize-scorecards-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
+    function showAllCardsCompleteModal() {
+        const modal = document.getElementById('all-cards-complete-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function hideAllCardsCompleteModal() {
+        const modal = document.getElementById('all-cards-complete-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         }
     }
 
@@ -7975,14 +8036,40 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Update card status to COMP
         const success = await updateCardStatus(archer.id, 'COMP');
         if (success) {
-            // Refresh card view
             renderCardView(archer.id);
+            const allComplete = state.archers.every(a => {
+                const s = (a.cardStatus || '').toUpperCase();
+                return s === 'COMP' || s === 'COMPLETED' || s === 'VER' || s === 'VERIFIED';
+            });
+            if (allComplete) {
+                showAllCardsCompleteModal();
+            }
+            // Else: user continues to next archer; no modal so flow is smooth
         }
 
         hideCompleteCardModal();
+    }
+
+    // Wire up Finalize Score Cards modal
+    const finalizeStartBtn = document.getElementById('finalize-scorecards-start-btn');
+    if (finalizeStartBtn) {
+        finalizeStartBtn.onclick = () => {
+            hideFinalizeScorecardsModal();
+        };
+    }
+    const finalizeModal = document.getElementById('finalize-scorecards-modal');
+    if (finalizeModal) {
+        finalizeModal.onclick = (e) => {
+            if (e.target === finalizeModal) hideFinalizeScorecardsModal();
+        };
+    }
+
+    // Wire up All Cards Complete modal
+    const allCardsCompleteOkBtn = document.getElementById('all-cards-complete-ok-btn');
+    if (allCardsCompleteOkBtn) {
+        allCardsCompleteOkBtn.onclick = hideAllCardsCompleteModal;
     }
 
     // Wire up Complete Card modal handlers

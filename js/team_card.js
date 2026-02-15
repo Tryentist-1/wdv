@@ -728,6 +728,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function showTeamCompleteSuccessModal() {
+        const modal = document.getElementById('team-complete-success-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+    }
+
+    function hideTeamCompleteSuccessModal() {
+        const modal = document.getElementById('team-complete-success-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+
     /**
      * Mark the current match as Complete
      */
@@ -781,13 +797,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             console.log('[completeMatch] Status updated:', result);
             
-            // Update UI to show completed status
             updateCompleteMatchButton();
-            
-            // Show success message
-            alert('Match marked as complete! Ready for coach verification.');
-            
             hideCompleteMatchModal();
+            showTeamCompleteSuccessModal();
             return true;
         } catch (err) {
             console.error('[completeMatch] Failed:', err);
@@ -1125,6 +1137,15 @@ document.addEventListener('DOMContentLoaded', () => {
             validateTeamMatch(matchData, normalizedMatchId);
             
             const match = matchData.match;
+
+            // 4b. Restore match code for authenticated writes (e.g. postTeamSet)
+            if (match.match_code) {
+                localStorage.setItem(`team_match_code:${normalizedMatchId}`, match.match_code);
+                if (window.LiveUpdates && window.LiveUpdates.setTeamMatchCode) {
+                    window.LiveUpdates.setTeamMatchCode(match.match_code);
+                }
+                console.log('[hydrateTeamMatch] 🔑 Match code restored');
+            }
             
             // 5. Populate metadata from server (Rule 1)
             state.matchId = normalizedMatchId;
@@ -1583,6 +1604,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (completeMatchCancelBtn) {
             completeMatchCancelBtn.addEventListener('click', hideCompleteMatchModal);
+        }
+
+        const teamCompleteSuccessOkBtn = document.getElementById('team-complete-success-ok-btn');
+        if (teamCompleteSuccessOkBtn) {
+            teamCompleteSuccessOkBtn.addEventListener('click', hideTeamCompleteSuccessModal);
         }
         
         document.body.addEventListener('focusin', (e) => {
