@@ -96,9 +96,9 @@ This document outlines the planned phases for developing the Archery Score Manag
 **Production Release:** v1.4.0 (November 2025)  
 **Tailwind Migration Complete:** v1.6.0 (December 2025)
 
-## Phase 2.4: Games Events Enhancements ✅ COMPLETE (Feb 2026)
+## Phase 2.4: Games Events & Infrastructure ✅ COMPLETE (Feb 2026)
 
-**Goal:** Position filter and Import Roster Games for Games Events.
+**Goal:** Position filter, Import Roster Games, keypad/sync fixes, deploy safety overhaul.
 
 **Status:** ✅ Complete (February 2026)
 
@@ -106,6 +106,10 @@ This document outlines the planned phases for developing the Archery Score Manag
 - ✅ Position filter (S1–S8, T1–T6) in Add Archers modal for Games Events
 - ✅ Import Roster Games CSV (column mapping, MySQL sync)
 - ✅ Assignment list: Active/Inactive/All filter, sort by School → Gender → VJV → Position
+- ✅ Solo card keypad: migrated to shared `ScoreKeypad` module, fixed auto-advance on mobile
+- ✅ Match code restoration: `hydrateSoloMatch` / `hydrateTeamMatch` restore codes after "Reset Data"
+- ✅ Sync status indicators on solo card end rows
+- ✅ Deploy script overhaul: 40+ exclusion patterns, canonical whitelist in `deployment-safety.mdc`
 - ✅ Deploy script safety (exclude dev folders, config), config best practices
 
 ## Phase 2.5: Event Tracking Dashboard 🚧 IN PLANNING (2026 Q1)
@@ -340,5 +344,5 @@ This document outlines the planned phases for developing the Archery Score Manag
 
 ---
 
-**Last Updated:** December 2025  
+**Last Updated:** February 2026  
 **Next Review:** After Phase 3 planning

@@ -5,20 +5,36 @@ The keypad is a critical component for mobile score entry across multiple module
 
 ## Architecture
 
+### Shared Keypad Module
+**`js/score_keypad.js`** (`ScoreKeypad`) is the canonical shared keypad implementation. Modules initialize it with configuration options rather than duplicating keypad logic.
+
 ### Modules Using Keypad
-1. **ranking_round_300.js** - Primary ranking round scoring
-2. **solo_card.js** - 1v1 match scoring
-3. **team_card.js** - Team match scoring
+1. **ranking_round_300.js** - Primary ranking round scoring (uses `ScoreKeypad`)
+2. **solo_card.js** - 1v1 match scoring (migrated to `ScoreKeypad` Feb 2026)
+3. **team_card.js** - Team match scoring (uses `ScoreKeypad`)
 4. **score-with-keypad.js** - Legacy scoring with keypad
 5. **solo_round.js** - Legacy solo round scoring
 
-### Common Pattern
-All implementations follow a consistent pattern:
+### Common Pattern (ScoreKeypad Module)
+All modern implementations use `ScoreKeypad.init()` with configuration:
+- `inputSelector` - CSS selector for score input elements
+- `getInputKey` - Function to generate unique key per input (for tracking)
+- `onShow` / `onHide` - Callbacks for body class toggling
+- Handles focus management, auto-advance, and `readonly` input compatibility
 - Fixed position keypad at bottom of screen
 - Grid layout (4 columns)
 - Score buttons (X, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, M)
 - Navigation buttons (prev, next, clear, close)
-- Focus management tied to input elements
+
+```javascript
+// Example: solo_card.js initialization
+scoreKeypad = ScoreKeypad.init(keypadElement, {
+    inputSelector: '#scoring-view input[type="text"]',
+    getInputKey: (input) => [input.dataset.archer, input.dataset.end, input.dataset.arrow].join('|'),
+    onShow: () => document.body.classList.add('keypad-visible'),
+    onHide: () => document.body.classList.remove('keypad-visible')
+});
+```
 
 ## CSS Dependencies
 
@@ -66,41 +82,58 @@ close     → Blue (#2d7dd9, #007bff)
 
 ## JavaScript Hooks
 
-### State Management
+### State Management (ScoreKeypad Module)
+The shared module manages state internally. Modules interact via `showForInput()`:
 ```javascript
-const keypad = {
-    element: document.getElementById('keypad'),
-    currentlyFocusedInput: null
-};
+// Module event handlers call showForInput() — all state managed by ScoreKeypad
+document.body.addEventListener('focusin', (e) => {
+    if (e.target.matches('#scoring-view input[type="text"]') && scoreKeypad) {
+        if (state.locked) { e.target.blur(); return; }
+        scoreKeypad.showForInput(e.target);
+    }
+});
+// Click handler as fallback for readonly inputs on mobile
+scoreTableContainer.addEventListener('click', (e) => {
+    const input = e.target.closest('#scoring-view input[type="text"]');
+    if (!input || state.locked || !scoreKeypad) return;
+    scoreKeypad.showForInput(input);
+});
 ```
 
 ### Critical Event Handlers
-1. **Input Focus** - Shows keypad, sets `currentlyFocusedInput`
-2. **Input Blur** - Hides keypad (with debounce)
-3. **Keypad Click** - Handles score entry and navigation
-4. **Body Class** - `keypad-visible` toggles for layout adjustments
+1. **Input Focus (`focusin`)** - Calls `scoreKeypad.showForInput(input)` — shows keypad, sets focused input
+2. **Input Click (fallback)** - Same as above, needed because `readonly` inputs may not fire `focusin` on mobile tap
+3. **Keypad Click** - ScoreKeypad handles score entry, navigation, auto-advance internally
+4. **Body Class** - `keypad-visible` toggled via `onShow`/`onHide` callbacks
 
 ### Flow Sequence
 ```
 1. User taps score input field
-   → input.addEventListener('focus')
-   → keypad.element.style.display = 'grid'
-   → keypad.currentlyFocusedInput = input
-   → document.body.classList.add('keypad-visible')
+   → focusin or click handler fires
+   → scoreKeypad.showForInput(input)
+   → ScoreKeypad tracks currentlyFocusedInput internally
+   → onShow callback: document.body.classList.add('keypad-visible')
 
 2. User taps keypad button
-   → handleKeypadClick(e)
+   → ScoreKeypad handles internally
    → Extract data-value or data-action
    → Update input.value
    → input.dispatchEvent(new Event('input'))
    → Apply score color class to parent cell
-   → Auto-advance to next input (optional)
+   → Auto-advance to next input
 
 3. User taps close or navigates away
-   → keypad.element.style.display = 'none'
-   → document.body.classList.remove('keypad-visible')
+   → ScoreKeypad hides keypad
+   → onHide callback: document.body.classList.remove('keypad-visible')
    → input.blur()
 ```
+
+### Important: `readonly` Input Compatibility
+Score inputs use `readonly` to prevent the native keyboard from appearing on mobile. This means:
+- `focusin` may NOT fire on tap in some mobile browsers
+- A `click` event listener is required as a fallback
+- Do NOT check `e.target.readOnly` in handlers — the `state.locked` flag is the correct guard
+- The ScoreKeypad module handles `.focus()` calls for auto-advance correctly with readonly inputs
 
 ### Data Attributes Used
 - `data-value="X"` - Score values (X, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, M)
@@ -240,13 +273,14 @@ Score input elements must have:
 ## References
 
 ### Files to Review
+- `js/score_keypad.js` - **Shared keypad module (canonical implementation)**
 - `css/main.css` (lines 432-901)
 - `css/keypad.css` (entire file)
 - `css/team_round.css` (lines 470-690)
 - `css/keypad-css-button-fix.css` (entire file)
-- `js/ranking_round_300.js` (lines 2411-2507)
-- `js/solo_card.js` (lines 339-400)
-- `js/team_card.js` (lines 340-400)
+- `js/ranking_round_300.js` - Uses ScoreKeypad
+- `js/solo_card.js` - Uses ScoreKeypad (migrated Feb 2026)
+- `js/team_card.js` - Uses ScoreKeypad
 
 ### Design System Integration
 When creating design tokens, ensure these keypad-specific tokens exist:
@@ -260,6 +294,6 @@ When creating design tokens, ensure these keypad-specific tokens exist:
 
 ---
 
-**Last Updated**: 2024-11-07  
-**Status**: Complete - Ready for Phase 2 (Design Tokens)
+**Last Updated**: 2026-02-12  
+**Status**: Updated — All modules now use shared `ScoreKeypad` module (`js/score_keypad.js`). Solo card migrated from inline keypad (Feb 2026).
 

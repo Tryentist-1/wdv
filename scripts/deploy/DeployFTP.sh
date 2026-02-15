@@ -41,9 +41,98 @@ echo "Deploy source: $SOURCE_DIR"
 echo "---"
 
 # --- Build lftp exclude list from .gitignore and always-excluded files (in deploy source) ---
-# Never deploy local app-imports to prod (coach uploads live CSVs there).
-# Never deploy config.local.php so prod credentials on the server are never overwritten.
-EXCLUDES="--exclude-glob .env* --exclude-glob .git/** --exclude-glob .cursor/** --exclude-glob .agent/** --exclude-glob wdv_backup_*/** --exclude-glob remote_backup_*/** --exclude-glob deploy_backups/** --exclude-glob node_modules/** --exclude-glob docs/** --exclude-glob tests/** --exclude-glob backups/** --exclude-glob app-imports/** --exclude-glob playwright-report/** --exclude-glob test-results/** --exclude-glob .vscode/** --exclude-glob .github/** --exclude-glob '*.md' --exclude-glob '.DS_Store' --exclude-glob docker-compose.yml --exclude-glob nginx.conf --exclude-glob config.docker.php --exclude-glob api/config.local.php"
+#
+# IMPORTANT: This is a BLOCKLIST. Only production files should reach the server.
+# See .cursor/rules/deployment-safety.mdc for the canonical list of what DOES deploy.
+#
+# If you add a new top-level directory or dev file, ADD IT HERE.
+# When in doubt, exclude it. You can always add it later.
+
+EXCLUDES=""
+
+# --- Sensitive / environment files ---
+EXCLUDES="$EXCLUDES --exclude-glob .env*"
+EXCLUDES="$EXCLUDES --exclude-glob api/config.local.php"
+EXCLUDES="$EXCLUDES --exclude-glob api/config.local.php.example"
+EXCLUDES="$EXCLUDES --exclude-glob api/config.local.php.production"
+EXCLUDES="$EXCLUDES --exclude-glob docker-compose.yml"
+EXCLUDES="$EXCLUDES --exclude-glob nginx.conf"
+EXCLUDES="$EXCLUDES --exclude-glob config.docker.php"
+
+# --- IDE / tooling / repo metadata ---
+EXCLUDES="$EXCLUDES --exclude-glob .git/**"
+EXCLUDES="$EXCLUDES --exclude-glob .cursor/**"
+EXCLUDES="$EXCLUDES --exclude-glob .agent/**"
+EXCLUDES="$EXCLUDES --exclude-glob .vscode/**"
+EXCLUDES="$EXCLUDES --exclude-glob .github/**"
+EXCLUDES="$EXCLUDES --exclude-glob .cursorignore"
+EXCLUDES="$EXCLUDES --exclude-glob .cursorrules"
+EXCLUDES="$EXCLUDES --exclude-glob .dockerignore"
+EXCLUDES="$EXCLUDES --exclude-glob .gitignore"
+EXCLUDES="$EXCLUDES --exclude-glob .gitattributes"
+EXCLUDES="$EXCLUDES --exclude-glob .markdownlint.json"
+
+# --- Dev/tooling directories (NEVER deploy) ---
+EXCLUDES="$EXCLUDES --exclude-glob scripts/**"
+EXCLUDES="$EXCLUDES --exclude-glob audit/**"
+EXCLUDES="$EXCLUDES --exclude-glob bugs/**"
+EXCLUDES="$EXCLUDES --exclude-glob planning/**"
+EXCLUDES="$EXCLUDES --exclude-glob node_modules/**"
+EXCLUDES="$EXCLUDES --exclude-glob docs/**"
+EXCLUDES="$EXCLUDES --exclude-glob tests/**"
+
+# --- Backup / temp directories ---
+EXCLUDES="$EXCLUDES --exclude-glob backups/**"
+EXCLUDES="$EXCLUDES --exclude-glob deploy_backups/**"
+EXCLUDES="$EXCLUDES --exclude-glob wdv_backup_*/**"
+EXCLUDES="$EXCLUDES --exclude-glob remote_backup_*/**"
+EXCLUDES="$EXCLUDES --exclude-glob app-imports/**"
+
+# --- Test output ---
+EXCLUDES="$EXCLUDES --exclude-glob playwright-report/**"
+EXCLUDES="$EXCLUDES --exclude-glob test-results/**"
+
+# --- Build/test config files (root level) ---
+EXCLUDES="$EXCLUDES --exclude-glob jest.config.js"
+EXCLUDES="$EXCLUDES --exclude-glob 'playwright.config*'"
+EXCLUDES="$EXCLUDES --exclude-glob postcss.config.js"
+EXCLUDES="$EXCLUDES --exclude-glob tailwind.config.js"
+EXCLUDES="$EXCLUDES --exclude-glob package.json"
+EXCLUDES="$EXCLUDES --exclude-glob package-lock.json"
+EXCLUDES="$EXCLUDES --exclude-glob router.php"
+
+# --- Dev-only HTML pages ---
+# NOTE: gemini-oneshot.html is a PRODUCTION page (Practice Target, linked from index.html)
+EXCLUDES="$EXCLUDES --exclude-glob test-coach-buttons.html"
+EXCLUDES="$EXCLUDES --exclude-glob 'test-*.html'"
+EXCLUDES="$EXCLUDES --exclude-glob 'test_*.html'"
+EXCLUDES="$EXCLUDES --exclude-glob 'test_*.sql'"
+EXCLUDES="$EXCLUDES --exclude-glob 'test_*.php'"
+EXCLUDES="$EXCLUDES --exclude-glob 'test-*.js'"
+
+# --- API dev tools, migrations, seeds (NEVER deploy) ---
+EXCLUDES="$EXCLUDES --exclude-glob api/sql/**"
+EXCLUDES="$EXCLUDES --exclude-glob api/seed_*.php"
+EXCLUDES="$EXCLUDES --exclude-glob api/*migrate*.php"
+EXCLUDES="$EXCLUDES --exclude-glob api/migration_*.php"
+EXCLUDES="$EXCLUDES --exclude-glob api/check_and_migrate.php"
+EXCLUDES="$EXCLUDES --exclude-glob api/cleanup_*.php"
+EXCLUDES="$EXCLUDES --exclude-glob api/diagnostic_*.php"
+EXCLUDES="$EXCLUDES --exclude-glob api/backfill_*.php"
+EXCLUDES="$EXCLUDES --exclude-glob api/add_size_columns.php"
+EXCLUDES="$EXCLUDES --exclude-glob api/backup_database_remote.sh"
+EXCLUDES="$EXCLUDES --exclude-glob api/restore_backup_to_dev.sh"
+
+# --- Icon dev tools ---
+EXCLUDES="$EXCLUDES --exclude-glob icons/generate-icons.sh"
+EXCLUDES="$EXCLUDES --exclude-glob 'icons/*.html'"
+
+# --- CSS source (only compiled CSS deploys) ---
+EXCLUDES="$EXCLUDES --exclude-glob css/tailwind-input.css"
+
+# --- Catch-all patterns ---
+EXCLUDES="$EXCLUDES --exclude-glob '*.md'"
+EXCLUDES="$EXCLUDES --exclude-glob '.DS_Store'"
 if [ -f "$SOURCE_DIR/.gitignore" ]; then
   GITEXCLUDES=$(grep -v '^#' "$SOURCE_DIR/.gitignore" | grep -v '^$' | awk '{print "--exclude-glob "$1}' | xargs)
   EXCLUDES="$EXCLUDES $GITEXCLUDES"
@@ -105,9 +194,75 @@ fi
 
 # --- Step 3: Verify files to be uploaded ---
 echo -e "\n--- Step 3: Verifying files to be uploaded ---"
-echo "Files that would be uploaded (excluding sensitive files):"
+echo "Production files that would be uploaded (all dev/test/config files excluded):"
 cd "$SOURCE_DIR"
-find . -type f -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/docs/*" -not -path "*/tests/*" -not -path "*/backups/*" -not -path "*/deploy_backups/*" -not -path "*/app-imports/*" | sort
+# Note: Uses specific dot-directory excludes instead of '*/.*' to preserve .htaccess files
+VERIFY_EXCLUDES="\
+  -not -path '*/.git/*' \
+  -not -path '*/.cursor/*' \
+  -not -path '*/.agent/*' \
+  -not -path '*/.vscode/*' \
+  -not -path '*/.github/*' \
+  -not -path '*/node_modules/*' \
+  -not -path '*/docs/*' \
+  -not -path '*/tests/*' \
+  -not -path '*/backups/*' \
+  -not -path '*/deploy_backups/*' \
+  -not -path '*/app-imports/*' \
+  -not -path '*/scripts/*' \
+  -not -path '*/audit/*' \
+  -not -path '*/bugs/*' \
+  -not -path '*/planning/*' \
+  -not -path '*/playwright-report/*' \
+  -not -path '*/test-results/*' \
+  -not -path '*/wdv_backup_*/*' \
+  -not -path '*/remote_backup_*/*' \
+  -not -path '*/api/sql/*' \
+  -not -path '*/icons/*.html' \
+  -not -name '.env*' \
+  -not -name '.DS_Store' \
+  -not -name '.cursorignore' \
+  -not -name '.cursorrules' \
+  -not -name '.dockerignore' \
+  -not -name '.gitignore' \
+  -not -name '.gitattributes' \
+  -not -name '.markdownlint.json' \
+  -not -name '*.md' \
+  -not -name '*.config.js' \
+  -not -name 'playwright.config*' \
+  -not -name 'jest.config.js' \
+  -not -name 'postcss.config.js' \
+  -not -name 'tailwind.config.js' \
+  -not -name 'package.json' \
+  -not -name 'package-lock.json' \
+  -not -name 'router.php' \
+  -not -name 'docker-compose.yml' \
+  -not -name 'nginx.conf' \
+  -not -name 'config.docker.php' \
+  -not -name 'test-coach-buttons.html' \
+  -not -name 'test-*.html' \
+  -not -name 'test_*.html' \
+  -not -name 'test_*.sql' \
+  -not -name 'test_*.php' \
+  -not -name 'test-*.js' \
+  -not -name 'generate-icons.sh' \
+  -not -name 'tailwind-input.css' \
+  -not -name '*.log' \
+  -not -name '*.sh' \
+  -not -name 'seed_*.php' \
+  -not -name '*migrate*.php' \
+  -not -name 'migration_*.php' \
+  -not -name 'check_and_migrate.php' \
+  -not -name 'cleanup_*.php' \
+  -not -name 'diagnostic_*.php' \
+  -not -name 'backfill_*.php' \
+  -not -name 'add_size_columns.php' \
+  -not -name 'config.local.php*' \
+  -not -name 'route_debug.txt'"
+
+eval "find . -type f $VERIFY_EXCLUDES" | sort
+FILE_COUNT=$(eval "find . -type f $VERIFY_EXCLUDES" | wc -l | tr -d ' ')
+echo "--- Total production files: $FILE_COUNT ---"
 cd - > /dev/null
 
 # --- Step 3.5: Set app version build for cache busting (version.json + sw.js) ---

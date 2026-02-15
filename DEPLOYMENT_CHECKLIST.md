@@ -72,12 +72,23 @@ npm run deploy:fast
 WDV_DEPLOY_SOURCE=/Users/terry/makeitso/wdv npm run deploy:fast
 ```
 
-**What gets deployed:**
-- `api/` - Backend PHP files (except `api/config.local.php` — never deployed; prod credentials live only on the server)
-- `js/` - Frontend JavaScript
-- `*.html` - All HTML pages
-- `css/` - Stylesheets
+**What gets deployed (see `.cursor/rules/deployment-safety.mdc` for canonical whitelist):**
+- `api/` - Production PHP files only (index.php, db.php, config.php, .htaccess, upload_avatar.php, data_admin.php, backup_admin.php, backup_database.php, backup_database_web.php)
+- `api/config.local.php` — **NEVER deployed**; prod credentials live only on the server
+- `js/` - All production JavaScript modules
+- `css/` - Compiled CSS only (not tailwind-input.css source)
+- `*.html` - Production HTML pages (not test-*.html or dev pages)
+- `icons/*.png` - App icons (not dev tools)
+- `avatars/` - User avatar images
+- `targetface/` - Target face viewer
+- `sw.js`, `manifest.json`, `version.json` - PWA files
 - Cloudflare cache purged automatically
+
+**What is EXCLUDED (40+ patterns in DeployFTP.sh):**
+- `scripts/`, `docs/`, `tests/`, `audit/`, `bugs/`, `planning/` - Dev directories
+- `api/sql/`, `api/seed_*.php`, `api/*migrate*.php` - Migrations/seeds
+- `*.md`, `.env*`, `node_modules/`, config files - Dev artifacts
+- Build configs: `jest.config.js`, `playwright.config*`, `package.json`, etc.
 
 ### 2. Verify Production
 

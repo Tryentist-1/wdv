@@ -1,127 +1,188 @@
 # Deployment Safety Rules
 
+## 🟢 What DOES Deploy to Production
+
+**This is the canonical list.** If a file/folder is NOT listed here, it should NOT be on the production server.
+
+### Production Files (WHITELIST)
+
+**HTML pages (root):**
+- `index.html` - Home / event entry
+- `coach.html` - Coach dashboard
+- `event_dashboard.html` - Event dashboard
+- `ranking_round_300.html` - Ranking round scorecard
+- `solo_card.html` - Solo match scorecard
+- `solo_round.html` - Solo round management
+- `team_card.html` - Team match scorecard
+- `archer_list.html` - Archer roster
+- `archer_history.html` - Archer history
+- `archer_matches.html` - Archer match list
+- `archer_results_pivot.html` - Results pivot table
+- `assignment_list.html` - Target assignments
+- `bracket_results.html` - Bracket results
+- `results.html` - Results display
+- `scorecard_editor.html` - Scorecard editor
+- `gemini-oneshot.html` - Practice Target (linked from home page)
+- `offline.html` - PWA offline page
+
+**JavaScript (js/):**
+- `js/*.js` - All production JavaScript modules
+
+**CSS (css/):**
+- `css/*.css` - All compiled CSS (**except** `tailwind-input.css` which is a source file)
+
+**API (api/):**
+- `api/index.php` - Main API router
+- `api/index_swiss_part.php` - Swiss pairing routes
+- `api/db.php` - Database connection
+- `api/config.php` - Config loader (reads `config.local.php` on server)
+- `api/.htaccess` - Apache rewrite rules
+- `api/upload_avatar.php` - Avatar upload handler
+- `api/data_admin.php` - Data admin endpoints
+- `api/backup_admin.php` - Backup admin endpoints
+- `api/backup_database.php` - Database backup tool
+- `api/backup_database_web.php` - Web-triggered backup
+
+**Static assets:**
+- `icons/*.png` - App icons (NOT `.html` or `.sh` files in icons/)
+- `avatars/` - User avatar images + `.htaccess`
+- `targetface/index.html`, `targetface/facescript.js` - Target face viewer
+
+**PWA / Config:**
+- `sw.js` - Service worker
+- `manifest.json` - PWA manifest
+- `version.json` - App version (cache busting)
+
+### Everything Else is EXCLUDED
+
+If it's not in the list above, the deploy script (`scripts/deploy/DeployFTP.sh`) must exclude it.
+
+---
+
 ## 🚨 CRITICAL: Never Deploy Dev Files to Production
 
 ### Files That MUST NEVER Be Deployed
 
-These files/folders contain development tools, local config, or sensitive data and MUST be excluded from production deployments:
+**Dev/tooling directories:**
+- `.cursor/`, `.agent/`, `.vscode/`, `.git/`, `.github/`
+- `node_modules/`, `docs/`, `tests/`
+- `scripts/` - Deploy scripts, dev scripts, test PHP scripts
+- `audit/` - CSS/HTML audits
+- `bugs/` - Bug documentation
+- `planning/` - Planning docs
+- `backups/`, `deploy_backups/`, `app-imports/`
+- `playwright-report/`, `test-results/`
 
-**Dev Tools & Config:**
-- `.cursor/` - Cursor IDE configuration
-- `.agent/` - Agent workflows and config
-- `.vscode/` - VS Code configuration
-- `.git/` - Git repository data
-- `.github/` - GitHub Actions/workflows
-- `node_modules/` - NPM dependencies
-- `docs/` - Documentation files
-- `tests/` - Test files
-- `playwright-report/` - Test reports
-- `test-results/` - Test results
-- `deploy_backups/` - Local backup archives
-- `backups/` - Backup folders
-- `app-imports/` - Local CSV uploads
-
-**Sensitive Config Files:**
+**Sensitive config files:**
 - `.env*` - Environment variables (all variants)
 - `api/config.local.php` - **CRITICAL: Contains production MySQL credentials**
-- `config.docker.php` - Docker-specific config
-- `docker-compose.yml` - Docker config
-- `nginx.conf` - Server config
+- `api/config.local.php.example`, `api/config.local.php.production`
+- `config.docker.php`, `docker-compose.yml`, `nginx.conf`
 
-**Other:**
-- `*.md` - Markdown documentation
+**Build/test configs (root level):**
+- `jest.config.js`, `playwright.config*.js`
+- `postcss.config.js`, `tailwind.config.js`
+- `package.json`, `package-lock.json`
+- `router.php` (PHP dev server router)
+
+**Dev-only HTML pages:**
+- `test-coach-buttons.html`
+- NOTE: `gemini-oneshot.html` is a PRODUCTION page (Practice Target, linked from index.html)
+
+**API dev tools (dangerous on prod!):**
+- `api/sql/**` - All SQL migration/diagnostic scripts
+- `api/seed_*.php` - Test data seeders
+- `api/*migrate*.php` - Migration scripts
+- `api/check_and_migrate.php` - Migration checker
+- `api/cleanup_*.php` - Cleanup scripts
+- `api/diagnostic_*.php` - Diagnostic tools
+- `api/backfill_*.php` - Backfill scripts
+- `api/add_size_columns.php` - One-off migration
+- `api/backup_database_remote.sh`, `api/restore_backup_to_dev.sh` - Shell scripts
+
+**Dot files / metadata:**
+- `.cursorignore`, `.cursorrules`, `.dockerignore`, `.gitignore`, `.gitattributes`, `.markdownlint.json`
+
+**Build source files:**
+- `css/tailwind-input.css` - Tailwind source (only compiled CSS deploys)
+- `icons/generate-icons.sh`, `icons/*.html` - Icon dev tools
+
+**Catch-all patterns:**
+- `*.md` - All markdown documentation
 - `.DS_Store` - macOS metadata
+- `*.log` - Log files
 
 ### Why This Matters
 
-1. **Security:** `api/config.local.php` contains production database credentials. If deployed from a local machine with Docker config, production breaks.
-2. **Performance:** Dev folders (`.cursor`, `.agent`, `node_modules`, etc.) are large and unnecessary on production.
-3. **Privacy:** `.env` files may contain API keys, passwords, and other secrets.
+1. **Security:** `api/config.local.php` contains production database credentials. `api/seed_test_data.php` can write test data to production.
+2. **Performance:** Dev folders (`.cursor`, `node_modules`, `scripts/`) are unnecessary on production.
+3. **Privacy:** `.env` files contain API keys, passwords, and secrets.
+4. **Data integrity:** Migration/seed/cleanup scripts could corrupt production data if triggered.
 
 ## 🔴 MANDATORY Pre-Deployment Checks
 
 Before ANY deployment suggestion, you MUST:
 
-1. **Verify Deploy Script Excludes:**
-   - Check `scripts/deploy/DeployFTP.sh` includes all dev folders in `EXCLUDES`
-   - Ensure `api/config.local.php` is explicitly excluded
-   - Verify `.cursor` and `.agent` are excluded
+1. **Verify the WHITELIST above matches `DeployFTP.sh` EXCLUDES:**
+   - Every file NOT in the whitelist must be in EXCLUDES
+   - New files/folders added to repo must be excluded unless they're production files
 
 2. **Verify Deploy Source:**
-   - Deploy script defaults to the **current repo folder** (repo root containing `scripts/deploy/`). When you run `npm run deploy:fast` from the repo, it deploys from that repo.
-   - Override with `WDV_DEPLOY_SOURCE=/path` to deploy from another tree.
-   - Confirm which folder is being deployed (echoed as "Deploy source: ...").
-   - Warn if deploying from a folder that contains dev files (excludes still apply).
+   - Deploy script defaults to the **current repo folder** (repo root containing `scripts/deploy/`)
+   - Override with `WDV_DEPLOY_SOURCE=/path` to deploy from another tree
+   - Confirm which folder is being deployed (echoed as "Deploy source: ...")
 
 3. **Verify Config Protection:**
-   - Confirm `api/config.local.php` is in `.gitignore`
-   - Confirm `api/config.local.php` is in deploy script excludes
-   - Warn that production config must exist ONLY on the server
+   - `api/config.local.php` is in `.gitignore` AND deploy script excludes
+   - Production config must exist ONLY on the server
 
-4. **Check for Accidental Inclusions:**
-   - Scan deploy script for any patterns that might include dev files
-   - Verify `.gitignore` patterns are respected in deploy excludes
+4. **Check for New Files:**
+   - If any new files were added to the repo since last deploy, verify they are either:
+     - In the whitelist (production file) → already deployed
+     - NOT in the whitelist → must be in EXCLUDES
 
 ## ⚠️ When User Asks to Deploy
 
 **ALWAYS do these checks first:**
 
-1. **Check deploy script excludes:**
+1. Run a dry-run to verify the file list:
    ```bash
-   grep -E "EXCLUDES|exclude-glob" scripts/deploy/DeployFTP.sh
+   npm run deploy:fast -- --dry-run --no-local-backup
    ```
 
-2. **Verify config.local.php protection:**
-   ```bash
-   grep "config.local.php" scripts/deploy/DeployFTP.sh
-   grep "config.local.php" .gitignore
-   ```
+2. Review the "Step 3: Verifying files" output - it should only show production files
 
-3. **Warn about deploy source:**
-   - By default the script deploys from the **current repo** (where the script lives). If you run deploy from the repo, it uses that repo's tree and its `.env`.
-   - If using `WDV_DEPLOY_SOURCE`: "Deploying from override path - verify it's up to date and has correct .env"
+3. Verify no dev files appear in the lftp mirror output
 
-4. **Remind about production config:**
-   - "Remember: `api/config.local.php` on production must have production MySQL credentials, not Docker/local config"
+4. Remind about production config:
+   - "`api/config.local.php` on production must have production MySQL credentials, not Docker/local config"
 
 ## 🚫 NEVER Do These
 
-- ❌ Suggest deploying without checking deploy script excludes
-- ❌ Suggest deploying `api/config.local.php` from local machine
+- ❌ Deploy without checking deploy script excludes
+- ❌ Deploy `api/config.local.php` from local machine
 - ❌ Skip verification of which folder is being deployed
 - ❌ Deploy without confirming dev folders are excluded
 - ❌ Override deploy script excludes "just this once"
+- ❌ Deploy new files without adding them to whitelist or excludes
 
 ## ✅ ALWAYS Do These
 
-- ✅ Check deploy script excludes before suggesting deployment
+- ✅ Check the whitelist above before suggesting deployment
 - ✅ Verify `api/config.local.php` is excluded
 - ✅ Confirm deploy source folder
-- ✅ Warn if deploying from a folder with dev files
+- ✅ Run `--dry-run` before actual deployment
 - ✅ Remind that production config lives only on server
 - ✅ Suggest running `check_prod_files.sh` after deployment to verify
 
-## 📋 Deployment Checklist
+## 🔧 When Adding New Files to the Repo
 
-Before suggesting deployment, verify:
-
-- [ ] Deploy script excludes `.cursor`, `.agent`, `.git`, `node_modules`, `docs`, `tests`
-- [ ] Deploy script excludes `api/config.local.php`
-- [ ] Deploy script excludes `.env*` files
-- [ ] `.gitignore` includes `api/config.local.php`
-- [ ] Deploy source is clear (default: current repo; or WDV_DEPLOY_SOURCE if set)
-- [ ] Production `api/config.local.php` exists on server with correct credentials
-- [ ] User understands dev files won't be uploaded
-
-## 🔧 If Deploy Script Needs Updates
-
-If you need to add excludes to the deploy script:
-
-1. Add to `EXCLUDES` variable in `scripts/deploy/DeployFTP.sh`
-2. Use pattern: `--exclude-glob folder_name/**` for folders
-3. Use pattern: `--exclude-glob file_name` for files
-4. Test with `--dry-run` flag first
-5. Document the exclude in this rule file
+1. **Decide:** Is this a production file?
+   - YES → Add to the WHITELIST section above
+   - NO → Add to EXCLUDES in `scripts/deploy/DeployFTP.sh`
+2. **Update EXCLUDES** in `DeployFTP.sh` (pattern or explicit name)
+3. **Verify** with `--dry-run` that the file is correctly included/excluded
+4. **Update this rule** if the whitelist changed
 
 ## 📚 Related Files
 
@@ -132,4 +193,4 @@ If you need to add excludes to the deploy script:
 
 ---
 
-**Remember:** One accidental deployment of `api/config.local.php` with Docker config can break production. Always verify excludes before deploying.
+**Remember:** One accidental deployment of `api/seed_test_data.php` or `api/config.local.php` can corrupt or break production. Always verify the whitelist and excludes before deploying.

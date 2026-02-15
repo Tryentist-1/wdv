@@ -70,6 +70,18 @@
 
 ## 🚨 Status Update (February 2026)
 
+### ✅ Solo/Team Keypad & Sync Fixes (February 12, 2026)
+- **Solo keypad fix:** Migrated `solo_card.js` from inline keypad to shared `ScoreKeypad` module (`js/score_keypad.js`). Fixed keypad not appearing and auto-advance broken on mobile (caused by `readOnly` check in `focusin` handler).
+- **Match code restoration:** `hydrateSoloMatch()` and `hydrateTeamMatch()` now restore `match_code` from server GET response. Fixes 401 sync failures after "Reset Data" clears localStorage.
+- **Sync status on solo card:** End rows now embed sync status icons (checkmark/spinner/error) via `<span id="sync-e${setNumber}">`.
+- **LiveUpdates API:** Added `setSoloMatchCode()` and `setTeamMatchCode()` public setters.
+
+### ✅ Deploy Script & Safety Overhaul (February 12, 2026)
+- **Comprehensive exclusions:** `DeployFTP.sh` now has 40+ exclude patterns organized by category (sensitive files, IDE/tooling, dev dirs, test configs, API dev tools, etc.)
+- **Canonical whitelist:** `.cursor/rules/deployment-safety.mdc` now starts with a positive "What DOES Deploy" list — no more guessing.
+- **Step 3 verification:** Deploy script now accurately shows only production files (was previously showing dev files in the preview).
+- **Files now excluded that were previously leaking to prod:** `scripts/`, `audit/`, `bugs/`, `planning/`, `jest.config.js`, `playwright.config*`, `package.json`, `api/sql/**`, `api/seed_*.php`, `api/*migrate*.php`, build configs, dot files, and more.
+
 ### ✅ Games Events: Position Filter & Import Roster Games
 - **Position filter:** S1–S8, T1–T6 for Games Events in Add Archers modal
 - **Import Roster Games:** CSV import with column mapping, MySQL sync
@@ -916,14 +928,17 @@ npm run deploy:fast         # Skip local backup (faster)
 
 #### What Gets Deployed
 
+> **Canonical whitelist:** `.cursor/rules/deployment-safety.mdc`
+
 | Deployed ✅ | Excluded ❌ |
 |-------------|------------|
-| `api/` - Backend PHP | `docs/` - Documentation |
-| `js/` - Frontend JS | `tests/` - Test files |
-| `css/` - Stylesheets | `*.md` - Markdown files |
-| `*.html` - HTML pages | `node_modules/` |
-| `avatars/`, `icons/` | `backups/`, `deploy_backups/` |
-| `sw.js`, `manifest.json` | `.env`, `.git/` |
+| `api/` - Production PHP only | `scripts/`, `docs/`, `tests/` |
+| `js/` - Frontend JS | `audit/`, `bugs/`, `planning/` |
+| `css/` - Compiled CSS | `api/sql/`, `api/seed_*.php`, `api/*migrate*.php` |
+| Production `*.html` pages | `*.md`, `.env*`, `node_modules/` |
+| `avatars/`, `icons/*.png` | Build configs (`jest`, `playwright`, `package.json`) |
+| `sw.js`, `manifest.json`, `version.json` | `.git/`, `.cursor/`, `.agent/`, IDE files |
+| `targetface/`, `.htaccess` files | `backups/`, `deploy_backups/`, `app-imports/` |
 
 #### Post-Deployment Verification
 
