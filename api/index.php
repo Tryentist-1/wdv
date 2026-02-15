@@ -176,7 +176,23 @@ file_put_contents(__DIR__ . '/route_debug.txt', "Route: [$route]\nURI: [{$_SERVE
 if ($route === '/v1/health') {
     $key = $_SERVER['HTTP_X_API_KEY'] ?? '';
     $pass = $_SERVER['HTTP_X_PASSCODE'] ?? '';
-    json_response(['ok' => true, 'time' => time(), 'hasApiKey' => !!$key, 'hasPass' => !!$pass]);
+    $payload = ['ok' => true, 'time' => time(), 'hasApiKey' => !!$key, 'hasPass' => !!$pass];
+    $versionFile = dirname(__DIR__) . '/version.json';
+    if (is_readable($versionFile)) {
+        $versionJson = @file_get_contents($versionFile);
+        if ($versionJson !== false) {
+            $versionData = @json_decode($versionJson, true);
+            if (is_array($versionData)) {
+                if (isset($versionData['version'])) {
+                    $payload['version'] = $versionData['version'];
+                }
+                if (isset($versionData['build'])) {
+                    $payload['build'] = $versionData['build'];
+                }
+            }
+        }
+    }
+    json_response($payload);
     exit;
 }
 

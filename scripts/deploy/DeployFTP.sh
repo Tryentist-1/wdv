@@ -107,6 +107,25 @@ cd "$SOURCE_DIR"
 find . -type f -not -path "*/\.*" -not -path "*/node_modules/*" -not -path "*/docs/*" -not -path "*/tests/*" -not -path "*/backups/*" -not -path "*/deploy_backups/*" -not -path "*/app-imports/*" | sort
 cd - > /dev/null
 
+# --- Step 3.5: Set app version build for cache busting (version.json + sw.js) ---
+BUILD=$(date +%Y%m%d%H%M%S)
+if [ -f "$SOURCE_DIR/version.json" ]; then
+  if sed --version >/dev/null 2>&1; then
+    sed -i "s/\"build\": *\"[^\"]*\"/\"build\": \"$BUILD\"/" "$SOURCE_DIR/version.json"
+  else
+    sed -i '' "s/\"build\": *\"[^\"]*\"/\"build\": \"$BUILD\"/" "$SOURCE_DIR/version.json"
+  fi
+  echo "Set version.json build to $BUILD"
+fi
+if [ -f "$SOURCE_DIR/sw.js" ]; then
+  if sed --version >/dev/null 2>&1; then
+    sed -i "s/__BUILD__/$BUILD/g" "$SOURCE_DIR/sw.js"
+  else
+    sed -i '' "s/__BUILD__/$BUILD/g" "$SOURCE_DIR/sw.js"
+  fi
+  echo "Set sw.js cache version to $BUILD"
+fi
+
 # --- Step 4: Deploy to FTP (from SOURCE_DIR so backup, verify, and upload use same tree) ---
 echo -e "\n--- Step 4: Deploying to FTP ---"
 if [[ $RESET_MODE -eq 1 ]]; then

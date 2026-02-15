@@ -1,7 +1,7 @@
 // Service Worker for OAS Score & Tools PWA
-// Version: 1.0.0
-const CACHE_NAME = 'oas-score-v1';
-const RUNTIME_CACHE = 'oas-runtime-v1';
+// Cache version replaced at deploy (__BUILD__) so new deploys get fresh assets
+const CACHE_NAME = 'oas-score-__BUILD__';
+const RUNTIME_CACHE = 'oas-runtime-__BUILD__';
 
 // Assets to cache immediately on install
 // Note: Paths are relative to service worker location (root /)
