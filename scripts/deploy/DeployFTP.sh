@@ -3,16 +3,19 @@
 # Deployment script for Tryentist WDV (FTP-SSL, with local and remote backup)
 # Loads FTP_PASSWORD from .env in the deploy source folder (which should be in .gitignore)
 #
-# Deploy source: Set WDV_DEPLOY_SOURCE to the path of the tree to deploy (backup, verify, and
-# upload all use this folder). If unset, uses LOCAL_DIR below. Examples:
-#   WDV_DEPLOY_SOURCE=/Volumes/terry/web-mirrors/tryentist/wdv   # other machine's copy (mounted)
-#   WDV_DEPLOY_SOURCE=/Users/terry/makeitso/wdv                   # this repo (e.g. Cursor workspace)
+# Deploy source: Default is the current repo (the folder containing this script's repo).
+# Override with WDV_DEPLOY_SOURCE to deploy from another tree. Examples:
+#   (default)  # deploy from this repo, e.g. /Users/terry/makeitso/wdv
+#   WDV_DEPLOY_SOURCE=/Volumes/terry/web-mirrors/tryentist/wdv   # other copy (mounted)
 
 HOST="da100.is.cc"
 USER="terry@tryentist.com"
 REMOTE_DIR="public_html/wdv"
-LOCAL_DIR="/Users/terry/web-mirrors/tryentist/wdv"
-SOURCE_DIR="${WDV_DEPLOY_SOURCE:-$LOCAL_DIR}"
+
+# Default: current repo root (folder that contains scripts/deploy/)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+SOURCE_DIR="${WDV_DEPLOY_SOURCE:-$REPO_ROOT}"
 DATESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="$SOURCE_DIR/deploy_backups"
 

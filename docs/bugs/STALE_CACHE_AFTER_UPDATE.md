@@ -135,4 +135,6 @@ When the app is updated (deploy), especially anything that affects sync or API c
 - `api/index.php` – health response includes `version` and `build` from `version.json`.
 - `sw.js` – `CACHE_NAME`/`RUNTIME_CACHE` use `__BUILD__` placeholder; deploy replaces with build timestamp.
 - `scripts/deploy/DeployFTP.sh` – Step 3.5: set `version.json` build and replace `__BUILD__` in `sw.js` before upload.
-- `index.html` – Early version check (fetch health, compare to `app_version`); on mismatch, full refresh (clear cache/session, unregister SW, reload). Added `refreshApp()` and "Refresh" button for manual get-latest.
+- `index.html` – Early version check (fetch health, compare to `app_version`); on mismatch, full refresh (clear cache/session, unregister SW, reload).
+
+**Update (2025-02):** Consolidated to single **Reset Data** button. It now also unregisters the Service Worker (same as former Refresh), so it does both "get latest app" and "full reset". Removed separate Refresh button.

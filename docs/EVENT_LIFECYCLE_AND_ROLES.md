@@ -15,6 +15,7 @@
 - Create Archer Records and School Roster in Archerlist using the "Import" or "Add Archer"
 - Select Positions for Brackets using the http://localhost:8001/assignment_list.html
 - Create and manage events, Ranking Rounds, Solo Brackets and Team Brackets.
+- Events can have Ranking ROunds, Solo Rounds Swiss or Elimination, Team Rounds Swiss or Elimination, they are all optional for the event set up. For "Games Events" that are not sanctioned events it is common to have only Swiss Solo and Swiss Team brackets.
 - Add archers to events, Ranking rounds, Solo Brackets and Team Brackets
 - Assign bales and targets
 - Verify scorecards and match results

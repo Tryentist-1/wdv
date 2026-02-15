@@ -3865,18 +3865,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const isLocked = !!state.activeEventId && (archer.locked || status === 'VER' || status === 'VERIFIED' || status === 'VOID');
             const rowLockAttr = isLocked ? 'data-locked="true" class="locked-scorecard-row"' : '';
             const lockedAttr = isLocked ? 'data-locked="true" tabindex="-1" disabled' : 'data-locked="false"';
-            const missing0 = safeEndScores[0] === '' || safeEndScores[0] == null;
-            const missing1 = safeEndScores[1] === '' || safeEndScores[1] == null;
-            const missing2 = safeEndScores[2] === '' || safeEndScores[2] == null;
+            // "Missing" = value 'M' (explicit) OR empty in a partially-filled end (inferred missing arrow).
+            const endHasAnyScore = safeEndScores.some(s => s !== '' && s != null);
+            const isEmpty = (s) => (s === '' || s == null);
+            const isExplicitM = (s) => String(s || '').toUpperCase() === 'M';
+            const showAsMissing0 = isExplicitM(safeEndScores[0]) || (isEmpty(safeEndScores[0]) && endHasAnyScore);
+            const showAsMissing1 = isExplicitM(safeEndScores[1]) || (isEmpty(safeEndScores[1]) && endHasAnyScore);
+            const showAsMissing2 = isExplicitM(safeEndScores[2]) || (isEmpty(safeEndScores[2]) && endHasAnyScore);
             const missingCellClass = ' border border-dashed border-amber-400 dark:border-amber-500';
             const missingPlaceholderClass = ' placeholder-gray-500 dark:placeholder-gray-400';
 
             tableHTML += `
                 <tr data-archer-id="${archer.id}" ${rowLockAttr} class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
                     <td class="px-1.5 py-0 text-left text-xs font-semibold sticky left-0 bg-white dark:bg-gray-700 text-gray-800 dark:text-white truncate max-w-[85px] h-[44px] align-middle">${archer.firstName} ${archer.lastName.charAt(0)}. (${archer.targetAssignment})</td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600${missing0 ? missingCellClass : ''}"><input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])}${missing0 ? missingPlaceholderClass : ''} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" placeholder="${missing0 ? 'Missing' : ''}" ${lockedAttr} readonly></td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600${missing1 ? missingCellClass : ''}"><input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[1])} ${getScoreTextColor(safeEndScores[1])}${missing1 ? missingPlaceholderClass : ''} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" placeholder="${missing1 ? 'Missing' : ''}" ${lockedAttr} readonly></td>
-                    <td class="p-0 border-r border-gray-200 dark:border-gray-600${missing2 ? missingCellClass : ''}"><input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])}${missing2 ? missingPlaceholderClass : ''} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" placeholder="${missing2 ? 'Missing' : ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600${showAsMissing0 ? missingCellClass : ''}"><input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[0])} ${getScoreTextColor(safeEndScores[0])}${showAsMissing0 ? missingPlaceholderClass : ''} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="0" value="${safeEndScores[0] || ''}" placeholder="${showAsMissing0 ? 'Missing' : ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600${showAsMissing1 ? missingCellClass : ''}"><input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[1])} ${getScoreTextColor(safeEndScores[1])}${showAsMissing1 ? missingPlaceholderClass : ''} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="1" value="${safeEndScores[1] || ''}" placeholder="${showAsMissing1 ? 'Missing' : ''}" ${lockedAttr} readonly></td>
+                    <td class="p-0 border-r border-gray-200 dark:border-gray-600${showAsMissing2 ? missingCellClass : ''}"><input type="text" class="score-input w-full h-[44px] text-center font-bold border-none bg-score-${getScoreColorClass(safeEndScores[2])} ${getScoreTextColor(safeEndScores[2])}${showAsMissing2 ? missingPlaceholderClass : ''} ${isLocked ? 'locked-score-input' : ''}" data-archer-id="${archer.id}" data-arrow-idx="2" value="${safeEndScores[2] || ''}" placeholder="${showAsMissing2 ? 'Missing' : ''}" ${lockedAttr} readonly></td>
                     <td class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600 text-xs" data-archer-id="${archer.id}" data-total-type="end">${endTotal}</td>
                     <td class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs" data-archer-id="${archer.id}" data-total-type="running">${runningTotal}</td>
                     <td class="px-0.5 py-0.5 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600 text-xs" data-archer-id="${archer.id}" data-total-type="xs">${endXs}</td>
@@ -4467,9 +4471,14 @@ document.addEventListener('DOMContentLoaded', () => {
             input.classList.add(`bg-score-${colorClass}`);
             input.classList.add(textColorClass);
 
-            // Show or hide "Missing Arrow" indicator when value is empty or filled
+            // "Missing" = value 'M' (explicit) OR empty in a partially-filled end (inferred missing).
             const td = input.closest('td');
-            if (scoreValue === '' || scoreValue == null) {
+            const isExplicitM = String(scoreValue || '').toUpperCase() === 'M';
+            const isEmpty = scoreValue === '' || scoreValue == null;
+            const endScores = archer.scores[state.currentEnd - 1];
+            const endHasAnyScore = Array.isArray(endScores) && endScores.some(s => s !== '' && s != null);
+            const showAsMissing = isExplicitM || (isEmpty && endHasAnyScore);
+            if (showAsMissing) {
                 input.placeholder = 'Missing';
                 input.classList.add('placeholder-gray-500', 'dark:placeholder-gray-400');
                 if (td) td.classList.add('border', 'border-dashed', 'border-amber-400', 'dark:border-amber-500');

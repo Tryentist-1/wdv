@@ -173,7 +173,7 @@ npm run test:api:all
 
 ## 9. Version Check & Refresh (Post-Deploy)
 
-After a deploy, the app detects a new version via `/api/v1/health` (response `version`/`build`) and auto-refreshes: clears cache/session (not cookies), unregisters the service worker, and reloads so users get latest JS and refetch from MySQL. Manual option: **Refresh** button on the home footer (next to Reset Data) does the same without logging out. To verify: see **docs/bugs/STALE_CACHE_AFTER_UPDATE.md** (testing plan).
+After a deploy, the app detects a new version via `/api/v1/health` (response `version`/`build`) and auto-refreshes: clears cache/session (not cookies), unregisters the service worker, and reloads so users get latest JS and refetch from MySQL. Manual option: **Reset Data** button on the home footer clears everything (including cookies), unregisters the service worker, and reloads—users must re-select archer after. To verify: see **docs/bugs/STALE_CACHE_AFTER_UPDATE.md** (testing plan).
 
 ---
 

@@ -192,14 +192,9 @@
             title="Coach console: events and live scoring">
             <i class="fas fa-chalkboard-teacher mr-1"></i>Coaches
           </a>
-          <button id="refresh-app-btn"
-            class="px-3 h-[44px] min-h-[44px] min-w-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center text-sm"
-            title="Get latest app version and refresh data from server">
-            <i class="fas fa-sync-alt mr-1"></i>Refresh
-          </button>
           <button id="clear-cache-btn"
             class="px-3 h-[44px] min-h-[44px] min-w-[44px] bg-danger text-white rounded font-semibold hover:bg-red-700 transition-colors flex items-center justify-center text-sm"
-            title="Clear cached archers, events, and scoring data on this device">
+            title="Reset data and get latest app. Clears cached archers, events, and scoring sessions. Any unsynced scorecard in progress will be lost.">
             <i class="fas fa-broom mr-1"></i>Reset Data
           </button>
         </div>
@@ -216,16 +211,45 @@
       let filteredArchers = [];
 
       /**
-       * Load archer list from server or localStorage
-       * Prefers ArcherModule if available for consistency
+       * Load archer list from server or localStorage.
+       * When cache is empty (e.g. after Reset Data), always fetches fresh from server
+       * so "Who Are You" picker shows the latest active archers.
+       * @returns {Promise<Array>} Archer list
        */
       async function loadArcherList() {
-        // Try ArcherModule first (most consistent with archer_list.html)
+        const cached = localStorage.getItem('archerList');
+
+        // When cache is empty (e.g. after Reset Data), fetch from server first
+        if (!cached || cached === '[]') {
+          try {
+            const res = await fetch('api/v1/archers');
+            if (res.ok) {
+              const data = await res.json();
+              archerList = (data.archers || []).map(a => ({
+                id: a.id,
+                extId: a.id,
+                first: a.first_name || a.firstName || '',
+                last: a.last_name || a.lastName || '',
+                school: a.school || '',
+                level: a.level || '',
+                gender: a.gender || '',
+                photoUrl: a.photo_url || a.photoUrl || null,
+                nickname: a.nickname || ''
+              }));
+              localStorage.setItem('archerList', JSON.stringify(archerList));
+              filteredArchers = archerList.slice(0, 50);
+              return archerList;
+            }
+          } catch (e) {
+            console.warn('[index] Could not fetch archer list from server:', e.message);
+          }
+        }
+
+        // Use cache: ArcherModule or localStorage
         if (window.ArcherModule && typeof window.ArcherModule.loadList === 'function') {
           try {
             const moduleList = window.ArcherModule.loadList();
             if (moduleList && moduleList.length > 0) {
-              // Convert ArcherModule format to index.html format
               archerList = moduleList.map(a => ({
                 id: a.id || a.extId,
                 extId: a.extId || a.id,
@@ -245,8 +269,6 @@
           }
         }
 
-        // Fallback: Try localStorage cache
-        const cached = localStorage.getItem('archerList');
         if (cached) {
           try {
             archerList = JSON.parse(cached) || [];
@@ -255,29 +277,7 @@
           }
         }
 
-        // Fallback: Fetch fresh list from server
-        try {
-          const res = await fetch('api/v1/archers');
-          if (res.ok) {
-            const data = await res.json();
-            archerList = (data.archers || []).map(a => ({
-              id: a.id,
-              extId: a.id,
-              first: a.first_name || a.firstName || '',
-              last: a.last_name || a.lastName || '',
-              school: a.school || '',
-              level: a.level || '',
-              gender: a.gender || '',
-              photoUrl: a.photo_url || a.photoUrl || null,
-              nickname: a.nickname || ''
-            }));
-            localStorage.setItem('archerList', JSON.stringify(archerList));
-          }
-        } catch (e) {
-          console.log('[index] Could not fetch archer list:', e.message);
-        }
-
-        filteredArchers = archerList.slice(0, 50); // Show first 50 by default
+        filteredArchers = archerList.slice(0, 50);
         return archerList;
       }
 
@@ -1136,56 +1136,6 @@
       }
 
 
-      /**
-       * Refresh app: clear cache/session (not cookies), unregister SW, reload to get latest JS and refetch data from MySQL.
-       * Use when the app feels stale or after an update. Keeps you logged in.
-       */
-      async function refreshApp() {
-        let serverVersion = '';
-        try {
-          const r = await fetch('api/v1/health', { cache: 'no-store' });
-          const data = await r.json();
-          serverVersion = (data && (data.build || data.version)) || '';
-        } catch (e) {
-          console.warn('Refresh: could not fetch version', e);
-        }
-        const exactKeys = [
-          'archerList',
-          'archerListMeta',
-          'archerListPendingUpserts',
-          'archerSelfExtId',
-          'live_updates_config',
-          'event_entry_code',
-          'archery_master_list',
-          'archery_tools_onboarding_complete',
-          'current_bale_session'
-        ];
-        const keyPrefixes = [
-          'rankingRound_', 'rankingRound300_', 'event:', 'LiveUpdates:',
-          'live_updates_session:', 'soloCard_session_', 'cachedRound:',
-          'coachSession:', 'manualBale:', 'luq:'
-        ];
-        const keys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (exactKeys.includes(key) || keyPrefixes.some(p => key.startsWith(p)))) keys.push(key);
-        }
-        keys.forEach(k => localStorage.removeItem(k));
-        try { sessionStorage.clear(); } catch (err) {}
-        if (window.caches && typeof window.caches.keys === 'function') {
-          try {
-            const cacheNames = await window.caches.keys();
-            await Promise.all(cacheNames.map(name => window.caches.delete(name)));
-          } catch (err) { console.warn('Cache API clear failed:', err); }
-        }
-        if (serverVersion) try { localStorage.setItem('app_version', serverVersion); } catch (e) {}
-        if ('serviceWorker' in navigator) {
-          const regs = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(regs.map(r => r.unregister()));
-        }
-        window.location.href = (window.location.pathname || '/') + (window.location.pathname.indexOf('?') === -1 ? '?' : '&') + 'nocache=' + Date.now();
-      }
-
       async function clearAppData() {
         const confirmed = confirm('Reset local app data? This clears cached archers, events, and scoring sessions stored on this device.');
         if (!confirmed) return;
@@ -1218,7 +1168,8 @@
           'soloCard_session_',
           'cachedRound:',
           'coachSession:',
-          'manualBale:'
+          'manualBale:',
+          'luq:'
         ];
 
         try {
@@ -1245,6 +1196,16 @@
             await Promise.all(cacheNames.map(name => window.caches.delete(name)));
           } catch (err) {
             console.warn('Cache API clear failed:', err);
+          }
+        }
+
+        // Unregister Service Worker so next load gets fresh app assets (JS/CSS)
+        if ('serviceWorker' in navigator) {
+          try {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map(r => r.unregister()));
+          } catch (err) {
+            console.warn('Service Worker unregister failed:', err);
           }
         }
 
@@ -1384,12 +1345,6 @@
 
       // Initialize the app
       document.addEventListener('DOMContentLoaded', function () {
-        const refreshBtn = document.getElementById('refresh-app-btn');
-        if (refreshBtn) {
-          refreshBtn.addEventListener('click', () => {
-            refreshApp();
-          });
-        }
         const clearBtn = document.getElementById('clear-cache-btn');
         if (clearBtn) {
           clearBtn.addEventListener('click', () => {

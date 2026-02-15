@@ -158,16 +158,20 @@ const ScorecardView = (() => {
         ? 'border-b border-gray-200 dark:border-gray-600' 
         : 'border-b border-gray-200 bg-gray-50 dark:bg-gray-800';
       const missingCellClass = ' border border-dashed border-amber-400 dark:border-amber-500 text-amber-700 dark:text-amber-400';
-      const m0 = endScores[0] === '' || endScores[0] == null;
-      const m1 = endScores[1] === '' || endScores[1] == null;
-      const m2 = endScores[2] === '' || endScores[2] == null;
+      const isExplicitM = (s) => String(s ?? '').toUpperCase() === 'M';
+      const isEmpty = (s) => (s === '' || s == null);
+      const endHasAnyScore = endScores.some(s => s !== '' && s != null);
+      const showAsMissing = (s) => isExplicitM(s) || (isEmpty(s) && endHasAnyScore);
+      const s0 = showAsMissing(endScores[0]);
+      const s1 = showAsMissing(endScores[1]);
+      const s2 = showAsMissing(endScores[2]);
       
       html += `
         <tr class="${rowClass}">
           <td class="px-2 py-1 text-center font-semibold dark:text-white">${endNum}</td>
-          <td class="px-2 py-1 text-center ${getScoreColor(endScores[0])} font-bold${m0 ? missingCellClass : ''}">${m0 ? 'Missing' : endScores[0]}</td>
-          <td class="px-2 py-1 text-center ${getScoreColor(endScores[1])} font-bold${m1 ? missingCellClass : ''}">${m1 ? 'Missing' : endScores[1]}</td>
-          <td class="px-2 py-1 text-center ${getScoreColor(endScores[2])} font-bold${m2 ? missingCellClass : ''}">${m2 ? 'Missing' : endScores[2]}</td>
+          <td class="px-2 py-1 text-center ${getScoreColor(endScores[0])} font-bold${s0 ? missingCellClass : ''}">${s0 ? 'Missing' : (endScores[0] ?? '')}</td>
+          <td class="px-2 py-1 text-center ${getScoreColor(endScores[1])} font-bold${s1 ? missingCellClass : ''}">${s1 ? 'Missing' : (endScores[1] ?? '')}</td>
+          <td class="px-2 py-1 text-center ${getScoreColor(endScores[2])} font-bold${s2 ? missingCellClass : ''}">${s2 ? 'Missing' : (endScores[2] ?? '')}</td>
           <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold">${isComplete ? endTotal : ''}</td>
           <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white">${isComplete ? runningTotal : ''}</td>
           <td class="px-2 py-1 text-center bg-gray-100 dark:bg-gray-400 dark:text-white ${avgClass} font-bold">${endAvg}</td>
@@ -423,16 +427,19 @@ const ScorecardView = (() => {
       html += `<tr data-archer-id="${archer.id || ''}">
         <td>${getRowLabel(archer)}</td>`;
 
+      const endHasAnyScore = endScores.some(s => s !== '' && s != null);
       for (let arrowIdx = 0; arrowIdx < arrowsPerEnd; arrowIdx++) {
         const scoreValue = endScores[arrowIdx] || '';
         const colorClass = getScoreColor(scoreValue);
-        const isMissing = scoreValue === '' || scoreValue == null || scoreValue === undefined;
+        const isExplicitM = String(scoreValue || '').toUpperCase() === 'M';
+        const isEmpty = scoreValue === '' || scoreValue == null;
+        const showAsMissing = isExplicitM || (isEmpty && endHasAnyScore);
         const missingCellClass = ' border border-dashed border-amber-400 dark:border-amber-500';
         if (editable) {
           const attrs = getInputAttrs(archer, endIndex, arrowIdx) || '';
-          html += `<td class="score-cell ${colorClass}${isMissing ? missingCellClass : ''}"><input type="text" class="score-input ${isMissing ? 'placeholder-gray-500 dark:placeholder-gray-400' : ''}" value="${scoreValue || ''}" placeholder="${isMissing ? 'Missing' : ''}" ${attrs}></td>`;
+          html += `<td class="score-cell ${colorClass}${showAsMissing ? missingCellClass : ''}"><input type="text" class="score-input ${showAsMissing ? 'placeholder-gray-500 dark:placeholder-gray-400' : ''}" value="${scoreValue || ''}" placeholder="${showAsMissing ? 'Missing' : ''}" ${attrs}></td>`;
         } else {
-          html += `<td class="score-cell ${colorClass}${isMissing ? missingCellClass : ''}">${isMissing ? 'Missing' : scoreValue}</td>`;
+          html += `<td class="score-cell ${colorClass}${showAsMissing ? missingCellClass : ''}">${showAsMissing ? 'Missing' : scoreValue}</td>`;
         }
       }
 

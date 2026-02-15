@@ -48,9 +48,10 @@ Before ANY deployment suggestion, you MUST:
    - Verify `.cursor` and `.agent` are excluded
 
 2. **Verify Deploy Source:**
-   - Confirm which folder is being deployed (`SOURCE_DIR` or `LOCAL_DIR`)
-   - Warn if deploying from a folder that contains dev files
-   - Suggest using `WDV_DEPLOY_SOURCE` environment variable if needed
+   - Deploy script defaults to the **current repo folder** (repo root containing `scripts/deploy/`). When you run `npm run deploy:fast` from the repo, it deploys from that repo.
+   - Override with `WDV_DEPLOY_SOURCE=/path` to deploy from another tree.
+   - Confirm which folder is being deployed (echoed as "Deploy source: ...").
+   - Warn if deploying from a folder that contains dev files (excludes still apply).
 
 3. **Verify Config Protection:**
    - Confirm `api/config.local.php` is in `.gitignore`
@@ -77,8 +78,8 @@ Before ANY deployment suggestion, you MUST:
    ```
 
 3. **Warn about deploy source:**
-   - If deploying from repo: "Deploying from `/Users/terry/makeitso/wdv` - ensure dev folders are excluded"
-   - If deploying from mirror: "Deploying from mirror - verify it's up to date"
+   - By default the script deploys from the **current repo** (where the script lives). If you run deploy from the repo, it uses that repo's tree and its `.env`.
+   - If using `WDV_DEPLOY_SOURCE`: "Deploying from override path - verify it's up to date and has correct .env"
 
 4. **Remind about production config:**
    - "Remember: `api/config.local.php` on production must have production MySQL credentials, not Docker/local config"
@@ -108,7 +109,7 @@ Before suggesting deployment, verify:
 - [ ] Deploy script excludes `api/config.local.php`
 - [ ] Deploy script excludes `.env*` files
 - [ ] `.gitignore` includes `api/config.local.php`
-- [ ] Deploy source is clear and correct
+- [ ] Deploy source is clear (default: current repo; or WDV_DEPLOY_SOURCE if set)
 - [ ] Production `api/config.local.php` exists on server with correct credentials
 - [ ] User understands dev files won't be uploaded
 
