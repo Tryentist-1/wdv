@@ -552,9 +552,10 @@
             }
           }
 
-          // Build subtitle with date, round type, and division
-          const subtitleParts = [dateStr, roundType, item.division].filter(p => p && p.trim());
-          const subtitle = subtitleParts.join(' • ');
+          // Build subtitle: use custom second line for solo (Opp: Record | Bale) or date • round • division
+          const subtitle = item.subtitleOverride != null
+            ? String(item.subtitleOverride)
+            : [dateStr, roundType, item.division].filter(p => p && p.trim()).join(' • ');
 
           // Determine progress color based on type
           let progressClass = 'text-blue-600 dark:text-blue-400';
@@ -836,7 +837,7 @@
               const bracketAssignments = bracketData.assignments || [];
               console.log('[index] Bracket assignments found:', bracketAssignments.length);
 
-              // Add each bracket assignment
+              // Add each bracket assignment (Swiss solo)
               bracketAssignments.forEach(assignment => {
                 if (assignment.bracket_type === 'SOLO') {
                   if (assignment.bracket_format === 'ELIMINATION' && assignment.opponent) {
@@ -854,22 +855,27 @@
                       event_date: assignment.event_date
                     });
                   } else if (assignment.bracket_format === 'SWISS') {
-                    // Swiss bracket - show bracket assignment with bale info if available
+                    // Swiss bracket - dedupe with history solo (same match can appear in both APIs)
+                    const matchId = assignment.match_id;
+                    let mergedSets = { sets_won: 0, opponent_sets_won: 0, is_winner: false };
+                    const existingIdx = assignments.findIndex(a =>
+                      (a.type === 'solo' || a.type === 'bracket') &&
+                      (a.match_id === matchId || a.matchId === matchId)
+                    );
+                    if (existingIdx >= 0) {
+                      const existing = assignments.splice(existingIdx, 1)[0];
+                      mergedSets = {
+                        sets_won: existing.sets_won ?? 0,
+                        opponent_sets_won: existing.opponent_sets_won ?? 0,
+                        is_winner: !!existing.is_winner
+                      };
+                    }
+
                     const winLoss = assignment.swiss_wins || 0;
                     const losses = assignment.swiss_losses || 0;
-                    const points = assignment.swiss_points || 0;
-                    let details = `Record: ${winLoss}-${losses}`;
-                    let subtitle = `${assignment.event_name || 'Event'} • Swiss`;
+                    const record = `${winLoss}-${losses}`;
+                    const oppFirst = (assignment.opponent_name || '').split(/\s+/)[0] || 'Opponent';
 
-                    // Add opponent and bale info if there's a current match
-                    if (assignment.opponent_name) {
-                      details = `vs ${assignment.opponent_name} • ${details}`;
-                    }
-                    if (assignment.current_round) {
-                      subtitle += ` • ${assignment.current_round}`;
-                    }
-
-                    // Bale assignment display
                     let baleInfo = '';
                     if (assignment.bale_number) {
                       baleInfo = `Bale ${assignment.bale_number}`;
@@ -878,25 +884,43 @@
                       if (assignment.wave) baleInfo += ` (Wave ${assignment.wave})`;
                     }
 
-                    const matchLink = assignment.match_id
-                      ? `solo_card.html?match=${assignment.match_id}`
+                    const setsWon = mergedSets.sets_won;
+                    const oppSetsWon = mergedSets.opponent_sets_won;
+                    const setsStr = `Sets: ${setsWon}-${oppSetsWon}`;
+                    const trophyIcon = mergedSets.is_winner ? ' 🏆' : '';
+
+                    const eventName = assignment.event_name || 'Event';
+                    const bracketName = assignment.round || assignment.current_round || 'Solo';
+                    const title = `${eventName} - ${bracketName}`;
+                    const details = baleInfo
+                      ? `${oppFirst}: ${record} | ${baleInfo}`
+                      : `${oppFirst}: ${record}`;
+
+                    const matchLink = matchId
+                      ? `solo_card.html?match=${matchId}`
                       : `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`;
 
                     assignments.push({
                       type: 'bracket',
-                      title: `${assignment.division} Swiss Bracket`,
-                      subtitle: subtitle,
-                      details: baleInfo ? `${details} | ${baleInfo}` : details,
+                      title,
+                      subtitle: details,
+                      details: setsStr + trophyIcon,
                       link: matchLink,
-                      icon: assignment.bale_number ? 'fas fa-bullseye' : 'fas fa-trophy',
+                      icon: mergedSets.is_winner ? 'fas fa-trophy' : (assignment.bale_number ? 'fas fa-bullseye' : 'fas fa-trophy'),
                       color: assignment.match_id ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-500 hover:bg-blue-600',
                       urgent: !!assignment.match_id,
                       event_date: assignment.event_date,
-                      matchId: assignment.match_id,
+                      matchId: matchId,
+                      match_id: matchId,
                       baleNumber: assignment.bale_number,
                       lineNumber: assignment.line_number,
                       myTarget: assignment.my_target,
-                      wave: assignment.wave
+                      wave: assignment.wave,
+                      sets_won: setsWon,
+                      opponent_sets_won: oppSetsWon,
+                      is_winner: mergedSets.is_winner,
+                      event_name: title,
+                      opponent_name: assignment.opponent_name
                     });
                   }
                 }
@@ -973,28 +997,32 @@
             rankingSection.classList.remove('hidden');
           }
 
-          // Render Solo
+          // Render Solo - unified format: [Event]-[Bracket], Opp: Record | Bale; Sets + trophy
           if (soloItems.length > 0 && soloList) {
             const items = soloItems.map(a => {
-              // Handle bracket vs solo item structure
-              let progress = '';
-              if (a.type === 'bracket') {
-                const detailsMatch = a.details.match(/vs (.+?) \(Seed/);
-                progress = detailsMatch ? `vs ${detailsMatch[1]}` : `vs ${a.details.split('vs ')[1] || 'Opponent'}`;
-              } else {
-                progress = a.details || '0-0';
+              const eventName = a.event_name || a.title;
+              const progress = a.details || (a.sets_won != null ? `Sets: ${a.sets_won}-${a.opponent_sets_won || 0}${a.is_winner ? ' 🏆' : ''}` : '0-0');
+              let subtitleOverride = a.subtitleOverride;
+              if (subtitleOverride == null && a.type === 'bracket' && a.subtitle) {
+                subtitleOverride = a.subtitle;
+              }
+              if (subtitleOverride == null && a.type === 'solo' && a.opponent_name) {
+                const oppFirst = String(a.opponent_name).split(/\s+/)[0] || 'Opponent';
+                const rec = (a.sets_won ?? 0) + '-' + (a.opponent_sets_won ?? 0);
+                subtitleOverride = `${oppFirst}: ${rec}`;
               }
 
               return {
-                event_name: a.title,
+                event_name: eventName,
                 event_date: a.event_date,
                 round_type: 'Solo',
-                division: (a.subtitle || '').split(' • ')[1] || '', // Fix division parsing
+                division: subtitleOverride ? '' : ((a.subtitle || '').split(' • ')[1] || ''),
+                subtitleOverride,
                 link: a.link,
                 ends_completed: progress,
                 isSolo: true,
                 isBracket: a.type === 'bracket',
-                id: a.match_id || a.matchId // Ensure Match ID for void
+                id: a.match_id || a.matchId
               };
             });
             soloList.appendChild(createAssignmentsList(items, createOptions(true)));

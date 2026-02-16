@@ -828,7 +828,7 @@
         }
       });
       
-      // Share modal functionality
+      // Share modal functionality - must be on window for onclick="showShareModal()"
       function showShareModal() {
         const modal = document.getElementById('share-modal');
         const qrContainer = document.getElementById('qr-code-container');
@@ -861,6 +861,7 @@
         
         modal.classList.remove('hidden');
       }
+      window.showShareModal = showShareModal;
       
       // Close share modal
       document.getElementById('close-share-btn')?.addEventListener('click', () => {
