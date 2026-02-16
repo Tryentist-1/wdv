@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>How Brackets Work – Solo & Team</title>
+  <link rel="stylesheet" href="css/tailwind-compiled.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="js/common.js"></script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { padding: 0; }
+      .print-break-before { break-before: page; }
+      .section-card { break-inside: avoid; }
+    }
+    .section-card { @apply rounded-xl shadow-lg overflow-hidden; }
+  </style>
+  <script>
+    if (typeof initDarkMode === 'function') initDarkMode();
+  </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen transition-colors duration-200">
+  <div class="max-w-2xl mx-auto px-4 py-6 pb-20">
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-white">How Brackets Work</h1>
+      <div class="flex gap-2 no-print flex-wrap">
+        <a href="#solo" class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold min-h-[44px] flex items-center">Solo</a>
+        <a href="#team" class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold min-h-[44px] flex items-center">Team</a>
+        <button onclick="window.print()" class="px-3 py-2 bg-gray-600 text-white rounded-lg text-sm font-semibold min-h-[44px] flex items-center gap-1">
+          <i class="fas fa-print"></i> Print
+        </button>
+        <a href="index.html" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg text-sm font-semibold min-h-[44px] flex items-center">
+          <i class="fas fa-home"></i>
+        </a>
+      </div>
+    </div>
+
+    <p class="text-gray-600 dark:text-gray-400 mb-8 text-sm">
+      Quick reference for coaches, archers, and spectators. Mobile-friendly and printable.
+    </p>
+
+    <!-- Solo Brackets Section -->
+    <section id="solo" class="section-card bg-white dark:bg-gray-800 mb-8 print-break-before">
+      <div class="bg-blue-600 text-white px-4 py-3">
+        <h2 class="text-xl font-bold">Solo Swiss Brackets</h2>
+        <p class="text-blue-100 text-sm">1v1 head-to-head matches</p>
+      </div>
+      <div class="p-4 sm:p-6 space-y-6 text-gray-700 dark:text-gray-300">
+
+        <div>
+          <h3 class="font-bold text-gray-900 dark:text-white mb-2">Format</h3>
+          <ul class="list-disc list-inside space-y-1 text-sm">
+            <li>Two archers per match, head-to-head</li>
+            <li>5 sets maximum, 3 arrows per set</li>
+            <li>Win set: 2 points · Tie: 1 point each</li>
+            <li>First to 6 set points wins</li>
+            <li>Shoot-off if tied 5–5 after 5 sets</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-gray-900 dark:text-white mb-2">Bale Layout</h3>
+          <p class="text-sm mb-2">Each bale has 4 targets (A, B, C, D) in two lines. Line 1 shoots first, then Line 2.</p>
+          <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 font-mono text-xs overflow-x-auto">
+            Line 1:  Archer1 (Target A)  vs  Archer2 (Target B)<br>
+            Line 2:  Archer3 (Target C)  vs  Archer4 (Target D)
+          </div>
+          <p class="text-sm mt-2">Two solo matches per bale (one per line).</p>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-gray-900 dark:text-white mb-2">Archer Flow</h3>
+          <ol class="list-decimal list-inside space-y-2 text-sm">
+            <li>Check <strong>Home Screen</strong> for opponent, bale, and target</li>
+            <li>Go to your bale and target (A, B, C, or D)</li>
+            <li>Line 1 shoots first; Line 2 shoots after</li>
+            <li>Score all 5 sets; tap <strong>Complete Match</strong> when done</li>
+            <li>Coach verifies; next round assignments appear after verification</li>
+          </ol>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-gray-900 dark:text-white mb-2">Swiss Pairing</h3>
+          <p class="text-sm">Winners face winners, losers face losers. No repeat opponents when possible. Divisions: Boys/Girls Varsity (BVAR/GVAR), Boys/Girls JV (BJV/GJV).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Team Brackets Section -->
+    <section id="team" class="section-card bg-white dark:bg-gray-800">
+      <div class="bg-emerald-600 text-white px-4 py-3">
+        <h2 class="text-xl font-bold">Team Swiss Brackets</h2>
+        <p class="text-emerald-100 text-sm">3v3 team matches</p>
+      </div>
+      <div class="p-4 sm:p-6 space-y-6 text-gray-700 dark:text-gray-300">
+
+        <div>
+          <h3 class="font-bold text-gray-900 dark:text-white mb-2">Format</h3>
+          <ul class="list-disc list-inside space-y-1 text-sm">
+            <li>Two teams of 3 archers each</li>
+            <li>4 sets maximum</li>
+            <li>Each archer shoots 2 arrows per set (6 arrows per team per set)</li>
+            <li>Archers shoot one at a time: Archer 1 → Archer 2 → Archer 3</li>
+            <li>Win set: 2 points · Tie: 1 point each</li>
+            <li>First team to 5 set points wins</li>
+            <li>Shoot-off if tied 4–4 after 4 sets</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-gray-900 dark:text-white mb-2">Bale Layout</h3>
+          <p class="text-sm mb-2">Each team shares one target. All 3 archers take turns on that target.</p>
+          <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 font-mono text-xs overflow-x-auto">
+            Line 1:  Team1 (Target A)  vs  Team2 (Target B)<br>
+            Line 2:  Team3 (Target C)  vs  Team4 (Target D)
+          </div>
+          <p class="text-sm mt-2">Two team matches per bale (one per line).</p>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-gray-900 dark:text-white mb-2">Team Flow</h3>
+          <ol class="list-decimal list-inside space-y-2 text-sm">
+            <li>Check <strong>Home Screen</strong> for opponent team, bale, and target</li>
+            <li>Meet your team at the assigned bale</li>
+            <li>Line 1 shoots first; Line 2 shoots after</li>
+            <li>Take turns: Archer 1 shoots 2, Archer 2 shoots 2, Archer 3 shoots 2</li>
+            <li>Score all 4 sets; tap <strong>Complete Match</strong> when done</li>
+            <li>Coach verifies; next round assignments appear after verification</li>
+          </ol>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-gray-900 dark:text-white mb-2">Teams</h3>
+          <p class="text-sm">Teams are School + Gender + Level (e.g., WDV Men's Varsity T1). Each team has exactly 3 archers. Cross-school "MIX" teams are allowed when a school doesn't have 3 archers.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <div class="mt-8 text-center text-sm text-gray-500 dark:text-gray-400 no-print">
+      <a href="index.html" class="underline">Back to Home</a>
+    </div>
+  </div>
+</body>
+</html>

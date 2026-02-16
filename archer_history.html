@@ -277,7 +277,10 @@
           const winIndicator = item.is_winner ? ' 🏆' : '';
           subtitle = `${eventDate} • Solo Match vs ${item.opponent_name}${winIndicator}`;
           totalScore = `${item.sets_won}-${item.opponent_sets_won}`;
-          avgScore = item.final_score || 0; // Show total score in avg column
+          // Avg column: average arrow (total score / arrows shot), 1 decimal like ranking rounds
+          const arrowsShot = item.arrows_shot || 0;
+          const total = item.final_score || 0;
+          avgScore = arrowsShot > 0 ? (total / arrowsShot).toFixed(1) : '-';
           xs = '-';
           tens = '-';
         } else if (item.type === 'team') {

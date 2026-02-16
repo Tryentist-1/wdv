@@ -297,11 +297,12 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             $myMatchArcherId = $isArcher1 ? $match['archer1_match_archer_id'] : $match['archer2_match_archer_id'];
             $opponentMatchArcherId = $isArcher1 ? $match['archer2_match_archer_id'] : $match['archer1_match_archer_id'];
 
-            // Calculate sets_won from set_points (count sets where set_points = 2)
+            // Calculate sets_won, total_score, and arrows_shot (each set = 3 arrows)
             $setsStmt = $pdo->prepare('
                 SELECT 
                     COUNT(CASE WHEN set_points = 2 THEN 1 END) as sets_won,
-                    SUM(set_total) as total_score
+                    SUM(set_total) as total_score,
+                    COUNT(*) as sets_completed
                 FROM solo_match_sets
                 WHERE match_archer_id = ? AND set_number <= 5
             ');
@@ -309,6 +310,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             $myStats = $setsStmt->fetch(PDO::FETCH_ASSOC);
             $setsWon = (int) ($myStats['sets_won'] ?? 0);
             $totalScore = (int) ($myStats['total_score'] ?? 0);
+            $arrowsShot = (int) ($myStats['sets_completed'] ?? 0) * 3;
 
             $setsStmt->execute([$opponentMatchArcherId]);
             $opponentStats = $setsStmt->fetch(PDO::FETCH_ASSOC);
@@ -343,6 +345,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
                 'sets_won' => $setsWon,
                 'opponent_sets_won' => $opponentSetsWon,
                 'final_score' => $totalScore,
+                'arrows_shot' => $arrowsShot,
                 'is_winner' => $isWinner,
                 'ends_completed' => 0, // Not applicable for matches
                 'total_tens' => 0, // Could be calculated from sets if needed

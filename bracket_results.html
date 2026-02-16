@@ -66,6 +66,11 @@
       <div class="flex justify-between items-center mb-2">
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Bracket Results</h1>
         <div class="flex gap-2">
+          <a id="info-brackets-btn" href="info-brackets.html" target="_blank" rel="noopener"
+             class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2 min-h-[44px] min-w-[44px] justify-center"
+             title="How brackets work">
+            <i class="fas fa-question-circle text-lg"></i>
+          </a>
           <button id="share-btn" onclick="showShareModal()" 
                   class="px-4 py-2 bg-primary dark:bg-primary-dark text-white rounded hover:bg-primary-dark dark:hover:bg-primary transition-colors duration-200 flex items-center gap-2 min-h-[44px]">
             <i class="fas fa-share-alt"></i>
@@ -315,6 +320,14 @@
           const bracket = data.bracket;
           const eventName = bracket.event_name || 'Event';
           const eventId = bracket.event_id;
+
+          // Set info button to correct section (solo or team)
+          const infoBtn = document.getElementById('info-brackets-btn');
+          if (infoBtn) {
+            const anchor = (bracket.bracket_type || 'SOLO').toUpperCase() === 'TEAM' ? '#team' : '#solo';
+            infoBtn.href = 'info-brackets.html' + anchor;
+          }
+
           document.getElementById('bracket-info').innerHTML = `
             <div class="text-lg font-semibold">${eventName}</div>
             <div>${bracket.bracket_type} ${bracket.bracket_format} - ${bracket.division} (${bracket.status})</div>
