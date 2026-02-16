@@ -5808,7 +5808,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/solo-matches$#i', $route, $m) && $meth
                     sma.position,
                     sma.archer_name,
                     sma.school,
-                    sma.archer_id
+                    sma.archer_id,
+                    sma.target_assignment
                 FROM solo_match_archers sma
                 WHERE sma.match_id = ?
                 ORDER BY sma.position
@@ -8791,7 +8792,6 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
     exit;
 }
 
-json_response(['error' => 'Not Found', 'route' => $route], 404);
 // POST /v1/brackets/:id/generate-round - Generate next round for Swiss brackets
 // Optional body params: totalBales, targetsPerBale, startBale (for bale auto-assignment)
 if (preg_match('#^/v1/brackets/([0-9a-f-]+)/generate-round$#i', $route, $m) && $method === 'POST') {
@@ -9040,3 +9040,5 @@ ORDER BY swiss_points DESC, swiss_wins DESC, swiss_losses ASC, RAND()
     }
     exit;
 }
+
+json_response(['error' => 'Not Found', 'route' => $route], 404);

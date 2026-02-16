@@ -183,7 +183,32 @@
     </div>
 
     <!-- Coach Actions (if authenticated) -->
-    <div id="coach-actions" class="hidden mt-6">
+    <div id="coach-actions" class="hidden mt-6 space-y-4">
+      <!-- Swiss Round Progress Indicator -->
+      <div id="swiss-round-progress" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <span id="round-progress-text" class="text-sm font-semibold text-gray-800 dark:text-white"></span>
+            <span id="round-progress-detail" class="text-xs text-gray-500 dark:text-gray-400 ml-2"></span>
+          </div>
+          <div id="round-progress-bar-container" class="w-32 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+            <div id="round-progress-bar" class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate Next Round Button (Swiss only) -->
+      <div id="swiss-generate-round-container" class="hidden">
+        <button id="generate-next-round-btn" class="w-full px-6 py-4 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors min-h-[44px] text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fas fa-plus-circle"></i>
+          <span id="generate-round-btn-text">Generate Next Round</span>
+        </button>
+        <p id="generate-round-hint" class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center hidden">
+          All current round matches must be verified before generating the next round.
+        </p>
+      </div>
+
+      <!-- Validate and Close -->
       <button id="validate-close-btn" class="px-6 py-3 bg-success hover:bg-success-dark text-white rounded-lg font-semibold transition-colors min-w-[44px] min-h-[44px]">
         ✅ Validate All and Close Bracket
       </button>
@@ -336,6 +361,13 @@
           // Show coach actions if authenticated
           if (localStorage.getItem('coach_auth') === 'true' || API_KEY) {
             document.getElementById('coach-actions').classList.remove('hidden');
+            
+            // Show Swiss-specific coach controls
+            if (bracket.bracket_format === 'SWISS') {
+              document.getElementById('swiss-generate-round-container').classList.remove('hidden');
+              loadSwissRoundProgress(bracketId);
+              checkSwissRoundReadiness(data.rounds.swiss || []);
+            }
           }
           
         } catch (err) {
@@ -586,6 +618,126 @@
         container.innerHTML = html;
       }
       
+      /**
+       * Loads the suggested rounds indicator from the API.
+       * Shows "Round X of Y suggested" with a progress bar.
+       * @param {string} bId - Bracket UUID
+       */
+      async function loadSwissRoundProgress(bId) {
+        try {
+          const data = await req(`/brackets/${bId}/suggested-rounds`);
+          const suggestedRounds = data.suggestedRounds || 0;
+          const rosterSize = data.rosterSize || 0;
+
+          if (suggestedRounds <= 0) return;
+
+          // Determine current round from bracket data
+          const swissMatches = bracketData?.rounds?.swiss || [];
+          let currentRound = 0;
+          swissMatches.forEach(m => {
+            const matchLabel = m.bracket_match_id || '';
+            const roundMatch = matchLabel.match(/Round\s+(\d+)/i);
+            if (roundMatch) {
+              const rn = parseInt(roundMatch[1], 10);
+              if (rn > currentRound) currentRound = rn;
+            }
+          });
+
+          const progressEl = document.getElementById('swiss-round-progress');
+          const progressText = document.getElementById('round-progress-text');
+          const progressDetail = document.getElementById('round-progress-detail');
+          const progressBar = document.getElementById('round-progress-bar');
+
+          progressText.textContent = `Round ${currentRound} of ${suggestedRounds} suggested`;
+          progressDetail.textContent = `(${rosterSize} archers)`;
+          const pct = suggestedRounds > 0 ? Math.min(100, Math.round((currentRound / suggestedRounds) * 100)) : 0;
+          progressBar.style.width = pct + '%';
+
+          progressEl.classList.remove('hidden');
+        } catch (err) {
+          console.error('Failed to load suggested rounds:', err);
+        }
+      }
+
+      /**
+       * Checks whether all matches in the current (latest) Swiss round are verified.
+       * Enables/disables the "Generate Next Round" button accordingly.
+       * @param {Array} swissMatches - Array of Swiss match objects from bracket results
+       */
+      function checkSwissRoundReadiness(swissMatches) {
+        const btn = document.getElementById('generate-next-round-btn');
+        const btnText = document.getElementById('generate-round-btn-text');
+        const hint = document.getElementById('generate-round-hint');
+
+        if (!swissMatches || swissMatches.length === 0) {
+          btn.disabled = false;
+          btnText.textContent = 'Generate Round 1';
+          hint.classList.add('hidden');
+          return;
+        }
+
+        // Find the highest round number
+        let maxRound = 0;
+        swissMatches.forEach(m => {
+          const matchLabel = m.bracket_match_id || '';
+          const roundMatch = matchLabel.match(/Round\s+(\d+)/i);
+          if (roundMatch) {
+            const rn = parseInt(roundMatch[1], 10);
+            if (rn > maxRound) maxRound = rn;
+          }
+        });
+
+        // Get all matches from the latest round
+        const latestRoundMatches = swissMatches.filter(m => {
+          const matchLabel = m.bracket_match_id || '';
+          return matchLabel.toLowerCase() === `round ${maxRound}`;
+        });
+
+        // Check if all are verified
+        const allVerified = latestRoundMatches.length > 0 && latestRoundMatches.every(m => {
+          const cs = (m.card_status || '').toUpperCase();
+          return cs === 'VRFD' || cs === 'VER';
+        });
+
+        if (allVerified) {
+          btn.disabled = false;
+          btnText.textContent = `Generate Round ${maxRound + 1}`;
+          hint.classList.add('hidden');
+        } else {
+          btn.disabled = true;
+          btnText.textContent = `Generate Round ${maxRound + 1}`;
+          hint.classList.remove('hidden');
+        }
+      }
+
+      /**
+       * Calls the generate-round API and refreshes the page with new matches.
+       * @param {string} bId - Bracket UUID
+       */
+      async function generateNextSwissRound(bId) {
+        const btn = document.getElementById('generate-next-round-btn');
+        const btnText = document.getElementById('generate-round-btn-text');
+        const originalText = btnText.textContent;
+
+        try {
+          btn.disabled = true;
+          btnText.textContent = 'Generating...';
+
+          const result = await req(`/brackets/${bId}/generate-round`, 'POST', {});
+
+          const matchCount = result.pairings || 0;
+          const roundNum = result.round || '?';
+          alert(`Round ${roundNum} generated with ${matchCount} matches!`);
+
+          // Reload the bracket to show the new matches
+          await loadBracketResults();
+        } catch (err) {
+          alert('Error generating round: ' + err.message);
+          btn.disabled = false;
+          btnText.textContent = originalText;
+        }
+      }
+
       function showTab(tabName) {
         // Hide all tabs
         document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
@@ -624,6 +776,11 @@
         } catch (err) {
           alert('Error: ' + err.message);
         }
+      });
+      
+      // Generate Next Round button (Swiss brackets)
+      document.getElementById('generate-next-round-btn')?.addEventListener('click', () => {
+        generateNextSwissRound(bracketId);
       });
       
       // Auto-refresh for Swiss brackets (every 5 seconds)
