@@ -5114,6 +5114,7 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
     $division = $_GET['division'] ?? null; // BVAR, BJV, GVAR, GJV
     $gender = $_GET['gender'] ?? null;
     $level = $_GET['level'] ?? null;
+    $statusFilter = $_GET['status'] ?? 'active'; // Default: only active archers. Pass ?status=all for unfiltered.
 
     try {
         $pdo = db();
@@ -5198,6 +5199,12 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
             }
         }
 
+        // Status filter: default 'active', pass ?status=all to skip
+        if ($statusFilter !== 'all') {
+            $sql .= ' AND LOWER(status) = ?';
+            $params[] = strtolower($statusFilter);
+        }
+
         if ($gender && in_array($gender, ['M', 'F'])) {
             $sql .= ' AND gender = ?';
             $params[] = $gender;
@@ -5208,7 +5215,7 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
             $params[] = $level;
         }
 
-        $sql .= ' ORDER BY last_name, first_name';
+        $sql .= ' ORDER BY first_name, last_name';
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);

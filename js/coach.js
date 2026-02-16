@@ -1774,7 +1774,7 @@
 
   async function loadMasterArcherList() {
     try {
-      const data = await req('/archers');
+      const data = await req('/archers?status=all');
       allArchers = data.archers || [];
       console.log(`Loaded ${allArchers.length} archers from master list`);
       return allArchers;
@@ -2110,10 +2110,10 @@
           exportCsvBtn.disabled = true;
           exportCsvBtn.textContent = 'Exporting...';
 
-          // Get all archers from database
+          // Get all archers from database (include inactive for full export)
           let response;
           try {
-            response = await req('/archers', 'GET');
+            response = await req('/archers?status=all', 'GET');
           } catch (err) {
             console.error('Export CSV API error:', err);
             alert(`Error fetching archers from database: ${err.message}\n\nCheck browser console for details.`);
@@ -3487,9 +3487,9 @@
         document.getElementById('roster-modal-title').textContent = 'Round';
       }
 
-      // Load master archer list
+      // Load master archer list (all statuses for roster management)
       try {
-        const res = await req('/archers');
+        const res = await req('/archers?status=all');
         rosterAllArchers = res.archers || [];
 
         // Populate school filter

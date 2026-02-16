@@ -705,13 +705,18 @@ const ArcherModule = {
   },
 
   // Load master list from MySQL database (PUBLIC - no auth required)
+  // Fetches ALL archers (status=all) so the archer list page can do its own client-side filtering.
   async loadFromMySQL() {
     if (!window.LiveUpdates || !window.LiveUpdates.request) {
       throw new Error('Live Updates API is not available');
     }
 
     try {
-      const result = await window.LiveUpdates.request('/archers', 'GET');
+      // Use direct fetch with ?status=all to get all archers (including inactive).
+      // The API defaults to active-only; archer management needs the full list.
+      const res = await fetch('/api/v1/archers?status=all');
+      if (!res.ok) throw new Error(`API returned ${res.status}`);
+      const result = await res.json();
       console.log('API Response:', result); // Debug logging
 
       if (!result) {
