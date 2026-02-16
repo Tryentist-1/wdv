@@ -4624,6 +4624,7 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                 'grade' => $normalizeArcherField('grade', $archer['grade'] ?? null),
                 'gender' => $normalizeArcherField('gender', $archer['gender'] ?? null),
                 'level' => $normalizeArcherField('level', $archer['level'] ?? null),
+                'assignment' => $archer['assignment'] ?? null,
                 'status' => $normalizeArcherField('status', $archer['status'] ?? null),
                 'faves' => $normalizeArcherField('faves', $archer['faves'] ?? null),
                 'domEye' => $normalizeArcherField('domEye', $archer['domEye'] ?? null),
@@ -4722,6 +4723,10 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                 if ($normalized['level']) {
                     $updateFields[] = 'level = ?';
                     $updateValues[] = $normalized['level'];
+                }
+                if ($normalized['assignment'] !== null) {
+                    $updateFields[] = 'assignment = ?';
+                    $updateValues[] = $normalized['assignment'];
                 }
                 if ($normalized['status']) {
                     $updateFields[] = 'status = ?';
@@ -4923,7 +4928,7 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                 $newId = $genUuid();
                 $stmt = $pdo->prepare('INSERT INTO archers (
                     id, ext_id, first_name, last_name, nickname, photo_url, school, grade, 
-                    gender, level, status, faves, dom_eye, dom_hand, height_in, wingspan_in, 
+                    gender, level, assignment, status, faves, dom_eye, dom_hand, height_in, wingspan_in, 
                     draw_length_sugg, riser_height_in, limb_length, limb_weight_lbs, 
                     notes_gear, notes_current, notes_archive, email, email2, phone, 
                     dob, nationality, ethnicity, discipline, street_address, street_address2,
@@ -4932,7 +4937,7 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                     disability_list, military_service, introduction_source, introduction_other,
                     nfaa_member_no, school_type, school_full_name,
                     us_archery_id, jv_pr, var_pr, shirt_size, pant_size, hat_size, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())');
 
                 $stmt->execute([
                     $newId,
@@ -4945,6 +4950,7 @@ if (preg_match('#^/v1/archers/bulk_upsert$#', $route) && $method === 'POST') {
                     $normalized['grade'],
                     $normalized['gender'],
                     $normalized['level'],
+                    $normalized['assignment'] ?: '',
                     $normalized['status'] ?? 'active',
                     $normalized['faves'],
                     $normalized['domEye'],
