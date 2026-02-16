@@ -137,6 +137,25 @@
         <div class="text-center text-gray-500 dark:text-gray-400 py-8">Loading brackets...</div>
       </div>
     </div>
+
+    <!-- Bale Assignments Section -->
+    <div id="bale-assignments-section" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200 hidden">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Bale Assignments</h2>
+        <div class="flex gap-2">
+          <select id="bale-round-filter" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded border border-gray-300 dark:border-gray-600 text-sm min-h-[44px]">
+            <option value="latest">Latest Round</option>
+            <option value="all">All Rounds</option>
+          </select>
+          <button id="print-bale-btn" class="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors min-h-[44px] flex items-center gap-1">
+            <i class="fas fa-print"></i> Print
+          </button>
+        </div>
+      </div>
+      <div id="bale-assignments-content" class="space-y-6">
+        <div class="text-center text-gray-500 dark:text-gray-400 py-8">Loading bale assignments...</div>
+      </div>
+    </div>
   </div>
 
   <!-- Footer -->
@@ -192,17 +211,26 @@
     };
 
     // API request helper
-    async function apiRequest(path, method = 'GET') {
+    /**
+     * Makes an authenticated API request.
+     * @param {string} path - API path (e.g. /events/123/overview)
+     * @param {string} method - HTTP method (GET, POST, PATCH, etc.)
+     * @param {Object|null} body - Optional JSON body for POST/PATCH requests
+     * @returns {Promise<Object>} Parsed JSON response
+     */
+    async function apiRequest(path, method = 'GET', body = null) {
       const headers = {
         'Content-Type': 'application/json',
         'X-Passcode': COACH_PASSCODE,
         'X-API-Key': COACH_PASSCODE
       };
 
-      const res = await fetch(`${API_BASE}${path}`, {
-        method,
-        headers
-      });
+      const options = { method, headers };
+      if (body && method !== 'GET') {
+        options.body = JSON.stringify(body);
+      }
+
+      const res = await fetch(`${API_BASE}${path}`, options);
 
       if (!res.ok) {
         const text = await res.text();
@@ -269,6 +297,17 @@
 
       // Brackets
       renderBrackets(brackets);
+
+      // Load Swiss round progress for each Swiss bracket
+      if (brackets && brackets.length > 0) {
+        brackets.filter(b => b.format === 'SWISS').forEach(b => loadSwissProgress(b.id));
+      }
+
+      // Load bale assignments for events with Swiss brackets
+      const hasSwissBrackets = brackets && brackets.some(b => b.format === 'SWISS');
+      if (hasSwissBrackets) {
+        loadBaleAssignments(eventId);
+      }
 
       // Setup auto-refresh if event is Active
       if (event.status === 'Active') {
@@ -459,13 +498,21 @@
                   <span class="ml-2 font-semibold text-gray-800 dark:text-white">${bracket.completed_matches}/${bracket.total_matches}</span>
                 </div>
               </div>
-              <div class="flex gap-2 mt-4">
+              ${bracket.format === 'SWISS' ? `
+              <div id="swiss-progress-${bracket.id}" class="mt-3 text-sm text-gray-600 dark:text-gray-400"></div>
+              ` : ''}
+              <div class="flex gap-2 mt-4 flex-wrap">
                 <a href="bracket_results.html?bracket=${bracket.id}" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors">
                   📊 View Bracket
                 </a>
                 ${bracket.format === 'ELIMINATION' && (bracket.status === 'OPEN' || bracket.entry_count === 0) ? `
                 <button onclick="generateBracket('${bracket.id}')" id="generate-btn-${bracket.id}" class="px-4 py-2 bg-success hover:bg-success-dark text-white rounded font-semibold text-sm transition-colors">
                   🎯 Generate from Top 8
+                </button>
+                ` : ''}
+                ${bracket.format === 'SWISS' && bracket.status !== 'COMPLETED' ? `
+                <button onclick="generateSwissRound('${bracket.id}')" id="swiss-gen-btn-${bracket.id}" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors min-h-[44px]">
+                  <i class="fas fa-plus-circle"></i> Next Round
                 </button>
                 ` : ''}
                 <a href="coach.html?event=${bracket.event_id}&editBracket=${bracket.id}" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold text-sm hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors inline-block text-center">
@@ -549,6 +596,487 @@
       }
     }
 
+    // ==================== Bale Assignments View ====================
+
+    /** Division code to display name mapping */
+    const BALE_DIVISION_LABELS = {
+      BVAR: 'Boys Varsity', GVAR: 'Girls Varsity',
+      BJV: 'Boys JV', GJV: 'Girls JV', OPEN: 'Open (Mixed)'
+    };
+
+    /** Current bale data cache for print */
+    let cachedBaleData = null;
+
+    /**
+     * Loads all solo and team matches for an event, groups them by bale,
+     * and renders the bale assignments view.
+     * @param {string} evtId - Event UUID
+     */
+    async function loadBaleAssignments(evtId) {
+      const section = document.getElementById('bale-assignments-section');
+      const container = document.getElementById('bale-assignments-content');
+
+      try {
+        const [soloData, teamData] = await Promise.all([
+          apiRequest(`/events/${evtId}/solo-matches`),
+          apiRequest(`/events/${evtId}/team-matches`)
+        ]);
+
+        const soloMatches = soloData.matches || [];
+        const teamMatches = teamData.matches || [];
+
+        if (soloMatches.length === 0 && teamMatches.length === 0) {
+          section.classList.add('hidden');
+          return;
+        }
+
+        section.classList.remove('hidden');
+        cachedBaleData = { soloMatches, teamMatches };
+
+        // Populate round filter options
+        populateRoundFilter(soloMatches, teamMatches);
+
+        // Render with current filter
+        renderBaleAssignmentsView(soloMatches, teamMatches);
+      } catch (err) {
+        console.error('Error loading bale assignments:', err);
+        container.innerHTML = `<div class="text-center text-red-500 py-4">Error: ${err.message}</div>`;
+        section.classList.remove('hidden');
+      }
+    }
+
+    /**
+     * Populates the round filter dropdown with available rounds.
+     * @param {Array} soloMatches - Solo match objects
+     * @param {Array} teamMatches - Team match objects
+     */
+    function populateRoundFilter(soloMatches, teamMatches) {
+      const select = document.getElementById('bale-round-filter');
+      const rounds = new Set();
+
+      soloMatches.forEach(m => {
+        if (m.bracket_match_id) rounds.add(m.bracket_match_id);
+      });
+      teamMatches.forEach(m => {
+        if (m.bracket_match_id) rounds.add(m.bracket_match_id);
+      });
+
+      const sortedRounds = [...rounds].sort((a, b) => {
+        const numA = parseInt((a.match(/\d+/) || [0])[0]);
+        const numB = parseInt((b.match(/\d+/) || [0])[0]);
+        return numA - numB;
+      });
+
+      // Keep existing options, add round-specific ones
+      const existingValues = ['latest', 'all'];
+      // Remove old round options
+      [...select.options].forEach(opt => {
+        if (!existingValues.includes(opt.value)) opt.remove();
+      });
+
+      sortedRounds.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r;
+        opt.textContent = r;
+        select.appendChild(opt);
+      });
+    }
+
+    /**
+     * Renders the bale assignments grid from match data.
+     * Groups matches by bale number and shows who is on each target.
+     * @param {Array} soloMatches - Solo match objects
+     * @param {Array} teamMatches - Team match objects
+     */
+    function renderBaleAssignmentsView(soloMatches, teamMatches) {
+      const container = document.getElementById('bale-assignments-content');
+      const filterValue = document.getElementById('bale-round-filter').value;
+
+      // Filter matches by round if needed
+      let filteredSolo = soloMatches;
+      let filteredTeam = teamMatches;
+
+      if (filterValue === 'latest') {
+        // Find the highest round number
+        let maxRound = 0;
+        let maxRoundLabel = '';
+        soloMatches.forEach(m => {
+          const match = (m.bracket_match_id || '').match(/Round\s+(\d+)/i);
+          if (match) {
+            const rn = parseInt(match[1]);
+            if (rn > maxRound) { maxRound = rn; maxRoundLabel = m.bracket_match_id; }
+          }
+        });
+        teamMatches.forEach(m => {
+          const match = (m.bracket_match_id || '').match(/Round\s+(\d+)/i);
+          if (match) {
+            const rn = parseInt(match[1]);
+            if (rn > maxRound) { maxRound = rn; maxRoundLabel = m.bracket_match_id; }
+          }
+        });
+
+        if (maxRoundLabel) {
+          filteredSolo = soloMatches.filter(m => m.bracket_match_id === maxRoundLabel);
+          filteredTeam = teamMatches.filter(m => m.bracket_match_id === maxRoundLabel);
+        }
+      } else if (filterValue !== 'all') {
+        filteredSolo = soloMatches.filter(m => m.bracket_match_id === filterValue);
+        filteredTeam = teamMatches.filter(m => m.bracket_match_id === filterValue);
+      }
+
+      // Build bale map: baleNumber -> { line1: {...}, line2: {...} }
+      const bales = {};
+
+      filteredSolo.forEach(m => {
+        const baleNum = m.bale_number;
+        if (!baleNum) return;
+        if (!bales[baleNum]) bales[baleNum] = {};
+
+        const lineKey = `line${m.line_number || 1}`;
+        const a1 = m.archer1 || {};
+        const a2 = m.archer2 || {};
+        const targets = m.line_number === 2 ? ['C', 'D'] : ['A', 'B'];
+
+        bales[baleNum][lineKey] = {
+          type: 'solo',
+          round: m.bracket_match_id,
+          bracketName: m.bracket_name || '',
+          status: m.card_status || 'PENDING',
+          wave: m.wave,
+          matchId: m.id,
+          slots: [
+            { target: a1.target_assignment || targets[0], name: a1.archer_name || '—', school: a1.school || '' },
+            { target: a2.target_assignment || targets[1], name: a2.archer_name || '—', school: a2.school || '' }
+          ]
+        };
+      });
+
+      filteredTeam.forEach(m => {
+        const baleNum = m.bale_number;
+        if (!baleNum) return;
+        if (!bales[baleNum]) bales[baleNum] = {};
+
+        const lineKey = `line${m.line_number || 1}`;
+        const t1 = m.team1 || {};
+        const t2 = m.team2 || {};
+        const targets = m.line_number === 2 ? ['C', 'D'] : ['A', 'B'];
+
+        const t1Archers = (t1.archers || []).map(a => a.archer_name).join(', ');
+        const t2Archers = (t2.archers || []).map(a => a.archer_name).join(', ');
+
+        bales[baleNum][lineKey] = {
+          type: 'team',
+          round: m.bracket_match_id,
+          bracketName: m.bracket_name || '',
+          status: m.card_status || 'PENDING',
+          wave: m.wave,
+          matchId: m.id,
+          slots: [
+            { target: targets[0], name: t1.team_name || t1.school || '—', school: t1.school || '', archers: t1Archers },
+            { target: targets[1], name: t2.team_name || t2.school || '—', school: t2.school || '', archers: t2Archers }
+          ]
+        };
+      });
+
+      const baleNumbers = Object.keys(bales).map(Number).sort((a, b) => a - b);
+
+      if (baleNumbers.length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-4">No bale assignments found for this round.</div>';
+        return;
+      }
+
+      // Determine filter label for heading
+      let headingLabel = filterValue === 'latest' ? (filteredSolo[0]?.bracket_match_id || filteredTeam[0]?.bracket_match_id || 'Latest Round') : (filterValue === 'all' ? 'All Rounds' : filterValue);
+
+      let html = `<div class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-4">Showing: ${headingLabel} &mdash; ${baleNumbers.length} bale${baleNumbers.length !== 1 ? 's' : ''} in use</div>`;
+      html += '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">';
+
+      for (const baleNum of baleNumbers) {
+        const baleData = bales[baleNum];
+        html += `<div class="border-2 border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-700">`;
+        html += `<div class="bg-primary text-white text-center py-2 font-bold text-sm">BALE ${baleNum}</div>`;
+
+        // Line 1 (targets A, B)
+        html += renderBaleLineHtml(baleData.line1, 1);
+
+        // Divider
+        html += `<div class="border-t border-gray-300 dark:border-gray-600"></div>`;
+
+        // Line 2 (targets C, D)
+        html += renderBaleLineHtml(baleData.line2, 2);
+
+        html += `</div>`;
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    /**
+     * Renders the HTML for one line (half) of a bale card.
+     * @param {Object|undefined} lineData - Line match data
+     * @param {number} lineNum - 1 or 2
+     * @returns {string} HTML string
+     */
+    function renderBaleLineHtml(lineData, lineNum) {
+      const lineLabel = lineNum === 1 ? 'Line 1 (A/B)' : 'Line 2 (C/D)';
+
+      if (!lineData) {
+        return `
+          <div class="p-3">
+            <div class="text-xs text-gray-400 dark:text-gray-500 mb-1">${lineLabel}</div>
+            <div class="text-center text-gray-400 dark:text-gray-500 text-xs py-2">— empty —</div>
+          </div>
+        `;
+      }
+
+      const statusColors = {
+        'VRFD': 'bg-green-500', 'VER': 'bg-green-500',
+        'COMP': 'bg-blue-500', 'COMPLETED': 'bg-blue-500',
+        'PENDING': 'bg-gray-400', 'PEND': 'bg-gray-400'
+      };
+      const statusLabel = {
+        'VRFD': 'Verified', 'VER': 'Verified',
+        'COMP': 'Complete', 'COMPLETED': 'Complete',
+        'PENDING': 'Pending', 'PEND': 'Pending'
+      };
+      const cs = (lineData.status || 'PENDING').toUpperCase();
+      const badgeColor = statusColors[cs] || 'bg-gray-400';
+      const badgeLabel = statusLabel[cs] || cs;
+      const waveLabel = lineData.wave ? ` <span class="text-gray-400">(Wave ${lineData.wave})</span>` : '';
+
+      let slotsHtml = '';
+      for (const slot of lineData.slots) {
+        const isTeam = lineData.type === 'team';
+        const archersLine = isTeam && slot.archers ? `<div class="text-[10px] text-gray-500 dark:text-gray-400 truncate">${slot.archers}</div>` : '';
+        slotsHtml += `
+          <div class="flex-1 bg-white dark:bg-gray-800 rounded p-2 text-center min-w-0">
+            <div class="text-xs font-bold text-gray-500 dark:text-gray-400">${slot.target}</div>
+            <div class="text-sm font-semibold text-gray-800 dark:text-white truncate" title="${slot.name}">${slot.name}</div>
+            <div class="text-[10px] text-gray-500 dark:text-gray-400">${slot.school}</div>
+            ${archersLine}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="p-3">
+          <div class="flex justify-between items-center mb-2">
+            <div class="text-xs text-gray-500 dark:text-gray-400">${lineLabel}${waveLabel}</div>
+            <span class="px-1.5 py-0.5 ${badgeColor} text-white rounded text-[10px] font-semibold">${badgeLabel}</span>
+          </div>
+          <div class="flex gap-2">
+            ${slotsHtml}
+          </div>
+          <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-1 truncate">${lineData.bracketName}</div>
+        </div>
+      `;
+    }
+
+    /**
+     * Opens a print-friendly version of the current bale assignments view in a new window.
+     */
+    function printBaleAssignments() {
+      if (!cachedBaleData) {
+        alert('No bale assignment data loaded yet.');
+        return;
+      }
+
+      const eventName = document.getElementById('event-name').textContent || 'Event';
+      const eventDate = document.getElementById('event-date').textContent || '';
+      const filterValue = document.getElementById('bale-round-filter').value;
+      const filterLabel = filterValue === 'latest' ? 'Latest Round' : (filterValue === 'all' ? 'All Rounds' : filterValue);
+
+      // Reuse the same rendering logic but build standalone HTML
+      const tempContainer = document.createElement('div');
+      tempContainer.id = 'bale-assignments-content';
+      document.body.appendChild(tempContainer);
+
+      // Temporarily swap container
+      const realContainer = document.getElementById('bale-assignments-content');
+      tempContainer.id = 'bale-assignments-content-temp';
+      renderBaleAssignmentsView(cachedBaleData.soloMatches, cachedBaleData.teamMatches);
+      const renderedHtml = realContainer.innerHTML;
+
+      const fullHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bale Assignments - ${eventName}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 1rem; color: #1f2937; }
+    .header { margin-bottom: 1.5rem; border-bottom: 2px solid #374151; padding-bottom: 0.75rem; }
+    .header h1 { font-size: 1.5rem; font-weight: 700; }
+    .header .meta { font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem; }
+    .bale-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+    .bale-card { border: 2px solid #9ca3af; border-radius: 0.5rem; overflow: hidden; break-inside: avoid; }
+    .bale-title { background: #0d6efd; color: white; text-align: center; padding: 0.375rem; font-weight: 700; font-size: 0.875rem; }
+    .bale-line { padding: 0.5rem; }
+    .bale-line + .bale-line { border-top: 1px solid #d1d5db; }
+    .line-label { font-size: 0.7rem; color: #6b7280; margin-bottom: 0.25rem; }
+    .slots { display: flex; gap: 0.5rem; }
+    .slot { flex: 1; text-align: center; border: 1px solid #e5e7eb; border-radius: 0.25rem; padding: 0.375rem; background: #f9fafb; }
+    .slot-target { font-size: 0.7rem; font-weight: 700; color: #6b7280; }
+    .slot-name { font-size: 0.8rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .slot-school { font-size: 0.65rem; color: #9ca3af; }
+    .slot-archers { font-size: 0.6rem; color: #9ca3af; }
+    .status-badge { font-size: 0.6rem; padding: 0.125rem 0.375rem; border-radius: 0.25rem; color: white; font-weight: 600; }
+    .status-verified { background: #198754; }
+    .status-complete { background: #2563eb; }
+    .status-pending { background: #9ca3af; }
+    .bracket-label { font-size: 0.6rem; color: #9ca3af; margin-top: 0.25rem; }
+    .empty-line { text-align: center; color: #d1d5db; font-size: 0.75rem; padding: 0.5rem; }
+    .print-actions { margin-top: 1.5rem; display: flex; gap: 0.5rem; }
+    .btn { padding: 0.5rem 1rem; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; font-size: 0.875rem; }
+    .btn-print { background: #2563eb; color: white; }
+    .btn-close { background: #e5e7eb; color: #374151; }
+    @media print { .print-actions { display: none !important; } body { margin: 0.5rem; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>${eventName}</h1>
+    <div class="meta">${eventDate} &mdash; ${filterLabel}</div>
+  </div>
+  ${buildPrintBaleHtml(cachedBaleData.soloMatches, cachedBaleData.teamMatches, filterValue)}
+  <div class="print-actions">
+    <button class="btn btn-print" onclick="window.print()">Print</button>
+    <button class="btn btn-close" onclick="window.close()">Close</button>
+  </div>
+</body>
+</html>`;
+
+      tempContainer.remove();
+
+      const win = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+      if (win) {
+        win.document.write(fullHtml);
+        win.document.close();
+      } else {
+        alert('Pop-up blocked. Please allow pop-ups for this site.');
+      }
+    }
+
+    /**
+     * Builds print-friendly HTML for bale assignment cards.
+     * @param {Array} soloMatches - Solo matches
+     * @param {Array} teamMatches - Team matches
+     * @param {string} filterValue - Round filter
+     * @returns {string} HTML string
+     */
+    function buildPrintBaleHtml(soloMatches, teamMatches, filterValue) {
+      let filteredSolo = soloMatches;
+      let filteredTeam = teamMatches;
+
+      if (filterValue === 'latest') {
+        let maxRound = 0, maxRoundLabel = '';
+        soloMatches.forEach(m => {
+          const match = (m.bracket_match_id || '').match(/Round\s+(\d+)/i);
+          if (match) { const rn = parseInt(match[1]); if (rn > maxRound) { maxRound = rn; maxRoundLabel = m.bracket_match_id; } }
+        });
+        teamMatches.forEach(m => {
+          const match = (m.bracket_match_id || '').match(/Round\s+(\d+)/i);
+          if (match) { const rn = parseInt(match[1]); if (rn > maxRound) { maxRound = rn; maxRoundLabel = m.bracket_match_id; } }
+        });
+        if (maxRoundLabel) {
+          filteredSolo = soloMatches.filter(m => m.bracket_match_id === maxRoundLabel);
+          filteredTeam = teamMatches.filter(m => m.bracket_match_id === maxRoundLabel);
+        }
+      } else if (filterValue !== 'all') {
+        filteredSolo = soloMatches.filter(m => m.bracket_match_id === filterValue);
+        filteredTeam = teamMatches.filter(m => m.bracket_match_id === filterValue);
+      }
+
+      const bales = {};
+
+      filteredSolo.forEach(m => {
+        const bn = m.bale_number;
+        if (!bn) return;
+        if (!bales[bn]) bales[bn] = {};
+        const lk = `line${m.line_number || 1}`;
+        const a1 = m.archer1 || {};
+        const a2 = m.archer2 || {};
+        const tgts = m.line_number === 2 ? ['C', 'D'] : ['A', 'B'];
+        bales[bn][lk] = {
+          type: 'solo', status: m.card_status || 'PENDING', bracketName: m.bracket_name || '',
+          slots: [
+            { target: a1.target_assignment || tgts[0], name: a1.archer_name || '—', school: a1.school || '' },
+            { target: a2.target_assignment || tgts[1], name: a2.archer_name || '—', school: a2.school || '' }
+          ]
+        };
+      });
+
+      filteredTeam.forEach(m => {
+        const bn = m.bale_number;
+        if (!bn) return;
+        if (!bales[bn]) bales[bn] = {};
+        const lk = `line${m.line_number || 1}`;
+        const t1 = m.team1 || {};
+        const t2 = m.team2 || {};
+        const tgts = m.line_number === 2 ? ['C', 'D'] : ['A', 'B'];
+        bales[bn][lk] = {
+          type: 'team', status: m.card_status || 'PENDING', bracketName: m.bracket_name || '',
+          slots: [
+            { target: tgts[0], name: t1.team_name || t1.school || '—', school: t1.school || '', archers: (t1.archers || []).map(a => a.archer_name).join(', ') },
+            { target: tgts[1], name: t2.team_name || t2.school || '—', school: t2.school || '', archers: (t2.archers || []).map(a => a.archer_name).join(', ') }
+          ]
+        };
+      });
+
+      const baleNumbers = Object.keys(bales).map(Number).sort((a, b) => a - b);
+      if (baleNumbers.length === 0) return '<p>No bale assignments found.</p>';
+
+      let html = '<div class="bale-grid">';
+      for (const bn of baleNumbers) {
+        const bd = bales[bn];
+        html += `<div class="bale-card">`;
+        html += `<div class="bale-title">BALE ${bn}</div>`;
+        html += buildPrintLineHtml(bd.line1, 1);
+        html += buildPrintLineHtml(bd.line2, 2);
+        html += `</div>`;
+      }
+      html += '</div>';
+      return html;
+    }
+
+    /**
+     * Builds print HTML for one line of a bale.
+     * @param {Object|undefined} lineData - Line data
+     * @param {number} lineNum - 1 or 2
+     * @returns {string} HTML
+     */
+    function buildPrintLineHtml(lineData, lineNum) {
+      const label = lineNum === 1 ? 'Line 1 (A/B)' : 'Line 2 (C/D)';
+      if (!lineData) {
+        return `<div class="bale-line"><div class="line-label">${label}</div><div class="empty-line">— empty —</div></div>`;
+      }
+
+      const cs = (lineData.status || 'PENDING').toUpperCase();
+      let badgeClass = 'status-pending';
+      let badgeText = 'Pending';
+      if (cs === 'VRFD' || cs === 'VER') { badgeClass = 'status-verified'; badgeText = 'Verified'; }
+      else if (cs === 'COMP' || cs === 'COMPLETED') { badgeClass = 'status-complete'; badgeText = 'Complete'; }
+
+      let slotsHtml = '';
+      for (const s of lineData.slots) {
+        const archersHtml = s.archers ? `<div class="slot-archers">${s.archers}</div>` : '';
+        slotsHtml += `<div class="slot"><div class="slot-target">${s.target}</div><div class="slot-name">${s.name}</div><div class="slot-school">${s.school}</div>${archersHtml}</div>`;
+      }
+
+      return `
+        <div class="bale-line">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+            <div class="line-label">${label}</div>
+            <span class="status-badge ${badgeClass}">${badgeText}</span>
+          </div>
+          <div class="slots">${slotsHtml}</div>
+          <div class="bracket-label">${lineData.bracketName}</div>
+        </div>
+      `;
+    }
+
     // Generate bracket from Top 8
     async function generateBracket(bracketId) {
       if (!confirm('This will generate bracket entries from Top 8 ranking scores. Continue?')) {
@@ -575,6 +1103,72 @@
       }
     }
 
+    /**
+     * Loads suggested round progress for a Swiss bracket and displays it.
+     * @param {string} bracketId - Bracket UUID
+     */
+    async function loadSwissProgress(bracketId) {
+      try {
+        const data = await apiRequest(`/brackets/${bracketId}/suggested-rounds`);
+        const suggestedRounds = data.suggestedRounds || 0;
+        const rosterSize = data.rosterSize || 0;
+
+        if (suggestedRounds <= 0) return;
+
+        // Determine current round from bracket results
+        const results = await apiRequest(`/brackets/${bracketId}/results`);
+        const swissMatches = results?.rounds?.swiss || [];
+        let currentRound = 0;
+        swissMatches.forEach(m => {
+          const matchLabel = m.bracket_match_id || '';
+          const roundMatch = matchLabel.match(/Round\s+(\d+)/i);
+          if (roundMatch) {
+            const rn = parseInt(roundMatch[1], 10);
+            if (rn > currentRound) currentRound = rn;
+          }
+        });
+
+        const el = document.getElementById(`swiss-progress-${bracketId}`);
+        if (el) {
+          el.innerHTML = `<span class="font-semibold text-gray-800 dark:text-white">Round ${currentRound} of ${suggestedRounds}</span> suggested (${rosterSize} archers)`;
+        }
+      } catch (err) {
+        console.error('Failed to load Swiss progress for bracket:', bracketId, err);
+      }
+    }
+
+    /**
+     * Generates the next Swiss round for a bracket.
+     * Calls POST /brackets/:id/generate-round and refreshes the dashboard.
+     * @param {string} bracketId - Bracket UUID
+     */
+    async function generateSwissRound(bracketId) {
+      if (!confirm('Generate the next Swiss round? This will create new match pairings based on current standings.')) {
+        return;
+      }
+
+      const btn = document.getElementById(`swiss-gen-btn-${bracketId}`);
+      if (!btn) return;
+
+      try {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+        const result = await apiRequest(`/brackets/${bracketId}/generate-round`, 'POST', {});
+
+        const matchCount = result.pairings || 0;
+        const roundNum = result.round || '?';
+        alert(`Round ${roundNum} generated with ${matchCount} matches!`);
+
+        // Refresh dashboard data
+        await loadOverview();
+      } catch (err) {
+        alert('Error generating Swiss round: ' + (err.message || 'Unknown error'));
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plus-circle"></i> Next Round';
+      }
+    }
+
     // Event listeners
     document.addEventListener('DOMContentLoaded', () => {
       // Refresh buttons
@@ -584,6 +1178,16 @@
       // Toggle buttons
       document.getElementById('toggle-rounds').addEventListener('click', toggleAllRounds);
       document.getElementById('toggle-brackets').addEventListener('click', toggleAllBrackets);
+
+      // Bale assignments: round filter change
+      document.getElementById('bale-round-filter').addEventListener('change', () => {
+        if (cachedBaleData) {
+          renderBaleAssignmentsView(cachedBaleData.soloMatches, cachedBaleData.teamMatches);
+        }
+      });
+
+      // Bale assignments: print button
+      document.getElementById('print-bale-btn').addEventListener('click', printBaleAssignments);
 
       // Initial load
       loadOverview();

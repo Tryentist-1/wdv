@@ -2612,7 +2612,7 @@
 
     // Print Bale Assignments button
     document.getElementById('edit-print-bale-assignments-btn').onclick = () => {
-      showBaleAssignmentsPrint(event.id, event.name, event.date);
+      showBaleAssignmentsPrint(event.id, event.name, event.date, event.event_format);
     };
 
     // Delete Event button
@@ -2705,15 +2705,119 @@
 
   /**
    * Open bale assignments in a new window (standalone HTML) for correct print output.
-   * Includes photos when available. Similar to ScoreCards PDF approach but outputs HTML.
+   * For Games Events (Swiss brackets), pulls bale data from match assignments.
+   * For Sanctioned Events (Ranking Rounds), pulls from the event snapshot.
    * @param {string} eventId - Event ID
    * @param {string} eventName - Event name
    * @param {string} eventDate - Event date (YYYY-MM-DD)
+   * @param {string} [eventFormat] - Event format (GAMES or SANCTIONED)
    */
-  async function showBaleAssignmentsPrint(eventId, eventName, eventDate) {
+  async function showBaleAssignmentsPrint(eventId, eventName, eventDate, eventFormat) {
     const baseUrl = window.location.origin;
+    const dateStr = eventDate ? new Date(eventDate + 'T00:00:00').toLocaleDateString() : '';
 
     try {
+      // Games Events: build bale view from match data
+      if (eventFormat === 'GAMES') {
+        const [soloData, teamData] = await Promise.all([
+          req(`/events/${eventId}/solo-matches`),
+          req(`/events/${eventId}/team-matches`)
+        ]);
+
+        const soloMatches = soloData.matches || [];
+        const teamMatches = teamData.matches || [];
+
+        if (soloMatches.length === 0 && teamMatches.length === 0) {
+          alert('No matches with bale assignments yet. Import roster and generate rounds first.');
+          return;
+        }
+
+        // Find latest round
+        let maxRound = 0, maxRoundLabel = '';
+        soloMatches.forEach(m => {
+          const rm = (m.bracket_match_id || '').match(/Round\s+(\d+)/i);
+          if (rm) { const rn = parseInt(rm[1]); if (rn > maxRound) { maxRound = rn; maxRoundLabel = m.bracket_match_id; } }
+        });
+        teamMatches.forEach(m => {
+          const rm = (m.bracket_match_id || '').match(/Round\s+(\d+)/i);
+          if (rm) { const rn = parseInt(rm[1]); if (rn > maxRound) { maxRound = rn; maxRoundLabel = m.bracket_match_id; } }
+        });
+
+        const filteredSolo = maxRoundLabel ? soloMatches.filter(m => m.bracket_match_id === maxRoundLabel) : soloMatches;
+        const filteredTeam = maxRoundLabel ? teamMatches.filter(m => m.bracket_match_id === maxRoundLabel) : teamMatches;
+
+        // Build bale map
+        const bales = {};
+        filteredSolo.forEach(m => {
+          const bn = m.bale_number;
+          if (!bn) return;
+          if (!bales[bn]) bales[bn] = {};
+          const lk = `line${m.line_number || 1}`;
+          const a1 = m.archer1 || {};
+          const a2 = m.archer2 || {};
+          const tgts = m.line_number === 2 ? ['C', 'D'] : ['A', 'B'];
+          bales[bn][lk] = {
+            bracketName: m.bracket_name || '',
+            slots: [
+              { target: a1.target_assignment || tgts[0], name: a1.archer_name || '—', school: a1.school || '' },
+              { target: a2.target_assignment || tgts[1], name: a2.archer_name || '—', school: a2.school || '' }
+            ]
+          };
+        });
+        filteredTeam.forEach(m => {
+          const bn = m.bale_number;
+          if (!bn) return;
+          if (!bales[bn]) bales[bn] = {};
+          const lk = `line${m.line_number || 1}`;
+          const t1 = m.team1 || {};
+          const t2 = m.team2 || {};
+          const tgts = m.line_number === 2 ? ['C', 'D'] : ['A', 'B'];
+          bales[bn][lk] = {
+            bracketName: m.bracket_name || '',
+            slots: [
+              { target: tgts[0], name: t1.team_name || t1.school || '—', school: t1.school || '', archers: (t1.archers || []).map(a => a.archer_name).join(', ') },
+              { target: tgts[1], name: t2.team_name || t2.school || '—', school: t2.school || '', archers: (t2.archers || []).map(a => a.archer_name).join(', ') }
+            ]
+          };
+        });
+
+        const baleNumbers = Object.keys(bales).map(Number).sort((a, b) => a - b);
+        if (baleNumbers.length === 0) {
+          alert('No bale assignments found for matches. Check that rounds have been generated.');
+          return;
+        }
+
+        let bodyHtml = `<div class="round-label">${escapeHtml(maxRoundLabel || 'All Matches')}</div>`;
+        bodyHtml += '<div class="bales-grid">';
+        for (const bn of baleNumbers) {
+          const bd = bales[bn];
+          bodyHtml += `<div class="bale-block"><div class="bale-header">BALE ${bn}</div><div class="bale-lines">`;
+          for (const lineNum of [1, 2]) {
+            const ld = bd[`line${lineNum}`];
+            const lineLabel = lineNum === 1 ? 'Line 1 (A/B)' : 'Line 2 (C/D)';
+            if (ld) {
+              bodyHtml += `<div class="bale-line"><div class="line-label">${lineLabel} <span class="bracket-name">${escapeHtml(ld.bracketName)}</span></div><div class="bale-slots">`;
+              for (const s of ld.slots) {
+                const archersHtml = s.archers ? `<div class="bale-slot-archers">${escapeHtml(s.archers)}</div>` : '';
+                bodyHtml += `<div class="bale-slot"><div class="bale-slot-label">${s.target}</div><div class="bale-slot-name">${escapeHtml(s.name)}</div><div class="bale-slot-school">${escapeHtml(s.school)}</div>${archersHtml}</div>`;
+              }
+              bodyHtml += '</div></div>';
+            } else {
+              bodyHtml += `<div class="bale-line empty"><div class="line-label">${lineLabel}</div><div class="empty-text">— empty —</div></div>`;
+            }
+          }
+          bodyHtml += '</div></div>';
+        }
+        bodyHtml += '</div>';
+
+        const fullHtml = buildBaleAssignmentsPrintPage(eventName, dateStr, bodyHtml, true);
+        const win = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+        if (win) { win.document.write(fullHtml); win.document.close(); }
+        else { alert('Pop-up blocked. Please allow pop-ups for this site.'); }
+        return;
+      }
+
+      // Sanctioned Events: original snapshot-based approach
       const [data, archersResp] = await Promise.all([
         req(`/events/${eventId}/snapshot`),
         fetch(`${API_BASE}/archers`).then(r => r.ok ? r.json() : { archers: [] })
@@ -2729,8 +2833,6 @@
         alert('No divisions with archers yet. Add archers to see bale assignments.');
         return;
       }
-
-      const dateStr = eventDate ? new Date(eventDate + 'T00:00:00').toLocaleDateString() : '';
 
       let bodyHtml = '';
       for (const [divCode, divData] of Object.entries(divisions)) {
@@ -2768,7 +2870,39 @@
         bodyHtml += `</div></div>`;
       }
 
-      const fullHtml = `<!DOCTYPE html>
+      const fullHtml = buildBaleAssignmentsPrintPage(eventName, dateStr, bodyHtml, false);
+      const win = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+      if (win) { win.document.write(fullHtml); win.document.close(); }
+      else { alert('Pop-up blocked. Please allow pop-ups for this site.'); }
+    } catch (err) {
+      console.error('Error loading bale assignments:', err);
+      alert('Error loading bale assignments: ' + err.message);
+    }
+  }
+
+  /**
+   * Builds the full HTML page for bale assignments print view.
+   * @param {string} eventName - Event name
+   * @param {string} dateStr - Formatted date string
+   * @param {string} bodyHtml - Inner HTML content
+   * @param {boolean} isGamesFormat - Whether this is a Games Event (match-based layout)
+   * @returns {string} Complete HTML document
+   */
+  function buildBaleAssignmentsPrintPage(eventName, dateStr, bodyHtml, isGamesFormat) {
+    const extraStyles = isGamesFormat ? `
+    .round-label { font-size: 1.1rem; font-weight: 700; color: #374151; margin-bottom: 1rem; }
+    .bale-block { flex: 0 0 240px; width: 240px; }
+    .bale-lines { }
+    .bale-line { padding: 0.375rem 0.5rem; }
+    .bale-line + .bale-line { border-top: 1px dashed #d1d5db; }
+    .bale-line.empty .empty-text { text-align: center; color: #d1d5db; font-size: 0.75rem; padding: 0.25rem; }
+    .line-label { font-size: 0.65rem; color: #6b7280; margin-bottom: 0.25rem; }
+    .bracket-name { font-weight: 400; font-size: 0.6rem; color: #9ca3af; }
+    .bale-slot-school { font-size: 0.65rem; color: #9ca3af; }
+    .bale-slot-archers { font-size: 0.6rem; color: #9ca3af; }
+    ` : '';
+
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -2795,6 +2929,7 @@
     .btn-print { background: #2563eb; color: white; }
     .btn-close { background: #e5e7eb; color: #374151; }
     @media print { .print-actions { display: none !important; } }
+    ${extraStyles}
   </style>
 </head>
 <body>
@@ -2809,14 +2944,6 @@
   </div>
 </body>
 </html>`;
-
-      const win = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
-      win.document.write(fullHtml);
-      win.document.close();
-    } catch (err) {
-      console.error('Error loading bale assignments:', err);
-      alert('Error loading bale assignments: ' + err.message);
-    }
   }
 
   // ==================== QR Code Display ====================
