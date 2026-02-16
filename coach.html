@@ -188,99 +188,150 @@
 
       <!-- MODULAR EVENT SECTIONS -->
 
-      <!-- 1. Ranking Rounds (Optional) -->
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-        <label class="flex items-center gap-2 cursor-pointer mb-3">
-          <input type="checkbox" id="include-ranking" checked
-            class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-          <span class="font-bold text-gray-800 dark:text-gray-200 text-lg">Ranking Rounds</span>
-        </label>
-
-        <div id="ranking-options" class="ml-7 space-y-3">
-          <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">Standard 300 Round (Official Divisions)</div>
-          <!-- OPEN -->
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="rank-div-open" value="OPEN" checked
-              class="w-4 h-4 text-primary rounded border-gray-300">
-            <span class="text-gray-700 dark:text-gray-300">OPEN (Mixed)</span>
-          </label>
-          <!-- VARSITY -->
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="rank-div-bvar" value="BVAR"
-                class="w-4 h-4 text-primary rounded border-gray-300">
-              <span class="text-gray-700 dark:text-gray-300">Boys Varsity</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="rank-div-gvar" value="GVAR"
-                class="w-4 h-4 text-primary rounded border-gray-300">
-              <span class="text-gray-700 dark:text-gray-300">Girls Varsity</span>
-            </label>
+      <!-- Games Event Flow (shown when GAMES selected) -->
+      <div id="games-event-sections" class="hidden">
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <div class="font-bold text-green-800 dark:text-green-300 mb-2">
+              <i class="fas fa-gamepad mr-1"></i> Games Event Flow
+            </div>
+            <div class="text-sm text-gray-700 dark:text-gray-300 space-y-2">
+              <p>This event uses <strong>assignments</strong> from your roster to create Swiss brackets:</p>
+              <ul class="list-disc ml-5 space-y-1">
+                <li><strong>S1-S4</strong> archers go into <strong>Solo Swiss</strong> brackets by division</li>
+                <li><strong>T1-T2</strong> archers go into <strong>Team Swiss</strong> brackets by division</li>
+              </ul>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                After creating the event, you'll be prompted to <strong>Import Roster</strong> which reads archer assignments and creates the brackets automatically.
+              </p>
+            </div>
           </div>
-          <!-- JV -->
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="rank-div-bjv" value="BJV" class="w-4 h-4 text-primary rounded border-gray-300">
-              <span class="text-gray-700 dark:text-gray-300">Boys JV</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="rank-div-gjv" value="GJV" class="w-4 h-4 text-primary rounded border-gray-300">
-              <span class="text-gray-700 dark:text-gray-300">Girls JV</span>
-            </label>
-          </div>
-        </div>
-      </div>
 
-      <!-- 2. Solo Brackets (Optional) -->
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-        <label class="flex items-center gap-2 cursor-pointer mb-3">
-          <input type="checkbox" id="include-solo"
-            class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-          <span class="font-bold text-gray-800 dark:text-gray-200 text-lg">Solo Brackets</span>
-        </label>
-
-        <div id="solo-options" class="ml-7 hidden">
-          <div class="flex flex-col gap-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="solo-type" value="ELIMINATION" checked
-                class="w-4 h-4 text-primary border-gray-300">
-              <span class="text-gray-700 dark:text-gray-300">Elimination (Top 8 from Ranking)</span>
-            </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="solo-type" value="SWISS" class="w-4 h-4 text-primary border-gray-300">
-              <span class="text-gray-700 dark:text-gray-300">Swiss (Varsity / JV)</span>
-            </label>
+          <!-- Division Selection for Games -->
+          <div class="mt-4">
+            <div class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Divisions</div>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="games-div-bvar" value="BVAR" checked
+                  class="w-4 h-4 text-primary rounded border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Mens Varsity</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="games-div-gvar" value="GVAR" checked
+                  class="w-4 h-4 text-primary rounded border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Womens Varsity</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="games-div-bjv" value="BJV"
+                  class="w-4 h-4 text-primary rounded border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Mens JV</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="games-div-gjv" value="GJV"
+                  class="w-4 h-4 text-primary rounded border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Womens JV</span>
+              </label>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- 3. Team Brackets (Optional) -->
-      <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 mb-2">
-        <label class="flex items-center gap-2 cursor-pointer mb-3">
-          <input type="checkbox" id="include-team"
-            class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
-          <span class="font-bold text-gray-800 dark:text-gray-200 text-lg">Team Brackets</span>
-        </label>
+      <!-- Sanctioned / Standard Event Sections (hidden when GAMES selected) -->
+      <div id="sanctioned-event-sections">
+        <!-- 1. Ranking Rounds (Optional) -->
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <label class="flex items-center gap-2 cursor-pointer mb-3">
+            <input type="checkbox" id="include-ranking" checked
+              class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            <span class="font-bold text-gray-800 dark:text-gray-200 text-lg">Ranking Rounds</span>
+          </label>
 
-        <div id="team-options" class="ml-7 hidden">
-          <div class="flex flex-col gap-2 mb-3">
+          <div id="ranking-options" class="ml-7 space-y-3">
+            <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">Standard 300 Round (Official Divisions)</div>
+            <!-- OPEN -->
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="team-type" value="ELIMINATION" checked
-                class="w-4 h-4 text-primary border-gray-300">
-              <span class="text-gray-700 dark:text-gray-300">Elimination (Top Schools)</span>
+              <input type="checkbox" id="rank-div-open" value="OPEN" checked
+                class="w-4 h-4 text-primary rounded border-gray-300">
+              <span class="text-gray-700 dark:text-gray-300">OPEN (Mixed)</span>
             </label>
+            <!-- VARSITY -->
+            <div class="grid grid-cols-2 gap-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="rank-div-bvar" value="BVAR"
+                  class="w-4 h-4 text-primary rounded border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Boys Varsity</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="rank-div-gvar" value="GVAR"
+                  class="w-4 h-4 text-primary rounded border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Girls Varsity</span>
+              </label>
+            </div>
+            <!-- JV -->
+            <div class="grid grid-cols-2 gap-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="rank-div-bjv" value="BJV" class="w-4 h-4 text-primary rounded border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Boys JV</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="rank-div-gjv" value="GJV" class="w-4 h-4 text-primary rounded border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Girls JV</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Solo Brackets (Optional) -->
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+          <label class="flex items-center gap-2 cursor-pointer mb-3">
+            <input type="checkbox" id="include-solo"
+              class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            <span class="font-bold text-gray-800 dark:text-gray-200 text-lg">Solo Brackets</span>
+          </label>
+
+          <div id="solo-options" class="ml-7 hidden">
+            <div class="flex flex-col gap-2">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="solo-type" value="ELIMINATION" checked
+                  class="w-4 h-4 text-primary border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Elimination (Top 8 from Ranking)</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="solo-type" value="SWISS" class="w-4 h-4 text-primary border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Swiss (Varsity / JV)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Team Brackets (Optional) -->
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 mb-2">
+          <label class="flex items-center gap-2 cursor-pointer mb-3">
+            <input type="checkbox" id="include-team"
+              class="w-5 h-5 text-primary border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-primary">
+            <span class="font-bold text-gray-800 dark:text-gray-200 text-lg">Team Brackets</span>
+          </label>
+
+          <div id="team-options" class="ml-7 hidden">
+            <div class="flex flex-col gap-2 mb-3">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="team-type" value="ELIMINATION" checked
+                  class="w-4 h-4 text-primary border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Elimination (Top Schools)</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="team-type" value="SWISS" class="w-4 h-4 text-primary border-gray-300">
+                <span class="text-gray-700 dark:text-gray-300">Swiss (Head-to-Head)</span>
+              </label>
+            </div>
+
+            <!-- Divisions for Team -->
+            <div class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Team Divisions</div>
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="team-type" value="SWISS" class="w-4 h-4 text-primary border-gray-300">
-              <span class="text-gray-700 dark:text-gray-300">Swiss (Head-to-Head)</span>
+              <input type="checkbox" id="team-div-open" checked class="w-4 h-4 text-primary rounded border-gray-300">
+              <span class="text-gray-700 dark:text-gray-300">OPEN (Mixed Gender)</span>
             </label>
           </div>
-
-          <!-- Divisions for Team -->
-          <div class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Team Divisions</div>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="team-div-open" checked class="w-4 h-4 text-primary rounded border-gray-300">
-            <span class="text-gray-700 dark:text-gray-300">OPEN (Mixed Gender)</span>
-          </label>
         </div>
       </div>
 

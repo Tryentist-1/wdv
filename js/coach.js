@@ -433,11 +433,18 @@
     if (formatSelect) formatSelect.value = '';
     if (baleConfig) baleConfig.classList.add('hidden');
 
-    // Toggle bale config visibility based on event format
-    if (formatSelect && baleConfig) {
-      formatSelect.onchange = () => {
-        baleConfig.classList.toggle('hidden', formatSelect.value !== 'GAMES');
-      };
+    // Toggle sections based on event format
+    const gamesSections = document.getElementById('games-event-sections');
+    const sanctionedSections = document.getElementById('sanctioned-event-sections');
+    const updateFormatSections = () => {
+      const isGames = formatSelect && formatSelect.value === 'GAMES';
+      if (baleConfig) baleConfig.classList.toggle('hidden', !isGames);
+      if (gamesSections) gamesSections.classList.toggle('hidden', !isGames);
+      if (sanctionedSections) sanctionedSections.classList.toggle('hidden', isGames);
+    };
+    if (formatSelect) {
+      formatSelect.onchange = updateFormatSections;
+      updateFormatSections();
     }
 
     // Initialize component toggle logic
@@ -472,6 +479,69 @@
         alert('Please enter an event name');
         return;
       }
+
+      // Determine event format
+      const eventFormat = formatSelect ? formatSelect.value : '';
+
+      // =========================================================
+      // GAMES EVENT PATH - separate flow from Sanctioned/Standard
+      // =========================================================
+      if (eventFormat === 'GAMES') {
+        try {
+          const btn = document.getElementById('submit-event-btn');
+          btn.disabled = true;
+          btn.textContent = 'Creating...';
+
+          const totalBalesEl = document.getElementById('total-bales');
+          const targetsPerBaleEl = document.getElementById('targets-per-bale');
+
+          // Step 1: Create the Games Event
+          const result = await req('/events', 'POST', {
+            name,
+            date,
+            status,
+            entryCode,
+            eventType: 'manual',
+            autoAssignBales: false,
+            eventFormat: 'GAMES',
+            totalBales: parseInt(totalBalesEl?.value, 10) || 16,
+            targetsPerBale: parseInt(targetsPerBaleEl?.value, 10) || 4
+          });
+
+          const eventId = result.eventId;
+          currentEventId = eventId;
+
+          // Step 2: Close modal
+          modal.style.display = 'none';
+
+          // Step 3: Ask to Import Roster immediately
+          const doImport = confirm(
+            `Games Event "${name}" created!\n\n` +
+            `Import active archers from roster assignments now?\n\n` +
+            `This reads S1-S4 (Solo) and T1-T2 (Team) assignments and creates Swiss brackets for each division.`
+          );
+
+          if (doImport) {
+            await importRoster(eventId);
+          } else {
+            alert('Event created. You can import the roster later using the "Import Roster" button on the event card.');
+          }
+
+          loadEvents();
+        } catch (err) {
+          alert(`Error creating Games Event: ${err.message}`);
+          console.error(err);
+        } finally {
+          const btn = document.getElementById('submit-event-btn');
+          btn.disabled = false;
+          btn.textContent = 'Create Event';
+        }
+        return; // Exit - don't fall through to Sanctioned path
+      }
+
+      // =========================================================
+      // SANCTIONED / STANDARD EVENT PATH (existing flow)
+      // =========================================================
 
       // Collect Configuration
       const config = {
@@ -509,8 +579,7 @@
         btn.disabled = true;
         btn.textContent = 'Creating...';
 
-        // Step 1: Create event with optional Games Event config
-        const eventFormat = formatSelect ? formatSelect.value : '';
+        // Step 1: Create event
         const totalBalesEl = document.getElementById('total-bales');
         const targetsPerBaleEl = document.getElementById('targets-per-bale');
         const eventBody = {
@@ -523,10 +592,6 @@
         };
         if (eventFormat) {
           eventBody.eventFormat = eventFormat;
-        }
-        if (eventFormat === 'GAMES' && totalBalesEl) {
-          eventBody.totalBales = parseInt(totalBalesEl.value, 10) || 16;
-          eventBody.targetsPerBale = parseInt(targetsPerBaleEl?.value, 10) || 4;
         }
         const result = await req('/events', 'POST', eventBody);
 
