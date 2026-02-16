@@ -854,20 +854,49 @@
                       event_date: assignment.event_date
                     });
                   } else if (assignment.bracket_format === 'SWISS') {
-                    // Swiss bracket - show bracket assignment
+                    // Swiss bracket - show bracket assignment with bale info if available
                     const winLoss = assignment.swiss_wins || 0;
                     const losses = assignment.swiss_losses || 0;
                     const points = assignment.swiss_points || 0;
+                    let details = `Record: ${winLoss}-${losses}`;
+                    let subtitle = `${assignment.event_name || 'Event'} • Swiss`;
+
+                    // Add opponent and bale info if there's a current match
+                    if (assignment.opponent_name) {
+                      details = `vs ${assignment.opponent_name} • ${details}`;
+                    }
+                    if (assignment.current_round) {
+                      subtitle += ` • ${assignment.current_round}`;
+                    }
+
+                    // Bale assignment display
+                    let baleInfo = '';
+                    if (assignment.bale_number) {
+                      baleInfo = `Bale ${assignment.bale_number}`;
+                      if (assignment.my_target) baleInfo += `, Target ${assignment.my_target}`;
+                      if (assignment.line_number) baleInfo += `, Line ${assignment.line_number}`;
+                      if (assignment.wave) baleInfo += ` (Wave ${assignment.wave})`;
+                    }
+
+                    const matchLink = assignment.match_id
+                      ? `solo_card.html?match=${assignment.match_id}`
+                      : `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`;
+
                     assignments.push({
                       type: 'bracket',
                       title: `${assignment.division} Swiss Bracket`,
-                      subtitle: `${assignment.event_name || 'Event'} • Swiss Format`,
-                      details: `Your record: ${winLoss}-${losses} (${points > 0 ? '+' : ''}${points} points)`,
-                      link: `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`,
-                      icon: 'fas fa-trophy',
-                      color: 'bg-blue-500 hover:bg-blue-600',
-                      urgent: true,
-                      event_date: assignment.event_date
+                      subtitle: subtitle,
+                      details: baleInfo ? `${details} | ${baleInfo}` : details,
+                      link: matchLink,
+                      icon: assignment.bale_number ? 'fas fa-bullseye' : 'fas fa-trophy',
+                      color: assignment.match_id ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-500 hover:bg-blue-600',
+                      urgent: !!assignment.match_id,
+                      event_date: assignment.event_date,
+                      matchId: assignment.match_id,
+                      baleNumber: assignment.bale_number,
+                      lineNumber: assignment.line_number,
+                      myTarget: assignment.my_target,
+                      wave: assignment.wave
                     });
                   }
                 }

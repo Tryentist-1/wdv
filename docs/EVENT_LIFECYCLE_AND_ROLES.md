@@ -1,923 +1,958 @@
 # WDV Archery Suite - Event Lifecycle & User Roles
 
-**Last Updated:** 2026-02-07  
-**Purpose:** Complete guide to event flow from planning to completion, covering both Coach and Archer roles
+**Last Updated:** 2026-02-15  
+**Purpose:** Complete guide to event flow from planning to completion, covering both Coach and Archer roles across two distinct event types: **Sanctioned OAS Events** and **Games Events**.
 
 ---
 
-## 👥 User Roles
+## Table of Contents
 
-### 🎯 Coach Role
+1. [User Roles](#user-roles)
+2. [Event Types Overview](#event-types-overview)
+3. [Bale and Target Model](#bale-and-target-model)
+4. [Assignment System](#assignment-system)
+5. [Games Event Lifecycle](#games-event-lifecycle)
+6. [Sanctioned OAS Event Lifecycle](#sanctioned-oas-event-lifecycle)
+7. [Authentication Flows](#authentication-flows)
+8. [Data Flow and Database Tables](#data-flow-and-database-tables)
+9. [Coach vs Archer Permissions](#coach-vs-archer-permissions)
+10. [Quick Reference](#quick-reference)
+11. [Best Practices](#best-practices)
+12. [Common Issues and Solutions](#common-issues-and-solutions)
+13. [Implementation TODOs](#implementation-todos)
+
+---
+
+## User Roles
+
+### Coach Role
 
 **Access:** `coach.html` (requires passcode: `wdva26`)
 
 **Responsibilities:**
-- Create Archer Records and School Roster in Archerlist using the "Import" or "Add Archer"
-- Select Positions for Brackets using the http://localhost:8001/assignment_list.html
-- Create and manage events, Ranking Rounds, Solo Brackets and Team Brackets.
-- Events can have Ranking ROunds, Solo Rounds Swiss or Elimination, Team Rounds Swiss or Elimination, they are all optional for the event set up. For "Games Events" that are not sanctioned events it is common to have only Swiss Solo and Swiss Team brackets.
-- Add archers to events, Ranking rounds, Solo Brackets and Team Brackets
-- Assign bales and targets
+- Manage archer records and school rosters in the Archer List module (Import CSV or Add Archer)
+- Assign positions (S1-S4, T1-T2) for Games Events via `assignment_list.html`
+- Create and manage events, including Ranking Rounds, Solo Brackets, and Team Brackets
+- Assign opponents, bales, and targets for each round
 - Verify scorecards and match results
-- Generate Elimination Brackets if needed
-- Manage event lifecycle (Planned → Active → Completed)
-- View analytics and results
-- Determine Winners and Medals
-- Medals for Ranking Rounds by Division, Solos by Division, Teams by Division and Overall School/Team score.
+- Manage event lifecycle (Planned -> Active -> Completed)
+- Determine winners and award medals
 
 **Permissions:**
-- ✅ Full read/write access to all data
-- ✅ Delete events, rounds, archers
-- ✅ Verify and finalize scores
-- ✅ Create brackets and generate matches
-- ✅ Export/import CSV files
-- ✅ Access admin tools
+- Full read/write access to all data
+- Delete events, rounds, archers
+- Verify and finalize scores
+- Create brackets and generate matches
+- Export/import CSV files
+- Access admin tools
 
 ---
 
-### 🏹 Archer Role
+### Archer Role
 
-**Access:** `index.html` → Enter event code → Select profile → Access scoring apps
+**Access:** `index.html` -> Enter event code -> Select profile -> Access scoring apps
 
 **Responsibilities:**
 - Select own profile from master list
-- Find their Opponents and Bale Assignment in the Home Screen
-- Join events using entry codes
-- Score ranking rounds (300 Round)
+- Find opponents and bale/target assignments on the Home Screen
+- Join events using entry codes or QR codes
+- Score ranking rounds (300 Round) when applicable
 - Score solo matches (Olympic Round)
 - Score team matches (Olympic Team Round)
-- Find Updates as Solo and Olympic Rounds progress through rounds ie new opponents and new bale assignements
+- Check Home Screen for updated opponents and bale assignments as rounds progress
 - View own history and stats
-- Select bales (if manual signup enabled)
-- Challenge opponents (if Swiss bracket is Open mode)
 
 **Permissions:**
-- ✅ Read archer list (public)
-- ✅ Read/write own scores (authenticated by event code)
-- ✅ View event results and brackets (public)
-- ❌ Cannot verify scores (coach-only)
-- ❌ Cannot create events
-- ❌ Cannot delete data
+- Read archer list (public)
+- Read/write own scores (authenticated by event code)
+- View event results and brackets (public)
+- Cannot verify scores (coach-only)
+- Cannot create events
+- Cannot delete data
 
 ---
 
-## 🔄 Complete Event Lifecycle
+## Event Types Overview
 
-### **📋 Phase 1: Event Planning** (Coach)
+The app supports two distinct event types with different flows:
 
-**Timeline:** Days or weeks before event  
-**Location:** `coach.html` → "Create Event"
+### Games Events (Non-Sanctioned)
+
+**Use case:** Multi-school competitions focused on maximum participation and experience. This is the primary flow for weekend games events.
+
+**Key characteristics:**
+- Ranking Rounds are **optional** (brackets do NOT require ranking scores)
+- Swiss format only (Solo and Team)
+- Roster populated from **assignment field** (S1-S4 = Solo, T1-T2 = Team)
+- Divisions: BVAR, GVAR, BJV, GJV
+- Medals: 1st, 2nd, 3rd per division for both Solo and Team
+- All divisions and types shoot each round simultaneously
+- App suggests number of rounds based on roster size
+
+**Typical structure:**
+- Solo Swiss Brackets: BVAR, GVAR, BJV, GJV
+- Team Swiss Brackets: BVAR, GVAR, BJV, GJV
+- All brackets run concurrently through N rounds
+
+---
+
+### Sanctioned OAS Events
+
+**Use case:** Official Oregon Archery in the Schools tournaments with formal ranking and elimination brackets.
+
+**Key characteristics:**
+- Ranking Rounds are **required** (scores determine seeding)
+- Elimination format (Top 8 from Ranking Round)
+- Assignment field is **NOT used** -- seeding is score-based
+- Divisions: BVAR, GVAR (Varsity only for Elimination; no JV)
+- Team Brackets: Top 3 archers per school for Varsity Men and Varsity Women
+
+**Typical structure:**
+1. Ranking Rounds (R300) for BVAR, GVAR, BJV, GJV
+2. Solo Elimination Brackets: Top 8 from Ranking Round (BVAR, GVAR)
+3. Team Elimination Brackets: Top 3 archers per school (BVAR, GVAR)
+
+---
+
+### Comparison
+
+| Feature | Games Events | Sanctioned OAS Events |
+|---|---|---|
+| **Ranking Rounds** | Optional | Required |
+| **Bracket Format** | Swiss | Elimination (Top 8) |
+| **Roster Source** | Assignment field (S1-S4, T1-T2) | Ranking Round scores |
+| **Divisions** | BVAR, GVAR, BJV, GJV | BVAR, GVAR (Varsity only for brackets) |
+| **JV Brackets** | Yes | No |
+| **Assignment Field Used** | Yes | No |
+| **Round Count** | App-suggested ceil(log2(N)) | Fixed bracket size (8) |
+| **Medals** | 1st/2nd/3rd per division (Solo + Team) | 1st/2nd/3rd + overall school awards |
+
+---
+
+## Bale and Target Model
+
+### Physical Layout
+
+Each **bale** has **4 targets** arranged in two lines:
+
+```
+         Bale N
+    ┌──────────────────┐
+    │  Line 1 (shoots first)  │
+    │  ┌─────┐  ┌─────┐      │
+    │  │  A  │  │  B  │      │
+    │  └─────┘  └─────┘      │
+    │                         │
+    │  Line 2 (shoots second) │
+    │  ┌─────┐  ┌─────┐      │
+    │  │  C  │  │  D  │      │
+    │  └─────┘  └─────┘      │
+    └──────────────────┘
+```
+
+- **Line 1:** Targets A and B -- shoots first
+- **Line 2:** Targets C and D -- shoots second
+- Lines alternate: all Line 1 archers shoot, then all Line 2 archers shoot
+
+### Solo Match on a Bale
+
+A solo match is a 1v1 head-to-head. Two opponents share a **line** on the same bale:
+
+```
+    Line 1: Archer1 → Target A  vs  Archer2 → Target B
+    Line 2: Archer3 → Target C  vs  Archer4 → Target D
+```
+
+- **2 solo matches per bale** (one match per line)
+- Opponents shoot side by side on the same line
+- 5 sets, 3 arrows per set, first to 6 set points wins
+
+### Team Match on a Bale
+
+A team match is a 3v3. Each team of 3 archers shares **one target**, taking turns:
+
+```
+    Line 1: Team1 (3 archers) → Target A  vs  Team2 (3 archers) → Target B
+    Line 2: Team3 (3 archers) → Target C  vs  Team4 (3 archers) → Target D
+```
+
+- **2 team matches per bale** (one match per line)
+- Each archer shoots 2 arrows per set, one at a time (Archer1, then Archer2, then Archer3)
+- 4 sets maximum, first team to 5 set points wins
+- All 3 archers share one target face
+
+### Capacity (16 Bales)
+
+| | Per Bale | 16 Bales Total |
+|---|---|---|
+| **Solo matches** | 2 (one per line) | 32 matches (64 archers) |
+| **Team matches** | 2 (one per line) | 32 matches (192 archers) |
+| **Mixed (Solo + Team)** | 2 total | 32 matches total |
+
+When Solo and Team matches run simultaneously in the same round:
+- Bales are assigned **sequentially**: Solo matches fill bales first, then Team matches
+- Example: 12 Solo matches (6 bales) + 6 Team matches (3 bales) = 9 bales used
+
+### Waves
+
+If a round has more matches than available bale capacity (32 matches for 16 bales):
+
+- **Wave A:** First batch of matches shoots
+- **Wave B:** Second batch shoots after Wave A completes
+
+Waves are rare with fewer than 20 archers per division but possible with large events.
+
+---
+
+## Assignment System
+
+### Overview
+
+The **assignment field** on each archer record determines which bracket type they participate in for Games Events. Managed in `assignment_list.html` before event creation.
+
+### Position Values
+
+| Position | Type | Meaning |
+|---|---|---|
+| S1 | Solo | Solo position 1 (top solo archer) |
+| S2 | Solo | Solo position 2 |
+| S3 | Solo | Solo position 3 |
+| S4 | Solo | Solo position 4 |
+| S5-S8 | Solo | Additional solo positions (larger teams) |
+| T1 | Team | Team 1 member |
+| T2 | Team | Team 2 member (second team from same school, rare) |
+| T3-T6 | Team | Additional team positions |
+| (empty) | None | Not assigned to any bracket |
+
+### Key Rules
+
+- **An archer is Solo OR Team, not both.** The single `assignment` field determines their bracket type.
+- Solo archers (S1-S4) go into Solo Swiss brackets only
+- Team archers (T1-T2) go into Team Swiss brackets only
+- Assignments are set **per season** in the Archer List module and can change between events
+
+### Typical Team Compositions
+
+| School Size | Solo Positions | Team Positions | Total Archers |
+|---|---|---|---|
+| Small (5 archers) | S1, S2 | T1 (3 archers) | 5 |
+| Medium (7 archers) | S1, S2, S3, S4 | T1 (3 archers) | 7 |
+| Large (10+ archers) | S1, S2, S3, S4 | T1 (3), T2 (3) | 10 |
+
+### Team Derivation
+
+Teams are derived from the combination of **School + Gender + Level + Team Number**:
+
+```
+Team ID Format: {SCHOOL}-{GENDER}-{LEVEL}-{T#}
+
+Examples:
+  WDV-M-VAR-T1  = West Valley Men's Varsity Team 1
+  BHS-F-VAR-T1  = Bend High Women's Varsity Team 1
+  HST-M-JV-T1   = Hood River Men's JV Team 1
+  MIX-F-VAR-T1  = Mixed Women's Varsity Team 1 (cross-school)
+```
+
+- A team = all archers at the same School + Gender + Level with the same T# assignment
+- Each team must have exactly **3 archers**
+- Team ID is derived at import time, not stored as a separate field
+
+### Cross-School Teams ("MIX")
+
+When a school does not have enough archers for a full team (3):
+1. Coach creates a **"MIX" school** entry in the roster
+2. Assigns archers from different schools to the MIX school with T1 position
+3. These archers form a mixed team: "MIX-M-VAR-T1"
+4. Coach can manually adjust bale assignments in Edit mode if needed
+
+### Assignment Workflow
+
+```
+1. Coach opens assignment_list.html
+2. Filters by School, Gender, Level, Status (Active)
+3. Clicks S1-S4 buttons for solo archers
+4. Clicks T1-T2 buttons for team archers
+5. Auto-saves to database after 1.5 seconds
+6. Repeat for each school
+7. Assignments ready for event import
+```
+
+---
+
+## Games Event Lifecycle
+
+This is the complete flow for a Games Event (non-sanctioned, Swiss format, assignment-based rosters).
+
+### Phase 1: Pre-Event Setup (Coach, days before)
+
+**Location:** `assignment_list.html` + `coach.html`
+
+#### Step 1: Assign Positions
+1. Open `assignment_list.html`
+2. For each school, filter by Gender and Level
+3. Assign S1-S4 to solo archers, T1-T2 to team archers
+4. Verify each team has exactly 3 archers with the same T# assignment
+5. Set any non-participating archers to "Inactive"
+6. Confirm all assignments saved
+
+#### Step 2: Create Event
+1. Open `coach.html` -> "Create Event"
+2. Enter event name (e.g., "WDV Games Feb 2026")
+3. Select date
+4. Set bales available: **16** (configurable)
+5. Set targets per bale: **4** (A, B, C, D)
+6. Generate entry code (e.g., `GAMES26`)
+7. Status: `Planned`
+
+#### Step 3: Import Rosters from Assignments
+1. Click "Import Roster" on the event
+2. System filters all archers where `status = 'active'` and `assignment != ''`
+3. Groups archers by Gender + Level + Assignment type:
+   - S* archers -> Solo brackets per division (BVAR, GVAR, BJV, GJV)
+   - T* archers -> Team brackets per division (BVAR, GVAR, BJV, GJV)
+4. System creates up to **8 brackets** automatically:
+   - Solo Swiss BVAR, Solo Swiss GVAR, Solo Swiss BJV, Solo Swiss GJV
+   - Team Swiss BVAR, Team Swiss GVAR, Team Swiss BJV, Team Swiss GJV
+5. Empty divisions (no archers) are skipped
+6. Coach reviews rosters and can manually add/remove archers
+
+#### Step 4: Generate Round 1
+1. System suggests total rounds: **ceil(log2(N))** where N = largest roster in any bracket
+   - Example: 16 archers -> 4 rounds suggested, 20 archers -> 5 rounds
+   - Coach can override
+2. Click "Generate Round 1"
+3. System creates pairings following these rules:
+   - **Different schools** paired against each other (priority)
+   - Random or seed-based initial pairing
+   - No duplicate matchups across rounds
+4. System auto-assigns bales and targets:
+   - Solo matches assigned first, sequentially (Bale 1 Line 1, Bale 1 Line 2, Bale 2 Line 1, etc.)
+   - Team matches assigned after Solo, continuing bale sequence
+   - If matches exceed 32 (16 bales x 2 lines): split into Wave A and Wave B
+5. Coach reviews and can manually adjust opponents or bale assignments in Edit mode
+
+**Output:**
+- Event exists with entry code and QR code
+- All brackets created with rosters
+- Round 1 pairings generated with bale/target assignments
+- Event ready for day-of
+
+---
+
+### Phase 2: Day-of-Event Setup (Coach, morning of)
+
+**Location:** `coach.html` -> Event Dashboard
 
 #### Steps:
-0. All Archer Profiles loaded into the ArcherList, and set to "Active" by Coaches
+1. Coach changes event status from `Planned` to `Active`
+2. Display QR code on projector or share event URL
+3. Archers arrive, scan QR code or enter event code
+4. Archers select their profile and see their Round 1 assignment:
+   - Opponent name
+   - Bale number
+   - Target letter (A, B, C, or D)
+   - Line number (1 or 2)
 
-1. **Coach clicks "Create Event"**
+**Output:**
+- Event is `Active`
+- Archers can access via QR/code
+- All archers know where to go for Round 1
+
+---
+
+### Phase 3: Match Play (Archers + Coach, during event)
+
+**Location:** `solo_card.html` (Solo) or `team_card.html` (Team)
+
+#### Archer Steps:
+1. **Check Home Screen** for current round assignment:
+   - Opponent(s)
+   - Bale number and target
+   - Line 1 or Line 2
+2. **Go to assigned bale**
+3. **Line 1 shoots first** (Targets A and B)
+   - Solo: Both archers score simultaneously on their respective targets
+   - Team: All 3 archers on each team take turns on their shared target
+4. **Line 2 shoots second** (Targets C and D) -- same format
+5. **Score the match** digitally (one scorer uses app, other uses paper backup)
+6. **Submit match** -> status: `PENDING` -> `COMP` (Completed)
+
+#### Solo Match Scoring:
+- 5 sets maximum
+- 3 arrows per set (30 points max per set)
+- Win set: 2 points, Tie set: 1 point each
+- First to 6 set points wins
+- Shoot-off if tied 5-5 after 5 sets
+
+#### Team Match Scoring:
+- 4 sets maximum
+- Each archer shoots 2 arrows per set (6 arrows per team per set, 24 points max)
+- Archers shoot one at a time: Archer 1, Archer 2, Archer 3
+- Win set: 2 points, Tie set: 1 point each
+- First team to 5 set points wins
+- Shoot-off if tied 4-4 after 4 sets
+
+---
+
+### Phase 4: Verification and Next Round (Coach, between rounds)
+
+**Location:** `coach.html` -> "Verify Scorecards"
+
+#### Steps:
+1. **Verify completed matches:**
+   - Review all `COMP` matches from current round
+   - Compare digital scores to paper scorecards
+   - Verify: `COMP` -> `VER` (Verified) -- winner/loser recorded
+   - Void: `COMP` -> `VOID` -- match must be re-shot
+2. **Swiss standings update automatically:**
+   - W-L records updated for all verified matches
+   - Standings ranked by: Points (2/win, 1/tie) -> Wins -> Losses (fewer better) -> Head-to-head
+3. **Generate next round:**
+   - Click "Generate Round N+1"
+   - System pairs by current record (winners vs winners, etc.)
+   - Different schools still prioritized
+   - No rematches (system prevents duplicate pairings)
+   - Bales/targets auto-assigned
+   - Coach reviews and can adjust
+4. **Announce next round** -- archers check Home Screen for new assignment
+5. **Repeat** until all suggested rounds complete
+
+---
+
+### Phase 5: Finals and Medals (Coach, end of event)
+
+**Location:** `coach.html` -> Event Dashboard -> Results
+
+#### Steps:
+1. After final round verified, review Swiss standings per bracket
+2. **Medals awarded per division:**
+   - Solo BVAR: 1st, 2nd, 3rd
+   - Solo GVAR: 1st, 2nd, 3rd
+   - Solo BJV: 1st, 2nd, 3rd
+   - Solo GJV: 1st, 2nd, 3rd
+   - Team BVAR: 1st, 2nd, 3rd
+   - Team GVAR: 1st, 2nd, 3rd
+   - Team BJV: 1st, 2nd, 3rd
+   - Team GJV: 1st, 2nd, 3rd
+3. **Tiebreakers for medal positions:**
+   - Swiss points (2/win, 1/tie)
+   - Total wins
+   - Fewest losses
+   - Head-to-head result
+   - If still tied: shared placement
+4. Update event status to `Completed`
+5. Export results (optional)
+
+---
+
+### Phase 6: Event Completion (Coach)
+
+**Location:** `coach.html` -> Event Dashboard
+
+#### Steps:
+1. Verify all matches across all brackets are verified (no `COMP` or `PENDING` remaining)
+2. Review final standings and medal placements
+3. Change event status from `Active` to `Completed`
+4. Generate reports / export CSV (optional)
+5. Historical record saved
+
+---
+
+### Games Event Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    GAMES EVENT LIFECYCLE                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  PHASE 1: Pre-Event Setup (Coach)                                  │
+│  ├─ Assign positions in assignment_list.html (S1-S4, T1-T2)       │
+│  ├─ Create event with bale config (16 bales, 4 targets)           │
+│  ├─ Import rosters from active assignments                         │
+│  ├─ System creates Solo + Team Swiss brackets per division         │
+│  ├─ Generate Round 1 pairings (different schools, auto-bales)     │
+│  └─ Status: PLANNED                                                │
+│      ↓                                                              │
+│                                                                     │
+│  PHASE 2: Day-of Setup (Coach)                                     │
+│  ├─ Change status to ACTIVE                                        │
+│  ├─ Share QR code / event URL with archers                         │
+│  ├─ Archers join and see Round 1 assignment                        │
+│  └─ Status: ACTIVE                                                  │
+│      ↓                                                              │
+│                                                                     │
+│  PHASE 3: Match Play (Archers)                ─── ROUND LOOP ───  │
+│  ├─ Check Home Screen for bale/target/opponent                     │
+│  ├─ Line 1 shoots (A, B), then Line 2 shoots (C, D)              │
+│  ├─ Score match digitally + paper backup                           │
+│  └─ Submit match (PENDING → COMP)                                  │
+│      ↓                                                              │
+│                                                                     │
+│  PHASE 4: Verification + Next Round (Coach)   ─── ROUND LOOP ───  │
+│  ├─ Verify matches (COMP → VER)                                    │
+│  ├─ Swiss standings auto-update                                    │
+│  ├─ Generate next round (pair by record, auto-bales)              │
+│  └─ Repeat Phases 3-4 for ceil(log2(N)) rounds                   │
+│      ↓                                                              │
+│                                                                     │
+│  PHASE 5: Finals + Medals (Coach)                                  │
+│  ├─ Final standings calculated                                     │
+│  ├─ Medals: 1st/2nd/3rd per division (Solo + Team)                │
+│  └─ Announce winners                                                │
+│      ↓                                                              │
+│                                                                     │
+│  PHASE 6: Event Completion (Coach)                                 │
+│  ├─ All matches verified                                           │
+│  ├─ Export results                                                  │
+│  └─ Status: COMPLETED                                               │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Games Event Day Timeline (Example)
+
+**Assumptions:** 6 schools, ~60 archers total, 16 bales available
+
+**Week Before:**
+- Coaches assign positions (S1-S4, T1-T2) per school
+- Head coach creates event, imports rosters, generates Round 1
+
+**Day of Event:**
+
+| Time | Activity | Who |
+|---|---|---|
+| 8:00 AM | Arrive, set up bales, activate event, display QR | Coach |
+| 8:15 AM | Archers scan QR, find Round 1 assignments | Archers |
+| 8:30 AM | **Round 1** -- all Solo + Team matches shoot | All |
+| 9:15 AM | Verify Round 1, generate Round 2 | Coach |
+| 9:30 AM | **Round 2** -- matches by record | All |
+| 10:15 AM | Verify Round 2, generate Round 3 | Coach |
+| 10:30 AM | **Round 3** -- matches by record | All |
+| 11:15 AM | Verify Round 3, generate Round 4 | Coach |
+| 11:30 AM | **Round 4** -- final round | All |
+| 12:15 PM | Verify Round 4, finalize standings | Coach |
+| 12:30 PM | Medal ceremony, event completed | All |
+
+---
+
+## Sanctioned OAS Event Lifecycle
+
+This is the flow for official Oregon Archery in the Schools tournaments where Ranking Round scores determine bracket seeding.
+
+### Phase 1: Event Planning (Coach)
+
+**Timeline:** Days or weeks before event  
+**Location:** `coach.html` -> "Create Event"
+
+#### Steps:
+1. **Create Event**
    - Enter event name (e.g., "State Championships 2026")
    - Select date
    - Set status: `Planned`
    - Generate entry code (e.g., `STATE26`)
 
-2. **Coach selects divisions**
-   - Check: OPEN (Mixed), Boys Varsity, Girls Varsity, Boys JV, Girls JV
-   - System creates a ranking round (R300) for each division
+2. **Select Divisions for Ranking Rounds**
+   - Check divisions: BVAR, GVAR, BJV, GJV
+   - System creates a Ranking Round (R300) for each selected division
 
-3. **Coach adds archers to each division** (Division Loop)
+3. **Add Archers to Ranking Rounds (Division Loop)**
    - FOR EACH DIVISION:
      - Modal: "Add Archers to [Division] Round"
-     - Search/filter master archer list
+     - Search/filter master archer list (by school, gender, level, status)
      - Select multiple archers (bulk selection)
      - Choose bale assignment mode:
-       - **Auto-Assign:** Coach assigns bales (2-4 per bale, continuous numbering)
+       - **Auto-Assign:** System assigns bales (2-4 per bale, continuous numbering)
        - **Manual Signup:** Archers select their own bales via app
      - Click "Confirm"
-     - Archers added to that division's round
    - Loop continues until all divisions configured
 
-4. **Event created with archers assigned**
-   - Event status: `Planned`
-   - All ranking rounds have rosters
-   - Bales assigned (if auto-assign) or NULL (if manual)
-   - Entry code generated
-   - QR code available for sharing
-
-**Output:**
-- ✅ Event exists with entry code
-- ✅ Ranking rounds created for each division
-- ✅ Archers assigned to rounds
-- ✅ Bales assigned (if auto-assign)
-- ✅ Event ready for day-of-event
+4. **Event created**
+   - Status: `Planned`
+   - Ranking rounds have rosters with bale assignments
+   - Entry code and QR code available
 
 ---
 
-### **🎯 Phase 2: Day of Event Setup** (Coach)
+### Phase 2: Day-of-Event Setup (Coach)
 
 **Timeline:** Morning of event  
-**Location:** `coach.html` → Event Dashboard
+**Location:** `coach.html` -> Event Dashboard
 
 #### Steps:
-1. **Coach updates event status to `Active`**
-   - Edit event
-   - Change status from `Planned` to `Active`
-   - Save changes
-
-2. **Coach shares access with archers**
-   - Open QR Code modal
-   - Display QR code on screen/projector
-   - OR: Share event URL via text/email
-   - Format: `ranking_round_300.html?event={id}&code={entry_code}`
-
-3. **If Manual Signup:** Archers select bales
-   - Archers open app (scan QR or enter code)
-   - Select their profile
-   - Choose available bale (A, B, C, or D)
-   - Confirm selection
-
-**Output:**
-- ✅ Event is `Active`
-- ✅ Archers can access via QR/code
-- ✅ All bales assigned (auto or manual)
-- ✅ Ready for scoring
+1. Change event status from `Planned` to `Active`
+2. Display QR code on projector or share event URL
+3. If Manual Signup mode: archers select bales via app
 
 ---
 
-### **🏹 Phase 3: Ranking Round Scoring** (Archers)
+### Phase 3: Ranking Round Scoring (Archers)
 
-**Timeline:** During event (typically 1-2 hours)  
+**Timeline:** 1-2 hours  
 **Location:** `ranking_round_300.html`
 
-#### Archer Steps:
-1. **Join event**
-   - Scan QR code OR enter event code manually
-   - Select own profile from list via modal if no cookie set yet
-   - Confirm bale assignment
-
-2. **Score ranking round**
-   - Enter 30 arrows (10 ends × 3 arrows)
-   - System calculates running total, 10s, Xs
-   - View real-time leaderboard
-   - See balemates' scores (if same bale)
-
-3. **Submit scorecard**
-   - Review total score
-   - Tap "Verify and Submit"
-   - Card status: `PENDING` → `COMP` (Completed)
-   - Card locked, waiting for coach verification
-
-**What Archers See:**
-- Own scorecard with all scores
-- Running total and average
-- Ranking within division
-- Balemates' progress (if auto-assigned)
+#### Steps:
+1. Scan QR code or enter event code
+2. Select own profile from list
+3. Confirm bale assignment
+4. Score 30 arrows (10 ends x 3 arrows per end)
+5. View running total and real-time leaderboard
+6. Submit scorecard -> status: `PENDING` -> `COMP`
 
 ---
 
-### **👮 Phase 4: Ranking Round Verification** (Coach)
+### Phase 4: Ranking Round Verification (Coach)
 
-**Timeline:** After archers submit (same day)  
-**Location:** `coach.html` → "Verify Scorecards"
+**Timeline:** After archers submit  
+**Location:** `coach.html` -> "Verify Scorecards"
 
-#### Coach Steps:
-1. **Open verification modal**
-   - Select verification type: "Ranking Rounds"
-   - Select division (e.g., BVAR)
-   - Select bale (or verify all bales)
+#### Steps:
+1. Select verification type: "Ranking Rounds"
+2. Select division and bale
+3. Review scorecards: compare digital to paper, check signatures
+4. Verify (`COMP` -> `VER`) or Void (`COMP` -> `VOID`)
+5. Bulk verify: "Verify This Bale" or "Verify ALL Bales"
 
-2. **Review scorecards**
-   - See all `COMP` (Completed) cards for selected division/bale
-   - Compare digital scores to paper scorecards
-   - Check signature on paper card
-
-3. **Verify or void**
-   - **Verify:** Card status: `COMP` → `VER` (Verified)
-     - Score is official
-     - Appears in final rankings
-   - **Void:** Card status: `COMP` → `VOID`
-     - Score rejected (duplicate, error, etc.)
-     - Does not appear in rankings
-
-4. **Bulk verification**
-   - Click "Verify This Bale" → All cards for one bale verified
-   - Click "Verify ALL Bales" → All cards for entire division verified
-
-**Output:**
-- ✅ All ranking round scores verified
-- ✅ Official rankings calculated
-- ✅ Ready for bracket generation
+**Output:** Official rankings calculated, ready for bracket generation
 
 ---
 
-### **🏆 Phase 5: Bracket Creation** (Coach)
+### Phase 5: Bracket Creation (Coach)
 
-**Timeline:** After ranking rounds complete  
-**Location:** `coach.html` → Event Dashboard → "Create Bracket"
-
-#### Types of Brackets:
+**Timeline:** After ranking rounds verified  
+**Location:** `coach.html` -> Event Dashboard -> "Create Bracket"
 
 #### A. Solo Elimination (Top 8)
-1. **Create bracket**
-   - Type: Solo
-   - Format: Elimination (Top 8)
-   - Division: Boys Varsity
-   - Size: 8 (fixed)
+1. Create bracket: Solo, Elimination, Division (BVAR or GVAR)
+2. Click "Generate from Top 8" -- fetches top 8 from verified ranking scores
+3. Seeds: 1v8, 2v7, 3v6, 4v5
+4. 4 Quarter-Final matches created
 
-2. **Generate from Top 8**
-   - Click "🎯 Generate from Top 8"
-   - System fetches top 8 archers from verified ranking scores
-   - Seeds: 1v8, 2v7, 3v6, 4v5
-   - 4 Quarter-Final matches created
-
-3. **Bracket ready**
-   - Status: `OPEN` (waiting for matches)
-   - Archers can see bracket on app
-   - Matches appear in "My Matches"
-
-#### B. Solo Swiss (Mixed/Open)
-1. **Create bracket**
-   - Type: Solo
-   - Format: Swiss
-   - Division: Mixed or specific
-   - Mode: Auto-Assign OR Open
-
-2. **Add archers to bracket**
-   - Use "Manage Roster" feature
-   - Add archers from master list
-   - OR import from ranking round (Top 8 or All)
-
-3. **Generate first round**
-   - **Auto-Assign:** Coach clicks "Generate Round"
-     - System creates pairings (random or seeded)
-     - Archers see assigned matches
-   - **Open:** Archers self-select opponents
-     - Archers see standings and available opponents
-     - Challenge system
-
-#### C. Team Elimination/Swiss
-- Similar to Solo but with team entries
-- Top schools ranked by combined scores
-- Team bracket seeding
-
-**Output:**
-- ✅ Brackets created and seeded
-- ✅ Matches generated (Elimination) or ready (Swiss)
-- ✅ Archers can see their bracket matches
+#### B. Team Elimination
+1. Create bracket: Team, Elimination, Division (BVAR or GVAR)
+2. Generate from top schools (top 3 archers per school by combined ranking scores)
+3. Teams seeded by combined score
+4. Bracket matches created
 
 ---
 
-### **🏹 Phase 6: Bracket Match Play** (Archers)
+### Phase 6: Elimination Match Play (Archers)
 
 **Timeline:** During/after ranking rounds  
 **Location:** `solo_card.html` or `team_card.html`
 
-#### Archer Steps:
+#### Steps:
+1. View "My Matches" on home page -- see assigned opponent and bale/target
+2. Navigate to match card
+3. Both archers/teams confirm ready
+4. Score match (Solo: 5 sets x 3 arrows; Team: 4 sets x 2 arrows per archer)
+5. Submit match -> `PENDING` -> `COMP`
 
-#### A. Elimination Matches (Assigned)
-1. **View "My Matches"**
-   - See assigned opponent and target
-   - Match appears in home page dashboard
-
-2. **Navigate to match**
-   - Click match from dashboard
-   - OR scan bracket-specific QR code
-   - Opens `solo_card.html?match={matchId}`
-
-3. **Confirm and score**
-   - Both archers confirm they're ready
-   - Score 5 sets (3 arrows per set)
-   - System calculates set points
-   - First to 6 set points wins
-
-4. **Submit match**
-   - Tap "Sign & Submit"
-   - Match status: `PENDING` → `COMP`
-   - Locked, waiting for coach verification
-
-#### B. Swiss Matches (Challenge)
-1. **View standings**
-   - See current W-L record
-   - See available opponents
-
-2. **Select opponent** (if Open mode)
-   - Choose from eligible opponents
-   - System prevents duplicate matches
-   - Click "Start Match"
-
-3. **Score and submit**
-   - Same as elimination (5 sets, first to 6)
-   - Submit for verification
-
-**What Archers See:**
-- Current match status
-- Bracket standings
-- W-L record
-- Next opponent (Elimination) or opponent selection (Swiss)
+**Bracket Progression:**
+- QF Winner -> Semi-Final
+- SF Winner -> Final
+- Final Winner -> Champion
+- Losers -> Placement matches (3rd/4th)
 
 ---
 
-### **👮 Phase 7: Match Verification** (Coach)
+### Phase 7: Match Verification (Coach)
 
-**Timeline:** After each match completes  
-**Location:** `coach.html` → "Verify Scorecards"
+**Timeline:** After each match  
+**Location:** `coach.html` -> "Verify Scorecards"
 
-#### Coach Steps:
-1. **Open verification modal**
-   - Select verification type: "Solo Matches" or "Team Matches"
-   - Select event
-   - Select bracket
-
-2. **Review completed matches**
-   - See all `COMP` matches
-   - Compare digital scores to paper cards
-   - Check both archers signed
-
-3. **Verify or void**
-   - **Verify:** Match status: `COMP` → `VER`
-     - Winner recorded
-     - Loser recorded
-     - **Elimination:** Winner auto-advances to next round
-     - **Swiss:** W-L records updated
-   - **Void:** Match status: `COMP` → `VOID`
-     - Match rejected, must be re-shot
-
-**Elimination Bracket Progression:**
-- QF Winner → Semi-Final
-- SF Winner → Final
-- Final Winner → Champion
-- Losers → Placement matches (3rd/4th)
-
-**Swiss Bracket Progression:**
-- W-L records update after each match
-- Coach generates next round when ready
-- Continues until champion determined
-
-**Output:**
-- ✅ Matches verified
-- ✅ Winners/losers recorded
-- ✅ Brackets progress automatically
-- ✅ Standings updated
+#### Steps:
+1. Review completed matches
+2. Verify (`COMP` -> `VER`) or Void (`COMP` -> `VOID`)
+3. Winner auto-advances to next round
+4. Repeat until champion determined
 
 ---
 
-### **🏆 Phase 8: Event Completion** (Coach)
+### Phase 8: Event Completion (Coach)
 
-**Timeline:** After all matches complete  
-**Location:** `coach.html` → Event Dashboard
+**Timeline:** After all matches  
+**Location:** `coach.html` -> Event Dashboard
 
-#### Coach Steps:
-1. **Verify all matches verified**
-   - Check all ranking rounds verified
-   - Check all bracket matches verified
-   - No `COMP` or `PENDING` cards remain
-
-2. **Review results**
-   - View final rankings
-   - View bracket results
-   - View winners and placements
-
-3. **Update event status**
-   - Edit event
-   - Change status from `Active` to `Completed`
-   - Save changes
-
-4. **Generate reports** (optional)
-   - Export results to CSV
-   - Download bracket results
-   - Generate awards lists
-
-**Output:**
-- ✅ Event status: `Completed`
-- ✅ All scores verified and final
-- ✅ Winners determined
-- ✅ Historical record created
+#### Steps:
+1. Verify all ranking rounds and bracket matches verified
+2. Review final results:
+   - Ranking Round placements per division
+   - Solo Elimination champion per division
+   - Team Elimination champion per division
+   - Overall school/team awards
+3. Change event status to `Completed`
+4. Export reports (optional)
 
 ---
 
-## 📊 Event Flow Summary
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     EVENT LIFECYCLE                              │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  PHASE 1: Planning (Coach)                                      │
-│  ├─ Create event with divisions                                 │
-│  ├─ Add archers to ranking rounds (division loop)               │
-│  ├─ Assign bales (auto or manual)                               │
-│  └─ Status: PLANNED ✅                                           │
-│      ↓                                                           │
-│                                                                  │
-│  PHASE 2: Day-of Setup (Coach)                                  │
-│  ├─ Change status to ACTIVE                                     │
-│  ├─ Share QR code with archers                                  │
-│  ├─ Manual bale signup (if enabled)                             │
-│  └─ Status: ACTIVE ✅                                            │
-│      ↓                                                           │
-│                                                                  │
-│  PHASE 3: Ranking Round Scoring (Archers)                       │
-│  ├─ Scan QR / enter code                                        │
-│  ├─ Select profile and bale                                     │
-│  ├─ Score 30 arrows (10 ends × 3)                               │
-│  └─ Submit scorecard (PENDING → COMP) ✅                         │
-│      ↓                                                           │
-│                                                                  │
-│  PHASE 4: Ranking Verification (Coach)                          │
-│  ├─ Review completed scorecards                                 │
-│  ├─ Compare digital to paper cards                              │
-│  ├─ Verify or void each card                                    │
-│  └─ Status: COMP → VER ✅                                        │
-│      ↓                                                           │
-│                                                                  │
-│  PHASE 5: Bracket Creation (Coach)                              │
-│  ├─ Create Solo/Team brackets                                   │
-│  ├─ Choose Elimination or Swiss                                 │
-│  ├─ Generate from Top 8 (Elimination)                           │
-│  └─ OR add archers + generate matches (Swiss) ✅                │
-│      ↓                                                           │
-│                                                                  │
-│  PHASE 6: Match Play (Archers)                                  │
-│  ├─ View assigned matches (Elimination)                         │
-│  ├─ OR select opponents (Swiss Open)                            │
-│  ├─ Score matches (5 sets, first to 6 pts)                      │
-│  └─ Submit match results (PENDING → COMP) ✅                     │
-│      ↓                                                           │
-│                                                                  │
-│  PHASE 7: Match Verification (Coach)                            │
-│  ├─ Review completed matches                                    │
-│  ├─ Verify or void each match                                   │
-│  ├─ Winners auto-advance (Elimination)                          │
-│  └─ Standings update (Swiss) ✅                                  │
-│      ↓                                                           │
-│                                                                  │
-│  PHASE 8: Event Completion (Coach)                              │
-│  ├─ Verify all rounds and matches complete                      │
-│  ├─ Review final results                                        │
-│  ├─ Export reports                                              │
-│  └─ Change status to COMPLETED ✅                                │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 🎯 Detailed Workflow by Event Component
-
-### **1. Ranking Rounds (R300)**
-
-**Purpose:** Initial seeding, determine rankings, qualify for brackets
-
-#### Coach Flow:
-```
-1. Create event with ranking divisions ✅
-2. Add archers to each division (division loop) ✅
-3. Assign bales (auto or manual) ✅
-4. Share QR code with archers ✅
-5. Monitor scoring progress (live updates) 👀
-6. Verify completed scorecards ✅
-7. View final rankings 📊
-```
-
-#### Archer Flow:
-```
-1. Scan QR code or enter event code ✅
-2. Select own profile from list ✅
-3. Select bale (if manual signup) ✅
-4. Score 30 arrows (10 ends × 3) 🎯
-5. View running total and ranking 📈
-6. Submit scorecard ✅
-7. Wait for coach verification ⏳
-8. View verified results 📊
-```
-
----
-
-### **2. Solo Elimination Brackets (Top 8)**
-
-**Purpose:** Head-to-head Olympic Round competition, top archers
-
-#### Coach Flow:
-```
-1. Create bracket (Solo, Elimination, Division) ✅
-2. Click "Generate from Top 8" ✅
-3. System seeds: 1v8, 2v7, 3v6, 4v5 ✅
-4. 4 Quarter-Final matches created ✅
-5. Archers see matches in "My Matches" ✅
-6. Monitor match progress 👀
-7. Verify completed matches ✅
-8. Winner auto-advances to next round ↗️
-9. Repeat for Semi-Finals → Finals ✅
-10. Champion determined! 🏆
-```
-
-#### Archer Flow:
-```
-1. View "My Matches" on home page ✅
-2. See assigned opponent and target 🎯
-3. Navigate to match card ✅
-4. Both archers confirm ready ✅
-5. Score 5 sets (3 arrows per set) 🏹
-6. First to 6 set points wins 🎯
-7. Submit match ✅
-8. Wait for coach verification ⏳
-9. Winner advances, loser eliminated ↗️❌
-10. Continue until champion crowned 🏆
-```
-
-**Match Scoring:**
-- 5 sets maximum
-- 3 arrows per set (30 points max)
-- Win set: 2 points
-- Tie set: 1 point each
-- First to 6 set points wins
-- Shoot-off if tied 5-5 after 5 sets
-
----
-
-### **3. Solo Swiss Brackets (Mixed/Open)**
-
-**Purpose:** Round-robin style, more matches per archer
-
-#### Coach Flow (Auto-Assign Mode):
-```
-1. Create bracket (Solo, Swiss, Auto) ✅
-2. Add archers via "Manage Roster" ✅
-3. Click "Generate Round 1" ✅
-4. System creates random/seeded pairings ✅
-5. Archers see assigned matches ✅
-6. Verify completed matches ✅
-7. Click "Generate Round 2" (after Round 1 done) ✅
-8. System pairs by record (1-0 vs 1-0, etc.) ✅
-9. Repeat until champion emerges ✅
-10. Final standings calculated 📊
-```
-
-#### Archer Flow (Open Mode):
-```
-1. View Swiss bracket standings 📊
-2. See own W-L record ✅
-3. Select available opponent from list 🎯
-4. System prevents duplicate matches ✅
-5. Start match ✅
-6. Score and submit ✅
-7. Wait for verification ⏳
-8. Record updates (W or L) ✅
-9. Repeat until no more matches ✅
-10. Final placement determined 📊
-```
-
-**Swiss Standings:**
-- Ranked by: Points (2 per win, 1 per tie)
-- Then: Total wins
-- Then: Total losses (fewer is better)
-- Then: Head-to-head result
-- Then: Random
-
----
-
-### **4. Team Brackets (School vs School)**
-
-**Purpose:** Team competition, represents school
-
-#### Coach Flow:
-```
-1. Create bracket (Team, Elimination/Swiss) ✅
-2. Generate from top schools (based on ranking totals) ✅
-3. System creates team matches ✅
-4. Teams see matches in app ✅
-5. Verify completed team matches ✅
-6. Winning school advances ✅
-7. Champion school determined 🏆
-```
-
-#### Archer Flow:
-```
-1. View team matches (3 archers per team) ✅
-2. See teammates and opponents 🎯
-3. Navigate to team card ✅
-4. All 6 archers confirm ready ✅
-5. Score team match (4 sets max) 🏹
-   - Each archer shoots 1 arrow per set
-   - Team total compared
-   - Win set: 2 points, Tie: 1 point each
-   - First team to 5 points wins
-6. Submit match ✅
-7. Wait for verification ⏳
-8. Winning team advances ✅
-```
-
----
-
-## 🔑 Key Authentication Flows
+## Authentication Flows
 
 ### Coach Authentication
+
 ```
 coach.html
-  ↓
-Modal: "Enter Passcode"
-  ↓
-Enter: wdva26
-  ↓
-Cookie stored (90 days)
-  ↓
-Full access granted ✅
+  → Modal: "Enter Passcode"
+  → Enter: wdva26
+  → Cookie stored (90 days)
+  → Full access granted
 ```
 
 ### Archer Authentication
+
 ```
 index.html
-  ↓
-Scan QR OR enter code: STATE26
-  ↓
-Select profile from list
-  ↓
-Event-specific access granted ✅
-  ↓
-Can score for this event only
+  → Scan QR code OR enter event code (e.g., GAMES26)
+  → Select own profile from list
+  → Event-specific access granted
+  → Can score for this event only
 ```
 
 ---
 
-## 🗄️ Data Flow (Source of Truth)
+## Data Flow and Database Tables
 
-### Database Tables:
-- `events` - Event metadata (name, date, status, entry_code)
-- `rounds` - Ranking rounds (one per division per event)
-- `round_archers` - Archer assignments to rounds (with bale/target)
-- `end_events` - Individual end scores (30 arrows per archer)
-- `brackets` - Bracket metadata (type, format, division, mode)
-- `bracket_entries` - Archers/teams in brackets (with seeds, W-L records)
-- `solo_matches` - Individual match records (with bracket_id)
-- `solo_match_archers` - Archer pairings for matches
-- `solo_values` - Arrow-by-arrow scores for matches
-- `team_matches` - Team match records
-- `team_match_participants` - Team rosters for matches
-- `team_values` - Arrow scores for team matches
+### Core Tables
 
-### Cache/Local Storage:
-- **localStorage:** Temporary cache only (not source of truth)
-  - Scorecard drafts (before submission)
-  - Archer profile selection
-  - UI preferences (dark mode, etc.)
+| Table | Purpose |
+|---|---|
+| `events` | Event metadata (name, date, status, entry_code, event_type) |
+| `archers` | Master archer list (name, school, gender, level, assignment, status) |
+| `rounds` | Ranking rounds (one per division per event) |
+| `round_archers` | Archer assignments to ranking rounds (with bale/target) |
+| `end_events` | Individual end scores for ranking rounds (30 arrows per archer) |
+| `brackets` | Bracket metadata (type: SOLO/TEAM, format: SWISS/ELIMINATION, division, mode) |
+| `bracket_entries` | Archers/teams in brackets (with seeds, W-L records) |
+| `solo_matches` | Solo match records (with bracket_id, status, winner) |
+| `solo_match_archers` | Archer pairings for solo matches (position 1 or 2) |
+| `solo_values` | Arrow-by-arrow scores for solo matches |
+| `team_matches` | Team match records |
+| `team_match_teams` | Team entries in team matches |
+| `team_match_archers` | Individual archers within teams |
+| `team_values` | Arrow scores for team matches |
+
+### Key Fields on `archers` Table
+
+| Field | Type | Values | Purpose |
+|---|---|---|---|
+| `gender` | VARCHAR(1) | M, F | Division grouping |
+| `level` | VARCHAR(3) | VAR, JV, BEG | Division grouping |
+| `school` | VARCHAR(3) | 3-letter code | School/team affiliation |
+| `assignment` | ENUM | S1-S8, T1-T6, '' | Games Event bracket placement |
+| `status` | VARCHAR(16) | active, inactive | Roster filtering |
+
+### Division Codes (Derived)
+
+| Code | Gender | Level | Display Name |
+|---|---|---|---|
+| BVAR | M | VAR | Men's Varsity |
+| GVAR | F | VAR | Women's Varsity |
+| BJV | M | JV | Men's JV |
+| GJV | F | JV | Women's JV |
+
+### Source of Truth
+
 - **Database:** Source of truth for all verified data
+- **localStorage:** Temporary cache only (scorecard drafts, profile selection, UI preferences)
 
 ---
 
-## 🎓 Coach vs Archer Permissions
+## Coach vs Archer Permissions
 
 | Action | Coach | Archer |
-|--------|-------|--------|
-| **Create events** | ✅ | ❌ |
-| **Add archers to events** | ✅ | ❌ |
-| **Assign bales** | ✅ | ❌ (can select if manual) |
-| **View archer list** | ✅ | ✅ (public) |
-| **Score ranking rounds** | ✅ | ✅ |
-| **Score matches** | ✅ | ✅ |
-| **Submit scorecards** | ✅ | ✅ |
-| **Verify scorecards** | ✅ | ❌ |
-| **Verify matches** | ✅ | ❌ |
-| **Create brackets** | ✅ | ❌ |
-| **Generate matches** | ✅ | ❌ (can select opponent if Swiss Open) |
-| **View results** | ✅ | ✅ (public) |
-| **Delete data** | ✅ | ❌ |
-| **Export CSV** | ✅ | ❌ |
-| **Import CSV** | ✅ | ❌ |
-| **Access admin tools** | ✅ | ❌ |
+|---|---|---|
+| Create events | Yes | No |
+| Assign positions (S1-S4, T1-T2) | Yes | No |
+| Import rosters | Yes | No |
+| Add archers to events | Yes | No |
+| Assign bales | Yes | No (can select if manual mode) |
+| View archer list | Yes | Yes (public) |
+| Score ranking rounds | Yes | Yes |
+| Score matches | Yes | Yes |
+| Submit scorecards | Yes | Yes |
+| Verify scorecards | Yes | No |
+| Verify matches | Yes | No |
+| Create brackets | Yes | No |
+| Generate rounds/matches | Yes | No |
+| View results | Yes | Yes (public) |
+| Delete data | Yes | No |
+| Export CSV | Yes | No |
+| Import CSV | Yes | No |
+| Access admin tools | Yes | No |
 
 ---
 
-## 🎯 Quick Reference: Where to Do What
+## Quick Reference
 
-### Coach Tasks:
-| Task | Location |
-|------|----------|
-| Create event | `coach.html` → "Create Event" |
-| Add archers to event | During event creation (division loop) |
-| Edit event | `coach.html` → Click event → "Edit" |
-| Manage roster | Event Dashboard → Round → "Manage Roster" |
-| Create bracket | Event Dashboard → "Create Bracket" |
-| Verify scorecards | `coach.html` → "Verify Scorecards" button |
-| View results | Event Dashboard → "View Results" |
-| Export data | `coach.html` → "Export CSV" |
-| Admin tools | Footer → "Admin" |
+### Coach Tasks
 
-### Archer Tasks:
 | Task | Location |
-|------|----------|
-| Join event | `index.html` → Scan QR or enter code |
-| Select profile | After entering code → Select from list |
+|---|---|
+| Assign positions (S1-S4, T1-T2) | `assignment_list.html` |
+| Create event | `coach.html` -> "Create Event" |
+| Import roster from assignments | Event Dashboard -> "Import Roster" |
+| Edit event / adjust bales | `coach.html` -> Click event -> "Edit" |
+| Generate next round | Event Dashboard -> Bracket -> "Generate Round" |
+| Verify scorecards | `coach.html` -> "Verify Scorecards" |
+| View results / standings | Event Dashboard -> "View Results" |
+| Create bracket (Sanctioned) | Event Dashboard -> "Create Bracket" |
+| Export data | `coach.html` -> "Export CSV" |
+| Admin tools | Footer -> "Admin" |
+
+### Archer Tasks
+
+| Task | Location |
+|---|---|
+| Join event | `index.html` -> Scan QR or enter code |
+| Select profile | After entering code -> Select from list |
+| View current assignment | Home Screen -> opponent, bale, target, line |
 | Score ranking round | `ranking_round_300.html` |
-| View ranking results | Ranking Round → "Results" tab |
-| View my matches | `index.html` → "My Matches" section |
 | Score solo match | `solo_card.html` |
 | Score team match | `team_card.html` |
-| View bracket | `bracket_results.html` (link from home) |
-| View history | `archer_history.html` |
+| View bracket standings | `bracket_results.html` |
+| View own history | `archer_history.html` |
 
 ---
 
-## 🔄 Event Status Lifecycle
+## Best Practices
 
-```
-PLANNED
-  ↓
-  └─ Coach creates event
-  └─ Adds archers to ranking rounds
-  └─ Assigns bales
-  └─ Event ready but not started
-  
-ACTIVE (Day of Event)
-  ↓
-  └─ Coach changes status to Active
-  └─ Archers can scan QR code
-  └─ Scoring begins
-  └─ Ranking rounds in progress
-  └─ Brackets created and matches scored
-  └─ Verification ongoing
-  
-COMPLETED (After Event)
-  ↓
-  └─ All rounds verified
-  └─ All matches verified
-  └─ Winners determined
-  └─ Coach changes status to Completed
-  └─ Historical record archived
-```
+### For Coaches (Games Events)
 
----
+1. **Assign positions days in advance** -- use `assignment_list.html` so rosters are ready
+2. **Verify team sizes** -- every T1/T2 group must have exactly 3 archers per school/gender/level
+3. **Use MIX school sparingly** -- only when a school genuinely cannot field a team of 3
+4. **Generate Round 1 before event day** -- review pairings and bale assignments in advance
+5. **Verify matches promptly between rounds** -- don't let them pile up
+6. **Trust the app's round suggestion** -- ceil(log2(N)) is mathematically sound for Swiss
+7. **Monitor leaderboards during matches** -- coaches and spectators can follow along
+8. **Export results after completion** -- backup for awards and records
 
-## 📱 Typical Event Timeline
+### For Coaches (Sanctioned Events)
 
-### **Week Before Event:**
-- Coach creates event (Planned)
-- Coach adds archers from roster
-- Coach assigns bales (auto-assign)
-- Coach shares entry code with archers
+1. **Create events days in advance** -- don't wait until day-of
+2. **Use auto-assign bales** -- faster and less confusion than manual
+3. **Test the QR code** -- make sure it works before event
+4. **Generate brackets only after ALL ranking rounds verified** -- ensures accurate seeding
+5. **Export data regularly** -- backup results
 
-### **Day of Event:**
+### For Archers
 
-**8:00 AM** - Setup
-- Coach arrives, changes event to Active
-- Displays QR code on projector
-- Archers arrive and join event
-
-**9:00 AM - 11:00 AM** - Ranking Rounds
-- Archers score ranking rounds (30 arrows)
-- Running leaderboard visible
-- Archers submit scorecards
-
-**11:00 AM - 12:00 PM** - Verification & Break
-- Coach verifies all ranking scorecards
-- Rankings finalized
-- Lunch break
-
-**12:00 PM** - Bracket Creation
-- Coach creates elimination brackets
-- Generates Top 8 from rankings
-- Seeds calculated automatically
-
-**12:30 PM - 3:00 PM** - Elimination Matches
-- Quarter-Finals (4 matches)
-- Semi-Finals (2 matches)
-- Finals (1 match)
-- Coach verifies after each match
-- Winners auto-advance
-
-**3:00 PM - 3:30 PM** - Finals & Awards
-- Championship match
-- Coach verifies final match
-- Winners announced
-- Awards ceremony
-
-**3:30 PM** - Event Complete
-- Coach changes event to Completed
-- Results finalized
-- Historical record saved
+1. **Test the app before event day** -- make sure you can access it
+2. **Check Home Screen between rounds** -- opponents and bales change each round
+3. **Bring paper scorecard** -- required for verification (backup to digital)
+4. **Sign paper card** -- coach needs signature for verification
+5. **Submit matches promptly** -- don't hold up the next round
+6. **Arrive at your bale on time** -- know your bale number, target letter, and line
 
 ---
 
-## 🎓 Best Practices
-
-### For Coaches:
-1. **Create events days in advance** - Don't wait until day-of
-2. **Use auto-assign bales** - Faster than manual, less confusion
-3. **Test the QR code** - Make sure it works before event
-4. **Verify scorecards promptly** - Don't let them pile up
-5. **Generate brackets only after all ranking verified** - Ensure accurate seeding
-6. **Monitor "My Matches" dashboard** - See what archers see
-7. **Use "Manage Roster"** - Add/remove archers after event creation
-8. **Export data regularly** - Backup results
-
-### For Archers:
-1. **Test app before event** - Make sure you can access it
-2. **Bring paper card** - Required for verification
-3. **Sign paper card** - Coach needs signature
-4. **Submit promptly** - Don't hold up verification
-5. **Check "My Matches"** - See upcoming bracket matches
-6. **Arrive on time for bracket matches** - Don't miss your match
-7. **Confirm with opponent** - Both must confirm before scoring
-
----
-
-## 🚨 Common Issues & Solutions
+## Common Issues and Solutions
 
 ### "Can't access event"
-- ✅ Check entry code is correct
-- ✅ Event must be Active status
-- ✅ Try manual entry if QR doesn't work
+- Check entry code is correct
+- Event must be `Active` status
+- Try manual entry if QR doesn't work
 
 ### "Can't find my profile"
-- ✅ Search by first or last name
-- ✅ Profile must exist in master list
-- ✅ Ask coach to add you if not found
+- Search by first or last name
+- Profile must exist in master list with `status = 'active'`
+- Ask coach to add you if not found
 
-### "Bale is full"
-- ✅ Only 4 archers per bale (A, B, C, D)
-- ✅ Choose different bale
-- ✅ Ask coach if auto-assigned wrong
+### "Don't know where to go"
+- Check Home Screen for: Bale number, Target letter (A/B/C/D), Line (1 or 2)
+- Line 1 = Targets A and B (shoot first)
+- Line 2 = Targets C and D (shoot second)
 
 ### "Can't submit scorecard"
-- ✅ Must complete all 30 arrows
-- ✅ Check for missing scores
-- ✅ Verify end totals calculated
+- Must complete all sets/arrows
+- Check for missing scores
+- Verify end totals calculated
 
 ### "Match opponent not showing up"
-- ✅ Check match time/target
-- ✅ Verify opponent confirmed
-- ✅ Ask coach if issue persists
+- Check bale/target assignment
+- Verify both archers are in the event
+- Ask coach if issue persists
 
-### "Bracket not generating"
-- ✅ Verify ranking rounds are verified (not just completed)
-- ✅ Check minimum 8 archers in division
-- ✅ Check division codes match (BV vs BVAR)
+### "Bracket not generating / no Round 1"
+- Verify rosters are imported (check bracket has entries)
+- For Sanctioned: ranking rounds must be verified (not just completed)
+- For Games: assignments must be set and archers must be active
+- Check division codes match
 
----
-
-## 📊 Event Types
-
-### **Type 1: Ranking Only**
-- Phases: 1-4 only
-- Just ranking rounds
-- No brackets or matches
-- Fastest event type (2-3 hours)
-
-### **Type 2: Ranking + Elimination**
-- Phases: 1-8
-- Ranking rounds + Top 8 brackets
-- Traditional tournament format
-- Typical event (4-5 hours)
-
-### **Type 3: Ranking + Swiss**
-- Phases: 1-8
-- Ranking rounds + Swiss brackets
-- More matches per archer
-- Longer event (5-6 hours)
-
-### **Type 4: Full Tournament**
-- Phases: 1-8
-- Ranking + Solo Elimination + Team Elimination + Swiss
-- Complete OAS tournament
-- Full day event (6-8 hours)
+### "Not enough bales"
+- System will split into Wave A and Wave B if matches exceed capacity
+- Coach can adjust bale assignments manually in Edit mode
+- Consider reducing divisions or running sequentially
 
 ---
 
-## 🔗 Related Documentation
+## Implementation TODOs
 
-- **Technical Details:** `docs/planning/Feature_EventPlanning_Product.md`
-- **Bracket Workflow:** `planning/bracket_workflow_v2.md`
-- **Authentication:** `docs/core/AUTHENTICATION_FLOWS.md`
+These are database and code changes needed to fully support the Games Event flow described in this document. They represent gaps between the current implementation and the documented requirements.
+
+### Database Changes
+
+1. **Add bale config to `events` table:**
+   - `total_bales` INT DEFAULT 16
+   - `targets_per_bale` INT DEFAULT 4
+
+2. **Add bale/target fields to match tables:**
+   - `solo_matches`: add `bale_number` INT, `line_number` TINYINT (1 or 2)
+   - `solo_match_archers`: add `target_assignment` VARCHAR(1) (A, B, C, or D)
+   - `team_matches`: add `bale_number` INT, `line_number` TINYINT (1 or 2)
+   - `team_match_teams`: add `target_assignment` VARCHAR(1) (A, B, C, or D)
+
+3. **Add wave support:**
+   - `solo_matches`: add `wave` VARCHAR(1) DEFAULT NULL (A or B)
+   - `team_matches`: add `wave` VARCHAR(1) DEFAULT NULL (A or B)
+
+### API Changes
+
+4. **Import roster from assignments endpoint:**
+   - `POST /v1/events/{id}/import-roster`
+   - Filters active archers by assignment (S* -> Solo brackets, T* -> Team brackets)
+   - Auto-creates brackets per division
+   - Returns created brackets and roster counts
+
+5. **Bale auto-assignment in round generation:**
+   - Update `POST /v1/brackets/{id}/generate-round` to accept bale config
+   - Sequential bale fill: Solo first, then Team
+   - Wave A/B split when exceeding capacity
+
+6. **Swiss round count suggestion:**
+   - `GET /v1/brackets/{id}/suggested-rounds`
+   - Returns `ceil(log2(N))` based on roster size
+   - Coach can override when generating rounds
+
+### UI Changes
+
+7. **Event creation form:**
+   - Add "Total Bales" and "Targets per Bale" fields
+   - Add "Event Type" selector: Games Event vs Sanctioned Event
+
+8. **Home Screen for archers:**
+   - Display bale number, target letter, line number for current match
+   - Clear visual distinction between Line 1 and Line 2
+
+9. **Coach dashboard:**
+   - Show bale assignment summary per round
+   - Wave A/B indicators when applicable
+   - Medal/placement view for Games Events
+
+---
+
+## Related Documentation
+
+- **Bracket Validation:** `docs/BRACKET_CREATION_VALIDATION.md`
+- **Event Modal Refactor:** `docs/EVENT_MODAL_REFACTOR_PHASE1_IMPLEMENTATION.md`
+- **Testing Guide:** `docs/testing/TESTING_GUIDE.md`
 - **Architecture:** `docs/core/APP_ARCHITECTURE_AND_INTEGRATION_STRATEGY.md`
+- **Authentication:** `docs/core/AUTHENTICATION_FLOWS.md`
 - **API Endpoints:** `docs/implementation/PHASE2_API_ENDPOINTS.md`
-- **Verification:** See various scorecard workflow docs
 
 ---
 
-## 🎉 Summary
-
-### Coach Role = Event Orchestrator
-- Creates and configures events
-- Manages rosters and assignments
-- Verifies all scores and matches
-- Controls event lifecycle
-- Generates reports
-
-### Archer Role = Competitor
-- Joins events
-- Scores rounds and matches
-- Views results and standings
-- Challenges opponents (Swiss Open)
-- Focuses on competition
-
-### Event Flow = Linear Progression
-- Planning → Setup → Ranking → Verification → Brackets → Matches → Completion
-- Each phase builds on previous phase
-- Coach gates progression through verification
-- Database is source of truth
-- Archers and coaches collaborate to complete event
-
----
-
-**This document is the comprehensive guide for understanding WDV Archery Suite event management.**
-
----
-
-**Last Updated:** 2026-02-07  
-**Status:** ✅ COMPLETE  
-**Audience:** Coaches, Archers, Developers, Documentation
+**Last Updated:** 2026-02-15  
+**Status:** REVISED  
+**Audience:** Coaches, Archers, Developers

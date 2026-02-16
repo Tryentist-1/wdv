@@ -145,7 +145,7 @@ npm run test:api:all
 |-----------|---------|
 | `core/` | Health, authentication |
 | `archers/` | CRUD, search, bulk, self-update |
-| `events/` | Event CRUD, verification |
+| `events/` | Event CRUD, verification, Games Event bale config & import |
 | `rounds/` | Round CRUD, round archers |
 | `matches/` | Solo matches, team matches, integration |
 | `scoring/` | Match scoring, validation, workflows, performance |

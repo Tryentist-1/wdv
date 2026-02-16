@@ -227,8 +227,9 @@
               <div class="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
                 ${shortDate}
               </div>
-              <div class="flex-shrink-0">
+              <div class="flex-shrink-0 flex gap-1">
                 <span class="px-2 py-1 rounded text-xs font-semibold ${statusClass}">${ev.status}</span>
+                ${ev.event_format ? `<span class="px-2 py-1 rounded text-xs font-semibold ${ev.event_format === 'GAMES' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'}">${ev.event_format}</span>` : ''}
               </div>
               <button class="px-2 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center" onclick="coach.editEvent('${eventData}')" title="Edit Event">
                 <i class="fas fa-pen-to-square"></i>
@@ -251,6 +252,9 @@
               <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center gap-1 whitespace-nowrap" onclick="coach.verifyEvent('${eventData}')" title="Verify Scorecards">
                 <i class="fas fa-user-check"></i> Verify
               </button>
+              ${ev.event_format === 'GAMES' ? `<button class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors min-h-[32px] flex items-center justify-center gap-1 whitespace-nowrap" onclick="coach.importRoster('${ev.id}')" title="Import Roster from Assignments">
+                <i class="fas fa-file-import"></i> Import Roster
+              </button>` : ''}
             </div>
           </div>
         `;
@@ -418,13 +422,23 @@
     const dateInput = document.getElementById('event-date');
     const statusSelect = document.getElementById('event-status');
     const codeInput = document.getElementById('event-code');
+    const formatSelect = document.getElementById('event-format');
+    const baleConfig = document.getElementById('games-bale-config');
 
     // Set defaults
     nameInput.value = '';
     dateInput.value = getLocalDateString(); // Use local timezone to avoid date offset issues
     statusSelect.value = 'Planned';
     codeInput.value = '';
+    if (formatSelect) formatSelect.value = '';
+    if (baleConfig) baleConfig.classList.add('hidden');
 
+    // Toggle bale config visibility based on event format
+    if (formatSelect && baleConfig) {
+      formatSelect.onchange = () => {
+        baleConfig.classList.toggle('hidden', formatSelect.value !== 'GAMES');
+      };
+    }
 
     // Initialize component toggle logic
     const linkToggle = (chkId, optId) => {
@@ -495,15 +509,26 @@
         btn.disabled = true;
         btn.textContent = 'Creating...';
 
-        // Step 1: Create event (TODO: Send config to backend to persist preferences)
-        const result = await req('/events', 'POST', {
+        // Step 1: Create event with optional Games Event config
+        const eventFormat = formatSelect ? formatSelect.value : '';
+        const totalBalesEl = document.getElementById('total-bales');
+        const targetsPerBaleEl = document.getElementById('targets-per-bale');
+        const eventBody = {
           name,
           date,
           status,
           entryCode,
           eventType: 'manual',
           autoAssignBales: false
-        });
+        };
+        if (eventFormat) {
+          eventBody.eventFormat = eventFormat;
+        }
+        if (eventFormat === 'GAMES' && totalBalesEl) {
+          eventBody.totalBales = parseInt(totalBalesEl.value, 10) || 16;
+          eventBody.targetsPerBale = parseInt(targetsPerBaleEl?.value, 10) || 4;
+        }
+        const result = await req('/events', 'POST', eventBody);
 
         const eventId = result.eventId;
         currentEventId = eventId;
@@ -598,6 +623,48 @@
       loadEvents();
     } catch (err) {
       alert(`Error deleting event: ${err.message}`);
+    }
+  }
+
+  /**
+   * Import active archers into Swiss brackets based on assignment field.
+   * S1-S8 go to Solo Swiss brackets, T1-T6 go to Team Swiss brackets.
+   * @param {string} eventId - UUID of the Games Event
+   */
+  async function importRoster(eventId) {
+    if (!confirm('Import active archers from assignments into Swiss brackets?\n\nThis will create Solo and Team Swiss brackets for each division based on archer assignment positions (S1-S4 = Solo, T1-T2 = Team).')) {
+      return;
+    }
+
+    try {
+      const result = await req(`/events/${eventId}/import-roster`, 'POST', {});
+
+      let message = `Roster imported!\n\n`;
+      message += `Brackets created: ${result.brackets?.length || 0}\n`;
+      message += `Solo archers: ${result.totalSoloArchers || 0}\n`;
+      message += `Teams: ${result.totalTeams || 0}\n`;
+
+      if (result.brackets && result.brackets.length > 0) {
+        message += `\nBrackets:\n`;
+        result.brackets.forEach(b => {
+          if (b.type === 'SOLO') {
+            message += `  - Solo ${b.division}: ${b.archerCount} archers\n`;
+          } else {
+            message += `  - Team ${b.division}: ${b.teamCount} teams\n`;
+          }
+        });
+      }
+
+      if (result.warnings && result.warnings.length > 0) {
+        message += `\nWarnings:\n`;
+        result.warnings.forEach(w => { message += `  - ${w}\n`; });
+      }
+
+      alert(message);
+      loadEvents();
+    } catch (err) {
+      alert(`Error importing roster: ${err.message}`);
+      console.error('Import roster error:', err);
     }
   }
 
@@ -3492,8 +3559,9 @@
     verifyEvent,
     editBracket,
     removeBracketEntry,
-    openManageRoster, // New
-    removeRosterArcher // New
+    openManageRoster,
+    removeRosterArcher,
+    importRoster
   };
 
 })();

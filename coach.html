@@ -155,6 +155,37 @@
 
 
 
+      <!-- Event Format -->
+      <div class="mb-5">
+        <label for="event-format" class="block mb-2 font-medium text-gray-700 dark:text-gray-300">Event Format</label>
+        <select id="event-format"
+          class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+          <option value="">Standard (Legacy)</option>
+          <option value="GAMES">Games Event (Swiss, Assignment-Based)</option>
+          <option value="SANCTIONED">Sanctioned OAS Event (Ranking + Elimination)</option>
+        </select>
+      </div>
+
+      <!-- Games Event Bale Config (shown when GAMES selected) -->
+      <div id="games-bale-config" class="hidden mb-5 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <div class="text-sm font-bold text-blue-800 dark:text-blue-300 mb-3">Bale Configuration</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="total-bales" class="block mb-1 text-sm text-gray-700 dark:text-gray-300">Total Bales</label>
+            <input type="number" id="total-bales" value="16" min="1" max="100"
+              class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+          </div>
+          <div>
+            <label for="targets-per-bale" class="block mb-1 text-sm text-gray-700 dark:text-gray-300">Targets / Bale</label>
+            <input type="number" id="targets-per-bale" value="4" min="2" max="8"
+              class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
+          </div>
+        </div>
+        <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          16 bales x 4 targets = 2 matches/bale (Line 1: A,B + Line 2: C,D) = 32 matches/round
+        </div>
+      </div>
+
       <!-- MODULAR EVENT SECTIONS -->
 
       <!-- 1. Ranking Rounds (Optional) -->

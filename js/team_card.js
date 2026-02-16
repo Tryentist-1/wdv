@@ -393,12 +393,26 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCompleteMatchButton();
     }
 
+    /**
+     * Render match summary header with team names and optional bale assignment.
+     */
     function renderMatchSummary() {
         if (!state.team1.length || !state.team2.length) return;
+        let baleHtml = '';
+        if (state.baleNumber) {
+            const lineLabel = state.lineNumber === 1 ? 'Line 1 (A,B)' : state.lineNumber === 2 ? 'Line 2 (C,D)' : '';
+            const waveLabel = state.wave ? ` Wave ${state.wave}` : '';
+            baleHtml = `<div class="text-xs text-center mt-1 text-gray-500 dark:text-gray-400">
+                <i class="fas fa-bullseye"></i> Bale ${state.baleNumber} &bull; ${lineLabel}${waveLabel}
+            </div>`;
+        }
         matchSummaryDisplay.innerHTML = `
-            <span class="team-summary a1-summary">Team 1</span>
-            <span class="mx-2">vs</span>
-            <span class="team-summary a2-summary">Team 2</span>
+            <div class="flex items-center justify-center gap-2">
+                <span class="team-summary a1-summary">Team 1</span>
+                <span class="mx-2">vs</span>
+                <span class="team-summary a2-summary">Team 2</span>
+            </div>
+            ${baleHtml}
         `;
     }
 
@@ -1156,6 +1170,10 @@ document.addEventListener('DOMContentLoaded', () => {
             state.locked = match.locked || false;
             // Store match data for completion checking
             state.matchData = match;
+            // Bale assignment info (display-only, no scoring impact)
+            state.baleNumber = match.bale_number ? parseInt(match.bale_number) : null;
+            state.lineNumber = match.line_number ? parseInt(match.line_number) : null;
+            state.wave = match.wave || null;
             
             // 6. Build teams from match data
             const teams = match.teams || [];

@@ -590,6 +590,10 @@ document.addEventListener('DOMContentLoaded', () => {
             state.location = match.location || '';
             state.cardStatus = match.card_status || match.status || 'PENDING';
             state.locked = match.locked || (state.cardStatus === 'VERIFIED' || state.cardStatus === 'VER' || state.cardStatus === 'COMPLETED' || state.cardStatus === 'COMP');
+            // Bale assignment info (display-only, no scoring impact)
+            state.baleNumber = match.bale_number ? parseInt(match.bale_number) : null;
+            state.lineNumber = match.line_number ? parseInt(match.line_number) : null;
+            state.wave = match.wave || null;
 
             // 6. Build archers from match data (use UUIDs, not names)
             const matchArchers = match.archers || [];
@@ -841,14 +845,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+    /**
+     * Render match summary header with archer names and optional bale assignment.
+     */
     function renderMatchSummary() {
         if (!state.archer1 || !state.archer2) return;
         const a1Name = `${state.archer1.first} ${state.archer1.last}`;
         const a2Name = `${state.archer2.first} ${state.archer2.last}`;
+        let baleHtml = '';
+        if (state.baleNumber) {
+            const lineLabel = state.lineNumber === 1 ? 'Line 1 (A,B)' : state.lineNumber === 2 ? 'Line 2 (C,D)' : '';
+            const waveLabel = state.wave ? ` Wave ${state.wave}` : '';
+            baleHtml = `<div class="text-xs text-center mt-1 text-gray-500 dark:text-gray-400">
+                <i class="fas fa-bullseye"></i> Bale ${state.baleNumber} &bull; ${lineLabel}${waveLabel}
+            </div>`;
+        }
         matchSummaryDisplay.innerHTML = `
-            <span class="team-summary a1-summary text-blue-600 dark:text-blue-400 font-bold">${a1Name}</span>
-            <span style="margin: 0 10px;" class="text-gray-800 dark:text-white">vs</span>
-            <span class="team-summary a2-summary text-red-600 dark:text-red-400 font-bold">${a2Name}</span>
+            <div class="flex items-center justify-center gap-2 flex-wrap">
+                <span class="team-summary a1-summary text-blue-600 dark:text-blue-400 font-bold">${a1Name}</span>
+                <span class="text-gray-800 dark:text-white">vs</span>
+                <span class="team-summary a2-summary text-red-600 dark:text-red-400 font-bold">${a2Name}</span>
+            </div>
+            ${baleHtml}
         `;
     }
 
