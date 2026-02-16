@@ -2196,24 +2196,16 @@ const ArcherModule = {
     // Save updated list to localStorage
     this.saveList(currentList);
 
-    // Queue all imported archers for MySQL sync
-    console.log(`[Import Roster Games] Queuing ${archersToSync.length} archers for MySQL sync...`);
-    
-    const syncPromises = [];
-    archersToSync.forEach(archer => {
-      try {
-        syncPromises.push(this.queueUpsert(archer));
-      } catch (err) {
-        console.warn('[Import Roster Games] Failed to queue archer for sync:', archer.first, archer.last, err);
+    // Sync imported archers to MySQL via bulk_upsert (same pattern as USA Archery import)
+    console.log(`[Import Roster Games] Syncing ${archersToSync.length} archers to MySQL...`);
+    this._syncImportedToMySQL(archersToSync).then(result => {
+      if (result.ok) {
+        console.log(`[Import Roster Games] MySQL sync complete for ${archersToSync.length} archers`);
+      } else {
+        console.warn('[Import Roster Games] MySQL sync failed - queued for retry:', result.error);
       }
-    });
-
-    // Wait for all sync operations
-    Promise.all(syncPromises).then(() => {
-      console.log(`[Import Roster Games] MySQL sync complete for ${syncPromises.length} archers`);
     }).catch(err => {
-      console.warn('[Import Roster Games] MySQL sync failed:', err);
-      warnings.push('Note: Archers saved locally but MySQL sync failed. They will sync on next refresh.');
+      console.warn('[Import Roster Games] MySQL sync error:', err);
     });
 
     const imported = added + updated;
