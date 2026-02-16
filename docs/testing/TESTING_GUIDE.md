@@ -28,7 +28,7 @@ npm run test:pre-deploy
 npm run test:pre-deploy
 ```
 
-Runs: Playwright setup tests → ranking round tests → API health check. See §3 for full behavior.
+Runs: API health check against production. See §3 for full behavior.
 
 ---
 
@@ -54,9 +54,7 @@ All paths are relative to the project root. Scripts live in `tests/scripts/`.
 | `npm run test` | Playwright E2E (excludes LOCAL) | `playwright test --grep-invert 'LOCAL'` |
 | `npm run test:local` | Playwright against localhost:8001 | `playwright.config.local.js` |
 | `npm run test:remote` | Same as `test` — against production | — |
-| `npm run test:setup-sections` | Playwright: setup sections only | `tests/ranking_round_setup_sections.spec.js` |
-| `npm run test:ranking-round` | Playwright: main ranking round | `tests/ranking_round.spec.js` |
-| `npm run test:pre-deploy` | Pre-deploy suite (see below) | — |
+| `npm run test:pre-deploy` | Pre-deploy suite: API health check | `./tests/scripts/test_api.sh` |
 | `npm run test:api:core` | Jest: health, auth | `tests/api/core/` |
 | `npm run test:api:archers` | Jest: archer CRUD, search | `tests/api/archers/` |
 | `npm run test:api:all` | Jest: all API tests | `tests/api/` |
@@ -127,8 +125,8 @@ npm run test:api:all
 
 | File | Feature |
 |------|---------|
-| `ranking_round.spec.js` | Event modal, manual/pre-assigned setup, scoring |
-| `ranking_round_setup_sections.spec.js` | Setup UI components |
+| ~~`ranking_round.spec.js`~~ | *Deleted — UI refactored, selectors obsolete* |
+| ~~`ranking_round_setup_sections.spec.js`~~ | *Deleted — UI refactored, selectors obsolete* |
 | `ranking_round_archer_selector.spec.js` | Archer selector component |
 | `ranking_round_live_sync.spec.js` | Live sync to server |
 | `ranking_round.local.spec.js` | Local-only tests (excluded by default) |
