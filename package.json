@@ -19,6 +19,7 @@
     "test:api:archers": "jest tests/api/archers --verbose",
     "test:api:core": "jest tests/api/core --verbose",
     "test:api:coverage": "jest tests/api --coverage --verbose",
+    "test:api:brackets": "jest tests/api/events/bracket-crud.test.js --verbose",
     "test:api:events": "jest tests/api/events --verbose",
     "test:api:integration": "jest tests/api/integration --verbose",
     "test:api:matches": "jest tests/api/matches --verbose",

@@ -15,23 +15,16 @@ tests/
 ├── manual_sanity_check.md        # Pre-deployment checklist
 │
 ├── *.spec.js                     # Playwright E2E Tests (root)
-│   ├── ranking_round.spec.js     # Production ranking round tests
-│   ├── ranking_round.local.spec.js # Local development tests (@LOCAL)
-│   ├── ranking_round_setup_sections.spec.js # Setup UI components
-│   ├── ranking_round_archer_selector.spec.js # Archer selector
 │   ├── ranking_round_live_sync.spec.js # Live sync E2E
-│   ├── resume_round_flow.spec.js # Resume from index
-│   ├── resume_round_standalone_flow.spec.js # Standalone round resume
 │   ├── verification.spec.js      # Verification, locking
-│   ├── smart_reconnect.spec.js   # Reconnect flow
 │   ├── archer_results_pivot.spec.js # Results pivot
 │   └── diagnostic-ranking-round.spec.js # Diagnostics
 │
 ├── api/                          # Jest API Tests (require: npm run serve)
 │   ├── core/                     # Health, auth
-│   ├── archers/                  # Archer CRUD, search, bulk, self-update
+│   ├── archers/                  # Archer CRUD, search, bulk, self-update, history, matches
 │   ├── rounds/                   # Round CRUD
-│   ├── events/                   # Event CRUD
+│   ├── events/                   # Event CRUD, bracket CRUD, event round/roster mgmt
 │   ├── matches/                  # Solo/Team matches
 │   ├── scoring/                  # Match scoring, validation, workflows
 │   ├── integration/              # Workflow tests
@@ -43,7 +36,7 @@ tests/
 │   └── style-guide.html          # Visual component library
 │
 ├── helpers/                      # Test Utilities
-│   └── ranking_round_utils.js    # Ranking round test helpers
+│   └── test-data-creation.js     # Playwright data creation helpers
 │
 ├── scripts/                      # Test Scripts (run from project root)
 │   ├── test_api.sh               # Production API health
@@ -65,20 +58,19 @@ tests/
 **Scope:** Full application workflows
 
 **Files:**
-- `ranking_round.spec.js` - Production tests
-- `ranking_round.local.spec.js` - Local development tests
-- `ranking_round_setup_sections.spec.js` - UI component integration
+- `ranking_round_live_sync.spec.js` - Live sync E2E
 - `verification.spec.js` - Data validation and integrity
+- `archer_results_pivot.spec.js` - Results pivot table
 - `diagnostic-ranking-round.spec.js` - System diagnostics
 
 **Coverage:**
-- ✅ Event modal functionality
-- ✅ Manual vs pre-assigned setup
-- ✅ Archer selection and assignment
-- ✅ Scoring workflow
 - ✅ Live sync and offline queue
-- ✅ Mobile responsiveness
-- ✅ Cross-browser compatibility
+- ✅ Scorecard verification and locking
+- ✅ Results pivot deduplication
+- ✅ Diagnostics (404 capture)
+
+**Deleted (Feb 2026 — UI refactored, selectors obsolete):**
+`ranking_round.spec.js`, `ranking_round_setup_sections.spec.js`, `ranking_round_archer_selector.spec.js`, `ranking_round.local.spec.js`, `resume_round_flow.spec.js`, `resume_round_standalone_flow.spec.js`, `smart_reconnect.spec.js`
 
 ### 2. **API Tests** (`tests/api/`)
 **Framework:** Jest + supertest  

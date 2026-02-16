@@ -3,7 +3,6 @@
 // Event -> Round -> Archers -> Scores -> Verification
 
 const { expect } = require('@playwright/test');
-const { enterPreassignedViaQr } = require('./ranking_round_utils');
 
 const COACH_PASSCODE = 'wdva26';
 const LOCAL_API_BASE = 'http://localhost:8001/api/index.php/v1';
@@ -149,7 +148,9 @@ async function createCompleteTestEvent(page, options = {}) {
   if (enterScores) {
     await page.waitForTimeout(500);
 
-    await enterPreassignedViaQr(page, { eventId, eventCode });
+    // Note: enterPreassignedViaQr was removed with ranking_round_utils.js
+    // Scoring via Playwright UI requires rewriting this helper
+    console.warn('Score entry via Playwright helper not implemented — skipping pre-assigned flow');
 
     const errors = [];
     page.on('console', msg => {

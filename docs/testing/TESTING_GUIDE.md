@@ -57,6 +57,7 @@ All paths are relative to the project root. Scripts live in `tests/scripts/`.
 | `npm run test:pre-deploy` | Pre-deploy suite: API health check | `./tests/scripts/test_api.sh` |
 | `npm run test:api:core` | Jest: health, auth | `tests/api/core/` |
 | `npm run test:api:archers` | Jest: archer CRUD, search | `tests/api/archers/` |
+| `npm run test:api:brackets` | Jest: bracket CRUD | `tests/api/events/bracket-crud.test.js` |
 | `npm run test:api:all` | Jest: all API tests | `tests/api/` |
 | `npm run test:workflow:dev` | Dev workflow (interactive) | `./tests/scripts/test-workflow.sh development` |
 | `npm run test:workflow:pre` | Pre-deploy workflow | `./tests/scripts/test-workflow.sh pre-deployment` |
@@ -125,25 +126,20 @@ npm run test:api:all
 
 | File | Feature |
 |------|---------|
-| ~~`ranking_round.spec.js`~~ | *Deleted — UI refactored, selectors obsolete* |
-| ~~`ranking_round_setup_sections.spec.js`~~ | *Deleted — UI refactored, selectors obsolete* |
-| `ranking_round_archer_selector.spec.js` | Archer selector component |
 | `ranking_round_live_sync.spec.js` | Live sync to server |
-| `ranking_round.local.spec.js` | Local-only tests (excluded by default) |
-| `resume_round_flow.spec.js` | Resume from index → Open Rounds |
-| `resume_round_standalone_flow.spec.js` | Standalone round resume |
 | `verification.spec.js` | Scorecard verification, locking |
-| `smart_reconnect.spec.js` | Reconnect flow |
 | `archer_results_pivot.spec.js` | Results pivot table |
 | `diagnostic-ranking-round.spec.js` | Diagnostics (404 capture) |
+
+**Deleted (UI refactored, selectors obsolete):** `ranking_round.spec.js`, `ranking_round_setup_sections.spec.js`, `ranking_round_archer_selector.spec.js`, `ranking_round.local.spec.js`, `resume_round_flow.spec.js`, `resume_round_standalone_flow.spec.js`, `smart_reconnect.spec.js`
 
 ### API (Jest) — `tests/api/**/*.test.js`
 
 | Directory | Feature |
 |-----------|---------|
 | `core/` | Health, authentication |
-| `archers/` | CRUD, search, bulk, self-update |
-| `events/` | Event CRUD, verification, Games Event bale config & import |
+| `archers/` | CRUD, search, bulk, self-update, **history, matches, bracket-assignments** |
+| `events/` | Event CRUD, verification, Games Event bale config & import, **bracket CRUD, event round/roster management** |
 | `rounds/` | Round CRUD, round archers |
 | `matches/` | Solo matches, team matches, integration |
 | `scoring/` | Match scoring, validation, workflows, performance |

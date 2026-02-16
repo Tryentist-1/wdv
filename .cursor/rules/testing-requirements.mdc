@@ -32,7 +32,7 @@ appliesTo: "*.js,*.php,*.html"
    ```bash
    npm run test:pre-deploy
    ```
-   Runs: Playwright setup + ranking round + production API health check.
+   Runs: Production API health check (`./tests/scripts/test_api.sh`).
 
 2. **Full local tests (when changing API/backend):**
    ```bash

@@ -174,7 +174,7 @@ pre_deployment_workflow() {
     echo ""
     echo "✅ Ready for deployment!"
     echo "Next steps:"
-    echo "  - Deploy: ./DeployFTP.sh"
+    echo "  - Deploy: ./scripts/deploy/DeployFTP.sh"
     echo "  - Run post-deployment tests: npm run test:workflow:post"
 }
 
