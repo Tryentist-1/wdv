@@ -4401,7 +4401,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const localId = archer.id || archer.archerId;
         if (!LiveUpdates._state.roundId) {
-            return LiveUpdates.ensureRound({ roundType: 'R300', date: new Date().toISOString().slice(0, 10), eventId: state.activeEventId || state.selectedEventId })
+            // Use ensureLiveRoundReady which validates division before creating rounds.
+            // This prevents null-division rounds for GAMES events (which use brackets, not rounds).
+            return ensureLiveRoundReady()
                 .then(() => LiveUpdates.ensureArcher(archer.id, archer))
                 .then(() => LiveUpdates.postEnd(archer.id, endNumber, { a1, a2, a3, endTotal, runningTotal: running, tens, xs }))
                 .then(() => updateSyncStatus(archer.id, endNumber, 'synced'))
@@ -5687,14 +5689,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let successCount = 0;
         let failCount = 0;
 
-        // Ensure round exists first
+        // Ensure round exists first (use ensureLiveRoundReady which validates division).
+        // This prevents null-division rounds for GAMES events (which use brackets, not rounds).
         try {
             if (!LiveUpdates._state.roundId) {
-                await LiveUpdates.ensureRound({
-                    roundType: 'R300',
-                    date: new Date().toISOString().slice(0, 10),
-                    eventId: state.activeEventId || state.selectedEventId
-                });
+                const ready = await ensureLiveRoundReady();
+                if (!ready) {
+                    throw new Error('Live round not ready (division may be unavailable for this event type)');
+                }
             }
 
             // Ensure all archers exist
@@ -7705,13 +7707,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const onStartScoring = () => {
                 if (!LiveUpdates || !LiveUpdates._state || !LiveUpdates.setConfig) return;
                 if (!LiveUpdates._state.roundId && isEnabled) {
-                    LiveUpdates.ensureRound({
-                        roundType: 'R300',
-                        date: new Date().toISOString().slice(0, 10),
-                        eventId: state.activeEventId || state.selectedEventId
-                    }).then(() => {
-                        state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
-                    }).catch(() => { });
+                    // Use ensureLiveRoundReady which validates division before creating rounds.
+                    // This prevents null-division rounds for GAMES events (which use brackets, not rounds).
+                    ensureLiveRoundReady().catch(() => { });
                 } else if (isEnabled) {
                     state.archers.forEach(a => LiveUpdates.ensureArcher(a.id, a));
                 }

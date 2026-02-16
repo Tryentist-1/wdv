@@ -1169,6 +1169,16 @@ if (preg_match('#^/v1/rounds$#', $route) && $method === 'POST') {
     if ($eventId !== null) {
         require_api_key();
     }
+
+    // GUARD: Reject event-linked rounds without a division.
+    // GAMES events use brackets (not rounds) and should never create ranking rounds.
+    // This prevents data pollution from null-division rounds.
+    if ($eventId !== null && empty($division)) {
+        error_log("REJECTED: POST /rounds with eventId=$eventId but no division (would create null-division round)");
+        json_response(['error' => 'Division is required for event-linked rounds. GAMES events use brackets, not ranking rounds.'], 400);
+        exit;
+    }
+
     try {
         $pdo = db();
         // Check if round already exists (by eventId + division)

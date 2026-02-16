@@ -1784,7 +1784,23 @@
     }
   }
 
-  async function addArchersToEvent(eventId, eventName) {
+  /**
+   * Add archers to an event's division rounds.
+   * GAMES events use brackets (not division rounds), so this function is not applicable.
+   * @param {string} eventId - Event UUID
+   * @param {string} eventName - Display name
+   * @param {string} [eventFormat] - Event format ('GAMES', 'SANCTIONED', or null)
+   */
+  async function addArchersToEvent(eventId, eventName, eventFormat) {
+    // GAMES events use Swiss brackets, not division rounds
+    if (eventFormat === 'GAMES') {
+      alert(
+        'Games Events use Swiss brackets, not division rounds.\n\n' +
+        'To add archers, use "Import Roster" to update bracket entries from roster assignments.'
+      );
+      return;
+    }
+
     currentEventId = eventId;
     selectedArchers = [];
 
@@ -2595,7 +2611,7 @@
         try {
           // Close edit event modal before opening add archers modal
           modal.style.display = 'none';
-          await addArchersToEvent(event.id, event.name);
+          await addArchersToEvent(event.id, event.name, event.event_format);
         } catch (err) {
           console.error('Error opening Add Archers modal:', err);
           alert('Error opening Add Archers: ' + err.message);
