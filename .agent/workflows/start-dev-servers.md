@@ -1,50 +1,47 @@
 ---
-description: Start PHP and MySQL dev servers for WDV
+description: Start the WDV development environment
 ---
 
-# Start Development Servers
+# Start Development Environment
 
-This workflow starts the local PHP development server and ensures MySQL is running (via Docker) for the wdv project.
+The entire dev environment runs in Docker Compose via OrbStack. All services auto-start when OrbStack launches.
 
 ## Prerequisites
 
-- Docker Desktop or OrbStack running
-- MySQL container (`wdv-mysql`) available
-- Node.js and npm installed
+- OrbStack installed and running
 
-## Steps
+## Services
 
-// turbo-all
+| Container | Image | Port | Purpose |
+|-----------|-------|------|---------|
+| `wdv_web` | nginx:alpine | **:8001** | Web server |
+| `wdv_php` | php:8.2-fpm-alpine | (internal) | PHP-FPM app server |
+| `wdv-mysql` | mysql:8.0 | **:3306** | MySQL database |
 
-1. **Verify Docker MySQL is running**
-   ```bash
-   docker ps | grep wdv-mysql
-   ```
-   
-   If not running, start it:
-   ```bash
-   docker-compose up -d
-   ```
+## Daily Workflow
 
-2. **Start PHP development server (background)**
-   ```bash
-   npm run serve
-   ```
+1. **Open OrbStack** — containers auto-start (all set to `restart: unless-stopped`)
+2. **Open browser** — http://localhost:8001/index.html
+3. **Done.**
 
-3. **Verify services are running**
-   ```bash
-   # Check MySQL
-   docker ps | grep wdv-mysql
-   
-   # Check PHP server
-   curl -I http://localhost:8001/index.html
-   ```
-
-## Quick Start (All-in-One)
+## First Time / After Changes
 
 ```bash
-# Ensure MySQL is up and start PHP server
-docker-compose up -d && npm run serve
+# Start or rebuild everything
+docker compose up -d
+```
+
+## Verify Services
+
+```bash
+# Container status
+docker compose ps
+
+# API health
+curl http://localhost:8001/api/v1/health
+
+# Database
+docker exec wdv-mysql mysql -u wdv_user -pwdv_dev_password wdv -e "SELECT COUNT(*) FROM archers;"
 ```
 
 ## Access Points
@@ -52,73 +49,81 @@ docker-compose up -d && npm run serve
 - **Main App:** http://localhost:8001/index.html
 - **Coach Console:** http://localhost:8001/coach.html (passcode: `wdva26`)
 - **Event Dashboard:** http://localhost:8001/event_dashboard.html?event={event_id}
+- **Style Guide:** http://localhost:8001/tests/components/style-guide.html
 - **API Base:** http://localhost:8001/api/v1/
 
-## Stopping Services
+## DBeaver / Database Client
+
+| Setting | Value |
+|---------|-------|
+| Host | `127.0.0.1` |
+| Port | `3306` |
+| Database | `wdv` |
+| User | `wdv_user` |
+| Password | `wdv_dev_password` |
+
+## Managing Services
 
 ```bash
-# Stop PHP server (Ctrl+C in terminal or kill process)
-lsof -ti:8001 | xargs kill
+# View logs
+docker compose logs -f        # All services
+docker compose logs -f web    # Nginx only
+docker compose logs -f php    # PHP only
+docker compose logs -f db     # MySQL only
 
-# Stop MySQL (keeps data)
-docker-compose stop
+# Restart after config changes (e.g., nginx.conf)
+docker compose restart web
 
-# Stop and remove MySQL (removes containers, keeps volumes)
-docker-compose down
+# Stop everything (keeps data)
+docker compose stop
+
+# Stop and remove containers (keeps data volume)
+docker compose down
 ```
 
 ## Troubleshooting
 
 ### Port 8001 Already in Use
 ```bash
-# Find process using port
 lsof -ti:8001
-
-# Kill it
-lsof -ti:8001 | xargs kill
 ```
 
 ### MySQL Container Not Healthy
 ```bash
-# Check logs
-docker-compose logs mysql
-
-# Restart container
-docker-compose restart mysql
+docker compose logs db
+docker compose restart db
 ```
 
 ### Can't Connect to MySQL
 ```bash
-# Verify container is running and healthy
-docker ps | grep wdv-mysql
-
-# Test connection
-docker exec -it wdv-mysql mysql -u root -p
+docker exec wdv-mysql mysqladmin ping -u wdv_user -pwdv_dev_password
 ```
 
-## Docker Configuration
+### PHP Errors
+```bash
+docker compose logs php
+```
 
-The project uses Docker Compose for MySQL:
-- **Container:** `wdv-mysql`
-- **Image:** `mysql:8.0`
-- **Port:** `3306` (host) → `3306` (container)
-- **Volumes:** Persisted data in Docker volume
+## Configuration Files
+
+- **`docker-compose.yml`** — Defines all three services
+- **`nginx.conf`** — Web server config (routes `/api/*` to PHP-FPM)
+- **`config.docker.php`** — PHP database credentials (mounted into container as `config.local.php`)
 
 ## Notes
 
-- The PHP server will run on http://localhost:8001
-- MySQL runs in Docker and persists data between restarts
-- To stop MySQL: `docker-compose stop`
-- The PHP server will stay running until you terminate it
-- PHP version: 8.5.2 (as of 2026-02-07)
+- Database data persists in Docker named volume `wdv_wdv_mysql_data`
+- `docker compose down` removes containers but keeps the data volume
+- File edits (HTML, JS, PHP) are reflected immediately via volume mounts
+- Tailwind CSS changes require `npm run build:css` on the host
 
 ## Related Workflows
 
-- **Coach Testing:** [Coach Login Start](coach-login-start.md) - After starting servers, test coach features
-- **Bug Fixes:** [Bug Fix Workflow](bug-workflow.md) - If you encounter issues during development
-- **Post-Deployment:** [Post-Deployment Testing](post-deployment-testing.md) - Testing after deploying changes
+- **Coach Testing:** [Coach Login Start](coach-login-start.md)
+- **Bug Fixes:** [Bug Fix Workflow](bug-workflow.md)
+- **Post-Deployment:** [Post-Deployment Testing](post-deployment-testing.md)
 
 ## Updated
 
-**Last Updated:** 2026-02-07  
-**Change:** Updated to reflect Docker-based MySQL setup (previously used `brew services`)
+**Last Updated:** 2026-02-15
+**Change:** Consolidated to full Docker Compose stack (nginx + PHP-FPM + MySQL). No more hybrid setup or manual `npm run serve`.

@@ -4,93 +4,90 @@ This is a quick reference guide. For detailed instructions, see `docs/LOCAL_DEVE
 
 ---
 
-## 🚀 Quick Setup (5 minutes)
+## 🚀 Quick Setup (OrbStack + Docker Compose)
 
-### Option 1: Docker (Recommended)
-The easiest way to get started is using Docker. This will create the database, configure PHP, and start the web server automatically.
+The entire dev environment runs in Docker via OrbStack. **Open OrbStack and everything auto-starts.**
 
-```bash
-docker-compose up -d
-```
-The app will be available at http://localhost:8001/index.html.
+### Services (all managed by `docker-compose.yml`)
 
-To stop the environment: `docker-compose down`
+| Container | Image | Port | Purpose |
+|-----------|-------|------|---------|
+| `wdv_web` | nginx:alpine | **:8001** | Web server (serves HTML, JS, CSS; routes API to PHP) |
+| `wdv_php` | php:8.2-fpm-alpine | (internal) | PHP-FPM application server |
+| `wdv-mysql` | mysql:8.0 | **:3306** | MySQL database (persistent named volume) |
 
-### Option 2: Hybrid Setup (Local App + Docker DB)
-This is the **preferred method for active development**. It runs the database in Docker (clean, isolated) but runs the PHP application locally for faster feedback.
+All containers use `restart: unless-stopped`, so they auto-start when OrbStack launches.
 
-### 1. Start Database (Docker Required)
-The database **MUST** be run via Docker to ensure compatibility and correct credentials.
+### First Time Setup
 
 ```bash
-# Start only the database container
-docker-compose up -d db
+# Start everything (pulls images on first run)
+docker compose up -d
 ```
 
-### 2. Configure Local Connection
-Edit `api/config.local.php` and use the following verified credentials:
+### Daily Workflow
 
-```php
-// Copy from api/config.local.php.example for full template.
-// LOCAL DATABASE (Docker):
-define('DB_DSN', 'mysql:host=127.0.0.1;port=3306;dbname=wdv;charset=utf8mb4');
-define('DB_USER', 'wdv_user');
-define('DB_PASS', 'wdv_dev_password');
-define('CORS_ORIGIN', '*');
-```
+1. **Open OrbStack** — containers auto-start, everything is ready
+2. **Open browser** — http://localhost:8001/index.html
+3. **Done.** No manual server starts needed.
 
-### 5. Test Connection
-```bash
-php tests/api/harness/test_db_connection.php
-```
+### Access Points
 
-Should show: ✅ Connection successful!
-
-### 6. Build Tailwind CSS
-```bash
-# Compile Tailwind CSS (required for styling)
-npm run build:css
-```
-
-**Note:** The project uses compiled Tailwind CSS instead of CDN for reliability. After editing `css/tailwind.css`, run `npm run build:css` to regenerate `css/tailwind-compiled.css`.
-
-**Dark Mode:** Dark mode is configured using Tailwind v4's `@custom-variant` directive. If dark mode isn't working, verify that `css/tailwind.css` contains the dark mode variant configuration.
-
-### 7. Start Server
-Run the local development server (uses `router.php` for clean URLs):
-
-```bash
-npm run serve
-```
-
-### 8. Open Browser
 - **Main app:** http://localhost:8001/index.html
 - **Coach console:** http://localhost:8001/coach.html
 - **Style guide:** http://localhost:8001/tests/components/style-guide.html
-- **API test harness:** http://localhost:8001/tests/api/harness/test_harness.html
+- **API health:** http://localhost:8001/api/v1/health
 
----
+### DBeaver / Database Client
 
-## 🔄 Switching Between Local and Production
+| Setting | Value |
+|---------|-------|
+| Host | `127.0.0.1` |
+| Port | `3306` |
+| Database | `wdv` |
+| User | `wdv_user` |
+| Password | `wdv_dev_password` |
 
-### To Use Local Database:
-1. Comment out production config (OPTION 1)
-2. Uncomment local config (OPTION 2)
-3. Update `DB_PASS` with your MySQL password
-4. Set `CORS_ORIGIN` to `'*'` or `'http://localhost:8001'`
+### Managing the Stack
 
-### To Use Production Database:
-1. Comment out local config (OPTION 2)
-2. Uncomment production config (OPTION 1)
-3. Set `CORS_ORIGIN` back to `'https://tryentist.com'`
+```bash
+# View container status
+docker compose ps
+
+# View logs
+docker compose logs -f        # All services
+docker compose logs -f web    # Nginx only
+docker compose logs -f php    # PHP only
+docker compose logs -f db     # MySQL only
+
+# Restart after config changes (e.g., nginx.conf)
+docker compose restart web
+
+# Stop everything (keeps data)
+docker compose stop
+
+# Stop and remove containers (keeps data volume)
+docker compose down
+```
+
+### Build Tailwind CSS
+
+If you change styling in `css/tailwind.css`, rebuild the compiled CSS:
+
+```bash
+npm run build:css
+```
+
+**Note:** The compiled CSS file (`css/tailwind-compiled.css`) is volume-mounted into the container, so changes are immediate after rebuild.
 
 ---
 
 ## ⚠️ Important Notes
 
-- **Never commit `config.local.php`** - it's in `.gitignore`
-- **Always use local database for development** to avoid accidentally modifying production
-- **Switch back to local** after testing with production data
+- **Never commit `config.local.php`** — it's in `.gitignore`
+- **Always use local database for development** — avoid accidentally modifying production
+- **Database data persists** in Docker named volume `wdv_wdv_mysql_data` — survives `docker compose down`
+- **`config.docker.php`** is mounted into the container as `config.local.php` — edit `config.docker.php` for Docker credentials
 
 ---
 
@@ -234,22 +231,26 @@ cat tests/manual_sanity_check.md
 
 ## 🐛 Troubleshooting
 
-**MySQL not running?**
+**Containers not starting?**
 ```bash
-brew services start mysql  # macOS
-sudo systemctl start mysql  # Linux
+# Check OrbStack is running, then:
+docker compose ps
+docker compose logs
 ```
 
-**Connection fails?**
-- Check MySQL username/password in `config.local.php`
-- Verify database exists: `mysql -u root -p -e "SHOW DATABASES;"`
-- Check MySQL is running: `mysqladmin ping -h localhost`
+**API returning errors?**
+```bash
+docker compose logs php
+```
 
 **Port 8001 in use?**
 ```bash
-# Use different port
-php -S localhost:8002
-# (Then update package.json to match)
+lsof -ti:8001
+```
+
+**Database connection refused?**
+```bash
+docker exec wdv-mysql mysqladmin ping -u wdv_user -pwdv_dev_password
 ```
 
 ---
@@ -257,23 +258,3 @@ php -S localhost:8002
 ## 📚 Full Documentation
 
 See `docs/LOCAL_DEVELOPMENT_SETUP.md` for complete setup instructions.
-
----
-
-## 📌 Ranking Round Sync (fix/ranking-round-dropped-arrow-sync)
-
-Recent work on ranking round scoring focuses on **sync reliability and UI clarity**. This is independent of how you run the app (Docker vs manual).
-
-### Server / environment setup (separate from sync)
-
-- **Server setup** (Docker, MySQL, PHP, nginx, `config.local.php`) is unchanged. Use `docker compose up -d` or manual MySQL + `npm run serve` as in the sections above.
-- **Sync optimizations** are client- and API-side: debounced POSTs, queue flush on init, correct running totals, and UI feedback. No extra server configuration is required for these fixes.
-
-### Sync and UI changes (this branch)
-
-- **Header:** One status alert only — **LOCAL Only** (red), **Syncing** (yellow), **Synced** (green). No “Check server” button; comparison with server runs automatically in the background.
-- **Footer:** **Sync End** is the scorer action. Validates missing arrows before sync; shows “All Arrows Synced” on success or “Error [description]” on failure. Running total sent is the sum of complete ends 1..current.
-- **Missing Arrow:** Empty arrow cells show “Missing” and a dashed border so archers see unfilled slots.
-- **Bug doc:** `docs/bugs/RANKING_ROUND_DROPPED_ARROW_SYNC_BUG.md`
-- **Data integrity:** `docs/guides/DATA_INTEGRITY_RANKING_ROUNDS.md`, `api/sql/check_ranking_round_integrity.sql`
-

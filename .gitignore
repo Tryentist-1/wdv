@@ -57,3 +57,5 @@ mysql/
 # Backup files
 *.backup
 *.bak
+deploy_backups/
+backups/

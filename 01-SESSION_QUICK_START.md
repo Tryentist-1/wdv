@@ -858,17 +858,27 @@ Cookies
 
 ### Local Development
 
+The full dev environment runs in Docker Compose via OrbStack. **Open OrbStack and everything auto-starts.**
+
 ```bash
-# Start PHP server
-npm run serve
-# → http://localhost:3000
+# First time or after changes
+docker compose up -d
+
+# Verify
+docker compose ps
+curl http://localhost:8001/api/v1/health
+
+# View logs
+docker compose logs -f
 
 # Run tests
 npm test
-
-# Check linting
-npm run lint
 ```
+
+- **App:** http://localhost:8001/index.html
+- **Coach:** http://localhost:8001/coach.html
+- **API:** http://localhost:8001/api/v1/health
+- **DB (DBeaver):** 127.0.0.1:3306, user `wdv_user`, password `wdv_dev_password`
 
 ### Git Workflow
 
@@ -1353,7 +1363,7 @@ See [docs/FUTURE_VISION_AND_ROADMAP.md](docs/FUTURE_VISION_AND_ROADMAP.md)
 - **Production:** <https://archery.tryentist.com/>
 - **Coach Console:** <https://archery.tryentist.com/coach.html>
 - **Results:** <https://archery.tryentist.com/results.html>
-- **Local:** <http://localhost:3000>
+- **Local:** <http://localhost:8001>
 
 ### Important Files
 

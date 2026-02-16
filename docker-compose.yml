@@ -19,22 +19,27 @@ services:
     volumes:
       - ./:/var/www/html
       - ./config.docker.php:/var/www/html/api/config.local.php:ro
-    # Install pdo_mysql extension
     command: /bin/sh -c "docker-php-ext-install pdo pdo_mysql && php-fpm"
     depends_on:
       - db
     restart: unless-stopped
 
   db:
-    image: mariadb:10.6
-    container_name: wdv_db
+    image: mysql:8.0
+    container_name: wdv-mysql
+    ports:
+      - 3306:3306
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ROOT_PASSWORD: secret
       MYSQL_DATABASE: wdv
       MYSQL_USER: wdv_user
-      MYSQL_PASSWORD: wdv_password
+      MYSQL_PASSWORD: wdv_dev_password
     volumes:
-      - ./mysql:/var/lib/mysql
-      # Auto-init schema from source
+      - wdv_mysql_data:/var/lib/mysql
       - ./api/sql/schema.mysql.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: unless-stopped
+
+volumes:
+  wdv_mysql_data:
+    external: true
+    name: wdv_wdv_mysql_data
