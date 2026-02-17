@@ -63,7 +63,7 @@
 
 **Types:**
 - **TEAM_OLYMPIC**: Best of 4 sets (first to 5 set points wins)
-  - Each set: 1 arrow per archer (3 archers = 3 arrows total per team)
+  - Each set: 2 arrows per archer (3 archers = 6 arrows total per team)
   - First to 5 set points wins match
   - Shoot-off if tied at 4-4
 

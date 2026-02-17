@@ -30,7 +30,7 @@ Create database foundation and API endpoints for Solo and Team Olympic matches, 
 - `team_matches` - Match metadata
 - `team_match_teams` - 2 teams per match
 - `team_match_archers` - 3 archers per team
-- `team_match_sets` - Per-set scores (1 arrow per archer)
+- `team_match_sets` - Per-set scores (2 arrows per archer: `a1`, `a2`)
 
 **Features:**
 - ✅ UUIDs for all IDs (not sequential)

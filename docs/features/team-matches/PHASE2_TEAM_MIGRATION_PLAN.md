@@ -814,7 +814,7 @@ Add LiveUpdates script:
 
 - Team match codes are generated when **both teams have 3 archers each** (6th archer added)
 - Match code format: `team-[INITIALS]-[MMDD]` where INITIALS can be up to 6 characters (3 archers × 2 initials each)
-- Team matches use 1 arrow per archer per set (vs 3 arrows for solo)
+- Team matches use 2 arrows per archer per set (vs 3 arrows for solo)
 - Score calculation needs to aggregate team totals per set
 - Offline queue key: `luq:team:{matchId}`
 

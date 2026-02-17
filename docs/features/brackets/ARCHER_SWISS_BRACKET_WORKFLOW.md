@@ -282,7 +282,7 @@ WHERE bracket_id = 'bracket-uuid'
 
 - **3 archers per team** (vs 1 archer in solo)
 - **4 sets total** (vs 5 sets in solo)  
-- **1 arrow per archer per set** (vs 3 arrows per archer)
+- **2 arrows per archer per set** (vs 3 arrows per archer in solo)
 - **First to 5 set points wins** (vs 6 in solo)
 
 ---

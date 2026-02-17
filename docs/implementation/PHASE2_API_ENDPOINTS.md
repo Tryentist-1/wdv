@@ -340,8 +340,8 @@ All endpoints follow the same patterns as Ranking Rounds:
 ```
 
 **Notes:**
-- Each archer shoots 1 arrow per set (`a1` only)
-- `setTotal` is team total (3 archers × 1 arrow each)
+- Each archer shoots 2 arrows per set (`a1` and `a2`)
+- `setTotal` is team total (3 archers × 2 arrows each = 6 arrows)
 - `setPoints` stored per team (2 for win, 1 for tie, 0 for loss)
 
 ---
