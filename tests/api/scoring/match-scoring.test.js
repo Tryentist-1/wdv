@@ -92,7 +92,8 @@ describe('Match Scoring API', () => {
         test('should require authentication', async () => {
             const response = await client.post('/team-matches/test-match/teams/test-team/archers/test-archer/sets', {
                 setNumber: 1,
-                a1: '10'
+                a1: '10',
+                a2: '9'
             });
             
             expect([401, 404]).toContain(response.status);
@@ -108,8 +109,9 @@ describe('Match Scoring API', () => {
         test('should handle valid team set submission', async () => {
             const teamSetData = {
                 setNumber: 1,
-                a1: '10', // Team matches may have different arrow counts
-                setTotal: 10,
+                a1: '10', // 2 arrows per archer per set in Team Olympic Round
+                a2: '9',
+                setTotal: 19,
                 setPoints: 2,
                 tens: 1,
                 xs: 0
@@ -121,17 +123,34 @@ describe('Match Scoring API', () => {
             expect([200, 201, 404]).toContain(response.status);
         });
 
-        test('should handle team perfect arrow', async () => {
-            const perfectArrow = {
+        test('should handle team perfect arrows', async () => {
+            const perfectArrows = {
                 setNumber: 1,
                 a1: 'X',
-                setTotal: 10,
+                a2: 'X',
+                setTotal: 20,
                 setPoints: 2,
-                tens: 1,
-                xs: 1
+                tens: 2,
+                xs: 2
             };
             
-            const response = await authClient.post('/team-matches/test-match/teams/test-team/archers/test-archer/sets', perfectArrow);
+            const response = await authClient.post('/team-matches/test-match/teams/test-team/archers/test-archer/sets', perfectArrows);
+            
+            expect([200, 201, 404]).toContain(response.status);
+        });
+
+        test('should handle partial arrow entry (a1 only, a2 pending)', async () => {
+            const partialEntry = {
+                setNumber: 1,
+                a1: '8',
+                a2: null,
+                setTotal: 0,
+                setPoints: 0,
+                tens: 0,
+                xs: 0
+            };
+            
+            const response = await authClient.post('/team-matches/test-match/teams/test-team/archers/test-archer/sets', partialEntry);
             
             expect([200, 201, 404]).toContain(response.status);
         });
