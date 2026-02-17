@@ -23,12 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
         matchArcherIds: { t1: {}, t2: {} }, // { t1: {0: id, 1: id, 2: id}, t2: {...} }
         eventId: null,
         bracketId: null,
+        eventName: '',
+        bracketName: '',
         syncStatus: { t1: {}, t2: {} },
         location: '',
         events: [],
         brackets: [],
         cardStatus: 'PEND',   // Match card status: PEND, COMP, VRFD, VOID
-        locked: false         // Match locked after verification
+        locked: false,        // Match locked after verification
+        matchOverModalShown: false
     };
 
     const sessionKey = `teamCard_${new Date().toISOString().split('T')[0]}`;
@@ -368,6 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
             state.scores.so = { t1: Array(t1Count).fill(''), t2: Array(t1Count).fill('') };
             
             state.syncStatus = { t1: {}, t2: {} };
+            state.matchOverModalShown = false;
             state.currentView = 'scoring';
             saveData();
             renderScoringView();
@@ -394,25 +398,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Render match summary header with team names and optional bale assignment.
+     * Get event and bracket display names from state.
+     * @returns {{ eventName: string, bracketName: string }}
+     */
+    function getEventBracketLabels() {
+        let eventName = state.eventName || '';
+        let bracketName = state.bracketName || '';
+        if (!eventName && state.eventId && state.events && state.events.length) {
+            const ev = state.events.find(e => (e.id || e.eventId) === state.eventId);
+            eventName = ev ? (ev.name || ev.eventName || '') : '';
+        }
+        if (!bracketName && state.bracketId && state.brackets && state.brackets.length) {
+            const br = state.brackets.find(b => (b.id || b.bracketId) === state.bracketId);
+            bracketName = br ? (br.division || br.bracket_format || '') : '';
+        }
+        if (!eventName && state.matchData && state.matchData.event_name) eventName = state.matchData.event_name;
+        if (!bracketName && state.matchData && state.matchData.bracket_name) bracketName = state.matchData.bracket_name;
+        return { eventName, bracketName };
+    }
+
+    /**
+     * Render match summary header with team names, event/bracket, and bale.
      */
     function renderMatchSummary() {
         if (!state.team1.length || !state.team2.length) return;
-        let baleHtml = '';
+        const { eventName, bracketName } = getEventBracketLabels();
+        let metaHtml = '';
+        const parts = [];
+        if (eventName) parts.push(eventName);
+        if (bracketName) parts.push(bracketName);
         if (state.baleNumber) {
             const lineLabel = state.lineNumber === 1 ? 'Line 1 (A,B)' : state.lineNumber === 2 ? 'Line 2 (C,D)' : '';
             const waveLabel = state.wave ? ` Wave ${state.wave}` : '';
-            baleHtml = `<div class="text-xs text-center mt-1 text-gray-500 dark:text-gray-400">
-                <i class="fas fa-bullseye"></i> Bale ${state.baleNumber} &bull; ${lineLabel}${waveLabel}
-            </div>`;
+            parts.push(`Bale ${state.baleNumber}${lineLabel ? ` • ${lineLabel}` : ''}${waveLabel}`);
+        }
+        if (parts.length) {
+            metaHtml = `<div class="text-xs mt-0.5 text-gray-500 dark:text-gray-400 truncate">${parts.join(' • ')}</div>`;
         }
         matchSummaryDisplay.innerHTML = `
-            <div class="flex items-center justify-center gap-2">
-                <span class="team-summary a1-summary">Team 1</span>
-                <span class="mx-2">vs</span>
-                <span class="team-summary a2-summary">Team 2</span>
-            </div>
-            ${baleHtml}
+            <div class="font-semibold">Team 1 vs Team 2</div>
+            ${metaHtml}
         `;
     }
 
@@ -426,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function buildArrowCell(team, endIdx, arrowIdx, value) {
         const scoreColor = typeof getScoreColor === 'function' ? getScoreColor(value) : '';
-        const isAlt = arrowIdx === 2 || arrowIdx === 3;
+        const isAlt = (arrowIdx === 2 || arrowIdx === 3) && !value;
         const isGroupStart = arrowIdx === 0 || arrowIdx === 2 || arrowIdx === 4;
         const altCls = isAlt ? 'archer-pair-alt' : '';
         const groupCls = isGroupStart ? 'archer-group-start' : '';
@@ -614,6 +639,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('t1-match-score').textContent = t1MatchScore;
         document.getElementById('t2-match-score').textContent = t2MatchScore;
+        const headerT1 = document.getElementById('header-t1-score');
+        const headerT2 = document.getElementById('header-t2-score');
+        if (headerT1) headerT1.textContent = t1MatchScore;
+        if (headerT2) headerT2.textContent = t2MatchScore;
 
         const shootOffEl = document.getElementById('shoot-off');
         const judgeCallRow = document.getElementById('judge-call-row');
@@ -673,14 +702,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const matchResultEl = document.getElementById('match-result');
-        if (matchOver) {
-            matchResultEl.textContent = `Match Over: Team ${winner === 't1' ? 1 : 2} Wins!`;
+        const dbMatchComplete = isMatchComplete();
+        const shouldLock = matchOver || dbMatchComplete;
+        let displayWinner = winner;
+        if (!displayWinner && state.matchData && state.matchData.winner_team_id && state.teamIds) {
+            displayWinner = state.teamIds.t1 === state.matchData.winner_team_id ? 't1' : 't2';
+        }
+        if (shouldLock) {
+            matchResultEl.textContent = `Match Over: Team ${displayWinner === 't1' ? 1 : 2} Wins!`;
             matchResultEl.classList.add('text-success');
             matchResultEl.classList.remove('text-gray-500');
+            if (scoreTableContainer) scoreTableContainer.classList.add('match-over-locked');
+            const isAlreadyCompleted = state.cardStatus === 'COMP' || state.cardStatus === 'VRFD';
+            if (!isAlreadyCompleted && !state.matchOverModalShown && matchOver) {
+                state.matchOverModalShown = true;
+                const modal = document.getElementById('match-over-modal');
+                const winnerText = document.getElementById('match-over-winner-text');
+                if (modal && winnerText) {
+                    winnerText.textContent = `Team ${displayWinner === 't1' ? 1 : 2} Wins!`;
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+            }
         } else {
             matchResultEl.textContent = 'Match in Progress...';
             matchResultEl.classList.add('text-gray-500');
             matchResultEl.classList.remove('text-success');
+            if (scoreTableContainer) scoreTableContainer.classList.remove('match-over-locked');
         }
     }
 
@@ -898,6 +946,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update score color classes on the cell (td element) - matching cf3a8cb approach
         if (input && input.parentElement && typeof getScoreColor === 'function') {
             const cell = input.parentElement;
+            // Remove archer-pair-alt when cell has a score (so score color shows correctly)
+            const arrowIdx = parseInt(input.dataset.arrow, 10);
+            const isA3A4 = arrowIdx === 2 || arrowIdx === 3;
+            if (input.value) cell.classList.remove('archer-pair-alt');
+            else if (isA3A4) cell.classList.add('archer-pair-alt');
             // Remove old score color classes
             cell.classList.remove('bg-score-gold', 'bg-score-red', 'bg-score-blue', 'bg-score-black', 'bg-score-white', 'text-black', 'text-white', 'dark:text-black');
             // Add new score color classes
@@ -907,6 +960,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         updateScoreHighlightsAndTotals();
+        updateCompleteMatchButton();
         saveData();
         
         // Phase 2: Post to database if match is active
@@ -1082,6 +1136,8 @@ document.addEventListener('DOMContentLoaded', () => {
         state.matchArcherIds = { t1: {}, t2: {} };
         state.eventId = null;
         state.bracketId = null;
+        state.eventName = '';
+        state.bracketName = '';
         state.location = '';
         state.syncStatus = { t1: {}, t2: {} };
         state.currentView = 'setup';
@@ -1204,6 +1260,8 @@ document.addEventListener('DOMContentLoaded', () => {
             state.matchId = normalizedMatchId;
             state.eventId = match.event_id || null;
             state.bracketId = match.bracket_id || null;
+            state.eventName = match.event_name || '';
+            state.bracketName = match.bracket_name || '';
             state.location = match.location || '';
             state.cardStatus = match.card_status || 'PEND';
             state.locked = match.locked || false;
@@ -1450,6 +1508,9 @@ document.addEventListener('DOMContentLoaded', () => {
             state.teamIds = { t1: null, t2: null };
             state.matchArcherIds = { t1: {}, t2: {} };
             state.eventId = null;
+            state.bracketId = null;
+            state.eventName = '';
+            state.bracketName = '';
             state.syncStatus = { t1: {}, t2: {} };
             localStorage.removeItem(sessionKey);
             syncSelectorSelection();
@@ -1695,6 +1756,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (teamCompleteSuccessOkBtn) {
             teamCompleteSuccessOkBtn.addEventListener('click', hideTeamCompleteSuccessModal);
         }
+
+        const matchOverModal = document.getElementById('match-over-modal');
+        const matchOverCompleteBtn = document.getElementById('match-over-complete-btn');
+        const matchOverCloseBtn = document.getElementById('match-over-close-btn');
+        if (matchOverCompleteBtn) {
+            matchOverCompleteBtn.addEventListener('click', () => {
+                if (matchOverModal) { matchOverModal.classList.add('hidden'); matchOverModal.classList.remove('flex'); }
+                showCompleteMatchModal();
+            });
+        }
+        if (matchOverCloseBtn) {
+            matchOverCloseBtn.addEventListener('click', () => {
+                if (matchOverModal) { matchOverModal.classList.add('hidden'); matchOverModal.classList.remove('flex'); }
+            });
+        }
         
         document.body.addEventListener('focusin', (e) => {
             if (e.target.matches('#scoring-view input[type="text"]') && scoreKeypad) {
@@ -1706,6 +1782,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target.matches('.tie-breaker-controls button')) {
                 state.shootOffWinner = e.target.dataset.winner;
                 updateScoreHighlightsAndTotals();
+                updateCompleteMatchButton();
                 saveData();
             }
         });

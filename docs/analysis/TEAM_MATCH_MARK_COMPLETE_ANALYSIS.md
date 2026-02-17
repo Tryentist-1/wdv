@@ -70,6 +70,10 @@
 - ✅ Prevents marking incomplete matches as COMP
 - ✅ Prevents changes to locked/verified matches
 
+### Post-Implementation Fix (Feb 2026)
+
+Completion validation was updated to use **`team_match_sets`** as the source of truth. Set scores are written only to `team_match_sets`; `team_match_teams.sets_won` is not updated when scores are posted, so the API was rejecting valid "Match Over" completions. The endpoint now derives completion from `MAX(running_points)` per team over sets 1–4 (and shoot-off when 4–4). See [TEAM_MATCH_COMPLETE_API_SETS_SOURCE_OF_TRUTH.md](../bugs/TEAM_MATCH_COMPLETE_API_SETS_SOURCE_OF_TRUTH.md).
+
 ---
 
 ## Comparison: Solo vs Team Matches

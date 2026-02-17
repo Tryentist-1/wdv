@@ -6617,8 +6617,17 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
     try {
         $pdo = db();
 
-        // Get match details
-        $matchStmt = $pdo->prepare('SELECT * FROM team_matches WHERE id=?');
+        // Get match details with event and bracket names
+        $matchStmt = $pdo->prepare('
+            SELECT tm.*, e.name AS event_name,
+                CASE WHEN b.id IS NOT NULL
+                    THEN CONCAT(b.bracket_type, " ", b.bracket_format, " - ", COALESCE(b.division, ""))
+                    ELSE NULL END AS bracket_name
+            FROM team_matches tm
+            LEFT JOIN events e ON e.id = tm.event_id
+            LEFT JOIN brackets b ON b.id = tm.bracket_id
+            WHERE tm.id=?
+        ');
         $matchStmt->execute([$matchId]);
         $match = $matchStmt->fetch();
 
@@ -7043,7 +7052,7 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
         $pdo = db();
 
         // Check if match exists and get current state
-        $checkStmt = $pdo->prepare('SELECT id, event_id, status, locked, card_status FROM team_matches WHERE id = ? LIMIT 1');
+        $checkStmt = $pdo->prepare('SELECT id, event_id, status, locked, card_status, winner_team_id FROM team_matches WHERE id = ? LIMIT 1');
         $checkStmt->execute([$matchId]);
         $match = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -7060,23 +7069,59 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
 
         // If setting to COMP, verify match is actually complete
         if ($newStatus === 'COMP') {
-            // Check if match has a winner (sets_won >= 5 for team matches OR winner_team_id is set)
-            $teamsStmt = $pdo->prepare('SELECT sets_won FROM team_match_teams WHERE match_id = ?');
-            $teamsStmt->execute([$matchId]);
-            $teams = $teamsStmt->fetchAll(PDO::FETCH_ASSOC);
+            // Compute completion from team_match_sets (source of truth). team_match_teams.sets_won
+            // is denormalized and may not be updated when scores are posted.
+            $setsStmt = $pdo->prepare('
+                SELECT team_id, MAX(running_points) as match_score
+                FROM team_match_sets
+                WHERE match_id = ? AND set_number <= 4
+                GROUP BY team_id
+            ');
+            $setsStmt->execute([$matchId]);
+            $teamScores = $setsStmt->fetchAll(PDO::FETCH_ASSOC);
 
             $isComplete = false;
-            foreach ($teams as $team) {
-                if ((int) $team['sets_won'] >= 5) {
+            foreach ($teamScores as $row) {
+                if ((int) $row['match_score'] >= 5) {
                     $isComplete = true;
                     break;
                 }
             }
 
-            // Also check if winner_team_id is set (alternative indicator of completion)
-            if (!$isComplete && !empty($match['winner_team_id'])) {
-                $isComplete = true;
+            // Shoot-off (set 5): if tied 4-4, check shoot-off sets for winner
+            if (!$isComplete && count($teamScores) === 2) {
+                $s1 = (int) ($teamScores[0]['match_score'] ?? 0);
+                $s2 = (int) ($teamScores[1]['match_score'] ?? 0);
+                if ($s1 === 4 && $s2 === 4) {
+                    $soStmt = $pdo->prepare('
+                        SELECT team_id, SUM(set_total) as so_total
+                        FROM team_match_sets
+                        WHERE match_id = ? AND set_number = 5
+                        GROUP BY team_id
+                    ');
+                    $soStmt->execute([$matchId]);
+                    $soRows = $soStmt->fetchAll(PDO::FETCH_ASSOC);
+                    if (count($soRows) === 2) {
+                        $t1 = (int) ($soRows[0]['so_total'] ?? 0);
+                        $t2 = (int) ($soRows[1]['so_total'] ?? 0);
+                        if ($t1 > 0 && $t2 > 0 && $t1 !== $t2) $isComplete = true;
+                    }
+                    $matchRow = $pdo->prepare('SELECT shoot_off_winner FROM team_matches WHERE id = ?');
+                    $matchRow->execute([$matchId]);
+                    $m = $matchRow->fetch(PDO::FETCH_ASSOC);
+                    if (!empty($m['shoot_off_winner'])) $isComplete = true;
+                }
             }
+
+            // Fallback: team_match_teams.sets_won or winner_team_id (legacy)
+            if (!$isComplete) {
+                $teamsStmt = $pdo->prepare('SELECT sets_won FROM team_match_teams WHERE match_id = ?');
+                $teamsStmt->execute([$matchId]);
+                foreach ($teamsStmt->fetchAll(PDO::FETCH_ASSOC) as $team) {
+                    if ((int) $team['sets_won'] >= 5) { $isComplete = true; break; }
+                }
+            }
+            if (!$isComplete && !empty($match['winner_team_id'])) $isComplete = true;
 
             if (!$isComplete) {
                 json_response(['error' => 'Match is not complete. Winner must be determined before marking as complete.'], 400);
