@@ -607,23 +607,23 @@
             roundType: 'R300'
           });
           roundsCreated = true;
-          
+
           // Get created rounds to map division -> roundId
           const roundsResp = await req(`/events/${eventId}/rounds`, 'GET');
           const rounds = (roundsResp && roundsResp.rounds) || [];
-          
+
           // Populate pendingDivisions for loop workflow
           pendingDivisions = config.ranking.divisions.slice(); // Copy array
-          
+
           // Map division -> roundId
           divisionRounds = {};
-          rounds.forEach(r => { 
-            divisionRounds[r.division] = r.id || r.roundId; 
+          rounds.forEach(r => {
+            divisionRounds[r.division] = r.id || r.roundId;
           });
-          
+
           // Close create event modal
           modal.style.display = 'none';
-          
+
           // Start division loop workflow to add archers
           await processNextDivision(name);
           return; // Don't call loadEvents() yet - processNextDivision will call it when loop completes
@@ -1080,7 +1080,7 @@
       const isVerified = cardStatus === 'VER' || cardStatus === 'VERIFIED';
       const isVoid = cardStatus === 'VOID';
       const isCompleted = match.status === 'Completed' || match.status === 'COMP';
-      
+
       // Status Badge Logic
       let cardStatusBadge = '';
       if (isVerified) {
@@ -1094,12 +1094,12 @@
       }
 
       const matchStatus = match.status || 'Scheduled';
-      
+
       // Edit Button
       let editButton = '';
       if (matchType === 'solo' && match.id) {
-         const editUrl = `scorecard_editor.html?match=${match.id}&mode=coach`;
-         editButton = `
+        const editUrl = `scorecard_editor.html?match=${match.id}&mode=coach`;
+        editButton = `
             <a href="${editUrl}" class="flex items-center justify-center px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors min-h-[44px]" title="Edit Match">
                 <i class="fas fa-edit"></i>
             </a>
@@ -1109,13 +1109,13 @@
       // Actions
       let actionButtons = '';
       if (isVerified || isVoid) {
-          actionButtons = `
+        actionButtons = `
             <button class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded text-sm min-h-[44px] shadow-sm transition-colors" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">
                 <i class="fas fa-lock-open mr-1"></i> Unlock
             </button>
           `;
       } else {
-          actionButtons = `
+        actionButtons = `
             <button class="flex-1 bg-success hover:bg-success-dark text-white font-bold py-2 px-3 rounded text-sm min-h-[44px] shadow-sm transition-colors" data-action="lock" data-match-id="${match.id}" data-match-type="${matchType}">
                  Verify
             </button>
@@ -1521,6 +1521,14 @@
     // Populate event selector
     eventSelect.innerHTML = '<option value="">Select Event...</option>';
     const events = verifyState.eventsWithBrackets || [];
+
+    // Check if we should hide the event selector (context already set)
+    if (verifyState.eventIdForMatches) {
+      eventSelect.parentElement.classList.add('hidden');
+    } else {
+      eventSelect.parentElement.classList.remove('hidden');
+    }
+
     events.forEach(event => {
       const option = document.createElement('option');
       option.value = event.id;
@@ -3502,9 +3510,9 @@
       console.log('[Roster] Roster modals not found in DOM, skipping setup');
       return;
     }
-    
+
     console.log('[Roster] Setting up roster modal event listeners');
-    
+
     // Add Archer button - opens modal and initializes ArcherSelector
     document.getElementById('add-archer-roster-btn').onclick = async () => {
       const modal = document.getElementById('add-archer-modal');
@@ -3568,7 +3576,7 @@
 
       } catch (e) {
         console.error('Failed to load archers:', e);
-        document.getElementById('roster-archer-selection-container').innerHTML = 
+        document.getElementById('roster-archer-selection-container').innerHTML =
           '<div class="text-center py-8 text-red-500">Error loading archer list</div>';
       }
     };
@@ -3647,10 +3655,10 @@
     // Select All Filtered button
     document.getElementById('roster-select-all-btn').onclick = () => {
       if (!rosterArcherSelector) return;
-      
+
       // Get currently filtered/visible archers
       const filtered = getFilteredRosterArchers();
-      
+
       // Add all filtered archers to selection
       rosterArcherSelector.setSelection({
         selected: filtered
@@ -3710,9 +3718,9 @@
       const limit = document.querySelector('input[name="import-limit"]:checked').value;
 
       try {
-        await req(`/rounds/${currentRosterRoundId}/import`, 'POST', { 
-          sourceRoundId: sourceId, 
-          limit: parseInt(limit) 
+        await req(`/rounds/${currentRosterRoundId}/import`, 'POST', {
+          sourceRoundId: sourceId,
+          limit: parseInt(limit)
         });
         alert('Import successful');
         document.getElementById('import-source-modal').classList.add('hidden');
