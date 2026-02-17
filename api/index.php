@@ -3481,6 +3481,49 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELET
             $summary['rounds_deleted'] = $roundDelStmt->rowCount();
         }
 
+        // BRACKET CLEANUP
+        // Get all bracket IDs for this event
+        $bracketStmt = $pdo->prepare('SELECT id FROM brackets WHERE event_id = ?');
+        $bracketStmt->execute([$eventId]);
+        $bracketIds = $bracketStmt->fetchAll(PDO::FETCH_COLUMN);
+
+        if (!empty($bracketIds)) {
+            $bracketPlaceholders = implode(',', array_fill(0, count($bracketIds), '?'));
+
+            // 1. Get Solo Match IDs
+            $soloMatchStmt = $pdo->prepare("SELECT id FROM solo_matches WHERE bracket_id IN ($bracketPlaceholders)");
+            $soloMatchStmt->execute($bracketIds);
+            $soloMatchIds = $soloMatchStmt->fetchAll(PDO::FETCH_COLUMN);
+
+            if (!empty($soloMatchIds)) {
+                $soloPlaceholders = implode(',', array_fill(0, count($soloMatchIds), '?'));
+                // Delete Solo Match Sets
+                $pdo->prepare("DELETE FROM solo_match_sets WHERE match_id IN ($soloPlaceholders)")->execute($soloMatchIds);
+                // Delete Solo Matches
+                $pdo->prepare("DELETE FROM solo_matches WHERE id IN ($soloPlaceholders)")->execute($soloMatchIds);
+            }
+
+            // 2. Get Team Match IDs
+            $teamMatchStmt = $pdo->prepare("SELECT id FROM team_matches WHERE bracket_id IN ($bracketPlaceholders)");
+            $teamMatchStmt->execute($bracketIds);
+            $teamMatchIds = $teamMatchStmt->fetchAll(PDO::FETCH_COLUMN);
+
+            if (!empty($teamMatchIds)) {
+                $teamPlaceholders = implode(',', array_fill(0, count($teamMatchIds), '?'));
+                // Delete Team Match Sets
+                $pdo->prepare("DELETE FROM team_match_sets WHERE match_id IN ($teamPlaceholders)")->execute($teamMatchIds);
+                // Delete Team Match Archers
+                $pdo->prepare("DELETE FROM team_match_archers WHERE match_id IN ($teamPlaceholders)")->execute($teamMatchIds);
+                // Delete Team Match Teams
+                $pdo->prepare("DELETE FROM team_match_teams WHERE match_id IN ($teamPlaceholders)")->execute($teamMatchIds);
+                // Delete Team Matches
+                $pdo->prepare("DELETE FROM team_matches WHERE id IN ($teamPlaceholders)")->execute($teamMatchIds);
+            }
+
+            // 3. Delete Brackets
+            $pdo->prepare("DELETE FROM brackets WHERE id IN ($bracketPlaceholders)")->execute($bracketIds);
+        }
+
         // Finally delete the event
         $eventDelStmt = $pdo->prepare('DELETE FROM events WHERE id = ?');
         $eventDelStmt->execute([$eventId]);
