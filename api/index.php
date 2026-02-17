@@ -8293,8 +8293,102 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/results$#i', $route, $m) && $method 
             $result['rounds']['finals'] = array_map(function ($m) use ($pdo, $enrichMatchWithSets) {
                 return $enrichMatchWithSets($pdo, $m);
             }, $finals);
+        } else if ($bracket['bracket_type'] === 'TEAM') {
+            // Swiss format — TEAM brackets: query team_matches tables
+            $swissStmt = $pdo->prepare('
+                SELECT tm.*
+                FROM team_matches tm
+                WHERE tm.bracket_id = ?
+                ORDER BY tm.created_at
+            ');
+            $swissStmt->execute([$bracketId]);
+            $swissMatches = $swissStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Enrich each team match with teams, archers, and set scores
+            foreach ($swissMatches as &$match) {
+                $teamsStmt = $pdo->prepare('
+                    SELECT 
+                        tmt.id,
+                        tmt.position,
+                        tmt.team_name,
+                        tmt.school,
+                        tmt.sets_won,
+                        COALESCE(MAX(tms.running_points), 0) as total_set_points,
+                        COUNT(DISTINCT tms.set_number) as sets_completed
+                    FROM team_match_teams tmt
+                    LEFT JOIN team_match_sets tms ON tms.team_id = tmt.id
+                    WHERE tmt.match_id = ?
+                    GROUP BY tmt.id, tmt.position, tmt.team_name, tmt.school, tmt.sets_won
+                    ORDER BY tmt.position
+                ');
+                $teamsStmt->execute([$match['id']]);
+                $teams = $teamsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($teams as &$team) {
+                    // Get archers for each team
+                    $archersStmt = $pdo->prepare('
+                        SELECT archer_name, school, position
+                        FROM team_match_archers
+                        WHERE team_id = ?
+                        ORDER BY position
+                    ');
+                    $archersStmt->execute([$team['id']]);
+                    $team['archers'] = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    // Get set scores for this team
+                    $setsStmt = $pdo->prepare('
+                        SELECT set_number, set_total, set_points, running_points, tens, xs
+                        FROM team_match_sets
+                        WHERE team_id = ?
+                        GROUP BY set_number, set_total, set_points, running_points, tens, xs
+                        ORDER BY set_number
+                    ');
+                    $setsStmt->execute([$team['id']]);
+                    $team['sets'] = $setsStmt->fetchAll(PDO::FETCH_ASSOC);
+                }
+                unset($team);
+
+                $match['team1'] = $teams[0] ?? null;
+                $match['team2'] = $teams[1] ?? null;
+
+                // Determine winner name
+                if ($match['winner_team_id']) {
+                    foreach ($teams as $t) {
+                        if ($t['id'] === $match['winner_team_id']) {
+                            $match['winner_name'] = $t['team_name'] ?: $t['school'];
+                            break;
+                        }
+                    }
+                }
+
+                $match['match_display'] = ($match['team1']['team_name'] ?? '?') . ' vs ' . ($match['team2']['team_name'] ?? '?');
+            }
+            unset($match);
+
+            $result['rounds']['swiss'] = $swissMatches;
+
+            // Build Swiss leaderboard from bracket_entries (TEAM type)
+            $leaderboardStmt = $pdo->prepare('
+                SELECT be.*
+                FROM bracket_entries be
+                WHERE be.bracket_id = ? AND be.entry_type = "TEAM"
+                ORDER BY be.swiss_points DESC, be.swiss_wins DESC, be.swiss_losses ASC
+            ');
+            $leaderboardStmt->execute([$bracketId]);
+            $leaderboard = $leaderboardStmt->fetchAll(PDO::FETCH_ASSOC);
+            $result['leaderboard'] = array_map(function ($entry, $index) {
+                return [
+                    'rank' => $index + 1,
+                    'team_name' => $entry['school_id'] ?? 'Team',
+                    'school' => $entry['school_id'],
+                    'wins' => $entry['swiss_wins'],
+                    'losses' => $entry['swiss_losses'],
+                    'points' => $entry['swiss_points'],
+                    'record' => $entry['swiss_wins'] . '-' . $entry['swiss_losses']
+                ];
+            }, $leaderboard, array_keys($leaderboard));
         } else {
-            // Swiss format - return all matches
+            // Swiss format — SOLO brackets: query solo_matches tables
             $swissStmt = $pdo->prepare('
                 SELECT sm.*, sma1.archer_name as archer1_name, sma1.archer_id as archer1_id,
                        sma2.archer_name as archer2_name, sma2.archer_id as archer2_id
@@ -8310,7 +8404,7 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/results$#i', $route, $m) && $method 
                 return $enrichMatchWithSets($pdo, $m);
             }, $swissMatches);
 
-            // Build Swiss leaderboard from bracket_entries
+            // Build Swiss leaderboard from bracket_entries (ARCHER type)
             $leaderboardStmt = $pdo->prepare('
                 SELECT be.*, a.first_name, a.last_name, a.school
                 FROM bracket_entries be

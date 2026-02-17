@@ -363,11 +363,15 @@
             renderMatches('semis', data.rounds.semifinals || []);
             renderMatches('finals', data.rounds.finals || []);
             showTab('qual');
+          } else if (bracket.bracket_type === 'TEAM') {
+            document.getElementById('swiss-view').classList.remove('hidden');
+            renderTeamLeaderboard(data.leaderboard || []);
+            renderTeamSwissMatches(data.rounds.swiss || []);
+            startAutoRefresh();
           } else {
             document.getElementById('swiss-view').classList.remove('hidden');
             renderSwissLeaderboard(data.leaderboard || []);
             renderSwissMatches(data.rounds.swiss || []);
-            // Restart auto-refresh for Swiss brackets
             startAutoRefresh();
           }
           
@@ -630,7 +634,152 @@
         });
         container.innerHTML = html;
       }
-      
+
+      /**
+       * Renders the Swiss leaderboard for TEAM brackets.
+       * Shows team/school names with W-L records and points.
+       * @param {Array} leaderboard - Leaderboard entries from API
+       */
+      function renderTeamLeaderboard(leaderboard) {
+        const tbody = document.getElementById('swiss-leaderboard-body');
+        if (!leaderboard || leaderboard.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">No leaderboard data</td></tr>';
+          return;
+        }
+
+        // Update header row for team display
+        const thead = tbody.closest('table').querySelector('thead tr');
+        if (thead) {
+          thead.innerHTML = `
+            <th class="text-left px-1 py-2 font-semibold w-10">Rank</th>
+            <th class="text-left px-2 py-2 font-semibold min-w-[120px]">Team</th>
+            <th class="text-left px-2 py-2 font-semibold hidden sm:table-cell">School</th>
+            <th class="text-center px-2 py-2 font-semibold w-12">W-L</th>
+            <th class="text-right px-1 py-2 font-semibold w-10">Pts</th>
+          `;
+        }
+
+        let html = '';
+        leaderboard.forEach(entry => {
+          html += `
+            <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <td class="px-1 py-2 font-semibold dark:text-white">${entry.rank}</td>
+              <td class="px-2 py-2 font-medium dark:text-white">${entry.team_name || entry.school || '—'}</td>
+              <td class="px-2 py-2 dark:text-gray-300 hidden sm:table-cell">${entry.school || ''}</td>
+              <td class="px-2 py-2 text-center dark:text-white">${entry.record}</td>
+              <td class="px-1 py-2 text-right font-semibold dark:text-white">${entry.points}</td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
+      }
+
+      /**
+       * Renders a single team row inside a match card.
+       * Shows team name, school, set scores, and member archers.
+       * @param {Object} team - Team object with team_name, school, archers[], sets[], sets_won, total_set_points
+       * @param {boolean} isWinner - Whether this team won the match
+       * @returns {string} HTML string
+       */
+      function renderTeamRow(team, isWinner) {
+        if (!team) {
+          return `
+            <div class="p-3 text-center text-gray-400 dark:text-gray-500 text-sm">— TBD —</div>
+          `;
+        }
+
+        const rowClass = isWinner ? 'winner-row' : '';
+        const textClass = isWinner ? 'winner-text' : 'dark:text-white';
+        const teamName = team.team_name || team.school || '—';
+        const setsWon = team.sets_won || 0;
+        const totalPts = team.total_set_points || 0;
+        const archers = team.archers || [];
+        const sets = team.sets || [];
+
+        // Build set score cells (up to 4 sets + optional shoot-off)
+        let setCells = '';
+        for (let i = 1; i <= 4; i++) {
+          const set = sets.find(s => parseInt(s.set_number) === i);
+          if (set) {
+            const pts = set.set_points !== undefined && set.set_points !== null ? set.set_points : '—';
+            const scoreClass = isWinner ? 'winner-text font-semibold' : 'dark:text-white';
+            setCells += `<td class="px-1 py-2 text-center ${scoreClass}">${set.set_total || 0} <span class="text-xs text-gray-400">(${pts})</span></td>`;
+          } else {
+            setCells += `<td class="px-1 py-2 text-center dark:text-gray-400">-</td>`;
+          }
+        }
+
+        const archersList = archers.map(a => a.archer_name).join(', ');
+
+        return `
+          <tr class="${rowClass} border-b border-gray-200 dark:border-gray-600">
+            <td class="px-2 py-2 font-semibold ${textClass}">${totalPts}</td>
+            <td class="px-2 py-2">
+              <div class="font-medium ${textClass}">${teamName}${isWinner ? ' ✓' : ''}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]" title="${archersList}">${archersList}</div>
+            </td>
+            ${setCells}
+          </tr>
+        `;
+      }
+
+      /**
+       * Renders all Swiss matches for TEAM brackets.
+       * Each match card shows two team rows with set scores and member archers.
+       * @param {Array} matches - Team match objects from API
+       */
+      function renderTeamSwissMatches(matches) {
+        const container = document.getElementById('swiss-matches');
+        if (!matches || matches.length === 0) {
+          container.innerHTML = '<div class="text-gray-500 text-center p-4">No matches yet</div>';
+          return;
+        }
+
+        let html = '';
+        matches.forEach(match => {
+          const matchId = match.bracket_match_id || match.match_code || match.id;
+          const t1 = match.team1 || null;
+          const t2 = match.team2 || null;
+          const t1IsWinner = t1 && match.winner_team_id === t1.id;
+          const t2IsWinner = t2 && match.winner_team_id === t2.id;
+          const statusBadge = getMatchStatusBadge(match.card_status, match.status);
+          const baleInfo = match.bale_number ? `Bale ${match.bale_number}` : '';
+          const lineInfo = match.line_number ? `Line ${match.line_number}` : '';
+          const locationLabel = [baleInfo, lineInfo].filter(Boolean).join(' / ');
+
+          html += `
+            <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 transition-colors duration-200">
+              <div class="flex justify-between items-center mb-3">
+                <div>
+                  <div class="font-semibold text-lg text-gray-800 dark:text-white">${matchId}</div>
+                  ${locationLabel ? `<div class="text-xs text-gray-500 dark:text-gray-400">${locationLabel}</div>` : ''}
+                </div>
+                <div>${statusBadge}</div>
+              </div>
+              <div class="overflow-x-auto -mx-4 px-4">
+                <table class="w-full text-xs sm:text-sm border-collapse min-w-[350px]">
+                  <thead>
+                    <tr class="border-b border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+                      <th class="text-right px-2 py-2 font-semibold dark:text-white w-12">Pts</th>
+                      <th class="text-left px-2 py-2 font-semibold dark:text-white">Team</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">S1</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">S2</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">S3</th>
+                      <th class="text-center px-1 py-2 font-semibold dark:text-white">S4</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${renderTeamRow(t1, t1IsWinner)}
+                    ${renderTeamRow(t2, t2IsWinner)}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      }
+
       /**
        * Loads the suggested rounds indicator from the API.
        * Shows "Round X of Y suggested" with a progress bar.

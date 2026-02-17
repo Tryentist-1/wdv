@@ -683,10 +683,20 @@
               const soloMatches = rounds.filter(r => r.type === 'solo');
               const teamMatches = rounds.filter(r => r.type === 'team');
 
+              // Staleness helper: hide PENDING items with zero progress older than 7 days
+              const now = new Date();
+              const STALE_DAYS = 7;
+              function isStale(eventDate, hasProgress) {
+                if (hasProgress) return false; // In-progress work is never stale
+                if (!eventDate) return true; // No date = can't determine relevance
+                const age = (now - new Date(eventDate)) / (1000 * 60 * 60 * 24);
+                return age > STALE_DAYS;
+              }
+
               // Find ranking rounds to show in assignments
               // Show only PENDING (incomplete work) and COMP (completed today)
+              // Hide stale assignments (old + zero progress)
               const openRounds = rankingRounds.filter(round => {
-                // Only show rounds where this archer is actually assigned
                 if (!round.round_id) {
                   console.warn('[index] Round missing round_id, skipping:', round);
                   return false;
@@ -696,17 +706,18 @@
                 const endsCompleted = parseInt(round.ends_completed || 0);
                 const isToday = round.event_date === new Date().toISOString().slice(0, 10);
 
-                // Normalize status (handle both PENDING/PEND and COMPLETED/COMP)
                 const normalizedStatus = cardStatus === 'PEND' ? 'PENDING' :
                   cardStatus === 'COMP' ? 'COMPLETED' :
                     cardStatus === 'VRFD' ? 'VERIFIED' : cardStatus;
 
-                // Show if PENDING/PEND (incomplete work)
+                // Show if PENDING/PEND and not yet complete
                 if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && endsCompleted < 10) {
+                  // Hide stale (old + no progress started)
+                  if (isStale(round.event_date, endsCompleted > 0)) return false;
                   return true;
                 }
 
-                // Show if COMPLETED/COMP and today (completed today, may need review)
+                // Show if COMPLETED/COMP and today
                 if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
                   return isToday;
                 }
@@ -717,34 +728,59 @@
 
               // Find solo matches to show in assignments
               // Show only PENDING/PEND (incomplete work) and COMPLETED/COMP (completed today)
+              // Hide stale assignments (old + zero progress)
               const openSoloMatches = soloMatches.filter(match => {
                 const cardStatus = (match.card_status || 'PENDING').toUpperCase();
                 const isToday = match.event_date === new Date().toISOString().slice(0, 10);
                 const setsWon = parseInt(match.sets_won || 0);
                 const opponentSetsWon = parseInt(match.opponent_sets_won || 0);
                 const isMatchComplete = setsWon >= 6 || opponentSetsWon >= 6;
+                const hasProgress = setsWon > 0 || opponentSetsWon > 0;
 
-                // Normalize status (handle both PENDING/PEND and COMPLETED/COMP)
                 const normalizedStatus = cardStatus === 'PEND' ? 'PENDING' :
                   cardStatus === 'COMP' ? 'COMPLETED' :
                     cardStatus === 'VRFD' ? 'VERIFIED' : cardStatus;
 
-                // Show if PENDING/PEND (incomplete work)
                 if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && !isMatchComplete) {
+                  if (isStale(match.event_date, hasProgress)) return false;
                   return true;
                 }
 
-                // Show if COMPLETED/COMP and today (completed today, may need review)
                 if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
                   return isToday;
                 }
 
-                // Don't show VERIFIED/VRFD or VOID
+                return false;
+              });
+
+              // Find team matches to show in assignments
+              // Show only PENDING (incomplete) and COMP (completed today)
+              // Hide stale assignments (old + zero progress)
+              const openTeamMatches = teamMatches.filter(match => {
+                const cardStatus = (match.card_status || 'PENDING').toUpperCase();
+                const isToday = match.event_date === new Date().toISOString().slice(0, 10);
+                const setsWon = parseInt(match.sets_won || 0);
+                const opponentSetsWon = parseInt(match.opponent_sets_won || 0);
+                const isMatchComplete = setsWon >= 5 || opponentSetsWon >= 5;
+                const hasProgress = setsWon > 0 || opponentSetsWon > 0;
+
+                const normalizedStatus = cardStatus === 'PEND' ? 'PENDING' :
+                  cardStatus === 'COMP' ? 'COMPLETED' :
+                    cardStatus === 'VRFD' ? 'VERIFIED' : cardStatus;
+
+                if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && !isMatchComplete) {
+                  if (isStale(match.event_date, hasProgress)) return false;
+                  return true;
+                }
+                if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
+                  return isToday;
+                }
                 return false;
               });
 
               console.log('[index] Open rounds found:', openRounds.length);
               console.log('[index] Open solo matches found:', openSoloMatches.length);
+              console.log('[index] Open team matches found:', openTeamMatches.length);
 
               // Build links for ranking rounds
               openRounds.forEach(round => {
@@ -817,6 +853,41 @@
                   card_status: match.card_status || 'PENDING',
                   match_id: match.match_id,
                   opponent_name: match.opponent_name,
+                  sets_won: setsWon,
+                  opponent_sets_won: opponentSetsWon,
+                  is_winner: match.is_winner
+                });
+              });
+
+              // Build links for team matches
+              openTeamMatches.forEach(match => {
+                const setsWon = parseInt(match.sets_won || 0);
+                const opponentSetsWon = parseInt(match.opponent_sets_won || 0);
+                const isStarted = setsWon > 0 || opponentSetsWon > 0;
+                const isComplete = setsWon >= 5 || opponentSetsWon >= 5;
+
+                const link = `team_card.html?match=${match.match_id}`;
+
+                const eventName = match.event_name || 'Team Match';
+                const title = isStarted ? (isComplete ? `${eventName} - View` : `${eventName} - Resume`) : eventName;
+                const oppTeam = match.opponent_team || 'Opponent';
+
+                assignments.push({
+                  type: 'team',
+                  isTeam: true,
+                  title: title,
+                  subtitle: `Team Match: ${match.team_name || '?'} vs ${oppTeam}`,
+                  details: `Sets: ${setsWon}-${opponentSetsWon}${match.is_winner ? ' 🏆' : ''}`,
+                  link: link,
+                  icon: isComplete ? 'fas fa-trophy' : (isStarted ? 'fas fa-play-circle' : 'fas fa-users'),
+                  color: isComplete ? 'bg-purple-500 hover:bg-purple-600' : (isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-purple-500 hover:bg-purple-600'),
+                  urgent: isStarted && !isComplete,
+                  event_date: match.event_date || null,
+                  card_status: match.card_status || 'PENDING',
+                  match_id: match.match_id,
+                  event_name: title,
+                  team_name: match.team_name,
+                  opponent_team: oppTeam,
                   sets_won: setsWon,
                   opponent_sets_won: opponentSetsWon,
                   is_winner: match.is_winner
@@ -974,8 +1045,9 @@
             onItemClick: (item) => window.location.href = item.link,
             getEventName: (item) => item.event_name,
             getTotal: (item) => {
-              if (item.isBracket) return item.ends_completed; // "vs Opponent"
-              if (item.isSolo) return item.ends_completed; // "Sets: x-y"
+              if (item.isBracket) return item.ends_completed;
+              if (item.isSolo) return item.ends_completed;
+              if (item.isTeam) return item.ends_completed;
               return `${item.ends_completed}/10`; // Ranking
             },
             getAvg: (item) => item.round_type,
@@ -1032,13 +1104,19 @@
           // Render Team (if any)
           if (teamItems.length > 0 && teamList) {
             const items = teamItems.map(a => {
+              const progress = a.details || (a.sets_won != null ? `Sets: ${a.sets_won}-${a.opponent_sets_won || 0}${a.is_winner ? ' 🏆' : ''}` : '0-0');
+              const oppTeam = a.opponent_team || 'Opponent';
+              const myTeam = a.team_name || 'Team';
+              const subtitleOverride = `${myTeam} vs ${oppTeam}`;
+
               return {
-                event_name: a.title,
+                event_name: a.event_name || a.title,
                 event_date: a.event_date,
                 round_type: 'Team',
                 division: '',
+                subtitleOverride,
                 link: a.link,
-                ends_completed: a.details,
+                ends_completed: progress,
                 isTeam: true,
                 id: a.match_id || a.matchId
               };
