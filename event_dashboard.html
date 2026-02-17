@@ -88,10 +88,16 @@
         </div>
         <div class="flex gap-2">
           <a href="info-brackets.html" target="_blank" rel="noopener"
-             class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
-             title="How brackets work">
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center min-h-[44px] min-w-[44px]"
+            title="How brackets work">
             <i class="fas fa-question-circle text-lg"></i>
           </a>
+          <button id="download-roster-btn"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center min-h-[44px]"
+            title="Download Consolidated Roster CSV">
+            <i class="fas fa-file-csv text-lg"></i>
+            <span class="hidden sm:inline ml-2">CSV</span>
+          </button>
           <button id="share-btn" onclick="showShareModal()"
             class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px] flex items-center gap-2">
             <i class="fas fa-share-alt"></i>
@@ -150,15 +156,18 @@
     </div>
 
     <!-- Bale Assignments Section -->
-    <div id="bale-assignments-section" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200 hidden">
+    <div id="bale-assignments-section"
+      class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200 hidden">
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Bale Assignments</h2>
         <div class="flex gap-2">
-          <select id="bale-round-filter" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded border border-gray-300 dark:border-gray-600 text-sm min-h-[44px]">
+          <select id="bale-round-filter"
+            class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded border border-gray-300 dark:border-gray-600 text-sm min-h-[44px]">
             <option value="latest">Latest Round</option>
             <option value="all">All Rounds</option>
           </select>
-          <button id="print-bale-btn" class="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors min-h-[44px] flex items-center gap-1">
+          <button id="print-bale-btn"
+            class="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold text-sm transition-colors min-h-[44px] flex items-center gap-1">
             <i class="fas fa-print"></i> Print
           </button>
         </div>
@@ -170,18 +179,22 @@
   </div>
 
   <!-- Share Modal -->
-  <div id="share-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center overflow-y-auto">
-    <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-lg w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+  <div id="share-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center overflow-y-auto">
+    <div
+      class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-lg w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
       <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-2">Share Event Dashboard</h2>
       <p class="text-gray-600 dark:text-gray-400 mb-4 text-sm">Share this event dashboard with spectators or coaches</p>
       <div class="text-center mb-4">
-        <div id="qr-code-container" class="inline-block p-2 bg-white border-2 border-gray-300 dark:border-gray-600 rounded-lg">
+        <div id="qr-code-container"
+          class="inline-block p-2 bg-white border-2 border-gray-300 dark:border-gray-600 rounded-lg">
           <!-- QR code will be inserted here -->
         </div>
       </div>
       <div class="mb-4">
         <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Share URL:</label>
-        <input type="text" id="share-url-display" readonly class="w-full px-2 py-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white cursor-text" />
+        <input type="text" id="share-url-display" readonly
+          class="w-full px-2 py-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white cursor-text" />
       </div>
       <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-gray-800 dark:text-gray-200">
         <strong>📱 Instructions:</strong><br>
@@ -189,10 +202,12 @@
         • Or copy URL to share via text/email
       </div>
       <div class="flex gap-2 mt-4">
-        <button id="copy-url-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center gap-2">
+        <button id="copy-url-btn"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center gap-2">
           <i class="fas fa-copy"></i> Copy URL
         </button>
-        <button id="close-share-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Close</button>
+        <button id="close-share-btn"
+          class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Close</button>
       </div>
     </div>
   </div>
@@ -621,6 +636,72 @@
       const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       document.getElementById('last-updated').textContent = `Last updated: ${timeStr}`;
     }
+
+    // Download Consolidated Event Roster CSV
+    async function downloadEventRosterCSV() {
+      const btn = document.getElementById('download-roster-btn');
+      try {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        // Fetch full archer list with assignments
+        // Snapshot only returns archers in active rounds, which might be empty before rounds are started.
+        // We use the master archer list instead to ensure we get all assignments.
+        const archersResponse = await apiRequest(`/archers?event_id=${eventId}`);
+        const archers = archersResponse.archers || [];
+
+        // CSV Header
+        let csvContent = "Archer Name,School,Gender,Level,Assignment,Bale,Target\n";
+
+        const rows = [];
+
+        archers.forEach(a => {
+          // Sanitize fields for CSV (handle commas)
+          const name = `${a.first_name} ${a.last_name}`.replace(/,/g, '');
+          const school = (a.school || '').replace(/,/g, '');
+          const gender = a.gender || '';
+          const level = a.level || '';
+          // Assignment is "S1", "T1-1", etc.
+          const assignment = a.assignment || '';
+          // Note: Master list doesn't have current bale/target (that's in snapshot), 
+          // but for "Consolidated Roster" (input to brackets), the 'assignment' field is key.
+
+          rows.push(`${name},${school},${gender},${level},${assignment},,`);
+        });
+
+        // Sort rows by School, then Gender, then Level, then Assignment
+        rows.sort();
+
+        csvContent += rows.join("\n");
+
+        // Download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `event_roster_${eventId}_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+      } catch (err) {
+        console.error('Error downloading CSV:', err);
+        alert('Failed to download roster CSV: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-file-csv text-lg"></i><span class="hidden sm:inline ml-2">CSV</span>';
+      }
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      // ... existing init ...
+      const downloadBtn = document.getElementById('download-roster-btn');
+      if (downloadBtn) {
+        downloadBtn.onclick = downloadEventRosterCSV;
+      }
+    });
 
     // Start auto-refresh
     function startAutoRefresh() {

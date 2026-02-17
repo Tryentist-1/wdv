@@ -2159,10 +2159,10 @@ if (preg_match('#^/v1/round_archers/([0-9a-f-]+)$#i', $route, $m) && $method ===
 if (preg_match('#^/v1/rounds/([0-9a-f-]+)/roster$#i', $route, $m) && $method === 'GET') {
     require_api_key();
     $roundId = $m[1];
-    
+
     try {
         $pdo = db();
-        
+
         $stmt = $pdo->prepare('
             SELECT 
                 id,
@@ -2182,7 +2182,7 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/roster$#i', $route, $m) && $method ===
         ');
         $stmt->execute([$roundId]);
         $roster = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         json_response($roster);
     } catch (Exception $e) {
         error_log("GET /v1/rounds/{id}/roster error: " . $e->getMessage());
@@ -2195,10 +2195,10 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/roster$#i', $route, $m) && $method ===
 if (preg_match('#^/v1/rounds/([0-9a-f-]+)$#i', $route, $m) && $method === 'GET') {
     require_api_key();
     $roundId = $m[1];
-    
+
     try {
         $pdo = db();
-        
+
         $stmt = $pdo->prepare('
             SELECT 
                 r.*,
@@ -2211,12 +2211,12 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)$#i', $route, $m) && $method === 'GET')
         ');
         $stmt->execute([$roundId]);
         $round = $stmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if (!$round) {
             json_response(['error' => 'Round not found'], 404);
             exit;
         }
-        
+
         json_response($round);
     } catch (Exception $e) {
         error_log("GET /v1/rounds/{id} error: " . $e->getMessage());
@@ -2230,49 +2230,49 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
     require_api_key();
     $roundId = $m[1];
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
-    
+
     $firstName = $input['firstName'] ?? '';
     $lastName = $input['lastName'] ?? '';
     $school = $input['school'] ?? null;
     $level = $input['level'] ?? null;
     $gender = $input['gender'] ?? null;
     $baleNumber = $input['baleNumber'] ?? null;
-    
+
     if (!$firstName || !$lastName) {
         json_response(['error' => 'firstName and lastName required'], 400);
         exit;
     }
-    
+
     try {
         $pdo = db();
-        
+
         // Check if round exists
         $roundStmt = $pdo->prepare('SELECT id, event_id FROM rounds WHERE id = ? LIMIT 1');
         $roundStmt->execute([$roundId]);
         $round = $roundStmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if (!$round) {
             json_response(['error' => 'Round not found'], 404);
             exit;
         }
-        
+
         // Try to find archer in master list
         $archerStmt = $pdo->prepare('SELECT id FROM archers WHERE first_name = ? AND last_name = ? LIMIT 1');
         $archerStmt->execute([$firstName, $lastName]);
         $archer = $archerStmt->fetch(PDO::FETCH_ASSOC);
         $archerId = $archer ? $archer['id'] : null;
-        
+
         // Create round_archer entry
         $roundArcherId = $genUuid();
         $archerName = trim("$firstName $lastName");
-        
+
         $insertStmt = $pdo->prepare('
             INSERT INTO round_archers (
                 id, round_id, archer_id, archer_name, school, level, gender, 
                 bale_number, card_status, locked, completed
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, "PENDING", 0, 0)
         ');
-        
+
         $insertStmt->execute([
             $roundArcherId,
             $roundId,
@@ -2283,7 +2283,7 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
             $gender,
             $baleNumber
         ]);
-        
+
         json_response([
             'success' => true,
             'id' => $roundArcherId,
@@ -2300,29 +2300,29 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/archers$#i', $route, $m) && $method ==
 if (preg_match('#^/v1/round_archers/([0-9a-f-]+)$#i', $route, $m) && $method === 'DELETE') {
     require_api_key();
     $roundArcherId = $m[1];
-    
+
     try {
         $pdo = db();
-        
+
         // Check if round_archer exists and is not locked/completed
         $checkStmt = $pdo->prepare('SELECT locked, completed FROM round_archers WHERE id = ? LIMIT 1');
         $checkStmt->execute([$roundArcherId]);
         $roundArcher = $checkStmt->fetch(PDO::FETCH_ASSOC);
-        
+
         if (!$roundArcher) {
             json_response(['error' => 'Archer not found in roster'], 404);
             exit;
         }
-        
-        if ((bool)$roundArcher['locked'] || (bool)$roundArcher['completed']) {
+
+        if ((bool) $roundArcher['locked'] || (bool) $roundArcher['completed']) {
             json_response(['error' => 'Cannot remove locked or completed scorecard'], 403);
             exit;
         }
-        
+
         // Delete the round_archer entry
         $deleteStmt = $pdo->prepare('DELETE FROM round_archers WHERE id = ?');
         $deleteStmt->execute([$roundArcherId]);
-        
+
         json_response(['success' => true, 'message' => 'Archer removed from roster']);
     } catch (Exception $e) {
         error_log("DELETE /v1/round_archers/{id} error: " . $e->getMessage());
@@ -2336,28 +2336,28 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/import$#i', $route, $m) && $method ===
     require_api_key();
     $targetRoundId = $m[1];
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
-    
+
     $sourceRoundId = $input['sourceRoundId'] ?? null;
-    $limit = isset($input['limit']) ? (int)$input['limit'] : 0; // 0 = all, 8 = top 8
-    
+    $limit = isset($input['limit']) ? (int) $input['limit'] : 0; // 0 = all, 8 = top 8
+
     if (!$sourceRoundId) {
         json_response(['error' => 'sourceRoundId required'], 400);
         exit;
     }
-    
+
     try {
         $pdo = db();
-        
+
         // Check if both rounds exist
         $checkStmt = $pdo->prepare('SELECT id, event_id, division FROM rounds WHERE id IN (?, ?) ORDER BY id');
         $checkStmt->execute([$sourceRoundId, $targetRoundId]);
         $rounds = $checkStmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         if (count($rounds) < 2) {
             json_response(['error' => 'Source or target round not found'], 404);
             exit;
         }
-        
+
         // Get top archers from source round (ordered by total score)
         $query = '
             SELECT 
@@ -2373,20 +2373,20 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/import$#i', $route, $m) && $method ===
             GROUP BY ra.id, ra.archer_id, ra.archer_name, ra.school, ra.level, ra.gender
             ORDER BY total_score DESC
         ';
-        
+
         if ($limit > 0) {
             $query .= " LIMIT $limit";
         }
-        
+
         $sourceStmt = $pdo->prepare($query);
         $sourceStmt->execute([$sourceRoundId]);
         $archers = $sourceStmt->fetchAll(PDO::FETCH_ASSOC);
-        
+
         if (empty($archers)) {
             json_response(['error' => 'No archers found in source round'], 404);
             exit;
         }
-        
+
         // Insert archers into target round
         $insertStmt = $pdo->prepare('
             INSERT INTO round_archers (
@@ -2394,7 +2394,7 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/import$#i', $route, $m) && $method ===
                 card_status, locked, completed
             ) VALUES (?, ?, ?, ?, ?, ?, ?, "PENDING", 0, 0)
         ');
-        
+
         $imported = 0;
         foreach ($archers as $archer) {
             // Check if archer already exists in target round
@@ -2403,7 +2403,7 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/import$#i', $route, $m) && $method ===
             if ($existsStmt->fetch()) {
                 continue; // Skip if already in roster
             }
-            
+
             $roundArcherId = $genUuid();
             $insertStmt->execute([
                 $roundArcherId,
@@ -2416,7 +2416,7 @@ if (preg_match('#^/v1/rounds/([0-9a-f-]+)/import$#i', $route, $m) && $method ===
             ]);
             $imported++;
         }
-        
+
         json_response([
             'success' => true,
             'imported' => $imported,
@@ -2996,8 +2996,8 @@ if (preg_match('#^/v1/events$#', $route) && $method === 'POST') {
     $roundType = $input['roundType'] ?? 'R300';
     $entryCode = trim($input['entryCode'] ?? '');
     $eventFormat = $input['eventFormat'] ?? null; // 'GAMES', 'SANCTIONED', or null
-    $totalBales = isset($input['totalBales']) ? (int)$input['totalBales'] : null;
-    $targetsPerBale = isset($input['targetsPerBale']) ? (int)$input['targetsPerBale'] : null;
+    $totalBales = isset($input['totalBales']) ? (int) $input['totalBales'] : null;
+    $targetsPerBale = isset($input['targetsPerBale']) ? (int) $input['targetsPerBale'] : null;
 
     try {
         $pdo = db();
@@ -3160,12 +3160,12 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)$#i', $route, $m) && $method === 'PATCH
 
         if (isset($input['totalBales'])) {
             $updates[] = 'total_bales = ?';
-            $params[] = (int)$input['totalBales'];
+            $params[] = (int) $input['totalBales'];
         }
 
         if (isset($input['targetsPerBale'])) {
             $updates[] = 'targets_per_bale = ?';
-            $params[] = (int)$input['targetsPerBale'];
+            $params[] = (int) $input['targetsPerBale'];
         }
 
         if (empty($updates)) {
@@ -3885,7 +3885,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
         $archers = $pdo->prepare('
             SELECT ra.id as roundArcherId, ra.archer_name as archerName, 
                    a.first_name as firstName, a.last_name as lastName,
-                   ra.school, ra.gender, ra.level, 
+                   ra.school, ra.gender, ra.level, a.assignment,
                    ra.target_assignment as target, ra.bale_number as bale, ra.completed, ra.archer_id,
                    ra.locked, ra.card_status, ra.verified_by, ra.verified_at, ra.notes
             FROM round_archers ra
@@ -3999,6 +3999,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/snapshot$#i', $route, $m) && $method =
                 'school' => $a['school'],
                 'gender' => $a['gender'],
                 'level' => $a['level'],
+                'assignment' => $a['assignment'] ?? '',
                 'target' => $a['target'],
                 'bale' => (int) $a['bale'],
                 'endsCompleted' => $endsCompleted,
@@ -5418,8 +5419,8 @@ if (preg_match('#^/v1/solo-matches$#', $route) && $method === 'POST') {
         }
 
         $matchId = $genUuid();
-        $baleNumber = isset($input['baleNumber']) ? (int)$input['baleNumber'] : null;
-        $lineNumber = isset($input['lineNumber']) ? (int)$input['lineNumber'] : null;
+        $baleNumber = isset($input['baleNumber']) ? (int) $input['baleNumber'] : null;
+        $lineNumber = isset($input['lineNumber']) ? (int) $input['lineNumber'] : null;
         $wave = $input['wave'] ?? null;
 
         // Note: bracket_match_id will be generated when archers are added (we need their IDs)
@@ -6250,8 +6251,8 @@ if (preg_match('#^/v1/team-matches$#', $route) && $method === 'POST') {
         }
 
         $matchId = $genUuid();
-        $baleNumber = isset($input['baleNumber']) ? (int)$input['baleNumber'] : null;
-        $lineNumber = isset($input['lineNumber']) ? (int)$input['lineNumber'] : null;
+        $baleNumber = isset($input['baleNumber']) ? (int) $input['baleNumber'] : null;
+        $lineNumber = isset($input['lineNumber']) ? (int) $input['lineNumber'] : null;
         $wave = $input['wave'] ?? null;
 
         // Note: bracket_match_id will be generated when teams are added (we need their IDs)
@@ -7116,12 +7117,14 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
                     if (count($soRows) === 2) {
                         $t1 = (int) ($soRows[0]['so_total'] ?? 0);
                         $t2 = (int) ($soRows[1]['so_total'] ?? 0);
-                        if ($t1 > 0 && $t2 > 0 && $t1 !== $t2) $isComplete = true;
+                        if ($t1 > 0 && $t2 > 0 && $t1 !== $t2)
+                            $isComplete = true;
                     }
                     $matchRow = $pdo->prepare('SELECT shoot_off_winner FROM team_matches WHERE id = ?');
                     $matchRow->execute([$matchId]);
                     $m = $matchRow->fetch(PDO::FETCH_ASSOC);
-                    if (!empty($m['shoot_off_winner'])) $isComplete = true;
+                    if (!empty($m['shoot_off_winner']))
+                        $isComplete = true;
                 }
             }
 
@@ -7130,10 +7133,14 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
                 $teamsStmt = $pdo->prepare('SELECT sets_won FROM team_match_teams WHERE match_id = ?');
                 $teamsStmt->execute([$matchId]);
                 foreach ($teamsStmt->fetchAll(PDO::FETCH_ASSOC) as $team) {
-                    if ((int) $team['sets_won'] >= 5) { $isComplete = true; break; }
+                    if ((int) $team['sets_won'] >= 5) {
+                        $isComplete = true;
+                        break;
+                    }
                 }
             }
-            if (!$isComplete && !empty($match['winner_team_id'])) $isComplete = true;
+            if (!$isComplete && !empty($match['winner_team_id']))
+                $isComplete = true;
 
             if (!$isComplete) {
                 json_response(['error' => 'Match is not complete. Winner must be determined before marking as complete.'], 400);
@@ -7848,8 +7855,8 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/bracket-assignments$#i', $route, $m) 
                     $assignment['current_round'] = $latestMatch['bracket_match_id'];
                     $assignment['opponent_name'] = $latestMatch['opponent_name'];
                     $assignment['opponent_id'] = $latestMatch['opponent_id'];
-                    $assignment['bale_number'] = $latestMatch['bale_number'] ? (int)$latestMatch['bale_number'] : null;
-                    $assignment['line_number'] = $latestMatch['line_number'] ? (int)$latestMatch['line_number'] : null;
+                    $assignment['bale_number'] = $latestMatch['bale_number'] ? (int) $latestMatch['bale_number'] : null;
+                    $assignment['line_number'] = $latestMatch['line_number'] ? (int) $latestMatch['line_number'] : null;
                     $assignment['wave'] = $latestMatch['wave'];
                     $assignment['my_target'] = $latestMatch['my_target'];
                     $assignment['opp_target'] = $latestMatch['opp_target'];
@@ -8512,9 +8519,9 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/suggested-rounds$#i', $route, $m) &&
         $stmt = $pdo->prepare('SELECT COUNT(*) as cnt FROM bracket_entries WHERE bracket_id = ?');
         $stmt->execute([$bracketId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $rosterSize = (int)($row['cnt'] ?? 0);
+        $rosterSize = (int) ($row['cnt'] ?? 0);
 
-        $suggestedRounds = $rosterSize > 1 ? (int)ceil(log($rosterSize, 2)) : 0;
+        $suggestedRounds = $rosterSize > 1 ? (int) ceil(log($rosterSize, 2)) : 0;
 
         json_response([
             'suggestedRounds' => $suggestedRounds,
@@ -8571,8 +8578,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
         $divisionMap = [
             'M_VAR' => 'BVAR',
             'F_VAR' => 'GVAR',
-            'M_JV'  => 'BJV',
-            'F_JV'  => 'GJV'
+            'M_JV' => 'BJV',
+            'F_JV' => 'GJV'
         ];
 
         // Group archers by division and type (Solo vs Team)
@@ -8582,7 +8589,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
         foreach ($archers as $archer) {
             $divKey = $archer['gender'] . '_' . $archer['level'];
             $division = $divisionMap[$divKey] ?? null;
-            if (!$division) continue;
+            if (!$division)
+                continue;
 
             $assignment = $archer['assignment'];
             $isSolo = strpos($assignment, 'S') === 0;
@@ -8680,7 +8688,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
         $evtBaleStmt = $pdo->prepare('SELECT total_bales, targets_per_bale FROM events WHERE id = ?');
         $evtBaleStmt->execute([$eventId]);
         $evtBale = $evtBaleStmt->fetch(PDO::FETCH_ASSOC);
-        $totalBales = $evtBale && $evtBale['total_bales'] ? (int)$evtBale['total_bales'] : 0;
+        $totalBales = $evtBale && $evtBale['total_bales'] ? (int) $evtBale['total_bales'] : 0;
         $maxMatchesPerBale = 2; // Line 1 + Line 2
         $globalBaleIdx = 0; // Continuous bale index across all brackets
 
@@ -8688,7 +8696,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
 
         // --- Solo Swiss Round 1 ---
         foreach ($createdBrackets as &$bracket) {
-            if ($bracket['type'] !== 'SOLO') continue;
+            if ($bracket['type'] !== 'SOLO')
+                continue;
             $bId = $bracket['bracketId'];
 
             // Get entries shuffled (Round 1 = random pairing, different schools first)
@@ -8702,18 +8711,21 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
             $entryStmt->execute([$bId]);
             $entries = $entryStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            if (count($entries) < 2) continue;
+            if (count($entries) < 2)
+                continue;
 
             // Pair different schools first, then same school
             $paired = [];
             $used = [];
             $n = count($entries);
             for ($i = 0; $i < $n; $i++) {
-                if (isset($used[$i])) continue;
+                if (isset($used[$i]))
+                    continue;
                 $bestJ = -1;
                 // Try to find a different-school opponent
                 for ($j = $i + 1; $j < $n; $j++) {
-                    if (isset($used[$j])) continue;
+                    if (isset($used[$j]))
+                        continue;
                     if ($entries[$j]['school'] !== $entries[$i]['school']) {
                         $bestJ = $j;
                         break;
@@ -8722,7 +8734,10 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                 // Fallback: any unpaired
                 if ($bestJ === -1) {
                     for ($j = $i + 1; $j < $n; $j++) {
-                        if (!isset($used[$j])) { $bestJ = $j; break; }
+                        if (!isset($used[$j])) {
+                            $bestJ = $j;
+                            break;
+                        }
                     }
                 }
                 if ($bestJ !== -1) {
@@ -8732,7 +8747,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                 } // Odd archer out = bye (skipped)
             }
 
-            if (empty($paired)) continue;
+            if (empty($paired))
+                continue;
 
             $hasWaveB = $totalBales > 0 && ($globalBaleIdx + count($paired)) > ($totalBales * $maxMatchesPerBale);
             $roundLabel = 'Round 1';
@@ -8803,7 +8819,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
 
         // --- Team Swiss Round 1 ---
         foreach ($createdBrackets as &$bracket) {
-            if ($bracket['type'] !== 'TEAM') continue;
+            if ($bracket['type'] !== 'TEAM')
+                continue;
             $bId = $bracket['bracketId'];
 
             // Get team entries with their archers
@@ -8816,17 +8833,20 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
             $teamEntryStmt->execute([$bId]);
             $teamEntries = $teamEntryStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            if (count($teamEntries) < 2) continue;
+            if (count($teamEntries) < 2)
+                continue;
 
             // Pair teams (different schools first)
             $paired = [];
             $used = [];
             $n = count($teamEntries);
             for ($i = 0; $i < $n; $i++) {
-                if (isset($used[$i])) continue;
+                if (isset($used[$i]))
+                    continue;
                 $bestJ = -1;
                 for ($j = $i + 1; $j < $n; $j++) {
-                    if (isset($used[$j])) continue;
+                    if (isset($used[$j]))
+                        continue;
                     if ($teamEntries[$j]['school_id'] !== $teamEntries[$i]['school_id']) {
                         $bestJ = $j;
                         break;
@@ -8834,7 +8854,10 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                 }
                 if ($bestJ === -1) {
                     for ($j = $i + 1; $j < $n; $j++) {
-                        if (!isset($used[$j])) { $bestJ = $j; break; }
+                        if (!isset($used[$j])) {
+                            $bestJ = $j;
+                            break;
+                        }
                     }
                 }
                 if ($bestJ !== -1) {
@@ -8844,7 +8867,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                 }
             }
 
-            if (empty($paired)) continue;
+            if (empty($paired))
+                continue;
 
             $roundLabel = 'Round 1';
             $bracketMatches = [];
@@ -8890,7 +8914,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                 ')->execute([$mId, $eventId, $bId, $roundLabel, $baleNumber, $lineNumber, $wave, $matchCode]);
 
                 // Find team archers for each entry by matching school_id to our grouped team data
-                    $addTeamToMatch = function($entry, $position) use ($pdo, $genUuid, $mId, $divTeams) {
+                $addTeamToMatch = function ($entry, $position) use ($pdo, $genUuid, $mId, $divTeams) {
                     $teamId = $genUuid();
                     $school = $entry['school_id'];
                     // Find the team's archers from our grouped data
@@ -8914,14 +8938,14 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                             INSERT INTO team_match_archers (id, match_id, team_id, archer_id, archer_name, school, position, created_at)
                             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
                         ')->execute([
-                            $genUuid(),
-                            $mId,
-                            $teamId,
-                            $archer['id'],
-                            $archer['first_name'] . ' ' . $archer['last_name'],
-                            $archer['school'],
-                            $archerIdx + 1
-                        ]);
+                                    $genUuid(),
+                                    $mId,
+                                    $teamId,
+                                    $archer['id'],
+                                    $archer['first_name'] . ' ' . $archer['last_name'],
+                                    $archer['school'],
+                                    $archerIdx + 1
+                                ]);
                     }
 
                     return $teamId;
@@ -8957,7 +8981,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
         ], 201);
 
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) $pdo->rollBack();
+        if ($pdo->inTransaction())
+            $pdo->rollBack();
         error_log("Import roster failed: " . $e->getMessage());
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
@@ -9098,14 +9123,14 @@ ORDER BY swiss_points DESC, swiss_wins DESC, swiss_losses ASC, RAND()
         $pdo->beginTransaction();
 
         // Bale config from request body or event settings
-        $totalBales = isset($roundInput['totalBales']) ? (int)$roundInput['totalBales'] : null;
-        $baleStartNum = isset($roundInput['startBale']) ? (int)$roundInput['startBale'] : 1;
+        $totalBales = isset($roundInput['totalBales']) ? (int) $roundInput['totalBales'] : null;
+        $baleStartNum = isset($roundInput['startBale']) ? (int) $roundInput['startBale'] : 1;
         if (!$totalBales && $bracket['event_id']) {
             $evtStmt = $pdo->prepare('SELECT total_bales FROM events WHERE id = ?');
             $evtStmt->execute([$bracket['event_id']]);
             $evtRow = $evtStmt->fetch(PDO::FETCH_ASSOC);
             if ($evtRow && $evtRow['total_bales']) {
-                $totalBales = (int)$evtRow['total_bales'];
+                $totalBales = (int) $evtRow['total_bales'];
             }
         }
         $maxMatchesPerBale = 2; // Line 1 + Line 2
@@ -9173,16 +9198,26 @@ ORDER BY swiss_points DESC, swiss_wins DESC, swiss_losses ASC, RAND()
 
             // Archer 1
             $archerInsert->execute([
-                $genUuid(), $mId, $a1['id'],
+                $genUuid(),
+                $mId,
+                $a1['id'],
                 $a1['first_name'] . ' ' . $a1['last_name'],
-                $a1['school'], $a1['gender'], 1, $target1
+                $a1['school'],
+                $a1['gender'],
+                1,
+                $target1
             ]);
 
             // Archer 2
             $archerInsert->execute([
-                $genUuid(), $mId, $a2['id'],
+                $genUuid(),
+                $mId,
+                $a2['id'],
                 $a2['first_name'] . ' ' . $a2['last_name'],
-                $a2['school'], $a2['gender'], 2, $target2
+                $a2['school'],
+                $a2['gender'],
+                2,
+                $target2
             ]);
 
             $createdMatches[] = [
