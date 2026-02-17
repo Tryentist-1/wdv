@@ -7909,6 +7909,84 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/bracket-assignments$#i', $route, $m) 
             $assignments[] = $assignment;
         }
 
+        // SUPPLEMENTARY: Find active TEAM MATCHES directly (since bracket_entries often don't link to archer for teams)
+        $teamMatchStmt = $pdo->prepare('
+            SELECT 
+                tm.id as match_id, 
+                tm.bracket_id, 
+                tm.bracket_match_id, 
+                tm.bale_number, 
+                tm.line_number, 
+                tm.wave,
+                b.bracket_type, 
+                b.bracket_format, 
+                b.event_id, 
+                b.division, 
+                b.side, 
+                b.status as bracket_status,
+                e.name as event_name, 
+                e.date as event_date,
+                tmt_self.school as my_school, 
+                tmt_self.team_name as my_team_name,
+                tmt_opp.school as opp_school, 
+                tmt_opp.team_name as opp_team_name,
+                tmt_self.swiss_wins,
+                tmt_self.swiss_losses,
+                tmt_self.swiss_points
+            FROM team_matches tm
+            JOIN team_match_archers tma ON tma.match_id = tm.id AND tma.archer_id = ?
+            JOIN brackets b ON b.id = tm.bracket_id
+            LEFT JOIN events e ON e.id = b.event_id
+            JOIN team_match_teams tmt_self ON tmt_self.match_id = tm.id AND tmt_self.id = tma.team_id
+            JOIN team_match_teams tmt_opp ON tmt_opp.match_id = tm.id AND tmt_opp.id != tma.team_id
+            WHERE tm.status IN ("Not Started", "PENDING", "In Progress")
+            ORDER BY tm.created_at DESC
+        ');
+        $teamMatchStmt->execute([$archerId]);
+        $teamMatches = $teamMatchStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($teamMatches as $tm) {
+            // Deduplicate: Check if we already have this match from the entries loop
+            // (Unlikely for Team brackets, but good practice)
+            $exists = false;
+            foreach ($assignments as $a) {
+                if ($a['match_id'] === $tm['match_id']) {
+                    $exists = true;
+                    break;
+                }
+            }
+            if ($exists)
+                continue;
+
+            $oppName = $tm['opp_team_name'] ?: ($tm['opp_school'] ?: 'Opponent Team');
+
+            $assignments[] = [
+                'entry_id' => null, // No direct archer entry
+                'bracket_id' => $tm['bracket_id'],
+                'event_id' => $tm['event_id'],
+                'event_name' => $tm['event_name'],
+                'event_date' => $tm['event_date'],
+                'event_status' => 'OPEN',
+                'bracket_type' => $tm['bracket_type'], // TEAM
+                'bracket_format' => $tm['bracket_format'],
+                'division' => $tm['division'],
+                'bracket_size' => 0,
+                'bracket_status' => $tm['bracket_status'],
+                'seed' => null,
+                'swiss_points' => $tm['swiss_points'],
+                'swiss_wins' => $tm['swiss_wins'],
+                'swiss_losses' => $tm['swiss_losses'],
+                'match_id' => $tm['match_id'],
+                'current_round' => $tm['bracket_match_id'],
+                'opponent_name' => $oppName,
+                'bale_number' => $tm['bale_number'] ? (int) $tm['bale_number'] : null,
+                'line_number' => $tm['line_number'] ? (int) $tm['line_number'] : null,
+                'wave' => $tm['wave'],
+                'my_target' => null, // Team matches usually don't have per-archer target
+                'opp_target' => null
+            ];
+        }
+
         json_response([
             'archer' => [
                 'id' => $archer['id'],
