@@ -63,6 +63,14 @@
   --color-purple: #6f42c1;
   --color-purple-dark: #5a32a3;
   
+  /* Team Row Colors (Team Scorecard - stacked layout) */
+  --color-team1-bg: #eff6ff;
+  --color-team1-bg-alt: #dbeafe;
+  --color-team1-accent: #3b82f6;
+  --color-team2-bg: #fffbeb;
+  --color-team2-bg-alt: #fef3c7;
+  --color-team2-accent: #f59e0b;
+  
   /* ======================
      2. SEMANTIC COLORS (Light Theme)
      ====================== */
@@ -295,6 +303,14 @@
     
     /* Score colors remain the same for recognition */
     /* Users are trained on these colors - don't change */
+    
+    /* Team Row Colors (dark mode) */
+    --color-team1-bg: rgba(59, 130, 246, 0.1);
+    --color-team1-bg-alt: rgba(59, 130, 246, 0.2);
+    --color-team1-accent: #60a5fa;
+    --color-team2-bg: rgba(245, 158, 11, 0.1);
+    --color-team2-bg-alt: rgba(245, 158, 11, 0.2);
+    --color-team2-accent: #fbbf24;
     
     /* Keypad background darker in dark mode */
     --keypad-bg: #0d1117;

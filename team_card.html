@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>OAS Team Match Card</title>
     
-    <!-- Tailwind CSS Compiled -->
+    <!-- Design Tokens & Tailwind CSS -->
+    <link rel="stylesheet" href="css/tokens.css">
     <link rel="stylesheet" href="css/tailwind-compiled.css">
+    <link rel="stylesheet" href="css/score-colors.css">
     
     <!-- Custom Color Utilities (fallback) -->
     <style>
@@ -133,7 +135,7 @@
                     <!-- Match summary will be rendered here -->
                 </div>
             </header>
-            <div id="score-table-container" class="flex-1 overflow-auto p-4 pb-[calc(48px+env(safe-area-inset-bottom))]">
+            <div id="score-table-container" class="flex-1 overflow-auto px-0 py-1 pb-[calc(48px+env(safe-area-inset-bottom))]">
                 <!-- Score table will be rendered here -->
             </div>
         </div>

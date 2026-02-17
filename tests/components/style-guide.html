@@ -15,6 +15,9 @@
     <!-- Unified Scorecard List CSS -->
     <link rel="stylesheet" href="/css/unified-scorecard-list.css">
 
+    <!-- Score Colors (target-face colors + team row utilities) -->
+    <link rel="stylesheet" href="/css/score-colors.css">
+
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
@@ -417,6 +420,91 @@
                 </table>
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">✨ Compact design, score colors, totals row</p>
+        </div>
+    </section>
+
+    <!-- Section: Team Scorecard (Stacked Mobile Layout) -->
+    <section id="team-scorecard" class="mb-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6 transition-colors duration-200">
+        <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-white">Team Scorecard (Stacked Mobile Layout)</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            8-column layout optimized for mobile. Teams are stacked vertically with color-coded rows.
+            Archer pairs are visually grouped with alternating shading and left-border markers.
+        </p>
+
+        <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-600 mb-3">Team Row Colors</h3>
+            <div class="flex gap-4 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-6 h-6 rounded" style="background:var(--color-team1-bg);border:1px solid var(--color-team1-accent)"></span>
+                    <span class="text-sm">Team 1 (Blue)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-6 h-6 rounded" style="background:var(--color-team1-bg-alt);border:1px solid var(--color-team1-accent)"></span>
+                    <span class="text-sm">T1 Archer Pair Alt</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-6 h-6 rounded" style="background:var(--color-team2-bg);border:1px solid var(--color-team2-accent)"></span>
+                    <span class="text-sm">Team 2 (Amber)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-6 h-6 rounded" style="background:var(--color-team2-bg-alt);border:1px solid var(--color-team2-accent)"></span>
+                    <span class="text-sm">T2 Archer Pair Alt</span>
+                </div>
+            </div>
+
+            <h3 class="text-sm font-semibold text-gray-600 mb-3">Example: End 1</h3>
+            <div style="max-width:375px">
+                <div class="flex justify-between items-center px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 border-b border-gray-300">
+                    <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:var(--color-team1-accent)"></span><strong>T1:</strong> Ethan D | Vince D | Brandon G</span>
+                    <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:var(--color-team2-accent)"></span><strong>T2:</strong> Trevor S | Mario S | Jace I</span>
+                </div>
+                <table class="w-full border-collapse text-sm">
+                    <thead class="sticky top-0 z-10">
+                        <tr class="bg-gray-700 text-white text-xs">
+                            <th class="px-1 py-1 text-center font-bold border-r border-gray-500" style="width:28px">Team</th>
+                            <th class="px-1 py-1 text-center font-bold border-r border-gray-500 archer-group-start">A1</th>
+                            <th class="px-1 py-1 text-center font-bold border-r border-gray-500">A2</th>
+                            <th class="px-1 py-1 text-center font-bold border-r border-gray-500 archer-group-start">A3</th>
+                            <th class="px-1 py-1 text-center font-bold border-r border-gray-500">A4</th>
+                            <th class="px-1 py-1 text-center font-bold border-r border-gray-500 archer-group-start">A5</th>
+                            <th class="px-1 py-1 text-center font-bold border-r border-gray-500">A6</th>
+                            <th class="px-1 py-1 text-center font-bold" style="width:40px">Tot</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="team-row-t1 border-b border-gray-200">
+                            <td class="team-label-t1 px-1 py-0.5 text-center text-xs border-r border-gray-300" style="width:28px">T1</td>
+                            <td class="p-0 border-r border-gray-200 archer-group-start score-10"><div class="score-input">10</div></td>
+                            <td class="p-0 border-r border-gray-200 score-9"><div class="score-input">9</div></td>
+                            <td class="p-0 border-r border-gray-200 archer-pair-alt archer-group-start score-9"><div class="score-input">9</div></td>
+                            <td class="p-0 border-r border-gray-200 archer-pair-alt score-8"><div class="score-input">8</div></td>
+                            <td class="p-0 border-r border-gray-200 archer-group-start score-7"><div class="score-input">7</div></td>
+                            <td class="p-0 border-r border-gray-200 score-7"><div class="score-input">7</div></td>
+                            <td class="px-1 py-0.5 text-center font-bold border-l border-gray-300" style="width:40px">50</td>
+                        </tr>
+                        <tr class="team-row-t2 border-b border-gray-200">
+                            <td class="team-label-t2 px-1 py-0.5 text-center text-xs border-r border-gray-300" style="width:28px">T2</td>
+                            <td class="p-0 border-r border-gray-200 archer-group-start score-8"><div class="score-input">8</div></td>
+                            <td class="p-0 border-r border-gray-200 score-8"><div class="score-input">8</div></td>
+                            <td class="p-0 border-r border-gray-200 archer-pair-alt archer-group-start score-7"><div class="score-input">7</div></td>
+                            <td class="p-0 border-r border-gray-200 archer-pair-alt score-7"><div class="score-input">7</div></td>
+                            <td class="p-0 border-r border-gray-200 archer-group-start score-7"><div class="score-input">7</div></td>
+                            <td class="p-0 border-r border-gray-200 score-7"><div class="score-input">7</div></td>
+                            <td class="px-1 py-0.5 text-center font-bold border-l border-gray-300" style="width:40px">44</td>
+                        </tr>
+                        <tr class="end-summary-row">
+                            <td colspan="8" class="px-2 py-1 text-center text-gray-700 dark:text-gray-300">
+                                <span class="font-semibold">End 1</span>
+                                <span class="mx-1">|</span>
+                                Pts: <span class="font-bold">2</span> - <span class="font-bold">0</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                375px width (iPhone SE). Blue/amber rows = teams. Darker A3-A4 cells = middle archer pair. Left borders = archer group start.
+            </p>
         </div>
     </section>
 

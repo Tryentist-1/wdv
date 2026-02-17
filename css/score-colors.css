@@ -460,7 +460,70 @@ tr.sync-error td {
 }
 
 /* ======================
-   12. JAVASCRIPT HELPER FUNCTION
+   12. TEAM SCORECARD ROW COLORS
+   ====================== */
+
+/* Team row backgrounds (stacked mobile layout) */
+.team-row-t1 {
+  background-color: var(--color-team1-bg);
+}
+
+.team-row-t2 {
+  background-color: var(--color-team2-bg);
+}
+
+/* Archer pair alternating shade (middle archer: A3, A4) */
+.team-row-t1 td.archer-pair-alt {
+  background-color: var(--color-team1-bg-alt);
+}
+
+.team-row-t2 td.archer-pair-alt {
+  background-color: var(--color-team2-bg-alt);
+}
+
+/* Archer group boundary (left border on first arrow of each archer) */
+.archer-group-start {
+  border-left: 2px solid var(--color-border-dark) !important;
+}
+
+/* Team label cells */
+.team-label-t1 {
+  background-color: var(--color-team1-accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.team-label-t2 {
+  background-color: var(--color-team2-accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* End summary row (thin separator between ends) */
+.end-summary-row {
+  background-color: var(--color-gray-200);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.dark .end-summary-row {
+  background-color: var(--color-gray-800);
+}
+
+/* End divider (gap between end groups) */
+.end-divider td {
+  height: 6px;
+  padding: 0;
+  border: none;
+  background-color: var(--color-gray-300);
+}
+
+.dark .end-divider td {
+  background-color: var(--color-gray-700);
+}
+
+/* ======================
+   13. JAVASCRIPT HELPER FUNCTION
    ====================== */
 
 /*

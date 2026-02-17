@@ -416,6 +416,23 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    /**
+     * Builds a single arrow <td> with archer-pair shading and group borders.
+     * @param {string} team - 't1' or 't2'
+     * @param {number|string} endIdx - End index (0-3) or 'so'
+     * @param {number} arrowIdx - Arrow column index (0-5)
+     * @param {string} value - Score value
+     * @returns {string} HTML for the td element
+     */
+    function buildArrowCell(team, endIdx, arrowIdx, value) {
+        const scoreColor = typeof getScoreColor === 'function' ? getScoreColor(value) : '';
+        const isAlt = arrowIdx === 2 || arrowIdx === 3;
+        const isGroupStart = arrowIdx === 0 || arrowIdx === 2 || arrowIdx === 4;
+        const altCls = isAlt ? 'archer-pair-alt' : '';
+        const groupCls = isGroupStart ? 'archer-group-start' : '';
+        return `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${altCls} ${groupCls} ${scoreColor}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="${team}" data-end="${endIdx}" data-arrow="${arrowIdx}" value="${value || ''}" readonly></td>`;
+    }
+
     function renderScoreTable() {
         // Ensure scores arrays are initialized
         if (!state.scores.t1 || !Array.isArray(state.scores.t1)) {
@@ -424,7 +441,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.scores.t2 || !Array.isArray(state.scores.t2)) {
             state.scores.t2 = [[], [], [], []];
         }
-        // Ensure each end array has 6 elements (for 6 arrows)
         for (let i = 0; i < 4; i++) {
             if (!state.scores.t1[i] || !Array.isArray(state.scores.t1[i])) {
                 state.scores.t1[i] = ['', '', '', '', '', ''];
@@ -433,7 +449,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.scores.t2[i] = ['', '', '', '', '', ''];
             }
         }
-        // Ensure shoot-off scores are initialized
         if (!state.scores.so) {
             state.scores.so = { t1: ['', '', ''], t2: ['', '', ''] };
         }
@@ -443,44 +458,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.scores.so.t2 || !Array.isArray(state.scores.so.t2)) {
             state.scores.so.t2 = ['', '', ''];
         }
-        
-        const t1ArcherNames = state.team1.map(a => `${a.first} ${a.last.charAt(0)}`).join(' | ');
-        const t2ArcherNames = state.team2.map(a => `${a.first} ${a.last.charAt(0)}`).join(' | ');
 
-        let tableHTML = `<table class="w-full border-collapse text-sm bg-white dark:bg-gray-700" id="team_round_table">
-            <thead class="bg-primary dark:bg-primary-dark text-white sticky top-0">
-                <tr>
-                    <th rowspan="3" class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End</th>
-                    <th colspan="6" class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Team 1 (${t1ArcherNames})</th>
-                    <th colspan="6" class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Team 2 (${t2ArcherNames})</th>
-                    <th colspan="2" class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">End Total</th>
-                    <th colspan="2" class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">Set Points</th>
-                    <th rowspan="3" class="px-1 py-1.5 sm:py-2 text-center font-bold">Sync</th>
-                </tr>
-                <tr><th colspan="16" class="bg-gray-100 dark:bg-gray-700 h-1 p-0"></th></tr>
-                <tr>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A4</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A5</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A6</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A1</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A2</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A3</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A4</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A5</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">A6</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T1</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T2</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T1</th>
-                    <th class="px-1 py-1.5 sm:py-2 text-center font-bold border-r border-gray-300 dark:border-gray-600">T2</th>
+        const t1Names = state.team1.map(a => `${a.first} ${a.last.charAt(0)}`).join(' | ');
+        const t2Names = state.team2.map(a => `${a.first} ${a.last.charAt(0)}`).join(' | ');
+
+        const COLS = 8;
+
+        let tableHTML = `<table class="w-full border-collapse text-sm" id="team_round_table">
+            <thead class="sticky top-0 z-10">
+                <tr class="bg-gray-700 dark:bg-gray-900 text-white text-xs">
+                    <th class="px-1 py-1 text-center font-bold border-r border-gray-500" style="width:28px">Team</th>
+                    <th class="px-1 py-1 text-center font-bold border-r border-gray-500 archer-group-start">A1</th>
+                    <th class="px-1 py-1 text-center font-bold border-r border-gray-500">A2</th>
+                    <th class="px-1 py-1 text-center font-bold border-r border-gray-500 archer-group-start">A3</th>
+                    <th class="px-1 py-1 text-center font-bold border-r border-gray-500">A4</th>
+                    <th class="px-1 py-1 text-center font-bold border-r border-gray-500 archer-group-start">A5</th>
+                    <th class="px-1 py-1 text-center font-bold border-r border-gray-500">A6</th>
+                    <th class="px-1 py-1 text-center font-bold" style="width:40px">Tot</th>
                 </tr>
             </thead><tbody>`;
 
         for (let i = 0; i < 4; i++) {
             const setNumber = i + 1;
-            // Get sync status for all archers in this set
             const syncStatuses = [];
             for (let archIdx = 0; archIdx < 3; archIdx++) {
                 const t1Status = state.syncStatus?.t1?.[archIdx]?.[setNumber] || '';
@@ -489,26 +488,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (t2Status) syncStatuses.push(t2Status);
             }
             const syncIcon = getSyncStatusIcon(syncStatuses);
-            
-            tableHTML += `<tr id="end-${i+1}" class="border-b border-gray-200 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-gray-600">
-                <td class="px-1 py-0.5 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">End ${i+1}</td>
-                ${state.scores.t1[i].map((s, a) => {
-                    const scoreColor = typeof getScoreColor === 'function' ? getScoreColor(s) : '';
-                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${scoreColor}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t1" data-end="${i}" data-arrow="${a}" value="${s || ''}" readonly></td>`;
-                }).join('')}
-                ${state.scores.t2[i].map((s, a) => {
-                    const scoreColor = typeof getScoreColor === 'function' ? getScoreColor(s) : '';
-                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${scoreColor}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t2" data-end="${i}" data-arrow="${a}" value="${s || ''}" readonly></td>`;
-                }).join('')}
-                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-e${i+1}-total"></td>
-                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-e${i+1}-total"></td>
-                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-e${i+1}-setpts"></td>
-                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-e${i+1}-setpts"></td>
-                <td class="px-1 py-0.5 text-center" id="sync-e${i+1}" data-set="${setNumber}">${syncIcon}</td>
+
+            // Team 1 row
+            tableHTML += `<tr class="team-row-t1 border-b border-gray-200 dark:border-gray-600">
+                <td class="team-label-t1 px-1 py-0.5 text-center text-xs border-r border-gray-300 dark:border-gray-600" style="width:28px">T1</td>
+                ${state.scores.t1[i].map((s, a) => buildArrowCell('t1', i, a, s)).join('')}
+                <td class="px-1 py-0.5 text-center font-bold border-l border-gray-300 dark:border-gray-600" id="t1-e${setNumber}-total" style="width:40px"></td>
             </tr>`;
+
+            // Team 2 row
+            tableHTML += `<tr class="team-row-t2 border-b border-gray-200 dark:border-gray-600">
+                <td class="team-label-t2 px-1 py-0.5 text-center text-xs border-r border-gray-300 dark:border-gray-600" style="width:28px">T2</td>
+                ${state.scores.t2[i].map((s, a) => buildArrowCell('t2', i, a, s)).join('')}
+                <td class="px-1 py-0.5 text-center font-bold border-l border-gray-300 dark:border-gray-600" id="t2-e${setNumber}-total" style="width:40px"></td>
+            </tr>`;
+
+            // End summary row
+            tableHTML += `<tr class="end-summary-row">
+                <td colspan="${COLS}" class="px-2 py-1 text-center text-gray-700 dark:text-gray-300">
+                    <span class="font-semibold">End ${setNumber}</span>
+                    <span class="mx-1">|</span>
+                    Pts: <span id="t1-e${setNumber}-setpts" class="font-bold">-</span> - <span id="t2-e${setNumber}-setpts" class="font-bold">-</span>
+                    <span class="ml-2" id="sync-e${setNumber}" data-set="${setNumber}">${syncIcon}</span>
+                </td>
+            </tr>`;
+
+            // End divider (except after last end)
+            if (i < 3) {
+                tableHTML += `<tr class="end-divider"><td colspan="${COLS}"></td></tr>`;
+            }
         }
 
-        // Get shoot-off sync status
+        tableHTML += `</tbody>`;
+
+        // Shoot-off section (separate tbody for easy show/hide)
         const soSyncStatuses = [];
         for (let archIdx = 0; archIdx < 3; archIdx++) {
             const t1Status = state.syncStatus?.t1?.[archIdx]?.[5] || '';
@@ -517,43 +530,61 @@ document.addEventListener('DOMContentLoaded', () => {
             if (t2Status) soSyncStatuses.push(t2Status);
         }
         const soSyncIcon = getSyncStatusIcon(soSyncStatuses);
-        
-        tableHTML += `<tr id="shoot-off" class="hidden border-b border-gray-200 dark:border-gray-600">
-                <td class="px-1 py-0.5 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">S.O.</td>
-                ${state.scores.so.t1.map((s,a) => {
-                    const scoreColor = typeof getScoreColor === 'function' ? getScoreColor(s) : '';
-                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${scoreColor}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t1" data-end="so" data-arrow="${a}" value="${s || ''}" readonly></td>`;
-                }).join('')}<td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
-                ${state.scores.so.t2.map((s,a) => {
-                    const scoreColor = typeof getScoreColor === 'function' ? getScoreColor(s) : '';
-                    return `<td class="p-0 border-r border-gray-200 dark:border-gray-600 ${scoreColor}"><input type="text" class="score-input w-full h-full min-h-[44px] text-center font-bold border-none bg-transparent" data-team="t2" data-end="so" data-arrow="${a}" value="${s || ''}" readonly></td>`;
-                }).join('')}<td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
-                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t1-so-total"></td>
-                <td class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600" id="t2-so-total"></td>
-                <td colspan="2" id="so-winner-cell" class="px-1 py-0.5 text-center bg-gray-100 dark:bg-gray-400 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">
-                    <span id="so-winner-text"></span>
+
+        tableHTML += `<tbody id="shoot-off" class="hidden">
+            <tr class="end-divider"><td colspan="${COLS}"></td></tr>
+            <tr class="team-row-t1 border-b border-gray-200 dark:border-gray-600">
+                <td class="team-label-t1 px-1 py-0.5 text-center text-xs border-r border-gray-300 dark:border-gray-600" style="width:28px">T1</td>
+                ${state.scores.so.t1.map((s, a) => buildArrowCell('t1', 'so', a, s)).join('')}
+                <td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
+                <td class="px-1 py-0.5 text-center font-bold border-l border-gray-300 dark:border-gray-600" id="t1-so-total" style="width:40px"></td>
+            </tr>
+            <tr class="team-row-t2 border-b border-gray-200 dark:border-gray-600">
+                <td class="team-label-t2 px-1 py-0.5 text-center text-xs border-r border-gray-300 dark:border-gray-600" style="width:28px">T2</td>
+                ${state.scores.so.t2.map((s, a) => buildArrowCell('t2', 'so', a, s)).join('')}
+                <td colspan="3" class="border-r border-gray-200 dark:border-gray-600"></td>
+                <td class="px-1 py-0.5 text-center font-bold border-l border-gray-300 dark:border-gray-600" id="t2-so-total" style="width:40px"></td>
+            </tr>
+            <tr class="end-summary-row">
+                <td colspan="${COLS}" class="px-2 py-1 text-center text-gray-700 dark:text-gray-300">
+                    <span class="font-semibold">Shoot-Off</span>
+                    <span class="mx-1">|</span>
+                    <span id="so-winner-cell"><span id="so-winner-text"></span></span>
+                    <span class="ml-2" id="sync-so" data-set="5">${soSyncIcon}</span>
                 </td>
-                <td class="px-1 py-0.5 text-center" id="sync-so" data-set="5">${soSyncIcon}</td>
-            </tr></tbody>
-            <tfoot class="bg-gray-200 dark:bg-gray-600">
-                <tr><td colspan="15" class="px-2 py-2 text-right font-bold dark:text-white">Match Score:</td>
-                    <td class="px-2 py-2 text-center font-bold dark:text-white" id="t1-match-score"></td>
-                    <td class="px-2 py-2 text-center font-bold dark:text-white" id="t2-match-score"></td>
-                    <td class="px-2 py-2"></td>
+            </tr>
+        </tbody>`;
+
+        // Footer
+        tableHTML += `<tfoot class="bg-gray-200 dark:bg-gray-600">
+                <tr>
+                    <td colspan="${COLS}" class="px-2 py-3 text-center dark:text-white">
+                        <span class="font-bold">Match Score:</span>
+                        <span class="ml-2 text-lg font-bold" id="t1-match-score"></span>
+                        <span class="mx-1">-</span>
+                        <span class="text-lg font-bold" id="t2-match-score"></span>
+                    </td>
                 </tr>
                 <tr id="judge-call-row" class="hidden">
-                    <td colspan="18" class="text-center p-2 bg-yellow-100 dark:bg-yellow-900/20">
-                        <span class="font-bold mr-2">Judge Call (Closest to Center):</span>
+                    <td colspan="${COLS}" class="text-center p-2 bg-yellow-100 dark:bg-yellow-900/20">
+                        <span class="font-bold mr-2">Judge Call:</span>
                         <span class="tie-breaker-controls">
                             <button class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]" data-winner="t1">Team 1 Wins</button>
                             <button class="px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark font-semibold transition-colors min-h-[44px]" data-winner="t2">Team 2 Wins</button>
                         </span>
                     </td>
                 </tr>
-                <tr><td colspan="18" id="match-result" class="px-2 py-2 text-center font-bold"></td></tr>
+                <tr><td colspan="${COLS}" id="match-result" class="px-2 py-2 text-center font-bold"></td></tr>
             </tfoot>
         </table>`;
-        scoreTableContainer.innerHTML = tableHTML;
+
+        // Team name legend above table
+        const legendHTML = `<div class="flex justify-between items-center px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600">
+            <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:var(--color-team1-accent)"></span><strong>T1:</strong> ${t1Names}</span>
+            <span><span class="inline-block w-3 h-3 rounded-sm mr-1" style="background:var(--color-team2-accent)"></span><strong>T2:</strong> ${t2Names}</span>
+        </div>`;
+
+        scoreTableContainer.innerHTML = legendHTML + tableHTML;
     }
 
     function updateScoreHighlightsAndTotals() {
@@ -584,14 +615,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('t1-match-score').textContent = t1MatchScore;
         document.getElementById('t2-match-score').textContent = t2MatchScore;
 
-        const shootOffRow = document.getElementById('shoot-off');
+        const shootOffEl = document.getElementById('shoot-off');
         const judgeCallRow = document.getElementById('judge-call-row');
         judgeCallRow.classList.add('hidden');
         judgeCallRow.classList.remove('table-row');
 
         if (!matchOver && t1MatchScore === 4 && t2MatchScore === 4) {
-            shootOffRow.classList.remove('hidden');
-            shootOffRow.classList.add('table-row');
+            shootOffEl.classList.remove('hidden');
+            shootOffEl.classList.add('table-row-group');
             const t1SoTotal = state.scores.so.t1.reduce((sum, s) => sum + parseScoreValue(s), 0);
             const t2SoTotal = state.scores.so.t2.reduce((sum, s) => sum + parseScoreValue(s), 0);
             document.getElementById('t1-so-total').textContent = t1SoTotal;
@@ -637,8 +668,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 soWinnerText.textContent = 'Enter S.O. Scores';
             }
         } else {
-            shootOffRow.classList.add('hidden');
-            shootOffRow.classList.remove('table-row');
+            shootOffEl.classList.add('hidden');
+            shootOffEl.classList.remove('table-row-group');
         }
 
         const matchResultEl = document.getElementById('match-result');
