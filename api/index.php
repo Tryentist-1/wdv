@@ -5980,6 +5980,18 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/team-matches$#i', $route, $m) && $meth
                 $team2Name = $match['team2']['team_name'] ?: $match['team2']['school'] ?: 'Team 2';
                 $match['match_display'] = $team1Name . ' vs ' . $team2Name;
             }
+
+            // Add bracket name if bracket_id exists
+            if ($match['bracket_id']) {
+                $bracketStmt = $pdo->prepare('SELECT id, division, bracket_format, bracket_type FROM brackets WHERE id = ? LIMIT 1');
+                $bracketStmt->execute([$match['bracket_id']]);
+                $bracket = $bracketStmt->fetch(PDO::FETCH_ASSOC);
+                if ($bracket) {
+                    $match['bracket_name'] = ($bracket['bracket_type'] === 'SOLO' ? 'Solo ' : 'Team ') .
+                        ($bracket['bracket_format'] === 'ELIMINATION' ? 'Elimination' : 'Swiss') .
+                        ' - ' . $bracket['division'];
+                }
+            }
         }
 
         json_response(['matches' => $matches], 200);

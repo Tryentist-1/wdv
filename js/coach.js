@@ -1047,7 +1047,12 @@
 
     const matches = verifyState.matches || [];
     if (matches.length === 0) {
-      container.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">No matches found for the selected filters.</p>';
+      container.innerHTML = `
+        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+          <i class="fas fa-search text-4xl mb-3 opacity-30"></i>
+          <p>No matches found for the selected filters.</p>
+        </div>
+      `;
       return;
     }
 
@@ -1064,85 +1069,112 @@
 
     const matchType = verifyState.matchType === 'solo-matches' ? 'solo' : 'team';
 
+    // Mobile-first Card Layout (iPhone XR optimized: 414px width target)
+    // Uses Grid: 1 col mobile, 2 cols tablet, 3 cols desktop
     let html = `
-      <table class="w-full border-collapse text-sm bg-white dark:bg-gray-700">
-        <thead class="bg-primary text-white sticky top-0 z-10">
-          <tr>
-            <th class="px-3 py-2 text-left font-bold border border-white/20">Match</th>
-            <th class="px-3 py-2 text-center font-bold border border-white/20">Sets Score</th>
-            <th class="px-3 py-2 text-center font-bold border border-white/20">Status</th>
-            <th class="px-3 py-2 text-center font-bold border border-white/20">Card Status</th>
-            <th class="px-3 py-2 text-center font-bold border border-white/20">Verified</th>
-            <th class="px-3 py-2 text-center font-bold border border-white/20">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20 md:pb-0">
     `;
 
     matches.forEach(match => {
       const cardStatus = (match.card_status || 'PENDING').toUpperCase();
-      const locked = !!match.locked;
-      const setsScore = match.archer1_sets_won !== undefined && match.archer2_sets_won !== undefined
-        ? `${match.archer1_sets_won}-${match.archer2_sets_won}`
-        : '—';
+      const isVerified = cardStatus === 'VER' || cardStatus === 'VERIFIED';
+      const isVoid = cardStatus === 'VOID';
+      const isCompleted = match.status === 'Completed' || match.status === 'COMP';
+      
+      // Status Badge Logic
+      let cardStatusBadge = '';
+      if (isVerified) {
+        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-success-light text-success-dark">VERIFIED</span>`;
+      } else if (isVoid) {
+        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-danger-light text-danger-dark">VOID</span>`;
+      } else if (isCompleted) {
+        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">COMPLETED</span>`;
+      } else {
+        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark">PENDING</span>`;
+      }
 
-      let actions = '';
-
-      // Add Edit button for solo matches (editor supports solo matches)
+      const matchStatus = match.status || 'Scheduled';
+      
+      // Edit Button
       let editButton = '';
       if (matchType === 'solo' && match.id) {
-        const editUrl = `scorecard_editor.html?match=${match.id}&mode=coach`;
-        editButton = `<a href="${editUrl}" class="inline-flex items-center gap-1 px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]" title="Edit Match">
-          <i class="fas fa-edit"></i>
-          <span>Edit</span>
-        </a>`;
+         const editUrl = `scorecard_editor.html?match=${match.id}&mode=coach`;
+         editButton = `
+            <a href="${editUrl}" class="flex items-center justify-center px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors min-h-[44px]" title="Edit Match">
+                <i class="fas fa-edit"></i>
+            </a>
+         `;
       }
 
-      if (cardStatus === 'VER' || cardStatus === 'VERIFIED') {
-        actions = `
-          ${editButton}
-          <button class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">Unlock</button>
-        `;
-      } else if (cardStatus === 'VOID') {
-        actions = `
-          ${editButton}
-          <button class="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px]" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">Reopen</button>
-        `;
+      // Actions
+      let actionButtons = '';
+      if (isVerified || isVoid) {
+          actionButtons = `
+            <button class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded text-sm min-h-[44px] shadow-sm transition-colors" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">
+                <i class="fas fa-lock-open mr-1"></i> Unlock
+            </button>
+          `;
       } else {
-        actions = `
-          ${editButton}
-          <button class="px-3 py-1 bg-primary hover:bg-primary-dark text-white rounded text-sm font-semibold transition-colors min-h-[44px]" data-action="lock" data-match-id="${match.id}" data-match-type="${matchType}">Verify</button>
-          <button class="px-3 py-1 bg-danger hover:bg-red-700 text-white rounded text-sm font-semibold transition-colors min-h-[44px]" data-action="void" data-match-id="${match.id}" data-match-type="${matchType}">Void</button>
-        `;
+          actionButtons = `
+            <button class="flex-1 bg-success hover:bg-success-dark text-white font-bold py-2 px-3 rounded text-sm min-h-[44px] shadow-sm transition-colors" data-action="lock" data-match-id="${match.id}" data-match-type="${matchType}">
+                 Verify
+            </button>
+            <button class="flex-1 bg-danger hover:bg-danger-dark text-white font-bold py-2 px-3 rounded text-sm min-h-[44px] shadow-sm transition-colors" data-action="void" data-match-id="${match.id}" data-match-type="${matchType}">
+                 Void
+            </button>
+          `;
       }
-
-      const verifiedInfo = match.verified_by
-        ? `${match.verified_by}<br><span class="text-xs text-gray-500 dark:text-gray-400">${formatTimestamp(match.verified_at)}</span>`
-        : '—';
 
       html += `
-        <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
-          <td class="px-3 py-2">
-            <strong class="text-gray-800 dark:text-white">${match.match_display || 'Match'}</strong><br>
-            ${match.bracket_name ? `<span class="text-xs text-gray-600 dark:text-gray-400">${match.bracket_name}</span>` : ''}
-          </td>
-          <td class="px-3 py-2 text-center text-gray-800 dark:text-white font-semibold">${setsScore}</td>
-          <td class="px-3 py-2 text-center">${formatMatchStatus(match.status || 'Not Started')}</td>
-          <td class="px-3 py-2 text-center">${formatStatusBadge(cardStatus)}</td>
-          <td class="px-3 py-2 text-center text-sm text-gray-600 dark:text-gray-400">${verifiedInfo}</td>
-          <td class="px-3 py-2 text-center">
-            <div class="flex gap-2 justify-center flex-wrap">
-              ${actions}
+        <div class="bg-white dark:bg-gray-700 rounded-lg shadow border border-gray-200 dark:border-gray-600 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    ${match.match_code ? `<span class="font-mono text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-900 px-1.5 py-0.5 rounded">${match.match_code}</span>` : ''}
+                    <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">${matchStatus}</span>
+                </div>
+                <div>${cardStatusBadge}</div>
             </div>
-          </td>
-        </tr>
+
+            <!-- Body -->
+            <div class="p-3 flex-1">
+                <h3 class="text-base font-bold text-gray-800 dark:text-white leading-tight mb-1">
+                    ${match.match_display || 'Match Details'}
+                </h3>
+                <div class="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
+                    ${match.bracket_name || 'Tournament Filter'}
+                </div>
+                
+                ${match.winner_name ? `
+                    <div class="mt-2 text-sm bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded border border-green-100 dark:border-green-900 inline-block">
+                        <span class="text-gray-500 dark:text-gray-400 text-xs">Winner:</span> 
+                        <span class="font-bold text-success-dark dark:text-success-light">${match.winner_name}</span>
+                    </div>
+                ` : ''}
+                
+                ${match.verified_by ? `
+                    <div class="mt-2 text-xs text-gray-400">
+                        Verified by ${match.verified_by} • ${formatTimestamp(match.verified_at)}
+                    </div>
+                ` : ''}
+            </div>
+
+            <!-- Actions Footer -->
+            <div class="px-3 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600 flex gap-2">
+                ${editButton}
+                ${actionButtons}
+            </div>
+        </div>
       `;
     });
 
-    html += '</tbody></table>';
+    html += `</div>`;
+    // Spacer for bottom safe area
+    html += `<div class="h-8 md:hidden"></div>`;
+
     container.innerHTML = html;
 
-    // Add action handlers for match verification
+    // Add action handlers for match verification (Event Delegation Re-attachment)
     container.querySelectorAll('[data-action]').forEach(btn => {
       btn.onclick = async (e) => {
         const action = e.currentTarget.dataset.action;
