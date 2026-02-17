@@ -1564,6 +1564,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         loadData();
+        
+        // Check URL for match ID (e.g., team_card.html?match=UUID)
+        const urlParams = new URLSearchParams(window.location.search);
+        let urlMatchId = urlParams.get('match');
+        
+        // Hash fallback (e.g., #matchId=UUID or #UUID)
+        if (!urlMatchId && window.location.hash) {
+            const hashVal = window.location.hash.substring(1);
+            if (hashVal.startsWith('matchId=')) {
+                urlMatchId = hashVal.split('=')[1];
+            } else if (/^[0-9a-f]{8}-/.test(hashVal)) {
+                urlMatchId = hashVal;
+            }
+        }
+        
+        if (urlMatchId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(urlMatchId)) {
+            console.log('[TeamCard] Loading match from URL param:', urlMatchId);
+            try {
+                await hydrateTeamMatch(urlMatchId, { mergeLocal: false, clearStateFirst: true });
+                console.log('[TeamCard] ✅ Match loaded from URL');
+                if (window.LiveUpdates?.flushTeamQueue) {
+                    window.LiveUpdates.flushTeamQueue(state.matchId).catch(e => console.warn('Queue flush failed:', e));
+                }
+            } catch (err) {
+                console.error('[TeamCard] Failed to load match from URL:', err);
+            }
+        }
+        
         console.log('[TeamCard] Session state loaded:', {
             currentView: state.currentView,
             matchId: state.matchId,
@@ -1574,8 +1602,8 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeKeypad();
         initializeArcherSelector();
         
-        // Phase 2: Restore match from database if matchId exists
-        if (state.matchId && window.LiveUpdates) {
+        // Phase 2: Restore match from database if matchId exists (skip if already loaded from URL)
+        if (state.matchId && window.LiveUpdates && !urlMatchId) {
             const restored = await restoreTeamMatchFromDatabase();
             if (restored) {
                 console.log('[TeamCard] ✅ Match restored from database');
