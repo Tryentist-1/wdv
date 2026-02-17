@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
             views[state.currentView].classList.add('block');
         }
     }
-    
+
     function saveData() {
         // Phase 2: Only store session state, not scores (scores are in database)
         const sessionState = {
@@ -281,7 +281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         startScoringBtn.classList.toggle('btn-primary', isValid);
         startScoringBtn.classList.toggle('btn-secondary', !isValid);
     }
-    
+
     // Phase 2: Create match in database before starting
     async function startScoring() {
         const t1Count = state.team1.length;
@@ -291,23 +291,23 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Please select an equal number of archers for each team (1, 2, or 3).");
             return;
         }
-        
+
         // Check if LiveUpdates is available
         if (!window.LiveUpdates || !window.LiveUpdates.ensureTeamMatch) {
             console.error('LiveUpdates API not available');
             alert('Database connection not available. Please refresh the page.');
             return;
         }
-        
+
         try {
             // Get event ID and bracket ID from URL or localStorage (if available)
             const urlParams = new URLSearchParams(window.location.search);
             const eventId = urlParams.get('event') || state.eventId || null;
             const bracketId = urlParams.get('bracket') || state.bracketId || null;
             const today = new Date().toISOString().split('T')[0];
-            
+
             // Create match in database (force new match - don't reuse cache)
-            
+
             console.log('Creating team match in database...');
             const matchId = await window.LiveUpdates.ensureTeamMatch({
                 date: today,
@@ -317,25 +317,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxSets: 4,
                 forceNew: true  // Always create a new match when starting scoring
             });
-            
+
             if (!matchId) {
                 throw new Error('Failed to create match in database');
             }
-            
+
             state.matchId = matchId;
             state.eventId = eventId;
-            
+
             // Add teams
             console.log('Adding teams to match...');
             const team1Id = await window.LiveUpdates.ensureTeam(matchId, 1, null, state.team1[0]?.school || '');
             const team2Id = await window.LiveUpdates.ensureTeam(matchId, 2, null, state.team2[0]?.school || '');
-            
+
             if (!team1Id || !team2Id) {
                 throw new Error('Failed to add teams to match');
             }
-            
+
             state.teamIds = { t1: team1Id, t2: team2Id };
-            
+
             // Add archers to teams
             console.log('[TeamCard] Adding archers to teams...');
             for (let i = 0; i < state.team1.length; i++) {
@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.matchArcherIds.t1[i] = matchArcherId1;
                 console.log(`[TeamCard] ✅ Team 1 archer ${i + 1} added: ${matchArcherId1}`);
             }
-            
+
             for (let i = 0; i < state.team2.length; i++) {
                 const a2Id = state.team2[i].id;
                 const archerName = `${state.team2[i].first} ${state.team2[i].last}`;
@@ -363,22 +363,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 state.matchArcherIds.t2[i] = matchArcherId2;
                 console.log(`[TeamCard] ✅ Team 2 archer ${i + 1} added: ${matchArcherId2}`);
             }
-            
+
             // Initialize scores
             const numArrows = t1Count * 2; // Each archer shoots 2 arrows per end
             state.scores.t1 = Array(4).fill(null).map(() => Array(numArrows).fill(''));
             state.scores.t2 = Array(4).fill(null).map(() => Array(numArrows).fill(''));
             state.scores.so = { t1: Array(t1Count).fill(''), t2: Array(t1Count).fill('') };
-            
+
             state.syncStatus = { t1: {}, t2: {} };
             state.matchOverModalShown = false;
             state.currentView = 'scoring';
             saveData();
             renderScoringView();
             renderView();
-            
+
             console.log('✅ Team match started successfully:', matchId);
-            
+
             // Flush any pending queue
             if (window.LiveUpdates.flushTeamQueue) {
                 window.LiveUpdates.flushTeamQueue(matchId).catch(e => console.warn('Queue flush failed:', e));
@@ -619,8 +619,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const endComplete = endScoresT1.every(s => s !== '') && endScoresT2.every(s => s !== '');
             const t1EndTotal = endScoresT1.reduce((sum, s) => sum + parseScoreValue(s), 0);
             const t2EndTotal = endScoresT2.reduce((sum, s) => sum + parseScoreValue(s), 0);
-            document.getElementById(`t1-e${i+1}-total`).textContent = t1EndTotal;
-            document.getElementById(`t2-e${i+1}-total`).textContent = t2EndTotal;
+            document.getElementById(`t1-e${i + 1}-total`).textContent = t1EndTotal;
+            document.getElementById(`t2-e${i + 1}-total`).textContent = t2EndTotal;
             let t1SetPoints = 0, t2SetPoints = 0;
             if (!matchOver && endComplete) {
                 if (t1EndTotal > t2EndTotal) t1SetPoints = 2;
@@ -633,8 +633,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     winner = t1MatchScore > t2MatchScore ? 't1' : 't2';
                 }
             }
-            document.getElementById(`t1-e${i+1}-setpts`).textContent = endComplete ? t1SetPoints : '-';
-            document.getElementById(`t2-e${i+1}-setpts`).textContent = endComplete ? t2SetPoints : '-';
+            document.getElementById(`t1-e${i + 1}-setpts`).textContent = endComplete ? t1SetPoints : '-';
+            document.getElementById(`t2-e${i + 1}-setpts`).textContent = endComplete ? t2SetPoints : '-';
         }
 
         document.getElementById('t1-match-score').textContent = t1MatchScore;
@@ -657,17 +657,17 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('t1-so-total').textContent = t1SoTotal;
             document.getElementById('t2-so-total').textContent = t2SoTotal;
             const soComplete = state.scores.so.t1.every(s => s !== '') && state.scores.so.t2.every(s => s !== '');
-            
+
             const soWinnerText = document.getElementById('so-winner-text');
-            
+
             if (soComplete) {
-                if (t1SoTotal > t2SoTotal) { 
-                    winner = 't1'; 
-                    matchOver = true; 
+                if (t1SoTotal > t2SoTotal) {
+                    winner = 't1';
+                    matchOver = true;
                     soWinnerText.textContent = 'T1 Wins S.O.';
-                } else if (t2SoTotal > t1SoTotal) { 
-                    winner = 't2'; 
-                    matchOver = true; 
+                } else if (t2SoTotal > t1SoTotal) {
+                    winner = 't2';
+                    matchOver = true;
                     soWinnerText.textContent = 'T2 Wins S.O.';
                 } else { // Tied shoot-off total, check highest arrow using the correct tie-break logic
                     const t1Max = Math.max(...state.scores.so.t1.map(getArrowValueForTiebreak));
@@ -752,14 +752,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
+
         // Fallback: Check state.scores (for matches being scored in real-time)
         let t1MatchScore = 0, t2MatchScore = 0, matchOver = false, winner = null;
         for (let i = 0; i < 4; i++) {
             const endScoresT1 = state.scores.t1 && state.scores.t1[i];
             const endScoresT2 = state.scores.t2 && state.scores.t2[i];
             if (!endScoresT1 || !endScoresT2) continue;
-            
+
             const endComplete = endScoresT1.every(s => s !== '' && s !== null) && endScoresT2.every(s => s !== '' && s !== null);
             if (!matchOver && endComplete) {
                 const t1EndTotal = endScoresT1.reduce((sum, s) => sum + parseScoreValue(s), 0);
@@ -797,18 +797,18 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function showCompleteMatchModal() {
         const modal = document.getElementById('complete-match-modal');
-        
+
         if (!modal) {
             console.error('[showCompleteMatchModal] Modal not found');
             return;
         }
-        
+
         // Check if match is actually complete
         if (!isMatchComplete()) {
             alert('Match is not complete. Please finish all sets and determine a winner before marking as complete.');
             return;
         }
-        
+
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
@@ -846,20 +846,20 @@ document.addEventListener('DOMContentLoaded', () => {
             hideCompleteMatchModal();
             return;
         }
-        
+
         // Check if match is actually complete
         if (!isMatchComplete()) {
             alert('Match is not complete. Please finish all sets and determine a winner before marking as complete.');
             hideCompleteMatchModal();
             return;
         }
-        
+
         try {
             // Build headers
             const headers = {
                 'Content-Type': 'application/json'
             };
-            
+
             // Add event code if match is part of an event
             if (state.eventId) {
                 const entryCode = localStorage.getItem('event_entry_code') || localStorage.getItem('coach_passcode');
@@ -867,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers['X-Passcode'] = entryCode;
                 }
             }
-            
+
             const response = await fetch(`${getApiBase()}/team-matches/${state.matchId}/status`, {
                 method: 'PATCH',
                 headers: headers,
@@ -875,21 +875,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     cardStatus: 'COMP'
                 })
             });
-            
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
                 throw new Error(errorData.error || `HTTP ${response.status}`);
             }
-            
+
             const result = await response.json();
-            
+
             // Update local state
             state.cardStatus = result.cardStatus || 'COMP';
             state.status = result.status || 'Completed';
             state.locked = result.locked || false;
-            
+
             console.log('[completeMatch] Status updated:', result);
-            
+
             updateCompleteMatchButton();
             hideCompleteMatchModal();
             showTeamCompleteSuccessModal();
@@ -907,12 +907,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateCompleteMatchButton() {
         const completeBtn = document.getElementById('complete-match-btn');
         if (!completeBtn) return;
-        
+
         const isComplete = isMatchComplete();
         const isAlreadyCompleted = state.cardStatus === 'COMP';
         const isVerified = state.cardStatus === 'VRFD';
         const isLocked = state.locked || isVerified;
-        
+
         if (isLocked) {
             completeBtn.disabled = true;
             completeBtn.innerHTML = '<i class="fas fa-lock mr-1"></i> Verified';
@@ -933,7 +933,7 @@ document.addEventListener('DOMContentLoaded', () => {
             completeBtn.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Complete';
         }
     }
-    
+
     async function handleScoreInput(e) {
         const input = e.target;
         const { team, end, arrow } = input.dataset;
@@ -962,35 +962,35 @@ document.addEventListener('DOMContentLoaded', () => {
         updateScoreHighlightsAndTotals();
         updateCompleteMatchButton();
         saveData();
-        
+
         // Phase 2: Post to database if match is active
         if (state.matchId && state.teamIds[team] && end !== 'so' && window.LiveUpdates && window.LiveUpdates.postTeamSet) {
             const setNumber = parseInt(end, 10) + 1;
             const arrowIdx = parseInt(arrow, 10);
             const archerIndex = Math.floor(arrowIdx / ARROWS_PER_ARCHER);
             const matchArcherId = state.matchArcherIds[team] && state.matchArcherIds[team][archerIndex];
-            
+
             if (matchArcherId) {
                 // Get all arrows for this set (team total)
                 const setScores = state.scores[team][parseInt(end, 10)];
                 const setTotal = setScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
-                
+
                 // Calculate set points (compare with opponent team)
                 let setPoints = 0;
                 let runningPoints = 0;
                 const opponentTeam = team === 't1' ? 't2' : 't1';
                 const opponentScores = state.scores[opponentTeam][parseInt(end, 10)];
                 const opponentTotal = opponentScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
-                
+
                 // Only calculate if both teams have all arrows entered
                 const allArrowsEntered = setScores.every(s => s !== '' && s !== null);
                 const opponentAllEntered = opponentScores.every(s => s !== '' && s !== null);
-                
+
                 if (allArrowsEntered && opponentAllEntered) {
                     if (setTotal > opponentTotal) setPoints = 2;
                     else if (setTotal < opponentTotal) setPoints = 0;
                     else setPoints = 1;
-                    
+
                     // Calculate running points (sum of all previous sets)
                     const currentSet = parseInt(end, 10);
                     for (let i = 0; i <= currentSet; i++) {
@@ -1002,41 +1002,96 @@ document.addEventListener('DOMContentLoaded', () => {
                         else if (myTotal === oppTotal) runningPoints += 1;
                     }
                 }
-                
+
                 // Read both arrows for this archer from state (UPSERT will set both)
                 const arrowStartIdx = archerIndex * ARROWS_PER_ARCHER;
                 const a1Value = setScores[arrowStartIdx] || null;
                 const a2Value = setScores[arrowStartIdx + 1] || null;
-                
+
                 // Count tens and Xs across both of this archer's arrows
                 const a1Score = parseScoreValue(a1Value);
                 const a2Score = parseScoreValue(a2Value);
                 const tens = (a1Score === 10 ? 1 : 0) + (a2Score === 10 ? 1 : 0);
                 const xs = (String(a1Value).toUpperCase() === 'X' ? 1 : 0) + (String(a2Value).toUpperCase() === 'X' ? 1 : 0);
-                
+
                 // Post this archer's set score (2 arrows per archer per set)
-                try {
-                    console.log(`[TeamCard] 📤 Posting score: Team=${team}, Archer=${archerIndex + 1}, Set=${setNumber}, a1=${a1Value}, a2=${a2Value}`);
-                    updateSyncStatus(team, archerIndex, setNumber, 'pending');
-                    await window.LiveUpdates.postTeamSet(state.matchId, state.teamIds[team], matchArcherId, setNumber, {
-                        a1: a1Value,
-                        a2: a2Value,
-                        setTotal: allArrowsEntered && opponentAllEntered ? setTotal : 0,
-                        setPoints: allArrowsEntered && opponentAllEntered ? setPoints : 0,
-                        runningPoints: allArrowsEntered && opponentAllEntered ? runningPoints : 0,
-                        tens,
-                        xs
-                    });
-                    updateSyncStatus(team, archerIndex, setNumber, 'synced');
-                    console.log(`[TeamCard] ✅ Score synced successfully: Team=${team}, Archer=${archerIndex + 1}, Set=${setNumber}`);
-                } catch (e) {
-                    console.error(`[TeamCard] ❌ Failed to sync score: Team=${team}, Archer=${archerIndex + 1}, Set=${setNumber}:`, e);
-                    updateSyncStatus(team, archerIndex, setNumber, 'failed');
-                }
+                const performPost = async () => {
+                    try {
+                        console.log(`[TeamCard] 📤 Posting score: Team=${team}, Archer=${archerIndex + 1}, Set=${setNumber}, a1=${a1Value}, a2=${a2Value}`);
+                        updateSyncStatus(team, archerIndex, setNumber, 'pending');
+                        await window.LiveUpdates.postTeamSet(state.matchId, state.teamIds[team], matchArcherId, setNumber, {
+                            a1: a1Value,
+                            a2: a2Value,
+                            setTotal: allArrowsEntered && opponentAllEntered ? setTotal : 0,
+                            setPoints: allArrowsEntered && opponentAllEntered ? setPoints : 0,
+                            runningPoints: allArrowsEntered && opponentAllEntered ? runningPoints : 0,
+                            tens,
+                            xs
+                        });
+                        updateSyncStatus(team, archerIndex, setNumber, 'synced');
+                        console.log(`[TeamCard] ✅ Score synced successfully: Team=${team}, Archer=${archerIndex + 1}, Set=${setNumber}`);
+
+                        // FIX: If set is complete, ALSO update opponent scores so they have correct Set Points / Running Points
+                        if (allArrowsEntered && opponentAllEntered) {
+                            console.log(`[TeamCard] 🔄 Syncing opponent team ${opponentTeam} scores as set is complete`);
+
+                            // Calculate Opponent Points
+                            let oppSetPoints = 0;
+                            if (opponentTotal > setTotal) oppSetPoints = 2;
+                            else if (opponentTotal < setTotal) oppSetPoints = 0;
+                            else oppSetPoints = 1;
+
+                            let oppRunningPoints = 0;
+                            for (let i = 0; i <= parseInt(end, 10); i++) {
+                                const myScores = state.scores[opponentTeam][i];
+                                const oppScores = state.scores[team][i];
+                                const myTotal = myScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                                const oppTotal = oppScores.reduce((sum, s) => sum + parseScoreValue(s), 0);
+                                if (myTotal > oppTotal) oppRunningPoints += 2;
+                                else if (myTotal === oppTotal) oppRunningPoints += 1;
+                            }
+
+                            // Iterate all opponent archers and update them
+                            const opponentArchers = state.matchArcherIds[opponentTeam] || {};
+                            for (const [idxStr, oppMatchArcherId] of Object.entries(opponentArchers)) {
+                                const idx = parseInt(idxStr, 10);
+                                const oppStartIdx = idx * ARROWS_PER_ARCHER;
+                                const oa1 = opponentScores[oppStartIdx] || null;
+                                const oa2 = opponentScores[oppStartIdx + 1] || null;
+                                const oa1Score = parseScoreValue(oa1);
+                                const oa2Score = parseScoreValue(oa2);
+                                const oTens = (oa1Score === 10 ? 1 : 0) + (oa2Score === 10 ? 1 : 0);
+                                const oXs = (String(oa1).toUpperCase() === 'X' ? 1 : 0) + (String(oa2).toUpperCase() === 'X' ? 1 : 0);
+
+                                updateSyncStatus(opponentTeam, idx, setNumber, 'pending');
+                                // We don't await this inside the loop to avoid delay, but we catch errors
+                                window.LiveUpdates.postTeamSet(state.matchId, state.teamIds[opponentTeam], oppMatchArcherId, setNumber, {
+                                    a1: oa1,
+                                    a2: oa2,
+                                    setTotal: opponentTotal,
+                                    setPoints: oppSetPoints,
+                                    runningPoints: oppRunningPoints,
+                                    tens: oTens,
+                                    xs: oXs
+                                }).then(() => {
+                                    updateSyncStatus(opponentTeam, idx, setNumber, 'synced');
+                                }).catch(e => {
+                                    console.error(`[TeamCard] ❌ Failed to sync opponent score: Team=${opponentTeam}, Archer=${idx + 1}`, e);
+                                    updateSyncStatus(opponentTeam, idx, setNumber, 'failed');
+                                });
+                            }
+                        }
+
+                    } catch (e) {
+                        console.error(`[TeamCard] ❌ Failed to sync score: Team=${team}, Archer=${archerIndex + 1}, Set=${setNumber}:`, e);
+                        updateSyncStatus(team, archerIndex, setNumber, 'failed');
+                    }
+                };
+                performPost();
             }
         }
     }
-    
+
     // Phase 2: Helper function to parse score value
     function parseScoreValue(score) {
         if (!score || score === '') return 0;
@@ -1046,13 +1101,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const num = parseInt(score, 10);
         return isNaN(num) ? 0 : num;
     }
-    
+
     // Phase 2: Update sync status for UI feedback
     function updateSyncStatus(team, archerIndex, setNumber, status) {
         if (!state.syncStatus[team]) state.syncStatus[team] = {};
         if (!state.syncStatus[team][archerIndex]) state.syncStatus[team][archerIndex] = {};
         state.syncStatus[team][archerIndex][setNumber] = status;
-        
+
         // Update UI indicator
         const setId = setNumber === 5 ? 'so' : setNumber;
         const syncCell = document.getElementById(`sync-e${setId}`);
@@ -1068,7 +1123,7 @@ document.addEventListener('DOMContentLoaded', () => {
             syncCell.innerHTML = getSyncStatusIcon(syncStatuses);
         }
     }
-    
+
     // Phase 2: Get sync status icon (shows worst status across all archers)
     function getSyncStatusIcon(statuses) {
         // Determine overall status (failed > pending > synced > none)
@@ -1080,7 +1135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (statuses.includes('synced')) {
             overallStatus = 'synced';
         }
-        
+
         const icons = {
             'synced': '<span class="text-success text-xl" title="Synced">✓</span>',
             'pending': '<span class="text-warning text-xl" title="Pending">⟳</span>',
@@ -1089,12 +1144,12 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         return icons[overallStatus] || icons[''];
     }
-    
+
     // =====================================================
     // PHASE 0: Centralized Data Hydration Functions
     // Following DATA_SYNCHRONIZATION_STRATEGY.md rules
     // =====================================================
-    
+
     /**
      * Validate UUID format
      * Rule 5: UUID-Only for Entity Identification
@@ -1103,25 +1158,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!str || typeof str !== 'string') return false;
         return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
     }
-    
+
     /**
      * Normalize entity ID to UUID format
      * Rule 5: UUID-Only for Entity Identification
      */
     function normalizeEntityId(entity, fieldName = 'id') {
         const id = typeof entity === 'string' ? entity : (entity?.id || entity?.matchId);
-        
+
         if (!id) {
             throw new Error(`Entity missing ${fieldName}`);
         }
-        
+
         if (!isValidUUID(id)) {
             throw new Error(`Invalid UUID format: ${id}`);
         }
-        
+
         return id;
     }
-    
+
     /**
      * Clear Team Match state before hydration
      * Rule 4: Clear State Before Hydration
@@ -1143,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.currentView = 'setup';
         state.currentSet = 1;
     }
-    
+
     /**
      * Validate Team Match integrity
      * Rule 3: Atomic Data Units - Verify all data belongs to this match
@@ -1154,35 +1209,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!matchData || !matchData.match) {
             throw new Error('Match data is missing');
         }
-        
+
         const match = matchData.match;
-        
+
         // Verify MatchID matches
         if (match.id && match.id !== expectedMatchId) {
             throw new Error(`Match ID mismatch: expected ${expectedMatchId}, got ${match.id}`);
         }
-        
+
         // Verify we have exactly 2 teams
         if (!match.teams || !Array.isArray(match.teams) || match.teams.length < 2) {
             throw new Error('Match must have exactly 2 teams');
         }
-        
+
         // Verify teams have valid positions
         const positions = match.teams.map(t => t.position).sort();
         if (positions[0] !== 1 || positions[1] !== 2) {
             throw new Error('Match teams must have positions 1 and 2');
         }
-        
+
         // Verify each team has archers
         match.teams.forEach((team, index) => {
             if (!team.archers || !Array.isArray(team.archers) || team.archers.length === 0) {
                 throw new Error(`Team ${index + 1} must have at least one archer`);
             }
         });
-        
+
         console.log('[validateTeamMatch] ✅ Validation passed');
     }
-    
+
     /**
      * Fetch Team Match from server
      * Rule 3: Atomic Data Units - Fetch Complete Units from Server
@@ -1191,31 +1246,31 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function fetchTeamMatch(matchId) {
         console.log('[fetchTeamMatch] Fetching Team Match:', matchId);
-        
+
         // Validate input
         if (!matchId || !isValidUUID(matchId)) {
             throw new Error(`Invalid matchId: ${matchId}`);
         }
-        
+
         if (!window.LiveUpdates) {
             throw new Error('LiveUpdates is not available');
         }
-        
+
         const matchData = await window.LiveUpdates.request(`/team-matches/${matchId}`, 'GET');
-        
+
         if (!matchData || !matchData.match) {
             throw new Error(`Match not found: ${matchId}`);
         }
-        
+
         console.log('[fetchTeamMatch] ✅ Fetched Team Match:', {
             matchId: matchData.match.id,
             status: matchData.match.status,
             teamCount: matchData.match.teams?.length || 0
         });
-        
+
         return matchData;
     }
-    
+
     /**
      * Centralized hydration function for Team Match
      * Rule 6: Centralized Hydration Function
@@ -1229,22 +1284,22 @@ document.addEventListener('DOMContentLoaded', () => {
     async function hydrateTeamMatch(matchId, options = {}) {
         console.log('[hydrateTeamMatch] ========== START ==========');
         console.log('[hydrateTeamMatch] Parameters:', { matchId, options });
-        
+
         try {
             // 1. Clear state first (Rule 4)
             if (options.clearStateFirst !== false) {
                 clearTeamMatchState();
             }
-            
+
             // 2. Validate inputs (Rule 5)
             const normalizedMatchId = normalizeEntityId(matchId, 'matchId');
-            
+
             // 3. Fetch atomic unit from server (Rule 3)
             const matchData = await fetchTeamMatch(normalizedMatchId);
-            
+
             // 4. Validate atomic unit integrity (Rule 3)
             validateTeamMatch(matchData, normalizedMatchId);
-            
+
             const match = matchData.match;
 
             // 4b. Restore match code for authenticated writes (e.g. postTeamSet)
@@ -1255,7 +1310,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 console.log('[hydrateTeamMatch] 🔑 Match code restored');
             }
-            
+
             // 5. Populate metadata from server (Rule 1)
             state.matchId = normalizedMatchId;
             state.eventId = match.event_id || null;
@@ -1271,32 +1326,32 @@ document.addEventListener('DOMContentLoaded', () => {
             state.baleNumber = match.bale_number ? parseInt(match.bale_number) : null;
             state.lineNumber = match.line_number ? parseInt(match.line_number) : null;
             state.wave = match.wave || null;
-            
+
             // 6. Build teams from match data
             const teams = match.teams || [];
             if (teams.length < 2) {
                 throw new Error('Match must have at least 2 teams');
             }
-            
+
             const team1Data = teams.find(t => t.position === 1);
             const team2Data = teams.find(t => t.position === 2);
-            
+
             if (!team1Data || !team2Data) {
                 throw new Error('Match missing team at position 1 or 2');
             }
-            
+
             // Store team IDs
             state.teamIds = {
                 t1: team1Data.id,
                 t2: team2Data.id
             };
-            
+
             // Find archers in master list by UUID (preferred) or fallback to name
             const masterList = ArcherModule.loadList();
             state.team1 = [];
             state.team2 = [];
             state.matchArcherIds = { t1: {}, t2: {} };
-            
+
             // Restore Team 1 archers
             if (team1Data.archers && Array.isArray(team1Data.archers)) {
                 team1Data.archers.forEach((archerData, index) => {
@@ -1304,21 +1359,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nameParts = archerName.split(' ');
                     const firstName = nameParts[0] || '';
                     const lastName = nameParts.slice(1).join(' ') || '';
-                    
+
                     // Try UUID first
                     let archer = masterList.find(a => {
                         const archerId = a.id || a.archerId;
                         return archerId && archerId === archerData.archer_id;
                     });
-                    
+
                     // Fallback to name matching
                     if (!archer) {
-                        archer = masterList.find(a => 
+                        archer = masterList.find(a =>
                             a.first.toLowerCase() === firstName.toLowerCase() &&
                             a.last.toLowerCase() === lastName.toLowerCase()
                         );
                     }
-                    
+
                     if (archer) {
                         archer.id = archer.id || `${archer.first}-${archer.last}`;
                         state.team1.push(archer);
@@ -1337,7 +1392,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
-            
+
             // Restore Team 2 archers
             if (team2Data.archers && Array.isArray(team2Data.archers)) {
                 team2Data.archers.forEach((archerData, index) => {
@@ -1345,21 +1400,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     const nameParts = archerName.split(' ');
                     const firstName = nameParts[0] || '';
                     const lastName = nameParts.slice(1).join(' ') || '';
-                    
+
                     // Try UUID first
                     let archer = masterList.find(a => {
                         const archerId = a.id || a.archerId;
                         return archerId && archerId === archerData.archer_id;
                     });
-                    
+
                     // Fallback to name matching
                     if (!archer) {
-                        archer = masterList.find(a => 
+                        archer = masterList.find(a =>
                             a.first.toLowerCase() === firstName.toLowerCase() &&
                             a.last.toLowerCase() === lastName.toLowerCase()
                         );
                     }
-                    
+
                     if (archer) {
                         archer.id = archer.id || `${archer.first}-${archer.last}`;
                         state.team2.push(archer);
@@ -1378,7 +1433,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
-            
+
             // 7. Build scores from server data
             const numArrows = state.team1.length * ARROWS_PER_ARCHER;
             state.scores = {
@@ -1389,7 +1444,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     t2: Array(state.team2.length).fill('')
                 }
             };
-            
+
             // Restore Team 1 scores
             if (team1Data.archers && Array.isArray(team1Data.archers)) {
                 team1Data.archers.forEach((archerData, archIdx) => {
@@ -1408,7 +1463,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
-            
+
             // Restore Team 2 scores
             if (team2Data.archers && Array.isArray(team2Data.archers)) {
                 team2Data.archers.forEach((archerData, archIdx) => {
@@ -1427,13 +1482,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
-            
+
             // 8. Set current view
             state.currentView = 'scoring';
-            
+
             // 9. Save session for recovery
             saveData();
-            
+
             console.log('[hydrateTeamMatch] ✅ Hydration complete:', {
                 matchId: state.matchId,
                 team1Archers: state.team1.length,
@@ -1441,20 +1496,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 setsScored: state.scores.t1.filter(s => s.some(v => v)).length
             });
             console.log('[hydrateTeamMatch] ========== END ==========');
-            
+
             return state;
-            
+
         } catch (error) {
             console.error('[hydrateTeamMatch] ❌ Error:', error);
             throw error;
         }
     }
-    
+
     // Phase 2: Restore match from database if matchId exists
     // Now uses centralized hydration function (Phase 0)
     async function restoreTeamMatchFromDatabase() {
         if (!state.matchId) return false;
-        
+
         try {
             console.log('[restoreTeamMatchFromDatabase] Using centralized hydrateTeamMatch()');
             await hydrateTeamMatch(state.matchId, {
@@ -1467,10 +1522,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
     }
-    
+
     // Phase 2: Reset clears session state (database match remains for coach visibility)
     function resetMatch() {
-        if(confirm("Are you sure you want to start a new match? This will clear all scores.")) {
+        if (confirm("Are you sure you want to start a new match? This will clear all scores.")) {
             // Clear cached match from localStorage so a new match will be created
             const oldMatchId = state.matchId;
             if (oldMatchId) {
@@ -1497,7 +1552,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const eventId = urlParams.get('event') || state.eventId || null;
             const matchKey = `team_match:${eventId || 'standalone'}:${today}`;
             localStorage.removeItem(matchKey);
-            
+
             state.team1 = [];
             state.team2 = [];
             state.scores = {};
@@ -1537,13 +1592,13 @@ document.addEventListener('DOMContentLoaded', () => {
             renderEventSelect();
         }
     }
-    
+
     function renderEventSelect() {
         const eventSelect = document.getElementById('event-select');
         if (!eventSelect) return;
-        
+
         eventSelect.innerHTML = '<option value="">Standalone Match (No Event)</option>';
-        
+
         // Only show active events
         const activeEvents = state.events.filter(e => e.status === 'Active');
         activeEvents.forEach(event => {
@@ -1552,34 +1607,34 @@ document.addEventListener('DOMContentLoaded', () => {
             option.textContent = `${event.name} - ${event.date}`;
             eventSelect.appendChild(option);
         });
-        
+
         // Set selected value if we have one
         if (state.eventId) {
             eventSelect.value = state.eventId;
             loadBrackets(state.eventId);
         }
     }
-    
+
     async function handleEventSelection() {
         const eventSelect = document.getElementById('event-select');
         const bracketSelection = document.getElementById('bracket-selection');
-        
+
         const eventId = eventSelect.value;
         state.eventId = eventId || null;
         state.bracketId = null;
         state.brackets = [];
-        
+
         if (eventId) {
             await loadBrackets(eventId);
             if (bracketSelection) bracketSelection.classList.remove('hidden');
         } else {
             if (bracketSelection) bracketSelection.classList.add('hidden');
         }
-        
+
         updateMatchTypeIndicator();
         saveData();
     }
-    
+
     async function loadBrackets(eventId) {
         try {
             const response = await fetch(`${getApiBase()}/events/${eventId}/brackets`);
@@ -1598,13 +1653,13 @@ document.addEventListener('DOMContentLoaded', () => {
             renderBracketSelect();
         }
     }
-    
+
     function renderBracketSelect() {
         const bracketSelect = document.getElementById('bracket-select');
         if (!bracketSelect) return;
-        
+
         bracketSelect.innerHTML = '<option value="">No Bracket (Standalone)</option>';
-        
+
         state.brackets.forEach(bracket => {
             const option = document.createElement('option');
             option.value = bracket.id;
@@ -1612,24 +1667,24 @@ document.addEventListener('DOMContentLoaded', () => {
             option.textContent = `${bracket.division} ${formatText} (${bracket.status})`;
             bracketSelect.appendChild(option);
         });
-        
+
         // Set selected value if we have one
         if (state.bracketId) {
             bracketSelect.value = state.bracketId;
         }
     }
-    
+
     function handleBracketSelection() {
         const bracketSelect = document.getElementById('bracket-select');
         state.bracketId = bracketSelect.value || null;
         updateMatchTypeIndicator();
         saveData();
     }
-    
+
     function updateMatchTypeIndicator() {
         const matchTypeText = document.getElementById('match-type-text');
         if (!matchTypeText) return;
-        
+
         if (state.eventId && state.bracketId) {
             const bracket = state.brackets.find(b => b.id === state.bracketId);
             const event = state.events.find(e => e.id === state.eventId);
@@ -1652,7 +1707,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[TeamCard] 🚀 Initializing Team Match Card...');
         console.log('[TeamCard] LiveUpdates available:', !!window.LiveUpdates);
         console.log('[TeamCard] LiveUpdates enabled:', window.LiveUpdates?._state?.config?.enabled);
-        
+
         // Phase 2: Load archers from MySQL first (for better UX)
         try {
             console.log('[TeamCard] Loading archers from MySQL...');
@@ -1662,13 +1717,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('[TeamCard] ⚠️ Failed to load archers from MySQL, using CSV fallback:', e);
             await ArcherModule.loadDefaultCSVIfNeeded();
         }
-        
+
         loadData();
-        
+
         // Check URL for match ID (e.g., team_card.html?match=UUID)
         const urlParams = new URLSearchParams(window.location.search);
         let urlMatchId = urlParams.get('match');
-        
+
         // Hash fallback (e.g., #matchId=UUID or #UUID)
         if (!urlMatchId && window.location.hash) {
             const hashVal = window.location.hash.substring(1);
@@ -1678,7 +1733,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 urlMatchId = hashVal;
             }
         }
-        
+
         if (urlMatchId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(urlMatchId)) {
             console.log('[TeamCard] Loading match from URL param:', urlMatchId);
             try {
@@ -1691,17 +1746,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('[TeamCard] Failed to load match from URL:', err);
             }
         }
-        
+
         console.log('[TeamCard] Session state loaded:', {
             currentView: state.currentView,
             matchId: state.matchId,
             team1Count: state.team1.length,
             team2Count: state.team2.length
         });
-        
+
         initializeKeypad();
         initializeArcherSelector();
-        
+
         // Phase 2: Restore match from database if matchId exists (skip if already loaded from URL)
         if (state.matchId && window.LiveUpdates && !urlMatchId) {
             const restored = await restoreTeamMatchFromDatabase();
@@ -1713,7 +1768,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
+
         if (state.currentView === 'scoring' && state.team1.length === 3 && state.team2.length === 3) {
             console.log('[TeamCard] Restoring scoring view from session');
             renderScoringView();
@@ -1771,13 +1826,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (matchOverModal) { matchOverModal.classList.add('hidden'); matchOverModal.classList.remove('flex'); }
             });
         }
-        
+
         document.body.addEventListener('focusin', (e) => {
             if (e.target.matches('#scoring-view input[type="text"]') && scoreKeypad) {
                 scoreKeypad.showForInput(e.target);
             }
         });
-        
+
         scoreTableContainer.addEventListener('click', (e) => {
             if (e.target.matches('.tie-breaker-controls button')) {
                 state.shootOffWinner = e.target.dataset.winner;
@@ -1786,14 +1841,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveData();
             }
         });
-        
+
         // Use event delegation for score input changes (works with dynamically generated table)
         scoreTableContainer.addEventListener('input', (e) => {
             if (e.target.matches('input.score-input')) {
                 handleScoreInput(e);
             }
         });
-        
+
         scoreTableContainer.addEventListener('change', (e) => {
             if (e.target.matches('input.score-input')) {
                 handleScoreInput(e);

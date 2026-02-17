@@ -1040,55 +1040,42 @@
   }
 
   function renderMatchesVerifyTable(container) {
-    if (!verifyState || !verifyState.matches) {
-      container.innerHTML = '<p class="p-4 text-gray-500 dark:text-gray-400">Select an event and bracket to view matches.</p>';
-      return;
-    }
+    if (!container) container = document.getElementById('verify-table-container');
+    if (!container) return;
 
-    const matches = verifyState.matches || [];
-    if (matches.length === 0) {
+    if (!verifyState || !verifyState.matches || verifyState.matches.length === 0) {
       container.innerHTML = `
-        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
-          <i class="fas fa-search text-4xl mb-3 opacity-30"></i>
-          <p>No matches found for the selected filters.</p>
+        <div class="p-8 text-center text-gray-500 dark:text-gray-400">
+          <i class="fas fa-search text-4xl mb-3 opacity-50"></i>
+          <p class="text-lg">No completed matches found.</p>
+          <p class="text-sm mt-1">Try selecting a different bracket or event.</p>
         </div>
       `;
       return;
     }
 
-    // Sort matches by status: PENDING/COMP first, then VER, then VOID
-    const statusOrder = { 'PENDING': 0, 'COMP': 0, 'COMPLETED': 0, 'VER': 1, 'VERIFIED': 1, 'VOID': 2 };
-    matches.sort((a, b) => {
-      const statusA = (a.card_status || 'PENDING').toUpperCase();
-      const statusB = (b.card_status || 'PENDING').toUpperCase();
-      if (statusOrder[statusA] !== statusOrder[statusB]) {
-        return (statusOrder[statusA] ?? 0) - (statusOrder[statusB] ?? 0);
-      }
-      return (a.match_display || '').localeCompare(b.match_display || '');
+    // Sort matches: Verified first, then by Match Code
+    const sortedMatches = [...verifyState.matches].sort((a, b) => {
+      // Prioritize "PENDING" (card_status != VRFD/VOID)
+      const aPending = a.card_status !== 'VRFD' && a.card_status !== 'VOID';
+      const bPending = b.card_status !== 'VRFD' && b.card_status !== 'VOID';
+      if (aPending && !bPending) return -1;
+      if (!aPending && bPending) return 1;
+      return (a.match_code || '').localeCompare(b.match_code || '');
     });
 
-    const matchType = verifyState.matchType === 'solo-matches' ? 'solo' : 'team';
+    let html = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">`;
 
-    // Mobile-first Card Layout (iPhone XR optimized: 414px width target)
-    // Uses Grid: 1 col mobile, 2 cols tablet, 3 cols desktop
-    let html = `
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-20 md:pb-0">
-    `;
+    sortedMatches.forEach(match => {
+      const matchType = verifyState.matchType === 'solo-matches' ? 'solo' : 'team';
+      const isVerified = match.card_status === 'VRFD';
+      const isVoid = match.card_status === 'VOID';
 
-    matches.forEach(match => {
-      const cardStatus = (match.card_status || 'PENDING').toUpperCase();
-      const isVerified = cardStatus === 'VER' || cardStatus === 'VERIFIED';
-      const isVoid = cardStatus === 'VOID';
-      const isCompleted = match.status === 'Completed' || match.status === 'COMP';
-
-      // Status Badge Logic
       let cardStatusBadge = '';
       if (isVerified) {
-        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-success-light text-success-dark">VERIFIED</span>`;
+        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-success-light text-success-dark"><i class="fas fa-check-circle mr-1"></i>VERIFIED</span>`;
       } else if (isVoid) {
-        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-danger-light text-danger-dark">VOID</span>`;
-      } else if (isCompleted) {
-        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">COMPLETED</span>`;
+        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 text-gray-600">VOID</span>`;
       } else {
         cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark">PENDING</span>`;
       }
@@ -1125,6 +1112,43 @@
           `;
       }
 
+      // Determine match score for display
+      let setsScore = '—';
+      if (match.team1 && match.team2) {
+        // Team Match Score
+        const s1 = match.team1.sets_won !== undefined ? match.team1.sets_won : 0;
+        const s2 = match.team2.sets_won !== undefined ? match.team2.sets_won : 0;
+        setsScore = `${s1}-${s2}`;
+      } else if (match.archer1_sets_won !== undefined && match.archer2_sets_won !== undefined) {
+        // Solo Match Score
+        setsScore = `${match.archer1_sets_won}-${match.archer2_sets_won}`;
+      }
+
+      // Format team names with division/position if available
+      const team1Name = match.team1
+        ? `${match.team1.team_name || match.team1.school} <span class="text-xs text-gray-500 font-normal">(${match.bracket_name ? match.bracket_name.split(' - ').pop() : ''}-T${match.team1.position})</span>`
+        : 'Team 1';
+      const team2Name = match.team2
+        ? `${match.team2.team_name || match.team2.school} <span class="text-xs text-gray-500 font-normal">(${match.bracket_name ? match.bracket_name.split(' - ').pop() : ''}-T${match.team2.position})</span>`
+        : 'Team 2';
+
+      // Get archer names
+      const getArcherNames = (team) => {
+        if (!team || !team.archers || !Array.isArray(team.archers)) return '';
+        return team.archers.map(a => a.archer_name.split(' ')[0]).join(', ');
+      };
+      const team1Archers = getArcherNames(match.team1);
+      const team2Archers = getArcherNames(match.team2);
+
+      // Determine display title
+      const title = match.team1 && match.team2 ? `${team1Name} vs ${team2Name}` : (match.match_display || 'Match Details');
+      const subTitle = match.team1 && match.team2
+        ? `<div class="text-xs text-gray-500 dark:text-gray-400 mb-1">
+             <div><span class="font-bold text-primary">Team 1:</span> ${team1Archers}</div>
+             <div><span class="font-bold text-primary">Team 2:</span> ${team2Archers}</div>
+           </div>`
+        : '';
+
       html += `
         <div class="bg-white dark:bg-gray-700 rounded-lg shadow border border-gray-200 dark:border-gray-600 flex flex-col overflow-hidden">
             <!-- Header -->
@@ -1139,11 +1163,13 @@
             <!-- Body -->
             <div class="p-3 flex-1">
                 <h3 class="text-base font-bold text-gray-800 dark:text-white leading-tight mb-1">
-                    ${match.match_display || 'Match Details'}
+                    ${title}
                 </h3>
+                ${subTitle}
                 <div class="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
                     ${match.bracket_name || 'Tournament Filter'}
                 </div>
+                ${setsScore !== '—' ? `<div class="text-lg font-bold text-gray-900 dark:text-white mb-2 ml-1">Score: ${setsScore}</div>` : ''}
                 
                 ${match.winner_name ? `
                     <div class="mt-2 text-sm bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded border border-green-100 dark:border-green-900 inline-block">
@@ -1442,6 +1468,7 @@
     if (!verifyState) return;
 
     verifyState.matchType = matchType;
+    verifyState.bracketId = undefined; // Clear bracket selection when changing types
     const rankingSelectors = document.getElementById('verify-ranking-selectors');
     const matchSelectors = document.getElementById('verify-match-selectors');
 
@@ -1573,9 +1600,9 @@
     });
 
     // Set default bracket if not set
-    if (!verifyState.bracketId && brackets.length > 0) {
-      verifyState.bracketId = brackets[0].id;
-      bracketSelect.value = brackets[0].id;
+    if (verifyState.bracketId === undefined) {
+      verifyState.bracketId = '';
+      bracketSelect.value = '';
     }
   }
 
