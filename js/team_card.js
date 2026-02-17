@@ -881,7 +881,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Phase 2: Post to database if match is active
         if (state.matchId && state.teamIds[team] && end !== 'so' && window.LiveUpdates && window.LiveUpdates.postTeamSet) {
             const setNumber = parseInt(end, 10) + 1;
-            const archerIndex = parseInt(arrow, 10); // Arrow index 0-2 corresponds to archer position 1-3
+            const arrowIdx = parseInt(arrow, 10);
+            const archerIndex = Math.floor(arrowIdx / ARROWS_PER_ARCHER);
             const matchArcherId = state.matchArcherIds[team] && state.matchArcherIds[team][archerIndex];
             
             if (matchArcherId) {
@@ -917,17 +918,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 
-                // Count tens and Xs for this archer's arrow only
-                const tens = parseScoreValue(input.value) === 10 ? 1 : 0;
-                const xs = String(input.value).toUpperCase() === 'X' ? 1 : 0;
+                // Read both arrows for this archer from state (UPSERT will set both)
+                const arrowStartIdx = archerIndex * ARROWS_PER_ARCHER;
+                const a1Value = setScores[arrowStartIdx] || null;
+                const a2Value = setScores[arrowStartIdx + 1] || null;
                 
-                // Post this archer's set score (1 arrow per archer per set)
+                // Count tens and Xs across both of this archer's arrows
+                const a1Score = parseScoreValue(a1Value);
+                const a2Score = parseScoreValue(a2Value);
+                const tens = (a1Score === 10 ? 1 : 0) + (a2Score === 10 ? 1 : 0);
+                const xs = (String(a1Value).toUpperCase() === 'X' ? 1 : 0) + (String(a2Value).toUpperCase() === 'X' ? 1 : 0);
+                
+                // Post this archer's set score (2 arrows per archer per set)
                 try {
-                    const arrowValue = input.value || null;
-                    console.log(`[TeamCard] 📤 Posting score: Team=${team}, Archer=${archerIndex + 1}, Set=${setNumber}, Arrow=${arrowValue}`);
+                    console.log(`[TeamCard] 📤 Posting score: Team=${team}, Archer=${archerIndex + 1}, Set=${setNumber}, a1=${a1Value}, a2=${a2Value}`);
                     updateSyncStatus(team, archerIndex, setNumber, 'pending');
                     await window.LiveUpdates.postTeamSet(state.matchId, state.teamIds[team], matchArcherId, setNumber, {
-                        a1: arrowValue,
+                        a1: a1Value,
+                        a2: a2Value,
                         setTotal: allArrowsEntered && opponentAllEntered ? setTotal : 0,
                         setPoints: allArrowsEntered && opponentAllEntered ? setPoints : 0,
                         runningPoints: allArrowsEntered && opponentAllEntered ? runningPoints : 0,

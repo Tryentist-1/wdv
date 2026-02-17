@@ -153,14 +153,15 @@ CREATE TABLE IF NOT EXISTS team_match_archers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Team match sets (mirrors: end_events)
--- Note: Each archer gets 1 arrow per set
+-- Note: Each archer gets 2 arrows per set (Team Olympic Round rules)
 CREATE TABLE IF NOT EXISTS team_match_sets (
   id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   match_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   team_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   match_archer_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   set_number INT NOT NULL COMMENT '1-4 (or 5 for shoot-off)',
-  a1 VARCHAR(3) COMMENT 'Arrow score (1 arrow per archer per set)',
+  a1 VARCHAR(3) COMMENT 'Arrow 1 score (2 arrows per archer per set)',
+  a2 VARCHAR(3) COMMENT 'Arrow 2 score (2 arrows per archer per set)',
   set_total INT COMMENT 'Team total for this set (max 30 for 3 archers)',
   set_points INT COMMENT '2 (win), 1 (tie), 0 (loss) - stored per team',
   running_points INT COMMENT 'Cumulative set points for team',

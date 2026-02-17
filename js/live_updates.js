@@ -1026,6 +1026,7 @@
         const reqBody = {
             setNumber,
             a1: payload.a1 || null,
+            a2: payload.a2 || null,
             setTotal: payload.setTotal || 0,
             setPoints: payload.setPoints || 0,
             runningPoints: payload.runningPoints || 0,
@@ -1034,7 +1035,7 @@
             deviceTs: new Date().toISOString(),
         };
 
-        console.log('[TeamMatch] 📤 Posting team set:', { matchId, teamId, matchArcherId, setNumber, arrow: reqBody.a1, setTotal: reqBody.setTotal, setPoints: reqBody.setPoints });
+        console.log('[TeamMatch] 📤 Posting team set:', { matchId, teamId, matchArcherId, setNumber, a1: reqBody.a1, a2: reqBody.a2, setTotal: reqBody.setTotal, setPoints: reqBody.setPoints });
 
         const doRequest = () => request(`/team-matches/${matchId}/teams/${teamId}/archers/${matchArcherId}/sets`, 'POST', reqBody)
             .then((response) => {

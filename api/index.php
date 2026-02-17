@@ -6553,6 +6553,7 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers/([0-9
 
     $setNumber = (int) ($input['setNumber'] ?? 0);
     $a1 = $input['a1'] ?? null;
+    $a2 = $input['a2'] ?? null;
     $setTotal = (int) ($input['setTotal'] ?? 0);
     $setPoints = (int) ($input['setPoints'] ?? 0);
     $runningPoints = (int) ($input['runningPoints'] ?? 0);
@@ -6583,16 +6584,16 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers/([0-9
 
         if ($existingRow) {
             // Update existing
-            $updateStmt = $pdo->prepare('UPDATE team_match_sets SET a1=?, set_total=?, set_points=?, running_points=?, tens=?, xs=?, device_ts=? WHERE id=?');
-            $updateStmt->execute([$a1, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs, $existingRow['id']]);
+            $updateStmt = $pdo->prepare('UPDATE team_match_sets SET a1=?, a2=?, set_total=?, set_points=?, running_points=?, tens=?, xs=?, device_ts=? WHERE id=?');
+            $updateStmt->execute([$a1, $a2, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs, $existingRow['id']]);
             json_response(['setId' => $existingRow['id'], 'updated' => true], 200);
             exit;
         }
 
         // Create new
         $setId = $genUuid();
-        $stmt = $pdo->prepare('INSERT INTO team_match_sets (id, match_id, team_id, match_archer_id, set_number, a1, set_total, set_points, running_points, tens, xs, device_ts, server_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW())');
-        $stmt->execute([$setId, $matchId, $teamId, $matchArcherId, $setNumber, $a1, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs]);
+        $stmt = $pdo->prepare('INSERT INTO team_match_sets (id, match_id, team_id, match_archer_id, set_number, a1, a2, set_total, set_points, running_points, tens, xs, device_ts, server_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())');
+        $stmt->execute([$setId, $matchId, $teamId, $matchArcherId, $setNumber, $a1, $a2, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs]);
 
         // Update match status to In Progress
         $updateMatch = $pdo->prepare('UPDATE team_matches SET status="In Progress" WHERE id=? AND status="Not Started"');
