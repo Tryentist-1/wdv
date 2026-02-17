@@ -203,6 +203,10 @@ The application now supports tournament bracket management for Solo and Team mat
 - [Event & Bracket UI](docs/EVENT_BRACKET_UI_IMPLEMENTATION.md)
 - [Bracket Test Plan](docs/BRACKET_RESULTS_TEST_PLAN.md)
 
+### Consolidated Roster Export (v1.9.6+)
+- **Feature**: Export a single CSV containing all archers and their assignments from the Event Dashboard.
+- **Usage**: Click the "Download Roster CSV" button (cloud icon) in the Event Dashboard header.
+
 ---
 
 ## 🧪 Testing Your Setup

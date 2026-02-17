@@ -657,7 +657,7 @@
 
         archers.forEach(a => {
           // Sanitize fields for CSV (handle commas)
-          const name = `${a.first_name} ${a.last_name}`.replace(/,/g, '');
+          const name = `${a.firstName} ${a.lastName}`.replace(/,/g, '');
           const school = (a.school || '').replace(/,/g, '');
           const gender = a.gender || '';
           const level = a.level || '';
