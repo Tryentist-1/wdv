@@ -6031,7 +6031,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/solo-matches$#i', $route, $m) && $meth
                     sma.target_assignment
                 FROM solo_match_archers sma
                 WHERE sma.match_id = ?
-                ORDER BY sma.position
+                ORDER BY sma.id, sma.position
             ');
             $archersStmt->execute([$match['id']]);
             $archers = $archersStmt->fetchAll();
@@ -6125,11 +6125,43 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/team-matches$#i', $route, $m) && $meth
     require_api_key();
     $eventId = $m[1];
 
+    // Parse query parameters
+    $bracketId = $_GET['bracket_id'] ?? null;
+    $statusFilter = $_GET['status'] ?? null;
+    $lockedFilter = $_GET['locked'] ?? null;
+    $cardStatusFilter = $_GET['card_status'] ?? null;
+
     try {
         $pdo = db();
 
+        // Build WHERE clause with filters
+        $whereConditions = ['tm.event_id = ?'];
+        $params = [$eventId];
+
+        if ($bracketId) {
+            $whereConditions[] = 'tm.bracket_id = ?';
+            $params[] = $bracketId;
+        }
+
+        if ($statusFilter) {
+            $whereConditions[] = 'tm.status = ?';
+            $params[] = $statusFilter;
+        }
+
+        if ($lockedFilter !== null) {
+            $whereConditions[] = 'tm.locked = ?';
+            $params[] = $lockedFilter === 'true' ? 1 : 0;
+        }
+
+        if ($cardStatusFilter) {
+            $whereConditions[] = 'tm.card_status = ?';
+            $params[] = $cardStatusFilter;
+        }
+
+        $whereClause = implode(' AND ', $whereConditions);
+
         // Get all matches for this event
-        $matchesStmt = $pdo->prepare('
+        $matchesStmt = $pdo->prepare("
             SELECT 
                 tm.id,
                 tm.event_id,
@@ -6149,10 +6181,10 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/team-matches$#i', $route, $m) && $meth
                 tm.wave,
                 tm.created_at
             FROM team_matches tm
-            WHERE tm.event_id = ?
+            WHERE {$whereClause}
             ORDER BY tm.date DESC, tm.created_at DESC
-        ');
-        $matchesStmt->execute([$eventId]);
+        ");
+        $matchesStmt->execute($params);
         $matches = $matchesStmt->fetchAll();
 
         // For each match, get teams and their scores
@@ -6170,7 +6202,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/team-matches$#i', $route, $m) && $meth
                 LEFT JOIN team_match_sets tms ON tms.team_id = tmt.id
                 WHERE tmt.match_id = ?
                 GROUP BY tmt.id, tmt.position, tmt.team_name, tmt.school, tmt.sets_won
-                ORDER BY tmt.position
+                ORDER BY tmt.id, tmt.position
             ');
             $teamsStmt->execute([$match['id']]);
             $teams = $teamsStmt->fetchAll();
@@ -6824,20 +6856,37 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers/([0-9
             // Update existing
             $updateStmt = $pdo->prepare('UPDATE team_match_sets SET a1=?, a2=?, set_total=?, set_points=?, running_points=?, tens=?, xs=?, device_ts=? WHERE id=?');
             $updateStmt->execute([$a1, $a2, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs, $existingRow['id']]);
-            json_response(['setId' => $existingRow['id'], 'updated' => true], 200);
-            exit;
+        } else {
+            // Create new
+            $setId = $genUuid();
+            $stmt = $pdo->prepare('INSERT INTO team_match_sets (id, match_id, team_id, match_archer_id, set_number, a1, a2, set_total, set_points, running_points, tens, xs, device_ts, server_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())');
+            $stmt->execute([$setId, $matchId, $teamId, $matchArcherId, $setNumber, $a1, $a2, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs]);
         }
 
-        // Create new
-        $setId = $genUuid();
-        $stmt = $pdo->prepare('INSERT INTO team_match_sets (id, match_id, team_id, match_archer_id, set_number, a1, a2, set_total, set_points, running_points, tens, xs, device_ts, server_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())');
-        $stmt->execute([$setId, $matchId, $teamId, $matchArcherId, $setNumber, $a1, $a2, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs]);
+        // CRITICAL SYNC: Update ALL archers in this team for this set with the Team Totals
+        // This ensures that when querying by team_id or grouping, all rows are consistent.
+        $syncStmt = $pdo->prepare('UPDATE team_match_sets SET set_total=?, set_points=?, running_points=? WHERE team_id=? AND set_number=?');
+        $syncStmt->execute([$setTotal, $setPoints, $runningPoints, $teamId, $setNumber]);
 
-        // Update match status to In Progress
-        $updateMatch = $pdo->prepare('UPDATE team_matches SET status="In Progress" WHERE id=? AND status="Not Started"');
-        $updateMatch->execute([$matchId]);
+        // CRITICAL UPDATE: Update team_match_teams.sets_won based on the unique sets won
+        // Since set_points are now synced, we can take ONE record per set_number
+        $teamTotalStmt = $pdo->prepare('
+            SELECT SUM(points) as total_sets_won
+            FROM (
+                SELECT DISTINCT set_number, set_points as points
+                FROM team_match_sets
+                WHERE team_id = ? AND set_number <= 4
+            ) as distinct_sets
+        ');
+        $teamTotalStmt->execute([$teamId]);
+        $setsWon = (int) $teamTotalStmt->fetchColumn();
 
-        json_response(['setId' => $setId, 'created' => true], 201);
+        // Update team aggregate
+        $updateTeamStmt = $pdo->prepare('UPDATE team_match_teams SET sets_won = ? WHERE id = ?');
+        $updateTeamStmt->execute([$setsWon, $teamId]);
+
+        // Return success (keep existing response format)
+        json_response(['setId' => $existingRow['id'] ?? $setId, 'updated' => true], $existingRow ? 200 : 201);
     } catch (Exception $e) {
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
@@ -8817,7 +8866,7 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/results$#i', $route, $m) && $method 
 
             // Fetch roster info for teams (grouped by school)
             $rosterStmt = $pdo->prepare('
-                SELECT DISTINCT tmt.school, a.first_name, a.last_name
+                SELECT DISTINCT tmt.school, tmt.team_name, a.first_name, a.last_name
                 FROM team_matches tm
                 JOIN team_match_teams tmt ON tmt.match_id = tm.id
                 JOIN team_match_archers tma ON tma.team_id = tmt.id

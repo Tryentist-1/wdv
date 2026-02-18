@@ -70,6 +70,15 @@
 
 ## 🚨 Status Update (February 2026)
 
+### ✅ Team Dashboard & Verification Fixes (February 18, 2026 — Afternoon)
+- **Team Bracket SQL Error:** Fixed 500 error on `GET /v1/brackets/:id/results` for TEAM Swiss brackets. `tmt.team_name` was missing from `SELECT DISTINCT` but referenced in `ORDER BY`. (`api/index.php`)
+- **Verification Radio Buttons:** Fixed "Teams" / "Solo" radio buttons requiring a page reload to work. Added explicit `onchange` listeners inside `verifyEvent()`. (`js/coach.js`)
+- **Team Score Sync:** Fixed team match scores showing as "0-0" on all summary views. Set-save endpoint now syncs `set_total`/`set_points`/`running_points` across all team archers and recalculates `sets_won` on `team_match_teams`. (`api/index.php`)
+- **Data Repair:** Ran one-time repair script to fix existing match records. Match `23089dd3` now correctly shows 5-1.
+
+**Files Changed:** `api/index.php`, `js/coach.js`  
+**Full Notes:** [RELEASE_NOTES_v1.0.0_build20260218b.md](RELEASE_NOTES_v1.0.0_build20260218b.md)
+
 ### ✅ Solo/Team Keypad & Sync Fixes (February 12, 2026)
 - **Solo keypad fix:** Migrated `solo_card.js` from inline keypad to shared `ScoreKeypad` module (`js/score_keypad.js`). Fixed keypad not appearing and auto-advance broken on mobile (caused by `readOnly` check in `focusin` handler).
 - **Match code restoration:** `hydrateSoloMatch()` and `hydrateTeamMatch()` now restore `match_code` from server GET response. Fixes 401 sync failures after "Reset Data" clears localStorage.

@@ -167,7 +167,8 @@
       </div>
 
       <!-- Games Event Bale Config (shown when GAMES selected) -->
-      <div id="games-bale-config" class="hidden mb-5 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+      <div id="games-bale-config"
+        class="hidden mb-5 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
         <div class="text-sm font-bold text-blue-800 dark:text-blue-300 mb-3">Bale Configuration</div>
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -176,7 +177,8 @@
               class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
           </div>
           <div>
-            <label for="targets-per-bale" class="block mb-1 text-sm text-gray-700 dark:text-gray-300">Targets / Bale</label>
+            <label for="targets-per-bale" class="block mb-1 text-sm text-gray-700 dark:text-gray-300">Targets /
+              Bale</label>
             <input type="number" id="targets-per-bale" value="4" min="2" max="8"
               class="w-full px-3 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors" />
           </div>
@@ -202,7 +204,8 @@
                 <li><strong>T1-T2</strong> archers go into <strong>Team Swiss</strong> brackets by division</li>
               </ul>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                After creating the event, you'll be prompted to <strong>Import Roster</strong> which reads archer assignments and creates the brackets automatically.
+                After creating the event, you'll be prompted to <strong>Import Roster</strong> which reads archer
+                assignments and creates the brackets automatically.
               </p>
             </div>
           </div>
@@ -270,11 +273,13 @@
             <!-- JV -->
             <div class="grid grid-cols-2 gap-2">
               <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="rank-div-bjv" value="BJV" class="w-4 h-4 text-primary rounded border-gray-300">
+                <input type="checkbox" id="rank-div-bjv" value="BJV"
+                  class="w-4 h-4 text-primary rounded border-gray-300">
                 <span class="text-gray-700 dark:text-gray-300">Boys JV</span>
               </label>
               <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="rank-div-gjv" value="GJV" class="w-4 h-4 text-primary rounded border-gray-300">
+                <input type="checkbox" id="rank-div-gjv" value="GJV"
+                  class="w-4 h-4 text-primary rounded border-gray-300">
                 <span class="text-gray-700 dark:text-gray-300">Girls JV</span>
               </label>
             </div>
@@ -752,36 +757,30 @@
 
       <!-- Content -->
       <div class="flex-1 overflow-y-auto px-4 py-4">
-        <!-- Match Type Selection (Popup Dropdown) -->
+        <!-- Match Type Selection (Radio Buttons) -->
         <div class="mb-4">
-          <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Verification Type</label>
-          <div class="relative">
-            <button id="verify-match-type-btn"
-              class="w-full px-3 py-2 border-2 border-primary rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-left flex items-center justify-between hover:border-primary-dark transition-colors min-h-[44px]">
-              <span id="verify-match-type-text">Ranking Rounds</span>
-              <i class="fas fa-chevron-down text-sm"></i>
-            </button>
-            <div id="verify-match-type-dropdown"
-              class="hidden absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-20">
-              <button
-                class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700 first:rounded-t-lg"
-                data-value="ranking-rounds">
-                <div class="font-medium text-gray-800 dark:text-white">Ranking Rounds</div>
-                <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Division & Bale</div>
-              </button>
-              <button
-                class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700"
-                data-value="solo-matches">
-                <div class="font-medium text-gray-800 dark:text-white">Solo Matches</div>
-                <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Event & Bracket</div>
-              </button>
-              <button
-                class="verify-match-type-option w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg"
-                data-value="team-matches">
-                <div class="font-medium text-gray-800 dark:text-white">Team Matches</div>
-                <div class="text-xs text-gray-600 dark:text-gray-400">Verify by Event & Bracket</div>
-              </button>
-            </div>
+          <label
+            class="block text-xs font-bold uppercase text-gray-500 dark:text-gray-400 mb-2 tracking-wide">Verification
+            Type</label>
+          <div class="flex gap-4 flex-wrap">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="verify-type-selector" value="ranking-rounds"
+                class="w-5 h-5 text-primary border-gray-300 focus:ring-primary focus:ring-2"
+                onclick="window.setVerifyMatchType('ranking-rounds')">
+              <span class="text-sm font-semibold text-gray-800 dark:text-white">Ranking</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="verify-type-selector" value="solo-matches"
+                class="w-5 h-5 text-primary border-gray-300 focus:ring-primary focus:ring-2"
+                onclick="window.setVerifyMatchType('solo-matches')">
+              <span class="text-sm font-semibold text-gray-800 dark:text-white">Solo</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="verify-type-selector" value="team-matches"
+                class="w-5 h-5 text-primary border-gray-300 focus:ring-primary focus:ring-2"
+                onclick="window.setVerifyMatchType('team-matches')">
+              <span class="text-sm font-semibold text-gray-800 dark:text-white">Teams</span>
+            </label>
           </div>
         </div>
 

@@ -1056,19 +1056,29 @@
 
     // Sort matches: Verified first, then by Match Code
     const sortedMatches = [...verifyState.matches].sort((a, b) => {
-      // Prioritize "PENDING" (card_status != VRFD/VOID)
-      const aPending = a.card_status !== 'VRFD' && a.card_status !== 'VOID';
-      const bPending = b.card_status !== 'VRFD' && b.card_status !== 'VOID';
+      // Prioritize "PENDING" (card_status != VRFD/VER/VERIFIED/VOID)
+      const isVerifiedA = ['VRFD', 'VER', 'VERIFIED'].includes(a.card_status);
+      const isVerifiedB = ['VRFD', 'VER', 'VERIFIED'].includes(b.card_status);
+      const isVoidA = a.card_status === 'VOID';
+      const isVoidB = b.card_status === 'VOID';
+
+      const aPending = !isVerifiedA && !isVoidA;
+      const bPending = !isVerifiedB && !isVoidB;
+
       if (aPending && !bPending) return -1;
       if (!aPending && bPending) return 1;
       return (a.match_code || '').localeCompare(b.match_code || '');
     });
 
-    let html = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">`;
+    let html = `
+      <div class="px-4 pb-2">
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">`;
 
     sortedMatches.forEach(match => {
       const matchType = verifyState.matchType === 'solo-matches' ? 'solo' : 'team';
-      const isVerified = match.card_status === 'VRFD';
+      // Allow legacy 'VER' or 'VERIFIED' status codes from backend
+      const isVerified = ['VRFD', 'VER', 'VERIFIED'].includes(match.card_status);
       const isVoid = match.card_status === 'VOID';
 
       let cardStatusBadge = '';
@@ -1076,18 +1086,20 @@
         cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-success-light text-success-dark"><i class="fas fa-check-circle mr-1"></i>VERIFIED</span>`;
       } else if (isVoid) {
         cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-gray-200 text-gray-600">VOID</span>`;
+      } else if (match.status === 'Completed') {
+        // Only show Ready to Verify for actually completed matches
+        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">READY TO VERIFY</span>`;
       } else {
-        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-warning-light text-warning-dark">PENDING</span>`;
+        // Fallback for In Progress / Not Started if they somehow get loaded
+        cardStatusBadge = `<span class="inline-block px-2 py-1 text-xs font-bold rounded bg-gray-100 text-gray-500 border border-gray-200">${match.status || 'Pending'}</span>`;
       }
 
-      const matchStatus = match.status || 'Scheduled';
-
-      // Edit Button
+      // Edit Button (Consistent across all states)
       let editButton = '';
       if (matchType === 'solo' && match.id) {
         const editUrl = `scorecard_editor.html?match=${match.id}&mode=coach`;
         editButton = `
-            <a href="${editUrl}" class="flex items-center justify-center px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors min-h-[44px]" title="Edit Match">
+            <a href="${editUrl}" class="flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="Edit Match">
                 <i class="fas fa-edit"></i>
             </a>
          `;
@@ -1097,17 +1109,19 @@
       let actionButtons = '';
       if (isVerified || isVoid) {
         actionButtons = `
-            <button class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-3 rounded text-sm min-h-[44px] shadow-sm transition-colors" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">
-                <i class="fas fa-lock-open mr-1"></i> Unlock
-            </button>
+            <div class="flex gap-2">
+                <button class="px-3 py-1 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 bg-transparent border border-gray-300 dark:border-gray-600 rounded" data-action="unlock" data-match-id="${match.id}" data-match-type="${matchType}">
+                    Unlock
+                </button>
+            </div>
           `;
       } else {
         actionButtons = `
-            <button class="flex-1 bg-success hover:bg-success-dark text-white font-bold py-2 px-3 rounded text-sm min-h-[44px] shadow-sm transition-colors" data-action="lock" data-match-id="${match.id}" data-match-type="${matchType}">
-                 Verify
+            <button class="flex-1 bg-success hover:bg-success-dark text-white font-bold py-2 px-3 rounded shadow-sm transition-colors flex items-center justify-center gap-2" data-action="lock" data-match-id="${match.id}" data-match-type="${matchType}">
+                 <i class="fas fa-check"></i> Verify
             </button>
-            <button class="flex-1 bg-danger hover:bg-danger-dark text-white font-bold py-2 px-3 rounded text-sm min-h-[44px] shadow-sm transition-colors" data-action="void" data-match-id="${match.id}" data-match-type="${matchType}">
-                 Void
+            <button class="flex-1 bg-danger hover:bg-danger-dark text-white font-bold py-2 px-3 rounded shadow-sm transition-colors flex items-center justify-center gap-2" data-action="void" data-match-id="${match.id}" data-match-type="${matchType}">
+                 <i class="fas fa-ban"></i> Void
             </button>
           `;
       }
@@ -1150,12 +1164,11 @@
         : '';
 
       html += `
-        <div class="bg-white dark:bg-gray-700 rounded-lg shadow border border-gray-200 dark:border-gray-600 flex flex-col overflow-hidden">
+        <div class="bg-white dark:bg-gray-700 rounded-lg shadow border-l-4 ${isVerified ? 'border-l-success' : (isVoid ? 'border-l-gray-400' : 'border-l-blue-500')} border-y border-r border-gray-200 dark:border-gray-600 flex flex-col overflow-hidden ${isVerified ? 'opacity-75 hover:opacity-100 transition-opacity' : ''} ${isVoid ? 'opacity-60 grayscale hover:grayscale-0 transition-all' : ''}">
             <!-- Header -->
             <div class="px-3 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
                 <div class="flex items-center gap-2">
-                    ${match.match_code ? `<span class="font-mono text-xs text-gray-500 dark:text-gray-400 bg-gray-200 dark:bg-gray-900 px-1.5 py-0.5 rounded">${match.match_code}</span>` : ''}
-                    <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">${matchStatus}</span>
+                    ${match.match_code ? `<span class="font-mono text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900 px-1.5 py-0.5 rounded">${match.match_code}</span>` : ''}
                 </div>
                 <div>${cardStatusBadge}</div>
             </div>
@@ -1169,7 +1182,7 @@
                 <div class="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
                     ${match.bracket_name || 'Tournament Filter'}
                 </div>
-                ${setsScore !== '—' ? `<div class="text-lg font-bold text-gray-900 dark:text-white mb-2 ml-1">Score: ${setsScore}</div>` : ''}
+                ${setsScore !== '—' ? `<div class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Score: ${setsScore}</div>` : ''}
                 
                 ${match.winner_name ? `
                     <div class="mt-2 text-sm bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded border border-green-100 dark:border-green-900 inline-block">
@@ -1186,9 +1199,14 @@
             </div>
 
             <!-- Actions Footer -->
-            <div class="px-3 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600 flex gap-2">
-                ${editButton}
-                ${actionButtons}
+            <div class="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center gap-3">
+                 ${isVerified ? '<span class="text-xs text-gray-400 italic">No actions needed</span>' : ''}
+                 ${isVoid ? '<span class="text-xs text-gray-400 italic">Match Voided</span>' : ''}
+                 
+                 <div class="flex gap-2 w-full justify-end items-center">
+                    ${editButton} 
+                    ${actionButtons}
+                 </div>
             </div>
         </div>
       `;
@@ -1334,8 +1352,9 @@
     document.getElementById('verify-actor-input').value = '';
     document.getElementById('verify-notes-input').value = '';
 
-    // Set default match type to ranking-rounds
-    updateVerifyMatchTypeDropdown('ranking-rounds');
+    // Set default match type to ranking-rounds and update radio button
+    const rankingRadio = document.querySelector('input[name="verify-type-selector"][value="ranking-rounds"]');
+    if (rankingRadio) rankingRadio.checked = true;
     updateVerifyMatchType('ranking-rounds');
 
     try {
@@ -1347,33 +1366,11 @@
       alert(`Unable to load verification data: ${err.message}`);
     }
 
-    // Dropdown button handler for match type switching
-    const matchTypeBtn = document.getElementById('verify-match-type-btn');
-    const matchTypeDropdown = document.getElementById('verify-match-type-dropdown');
-    const matchTypeOptions = document.querySelectorAll('.verify-match-type-option');
-
-    matchTypeBtn.onclick = (e) => {
-      e.stopPropagation();
-      matchTypeDropdown.classList.toggle('hidden');
-    };
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!matchTypeBtn.contains(e.target) && !matchTypeDropdown.contains(e.target)) {
-        matchTypeDropdown.classList.add('hidden');
-      }
+    // Radio buttons have inline onclick handlers in HTML, but we re-attach to be safe
+    document.querySelectorAll('input[name="verify-type-selector"]').forEach(radio => {
+      radio.onchange = (e) => updateVerifyMatchType(e.target.value);
     });
 
-    // Option click handlers
-    matchTypeOptions.forEach(option => {
-      option.onclick = (e) => {
-        e.stopPropagation();
-        const value = option.getAttribute('data-value');
-        updateVerifyMatchTypeDropdown(value);
-        updateVerifyMatchType(value);
-        matchTypeDropdown.classList.add('hidden');
-      };
-    });
 
     const divisionSelect = document.getElementById('verify-division-select');
     const baleSelect = document.getElementById('verify-bale-select');
@@ -1450,18 +1447,7 @@
     };
   }
 
-  // Update dropdown text based on match type
-  function updateVerifyMatchTypeDropdown(matchType) {
-    const matchTypeText = document.getElementById('verify-match-type-text');
-    const matchTypeLabels = {
-      'ranking-rounds': 'Ranking Rounds',
-      'solo-matches': 'Solo Matches',
-      'team-matches': 'Team Matches'
-    };
-    if (matchTypeText) {
-      matchTypeText.textContent = matchTypeLabels[matchType] || 'Ranking Rounds';
-    }
-  }
+
 
   // Update verification UI based on match type selection
   async function updateVerifyMatchType(matchType) {
@@ -1500,6 +1486,8 @@
       renderVerifyTable();
     }
   }
+  // Expose to window for radio button onclick handlers
+  window.setVerifyMatchType = updateVerifyMatchType;
 
   // Load events that have brackets
   async function loadEventsWithBrackets() {
