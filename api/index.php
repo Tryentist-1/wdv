@@ -260,7 +260,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         }
 
         // Get all solo matches this archer participated in
-        // Calculate sets_won from set_points in solo_match_sets (more accurate than denormalized field)
+        // Calculate cumulative set points from solo_match_sets (2 for win, 1 for tie, 0 for loss)
         $soloMatches = $pdo->prepare('
         SELECT 
             sm.id AS match_id,
@@ -297,27 +297,40 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             $myMatchArcherId = $isArcher1 ? $match['archer1_match_archer_id'] : $match['archer2_match_archer_id'];
             $opponentMatchArcherId = $isArcher1 ? $match['archer2_match_archer_id'] : $match['archer1_match_archer_id'];
 
-            // Calculate sets_won, total_score, and arrows_shot (each set = 3 arrows)
-            $setsStmt = $pdo->prepare('
+            // Fetch per-set data for both archers and replay match logic.
+            // We stop accumulating set points once either archer reaches 6 (match over).
+            $perSetStmt = $pdo->prepare('
                 SELECT 
-                    COUNT(CASE WHEN set_points = 2 THEN 1 END) as sets_won,
-                    SUM(set_total) as total_score,
-                    COUNT(*) as sets_completed
-                FROM solo_match_sets
-                WHERE match_archer_id = ? AND set_number <= 5
+                    sms1.set_number,
+                    COALESCE(sms1.set_points, 0) as my_points,
+                    COALESCE(sms2.set_points, 0) as opp_points,
+                    COALESCE(sms1.set_total, 0) as my_total
+                FROM solo_match_sets sms1
+                LEFT JOIN solo_match_sets sms2 ON sms2.match_archer_id = ? AND sms2.set_number = sms1.set_number
+                WHERE sms1.match_archer_id = ? AND sms1.set_number <= 5
+                AND sms1.a1 IS NOT NULL AND sms1.a1 != \'\'
+                ORDER BY sms1.set_number
             ');
-            $setsStmt->execute([$myMatchArcherId]);
-            $myStats = $setsStmt->fetch(PDO::FETCH_ASSOC);
-            $setsWon = (int) ($myStats['sets_won'] ?? 0);
-            $totalScore = (int) ($myStats['total_score'] ?? 0);
-            $arrowsShot = (int) ($myStats['sets_completed'] ?? 0) * 3;
+            $perSetStmt->execute([$opponentMatchArcherId, $myMatchArcherId]);
+            $sets = $perSetStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $setsStmt->execute([$opponentMatchArcherId]);
-            $opponentStats = $setsStmt->fetch(PDO::FETCH_ASSOC);
-            $opponentSetsWon = (int) ($opponentStats['sets_won'] ?? 0);
+            $setsWon = 0;
+            $opponentSetsWon = 0;
+            $totalScore = 0;
+            $setsPlayed = 0;
+            foreach ($sets as $set) {
+                // Stop if match is already decided (either archer reached 6)
+                if ($setsWon >= 6 || $opponentSetsWon >= 6)
+                    break;
+                $setsWon += (int) $set['my_points'];
+                $opponentSetsWon += (int) $set['opp_points'];
+                $totalScore += (int) $set['my_total'];
+                $setsPlayed++;
+            }
+            $arrowsShot = $setsPlayed * 3;
 
-            // Determine winner based on sets_won (more reliable than database field)
-            // Winner is the archer with more sets won, or null if match is incomplete/tied
+            // Determine winner based on set points (more reliable than database field)
+            // Winner is the archer with more set points, or null if match is incomplete/tied
             $isWinner = null;
             if ($setsWon > $opponentSetsWon) {
                 $isWinner = true;
@@ -745,14 +758,15 @@ function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void
 
     // Count wins/losses from actual matches
     foreach ($matches as $match) {
-        // Get match archers and determine winner based on sets won
+        // Get match archers and determine winner based on cumulative set points
         $archersStmt = $pdo->prepare('
             SELECT 
                 sma.archer_id,
                 sma.position,
-                COUNT(CASE WHEN sms.set_points = 2 THEN 1 END) as sets_won
+                SUM(COALESCE(sms.set_points, 0)) as sets_won
             FROM solo_match_archers sma
             LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 5
+                AND sms.a1 IS NOT NULL AND sms.a1 != \'\'
             WHERE sma.match_id = ?
             GROUP BY sma.id, sma.position, sma.archer_id
             ORDER BY sma.position
@@ -763,8 +777,9 @@ function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void
         if (count($archers) === 2) {
             $archer1Id = $archers[0]['archer_id'];
             $archer2Id = $archers[1]['archer_id'];
-            $archer1SetsWon = (int) ($archers[0]['sets_won'] ?? 0);
-            $archer2SetsWon = (int) ($archers[1]['sets_won'] ?? 0);
+            // Cap at 6 — match ends when either archer reaches 6 set points
+            $archer1SetsWon = min(6, (int) ($archers[0]['sets_won'] ?? 0));
+            $archer2SetsWon = min(6, (int) ($archers[1]['sets_won'] ?? 0));
 
             // Ensure both archers are in standings (in case they were added to match but not bracket_entries)
             if (!isset($standings[$archer1Id])) {
@@ -805,7 +820,79 @@ function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void
             // Update existing entry
             $updateStmt = $pdo->prepare('UPDATE bracket_entries SET swiss_wins = ?, swiss_losses = ?, swiss_points = ? WHERE bracket_id = ? AND archer_id = ?');
             $updateStmt->execute([$wins, $losses, $points, $bracketId, $archerId]);
+            $updateStmt->execute([$wins, $losses, $points, $bracketId, $archerId]);
         }
+    }
+}
+
+/**
+ * Recalculate Swiss standings for TEAM brackets.
+ * Uses team_name to distinguish teams from the same school.
+ */
+function recalculate_team_swiss_standings(PDO $pdo, string $bracketId): void
+{
+    // Get all completed matches for this bracket
+    $matchesStmt = $pdo->prepare('
+        SELECT tm.id, tm.winner_team_id
+        FROM team_matches tm
+        WHERE tm.bracket_id = ? 
+        AND tm.status = "Completed"
+        AND tm.card_status IN ("COMP", "VER")
+        AND tm.winner_team_id IS NOT NULL
+    ');
+    $matchesStmt->execute([$bracketId]);
+    $matches = $matchesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Initialize stats for all teams in bracket_entries
+    $standings = [];
+    $entriesStmt = $pdo->prepare('SELECT id, team_name, school_id FROM bracket_entries WHERE bracket_id = ? AND entry_type = "TEAM"');
+    $entriesStmt->execute([$bracketId]);
+    $entries = $entriesStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Map team_id/school to entry_id for quick lookup
+    // Problem: team_match_teams has team_name, bracket_entries has team_name
+    foreach ($entries as $entry) {
+        $key = $entry['team_name'] ?: $entry['school_id']; // Fallback if team_name empty
+        $standings[$key] = ['wins' => 0, 'losses' => 0, 'entry_id' => $entry['id']];
+    }
+
+    foreach ($matches as $match) {
+        // Get teams involved in match
+        $teamsStmt = $pdo->prepare('SELECT id, team_name, school FROM team_match_teams WHERE match_id = ?');
+        $teamsStmt->execute([$match['id']]);
+        $teams = $teamsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (count($teams) !== 2)
+            continue;
+
+        $t1 = $teams[0];
+        $t2 = $teams[1];
+
+        // Key is team_name (e.g. "BHS1") or school if team_name missing
+        $k1 = $t1['team_name'] ?: $t1['school'];
+        $k2 = $t2['team_name'] ?: $t2['school'];
+
+        // Ensure keys exist in standings (might need auto-create in future, but for now skip if missing)
+        if (!isset($standings[$k1]) || !isset($standings[$k2]))
+            continue;
+
+        if ($match['winner_team_id'] === $t1['id']) {
+            $standings[$k1]['wins']++;
+            $standings[$k2]['losses']++;
+        } elseif ($match['winner_team_id'] === $t2['id']) {
+            $standings[$k2]['wins']++;
+            $standings[$k1]['losses']++;
+        }
+    }
+
+    // Update DB
+    foreach ($standings as $key => $stats) {
+        $wins = $stats['wins'];
+        $losses = $stats['losses'];
+        $points = $wins; // 1 point per win for now
+
+        $updateStmt = $pdo->prepare('UPDATE bracket_entries SET swiss_wins = ?, swiss_losses = ?, swiss_points = ? WHERE id = ?');
+        $updateStmt->execute([$wins, $losses, $points, $stats['entry_id']]);
     }
 }
 
@@ -951,6 +1038,19 @@ function process_team_match_verification(PDO $pdo, string $matchId, string $acti
     $refetch->execute([$matchId]);
     $updated = $refetch->fetch(PDO::FETCH_ASSOC);
     $updated['lock_history'] = decode_lock_history($updated['lock_history'] ?? null);
+
+    // Recalculate Swiss bracket standings after unlock (in case match was edited)
+    // or after lock/void (to ensure accuracy)
+    if (!empty($updated['event_id']) && in_array($action, ['unlock', 'lock', 'void'])) {
+        // Find bracket ID from match -> bracket
+        $bStmt = $pdo->prepare('SELECT bracket_id FROM team_matches WHERE id = ?');
+        $bStmt->execute([$matchId]);
+        $bRow = $bStmt->fetch(PDO::FETCH_ASSOC);
+        if ($bRow && !empty($bRow['bracket_id'])) {
+            recalculate_team_swiss_standings($pdo, $bRow['bracket_id']);
+        }
+    }
+
     return $updated;
 }
 
@@ -5881,19 +5981,46 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/solo-matches$#i', $route, $m) && $meth
             $archersStmt->execute([$match['id']]);
             $archers = $archersStmt->fetchAll();
 
-            // Calculate sets_won for each archer (count sets where set_points = 2)
-            foreach ($archers as &$archer) {
-                $setsWonStmt = $pdo->prepare('
+            // Calculate cumulative set points for each archer using per-set replay.
+            // Stop accumulating when either archer reaches 6 (match over).
+            if (count($archers) === 2) {
+                $perSetStmt = $pdo->prepare('
                     SELECT 
-                        COUNT(CASE WHEN set_points = 2 THEN 1 END) as sets_won,
-                        SUM(set_total) as total_score
-                    FROM solo_match_sets
-                    WHERE match_archer_id = ? AND set_number <= 5
+                        sms1.set_number,
+                        COALESCE(sms1.set_points, 0) as a1_points,
+                        COALESCE(sms2.set_points, 0) as a2_points,
+                        COALESCE(sms1.set_total, 0) as a1_total,
+                        COALESCE(sms2.set_total, 0) as a2_total
+                    FROM solo_match_sets sms1
+                    LEFT JOIN solo_match_sets sms2 ON sms2.match_archer_id = ? AND sms2.set_number = sms1.set_number
+                    WHERE sms1.match_archer_id = ? AND sms1.set_number <= 5
+                    AND sms1.a1 IS NOT NULL AND sms1.a1 != \'\'
+                    ORDER BY sms1.set_number
                 ');
-                $setsWonStmt->execute([$archer['id']]);
-                $stats = $setsWonStmt->fetch(PDO::FETCH_ASSOC);
-                $archer['sets_won'] = (int) ($stats['sets_won'] ?? 0);
-                $archer['total_score'] = (int) ($stats['total_score'] ?? 0);
+                $perSetStmt->execute([$archers[1]['id'], $archers[0]['id']]);
+                $matchSets = $perSetStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $a1Won = 0;
+                $a2Won = 0;
+                $a1Total = 0;
+                $a2Total = 0;
+                foreach ($matchSets as $s) {
+                    if ($a1Won >= 6 || $a2Won >= 6)
+                        break;
+                    $a1Won += (int) $s['a1_points'];
+                    $a2Won += (int) $s['a2_points'];
+                    $a1Total += (int) $s['a1_total'];
+                    $a2Total += (int) $s['a2_total'];
+                }
+                $archers[0]['sets_won'] = $a1Won;
+                $archers[0]['total_score'] = $a1Total;
+                $archers[1]['sets_won'] = $a2Won;
+                $archers[1]['total_score'] = $a2Total;
+            } else {
+                foreach ($archers as &$archer) {
+                    $archer['sets_won'] = 0;
+                    $archer['total_score'] = 0;
+                }
             }
 
             // Determine winner name
@@ -6996,14 +7123,15 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
              * @param string $matchId Match UUID
              * @return void
              */
-            // Get both archers with their sets_won
+            // Get both archers with their cumulative set points
             $archersStmt = $pdo->prepare('
                 SELECT 
                     sma.id,
                     sma.position,
-                    COUNT(CASE WHEN sms.set_points = 2 THEN 1 END) as sets_won
+                    SUM(COALESCE(sms.set_points, 0)) as sets_won
                 FROM solo_match_archers sma
                 LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 5
+                    AND sms.a1 IS NOT NULL AND sms.a1 != \'\'
                 WHERE sma.match_id = ?
                 GROUP BY sma.id, sma.position
                 ORDER BY sma.position
@@ -7012,8 +7140,9 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
             $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
 
             if (count($archers) === 2) {
-                $archer1SetsWon = (int) ($archers[0]['sets_won'] ?? 0);
-                $archer2SetsWon = (int) ($archers[1]['sets_won'] ?? 0);
+                // Cap at 6 — match ends when either archer reaches 6 set points
+                $archer1SetsWon = min(6, (int) ($archers[0]['sets_won'] ?? 0));
+                $archer2SetsWon = min(6, (int) ($archers[1]['sets_won'] ?? 0));
 
                 // Get archer IDs
                 $archer1IdStmt = $pdo->prepare('SELECT archer_id FROM solo_match_archers WHERE id = ?');
@@ -8371,6 +8500,14 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/results$#i', $route, $m) && $method 
                 $entryStmt->execute([$match['bracket_id'], $archer['archer_id']]);
                 $entry = $entryStmt->fetch(PDO::FETCH_ASSOC);
 
+                // Compute sets_won (cumulative set points, capped at 6)
+                $setsWon = 0;
+                $totalArrowScore = 0;
+                foreach ($formattedSets as $s) {
+                    $setsWon += (int) ($s['set_points'] ?? 0);
+                    $totalArrowScore += (int) ($s['score'] ?? 0);
+                }
+
                 $enrichedArchers[] = [
                     'id' => $archer['id'],
                     'archer_id' => $archer['archer_id'],
@@ -8378,7 +8515,10 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/results$#i', $route, $m) && $method 
                     'name' => $archer['archer_name'],
                     'school' => $archer['school'] ?: $archer['archer_school'],
                     'seed' => $entry['seed_position'] ?? null,
+                    'target_assignment' => $archer['target_assignment'] ?? '',
+                    'sets_won' => $setsWon,
                     'total_set_points' => $archer['cumulative_score'] ?? 0,
+                    'total_score' => $totalArrowScore,
                     'sets' => $formattedSets
                 ];
             }
@@ -8562,15 +8702,51 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/results$#i', $route, $m) && $method 
             ');
             $leaderboardStmt->execute([$bracketId]);
             $leaderboard = $leaderboardStmt->fetchAll(PDO::FETCH_ASSOC);
-            $result['leaderboard'] = array_map(function ($entry, $index) {
+
+            // Fetch roster info for teams (grouped by school)
+            $rosterStmt = $pdo->prepare('
+                SELECT DISTINCT tmt.school, a.first_name, a.last_name
+                FROM team_matches tm
+                JOIN team_match_teams tmt ON tmt.match_id = tm.id
+                JOIN team_match_archers tma ON tma.team_id = tmt.id
+                JOIN archers a ON a.id = tma.archer_id
+                WHERE tm.bracket_id = ?
+                ORDER BY tmt.school, tmt.team_name, a.last_name
+            ');
+            $rosterStmt->execute([$bracketId]);
+            $rosterRows = $rosterStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $teamRosters = [];
+            foreach ($rosterRows as $row) {
+                // Key is team_name if available, else school
+                $key = $row['team_name'] ?: $row['school'];
+                if (!isset($teamRosters[$key])) {
+                    $teamRosters[$key] = [];
+                }
+                $teamRosters[$key][] = $row['first_name'] . ' ' . $row['last_name'];
+            }
+
+            $result['leaderboard'] = array_map(function ($entry, $index) use ($teamRosters) {
+                // Use team_name if available, else school_id
+                $key = $entry['team_name'] ?: $entry['school_id'];
+                $members = $teamRosters[$key] ?? [];
+
+                // Display Name: Team Name (e.g. "BHS1") or School Code
+                $displayName = $entry['team_name'] ?: ($entry['school_id'] ?? 'Team');
+
+                // DEBUG: Log keys
+                $debugLine = "Entry Key: '$displayName' | Roster Keys: " . implode(', ', array_keys($teamRosters)) . "\n";
+                file_put_contents('debug_roster_keys.log', $debugLine, FILE_APPEND);
+
                 return [
                     'rank' => $index + 1,
-                    'team_name' => $entry['school_id'] ?? 'Team',
+                    'team_name' => $displayName,
                     'school' => $entry['school_id'],
                     'wins' => $entry['swiss_wins'],
                     'losses' => $entry['swiss_losses'],
                     'points' => $entry['swiss_points'],
-                    'record' => $entry['swiss_wins'] . '-' . $entry['swiss_losses']
+                    'record' => $entry['swiss_wins'] . '-' . $entry['swiss_losses'],
+                    'members' => $members
                 ];
             }, $leaderboard, array_keys($leaderboard));
         } else {
@@ -8785,11 +8961,16 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
 
             foreach ($validTeams as $teamKey => $teamArchers) {
                 $entryId = $genUuid();
-                $school = $teamArchers[0]['school'] ?? '';
+                $firstArcher = $teamArchers[0] ?? [];
+                $school = $firstArcher['school'] ?? '';
+                // NEW: Use teamKey as team_name if it's not numeric, otherwise default
+                // In Games logic, teamKey is usually the team name (e.g. "BHS1", "WDV2")
+                $teamName = is_string($teamKey) ? $teamKey : ($school . ' ' . ($teamKey + 1));
+
                 $pdo->prepare("
-                    INSERT INTO bracket_entries (id, bracket_id, entry_type, archer_id, school_id, seed_position, swiss_wins, swiss_losses, swiss_points, created_at)
-                    VALUES (?, ?, 'TEAM', NULL, ?, NULL, 0, 0, 0, NOW())
-                ")->execute([$entryId, $bracketId, $school]);
+                    INSERT INTO bracket_entries (id, bracket_id, entry_type, archer_id, school_id, team_name, seed_position, swiss_wins, swiss_losses, swiss_points, created_at)
+                    VALUES (?, ?, 'TEAM', NULL, ?, ?, NULL, 0, 0, 0, NOW())
+                ")->execute([$entryId, $bracketId, $school, $teamName]);
             }
 
             $createdBrackets[] = [
@@ -8946,7 +9127,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
 
             // Get team entries with their archers
             $teamEntryStmt = $pdo->prepare('
-                SELECT be.id as entry_id, be.school_id
+                SELECT be.id as entry_id, be.school_id, be.team_name
                 FROM bracket_entries be
                 WHERE be.bracket_id = ? AND be.entry_type = "TEAM"
                 ORDER BY RAND()
@@ -9038,20 +9219,35 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                 $addTeamToMatch = function ($entry, $position) use ($pdo, $genUuid, $mId, $divTeams) {
                     $teamId = $genUuid();
                     $school = $entry['school_id'];
+                    $targetTeamName = $entry['team_name'] ?? $school; // Use the specific team name
+
                     // Find the team's archers from our grouped data
                     $teamArchers = [];
                     foreach ($divTeams as $teamKey => $archers) {
-                        if (($archers[0]['school'] ?? '') === $school) {
+                        // Reconstruct name to match against targetTeamName
+                        $firstArcher = $archers[0] ?? [];
+                        $s = $firstArcher['school'] ?? '';
+                        $derivedName = is_string($teamKey) ? $teamKey : ($s . ' ' . ($teamKey + 1));
+
+                        if ($derivedName === $targetTeamName) {
                             $teamArchers = $archers;
                             break;
                         }
                     }
-                    $teamName = $school;
+                    // Fallback if not found (shouldn't happen if data consistent)
+                    if (empty($teamArchers)) {
+                        foreach ($divTeams as $teamKey => $archers) {
+                            if (($archers[0]['school'] ?? '') === $school) {
+                                $teamArchers = $archers;
+                                break;
+                            }
+                        }
+                    }
 
                     $pdo->prepare('
                         INSERT INTO team_match_teams (id, match_id, team_name, school, position, target_assignment, created_at)
                         VALUES (?, ?, ?, ?, ?, NULL, NOW())
-                    ')->execute([$teamId, $mId, $teamName, $school, $position]);
+                    ')->execute([$teamId, $mId, $targetTeamName, $school, $position]);
 
                     // Add archers to the team
                     foreach ($teamArchers as $archerIdx => $archer) {
@@ -9076,6 +9272,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                 $addTeamToMatch($t2Entry, 2);
 
                 $bracketMatches[] = [
+
                     'matchId' => $mId,
                     'team1' => $t1Entry['school_id'],
                     'team2' => $t2Entry['school_id'],

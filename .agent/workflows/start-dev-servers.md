@@ -104,6 +104,42 @@ docker exec wdv-mysql mysqladmin ping -u wdv_user -pwdv_dev_password
 docker compose logs php
 ```
 
+### PHP Changes Not Taking Effect (Opcode Cache)
+PHP-FPM caches compiled PHP code. After editing `api/index.php` or other PHP files,
+changes may not appear immediately. **Restart PHP-FPM to clear the cache:**
+
+```bash
+docker compose restart php
+```
+
+**Why this matters:** If you edit backend API code and the response still returns old
+data, this is almost certainly the opcode cache. Always restart PHP after backend changes.
+
+### Accessing MySQL Inside Docker
+To run ad-hoc queries or debug data issues:
+
+```bash
+# Interactive MySQL shell
+docker exec -it wdv-mysql mysql -u wdv_user -pwdv_dev_password wdv
+
+# Run a single query
+docker exec wdv-mysql mysql -u wdv_user -pwdv_dev_password wdv -e "SELECT * FROM solo_matches LIMIT 5;"
+
+# Export a table
+docker exec wdv-mysql mysqldump -u wdv_user -pwdv_dev_password wdv archers > archers_backup.sql
+```
+
+**Note:** The MySQL container name is `wdv-mysql` (hyphen, not underscore).
+
+### Frontend Changes Not Appearing
+HTML, JS, and CSS files are volume-mounted, so changes should appear on browser refresh.
+If they don't:
+
+```bash
+# Hard refresh in browser: Cmd+Shift+R (Mac) or Ctrl+Shift+R
+# Or clear the service worker cache if PWA is active
+```
+
 ## Configuration Files
 
 - **`docker-compose.yml`** — Defines all three services

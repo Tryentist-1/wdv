@@ -10,7 +10,7 @@
  */
 
 const SoloMatchView = (() => {
-  
+
   /**
    * Parse score value to number (X=10, M=0, others as-is)
    * Uses global parseScoreValue from common.js if available, otherwise provides fallback
@@ -129,17 +129,19 @@ const SoloMatchView = (() => {
     for (let i = 1; i <= 5; i++) {
       const set1 = setsByNumber[i].a1;
       const set2 = setsByNumber[i].a2;
-      
+
       if (set1 && set2) {
-        const set1Total = set1.set_total || calculateSetTotal([set1.arrow1, set1.arrow2, set1.arrow3]);
-        const set2Total = set2.set_total || calculateSetTotal([set2.arrow1, set2.arrow2, set2.arrow3]);
-        
+        // Stop accumulating if match is already decided (either archer reached 6)
+        if (setsWonA1 >= 6 || setsWonA2 >= 6) continue;
+        const set1Total = set1.set_total || calculateSetTotal([set1.a1 || set1.arrow1, set1.a2 || set1.arrow2, set1.a3 || set1.arrow3]);
+        const set2Total = set2.set_total || calculateSetTotal([set2.a1 || set2.arrow1, set2.a2 || set2.arrow2, set2.a3 || set2.arrow3]);
+
         totalScoreA1 += set1Total;
         totalScoreA2 += set2Total;
-        
+
         const points = calculateSetPoints(set1Total, set2Total);
-        if (points.a1 === 2) setsWonA1++;
-        if (points.a2 === 2) setsWonA2++;
+        setsWonA1 += points.a1;
+        setsWonA2 += points.a2;
       }
     }
 
@@ -152,18 +154,18 @@ const SoloMatchView = (() => {
 
     // Status badge
     const status = matchData.card_status || matchData.status || 'PENDING';
-    const statusClass = status === 'VERIFIED' || status === 'VER' 
+    const statusClass = status === 'VERIFIED' || status === 'VER'
       ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
       : status === 'VOID'
-      ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-      : status === 'COMPLETED' || status === 'COMP'
-      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-      : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-    
+        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+        : status === 'COMPLETED' || status === 'COMP'
+          ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+
     const statusText = status === 'VERIFIED' || status === 'VER' ? 'VER'
       : status === 'VOID' ? 'VOID'
-      : status === 'COMPLETED' || status === 'COMP' ? 'COMP'
-      : 'PEND';
+        : status === 'COMPLETED' || status === 'COMP' ? 'COMP'
+          : 'PEND';
 
     let html = '';
 
@@ -227,20 +229,20 @@ const SoloMatchView = (() => {
       const set2 = setsByNumber[i].a2;
 
       const a1Scores = set1 ? [
-        set1.arrow1 || '',
-        set1.arrow2 || '',
-        set1.arrow3 || ''
+        set1.a1 || set1.arrow1 || '',
+        set1.a2 || set1.arrow2 || '',
+        set1.a3 || set1.arrow3 || ''
       ] : ['', '', ''];
-      
+
       const a2Scores = set2 ? [
-        set2.arrow1 || '',
-        set2.arrow2 || '',
-        set2.arrow3 || ''
+        set2.a1 || set2.arrow1 || '',
+        set2.a2 || set2.arrow2 || '',
+        set2.a3 || set2.arrow3 || ''
       ] : ['', '', ''];
 
       const set1Total = set1 ? (set1.set_total || calculateSetTotal(a1Scores)) : 0;
       const set2Total = set2 ? (set2.set_total || calculateSetTotal(a2Scores)) : 0;
-      const points = calculateSetPoints(set1Total, set2Total);
+      const points = (set1 || set2) ? calculateSetPoints(set1Total, set2Total) : { a1: 0, a2: 0 };
 
       const rowBgClass = i % 2 === 0 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-700';
 
@@ -326,9 +328,9 @@ const SoloMatchView = (() => {
       }
       return null;
     }
-    
+
     return !!(
-      localStorage.getItem('coach_passcode') || 
+      localStorage.getItem('coach_passcode') ||
       localStorage.getItem('coach_api_key') ||
       getCookie('coach_auth')
     );
@@ -343,10 +345,10 @@ const SoloMatchView = (() => {
    */
   function showMatchModal(matchData, options = {}) {
     const { onClose, onRemake, editUrl, ...matchOptions } = options;
-    
+
     // Check if user is coach
     const userIsCoach = isCoach();
-    
+
     // Create modal if it doesn't exist
     let modal = document.getElementById('solo-match-view-modal');
     if (!modal) {
@@ -356,9 +358,9 @@ const SoloMatchView = (() => {
       modal.style.display = 'none';
       document.body.appendChild(modal);
     }
-    
+
     const matchHTML = renderMatchCard(matchData, { ...matchOptions, showRemakeButton: !!onRemake });
-    
+
     // Build footer with Edit and Remake buttons
     let footerHTML = '';
     if (userIsCoach && editUrl) {
@@ -398,7 +400,7 @@ const SoloMatchView = (() => {
         </div>
       `;
     }
-    
+
     modal.innerHTML = `
       <div class="bg-white dark:bg-gray-900 rounded-lg shadow-2xl max-w-5xl w-full max-h-[85vh] overflow-y-auto relative p-6">
         <button class="absolute top-4 right-4 w-10 h-10 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded-full text-2xl font-bold transition-colors z-10">&times;</button>
@@ -408,7 +410,7 @@ const SoloMatchView = (() => {
         ${footerHTML}
       </div>
     `;
-    
+
     // Close button handlers (X button and footer Close button)
     const closeButtons = modal.querySelectorAll('button:not(#remake-match-btn)');
     closeButtons.forEach(btn => {
@@ -417,7 +419,7 @@ const SoloMatchView = (() => {
         if (onClose) onClose();
       };
     });
-    
+
     // Remake button handler (if exists)
     const remakeBtn = modal.querySelector('#remake-match-btn');
     if (remakeBtn && onRemake) {
@@ -427,7 +429,7 @@ const SoloMatchView = (() => {
         onRemake();
       };
     }
-    
+
     // Close on background click
     modal.onclick = (e) => {
       if (e.target === modal) {
@@ -435,9 +437,9 @@ const SoloMatchView = (() => {
         if (onClose) onClose();
       }
     };
-    
+
     modal.style.display = 'flex';
-    
+
     // Scroll to top when modal opens
     setTimeout(() => {
       const content = modal.querySelector('div');
@@ -446,7 +448,7 @@ const SoloMatchView = (() => {
       }
       window.scrollTo(0, 0);
     }, 10);
-    
+
     return modal;
   }
 

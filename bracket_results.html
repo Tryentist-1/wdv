@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="light">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -8,21 +9,42 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    .bg-primary { background-color: #0d6efd !important; }
-    .bg-primary-dark { background-color: #0a58ca !important; }
-    .bg-success { background-color: #198754 !important; }
-    .text-primary { color: #0d6efd !important; }
-    .text-success { color: #198754 !important; }
-    .hover\:bg-primary-dark:hover { background-color: #0a58ca !important; }
-    .winner-row { 
-      background-color: #d4edda !important; 
+    .bg-primary {
+      background-color: #0d6efd !important;
     }
+
+    .bg-primary-dark {
+      background-color: #0a58ca !important;
+    }
+
+    .bg-success {
+      background-color: #198754 !important;
+    }
+
+    .text-primary {
+      color: #0d6efd !important;
+    }
+
+    .text-success {
+      color: #198754 !important;
+    }
+
+    .hover\:bg-primary-dark:hover {
+      background-color: #0a58ca !important;
+    }
+
+    .winner-row {
+      background-color: #d4edda !important;
+    }
+
     .dark .winner-row {
       background-color: rgba(34, 197, 94, 0.2) !important;
     }
+
     .winner-text {
       color: #198754 !important;
     }
+
     .dark .winner-text {
       color: #4ade80 !important;
     }
@@ -32,7 +54,7 @@
     function toggleDarkMode() {
       const html = document.documentElement;
       const isDark = html.classList.contains('dark');
-      
+
       if (isDark) {
         html.classList.remove('dark');
         html.classList.add('light');
@@ -43,23 +65,25 @@
         localStorage.setItem('theme', 'dark');
       }
     }
-    
+
     // Initialize theme from localStorage or system preference
     function initTheme() {
       const savedTheme = localStorage.getItem('theme');
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      
+
       if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
         document.documentElement.classList.add('dark');
         document.documentElement.classList.remove('light');
       }
     }
-    
+
     // Run on page load
     initTheme();
   </script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 min-h-screen p-4 transition-colors duration-200" style="padding-bottom: calc(48px + env(safe-area-inset-bottom));">
+
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen p-4 transition-colors duration-200"
+  style="padding-bottom: calc(48px + env(safe-area-inset-bottom));">
   <div class="max-w-7xl mx-auto">
     <!-- Header -->
     <div class="mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
@@ -67,17 +91,17 @@
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Bracket Results</h1>
         <div class="flex gap-2">
           <a id="info-brackets-btn" href="info-brackets.html" target="_blank" rel="noopener"
-             class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2 min-h-[44px] min-w-[44px] justify-center"
-             title="How brackets work">
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2 min-h-[44px] min-w-[44px] justify-center"
+            title="How brackets work">
             <i class="fas fa-question-circle text-lg"></i>
           </a>
-          <button id="share-btn" onclick="showShareModal()" 
-                  class="px-4 py-2 bg-primary dark:bg-primary-dark text-white rounded hover:bg-primary-dark dark:hover:bg-primary transition-colors duration-200 flex items-center gap-2 min-h-[44px]">
+          <button id="share-btn" onclick="showShareModal()"
+            class="px-4 py-2 bg-primary dark:bg-primary-dark text-white rounded hover:bg-primary-dark dark:hover:bg-primary transition-colors duration-200 flex items-center gap-2 min-h-[44px]">
             <i class="fas fa-share-alt"></i>
             <span class="hidden sm:inline">Share</span>
           </button>
-          <button onclick="toggleDarkMode()" 
-                  class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2 min-h-[44px]">
+          <button onclick="toggleDarkMode()"
+            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2 min-h-[44px]">
             <span class="dark:hidden">🌙 Dark</span>
             <span class="hidden dark:inline">☀️ Light</span>
           </button>
@@ -89,12 +113,21 @@
     </div>
 
     <!-- Tab Navigation (for Elimination brackets) -->
-    <div id="elimination-tabs" class="hidden mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-2 transition-colors duration-200">
+    <div id="elimination-tabs"
+      class="hidden mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-2 transition-colors duration-200">
       <div class="flex gap-2 overflow-x-auto">
-        <button class="tab-btn active px-4 py-2 font-semibold text-primary border-b-2 border-primary whitespace-nowrap min-w-[44px] min-h-[44px]" data-tab="qual">Qual Ranking</button>
-        <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary whitespace-nowrap min-w-[44px] min-h-[44px]" data-tab="quarters">Quarter Finals</button>
-        <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary whitespace-nowrap min-w-[44px] min-h-[44px]" data-tab="semis">Semi Finals</button>
-        <button class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary whitespace-nowrap min-w-[44px] min-h-[44px]" data-tab="finals">Finals Round</button>
+        <button
+          class="tab-btn active px-4 py-2 font-semibold text-primary border-b-2 border-primary whitespace-nowrap min-w-[44px] min-h-[44px]"
+          data-tab="qual">Qual Ranking</button>
+        <button
+          class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary whitespace-nowrap min-w-[44px] min-h-[44px]"
+          data-tab="quarters">Quarter Finals</button>
+        <button
+          class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary whitespace-nowrap min-w-[44px] min-h-[44px]"
+          data-tab="semis">Semi Finals</button>
+        <button
+          class="tab-btn px-4 py-2 font-semibold text-gray-600 dark:text-gray-400 hover:text-primary whitespace-nowrap min-w-[44px] min-h-[44px]"
+          data-tab="finals">Finals Round</button>
       </div>
     </div>
 
@@ -115,7 +148,9 @@
               </tr>
             </thead>
             <tbody id="qual-table-body">
-              <tr><td colspan="6" class="text-center p-4 text-gray-500">Loading...</td></tr>
+              <tr>
+                <td colspan="6" class="text-center p-4 text-gray-500">Loading...</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -168,16 +203,20 @@
               </tr>
             </thead>
             <tbody id="swiss-leaderboard-body">
-              <tr><td colspan="5" class="text-center p-4 text-gray-500">Loading...</td></tr>
+              <tr>
+                <td colspan="5" class="text-center p-4 text-gray-500">Loading...</td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
-      
+
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-bold text-gray-800 dark:text-white">All Matches</h2>
-          <button id="refresh-swiss-matches-btn" class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center" title="Refresh Matches">
+          <button id="refresh-swiss-matches-btn"
+            class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Refresh Matches">
             <i class="fas fa-recycle text-lg"></i>
           </button>
         </div>
@@ -190,21 +229,24 @@
     <!-- Coach Actions (if authenticated) -->
     <div id="coach-actions" class="hidden mt-6 space-y-4">
       <!-- Swiss Round Progress Indicator -->
-      <div id="swiss-round-progress" class="hidden bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
+      <div id="swiss-round-progress"
+        class="hidden bg-white dark:bg-gray-800 rounded-lg shadow p-4 transition-colors duration-200">
         <div class="flex items-center justify-between">
           <div>
             <span id="round-progress-text" class="text-sm font-semibold text-gray-800 dark:text-white"></span>
             <span id="round-progress-detail" class="text-xs text-gray-500 dark:text-gray-400 ml-2"></span>
           </div>
           <div id="round-progress-bar-container" class="w-32 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-            <div id="round-progress-bar" class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            <div id="round-progress-bar" class="bg-primary h-2 rounded-full transition-all duration-300"
+              style="width: 0%"></div>
           </div>
         </div>
       </div>
 
       <!-- Generate Next Round Button (Swiss only) -->
       <div id="swiss-generate-round-container" class="hidden">
-        <button id="generate-next-round-btn" class="w-full px-6 py-4 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors min-h-[44px] text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+        <button id="generate-next-round-btn"
+          class="w-full px-6 py-4 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold transition-colors min-h-[44px] text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
           <i class="fas fa-plus-circle"></i>
           <span id="generate-round-btn-text">Generate Next Round</span>
         </button>
@@ -214,48 +256,57 @@
       </div>
 
       <!-- Validate and Close -->
-      <button id="validate-close-btn" class="px-6 py-3 bg-success hover:bg-success-dark text-white rounded-lg font-semibold transition-colors min-w-[44px] min-h-[44px]">
+      <button id="validate-close-btn"
+        class="px-6 py-3 bg-success hover:bg-success-dark text-white rounded-lg font-semibold transition-colors min-w-[44px] min-h-[44px]">
         ✅ Validate All and Close Bracket
       </button>
     </div>
   </div>
 
   <!-- Share Modal -->
-  <div id="share-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center overflow-y-auto">
-    <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-lg w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
+  <div id="share-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center overflow-y-auto">
+    <div
+      class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-lg w-11/12 max-h-[90vh] overflow-y-auto shadow-2xl my-8">
       <h2 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white mb-2">Share Bracket Results</h2>
       <p class="text-gray-600 dark:text-gray-400 mb-4 text-sm">This page is public and can be shared with spectators</p>
-      
+
       <div class="text-center mb-4">
         <div id="qr-code-container" class="inline-block p-2 bg-white border-2 border-gray-300 rounded-lg">
           <!-- QR code will be inserted here -->
         </div>
       </div>
-      
+
       <div class="mb-4">
         <label class="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Share URL:</label>
-        <input type="text" id="share-url-display" readonly class="w-full px-2 py-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white cursor-text" />
+        <input type="text" id="share-url-display" readonly
+          class="w-full px-2 py-2 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white cursor-text" />
       </div>
-      
+
       <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-gray-800 dark:text-gray-200">
         <strong>📱 Instructions:</strong><br>
         • Scan QR code with phone camera<br>
         • Or copy URL to share via text/email<br>
         • Page updates automatically during matches
       </div>
-      
+
       <div class="flex gap-2 mt-4">
-        <button id="copy-url-btn" class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center gap-2">
+        <button id="copy-url-btn"
+          class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors min-h-[44px] flex items-center justify-center gap-2">
           <i class="fas fa-copy"></i> Copy URL
         </button>
-        <button id="close-share-btn" class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Close</button>
+        <button id="close-share-btn"
+          class="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">Close</button>
       </div>
     </div>
   </div>
 
   <!-- Footer Navigation -->
-  <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
-    <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+  <footer
+    class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
+    <a href="index.html"
+      class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center"
+      aria-label="Home">
       <i class="fas fa-home text-2xl"></i>
     </a>
     <div class="flex-1"></div>
@@ -269,21 +320,21 @@
       const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? `${window.location.protocol}//${window.location.hostname}:${window.location.port || 8001}/api/index.php/v1`
         : 'https://archery.tryentist.com/api/v1';
-      
+
       // API key is optional - bracket results are public
       const API_KEY = localStorage.getItem('coach_api_key') || null;
-      
+
       const urlParams = new URLSearchParams(window.location.search);
       const bracketId = urlParams.get('bracket') || urlParams.get('bracketId'); // Support both 'bracket' and 'bracketId'
-      
+
       if (!bracketId) {
         document.body.innerHTML = '<div class="p-8 text-center"><h1 class="text-2xl font-bold text-red-600 mb-4">Error</h1><p>No bracket ID provided. Please provide a bracket ID in the URL: <code>?bracket=BRACKET_ID</code></p><p class="mt-4 text-gray-600">This page is public and can be shared with spectators.</p></div>';
         return;
       }
-      
+
       let bracketData = null;
       let refreshInterval = null;
-      
+
       async function req(endpoint, method = 'GET', data = null) {
         const options = {
           method,
@@ -291,31 +342,31 @@
             'Content-Type': 'application/json'
           }
         };
-        
+
         // Only add API key if available (for coach actions)
         if (API_KEY) {
           options.headers['X-API-Key'] = API_KEY;
         }
-        
+
         if (data && method !== 'GET') {
           options.body = JSON.stringify(data);
         }
-        
+
         const response = await fetch(`${API_BASE}${endpoint}`, options);
         const json = await response.json();
-        
+
         if (!response.ok) {
           throw new Error(json.error || 'Request failed');
         }
-        
+
         return json;
       }
-      
+
       async function loadBracketResults() {
         try {
           const data = await req(`/brackets/${bracketId}/results`);
           bracketData = data;
-          
+
           // Update header
           const bracket = data.bracket;
           const eventName = bracket.event_name || 'Event';
@@ -332,11 +383,11 @@
             <div class="text-lg font-semibold">${eventName}</div>
             <div>${bracket.bracket_type} ${bracket.bracket_format} - ${bracket.division} (${bracket.status})</div>
           `;
-          
+
           // Add footer navigation
           const footerNav = document.getElementById('footer-navigation');
           let footerHtml = '';
-          
+
           if (eventId) {
             footerHtml += `
               <a href="event_dashboard.html?event=${eventId}" 
@@ -345,16 +396,16 @@
               </a>
             `;
           }
-          
+
           footerHtml += `
             <a href="coach.html" 
                class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center text-sm">
               <i class="fas fa-chalkboard-teacher mr-1"></i>Coach
             </a>
           `;
-          
+
           footerNav.innerHTML = footerHtml;
-          
+
           // Show appropriate view
           if (bracket.bracket_format === 'ELIMINATION') {
             document.getElementById('elimination-tabs').classList.remove('hidden');
@@ -374,11 +425,11 @@
             renderSwissMatches(data.rounds.swiss || []);
             startAutoRefresh();
           }
-          
+
           // Show coach actions if authenticated
           if (localStorage.getItem('coach_auth') === 'true' || API_KEY) {
             document.getElementById('coach-actions').classList.remove('hidden');
-            
+
             // Show Swiss-specific coach controls
             if (bracket.bracket_format === 'SWISS') {
               document.getElementById('swiss-generate-round-container').classList.remove('hidden');
@@ -386,20 +437,20 @@
               checkSwissRoundReadiness(data.rounds.swiss || []);
             }
           }
-          
+
         } catch (err) {
           console.error('Error loading bracket results:', err);
           document.body.innerHTML = `<div class="p-8 text-center"><h1 class="text-2xl font-bold text-red-600 mb-4">Error</h1><p>${err.message}</p></div>`;
         }
       }
-      
+
       function renderQualification(qual) {
         const tbody = document.getElementById('qual-table-body');
         if (qual.length === 0) {
           tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-gray-500">No qualification data</td></tr>';
           return;
         }
-        
+
         let html = '';
         qual.forEach((entry, index) => {
           const isTop8 = index < 8;
@@ -417,14 +468,14 @@
         });
         tbody.innerHTML = html;
       }
-      
+
       function renderMatches(round, matches) {
         const container = document.getElementById(`${round}-matches`);
         if (!matches || matches.length === 0) {
           container.innerHTML = '<div class="text-gray-500 text-center p-4">No matches yet</div>';
           return;
         }
-        
+
         let html = '';
         matches.forEach(match => {
           const matchId = match.bracket_match_id || match.id;
@@ -432,7 +483,7 @@
           const a2 = match.archer2 || {};
           const a1IsWinner = match.winner_archer_id === a1.archer_id;
           const a2IsWinner = match.winner_archer_id === a2.archer_id;
-          
+
           html += `
             <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 transition-colors duration-200">
               <div class="font-semibold text-lg mb-3 text-gray-800 dark:text-white">${matchId}</div>
@@ -461,14 +512,15 @@
         });
         container.innerHTML = html;
       }
-      
+
       function renderMatchRow(archer, position, isWinner, swissFormat = false) {
+        const tgt = (archer && archer.target_assignment) ? archer.target_assignment : '-';
         if (!archer || !archer.name) {
           if (swissFormat) {
             return `
               <tr class="border-b border-gray-200 dark:border-gray-600">
                 <td class="px-1 py-2 text-right font-semibold dark:text-white">-</td>
-                <td class="px-1 py-2 dark:text-white">${position === 1 ? '15A' : '16A'}</td>
+                <td class="px-1 py-2 dark:text-white">${tgt}</td>
                 <td class="px-2 py-2 font-medium dark:text-white">-</td>
                 <td class="px-1 py-2 text-center dark:text-white">-</td>
                 <td class="px-1 py-2 text-center dark:text-white">-</td>
@@ -480,7 +532,7 @@
           } else {
             return `
               <tr class="border-b border-gray-200 dark:border-gray-600">
-                <td class="px-1 py-2 dark:text-white">${position === 1 ? '15A' : '16A'}</td>
+                <td class="px-1 py-2 dark:text-white">${tgt}</td>
                 <td class="px-2 py-2 font-medium dark:text-white">-</td>
                 <td class="px-1 py-2 text-center dark:text-white">-</td>
                 <td class="px-1 py-2 text-center dark:text-white">-</td>
@@ -492,12 +544,12 @@
             `;
           }
         }
-        
+
         const nameDisplay = archer.seed ? `${archer.name} (${archer.seed})` : archer.name;
         const rowClass = isWinner ? 'winner-row' : '';
         const textClass = isWinner ? 'winner-text' : 'dark:text-white';
         const sets = archer.sets || [];
-        
+
         // Calculate total score from sets (sum of all end scores)
         let totalScore = 0;
         if (archer.total_score !== undefined) {
@@ -505,7 +557,7 @@
         } else if (sets.length > 0) {
           totalScore = sets.reduce((sum, set) => sum + (set.score || 0), 0);
         }
-        
+
         // Build end columns - show set_points (0, 1, or 2) instead of just score
         let endCells = '';
         for (let i = 1; i <= 5; i++) {
@@ -520,22 +572,23 @@
             endCells += `<td class="px-1 py-2 text-center dark:text-gray-400">-</td>`;
           }
         }
-        
+
+        // For Swiss format: Total = match set points (sets_won). For elimination: use total_set_points.
+        const matchScore = archer.sets_won !== undefined ? Math.min(6, archer.sets_won) : (archer.total_set_points || 0);
+
         if (swissFormat) {
           return `
             <tr class="${rowClass} border-b border-gray-200 dark:border-gray-600">
-              <td class="px-1 py-2 text-right font-semibold ${textClass}">${totalScore}</td>
-              <td class="px-1 py-2 dark:text-white">${position === 1 ? '15A' : '16A'}</td>
+              <td class="px-1 py-2 text-right font-semibold ${textClass}">${matchScore}</td>
+              <td class="px-1 py-2 dark:text-white">${tgt}</td>
               <td class="px-2 py-2 font-medium ${textClass}">${nameDisplay}</td>
               ${endCells}
             </tr>
           `;
         } else {
-          // For elimination format, use total_set_points (match score)
-          const matchScore = archer.total_set_points || 0;
           return `
             <tr class="${rowClass} border-b border-gray-200 dark:border-gray-600">
-              <td class="px-1 py-2 dark:text-white">${position === 1 ? '15A' : '16A'}</td>
+              <td class="px-1 py-2 dark:text-white">${tgt}</td>
               <td class="px-2 py-2 font-medium ${textClass}">${nameDisplay}</td>
               ${endCells}
               <td class="px-1 py-2 text-right font-semibold ${textClass}">${matchScore}</td>
@@ -543,14 +596,14 @@
           `;
         }
       }
-      
+
       function renderSwissLeaderboard(leaderboard) {
         const tbody = document.getElementById('swiss-leaderboard-body');
         if (!leaderboard || leaderboard.length === 0) {
           tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">No leaderboard data</td></tr>';
           return;
         }
-        
+
         let html = '';
         leaderboard.forEach(entry => {
           html += `
@@ -565,13 +618,13 @@
         });
         tbody.innerHTML = html;
       }
-      
+
       function getMatchStatusBadge(cardStatus, status) {
         // card_status: PEND, COMP, VRFD, VOID
         // status: Not Started, In Progress, Completed, Voided
         const cardStatusUpper = (cardStatus || '').toUpperCase();
         const statusUpper = (status || '').toUpperCase();
-        
+
         if (cardStatusUpper === 'VRFD') {
           return '<span class="px-2 py-1 bg-green-500 text-white rounded text-xs font-semibold">Verified</span>';
         } else if (cardStatusUpper === 'COMP') {
@@ -586,14 +639,14 @@
           return '<span class="px-2 py-1 bg-gray-400 text-white rounded text-xs font-semibold">Pending</span>';
         }
       }
-      
+
       function renderSwissMatches(matches) {
         const container = document.getElementById('swiss-matches');
         if (!matches || matches.length === 0) {
           container.innerHTML = '<div class="text-gray-500 text-center p-4">No matches yet</div>';
           return;
         }
-        
+
         let html = '';
         matches.forEach(match => {
           const matchId = match.bracket_match_id || match.match_code || match.id;
@@ -602,7 +655,7 @@
           const a1IsWinner = match.winner_archer_id === a1.archer_id;
           const a2IsWinner = match.winner_archer_id === a2.archer_id;
           const statusBadge = getMatchStatusBadge(match.card_status, match.status);
-          
+
           html += `
             <div class="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-800 transition-colors duration-200">
               <div class="flex justify-between items-center mb-3">
@@ -661,10 +714,15 @@
 
         let html = '';
         leaderboard.forEach(entry => {
+          const membersList = (entry.members || []).join(', ');
+
           html += `
             <tr class="border-b border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
               <td class="px-1 py-2 font-semibold dark:text-white">${entry.rank}</td>
-              <td class="px-2 py-2 font-medium dark:text-white">${entry.team_name || entry.school || '—'}</td>
+              <td class="px-2 py-2 font-medium dark:text-white">
+                <div>${entry.team_name || entry.school || '—'}</div>
+                ${membersList ? `<div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">${membersList}</div>` : ''}
+              </td>
               <td class="px-2 py-2 dark:text-gray-300 hidden sm:table-cell">${entry.school || ''}</td>
               <td class="px-2 py-2 text-center dark:text-white">${entry.record}</td>
               <td class="px-1 py-2 text-right font-semibold dark:text-white">${entry.points}</td>
@@ -907,7 +965,7 @@
           btn.classList.remove('active', 'text-primary', 'border-b-2', 'border-primary');
           btn.classList.add('text-gray-600', 'dark:text-gray-400');
         });
-        
+
         // Show selected tab
         document.getElementById(`${tabName}-tab`).classList.remove('hidden');
         const btn = document.querySelector(`[data-tab="${tabName}"]`);
@@ -916,7 +974,7 @@
           btn.classList.remove('text-gray-600', 'dark:text-gray-400');
         }
       }
-      
+
       // Tab navigation
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -924,13 +982,13 @@
           showTab(tab);
         });
       });
-      
+
       // Validate and close button
       document.getElementById('validate-close-btn')?.addEventListener('click', async () => {
         if (!confirm('Validate all matches and close this bracket? This will mark it as COMPLETED.')) {
           return;
         }
-        
+
         try {
           await req(`/brackets/${bracketId}`, 'PATCH', { status: 'COMPLETED' });
           alert('Bracket validated and closed successfully!');
@@ -939,18 +997,18 @@
           alert('Error: ' + err.message);
         }
       });
-      
+
       // Generate Next Round button (Swiss brackets)
       document.getElementById('generate-next-round-btn')?.addEventListener('click', () => {
         generateNextSwissRound(bracketId);
       });
-      
+
       // Auto-refresh for Swiss brackets (every 5 seconds)
       function startAutoRefresh() {
         if (refreshInterval) {
           clearInterval(refreshInterval);
         }
-        
+
         // Check if we're viewing a Swiss bracket
         const swissView = document.getElementById('swiss-view');
         if (swissView && !swissView.classList.contains('hidden')) {
@@ -959,12 +1017,12 @@
           }, 5000); // Refresh every 5 seconds
         }
       }
-      
+
       // Refresh button handler
       document.getElementById('refresh-swiss-matches-btn')?.addEventListener('click', () => {
         loadBracketResults();
       });
-      
+
       // Stop auto-refresh when page is hidden
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
@@ -976,25 +1034,25 @@
           startAutoRefresh();
         }
       });
-      
+
       // Share modal functionality - must be on window for onclick="showShareModal()"
       function showShareModal() {
         const modal = document.getElementById('share-modal');
         const qrContainer = document.getElementById('qr-code-container');
         const urlDisplay = document.getElementById('share-url-display');
-        
+
         // Build the current page URL
         const currentUrl = window.location.href;
         urlDisplay.value = currentUrl;
-        
+
         // Clear previous QR code
         qrContainer.innerHTML = '';
-        
+
         // Generate QR code (responsive size)
         try {
           const isMobile = window.innerWidth < 768;
           const qrSize = isMobile ? 200 : 256;
-          
+
           new QRCode(qrContainer, {
             text: currentUrl,
             width: qrSize,
@@ -1007,22 +1065,22 @@
           console.error('QR Code generation error:', err);
           qrContainer.innerHTML = '<p class="text-red-500 text-sm">Error generating QR code</p>';
         }
-        
+
         modal.classList.remove('hidden');
       }
       window.showShareModal = showShareModal;
-      
+
       // Close share modal
       document.getElementById('close-share-btn')?.addEventListener('click', () => {
         document.getElementById('share-modal').classList.add('hidden');
       });
-      
+
       // Copy URL button
       document.getElementById('copy-url-btn')?.addEventListener('click', () => {
         const urlInput = document.getElementById('share-url-display');
         urlInput.select();
         urlInput.setSelectionRange(0, 99999); // For mobile devices
-        
+
         try {
           document.execCommand('copy');
           const btn = document.getElementById('copy-url-btn');
@@ -1030,7 +1088,7 @@
           btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
           btn.classList.add('bg-green-500', 'hover:bg-green-600');
           btn.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'hover:bg-gray-300', 'dark:hover:bg-gray-600');
-          
+
           setTimeout(() => {
             btn.innerHTML = originalText;
             btn.classList.remove('bg-green-500', 'hover:bg-green-600');
@@ -1041,14 +1099,14 @@
           alert('Failed to copy URL. Please copy manually.');
         }
       });
-      
+
       // Close modal on outside click
       document.getElementById('share-modal')?.addEventListener('click', (e) => {
         if (e.target.id === 'share-modal') {
           document.getElementById('share-modal').classList.add('hidden');
         }
       });
-      
+
       // Load data on page load
       loadBracketResults().then(() => {
         startAutoRefresh();
@@ -1056,4 +1114,5 @@
     })();
   </script>
 </body>
+
 </html>

@@ -1,40 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scorecard Editor</title>
-    
+
     <!-- Tailwind CSS Compiled -->
     <link rel="stylesheet" href="css/tailwind-compiled.css">
     <link rel="stylesheet" href="css/unified-scorecard-list.css">
-    
+
     <style>
         /* Score color classes - matching ranking_round_300.js */
-        .score-gold { background-color: #FFD700; color: #000000; }
-        .score-red { background-color: #DC143C; color: #FFFFFF; }
-        .score-blue { background-color: #4169E1; color: #FFFFFF; }
-        .score-black { background-color: #000000; color: #FFFFFF; }
-        .score-white { background-color: #FFFFFF; color: #000000; }
-        .score-m { background-color: #808080; color: #FFFFFF; }
-        
+        .score-gold {
+            background-color: #FFD700;
+            color: #000000;
+        }
+
+        .score-red {
+            background-color: #DC143C;
+            color: #FFFFFF;
+        }
+
+        .score-blue {
+            background-color: #4169E1;
+            color: #FFFFFF;
+        }
+
+        .score-black {
+            background-color: #000000;
+            color: #FFFFFF;
+        }
+
+        .score-white {
+            background-color: #FFFFFF;
+            color: #000000;
+        }
+
+        .score-m {
+            background-color: #808080;
+            color: #FFFFFF;
+        }
+
         /* Individual score values */
-        .score-X, .score-10 { background-color: #FFD700; color: #000; }
-        .score-9 { background-color: #FFD700; color: #000; }
-        .score-8 { background-color: #DC143C; color: #FFF; }
-        .score-7 { background-color: #DC143C; color: #FFF; }
-        .score-6 { background-color: #4169E1; color: #FFF; }
-        .score-5 { background-color: #4169E1; color: #FFF; }
-        .score-4 { background-color: #000000; color: #FFF; }
-        .score-3 { background-color: #000000; color: #FFF; }
-        .score-2 { background-color: #FFFFFF; color: #000; border: 1px solid #ccc; }
-        .score-1 { background-color: #FFFFFF; color: #000; border: 1px solid #ccc; }
-        .score-M { background-color: #808080; color: #FFF; }
-        .score-empty { background-color: #f3f4f6; color: #9ca3af; }
-        
+        .score-X,
+        .score-10 {
+            background-color: #FFD700;
+            color: #000;
+        }
+
+        .score-9 {
+            background-color: #FFD700;
+            color: #000;
+        }
+
+        .score-8 {
+            background-color: #DC143C;
+            color: #FFF;
+        }
+
+        .score-7 {
+            background-color: #DC143C;
+            color: #FFF;
+        }
+
+        .score-6 {
+            background-color: #4169E1;
+            color: #FFF;
+        }
+
+        .score-5 {
+            background-color: #4169E1;
+            color: #FFF;
+        }
+
+        .score-4 {
+            background-color: #000000;
+            color: #FFF;
+        }
+
+        .score-3 {
+            background-color: #000000;
+            color: #FFF;
+        }
+
+        .score-2 {
+            background-color: #FFFFFF;
+            color: #000;
+            border: 1px solid #ccc;
+        }
+
+        .score-1 {
+            background-color: #FFFFFF;
+            color: #000;
+            border: 1px solid #ccc;
+        }
+
+        .score-M {
+            background-color: #808080;
+            color: #FFF;
+        }
+
+        .score-empty {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+        }
+
         /* Dark mode adjustments */
-        .dark .score-empty { background-color: #374151; }
-        .dark .score-2, .dark .score-1 { background-color: #e5e7eb; }
+        .dark .score-empty {
+            background-color: #374151;
+        }
+
+        .dark .score-2,
+        .dark .score-1 {
+            background-color: #e5e7eb;
+        }
     </style>
     <script src="js/common.js"></script>
     <script>
@@ -44,7 +124,7 @@
             initDarkMode();
         } else {
             // Fallback if common.js not loaded yet
-            (function() {
+            (function () {
                 const savedTheme = localStorage.getItem('theme');
                 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
@@ -56,68 +136,76 @@
         }
     </script>
 </head>
+
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200 pb-[calc(48px+env(safe-area-inset-bottom))]">
-    
+
     <!-- Header -->
     <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
             <div>
                 <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Scorecard Editor</h1>
-                <p class="text-sm text-gray-600 dark:text-gray-400">View and edit scorecard with verification tracking</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">View and edit scorecard with verification tracking
+                </p>
             </div>
             <div class="flex gap-2 items-center">
-                <button onclick="window.history.back()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                <button onclick="window.history.back()"
+                    class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition">
                     ← Back
                 </button>
             </div>
         </div>
     </header>
-    
+
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 py-6">
-        
+
         <!-- Search Interface (shown when no ID provided) -->
         <div id="search-interface" class="hidden">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                 <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">Find Scorecard</h2>
                 <p class="text-gray-600 dark:text-gray-400 mb-4">Search for an archer to view their scorecards:</p>
-                
+
                 <div class="mb-4">
-                    <input type="text" id="archer-search-input" placeholder="🔍 Search by archer name..." 
-                           class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
+                    <input type="text" id="archer-search-input" placeholder="🔍 Search by archer name..."
+                        class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary focus:outline-none transition-colors">
                 </div>
-                
+
                 <div id="search-results">
                     <!-- Results will be populated here -->
                 </div>
             </div>
-            
+
             <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                 <h3 class="font-bold text-blue-800 dark:text-blue-300 mb-2">💡 Other Ways to Find Scorecard IDs:</h3>
                 <ul class="text-sm text-blue-700 dark:text-blue-400 space-y-1 ml-4">
-                    <li>• <strong>From Pivot View:</strong> Go to <a href="archer_results_pivot.html" class="underline">Results Pivot</a> and click on a score</li>
-                    <li>• <strong>From Archer History:</strong> Go to <a href="archer_history.html" class="underline">Archer History</a> and select an archer</li>
-                    <li>• <strong>From Data Admin:</strong> Go to <a href="api/data_admin.php" class="underline">Admin Panel</a> and search the database</li>
-                    <li>• <strong>Direct URL:</strong> Use <code class="bg-blue-100 dark:bg-blue-900 px-1 rounded">?id={round_archer_id}&mode=coach</code></li>
+                    <li>• <strong>From Pivot View:</strong> Go to <a href="archer_results_pivot.html"
+                            class="underline">Results Pivot</a> and click on a score</li>
+                    <li>• <strong>From Archer History:</strong> Go to <a href="archer_history.html"
+                            class="underline">Archer History</a> and select an archer</li>
+                    <li>• <strong>From Data Admin:</strong> Go to <a href="api/data_admin.php" class="underline">Admin
+                            Panel</a> and search the database</li>
+                    <li>• <strong>Direct URL:</strong> Use <code
+                            class="bg-blue-100 dark:bg-blue-900 px-1 rounded">?id={round_archer_id}&mode=coach</code>
+                    </li>
                 </ul>
             </div>
         </div>
-        
+
         <!-- Loading State -->
         <div id="loading" class="hidden text-center py-12">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             <p class="mt-4 text-gray-600 dark:text-gray-400">Loading scorecard...</p>
         </div>
-        
+
         <!-- Error State -->
         <div id="error" class="hidden bg-danger/10 border border-danger text-danger px-6 py-4 rounded-lg">
             <h3 class="font-bold mb-2">Error Loading Scorecard</h3>
             <p id="error-message"></p>
         </div>
-        
+
         <!-- Scorecard Container -->
         <div id="scorecard-container" class="hidden">
-            
+
             <!-- Archer Info Card -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                 <div class="flex justify-between items-start mb-4">
@@ -138,31 +226,36 @@
                         <div id="status-badge"></div>
                     </div>
                 </div>
-                
+
                 <!-- Edit Controls Subheader (Coach only) -->
                 <div id="lock-controls" class="hidden border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                     <div class="flex flex-wrap gap-3 items-center">
-                        <button id="unlock-btn" class="px-4 py-2 bg-warning text-white rounded hover:bg-warning-dark transition font-semibold min-h-[44px]">
+                        <button id="unlock-btn"
+                            class="px-4 py-2 bg-warning text-white rounded hover:bg-warning-dark transition font-semibold min-h-[44px]">
                             🔓 Unlock
                         </button>
-                        <button id="lock-btn" class="hidden px-4 py-2 bg-success text-white rounded hover:bg-success-dark transition font-semibold min-h-[44px]">
+                        <button id="lock-btn"
+                            class="hidden px-4 py-2 bg-success text-white rounded hover:bg-success-dark transition font-semibold min-h-[44px]">
                             ✓ Verify
                         </button>
-                        <button id="complete-btn" class="hidden px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition font-semibold min-h-[44px]">
+                        <button id="complete-btn"
+                            class="hidden px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition font-semibold min-h-[44px]">
                             ✓ Complete
                         </button>
-                        <button id="void-btn" class="px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark transition font-semibold min-h-[44px]">
+                        <button id="void-btn"
+                            class="px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark transition font-semibold min-h-[44px]">
                             ✗ Void
                         </button>
-                        <button id="delete-btn" class="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded transition font-semibold min-h-[44px]">
+                        <button id="delete-btn"
+                            class="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded transition font-semibold min-h-[44px]">
                             🗑️ Delete
                         </button>
-                        <input type="text" id="edit-reason" placeholder="Reason for edit (required)" 
-                               class="hidden px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white flex-1 min-w-[200px] max-w-[400px]">
+                        <input type="text" id="edit-reason" placeholder="Reason for edit (required)"
+                            class="hidden px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white flex-1 min-w-[200px] max-w-[400px]">
                     </div>
                 </div>
             </div>
-            
+
             <!-- Scorecard Table -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
                 <div class="overflow-x-auto">
@@ -170,7 +263,7 @@
                         <!-- Table will be dynamically generated -->
                     </table>
                 </div>
-                
+
                 <!-- Score Totals (Dynamic labels based on card type) -->
                 <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
@@ -191,7 +284,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Verification History -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                 <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Verification History</h3>
@@ -199,18 +292,19 @@
                     <!-- History will be dynamically generated -->
                 </div>
             </div>
-            
+
         </div>
     </main>
-    
+
     <!-- Modify Card Modal -->
-    <div id="modify-card-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div id="modify-card-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
             <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Modify Scorecard</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 Choose an action to modify this scorecard. All actions are logged in verification history.
             </p>
-            
+
             <div id="modify-modal-content" class="space-y-3">
                 <!-- Unlock Option (shown when locked) -->
                 <div id="unlock-option" class="hidden">
@@ -219,40 +313,45 @@
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
                             Unlock this scorecard to allow score corrections. You'll be able to edit individual scores.
                         </p>
-                        <button id="modal-unlock-btn" class="w-full px-4 py-2 bg-warning text-white rounded hover:bg-warning-dark transition font-semibold min-h-[44px]">
+                        <button id="modal-unlock-btn"
+                            class="w-full px-4 py-2 bg-warning text-white rounded hover:bg-warning-dark transition font-semibold min-h-[44px]">
                             Unlock Card
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Lock Option (shown when unlocked) -->
                 <div id="lock-option" class="hidden">
                     <div class="bg-success/10 border border-success rounded-lg p-4">
                         <h4 class="font-semibold text-success-dark dark:text-success mb-2">✓ Verify</h4>
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                            Verify this scorecard and save all changes. This will lock the scorecard and mark it as verified.
+                            Verify this scorecard and save all changes. This will lock the scorecard and mark it as
+                            verified.
                         </p>
-                        <input type="text" id="modal-edit-reason" placeholder="Reason for edit (required)" 
-                               class="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
-                        <button id="modal-lock-btn" class="w-full px-4 py-2 bg-success text-white rounded hover:bg-success-dark transition font-semibold min-h-[44px]">
+                        <input type="text" id="modal-edit-reason" placeholder="Reason for edit (required)"
+                            class="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                        <button id="modal-lock-btn"
+                            class="w-full px-4 py-2 bg-success text-white rounded hover:bg-success-dark transition font-semibold min-h-[44px]">
                             Verify Card
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Complete Option (shown when unlocked) -->
                 <div id="complete-option" class="hidden">
                     <div class="bg-primary/10 border border-primary rounded-lg p-4">
                         <h4 class="font-semibold text-primary-dark dark:text-primary mb-2">✓ Complete</h4>
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                            Mark this scorecard as complete. This indicates the scorer has verified the digital card matches the paper card.
+                            Mark this scorecard as complete. This indicates the scorer has verified the digital card
+                            matches the paper card.
                         </p>
-                        <button id="modal-complete-btn" class="w-full px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition font-semibold min-h-[44px]">
+                        <button id="modal-complete-btn"
+                            class="w-full px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark transition font-semibold min-h-[44px]">
                             Mark as Complete
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Void Option -->
                 <div id="void-option" class="hidden">
                     <div class="bg-danger/10 border border-danger rounded-lg p-4">
@@ -260,14 +359,15 @@
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
                             Mark this scorecard as voided. This action cannot be undone.
                         </p>
-                        <input type="text" id="modal-void-reason" placeholder="Reason for voiding (required)" 
-                               class="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
-                        <button id="modal-void-btn" class="w-full px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark transition font-semibold min-h-[44px]">
+                        <input type="text" id="modal-void-reason" placeholder="Reason for voiding (required)"
+                            class="w-full px-3 py-2 mb-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-white">
+                        <button id="modal-void-btn"
+                            class="w-full px-4 py-2 bg-danger text-white rounded hover:bg-danger-dark transition font-semibold min-h-[44px]">
                             Void Card
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Delete Option -->
                 <div id="delete-option" class="hidden">
                     <div class="bg-red-700/10 border border-red-700 rounded-lg p-4">
@@ -275,58 +375,76 @@
                             <i class="fas fa-trash-alt mr-2"></i>Delete Card
                         </h4>
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                            Permanently delete this scorecard. Only unlocked, abandoned, or test scorecards can be deleted. This action cannot be undone.
+                            Permanently delete this scorecard. Only unlocked, abandoned, or test scorecards can be
+                            deleted. This action cannot be undone.
                         </p>
-                        <button id="modal-delete-btn" class="w-full px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded transition font-semibold min-h-[44px]">
+                        <button id="modal-delete-btn"
+                            class="w-full px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded transition font-semibold min-h-[44px]">
                             Delete Card
                         </button>
                     </div>
                 </div>
             </div>
-            
+
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button onclick="closeModifyCardModal()" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition font-semibold min-h-[44px]">
+                <button onclick="closeModifyCardModal()"
+                    class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition font-semibold min-h-[44px]">
                     Cancel
                 </button>
             </div>
         </div>
     </div>
-    
+
     <!-- Score Input Keypad - Bottom Sheet -->
-    <div id="score-modal" class="hidden fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-area-bottom">
+    <div id="score-modal"
+        class="hidden fixed bottom-0 left-0 right-0 w-full bg-gray-800 dark:bg-gray-900 shadow-lg z-50 safe-area-bottom">
         <div class="bg-white dark:bg-gray-800 rounded-t-lg shadow-xl p-4">
             <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Edit Score</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
                 End <span id="modal-end"></span>, Arrow <span id="modal-arrow"></span>
             </p>
-            
+
             <!-- Score Buttons - New 4x3 layout: no gaps, no navigation buttons -->
             <div class="grid grid-cols-4 gap-0 mb-4 bg-gray-800 dark:bg-gray-900 rounded-lg shadow-lg overflow-hidden">
                 <!-- Row 1: X, 10, 9, M -->
-                <button onclick="setScore('X')" class="score-btn score-X p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">X</button>
-                <button onclick="setScore('10')" class="score-btn score-10 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">10</button>
-                <button onclick="setScore('9')" class="score-btn score-9 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">9</button>
-                <button onclick="setScore('M')" class="score-btn score-M p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-200 text-black dark:text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">M</button>
-                
+                <button onclick="setScore('X')"
+                    class="score-btn score-X p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">X</button>
+                <button onclick="setScore('10')"
+                    class="score-btn score-10 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">10</button>
+                <button onclick="setScore('9')"
+                    class="score-btn score-9 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-gold text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">9</button>
+                <button onclick="setScore('M')"
+                    class="score-btn score-M p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-200 text-black dark:text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">M</button>
+
                 <!-- Row 2: 8, 7, 6, 5 -->
-                <button onclick="setScore('8')" class="score-btn score-8 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">8</button>
-                <button onclick="setScore('7')" class="score-btn score-7 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">7</button>
-                <button onclick="setScore('6')" class="score-btn score-6 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">6</button>
-                <button onclick="setScore('5')" class="score-btn score-5 p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">5</button>
-                
+                <button onclick="setScore('8')"
+                    class="score-btn score-8 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">8</button>
+                <button onclick="setScore('7')"
+                    class="score-btn score-7 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-red text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">7</button>
+                <button onclick="setScore('6')"
+                    class="score-btn score-6 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">6</button>
+                <button onclick="setScore('5')"
+                    class="score-btn score-5 p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-blue text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">5</button>
+
                 <!-- Row 3: 4, 3, 2, 1 -->
-                <button onclick="setScore('4')" class="score-btn score-4 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">4</button>
-                <button onclick="setScore('3')" class="score-btn score-3 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">3</button>
-                <button onclick="setScore('2')" class="score-btn score-2 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">2</button>
-                <button onclick="setScore('1')" class="score-btn score-1 p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">1</button>
-                
+                <button onclick="setScore('4')"
+                    class="score-btn score-4 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">4</button>
+                <button onclick="setScore('3')"
+                    class="score-btn score-3 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-black text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">3</button>
+                <button onclick="setScore('2')"
+                    class="score-btn score-2 p-4 text-xl font-bold border-r border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">2</button>
+                <button onclick="setScore('1')"
+                    class="score-btn score-1 p-4 text-xl font-bold border-b border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-score-white text-black min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98">1</button>
+
                 <!-- Row 4: CLOSE (left), CLEAR (right) -->
-                <button onclick="closeScoreModal()" class="p-4 text-lg font-bold border-r border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2">CLOSE</button>
-                <button onclick="clearScore()" class="p-4 text-lg font-bold cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger-light dark:bg-danger-dark text-danger-dark dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2">CLEAR</button>
+                <button onclick="closeScoreModal()"
+                    class="p-4 text-lg font-bold border-r border-gray-700 cursor-pointer transition-all duration-150 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2">CLOSE</button>
+                <button onclick="clearScore()"
+                    class="p-4 text-lg font-bold cursor-pointer transition-all duration-150 flex items-center justify-center bg-danger-light dark:bg-danger-dark text-danger-dark dark:text-white min-w-[44px] min-h-[44px] touch-manipulation active:brightness-80 active:scale-98 col-span-2">CLEAR</button>
             </div>
         </div>
     </div>
-    
+
     <script src="js/common.js"></script>
     <script>
         // Use local API when running on localhost, otherwise use production
@@ -338,42 +456,47 @@
         let currentArrowIndex = null;
         let isLocked = true;
         let isCoach = false;
-        
+
+        // Solo match editing state
+        let currentSoloArcherPos = null;   // 1 or 2
+        let currentSoloSetNumber = null;   // 1-5
+        let currentSoloArrowField = null;  // 'a1', 'a2', or 'a3'
+
         // Helper function to check if user is coach
         function checkIsCoach() {
             return !!(
-                mode === 'coach' || 
-                localStorage.getItem('coach_passcode') || 
+                mode === 'coach' ||
+                localStorage.getItem('coach_passcode') ||
                 localStorage.getItem('coach_api_key') ||
                 getCookie('coach_auth')
             );
         }
-        
+
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const roundArcherId = urlParams.get('id');
         const soloMatchId = urlParams.get('match') || urlParams.get('soloMatchId');
         const mode = urlParams.get('mode') || 'view'; // view, coach, practice
         const cardType = soloMatchId ? 'solo_match' : 'ranking_round'; // 'ranking_round' or 'solo_match'
-        
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            
+
             // Check if coach mode
             isCoach = checkIsCoach();
-            
+
             // For practice mode, always allow editing (no lock controls)
             if (mode === 'practice') {
                 isCoach = false;
                 isLocked = false;
             }
-            
+
             if (!roundArcherId && !soloMatchId) {
                 // Show search interface instead of error
                 showSearchInterface();
                 return;
             }
-            
+
             // Load appropriate card type
             if (cardType === 'solo_match') {
                 loadSoloMatch();
@@ -381,15 +504,15 @@
                 loadScorecard();
             }
         });
-        
+
         function showSearchInterface() {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('search-interface').classList.remove('hidden');
-            
+
             const searchInput = document.getElementById('archer-search-input');
             searchInput.addEventListener('input', debounce(searchArchers, 300));
         }
-        
+
         function debounce(func, wait) {
             let timeout;
             return function executedFunction(...args) {
@@ -401,33 +524,33 @@
                 timeout = setTimeout(later, wait);
             };
         }
-        
+
         async function searchArchers() {
             const query = document.getElementById('archer-search-input').value.trim();
             const resultsDiv = document.getElementById('search-results');
-            
+
             if (query.length < 2) {
                 resultsDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Type at least 2 characters to search...</p>';
                 return;
             }
-            
+
             resultsDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Searching...</p>';
-            
+
             try {
                 // Use the new search endpoint
                 const res = await fetch(`${API_BASE}/archers/search?q=${encodeURIComponent(query)}`);
                 if (!res.ok) throw new Error('Search failed');
-                
+
                 const data = await res.json();
                 const results = data.results || [];
-                
+
                 console.log('[searchArchers] Found results:', results.length);
-                
+
                 if (results.length === 0) {
                     resultsDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">No archers found matching "' + query + '"</p>';
                     return;
                 }
-                
+
                 // Flatten all cards from all archers into a single list
                 const allCards = [];
                 results.forEach(result => {
@@ -446,38 +569,38 @@
                     resultsDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No scorecards found</p>';
                     return;
                 }
-                
+
                 // Create unified scorecard list using DOM elements (not HTML string)
                 // Override formatEventDetails to include archer name
                 const originalFormatEventDetails = UnifiedScorecardList.formatEventDetails;
-                UnifiedScorecardList.formatEventDetails = function(card) {
+                UnifiedScorecardList.formatEventDetails = function (card) {
                     const parts = [];
-                    
+
                     // Archer name and school
                     let archerInfo = card.archerName || 'Unknown Archer';
                     if (card.archerSchool) {
                         archerInfo += ` (${card.archerSchool})`;
                     }
                     parts.push(archerInfo);
-                    
+
                     // Round type and division
                     if (card.roundType || card.division) {
                         parts.push(card.roundType || card.division);
                     }
-                    
+
                     // Date
                     if (card.eventDate || card.date) {
                         const date = new Date(card.eventDate || card.date);
                         if (!isNaN(date.getTime())) {
-                            parts.push(date.toLocaleDateString('en-US', { 
-                                month: 'short', day: 'numeric', year: '2-digit' 
+                            parts.push(date.toLocaleDateString('en-US', {
+                                month: 'short', day: 'numeric', year: '2-digit'
                             }));
                         }
                     }
-                    
+
                     return parts.join(' • ');
                 };
-                
+
                 const options = {
                     columns: ['Scorecard', 'Status', 'Total', 'Avg', 'Xs', '10s'],
                     onItemClick: (card) => {
@@ -501,23 +624,23 @@
                     },
                     getStatus: (card) => card.cardStatus || 'PEND'
                 };
-                
+
                 // Use create() to get DOM elements with working event handlers
                 const listContainer = UnifiedScorecardList.create(allCards, options);
-                
+
                 // Restore original function
                 UnifiedScorecardList.formatEventDetails = originalFormatEventDetails;
-                
+
                 // Clear and append the DOM element (not innerHTML)
                 resultsDiv.innerHTML = '';
                 resultsDiv.appendChild(listContainer);
-                
+
             } catch (error) {
                 console.error('[searchArchers] Error:', error);
                 resultsDiv.innerHTML = '<p class="text-sm text-danger">Search failed: ' + error.message + '</p>';
             }
         }
-        
+
         async function loadScorecard() {
             try {
                 const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}`);
@@ -526,11 +649,11 @@
                     console.error('[loadScorecard] API Error:', errorData);
                     throw new Error(errorData.error || `Failed to load scorecard: ${res.status}`);
                 }
-                
+
                 currentScorecard = await res.json();
                 console.log('[loadScorecard] Loaded scorecard:', currentScorecard);
                 renderScorecard();
-                
+
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('scorecard-container').classList.remove('hidden');
             } catch (error) {
@@ -538,35 +661,35 @@
                 showError(error.message);
             }
         }
-        
+
         // Get authentication headers for API requests
         function getAuthHeaders(matchId = null, matchCode = null) {
             const headers = { 'Content-Type': 'application/json' };
-            
+
             // Try coach API key first
-            const coachKey = localStorage.getItem('coach_api_key') || 
-                             localStorage.getItem('coach_passcode') || 
-                             getCookie('coach_auth') || 
-                             'wdva26';
+            const coachKey = localStorage.getItem('coach_api_key') ||
+                localStorage.getItem('coach_passcode') ||
+                getCookie('coach_auth') ||
+                'wdva26';
             if (coachKey) {
                 headers['X-API-Key'] = coachKey;
                 headers['X-Passcode'] = coachKey;
                 return headers;
             }
-            
+
             // Fall back to event entry code
             const entryCode = localStorage.getItem('event_entry_code') || '';
             if (entryCode) {
                 headers['X-Passcode'] = entryCode;
                 return headers;
             }
-            
+
             // Try match code (for standalone matches)
             if (matchCode) {
                 headers['X-Passcode'] = matchCode;
                 return headers;
             }
-            
+
             // Try to get match code from localStorage if matchId provided
             if (matchId) {
                 const storedMatchCode = localStorage.getItem(`solo_match_code:${matchId}`);
@@ -575,23 +698,23 @@
                     return headers;
                 }
             }
-            
+
             // Default to coach passcode for coach mode
             if (isCoach) {
                 headers['X-API-Key'] = 'wdva26';
                 headers['X-Passcode'] = 'wdva26';
             }
-            
+
             return headers;
         }
-        
+
         async function loadSoloMatch() {
             try {
                 const headers = getAuthHeaders(soloMatchId);
                 const res = await fetch(`${API_BASE}/solo-matches/${soloMatchId}`, {
                     headers: headers
                 });
-                
+
                 if (!res.ok) {
                     if (res.status === 401 || res.status === 403) {
                         throw new Error('Authentication required. Please visit the Coach Console to authenticate first.');
@@ -600,20 +723,20 @@
                     console.error('[loadSoloMatch] API Error:', errorData);
                     throw new Error(errorData.error || `Failed to load match: ${res.status}`);
                 }
-                
+
                 const data = await res.json();
                 currentScorecard = data.match;
                 console.log('[loadSoloMatch] Loaded match:', currentScorecard);
-                
+
                 // Determine locked status
                 if (mode === 'practice') {
                     isLocked = false;
                 } else {
                     isLocked = currentScorecard.locked || currentScorecard.card_status === 'VER' || currentScorecard.card_status === 'VOID';
                 }
-                
+
                 renderSoloMatch();
-                
+
                 document.getElementById('loading').classList.add('hidden');
                 document.getElementById('scorecard-container').classList.remove('hidden');
             } catch (error) {
@@ -621,21 +744,21 @@
                 showError(error.message);
             }
         }
-        
+
         function renderScorecard() {
             const card = currentScorecard;
-            
+
             // Archer Info
             document.getElementById('archer-name').textContent = card.archer_name || 'Unknown Archer';
             document.getElementById('archer-school').textContent = card.school || '';
             document.getElementById('archer-level').textContent = card.level || '';
             document.getElementById('archer-gender').textContent = card.gender === 'M' ? 'Boys' : card.gender === 'F' ? 'Girls' : '';
             document.getElementById('archer-bale').textContent = card.bale_number ? `Bale ${card.bale_number}${card.target_assignment || ''}` : '';
-            
+
             // Event/Round Info
             document.getElementById('event-name').textContent = card.event_name || '';
             document.getElementById('round-type').textContent = card.round_type || '';
-            
+
             // Status Badge
             // For practice mode, never lock
             if (mode === 'practice') {
@@ -643,10 +766,10 @@
             } else {
                 isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VOID';
             }
-            
+
             const statusBadge = document.getElementById('status-badge');
             const cardStatus = (card.card_status || '').toUpperCase();
-            
+
             if (mode === 'practice') {
                 statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-primary text-white rounded-full text-sm font-bold">PRACTICE</span>';
             } else if (cardStatus === 'VER' || cardStatus === 'VERIFIED') {
@@ -658,19 +781,19 @@
             } else {
                 statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-warning text-white rounded-full text-sm font-bold">PEND</span>';
             }
-            
+
             // Lock Controls (Coach only) - Inline buttons
             if (isCoach) {
                 const lockControls = document.getElementById('lock-controls');
                 lockControls.classList.remove('hidden');
-                
+
                 const isVoided = card.card_status === 'VOID';
-                
+
                 // Show/hide buttons based on locked state and current status
                 const currentStatus = (card.card_status || '').toUpperCase();
                 const canComplete = !isLocked && currentStatus !== 'COMP' && currentStatus !== 'COMPLETED' && currentStatus !== 'VER' && currentStatus !== 'VERIFIED';
                 const canVerify = !isLocked && (currentStatus === 'COMP' || currentStatus === 'COMPLETED' || currentStatus === 'PENDING' || currentStatus === 'PEND');
-                
+
                 if (isLocked) {
                     document.getElementById('unlock-btn').classList.remove('hidden');
                     document.getElementById('lock-btn').classList.add('hidden');
@@ -692,7 +815,7 @@
                     }
                     document.getElementById('edit-reason').classList.remove('hidden');
                 }
-                
+
                 // Void button: hide if already voided
                 if (isVoided) {
                     document.getElementById('void-btn').classList.add('hidden');
@@ -700,53 +823,53 @@
                     document.getElementById('void-btn').classList.remove('hidden');
                 }
             }
-            
+
             // Render Scorecard Table
             renderScorecardTable();
-            
+
             // Render Verification History
             renderVerificationHistory();
-            
+
             // Calculate and display totals
             calculateTotals();
-            
+
             // Reset labels for ranking round
             document.getElementById('total-label').textContent = 'Total Score';
             document.getElementById('x-label').textContent = 'X Count';
             document.getElementById('ten-label').textContent = '10 Count';
             document.getElementById('avg-label').textContent = 'Avg/Arrow';
         }
-        
+
         function renderSoloMatch() {
             const match = currentScorecard;
             if (!match) {
                 showError('Invalid match data');
                 return;
             }
-            
+
             // Extract archers
             const archer1 = match.archers?.find(a => a.position === 1) || {};
             const archer2 = match.archers?.find(a => a.position === 2) || {};
-            
+
             const a1Name = archer1.archer_name || `${archer1.first_name || ''} ${archer1.last_name || ''}`.trim() || 'Archer 1';
             const a2Name = archer2.archer_name || `${archer2.first_name || ''} ${archer2.last_name || ''}`.trim() || 'Archer 2';
-            
+
             // Match Info
             document.getElementById('archer-name').textContent = `${a1Name} vs ${a2Name}`;
             document.getElementById('archer-school').textContent = archer1.school || archer2.school || '';
             document.getElementById('archer-level').textContent = '';
             document.getElementById('archer-gender').textContent = '';
             document.getElementById('archer-bale').textContent = '';
-            
+
             // Event/Bracket Info
             const eventName = match.event_id ? (match.event_name || 'Event') : 'Standalone Match';
             document.getElementById('event-name').textContent = eventName;
             document.getElementById('round-type').textContent = match.bracket_name || 'Solo Match';
-            
+
             // Status Badge
             const statusBadge = document.getElementById('status-badge');
             const cardStatus = (match.card_status || '').toUpperCase();
-            
+
             if (mode === 'practice') {
                 statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-primary text-white rounded-full text-sm font-bold">PRACTICE</span>';
             } else if (cardStatus === 'VER' || cardStatus === 'VERIFIED') {
@@ -758,17 +881,17 @@
             } else {
                 statusBadge.innerHTML = '<span class="inline-block px-4 py-2 bg-warning text-white rounded-full text-sm font-bold">PEND</span>';
             }
-            
+
             // Lock Controls (Coach only) - Reuse existing logic
             if (isCoach) {
                 const lockControls = document.getElementById('lock-controls');
                 lockControls.classList.remove('hidden');
-                
+
                 const isVoided = match.card_status === 'VOID';
                 const currentStatus = (match.card_status || '').toUpperCase();
                 const canComplete = !isLocked && currentStatus !== 'COMP' && currentStatus !== 'COMPLETED' && currentStatus !== 'VER' && currentStatus !== 'VERIFIED';
                 const canVerify = !isLocked && (currentStatus === 'COMP' || currentStatus === 'COMPLETED' || currentStatus === 'PENDING' || currentStatus === 'PEND');
-                
+
                 if (isLocked) {
                     document.getElementById('unlock-btn').classList.remove('hidden');
                     document.getElementById('lock-btn').classList.add('hidden');
@@ -788,35 +911,35 @@
                     }
                     document.getElementById('edit-reason').classList.remove('hidden');
                 }
-                
+
                 if (isVoided) {
                     document.getElementById('void-btn').classList.add('hidden');
                 } else {
                     document.getElementById('void-btn').classList.remove('hidden');
                 }
             }
-            
+
             // Render Solo Match Table
             renderSoloMatchTable();
-            
+
             // Render Verification History
             renderVerificationHistory();
-            
+
             // Calculate and display match totals
             calculateSoloMatchTotals();
         }
-        
+
         function renderSoloMatchTable() {
             const match = currentScorecard;
             const archer1 = match.archers?.find(a => a.position === 1) || {};
             const archer2 = match.archers?.find(a => a.position === 2) || {};
-            
+
             const a1Name = archer1.archer_name || 'Archer 1';
             const a2Name = archer2.archer_name || 'Archer 2';
-            
+
             const sets1 = archer1.sets || [];
             const sets2 = archer2.sets || [];
-            
+
             // Organize sets by set_number
             const setsByNumber = {};
             for (let i = 1; i <= 5; i++) {
@@ -825,12 +948,12 @@
                     a2: sets2.find(s => s.set_number === i) || null
                 };
             }
-            
+
             // Check for shoot-off
             const shootOff1 = sets1.find(s => s.set_number === 6) || null;
             const shootOff2 = sets2.find(s => s.set_number === 6) || null;
             const hasShootOff = shootOff1 || shootOff2;
-            
+
             let html = `
                 <thead class="bg-primary dark:bg-primary-dark text-white">
                     <tr>
@@ -855,39 +978,45 @@
                 </thead>
                 <tbody>
             `;
-            
+
             // Render 5 sets
             for (let i = 1; i <= 5; i++) {
                 const set1 = setsByNumber[i].a1;
                 const set2 = setsByNumber[i].a2;
-                
+
                 const a1Scores = set1 ? [
                     set1.a1 || set1.arrow1 || '',
                     set1.a2 || set1.arrow2 || '',
                     set1.a3 || set1.arrow3 || ''
                 ] : ['', '', ''];
-                
+
                 const a2Scores = set2 ? [
                     set2.a1 || set2.arrow1 || '',
                     set2.a2 || set2.arrow2 || '',
                     set2.a3 || set2.arrow3 || ''
                 ] : ['', '', ''];
-                
+
                 const set1Total = set1 ? (set1.set_total || calculateSetTotal(a1Scores)) : 0;
                 const set2Total = set2 ? (set2.set_total || calculateSetTotal(a2Scores)) : 0;
-                const points = calculateSetPoints(set1Total, set2Total);
-                
+                const points = (set1 || set2) ? calculateSetPoints(set1Total, set2Total) : { a1: 0, a2: 0 };
+
                 const rowBgClass = i % 2 === 0 ? 'bg-gray-50 dark:bg-gray-800' : 'bg-white dark:bg-gray-700';
-                
+
                 html += `
                     <tr class="border-b border-gray-200 dark:border-gray-600 ${rowBgClass}">
                         <td class="px-2 py-2 text-center font-semibold bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">${i}</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a1Scores[0])} border-r border-gray-200 dark:border-gray-600">${formatScore(a1Scores[0])}</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a1Scores[1])} border-r border-gray-200 dark:border-gray-600">${formatScore(a1Scores[1])}</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a1Scores[2])} border-r border-gray-200 dark:border-gray-600">${formatScore(a1Scores[2])}</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a2Scores[0])} border-r border-gray-200 dark:border-gray-600">${formatScore(a2Scores[0])}</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a2Scores[1])} border-r border-gray-200 dark:border-gray-600">${formatScore(a2Scores[1])}</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a2Scores[2])} border-r border-gray-200 dark:border-gray-600">${formatScore(a2Scores[2])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a1Scores[0])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" 
+                            onclick="${isLocked ? '' : `editSoloScore(1, ${i}, 'a1')`}">${formatScore(a1Scores[0])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a1Scores[1])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" 
+                            onclick="${isLocked ? '' : `editSoloScore(1, ${i}, 'a2')`}">${formatScore(a1Scores[1])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a1Scores[2])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" 
+                            onclick="${isLocked ? '' : `editSoloScore(1, ${i}, 'a3')`}">${formatScore(a1Scores[2])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a2Scores[0])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" 
+                            onclick="${isLocked ? '' : `editSoloScore(2, ${i}, 'a1')`}">${formatScore(a2Scores[0])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a2Scores[1])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" 
+                            onclick="${isLocked ? '' : `editSoloScore(2, ${i}, 'a2')`}">${formatScore(a2Scores[1])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(a2Scores[2])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" 
+                            onclick="${isLocked ? '' : `editSoloScore(2, ${i}, 'a3')`}">${formatScore(a2Scores[2])}</td>
                         <td class="px-2 py-2 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${set1Total > 0 ? set1Total : ''}</td>
                         <td class="px-2 py-2 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${set2Total > 0 ? set2Total : ''}</td>
                         <td class="px-2 py-2 text-center bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${points.a1 > 0 ? points.a1 : ''}</td>
@@ -895,7 +1024,7 @@
                     </tr>
                 `;
             }
-            
+
             // Render shoot-off if exists
             if (hasShootOff) {
                 const so1Scores = shootOff1 ? [
@@ -903,16 +1032,16 @@
                     shootOff1.a2 || shootOff1.arrow2 || '',
                     shootOff1.a3 || shootOff1.arrow3 || ''
                 ] : ['', '', ''];
-                
+
                 const so2Scores = shootOff2 ? [
                     shootOff2.a1 || shootOff2.arrow1 || '',
                     shootOff2.a2 || shootOff2.arrow2 || '',
                     shootOff2.a3 || shootOff2.arrow3 || ''
                 ] : ['', '', ''];
-                
+
                 const so1Total = shootOff1 ? (shootOff1.set_total || calculateSetTotal(so1Scores)) : 0;
                 const so2Total = shootOff2 ? (shootOff2.set_total || calculateSetTotal(so2Scores)) : 0;
-                
+
                 html += `
                     <tr class="border-b-2 border-gray-400 dark:border-gray-500 bg-yellow-50 dark:bg-yellow-900/20">
                         <td class="px-2 py-2 text-center font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">SO</td>
@@ -929,42 +1058,44 @@
                     </tr>
                 `;
             }
-            
+
             html += '</tbody>';
             document.getElementById('scorecard-table').innerHTML = html;
         }
-        
+
         function calculateSetTotal(scores) {
             return scores.reduce((total, score) => {
                 return total + parseScore(score);
             }, 0);
         }
-        
+
         function calculateSetPoints(set1Total, set2Total) {
             if (set1Total > set2Total) return { a1: 2, a2: 0 };
             if (set2Total > set1Total) return { a1: 0, a2: 2 };
             return { a1: 1, a2: 1 }; // Tie
         }
-        
+
         function calculateSoloMatchTotals() {
             const match = currentScorecard;
             const archer1 = match.archers?.find(a => a.position === 1) || {};
             const archer2 = match.archers?.find(a => a.position === 2) || {};
-            
+
             const sets1 = archer1.sets || [];
             const sets2 = archer2.sets || [];
-            
+
             // Calculate sets won (count sets where set_points = 2)
             let setsWonA1 = 0;
             let setsWonA2 = 0;
             let totalScoreA1 = 0;
             let totalScoreA2 = 0;
-            
+
             for (let i = 1; i <= 5; i++) {
                 const set1 = sets1.find(s => s.set_number === i);
                 const set2 = sets2.find(s => s.set_number === i);
-                
+
                 if (set1 && set2) {
+                    // Stop accumulating if match is already decided (either archer reached 6)
+                    if (setsWonA1 >= 6 || setsWonA2 >= 6) continue;
                     const set1Total = set1.set_total || calculateSetTotal([
                         set1.a1 || set1.arrow1 || '',
                         set1.a2 || set1.arrow2 || '',
@@ -975,27 +1106,27 @@
                         set2.a2 || set2.arrow2 || '',
                         set2.a3 || set2.arrow3 || ''
                     ]);
-                    
+
                     totalScoreA1 += set1Total;
                     totalScoreA2 += set2Total;
-                    
+
                     const points = calculateSetPoints(set1Total, set2Total);
-                    if (points.a1 === 2) setsWonA1++;
-                    if (points.a2 === 2) setsWonA2++;
+                    setsWonA1 += points.a1;
+                    setsWonA2 += points.a2;
                 }
             }
-            
+
             // Update labels for solo match
-            document.getElementById('total-label').textContent = 'Sets Score';
+            document.getElementById('total-label').textContent = 'Match Score';
             document.getElementById('x-label').textContent = 'Archer 1 Total';
             document.getElementById('ten-label').textContent = 'Archer 2 Total';
             document.getElementById('avg-label').textContent = 'Winner';
-            
+
             // Update totals display
             document.getElementById('total-score').textContent = `${setsWonA1}-${setsWonA2}`;
             document.getElementById('x-count').textContent = totalScoreA1;
             document.getElementById('ten-count').textContent = totalScoreA2;
-            
+
             // Show winner
             let winnerText = '—';
             if (setsWonA1 > setsWonA2) {
@@ -1007,12 +1138,12 @@
             }
             document.getElementById('avg-arrow').textContent = winnerText;
         }
-        
+
         function renderScorecardTable() {
             const card = currentScorecard;
             const totalEnds = card.total_ends || 10;
             const scores = card.scores || [];
-            
+
             let html = `
                 <thead class="bg-primary dark:bg-primary-dark text-white">
                     <tr>
@@ -1029,26 +1160,26 @@
                 </thead>
                 <tbody>
             `;
-            
+
             let runningTotal = 0;
             let totalXsOverall = 0;
             let totalTensOverall = 0;
-            
+
             for (let i = 0; i < totalEnds; i++) {
                 const end = scores[i] || { arrows: [null, null, null] };
                 const arrows = end.arrows || [null, null, null];
-                
+
                 const a1 = arrows[0];
                 const a2 = arrows[1];
                 const a3 = arrows[2];
-                
+
                 // Check if end is complete
                 const isComplete = a1 !== null && a1 !== '' && a1 !== undefined &&
-                                   a2 !== null && a2 !== '' && a2 !== undefined &&
-                                   a3 !== null && a3 !== '' && a3 !== undefined;
-                
+                    a2 !== null && a2 !== '' && a2 !== undefined &&
+                    a3 !== null && a3 !== '' && a3 !== undefined;
+
                 const endTotal = parseScore(a1) + parseScore(a2) + parseScore(a3);
-                
+
                 // Count Xs and 10s for this end
                 let endXs = 0;
                 let endTens = 0;
@@ -1062,13 +1193,13 @@
                         }
                     }
                 });
-                
+
                 if (isComplete) {
                     runningTotal += endTotal;
                     totalXsOverall += endXs;
                     totalTensOverall += endTens;
                 }
-                
+
                 // Calculate average for THIS END only
                 const avg = isComplete ? (endTotal / 3).toFixed(1) : '';
                 let avgClass = '';
@@ -1080,7 +1211,7 @@
                     else if (avgNum >= 3) avgClass = 'score-black';
                     else avgClass = 'score-white';
                 }
-                
+
                 html += `
                     <tr class="border-b border-gray-200 dark:border-gray-600">
                         <td class="px-2 py-1 text-center font-semibold text-gray-800 dark:text-white">${i + 1}</td>
@@ -1104,13 +1235,13 @@
                     </tr>
                 `;
             }
-            
+
             // Calculate overall average
             const completedEnds = scores.filter(end => {
                 if (!end || !end.arrows) return false;
                 return end.arrows.every(a => a !== null && a !== '' && a !== undefined);
             }).length;
-            
+
             let finalAvg = 0;
             let finalAvgClass = '';
             if (completedEnds > 0) {
@@ -1122,7 +1253,7 @@
                 else if (avgNum >= 3) finalAvgClass = 'score-black';
                 else finalAvgClass = 'score-white';
             }
-            
+
             html += `
                 </tbody>
                 <tfoot>
@@ -1136,10 +1267,10 @@
                     </tr>
                 </tfoot>
             `;
-            
+
             document.getElementById('scorecard-table').innerHTML = html;
         }
-        
+
         function parseScore(score) {
             if (score === null || score === '' || score === undefined) return 0;
             const upper = String(score).toUpperCase();
@@ -1148,12 +1279,12 @@
             const num = parseInt(score, 10);
             return isNaN(num) ? 0 : num;
         }
-        
+
         function formatScore(score) {
             if (score === null || score === '' || score === undefined) return '-';
             return String(score).toUpperCase();
         }
-        
+
         function getScoreClass(score) {
             if (score === null || score === '' || score === undefined) return 'score-empty';
             const s = String(score).toUpperCase();
@@ -1169,51 +1300,188 @@
             if (s === '2' || s === '1' || s === 'M' || s === '0') return 'score-white';
             return 'score-empty';
         }
-        
+
         function editScore(endIndex, arrowIndex) {
             if (isLocked) {
                 alert('🔒 Scorecard is locked. Unlock it first to make changes.');
                 return;
             }
-            
+
             currentEndIndex = endIndex;
             currentArrowIndex = arrowIndex;
-            
+            currentSoloArcherPos = null; // Clear solo editing state
+
             document.getElementById('modal-end').textContent = endIndex + 1;
             document.getElementById('modal-arrow').textContent = arrowIndex + 1;
             document.getElementById('score-modal').classList.remove('hidden');
         }
-        
+
+        // Solo match: open score modal for a specific archer/set/arrow
+        function editSoloScore(archerPosition, setNumber, arrowField) {
+            if (isLocked) {
+                alert('🔒 Scorecard is locked. Unlock it first to make changes.');
+                return;
+            }
+
+            currentSoloArcherPos = archerPosition;  // 1 or 2
+            currentSoloSetNumber = setNumber;        // 1-5
+            currentSoloArrowField = arrowField;      // 'a1', 'a2', 'a3'
+            currentEndIndex = null; // Clear ranking round state
+            currentArrowIndex = null;
+
+            const archerName = archerPosition === 1
+                ? (currentScorecard.archers?.find(a => a.position === 1)?.archer_name || 'Archer 1')
+                : (currentScorecard.archers?.find(a => a.position === 2)?.archer_name || 'Archer 2');
+            const arrowNum = arrowField.replace('a', '');
+
+            document.getElementById('modal-end').textContent = `Set ${setNumber} (${archerName})`;
+            document.getElementById('modal-arrow').textContent = arrowNum;
+            document.getElementById('score-modal').classList.remove('hidden');
+        }
+
         function setScore(value) {
+            // Solo match editing
+            if (currentSoloArcherPos !== null) {
+                setSoloScore(value);
+                return;
+            }
+
+            // Ranking round editing
             if (!currentScorecard.scores) currentScorecard.scores = [];
             if (!currentScorecard.scores[currentEndIndex]) {
                 currentScorecard.scores[currentEndIndex] = { arrows: [null, null, null] };
             }
-            
+
             currentScorecard.scores[currentEndIndex].arrows[currentArrowIndex] = value;
-            
+
             closeScoreModal();
             renderScorecardTable();
             calculateTotals();
         }
-        
+
+        // Solo match: update arrow score in local data and save to API
+        async function setSoloScore(value) {
+            const archer = currentScorecard.archers?.find(a => a.position === currentSoloArcherPos);
+            if (!archer) {
+                alert('Error: Archer data not found.');
+                closeScoreModal();
+                return;
+            }
+
+            // Find or create the set in local data
+            if (!archer.sets) archer.sets = [];
+            let set = archer.sets.find(s => s.set_number === currentSoloSetNumber);
+            if (!set) {
+                set = { set_number: currentSoloSetNumber, a1: null, a2: null, a3: null, set_total: 0, set_points: 0 };
+                archer.sets.push(set);
+            }
+
+            // Update the arrow value
+            set[currentSoloArrowField] = value;
+
+            // Recalculate set total
+            set.set_total = calculateSetTotal([set.a1, set.a2, set.a3]);
+
+            // Recalculate set points (need the opponent's set total for this set)
+            const otherPos = currentSoloArcherPos === 1 ? 2 : 1;
+            const otherArcher = currentScorecard.archers?.find(a => a.position === otherPos);
+            const otherSet = otherArcher?.sets?.find(s => s.set_number === currentSoloSetNumber);
+            const otherSetTotal = otherSet ? (otherSet.set_total || calculateSetTotal([otherSet.a1, otherSet.a2, otherSet.a3])) : 0;
+
+            // Only calculate set points if both archers have scored
+            if (set.a1 != null && set.a2 != null && set.a3 != null && set.set_total > 0) {
+                if (otherSet && otherSet.a1 != null && otherSet.a2 != null && otherSet.a3 != null && otherSetTotal > 0) {
+                    const pts = calculateSetPoints(set.set_total, otherSetTotal);
+                    if (currentSoloArcherPos === 1) {
+                        set.set_points = pts.a1;
+                        otherSet.set_points = pts.a2;
+                    } else {
+                        set.set_points = pts.a2;
+                        otherSet.set_points = pts.a1;
+                    }
+                }
+            }
+
+            closeScoreModal();
+            renderSoloMatchTable();
+            calculateSoloMatchTotals();
+
+            // Save to API
+            await saveSoloSetScore(archer, set);
+
+            // If both archers scored this set, also save the opponent's updated set_points
+            if (otherSet && otherSet.set_points !== undefined && otherArcher) {
+                await saveSoloSetScore(otherArcher, otherSet);
+            }
+        }
+
+        // Save a solo match set score to the API
+        async function saveSoloSetScore(archer, set) {
+            try {
+                const matchArcherId = archer.id;
+                const matchId = currentScorecard.id || soloMatchId;
+                const headers = getAuthHeaders(soloMatchId);
+
+                const payload = {
+                    setNumber: set.set_number,
+                    a1: set.a1,
+                    a2: set.a2,
+                    a3: set.a3,
+                    setTotal: set.set_total || 0,
+                    setPoints: set.set_points || 0,
+                    runningPoints: 0,
+                    tens: countTens([set.a1, set.a2, set.a3]),
+                    xs: countXs([set.a1, set.a2, set.a3]),
+                    deviceTs: new Date().toISOString()
+                };
+
+                const res = await fetch(`${API_BASE}/solo-matches/${matchId}/archers/${matchArcherId}/sets`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+                    console.error('[saveSoloSetScore] Error:', errorData);
+                    alert('Failed to save score: ' + (errorData.error || 'Unknown error'));
+                } else {
+                    console.log('[saveSoloSetScore] Saved set', set.set_number, 'for archer', matchArcherId);
+                }
+            } catch (error) {
+                console.error('[saveSoloSetScore] Error:', error);
+                alert('Failed to save score: ' + error.message);
+            }
+        }
+
+        function countTens(arrows) {
+            return arrows.filter(a => a != null && String(a).toUpperCase() === '10').length;
+        }
+
+        function countXs(arrows) {
+            return arrows.filter(a => a != null && String(a).toUpperCase() === 'X').length;
+        }
+
         function clearScore() {
             setScore(null);
         }
-        
+
         function closeScoreModal() {
             document.getElementById('score-modal').classList.add('hidden');
             currentEndIndex = null;
             currentArrowIndex = null;
+            currentSoloArcherPos = null;
+            currentSoloSetNumber = null;
+            currentSoloArrowField = null;
         }
-        
+
         function calculateTotals() {
             const scores = currentScorecard.scores || [];
             let totalScore = 0;
             let xCount = 0;
             let tenCount = 0;
             let arrowCount = 0;
-            
+
             scores.forEach(end => {
                 if (!end || !end.arrows) return;
                 end.arrows.forEach(arrow => {
@@ -1235,15 +1503,15 @@
                     }
                 });
             });
-            
+
             const avgArrow = arrowCount > 0 ? (totalScore / arrowCount).toFixed(2) : '0.00';
-            
+
             document.getElementById('total-score').textContent = totalScore;
             document.getElementById('x-count').textContent = xCount;
             document.getElementById('ten-count').textContent = tenCount;
             document.getElementById('avg-arrow').textContent = avgArrow;
         }
-        
+
         function renderVerificationHistory() {
             // Handle both ranking rounds and solo matches
             let history = [];
@@ -1262,21 +1530,21 @@
             } else {
                 history = currentScorecard.lock_history || [];
             }
-            
+
             const historyDiv = document.getElementById('verification-history');
-            
+
             if (history.length === 0) {
                 historyDiv.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">No verification history</p>';
                 return;
             }
-            
+
             let html = '';
             history.forEach((entry, index) => {
                 const date = new Date(entry.timestamp).toLocaleString();
                 const action = entry.action.toUpperCase();
                 const icon = action === 'LOCK' ? '🔒' : action === 'UNLOCK' ? '🔓' : '✗';
                 const color = action === 'LOCK' ? 'text-success' : action === 'UNLOCK' ? 'text-warning' : 'text-gray-500';
-                
+
                 html += `
                     <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded">
                         <span class="text-2xl">${icon}</span>
@@ -1290,17 +1558,17 @@
                     </div>
                 `;
             });
-            
+
             historyDiv.innerHTML = html;
         }
-        
+
         // Modify Card button - opens modal
         // Inline button handlers (replacing modal approach)
         document.getElementById('unlock-btn')?.addEventListener('click', async () => {
             if (!confirm('Unlock this scorecard for editing?\n\nThis action will be logged in the verification history.')) {
                 return;
             }
-            
+
             try {
                 const headers = getAuthHeaders();
                 let endpoint;
@@ -1309,7 +1577,7 @@
                 } else {
                     endpoint = `${API_BASE}/round_archers/${roundArcherId}/verify`;
                 }
-                
+
                 const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: headers,
@@ -1318,12 +1586,12 @@
                         notes: 'Unlocked for score corrections'
                     })
                 });
-                
+
                 if (!res.ok) {
                     const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
                     throw new Error(errorData.error || 'Failed to unlock');
                 }
-                
+
                 isLocked = false;
                 if (cardType === 'solo_match') {
                     await loadSoloMatch();
@@ -1336,27 +1604,27 @@
                 alert('Failed to unlock scorecard: ' + error.message);
             }
         });
-        
+
         document.getElementById('lock-btn')?.addEventListener('click', async () => {
             const reason = document.getElementById('edit-reason').value.trim();
             if (!reason) {
                 alert('Please provide a reason for the edit.');
                 return;
             }
-            
+
             // Check if already locked
             if (isLocked) {
                 alert('This scorecard is already locked. Unlock it first to make changes.');
                 return;
             }
-            
+
             if (!confirm('Verify this scorecard?\n\nThis will lock the scorecard and mark it as verified with the updated scores.')) {
                 return;
             }
-            
+
             try {
                 const headers = getAuthHeaders();
-                
+
                 if (cardType === 'solo_match') {
                     // For solo matches, just verify (no score saving needed in view-only mode)
                     const lockRes = await fetch(`${API_BASE}/solo-matches/${soloMatchId}/verify`, {
@@ -1368,19 +1636,19 @@
                             notes: `Score verification: ${reason}`
                         })
                     });
-                    
+
                     if (!lockRes.ok) {
                         const errorData = await lockRes.json().catch(() => ({ error: 'Unknown error' }));
                         throw new Error(errorData.error || `Failed to lock match: ${lockRes.status}`);
                     }
-                    
+
                     isLocked = true;
                     await loadSoloMatch();
                     alert('✓ Match verified and locked.');
                 } else {
                     // For ranking rounds, save scores first then verify
                     console.log('[lock-btn] Saving scores:', currentScorecard.scores);
-                    
+
                     const saveRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/scores`, {
                         method: 'PUT',
                         headers: headers,
@@ -1388,12 +1656,12 @@
                             scores: currentScorecard.scores
                         })
                     });
-                    
+
                     if (!saveRes.ok) {
                         const errorData = await saveRes.json().catch(() => ({ error: 'Unknown error' }));
                         throw new Error(errorData.error || `Failed to save scores: ${saveRes.status}`);
                     }
-                    
+
                     const lockRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
                         method: 'POST',
                         headers: headers,
@@ -1402,12 +1670,12 @@
                             notes: `Score correction: ${reason}`
                         })
                     });
-                    
+
                     if (!lockRes.ok) {
                         const errorData = await lockRes.json().catch(() => ({ error: 'Unknown error' }));
                         throw new Error(errorData.error || `Failed to lock scorecard: ${lockRes.status}`);
                     }
-                    
+
                     isLocked = true;
                     await loadScorecard();
                     alert('✓ Scorecard verified and saved.');
@@ -1417,7 +1685,7 @@
                 alert('Failed to save and verify scorecard: ' + error.message);
             }
         });
-        
+
         // Complete button handler
         document.getElementById('complete-btn')?.addEventListener('click', async () => {
             // Check if already locked
@@ -1425,21 +1693,21 @@
                 alert('This scorecard is locked. Unlock it first to mark as complete.');
                 return;
             }
-            
+
             const currentStatus = (currentScorecard?.card_status || '').toUpperCase();
             if (currentStatus === 'COMP' || currentStatus === 'COMPLETED') {
                 alert('This scorecard is already marked as Complete.');
                 return;
             }
-            
+
             if (!confirm('Mark this scorecard as Complete?\n\nThis will save all current scores and mark the card as complete.')) {
                 return;
             }
-            
+
             try {
                 // First, save the scores (like Verify button does)
                 console.log('[complete-btn] Saving scores:', currentScorecard.scores);
-                
+
                 const saveRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/scores`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -1447,12 +1715,12 @@
                         scores: currentScorecard.scores
                     })
                 });
-                
+
                 if (!saveRes.ok) {
                     const errorData = await saveRes.json().catch(() => ({ error: 'Unknown error' }));
                     throw new Error(errorData.error || `Failed to save scores: ${saveRes.status}`);
                 }
-                
+
                 // Then set status to COMP
                 const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/status`, {
                     method: 'PATCH',
@@ -1461,12 +1729,12 @@
                         cardStatus: 'COMP'
                     })
                 });
-                
+
                 if (!res.ok) {
                     const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
                     throw new Error(errorData.error || `Failed to set status to COMP: ${res.status}`);
                 }
-                
+
                 await loadScorecard();
                 alert('✓ Scores saved and scorecard marked as Complete.');
             } catch (error) {
@@ -1474,17 +1742,17 @@
                 alert('Failed to save and mark scorecard as complete: ' + error.message);
             }
         });
-        
+
         document.getElementById('void-btn')?.addEventListener('click', async () => {
             const reason = prompt('Reason for voiding this scorecard:');
             if (!reason || !reason.trim()) {
                 return;
             }
-            
+
             if (!confirm('⚠️ VOID this scorecard?\n\nThis action cannot be undone. The scorecard will be marked as VOID and locked.\n\nReason: ' + reason)) {
                 return;
             }
-            
+
             try {
                 const headers = getAuthHeaders();
                 let endpoint;
@@ -1493,7 +1761,7 @@
                 } else {
                     endpoint = `${API_BASE}/round_archers/${roundArcherId}/verify`;
                 }
-                
+
                 const res = await fetch(endpoint, {
                     method: 'POST',
                     headers: headers,
@@ -1503,12 +1771,12 @@
                         notes: reason.trim()
                     })
                 });
-                
+
                 if (!res.ok) {
                     const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
                     throw new Error(errorData.error || `Failed to void: ${res.status}`);
                 }
-                
+
                 isLocked = true;
                 if (cardType === 'solo_match') {
                     await loadSoloMatch();
@@ -1521,66 +1789,66 @@
                 alert('Failed to void scorecard: ' + error.message);
             }
         });
-        
+
         document.getElementById('delete-btn')?.addEventListener('click', async () => {
             const card = currentScorecard;
             const isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VERIFIED';
             const isVerified = card.card_status === 'VER' || card.card_status === 'VERIFIED';
-            
+
             // Check if this is a solo match or ranking round
             const isSoloMatch = cardType === 'solo_match';
-            
+
             // Check if this is an abandoned/test card
             let isAbandoned = false;
             if (isSoloMatch) {
                 // For solo matches, check if match has no sets or very low scores
                 const hasSets = card.archers?.some(archer => archer.sets && archer.sets.length > 0);
                 const totalScore = card.archers?.reduce((sum, archer) => sum + (archer.total_score || 0), 0) || 0;
-                isAbandoned = !hasSets || totalScore === 0 || 
-                             card.event_name?.toLowerCase().includes('test') || 
-                             card.event_name?.toLowerCase().includes('practice');
+                isAbandoned = !hasSets || totalScore === 0 ||
+                    card.event_name?.toLowerCase().includes('test') ||
+                    card.event_name?.toLowerCase().includes('practice');
             } else {
                 // For ranking rounds, use original logic
                 isAbandoned = (
-                    card.ends_completed === 0 || 
-                    card.final_score === 0 || 
+                    card.ends_completed === 0 ||
+                    card.final_score === 0 ||
                     (card.ends_completed <= 3 && card.final_score < 100) ||
-                    card.event_name?.toLowerCase().includes('test') || 
+                    card.event_name?.toLowerCase().includes('test') ||
                     card.event_name?.toLowerCase().includes('practice')
                 );
             }
-            
+
             // Coaches can delete any card; others can only delete unlocked abandoned cards
             const canDelete = isCoach || (!isLocked && isAbandoned);
-            
+
             if (!canDelete) {
                 alert('This scorecard cannot be deleted. Only unlocked, abandoned, or test scorecards can be deleted.');
                 return;
             }
-            
+
             // Extra confirmation for verified/locked cards (coach override)
             const eventName = card.event_name || (isSoloMatch ? 'this match' : 'this scorecard');
             let confirmMessage = `Delete ${isSoloMatch ? 'this match' : 'this scorecard'} from "${eventName}"?\n\nThis action cannot be undone.`;
             if (isCoach && isLocked) {
                 confirmMessage = `WARNING: This ${isSoloMatch ? 'match' : 'scorecard'} is ${isVerified ? 'VERIFIED' : 'LOCKED'}.\n\nDelete anyway?\n\nThis action cannot be undone.`;
             }
-            
+
             if (!confirm(confirmMessage)) {
                 return;
             }
-            
+
             try {
-                const coachApiKey = localStorage.getItem('coach_api_key') || 
-                                   localStorage.getItem('coach_passcode') || 
-                                   getCookie('coach_auth') || 
-                                   'wdva26';
-                
+                const coachApiKey = localStorage.getItem('coach_api_key') ||
+                    localStorage.getItem('coach_passcode') ||
+                    getCookie('coach_auth') ||
+                    'wdva26';
+
                 const headers = {
                     'Content-Type': 'application/json',
                     'X-Passcode': coachApiKey,
                     'X-API-Key': coachApiKey
                 };
-                
+
                 let response;
                 if (isSoloMatch) {
                     // For solo matches, delete the entire match
@@ -1600,13 +1868,13 @@
                         headers['X-Archer-ID'] = currentArcherId;
                         headers['X-Archer-Self'] = 'true';
                     }
-                    
+
                     response = await fetch(`${API_BASE}/rounds/${card.round_id}/archers/${roundArcherId}`, {
                         method: 'DELETE',
                         headers: headers
                     });
                 }
-                
+
                 if (!response.ok) {
                     if (response.status === 401 || response.status === 403) {
                         throw new Error('Authentication required. Please visit the Coach Console to authenticate first, then try again.');
@@ -1614,7 +1882,7 @@
                     const errorText = await response.text().catch(() => 'Unknown error');
                     throw new Error(`Failed to delete ${isSoloMatch ? 'match' : 'scorecard'} (HTTP ${response.status}): ${errorText}`);
                 }
-                
+
                 const result = await response.json();
                 if (result.ok) {
                     alert(`${isSoloMatch ? 'Match' : 'Scorecard'} deleted successfully!`);
@@ -1627,18 +1895,18 @@
                 alert(`Failed to delete ${isSoloMatch ? 'match' : 'scorecard'}: ` + error.message);
             }
         });
-        
+
         function openModifyCardModal() {
             const card = currentScorecard;
             const isVoided = card.card_status === 'VOID';
             const canDelete = !isLocked && (
-                card.ends_completed === 0 || 
-                card.final_score === 0 || 
+                card.ends_completed === 0 ||
+                card.final_score === 0 ||
                 (card.ends_completed <= 3 && card.final_score < 100) ||
-                card.event_name?.toLowerCase().includes('test') || 
+                card.event_name?.toLowerCase().includes('test') ||
                 card.event_name?.toLowerCase().includes('practice')
             );
-            
+
             // Show/hide options based on state
             if (isLocked) {
                 document.getElementById('unlock-option').classList.remove('hidden');
@@ -1646,54 +1914,54 @@
                 document.getElementById('complete-option').classList.add('hidden');
             } else {
                 document.getElementById('unlock-option').classList.add('hidden');
-                
+
                 // Show/hide options based on current status
                 const currentStatus = (card.card_status || '').toUpperCase();
                 const canComplete = currentStatus !== 'COMP' && currentStatus !== 'COMPLETED' && currentStatus !== 'VER' && currentStatus !== 'VERIFIED';
                 const canVerify = currentStatus === 'COMP' || currentStatus === 'COMPLETED' || currentStatus === 'PENDING' || currentStatus === 'PEND';
-                
+
                 if (canVerify) {
                     document.getElementById('lock-option').classList.remove('hidden');
                 } else {
                     document.getElementById('lock-option').classList.add('hidden');
                 }
-                
+
                 if (canComplete) {
                     document.getElementById('complete-option').classList.remove('hidden');
                 } else {
                     document.getElementById('complete-option').classList.add('hidden');
                 }
             }
-            
+
             // Void option - hide if already voided
             if (isVoided) {
                 document.getElementById('void-option').classList.add('hidden');
             } else {
                 document.getElementById('void-option').classList.remove('hidden');
             }
-            
+
             // Delete option - show if can delete OR if coach (coaches can override)
             if (canDelete || isCoach) {
                 document.getElementById('delete-option').classList.remove('hidden');
             } else {
                 document.getElementById('delete-option').classList.add('hidden');
             }
-            
+
             document.getElementById('modify-card-modal').classList.remove('hidden');
         }
-        
+
         function closeModifyCardModal() {
             document.getElementById('modify-card-modal').classList.add('hidden');
             document.getElementById('modal-edit-reason').value = '';
             document.getElementById('modal-void-reason').value = '';
         }
-        
+
         // Modal Unlock button handler
         document.getElementById('modal-unlock-btn').addEventListener('click', async () => {
             if (!confirm('Unlock this scorecard for editing?\n\nThis action will be logged in the verification history.')) {
                 return;
             }
-            
+
             try {
                 const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
                     method: 'POST',
@@ -1703,9 +1971,9 @@
                         notes: 'Unlocked for score corrections'
                     })
                 });
-                
+
                 if (!res.ok) throw new Error('Failed to unlock scorecard');
-                
+
                 isLocked = false;
                 closeModifyCardModal();
                 await loadScorecard();
@@ -1715,7 +1983,7 @@
                 alert('Failed to unlock scorecard: ' + error.message);
             }
         });
-        
+
         // Modal Lock button handler
         document.getElementById('modal-lock-btn').addEventListener('click', async () => {
             const reason = document.getElementById('modal-edit-reason').value.trim();
@@ -1723,22 +1991,22 @@
                 alert('Please provide a reason for the edit.');
                 return;
             }
-            
+
             // Check if already locked
             if (isLocked) {
                 alert('This scorecard is already locked. Unlock it first to make changes.');
                 closeModifyCardModal();
                 return;
             }
-            
+
             if (!confirm('Verify this scorecard?\n\nThis will lock the scorecard and mark it as verified with the updated scores.')) {
                 return;
             }
-            
+
             try {
                 // First, save the scores
                 console.log('[lock-btn] Saving scores:', currentScorecard.scores);
-                
+
                 const saveRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/scores`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -1746,13 +2014,13 @@
                         scores: currentScorecard.scores
                     })
                 });
-                
+
                 if (!saveRes.ok) {
                     const errorData = await saveRes.json().catch(() => ({ error: 'Unknown error' }));
                     console.error('[lock-btn] Save failed:', errorData);
                     throw new Error(errorData.error || `Failed to save scores: ${saveRes.status}`);
                 }
-                
+
                 // Then lock it
                 const lockRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
                     method: 'POST',
@@ -1762,12 +2030,12 @@
                         notes: `Score correction: ${reason}`
                     })
                 });
-                
+
                 if (!lockRes.ok) {
                     const errorData = await lockRes.json().catch(() => ({ error: 'Unknown error' }));
                     throw new Error(errorData.error || `Failed to lock scorecard: ${lockRes.status}`);
                 }
-                
+
                 isLocked = true;
                 closeModifyCardModal();
                 await loadScorecard();
@@ -1777,7 +2045,7 @@
                 alert('Failed to save and verify scorecard: ' + error.message);
             }
         });
-        
+
         // Modal Complete button handler
         document.getElementById('modal-complete-btn')?.addEventListener('click', async () => {
             // Check if already locked
@@ -1786,22 +2054,22 @@
                 closeModifyCardModal();
                 return;
             }
-            
+
             const currentStatus = (currentScorecard?.card_status || '').toUpperCase();
             if (currentStatus === 'COMP' || currentStatus === 'COMPLETED') {
                 alert('This scorecard is already marked as Complete.');
                 closeModifyCardModal();
                 return;
             }
-            
+
             if (!confirm('Mark this scorecard as Complete?\n\nThis will save all current scores and mark the card as complete.')) {
                 return;
             }
-            
+
             try {
                 // First, save the scores (like Verify button does)
                 console.log('[modal-complete-btn] Saving scores:', currentScorecard.scores);
-                
+
                 const saveRes = await fetch(`${API_BASE}/round_archers/${roundArcherId}/scores`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -1809,12 +2077,12 @@
                         scores: currentScorecard.scores
                     })
                 });
-                
+
                 if (!saveRes.ok) {
                     const errorData = await saveRes.json().catch(() => ({ error: 'Unknown error' }));
                     throw new Error(errorData.error || `Failed to save scores: ${saveRes.status}`);
                 }
-                
+
                 // Then set status to COMP
                 const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/status`, {
                     method: 'PATCH',
@@ -1823,12 +2091,12 @@
                         cardStatus: 'COMP'
                     })
                 });
-                
+
                 if (!res.ok) {
                     const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
                     throw new Error(errorData.error || `Failed to set status to COMP: ${res.status}`);
                 }
-                
+
                 closeModifyCardModal();
                 await loadScorecard();
                 alert('✓ Scores saved and scorecard marked as Complete.');
@@ -1837,7 +2105,7 @@
                 alert('Failed to save and mark scorecard as complete: ' + error.message);
             }
         });
-        
+
         // Modal Void button handler
         document.getElementById('modal-void-btn').addEventListener('click', async () => {
             const reason = document.getElementById('modal-void-reason').value.trim();
@@ -1845,11 +2113,11 @@
                 alert('Please provide a reason for voiding this scorecard.');
                 return;
             }
-            
+
             if (!confirm('⚠️ VOID this scorecard?\n\nThis action cannot be undone. The scorecard will be marked as VOID and locked.\n\nReason: ' + reason)) {
                 return;
             }
-            
+
             try {
                 const res = await fetch(`${API_BASE}/round_archers/${roundArcherId}/verify`, {
                     method: 'POST',
@@ -1859,12 +2127,12 @@
                         notes: reason
                     })
                 });
-                
+
                 if (!res.ok) {
                     const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
                     throw new Error(errorData.error || `Failed to void scorecard: ${res.status}`);
                 }
-                
+
                 isLocked = true;
                 closeModifyCardModal();
                 await loadScorecard();
@@ -1874,69 +2142,69 @@
                 alert('Failed to void scorecard: ' + error.message);
             }
         });
-        
+
         // Modal Delete button handler
         document.getElementById('modal-delete-btn').addEventListener('click', async () => {
             // Check if this scorecard can be deleted
             const card = currentScorecard;
             const isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VERIFIED';
             const isVerified = card.card_status === 'VER' || card.card_status === 'VERIFIED';
-            
+
             // Check if this is a solo match or ranking round
             const isSoloMatch = cardType === 'solo_match';
-            
+
             // Check if this is an abandoned/test card
             let isAbandoned = false;
             if (isSoloMatch) {
                 // For solo matches, check if match has no sets or very low scores
                 const hasSets = card.archers?.some(archer => archer.sets && archer.sets.length > 0);
                 const totalScore = card.archers?.reduce((sum, archer) => sum + (archer.total_score || 0), 0) || 0;
-                isAbandoned = !hasSets || totalScore === 0 || 
-                             card.event_name?.toLowerCase().includes('test') || 
-                             card.event_name?.toLowerCase().includes('practice');
+                isAbandoned = !hasSets || totalScore === 0 ||
+                    card.event_name?.toLowerCase().includes('test') ||
+                    card.event_name?.toLowerCase().includes('practice');
             } else {
                 // For ranking rounds, use original logic
                 isAbandoned = (
-                    card.ends_completed === 0 || 
-                    card.final_score === 0 || 
+                    card.ends_completed === 0 ||
+                    card.final_score === 0 ||
                     (card.ends_completed <= 3 && card.final_score < 100) ||
-                    card.event_name?.toLowerCase().includes('test') || 
+                    card.event_name?.toLowerCase().includes('test') ||
                     card.event_name?.toLowerCase().includes('practice')
                 );
             }
-            
+
             // Coaches can delete any card; others can only delete unlocked abandoned cards
             const canDelete = isCoach || (!isLocked && isAbandoned);
-            
+
             if (!canDelete) {
                 alert('This scorecard cannot be deleted. Only unlocked, abandoned, or test scorecards can be deleted.');
                 return;
             }
-            
+
             // Extra confirmation for verified/locked cards (coach override)
             const eventName = card.event_name || (isSoloMatch ? 'this match' : 'this scorecard');
             let confirmMessage = `Delete ${isSoloMatch ? 'this match' : 'this scorecard'} from "${eventName}"?\n\nThis action cannot be undone.`;
             if (isCoach && isLocked) {
                 confirmMessage = `WARNING: This ${isSoloMatch ? 'match' : 'scorecard'} is ${isVerified ? 'VERIFIED' : 'LOCKED'}.\n\nDelete anyway?\n\nThis action cannot be undone.`;
             }
-            
+
             if (!confirm(confirmMessage)) {
                 return;
             }
-            
+
             try {
                 // Get authentication headers
-                const coachApiKey = localStorage.getItem('coach_api_key') || 
-                                   localStorage.getItem('coach_passcode') || 
-                                   getCookie('coach_auth') || 
-                                   'wdva26';
-                
+                const coachApiKey = localStorage.getItem('coach_api_key') ||
+                    localStorage.getItem('coach_passcode') ||
+                    getCookie('coach_auth') ||
+                    'wdva26';
+
                 const headers = {
                     'Content-Type': 'application/json',
                     'X-Passcode': coachApiKey,
                     'X-API-Key': coachApiKey
                 };
-                
+
                 let response;
                 if (isSoloMatch) {
                     // For solo matches, delete the entire match
@@ -1957,13 +2225,13 @@
                         headers['X-Archer-ID'] = currentArcherId;
                         headers['X-Archer-Self'] = 'true';
                     }
-                    
+
                     response = await fetch(`${API_BASE}/rounds/${card.round_id}/archers/${roundArcherId}`, {
                         method: 'DELETE',
                         headers: headers
                     });
                 }
-                
+
                 if (!response.ok) {
                     if (response.status === 401 || response.status === 403) {
                         throw new Error('Authentication required. Please visit the Coach Console to authenticate first, then try again.');
@@ -1971,7 +2239,7 @@
                     const errorText = await response.text().catch(() => 'Unknown error');
                     throw new Error(`Failed to delete ${isSoloMatch ? 'match' : 'scorecard'} (HTTP ${response.status}): ${errorText}`);
                 }
-                
+
                 const result = await response.json();
                 if (result.ok) {
                     closeModifyCardModal();
@@ -1986,7 +2254,7 @@
                 alert(`Failed to delete ${isSoloMatch ? 'match' : 'scorecard'}: ` + error.message);
             }
         });
-        
+
         // Helper function to get cookie value
         function getCookie(name) {
             const nameEQ = name + '=';
@@ -1998,8 +2266,8 @@
             }
             return null;
         }
-        
-        
+
+
         function showError(message) {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('error').classList.remove('hidden');
@@ -2007,16 +2275,21 @@
         }
     </script>
     <script src="js/unified_scorecard_list.js"></script>
-    
+
     <!-- Footer -->
-    <footer class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
-        <a href="index.html" class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center" aria-label="Home">
+    <footer
+        class="fixed bottom-0 left-0 right-0 h-[48px] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center px-4 shadow-lg transition-colors duration-200 z-10 safe-area-bottom">
+        <a href="index.html"
+            class="min-w-[48px] h-[48px] text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white active:bg-gray-100 dark:active:bg-gray-700 rounded-lg transition-colors flex items-center justify-center"
+            aria-label="Home">
             <i class="fas fa-home text-2xl"></i>
         </a>
         <div class="flex-1"></div>
         <div class="flex gap-2">
-            <a href="coach.html" class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">Coach</a>
+            <a href="coach.html"
+                class="px-3 h-[44px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded text-sm font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center">Coach</a>
         </div>
     </footer>
 </body>
+
 </html>
