@@ -2,7 +2,7 @@
 
 **Purpose:** Rapidly onboard into development session without derailing  
 **Use Case:** Start of every AI-assisted session or new developer onboarding  
-**Last Updated:** December 15, 2025
+**Last Updated:** February 18, 2026
 
 ---
 
@@ -69,6 +69,17 @@
 ---
 
 ## 🚨 Status Update (February 2026)
+
+### ✅ Archer Window UI — Recent Activity & Team Match Navigation Fixes (February 18, 2026 — Evening, Build 20260218151545)
+- **Recent Activity hidden for archers with no open assignments** — `renderRecentActivity()` was called after an early-return guard in `loadOpenAssignments()`. Archers who had completed all work (e.g. post-event) never saw their history. Fixed by moving the call before the early return. (`index.html`)
+- **Stale Recent Activity when switching archers** — Switching from an archer with active assignments to one without left the previous archer's history cards visible. Fixed automatically by the above change.
+- **Team match deep-link shows Setup view instead of Scoring view** — `team_card.js` required exactly 3 archers per side before restoring the scoring view from `?match=UUID`. Test/dev matches with fewer archers could never reach the scoring view. Relaxed guard to `team1.length > 0 && team1.length === team2.length`. (`js/team_card.js`)
+- **Legacy files removed:** `solo_round.html` and `js/solo_round.js` deleted.
+
+**Files Changed:** `index.html`, `js/team_card.js`  
+**Git Commit:** `0da4d15` (fix) + `0e0b423` (chore) → merged `78723c9` on main  
+**Build:** `20260218151545` → deployed to production ✅  
+**Full Notes:** [RELEASE_NOTES_v1.0.0_build20260218.md](RELEASE_NOTES_v1.0.0_build20260218.md)
 
 ### ✅ Team Dashboard & Verification Fixes (February 18, 2026 — Afternoon)
 - **Team Bracket SQL Error:** Fixed 500 error on `GET /v1/brackets/:id/results` for TEAM Swiss brackets. `tmt.team_name` was missing from `SELECT DISTINCT` but referenced in `ORDER BY`. (`api/index.php`)
