@@ -1048,6 +1048,11 @@
           if (soloList) soloList.innerHTML = '';
           if (teamList) teamList.innerHTML = '';
 
+          // Render Recent Activity first — before any early return — so archers
+          // with no open assignments still see their history, and switching archers
+          // clears stale data from the previous selection.
+          renderRecentActivity(fullHistory, archerId);
+
           if (assignments.length === 0) {
             return;
           }
@@ -1151,9 +1156,6 @@
             teamSection.classList.remove('hidden');
           }
 
-          // After rendering assignments, populate Recent Activity from the same history data.
-          // fullHistory is hoisted above the inner try block so it's accessible here.
-          renderRecentActivity(fullHistory, archerId);
 
         } catch (e) {
           console.log('Could not load open assignments:', e.message);
