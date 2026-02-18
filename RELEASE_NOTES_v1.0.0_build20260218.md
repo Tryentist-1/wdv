@@ -25,6 +25,9 @@ This release fixes several solo match scoring display and editing issues across 
 ### Scorecard Editor — Solo Match Editing ✨
 - **Arrow scores were not editable after unlock** — Unlocking a solo match scorecard did not make arrow scores interactive (unlike ranking rounds). **New feature:** Arrow cells are now clickable when unlocked, opening the same score-entry modal used by ranking rounds. Scores are saved to the backend via the existing API in real-time.
 
+### Swiss Bracket Scoring Update
+- **SOLO Scoring now 1 point per win** — Changed the SOLO Swiss scoring formula from `wins - losses` to `wins` (1 point per win, 0 for loss). This eliminates negative points on the leaderboard and aligns SOLO scoring with the existing TEAM scoring logic. Rankings and matchmaking remain effectively unchanged.
+
 ---
 
 ## Files Changed

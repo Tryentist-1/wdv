@@ -13,7 +13,7 @@ This document describes the complete workflow for how an archer creates a match 
 ### What is a Swiss Bracket?
 
 - **Format:** Open tournament where archers can challenge different opponents
-- **Scoring:** 1 point per win (5 sets = perfect record)
+- **Scoring:** 1 point per match win, 0 for a loss
 - **Opponent Selection:** Manual (archers choose who to face)
 - **Win/Loss Tracking:** System shows win/loss ratio to help avoid duplicates
 - **Match Codes:** Uses existing system (`SOLO-RHTA-1101`, `TEAM-RHTA-1101`)
@@ -241,13 +241,13 @@ solo_card.html?event=08184166-7900-44e0-8386-0b1c7c14a398&bracket=bracket-uuid
 -- Update bracket entry with win/loss
 UPDATE bracket_entries 
 SET swiss_wins = swiss_wins + 1,
-    swiss_points = swiss_wins - swiss_losses
+    swiss_points = swiss_wins + 1
 WHERE bracket_id = 'bracket-uuid' 
   AND archer_id = 'winner_archer_id';
 
 UPDATE bracket_entries 
 SET swiss_losses = swiss_losses + 1,
-    swiss_points = swiss_wins - swiss_losses  
+    swiss_points = swiss_wins  
 WHERE bracket_id = 'bracket-uuid'
   AND archer_id = 'loser_archer_id';
 ```

@@ -805,7 +805,7 @@ function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void
     foreach ($standings as $archerId => $stats) {
         $wins = $stats['wins'];
         $losses = $stats['losses'];
-        $points = $wins - $losses;
+        $points = $wins;
 
         // Ensure entry exists (create if missing)
         $checkStmt = $pdo->prepare('SELECT id FROM bracket_entries WHERE bracket_id = ? AND archer_id = ?');
