@@ -7178,6 +7178,63 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
              * @param string $matchId Match UUID
              * @return void
              */
+
+            // --- RECALCULATE SET POINTS FROM RAW SCORES (Data Integrity) ---
+            // Before summing up points, ensure they are correct based on the arrow values
+            $setsStmt = $pdo->prepare("SELECT * FROM solo_match_sets WHERE match_id = ? ORDER BY set_number");
+            $setsStmt->execute([$matchId]);
+            $allSets = $setsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Group by set number
+            $setsByNum = [];
+            foreach ($allSets as $s) {
+                $setsByNum[$s['set_number']][$s['match_archer_id']] = $s;
+            }
+
+            foreach ($setsByNum as $setNum => $pair) {
+                if (count($pair) !== 2)
+                    continue; // Need 2 archers for comparison
+
+                // Get the two set records
+                $s1 = array_values($pair)[0];
+                $s2 = array_values($pair)[1];
+
+                // Helper to parse score
+                $parseScore = function ($val) {
+                    if ($val === null || $val === '')
+                        return 0;
+                    if (strtoupper($val) === 'X')
+                        return 10;
+                    if (strtoupper($val) === 'M')
+                        return 0;
+                    return (int) $val;
+                };
+
+                // Calculate totals
+                $total1 = $parseScore($s1['a1']) + $parseScore($s1['a2']) + $parseScore($s1['a3']);
+                $total2 = $parseScore($s2['a1']) + $parseScore($s2['a2']) + $parseScore($s2['a3']);
+
+                // Determine correct points
+                $p1 = 1;
+                $p2 = 1;
+                if ($total1 > $total2) {
+                    $p1 = 2;
+                    $p2 = 0;
+                } elseif ($total2 > $total1) {
+                    $p1 = 0;
+                    $p2 = 2;
+                }
+
+                // Update if needed
+                if ((int) $s1['set_points'] !== $p1 || (int) $s1['set_total'] !== $total1) {
+                    $pdo->prepare("UPDATE solo_match_sets SET set_total=?, set_points=? WHERE id=?")->execute([$total1, $p1, $s1['id']]);
+                }
+                if ((int) $s2['set_points'] !== $p2 || (int) $s2['set_total'] !== $total2) {
+                    $pdo->prepare("UPDATE solo_match_sets SET set_total=?, set_points=? WHERE id=?")->execute([$total2, $p2, $s2['id']]);
+                }
+            }
+            // --- END RECALCULATION ---
+
             // Get both archers with their cumulative set points
             $archersStmt = $pdo->prepare('
                 SELECT 
