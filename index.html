@@ -56,16 +56,16 @@
             localStorage.removeItem(key);
           }
         }
-        try { sessionStorage.clear(); } catch (e) {}
+        try { sessionStorage.clear(); } catch (e) { }
         if (window.caches && typeof window.caches.keys === 'function') {
           window.caches.keys().then(function (names) {
             return Promise.all(names.map(function (n) { return window.caches.delete(n); }));
-          }).catch(function () {});
+          }).catch(function () { });
         }
       }
       function fullRefresh(serverVersion) {
         clearCacheAndSessionOnly();
-        if (serverVersion) try { localStorage.setItem('app_version', serverVersion); } catch (e) {}
+        if (serverVersion) try { localStorage.setItem('app_version', serverVersion); } catch (e) { }
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(function (regs) {
             regs.forEach(function (r) { r.unregister(); });
@@ -83,7 +83,7 @@
         if (serverVersion && serverVersion !== stored) {
           fullRefresh(serverVersion);
         }
-      }).catch(function () {});
+      }).catch(function () { });
     })();
   </script>
 
@@ -552,10 +552,19 @@
             }
           }
 
-          // Build subtitle: use custom second line for solo (Opp: Record | Bale) or date • round • division
-          const subtitle = item.subtitleOverride != null
-            ? String(item.subtitleOverride)
-            : [dateStr, roundType, item.division].filter(p => p && p.trim()).join(' • ');
+          // Build subtitle: use custom second line for solo/team (subtitleOverride) or date • round • division [• Bale X • Target Y]
+          let subtitle;
+          if (item.subtitleOverride != null) {
+            subtitle = String(item.subtitleOverride);
+          } else {
+            const subtitleParts = [dateStr, roundType, item.division].filter(p => p && p.trim());
+            // Append bale/target info for ranking rounds when available
+            if (item.bale_number) {
+              subtitleParts.push(`Bale ${item.bale_number}`);
+              if (item.target_assignment) subtitleParts.push(`Target ${item.target_assignment}`);
+            }
+            subtitle = subtitleParts.join(' • ');
+          }
 
           // Determine progress color based on type
           let progressClass = 'text-blue-600 dark:text-blue-400';
@@ -667,6 +676,8 @@
           console.log('[index] Loading assignments for archer UUID:', archerId);
 
           const assignments = [];
+          // Hoisted so renderRecentActivity can access it after the inner try block
+          let fullHistory = [];
 
           // Check for open ranking rounds
           try {
@@ -674,8 +685,9 @@
             console.log('[index] History API response status:', historyRes.status);
             if (historyRes.ok) {
               const historyData = await historyRes.json();
+              fullHistory = historyData.history || historyData.rounds || [];
               console.log('[index] History data:', historyData);
-              const rounds = historyData.history || historyData.rounds || [];
+              const rounds = fullHistory;
               console.log('[index] Total rounds found:', rounds.length);
 
               // Separate ranking rounds and solo/team matches
@@ -810,11 +822,20 @@
                 const eventName = round.event_name || 'Ranking Round';
                 const title = isStarted ? `${eventName} - Resume` : eventName;
 
+                // Build bale/target detail string — shown on card so archer knows where to go
+                let baleDetail = '';
+                if (round.bale_number) {
+                  baleDetail = `Bale ${round.bale_number}`;
+                  if (round.target_assignment) baleDetail += ` • Target ${round.target_assignment}`;
+                }
+                const endsDetail = `${round.ends_completed || 0}/10 ends`;
+                const detailParts = [baleDetail, endsDetail].filter(Boolean);
+
                 assignments.push({
                   type: 'ranking',
                   title: title,
                   subtitle: `${round.round_type || 'R300'} • ${round.division || 'Unknown Division'}`,
-                  details: `Bale ${round.bale_number || '?'} • ${round.ends_completed || 0}/10 ends`,
+                  details: detailParts.join(' • '),
                   link: link,
                   icon: isStarted ? 'fas fa-play-circle' : 'fas fa-trophy',
                   color: isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-teal-600 hover:bg-teal-700',
@@ -822,7 +843,9 @@
                   event_date: round.event_date || round.eventDate || null,
                   card_status: round.card_status || round.cardStatus || 'PENDING',
                   ends_completed: round.ends_completed || 0,
-                  round_type: round.round_type || 'R300'
+                  round_type: round.round_type || 'R300',
+                  bale_number: round.bale_number || null,
+                  target_assignment: round.target_assignment || null
                 });
               });
 
@@ -843,7 +866,7 @@
                 assignments.push({
                   type: 'solo',
                   title: title,
-                  subtitle: `Solo Match vs ${match.opponent_name || 'Opponent'}`,
+                  subtitle: `vs ${match.opponent_name || 'Opponent'}`,
                   details: `Sets: ${setsWon}-${opponentSetsWon}${match.is_winner ? ' 🏆' : ''}`,
                   link: link,
                   icon: isComplete ? 'fas fa-trophy' : (isStarted ? 'fas fa-play-circle' : 'fas fa-user-friends'),
@@ -876,11 +899,11 @@
                   type: 'team',
                   isTeam: true,
                   title: title,
-                  subtitle: `Team Match: ${match.team_name || '?'} vs ${oppTeam}`,
+                  subtitle: `${match.team_name || '?'} vs ${oppTeam}`,
                   details: `Sets: ${setsWon}-${opponentSetsWon}${match.is_winner ? ' 🏆' : ''}`,
                   link: link,
                   icon: isComplete ? 'fas fa-trophy' : (isStarted ? 'fas fa-play-circle' : 'fas fa-users'),
-                  color: isComplete ? 'bg-purple-500 hover:bg-purple-600' : (isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-purple-500 hover:bg-purple-600'),
+                  color: isComplete ? 'bg-orange-500 hover:bg-orange-600' : (isStarted ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-500 hover:bg-orange-600'),
                   urgent: isStarted && !isComplete,
                   event_date: match.event_date || null,
                   card_status: match.card_status || 'PENDING',
@@ -1063,32 +1086,34 @@
               division: (a.subtitle || '').split(' • ')[1] || '',
               link: a.link,
               ends_completed: a.ends_completed || 0,
-              id: a.match_id || a.round_id // Ensure ID?
+              bale_number: a.bale_number || null,
+              target_assignment: a.target_assignment || null,
+              id: a.match_id || a.round_id
             }));
             rankingList.appendChild(createAssignmentsList(items, createOptions(false)));
             rankingSection.classList.remove('hidden');
           }
 
-          // Render Solo - unified format: [Event]-[Bracket], Opp: Record | Bale; Sets + trophy
+          // Render Solo — consistent label: event name, then "vs Opponent" subtitle
           if (soloItems.length > 0 && soloList) {
             const items = soloItems.map(a => {
               const eventName = a.event_name || a.title;
               const progress = a.details || (a.sets_won != null ? `Sets: ${a.sets_won}-${a.opponent_sets_won || 0}${a.is_winner ? ' 🏆' : ''}` : '0-0');
-              let subtitleOverride = a.subtitleOverride;
-              if (subtitleOverride == null && a.type === 'bracket' && a.subtitle) {
+              // Consistent subtitle: always "vs [Opponent]" for solo matches
+              let subtitleOverride = null;
+              if (a.type === 'bracket' && a.subtitle) {
+                subtitleOverride = a.subtitle; // Swiss bracket already has formatted subtitle
+              } else if (a.opponent_name) {
+                subtitleOverride = `vs ${a.opponent_name}`;
+              } else if (a.subtitle) {
                 subtitleOverride = a.subtitle;
-              }
-              if (subtitleOverride == null && a.type === 'solo' && a.opponent_name) {
-                const oppFirst = String(a.opponent_name).split(/\s+/)[0] || 'Opponent';
-                const rec = (a.sets_won ?? 0) + '-' + (a.opponent_sets_won ?? 0);
-                subtitleOverride = `${oppFirst}: ${rec}`;
               }
 
               return {
                 event_name: eventName,
                 event_date: a.event_date,
                 round_type: 'Solo',
-                division: subtitleOverride ? '' : ((a.subtitle || '').split(' • ')[1] || ''),
+                division: '',
                 subtitleOverride,
                 link: a.link,
                 ends_completed: progress,
@@ -1101,12 +1126,13 @@
             soloSection.classList.remove('hidden');
           }
 
-          // Render Team (if any)
+          // Render Team — consistent label: event name, then "[My Team] vs [Opponent]" subtitle
           if (teamItems.length > 0 && teamList) {
             const items = teamItems.map(a => {
               const progress = a.details || (a.sets_won != null ? `Sets: ${a.sets_won}-${a.opponent_sets_won || 0}${a.is_winner ? ' 🏆' : ''}` : '0-0');
               const oppTeam = a.opponent_team || 'Opponent';
               const myTeam = a.team_name || 'Team';
+              // Consistent subtitle: "[My Team] vs [Opponent]"
               const subtitleOverride = `${myTeam} vs ${oppTeam}`;
 
               return {
@@ -1125,149 +1151,168 @@
             teamSection.classList.remove('hidden');
           }
 
+          // After rendering assignments, populate Recent Activity from the same history data.
+          // fullHistory is hoisted above the inner try block so it's accessible here.
+          renderRecentActivity(fullHistory, archerId);
+
         } catch (e) {
           console.log('Could not load open assignments:', e.message);
         }
       }
 
-      // Load recent activity history
+      /**
+       * Stub kept for backward compatibility — Recent Activity is now rendered
+       * inside loadOpenAssignments() using the same history API response,
+       * avoiding a duplicate network request.
+       */
       async function loadRecentActivity() {
+        // No-op: renderRecentActivity() is called from loadOpenAssignments()
+        // after the history fetch completes. This stub prevents errors if
+        // any external code calls loadRecentActivity() directly.
+      }
+
+      /**
+       * Render Recent Activity from already-fetched history data.
+       * Called by loadOpenAssignments() after it fetches archer history,
+       * avoiding a duplicate API call.
+       *
+       * Shows the last 4 completed/verified items for the selected archer.
+       * Displays consistent round-type labels and status badges across all types.
+       *
+       * @param {Array} history - Full history array from /api/v1/archers/{id}/history
+       * @param {string} archerId - UUID of the current archer (for building links)
+       */
+      function renderRecentActivity(history, archerId) {
         const container = document.getElementById('recent-activity');
         const list = document.getElementById('recent-activity-list');
-
         if (!container || !list) return;
 
-        try {
-          // Get current archer
-          let archer = null;
-          if (window.ArcherModule && typeof window.ArcherModule.getSelfArcher === 'function') {
-            archer = window.ArcherModule.getSelfArcher();
-          }
+        // Filter for COMP (completed, awaiting verification) or VER (coach-verified)
+        const completed = history.filter(item => {
+          const status = (item.card_status || '').toUpperCase();
+          return status === 'COMP' || status === 'COMPLETED' || status === 'VER' || status === 'VERIFIED';
+        });
 
-          if (!archer) {
-            container.classList.add('hidden');
-            return;
-          }
+        // Sort most-recent first, take last 4
+        completed.sort((a, b) => new Date(b.event_date || 0) - new Date(a.event_date || 0));
+        const recent = completed.slice(0, 4);
 
-          // Resolve Archer UUID (reusing logic from loadOpenAssignments)
-          let archerId = archer.id || archer.archerId || archer.databaseId || null;
-          let isUUID = archerId && archerId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+        if (recent.length === 0) {
+          container.classList.add('hidden');
+          return;
+        }
 
-          // If not UUID, try search (simplified fallback)
-          if (!isUUID && archer.first && archer.last) {
-            try {
-              const searchRes = await fetch(`api/v1/archers/search?q=${encodeURIComponent(archer.first + ' ' + archer.last)}`);
-              if (searchRes.ok) {
-                const searchData = await searchRes.json();
-                if (searchData.results && searchData.results.length > 0) {
-                  const match = searchData.results.find(r =>
-                    r.archer.firstName.toLowerCase() === archer.first.toLowerCase() &&
-                    r.archer.lastName.toLowerCase() === archer.last.toLowerCase()
-                  );
-                  if (match) archerId = match.archer.id;
-                }
-              }
-            } catch (e) { console.warn('History ID lookup failed', e); }
-          }
+        /**
+         * Map a history item to a display object with consistent field names.
+         * Uses the same labels as the assignment cards above.
+         */
+        const displayItems = recent.map(item => {
+          const rawStatus = (item.card_status || '').toUpperCase();
+          // Status badge: COMP = submitted for verification, VER = coach verified
+          const isVerified = rawStatus === 'VER' || rawStatus === 'VERIFIED';
+          const statusLabel = isVerified ? 'Verified' : 'COMP';
+          const statusClass = isVerified
+            ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+            : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
 
-          if (!archerId) return;
+          const dateStr = item.event_date
+            ? new Date(item.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : '';
 
-          // Fetch history
-          const res = await fetch(`api/v1/archers/${archerId}/history`);
-          if (!res.ok) return;
-
-          const data = await res.json();
-          const history = data.history || []; // history array from API
-
-          // Filter for COMPLETED, VERIFIED, or VOID (basically not PENDING)
-          // Also ensure we show items that are technically "Open" but have data, if they are not in the Open Assignments list?
-          // Actually, let's just show the last 5 items that are marked as COMP/VER/VOID.
-          const completed = history.filter(item => {
-            const status = (item.card_status || 'PENDING').toUpperCase();
-            return status === 'COMP' || status === 'COMPLETED' || status === 'VER' || status === 'VERIFIED';
-          });
-
-          // Sort by event_date desc
-          completed.sort((a, b) => new Date(b.event_date || 0) - new Date(a.event_date || 0));
-
-          // Take top 5
-          const recent = completed.slice(0, 5);
-
-          if (recent.length === 0) {
-            container.classList.add('hidden');
-            return;
-          }
-
-          // Render
-          const items = recent.map(item => {
-            const dateStr = item.event_date ? new Date(item.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-            let title = item.event_name || 'Event';
-            let subtitle = '';
-            let score = '';
-            let isSolo = false;
-            let isBracket = false;
-            let link = '#';
-
-            if (item.type === 'solo') {
-              title = 'Solo Match';
-              subtitle = `${dateStr} • vs ${item.opponent_name || 'Opponent'}`;
-              score = `${item.sets_won}-${item.opponent_sets_won}`;
-              if (item.is_winner) score += ' 🏆';
-              isSolo = true;
-              link = `solo_card.html?match=${item.match_id}`;
-            } else if (item.type === 'ranking') {
-              title = item.event_name || 'Ranking Round';
-              subtitle = `${dateStr} • ${item.round_type || 'R300'}`;
-              score = item.final_score || 0;
-              link = `ranking_round_300.html?event=${item.event_id || 'null'}&round=${item.round_id}&archer=${archerId}&view=readonly`; // Hypothetical readonly view param
-            } else {
-              // Bracket or other?
-              subtitle = `${dateStr}`;
-              score = item.final_score || '-';
-            }
-
+          if (item.type === 'ranking') {
+            // Ranking round — consistent with assignment card labels
+            const eventName = item.event_name || 'Ranking Round';
+            let subtitle = [dateStr, item.round_type || 'R300'].filter(Boolean).join(' • ');
+            if (item.division) subtitle += ` • ${item.division}`;
             return {
-              event_name: title,
-              subtitle: subtitle, // We'll hijack division field in createAssignmentsList or just use subtitle
-              progress: score,
-              link: link,
-              isSolo: isSolo,
-              isBracket: isBracket,
-              // Helper props for createAssignmentsList custom getters
-              raw_subtitle: subtitle,
-              raw_score: score
+              typeIcon: 'fas fa-trophy',
+              typeColor: 'text-teal-600 dark:text-teal-400',
+              typeBg: 'bg-teal-50 dark:bg-teal-900/30',
+              title: eventName,
+              subtitle,
+              score: item.final_score != null ? String(item.final_score) : '—',
+              scoreLabel: 'pts',
+              statusLabel,
+              statusClass,
+              link: `ranking_round_300.html?event=${item.event_id || 'null'}&round=${item.round_id}&archer=${archerId || ''}`
             };
-          });
+          } else if (item.type === 'solo') {
+            // Solo match — consistent with assignment card: "vs [Opponent]"
+            const eventName = item.event_name || 'Solo Match';
+            const oppName = item.opponent_name || 'Opponent';
+            const setsWon = item.sets_won ?? 0;
+            const oppSets = item.opponent_sets_won ?? 0;
+            const trophy = item.is_winner ? ' 🏆' : '';
+            return {
+              typeIcon: 'fas fa-user-friends',
+              typeColor: 'text-yellow-600 dark:text-yellow-400',
+              typeBg: 'bg-yellow-50 dark:bg-yellow-900/30',
+              title: eventName,
+              subtitle: `${dateStr ? dateStr + ' • ' : ''}vs ${oppName}`,
+              score: `${setsWon}–${oppSets}${trophy}`,
+              scoreLabel: 'sets',
+              statusLabel,
+              statusClass,
+              link: `solo_card.html?match=${item.match_id}`
+            };
+          } else if (item.type === 'team') {
+            // Team match — consistent with assignment card: "[My Team] vs [Opponent]"
+            const eventName = item.event_name || 'Team Match';
+            const myTeam = item.team_name || 'My Team';
+            const oppTeam = item.opponent_team || 'Opponent';
+            const setsWon = item.sets_won ?? 0;
+            const oppSets = item.opponent_sets_won ?? 0;
+            const trophy = item.is_winner ? ' 🏆' : '';
+            return {
+              typeIcon: 'fas fa-users',
+              typeColor: 'text-orange-600 dark:text-orange-400',
+              typeBg: 'bg-orange-50 dark:bg-orange-900/30',
+              title: eventName,
+              subtitle: `${dateStr ? dateStr + ' • ' : ''}${myTeam} vs ${oppTeam}`,
+              score: `${setsWon}–${oppSets}${trophy}`,
+              scoreLabel: 'sets',
+              statusLabel,
+              statusClass,
+              link: `team_card.html?match=${item.match_id}`
+            };
+          } else {
+            // Unknown type — generic fallback
+            return {
+              typeIcon: 'fas fa-circle',
+              typeColor: 'text-gray-500',
+              typeBg: 'bg-gray-50 dark:bg-gray-800',
+              title: item.event_name || 'Activity',
+              subtitle: dateStr,
+              score: item.final_score != null ? String(item.final_score) : '—',
+              scoreLabel: '',
+              statusLabel,
+              statusClass,
+              link: '#'
+            };
+          }
+        });
 
-          // Reuse createAssignmentsList
-          const options = {
-            onItemClick: (item) => window.location.href = item.link,
-            getEventName: (item) => item.event_name,
-            getTotal: (item) => item.raw_score,
-            getAvg: (item) => item.raw_subtitle, // Hijack the subtitle slot
-          };
-
-          // We need to adapt createAssignmentsList slightly or just build HTML manually if it's too rigid.
-          // createAssignmentsList uses: item.event_name (via getter), date/roundType/division (via getter/props) for subtitle.
-          // Let's just manually build the list for maximum control and simplicity, avoiding the complexity of adapting the other function.
-
-          list.innerHTML = items.map(item => `
-            <a href="${item.link}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm flex items-center justify-between">
-                <div class="flex flex-col min-w-0">
-                    <span class="font-semibold text-gray-900 dark:text-white truncate">${item.event_name}</span>
-                    <span class="text-xs text-gray-500 dark:text-gray-400 truncate">${item.subtitle}</span>
-                </div>
-                <div class="font-bold text-gray-800 dark:text-white pl-3 whitespace-nowrap">
-                    ${item.progress}
-                </div>
-            </a>
+        list.innerHTML = displayItems.map(d => `
+          <a href="${d.link}"
+             class="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-3 min-h-[60px] hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors">
+            <!-- Round-type icon -->
+            <div class="flex-shrink-0 w-9 h-9 rounded-full ${d.typeBg} flex items-center justify-center">
+              <i class="${d.typeIcon} text-sm ${d.typeColor}"></i>
+            </div>
+            <!-- Title + subtitle -->
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold text-gray-900 dark:text-white truncate leading-tight">${d.title}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 truncate leading-tight mt-0.5">${d.subtitle}</div>
+            </div>
+            <!-- Score + status -->
+            <div class="flex-shrink-0 flex flex-col items-end gap-1">
+              <div class="text-base font-bold text-gray-900 dark:text-white whitespace-nowrap">${d.score}</div>
+              <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded ${d.statusClass} whitespace-nowrap">${d.statusLabel}</span>
+            </div>
+          </a>
         `).join('');
 
-          container.classList.remove('hidden');
-
-        } catch (e) {
-          console.warn('Error displaying recent activity:', e);
-        }
+        container.classList.remove('hidden');
       }
 
 
