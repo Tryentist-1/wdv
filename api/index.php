@@ -5805,7 +5805,7 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers/([0-9a-f-]+)/sets$#i', $
     try {
         $pdo = db();
 
-        // Check if set already exists
+        // Check if set already exists for this archer
         $existing = $pdo->prepare('SELECT id FROM solo_match_sets WHERE match_archer_id=? AND set_number=? LIMIT 1');
         $existing->execute([$matchArcherId, $setNumber]);
         $existingRow = $existing->fetch();
@@ -5814,20 +5814,75 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers/([0-9a-f-]+)/sets$#i', $
             // Update existing
             $updateStmt = $pdo->prepare('UPDATE solo_match_sets SET a1=?, a2=?, a3=?, set_total=?, set_points=?, running_points=?, tens=?, xs=?, device_ts=? WHERE id=?');
             $updateStmt->execute([$a1, $a2, $a3, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs, $existingRow['id']]);
-            json_response(['setId' => $existingRow['id'], 'updated' => true], 200);
-            exit;
+        } else {
+            // Create new
+            $setId = $genUuid();
+            $stmt = $pdo->prepare('INSERT INTO solo_match_sets (id, match_id, match_archer_id, set_number, a1, a2, a3, set_total, set_points, running_points, tens, xs, device_ts, server_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())');
+            $stmt->execute([$setId, $matchId, $matchArcherId, $setNumber, $a1, $a2, $a3, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs]);
         }
 
-        // Create new
-        $setId = $genUuid();
-        $stmt = $pdo->prepare('INSERT INTO solo_match_sets (id, match_id, match_archer_id, set_number, a1, a2, a3, set_total, set_points, running_points, tens, xs, device_ts, server_ts) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())');
-        $stmt->execute([$setId, $matchId, $matchArcherId, $setNumber, $a1, $a2, $a3, $setTotal, $setPoints, $runningPoints, $tens, $xs, $deviceTs]);
+        // --- DUAL-UPDATE LOGIC START ---
+        // Get both archers in the match
+        $allArchersStmt = $pdo->prepare('SELECT id, position FROM solo_match_archers WHERE match_id = ? ORDER BY position');
+        $allArchersStmt->execute([$matchId]);
+        $allArchers = $allArchersStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (count($allArchers) === 2) {
+            // For each archer, get their scores for this set
+            $a1Id = $allArchers[0]['id'];
+            $a2Id = $allArchers[1]['id'];
+
+            $setScoresStmt = $pdo->prepare('
+                 SELECT id, match_archer_id, set_total, a1, a2, a3 
+                 FROM solo_match_sets 
+                 WHERE match_id = ? AND set_number = ?
+             ');
+            $setScoresStmt->execute([$matchId, $setNumber]);
+            $setRows = $setScoresStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $s1 = null;
+            $s2 = null;
+
+            foreach ($setRows as $r) {
+                if ($r['match_archer_id'] === $a1Id)
+                    $s1 = $r;
+                elseif ($r['match_archer_id'] === $a2Id)
+                    $s2 = $r;
+            }
+
+            // Only recalculate points if both have scores
+            // (Check if arrows are not null/empty strings to count as "scored")
+            $hasScore1 = $s1 && ($s1['a1'] !== null && $s1['a1'] !== '');
+            $hasScore2 = $s2 && ($s2['a1'] !== null && $s2['a1'] !== '');
+
+            if ($hasScore1 && $hasScore2) {
+                $total1 = (int) $s1['set_total'];
+                $total2 = (int) $s2['set_total'];
+
+                $p1 = 1;
+                $p2 = 1; // Default Tie
+
+                if ($total1 > $total2) {
+                    $p1 = 2;
+                    $p2 = 0;
+                } elseif ($total2 > $total1) {
+                    $p1 = 0;
+                    $p2 = 2;
+                }
+
+                // Update both set points
+                $upd = $pdo->prepare('UPDATE solo_match_sets SET set_points = ? WHERE id = ?');
+                $upd->execute([$p1, $s1['id']]);
+                $upd->execute([$p2, $s2['id']]);
+            }
+        }
+        // --- DUAL-UPDATE LOGIC END ---
 
         // Update match status to In Progress
         $updateMatch = $pdo->prepare('UPDATE solo_matches SET status="In Progress" WHERE id=? AND status="Not Started"');
         $updateMatch->execute([$matchId]);
 
-        json_response(['setId' => $setId, 'created' => true], 201);
+        json_response(['updated' => true], 200);
     } catch (Exception $e) {
         json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
     }
