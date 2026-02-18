@@ -1769,7 +1769,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        if (state.currentView === 'scoring' && state.team1.length === 3 && state.team2.length === 3) {
+        if (state.currentView === 'scoring' && state.team1.length > 0 && state.team1.length === state.team2.length) {
             console.log('[TeamCard] Restoring scoring view from session');
             renderScoringView();
         } else {

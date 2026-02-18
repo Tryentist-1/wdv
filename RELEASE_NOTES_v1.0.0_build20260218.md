@@ -27,6 +27,12 @@ This release fixes several solo match scoring display and editing issues across 
 
 ### Swiss Bracket Scoring Update
 - **SOLO Scoring now 1 point per win** — Changed the SOLO Swiss scoring formula from `wins - losses` to `wins` (1 point per win, 0 for loss). This eliminates negative points on the leaderboard and aligns SOLO scoring with the existing TEAM scoring logic. Rankings and matchmaking remain effectively unchanged.
+- **Set Points Synchronization** — Fixed a bug where entering a score for one archer did not update the opponent's set points (Win/Loss/Tie) if the opponent's score was already entered. Now forces recalculation for both archers on every save.
+
+### Archer Window — Recent Activity & Team Match Navigation
+- **Recent Activity hidden for archers with no open assignments** — `renderRecentActivity()` was called *after* an early-return guard that fired when an archer had no active rounds. Archers who had completed all their work (e.g. post-event) never saw their recent history. Fixed by moving the call before the early return.
+- **Stale Recent Activity when switching archers** — Switching from an archer with assignments to one without left the previous archer's Recent Activity cards visible. Fixed automatically as part of the above change.
+- **Team match deep-link shows Setup view instead of Scoring view** — `team_card.js` required exactly 3 archers per side before restoring the scoring view from a `?match=UUID` URL. Dev/test matches with 1 or 2 archers per side could never restore. Relaxed to `team1.length > 0 && team1.length === team2.length`.
 
 ---
 
