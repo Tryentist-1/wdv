@@ -103,6 +103,10 @@
             <i class="fas fa-share-alt"></i>
             <span class="hidden sm:inline">Share</span>
           </button>
+          <button id="verify-btn" onclick="window.location.href=`coach.html?verifyEvent=${eventId}`"
+            class="hidden px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold transition-colors min-h-[44px] flex items-center gap-2">
+            <i class="fas fa-check-circle"></i> Verify
+          </button>
           <button id="refresh-btn"
             class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded font-semibold transition-colors min-h-[44px]">🔄
             Refresh</button>
@@ -322,6 +326,10 @@
     // Render dashboard
     function renderDashboard(data) {
       const { event, summary, rounds, brackets } = data;
+
+      if (isCoach) {
+        document.getElementById('verify-btn')?.classList.remove('hidden');
+      }
 
       // Update event header
       document.getElementById('event-name').textContent = event.name;

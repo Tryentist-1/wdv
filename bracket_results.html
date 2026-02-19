@@ -502,8 +502,8 @@
                     </tr>
                   </thead>
                   <tbody>
-                    ${renderMatchRow(a1, 1, a1IsWinner, false)}
-                    ${renderMatchRow(a2, 2, a2IsWinner, false)}
+                    ${renderMatchRow(a1, 1, a1IsWinner, false, match.bale_number)}
+                    ${renderMatchRow(a2, 2, a2IsWinner, false, match.bale_number)}
                   </tbody>
                 </table>
               </div>
@@ -513,8 +513,11 @@
         container.innerHTML = html;
       }
 
-      function renderMatchRow(archer, position, isWinner, swissFormat = false) {
-        const tgt = (archer && archer.target_assignment) ? archer.target_assignment : '-';
+      function renderMatchRow(archer, position, isWinner, swissFormat = false, baleNumber = null) {
+        let tgt = (archer && archer.target_assignment) ? archer.target_assignment : '-';
+        if (baleNumber && tgt !== '-') {
+          tgt = `${baleNumber}-${tgt}`;
+        }
         if (!archer || !archer.name) {
           if (swissFormat) {
             return `
@@ -546,7 +549,7 @@
         }
 
         const nameDisplay = archer.seed ? `${archer.name} (${archer.seed})` : archer.name;
-        const rowClass = isWinner ? 'winner-row' : '';
+        const rowClass = isWinner ? 'winner-row bg-green-100 dark:bg-green-900/40' : '';
         const textClass = isWinner ? 'winner-text' : 'dark:text-white';
         const sets = archer.sets || [];
 
@@ -625,7 +628,7 @@
         const cardStatusUpper = (cardStatus || '').toUpperCase();
         const statusUpper = (status || '').toUpperCase();
 
-        if (cardStatusUpper === 'VRFD') {
+        if (cardStatusUpper === 'VRFD' || cardStatusUpper === 'VER') {
           return '<span class="px-2 py-1 bg-green-500 text-white rounded text-xs font-semibold">Verified</span>';
         } else if (cardStatusUpper === 'COMP') {
           return '<span class="px-2 py-1 bg-blue-500 text-white rounded text-xs font-semibold">Complete</span>';
@@ -677,8 +680,8 @@
                     </tr>
                   </thead>
                   <tbody>
-                    ${renderMatchRow(a1, 1, a1IsWinner, true)}
-                    ${renderMatchRow(a2, 2, a2IsWinner, true)}
+                    ${renderMatchRow(a1, 1, a1IsWinner, true, match.bale_number)}
+                    ${renderMatchRow(a2, 2, a2IsWinner, true, match.bale_number)}
                   </tbody>
                 </table>
               </div>
@@ -1014,7 +1017,7 @@
         if (swissView && !swissView.classList.contains('hidden')) {
           refreshInterval = setInterval(() => {
             loadBracketResults();
-          }, 5000); // Refresh every 5 seconds
+          }, 15000); // Refresh every 15 seconds
         }
       }
 

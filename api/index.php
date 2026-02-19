@@ -6875,7 +6875,7 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers/([0-9
             FROM (
                 SELECT DISTINCT set_number, set_points as points
                 FROM team_match_sets
-                WHERE team_id = ? AND set_number <= 4
+                WHERE team_id = ? AND set_number <= 5
             ) as distinct_sets
         ');
         $teamTotalStmt->execute([$teamId]);
@@ -7291,7 +7291,7 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
                     sma.position,
                     SUM(COALESCE(sms.set_points, 0)) as sets_won
                 FROM solo_match_archers sma
-                LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 5
+                LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 6
                     AND sms.a1 IS NOT NULL AND sms.a1 != \'\'
                 WHERE sma.match_id = ?
                 GROUP BY sma.id, sma.position
@@ -7420,7 +7420,7 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
             $setsStmt = $pdo->prepare('
                 SELECT team_id, MAX(running_points) as match_score
                 FROM team_match_sets
-                WHERE match_id = ? AND set_number <= 4
+                WHERE match_id = ? AND set_number <= 5
                 GROUP BY team_id
             ');
             $setsStmt->execute([$matchId]);
@@ -8120,55 +8120,8 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/bracket-assignments$#i', $route, $m) 
                 'match_id' => null
             ];
 
-            // Calculate opponent for elimination brackets
-            if ($entry['bracket_format'] === 'ELIMINATION') {
-                $seed = $entry['seed_position'];
-                $opponentSeed = null;
-                $round = 'Quarter-Finals';
-
-                // Standard 8-person bracket pairings
-                if ($seed === 1) {
-                    $opponentSeed = 8;
-                } elseif ($seed === 2) {
-                    $opponentSeed = 7;
-                } elseif ($seed === 3) {
-                    $opponentSeed = 6;
-                } elseif ($seed === 4) {
-                    $opponentSeed = 5;
-                } elseif ($seed === 5) {
-                    $opponentSeed = 4;
-                } elseif ($seed === 6) {
-                    $opponentSeed = 3;
-                } elseif ($seed === 7) {
-                    $opponentSeed = 2;
-                } elseif ($seed === 8) {
-                    $opponentSeed = 1;
-                }
-
-                if ($opponentSeed) {
-                    // Get opponent info
-                    $oppStmt = $pdo->prepare('
-                        SELECT be.seed_position, a.id, a.first_name, a.last_name
-                        FROM bracket_entries be
-                        JOIN archers a ON a.id = be.archer_id
-                        WHERE be.bracket_id = ? AND be.seed_position = ?
-                    ');
-                    $oppStmt->execute([$entry['bracket_id'], $opponentSeed]);
-                    $opponent = $oppStmt->fetch(PDO::FETCH_ASSOC);
-
-                    if ($opponent) {
-                        $assignment['opponent'] = [
-                            'id' => $opponent['id'],
-                            'name' => $opponent['first_name'] . ' ' . $opponent['last_name'],
-                            'seed' => $opponent['seed_position']
-                        ];
-                        $assignment['round'] = $round;
-                    }
-                }
-            }
-
-            // For Swiss brackets, find the latest pending match with bale assignment
-            if ($entry['bracket_format'] === 'SWISS') {
+            // For both SWISS and ELIMINATION brackets, find the latest pending match with bale assignment
+            if ($entry['bracket_format'] === 'SWISS' || $entry['bracket_format'] === 'ELIMINATION') {
                 $matchStmt = $pdo->prepare('
                     SELECT sm.id as match_id, sm.bale_number, sm.line_number, sm.wave, sm.bracket_match_id,
                            sma_opp.archer_name as opponent_name, sma_opp.archer_id as opponent_id,
@@ -8193,6 +8146,16 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/bracket-assignments$#i', $route, $m) 
                     $assignment['wave'] = $latestMatch['wave'];
                     $assignment['my_target'] = $latestMatch['my_target'];
                     $assignment['opp_target'] = $latestMatch['opp_target'];
+
+                    // For Elimination, we set round for UI display
+                    if ($entry['bracket_format'] === 'ELIMINATION') {
+                        $assignment['round'] = $latestMatch['bracket_match_id'] ?: 'Elimination Round';
+                        $assignment['opponent'] = [
+                            'id' => $latestMatch['opponent_id'],
+                            'name' => $latestMatch['opponent_name'],
+                            'seed' => null // Optional: fetch seed if needed, but UI mostly needs name
+                        ];
+                    }
                 }
             }
 
@@ -8855,7 +8818,7 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/results$#i', $route, $m) && $method 
                 SELECT be.*
                 FROM bracket_entries be
                 WHERE be.bracket_id = ? AND be.entry_type = "TEAM"
-                ORDER BY be.swiss_points DESC, be.swiss_wins DESC, be.swiss_losses ASC
+                ORDER BY (be.swiss_wins / NULLIF(be.swiss_wins + be.swiss_losses, 0)) DESC, be.swiss_wins DESC, be.swiss_losses ASC, be.swiss_points DESC
             ');
             $leaderboardStmt->execute([$bracketId]);
             $leaderboard = $leaderboardStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -8929,7 +8892,7 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/results$#i', $route, $m) && $method 
                 FROM bracket_entries be
                 LEFT JOIN archers a ON a.id = be.archer_id
                 WHERE be.bracket_id = ? AND be.entry_type = "ARCHER"
-                ORDER BY be.swiss_points DESC, be.swiss_wins DESC, be.swiss_losses ASC
+                ORDER BY (be.swiss_wins / NULLIF(be.swiss_wins + be.swiss_losses, 0)) DESC, be.swiss_wins DESC, be.swiss_losses ASC, be.swiss_points DESC
             ');
             $leaderboardStmt->execute([$bracketId]);
             $leaderboard = $leaderboardStmt->fetchAll(PDO::FETCH_ASSOC);

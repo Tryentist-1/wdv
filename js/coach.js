@@ -2516,6 +2516,25 @@
       openManageRoster(rosterRoundId, roundName);
     }
 
+    const eventToVerify = urlParams.get('verifyEvent');
+    if (eventToVerify) {
+      // Clean up URL without reload
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      window.history.pushState({ path: newUrl }, '', newUrl);
+
+      // Fetch event and open verify modal
+      req(`/events/${eventToVerify}/snapshot`)
+        .then(data => {
+          if (data && data.event) {
+            verifyEvent(encodeURIComponent(JSON.stringify(data.event)));
+          }
+        })
+        .catch(err => {
+          console.error('[Coach] Failed to load event for verification:', err);
+          alert('Could not load event for verification');
+        });
+    }
+
     // Setup roster modal event listeners
     setupRosterModalListeners();
 
@@ -3022,12 +3041,6 @@
   function showQRCode(encodedEventData) {
     const event = JSON.parse(decodeURIComponent(encodedEventData));
 
-    // Check if event has an entry code
-    if (!event.entry_code) {
-      alert('This event does not have an entry code.\n\nPlease edit the event and add an entry code first.');
-      return;
-    }
-
     const modal = document.getElementById('qr-code-modal');
     const qrContainer = document.getElementById('qr-code-container');
     const urlDisplay = document.getElementById('qr-url-display');
@@ -3035,7 +3048,7 @@
 
     // Build the URL
     const baseUrl = window.location.origin + window.location.pathname.replace('coach.html', '');
-    const fullUrl = `${baseUrl}ranking_round_300.html?event=${event.id}&code=${event.entry_code}`;
+    const fullUrl = `${baseUrl}event_dashboard.html?event=${event.id}`;
 
     // Update displays
     eventNameDisplay.textContent = `${event.name} - QR Code`;

@@ -945,12 +945,19 @@
                 if (assignment.bracket_type === 'SOLO') {
                   if (assignment.bracket_format === 'ELIMINATION' && assignment.opponent) {
                     // Elimination bracket with assigned opponent
+                    const matchLink = assignment.match_id
+                      ? `solo_card.html?match=${assignment.match_id}`
+                      : `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`;
+
+                    const mySeedText = assignment.seed ? ` (Seed ${assignment.seed})` : '';
+                    const oppSeedText = assignment.opponent.seed ? ` (Seed ${assignment.opponent.seed})` : '';
+
                     assignments.push({
                       type: 'bracket',
                       title: `${assignment.division} Elimination Bracket`,
                       subtitle: `${assignment.event_name || 'Event'} • ${assignment.round}`,
-                      details: `You (Seed ${assignment.seed}) vs ${assignment.opponent.name} (Seed ${assignment.opponent.seed})`,
-                      link: `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`,
+                      details: `You${mySeedText} vs ${assignment.opponent.name}${oppSeedText}`,
+                      link: matchLink,
                       icon: 'fas fa-trophy',
                       color: 'bg-yellow-500 hover:bg-yellow-600',
                       urgent: true,

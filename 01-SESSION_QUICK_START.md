@@ -70,6 +70,17 @@
 
 ## 🚨 Status Update (February 2026)
 
+### ✅ Event Prep Fixes & UI Polish (February 19, 2026)
+- **Pending Matches Link Fix**: Modified the `/v1/archers/{id}/bracket-assignments` API to dynamically resolve the active match ID for both Elimination and Swiss brackets. The archer UI now successfully clicks through to `solo_card.html?match=UUID`.
+- **Bracket Tie-Breakers (Shoot-Offs)**: Adjusted the aggregation limit inside `api/index.php`. Solo matches now parse up to `set_number <= 6` and Team matches up to `set_number <= 5`, securely resolving tie scenarios without rolling over missing points.
+- **Bracket Leaderboards**: Unified the SQL `ORDER BY` logic for `/v1/brackets/{id}/results`. Swiss standings inherently prioritize absolute win percentage (record) prior to points or total wins. Polling on `bracket_results.html` is relaxed from 5 to 15 seconds.
+- **Dashboard Verify Workflow**: Intercepted the hidden `Verify` button inside the `event_dashboard.html` authenticated UI. Integrated the exact coach parameter logic (`verifyEvent`) to automatically trigger the `coach.html` Verify Scorecards modal.
+- **Bracket Results UI**: Status badge conditionally transitions to "Verified" when cards hit `VRFD` or `VER`. Display explicit bale strings (e.g. `11-A`) in the `Tgt` column. Amply styled match winner rows using `bg-green-100`.
+- **Event List QR Update**: Rewired the coach event list QR Code generation to exclusively direct toward `event_dashboard.html?event=UUID`, dissolving the previous `entry_code` requirement since the dashboard is inherently public-facing.
+
+**Files Changed:** `api/index.php`, `index.html`, `bracket_results.html`, `event_dashboard.html`, `js/coach.js`
+**Full Notes:** [RELEASE_NOTES_v1.0.0_build20260219.md](RELEASE_NOTES_v1.0.0_build20260219.md)
+
 ### ✅ Archer Window — "Your Bale" Section + API Fix (February 18, 2026 — Evening, Build 20260218192007)
 - **"Your Bale" section added to Archer Window** — Archers now see their exact bale, line, and target assignment directly on the home screen, without navigating to the scorecard. A compact card appears whenever the archer has an active match with a bale assigned. (`index.html`)
   - **Solo matches:** Shows target letter (A or B) highlighted in blue, opponent's target and name
