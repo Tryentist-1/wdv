@@ -135,6 +135,15 @@
         <div id="team-assignments-list" class="space-y-2"></div>
       </div>
 
+      <!-- Bale Assignments Section (round-specific, shown when archer has a bale assigned) -->
+      <div id="bale-section" class="hidden space-y-3">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+          <i class="fas fa-bullseye mr-2 text-blue-600 dark:text-blue-400"></i>
+          Your Bale
+        </h2>
+        <div id="bale-section-list" class="space-y-3"></div>
+      </div>
+
       <!-- Recent Activity Section -->
       <div id="recent-activity" class="hidden space-y-3">
         <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
@@ -1017,6 +1026,55 @@
                       opponent_name: assignment.opponent_name
                     });
                   }
+                } else if (assignment.bracket_type === 'TEAM' && assignment.match_id) {
+                  // Team bracket assignment — find the existing team entry (from history) and
+                  // merge bale info onto it. The history API gives us sets/progress; the
+                  // bracket-assignments API gives us the bale/line assignment.
+                  const matchId = assignment.match_id;
+                  const existingIdx = assignments.findIndex(a =>
+                    (a.type === 'team') && (a.match_id === matchId || a.matchId === matchId)
+                  );
+                  if (existingIdx >= 0) {
+                    // Merge bale data onto the existing team assignment
+                    assignments[existingIdx].baleNumber = assignment.bale_number;
+                    assignments[existingIdx].bale_number = assignment.bale_number;
+                    assignments[existingIdx].lineNumber = assignment.line_number;
+                    assignments[existingIdx].line_number = assignment.line_number;
+                    assignments[existingIdx].wave = assignment.wave;
+                    console.log('[index] Merged bale data onto team match:', matchId, 'bale:', assignment.bale_number);
+                  } else {
+                    // Edge case: team match in bracket-assignments but not in history
+                    // (e.g. match created after history was fetched) — push it directly
+                    const eventName = assignment.event_name || 'Team Match';
+                    const bracketName = assignment.current_round || 'Team';
+                    const title = `${eventName} - ${bracketName}`;
+                    assignments.push({
+                      type: 'team',
+                      isTeam: true,
+                      title,
+                      subtitle: assignment.opponent_name || 'Opponent',
+                      details: 'Sets: 0-0',
+                      link: `team_card.html?match=${matchId}`,
+                      icon: 'fas fa-users',
+                      color: 'bg-orange-500 hover:bg-orange-600',
+                      urgent: true,
+                      event_date: assignment.event_date,
+                      card_status: 'PENDING',
+                      match_id: matchId,
+                      matchId: matchId,
+                      event_name: title,
+                      team_name: assignment.my_team_name || '',
+                      opponent_team: assignment.opponent_name || 'Opponent',
+                      baleNumber: assignment.bale_number,
+                      bale_number: assignment.bale_number,
+                      lineNumber: assignment.line_number,
+                      line_number: assignment.line_number,
+                      wave: assignment.wave,
+                      sets_won: 0,
+                      opponent_sets_won: 0,
+                      is_winner: false
+                    });
+                  }
                 }
               });
             } else if (bracketRes.status !== 404) {
@@ -1047,6 +1105,10 @@
           if (rankingList) rankingList.innerHTML = '';
           if (soloList) soloList.innerHTML = '';
           if (teamList) teamList.innerHTML = '';
+          const baleSection = document.getElementById('bale-section');
+          const baleSectionList = document.getElementById('bale-section-list');
+          if (baleSection) baleSection.classList.add('hidden');
+          if (baleSectionList) baleSectionList.innerHTML = '';
 
           // Render Recent Activity first — before any early return — so archers
           // with no open assignments still see their history, and switching archers
@@ -1156,10 +1218,103 @@
             teamSection.classList.remove('hidden');
           }
 
+          // Render Bale Assignments — shown when any assignment has a bale number
+          renderBaleSection(assignments);
 
         } catch (e) {
           console.log('Could not load open assignments:', e.message);
         }
+      }
+
+      /**
+       * Renders compact "Your Bale" cards for any assignment that has a bale_number
+       * or baleNumber. Shows the archer's specific target highlighted, opponent, and
+       * match context. Uses data already present in the assignments array — no API call.
+       * @param {Array} assignments - Built list of assignments from loadOpenAssignments
+       */
+      function renderBaleSection(assignments) {
+        const section = document.getElementById('bale-section');
+        const list = document.getElementById('bale-section-list');
+        if (!section || !list) return;
+
+        // Collect assignments that have a bale number
+        const baleItems = assignments.filter(a =>
+          (a.baleNumber || a.bale_number) && (a.type === 'solo' || a.type === 'team' || a.type === 'bracket')
+        );
+
+        if (baleItems.length === 0) {
+          section.classList.add('hidden');
+          return;
+        }
+
+        list.innerHTML = '';
+
+        baleItems.forEach(a => {
+          const baleNum = a.baleNumber || a.bale_number;
+          const myTarget = a.myTarget || a.my_target || a.target_assignment || '?';
+          const lineNum = a.lineNumber || a.line_number;
+          const wave = a.wave;
+          const opponent = a.opponent_name || a.opponent || null;
+          const oppTarget = myTarget ? (lineNum === 1 ? (myTarget === 'A' ? 'B' : 'A') : (myTarget === 'C' ? 'D' : 'C')) : null;
+          const lineLabel = lineNum === 1 ? 'Line 1 (A/B)' : lineNum === 2 ? 'Line 2 (C/D)' : '';
+          const isTeam = a.type === 'team';
+          const myTeamName = a.team_name || '';
+          const bracketName = a.event_name || a.title || '';
+
+          // Status badge
+          const cs = (a.card_status || 'PENDING').toUpperCase();
+          const statusBadgeColor = { VRFD: 'bg-green-500', VER: 'bg-green-500', COMP: 'bg-blue-500', COMPLETED: 'bg-blue-500' }[cs] || 'bg-gray-400';
+          const statusBadgeLabel = { VRFD: 'Verified', VER: 'Verified', COMP: 'Complete', COMPLETED: 'Complete', PENDING: 'Pending', PEND: 'Pending' }[cs] || cs;
+
+          const waveHtml = wave ? `<span class="ml-2 text-xs text-gray-400">(Wave ${wave})</span>` : '';
+          const oppHtml = opponent
+            ? `<div class="flex-1 bg-white dark:bg-gray-800 rounded-lg p-2 text-center min-w-0 border border-gray-200 dark:border-gray-600">
+                ${oppTarget ? `<div class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide">${oppTarget}</div>` : ''}
+                <div class="text-sm font-semibold text-gray-700 dark:text-gray-200 truncate" title="${opponent}">${opponent}</div>
+                <div class="text-[10px] text-gray-400">${isTeam ? 'Opponent Team' : 'Opponent'}</div>
+              </div>`
+            : `<div class="flex-1 bg-gray-50 dark:bg-gray-700 rounded-lg p-2 text-center border border-dashed border-gray-300 dark:border-gray-600">
+                ${oppTarget ? `<div class="text-xs text-gray-400 dark:text-gray-500">${oppTarget}</div>` : ''}
+                <div class="text-xs text-gray-400 dark:text-gray-500 mt-1">${isTeam ? 'Opponent Team' : 'Opponent'}</div>
+              </div>`;
+
+          const card = document.createElement('div');
+          card.className = 'border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-700 shadow-sm';
+          card.innerHTML = `
+            <div class="bg-blue-600 dark:bg-blue-700 text-white text-center py-1.5 font-bold text-sm tracking-wide">
+              BALE ${baleNum}
+            </div>
+            <div class="p-3">
+              <div class="flex justify-between items-center mb-2">
+                <div class="text-xs text-gray-500 dark:text-gray-400">${lineLabel}${waveHtml}</div>
+                <span class="px-1.5 py-0.5 ${statusBadgeColor} text-white rounded text-[10px] font-semibold">${statusBadgeLabel}</span>
+              </div>
+              <div class="flex gap-2">
+                <!-- Your target — highlighted -->
+                <div class="flex-1 bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 dark:border-blue-400 rounded-lg p-2 text-center min-w-0">
+                  ${isTeam
+              ? `<div class="text-xs font-bold text-blue-600 dark:text-blue-300 uppercase tracking-wide truncate" title="${myTeamName}">${myTeamName || 'Your Team'}</div>
+                       <div class="text-[10px] text-blue-500 dark:text-blue-400 mt-1">Your team</div>`
+              : `<div class="text-xs font-bold text-blue-600 dark:text-blue-300 uppercase tracking-wide">${myTarget} — You</div>
+                       <div class="text-[10px] text-blue-500 dark:text-blue-400 mt-1">Your target</div>`
+            }
+                </div>
+                ${oppHtml}
+              </div>
+              <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-2 truncate">${bracketName}</div>
+            </div>
+          `;
+
+          // Tapping the card navigates to the match
+          if (a.link) {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', () => window.location.href = a.link);
+          }
+
+          list.appendChild(card);
+        });
+
+        section.classList.remove('hidden');
       }
 
       /**

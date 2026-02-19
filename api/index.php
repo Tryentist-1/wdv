@@ -8212,17 +8212,13 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/bracket-assignments$#i', $route, $m) 
                 b.bracket_format, 
                 b.event_id, 
                 b.division, 
-                b.side, 
                 b.status as bracket_status,
                 e.name as event_name, 
                 e.date as event_date,
                 tmt_self.school as my_school, 
                 tmt_self.team_name as my_team_name,
                 tmt_opp.school as opp_school, 
-                tmt_opp.team_name as opp_team_name,
-                tmt_self.swiss_wins,
-                tmt_self.swiss_losses,
-                tmt_self.swiss_points
+                tmt_opp.team_name as opp_team_name
             FROM team_matches tm
             JOIN team_match_archers tma ON tma.match_id = tm.id AND tma.archer_id = ?
             JOIN brackets b ON b.id = tm.bracket_id
@@ -8263,9 +8259,9 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/bracket-assignments$#i', $route, $m) 
                 'bracket_size' => 0,
                 'bracket_status' => $tm['bracket_status'],
                 'seed' => null,
-                'swiss_points' => $tm['swiss_points'],
-                'swiss_wins' => $tm['swiss_wins'],
-                'swiss_losses' => $tm['swiss_losses'],
+                'swiss_points' => null,
+                'swiss_wins' => null,
+                'swiss_losses' => null,
                 'match_id' => $tm['match_id'],
                 'current_round' => $tm['bracket_match_id'],
                 'opponent_name' => $oppName,

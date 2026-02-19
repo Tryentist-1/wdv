@@ -70,6 +70,19 @@
 
 ## 🚨 Status Update (February 2026)
 
+### ✅ Archer Window — "Your Bale" Section + API Fix (February 18, 2026 — Evening, Build 20260218192007)
+- **"Your Bale" section added to Archer Window** — Archers now see their exact bale, line, and target assignment directly on the home screen, without navigating to the scorecard. A compact card appears whenever the archer has an active match with a bale assigned. (`index.html`)
+  - **Solo matches:** Shows target letter (A or B) highlighted in blue, opponent's target and name
+  - **Team matches:** Shows your team name and "Opponent Team" label — no confusing target letters when not applicable
+  - Tapping the card navigates directly to the match scorecard
+  - Re-uses data from the existing `/v1/archers/{id}/bracket-assignments` API (no new network calls)
+- **Fixed 500 error on `/v1/archers/{id}/bracket-assignments` API** — Two invalid column references (`b.side`, `tmt_self.swiss_wins/losses/points`) blocked the endpoint for all archers. Removed both. (`api/index.php`)
+- **Fixed team bale assignments not showing** — The `bracketAssignments.forEach` loop only handled `SOLO` assignments. Added `TEAM` branch that merges bale data from the bracket-assignments API onto the existing team entry from the history API. (`index.html`)
+
+**Files Changed:** `index.html`, `api/index.php`, `version.json`  
+**Build:** `20260218192007` → deployed to production ✅  
+**Full Notes:** [RELEASE_NOTES_v1.0.0_build20260218c.md](RELEASE_NOTES_v1.0.0_build20260218c.md)
+
 ### ✅ Archer Window UI — Recent Activity & Team Match Navigation Fixes (February 18, 2026 — Evening, Build 20260218151545)
 - **Recent Activity hidden for archers with no open assignments** — `renderRecentActivity()` was called after an early-return guard in `loadOpenAssignments()`. Archers who had completed all work (e.g. post-event) never saw their history. Fixed by moving the call before the early return. (`index.html`)
 - **Stale Recent Activity when switching archers** — Switching from an archer with active assignments to one without left the previous archer's history cards visible. Fixed automatically by the above change.
@@ -80,6 +93,7 @@
 **Git Commit:** `0da4d15` (fix) + `0e0b423` (chore) → merged `78723c9` on main  
 **Build:** `20260218151545` → deployed to production ✅  
 **Full Notes:** [RELEASE_NOTES_v1.0.0_build20260218.md](RELEASE_NOTES_v1.0.0_build20260218.md)
+
 
 ### ✅ Team Dashboard & Verification Fixes (February 18, 2026 — Afternoon)
 - **Team Bracket SQL Error:** Fixed 500 error on `GET /v1/brackets/:id/results` for TEAM Swiss brackets. `tmt.team_name` was missing from `SELECT DISTINCT` but referenced in `ORDER BY`. (`api/index.php`)
