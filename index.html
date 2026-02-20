@@ -738,12 +738,7 @@
                   return true;
                 }
 
-                // Show if COMPLETED/COMP and today
-                if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
-                  return isToday;
-                }
-
-                // Don't show VERIFIED/VRFD or VOID
+                // Don't show COMPLETED/COMP, VERIFIED/VRFD or VOID
                 return false;
               });
 
@@ -765,10 +760,6 @@
                 if ((normalizedStatus === 'PENDING' || normalizedStatus === 'PEND') && !isMatchComplete) {
                   if (isStale(match.event_date, hasProgress)) return false;
                   return true;
-                }
-
-                if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
-                  return isToday;
                 }
 
                 return false;
@@ -793,9 +784,7 @@
                   if (isStale(match.event_date, hasProgress)) return false;
                   return true;
                 }
-                if (normalizedStatus === 'COMPLETED' || normalizedStatus === 'COMP') {
-                  return isToday;
-                }
+
                 return false;
               });
 
@@ -945,25 +934,45 @@
                 if (assignment.bracket_type === 'SOLO') {
                   if (assignment.bracket_format === 'ELIMINATION' && assignment.opponent) {
                     // Elimination bracket with assigned opponent
-                    const matchLink = assignment.match_id
-                      ? `solo_card.html?match=${assignment.match_id}`
-                      : `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`;
+                    const matchId = assignment.match_id;
+                    let isComplete = false;
 
-                    const mySeedText = assignment.seed ? ` (Seed ${assignment.seed})` : '';
-                    const oppSeedText = assignment.opponent.seed ? ` (Seed ${assignment.opponent.seed})` : '';
+                    // Check if match is already in history and completed
+                    if (matchId) {
+                      const existingMatch = assignments.find(a =>
+                        (a.type === 'solo' || a.type === 'bracket') &&
+                        (a.match_id === matchId || a.matchId === matchId)
+                      );
 
-                    assignments.push({
-                      type: 'bracket',
-                      title: `${assignment.division} Elimination Bracket`,
-                      subtitle: `${assignment.event_name || 'Event'} • ${assignment.round}`,
-                      details: `You${mySeedText} vs ${assignment.opponent.name}${oppSeedText}`,
-                      link: matchLink,
-                      icon: 'fas fa-trophy',
-                      color: 'bg-yellow-500 hover:bg-yellow-600',
-                      urgent: true,
-                      matchId: assignment.match_id,
-                      event_date: assignment.event_date
-                    });
+                      // If it's already in assignments (from history API), it was already filtered
+                      // but if it's there, it means it's pending. If it's NOT there but in fullHistory,
+                      // it means the history filter correctly removed it because it's complete.
+                      if (!existingMatch && fullHistory.some(historyItem => historyItem.match_id === matchId)) {
+                        isComplete = true; // It's in history but was filtered out (so it's complete)
+                      }
+                    }
+
+                    if (!isComplete) {
+                      const matchLink = matchId
+                        ? `solo_card.html?match=${matchId}`
+                        : `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`;
+
+                      const mySeedText = assignment.seed ? ` (Seed ${assignment.seed})` : '';
+                      const oppSeedText = assignment.opponent.seed ? ` (Seed ${assignment.opponent.seed})` : '';
+
+                      assignments.push({
+                        type: 'bracket',
+                        title: `${assignment.division} Elimination Bracket`,
+                        subtitle: `${assignment.event_name || 'Event'} • ${assignment.round}`,
+                        details: `You${mySeedText} vs ${assignment.opponent.name}${oppSeedText}`,
+                        link: matchLink,
+                        icon: 'fas fa-trophy',
+                        color: 'bg-yellow-500 hover:bg-yellow-600',
+                        urgent: true,
+                        matchId: matchId,
+                        event_date: assignment.event_date
+                      });
+                    }
                   } else if (assignment.bracket_format === 'SWISS') {
                     // Swiss bracket - dedupe with history solo (same match can appear in both APIs)
                     const matchId = assignment.match_id;
@@ -996,42 +1005,63 @@
 
                     const setsWon = mergedSets.sets_won;
                     const oppSetsWon = mergedSets.opponent_sets_won;
-                    const setsStr = `Sets: ${setsWon}-${oppSetsWon}`;
-                    const trophyIcon = mergedSets.is_winner ? ' 🏆' : '';
 
-                    const eventName = assignment.event_name || 'Event';
-                    const bracketName = assignment.round || assignment.current_round || 'Solo';
-                    const title = `${eventName} - ${bracketName}`;
-                    const details = baleInfo
-                      ? `${oppFirst}: ${record} | ${baleInfo}`
-                      : `${oppFirst}: ${record}`;
+                    // Filter out completed matches (6 sets won by either side)
+                    const isMatchComplete = setsWon >= 6 || oppSetsWon >= 6;
 
-                    const matchLink = matchId
-                      ? `solo_card.html?match=${matchId}`
-                      : `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`;
+                    // Also check full history to see if it was completed but filtered out by history API filter
+                    let historySaysComplete = false;
+                    if (matchId && !isMatchComplete && !existingIdx >= 0) {
+                      const historyItem = fullHistory.find(h => h.match_id === matchId);
+                      if (historyItem) {
+                        const hs = parseInt(historyItem.sets_won || 0);
+                        const ho = parseInt(historyItem.opponent_sets_won || 0);
+                        if (hs >= 6 || ho >= 6) historySaysComplete = true;
+                      }
+                    }
 
-                    assignments.push({
-                      type: 'bracket',
-                      title,
-                      subtitle: details,
-                      details: setsStr + trophyIcon,
-                      link: matchLink,
-                      icon: mergedSets.is_winner ? 'fas fa-trophy' : (assignment.bale_number ? 'fas fa-bullseye' : 'fas fa-trophy'),
-                      color: assignment.match_id ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-500 hover:bg-blue-600',
-                      urgent: !!assignment.match_id,
-                      event_date: assignment.event_date,
-                      matchId: matchId,
-                      match_id: matchId,
-                      baleNumber: assignment.bale_number,
-                      lineNumber: assignment.line_number,
-                      myTarget: assignment.my_target,
-                      wave: assignment.wave,
-                      sets_won: setsWon,
-                      opponent_sets_won: oppSetsWon,
-                      is_winner: mergedSets.is_winner,
-                      event_name: title,
-                      opponent_name: assignment.opponent_name
-                    });
+                    // If the Swiss bracket returns an assignment without a match_id, and they have wins/losses,
+                    // it means they're waiting for the next round to be generated. Do not show them as an open assignment.
+                    const waitingForNextRound = !matchId && (assignment.swiss_wins > 0 || assignment.swiss_losses > 0 || assignment.swiss_draws > 0);
+
+                    if (!isMatchComplete && !historySaysComplete && !waitingForNextRound) {
+                      const setsStr = `Sets: ${setsWon}-${oppSetsWon}`;
+                      const trophyIcon = mergedSets.is_winner ? ' 🏆' : '';
+
+                      const eventName = assignment.event_name || 'Event';
+                      const bracketName = assignment.round || assignment.current_round || 'Solo';
+                      const title = `${eventName} - ${bracketName}`;
+                      const details = baleInfo
+                        ? `${oppFirst}: ${record} | ${baleInfo}`
+                        : `${oppFirst}: ${record}`;
+
+                      const matchLink = matchId
+                        ? `solo_card.html?match=${matchId}`
+                        : `solo_card.html?event=${assignment.event_id}&bracket=${assignment.bracket_id}`;
+
+                      assignments.push({
+                        type: 'bracket',
+                        title,
+                        subtitle: details,
+                        details: setsStr + trophyIcon,
+                        link: matchLink,
+                        icon: mergedSets.is_winner ? 'fas fa-trophy' : (assignment.bale_number ? 'fas fa-bullseye' : 'fas fa-trophy'),
+                        color: assignment.match_id ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-500 hover:bg-blue-600',
+                        urgent: !!assignment.match_id,
+                        event_date: assignment.event_date,
+                        matchId: matchId,
+                        match_id: matchId,
+                        baleNumber: assignment.bale_number,
+                        lineNumber: assignment.line_number,
+                        myTarget: assignment.my_target,
+                        wave: assignment.wave,
+                        sets_won: setsWon,
+                        opponent_sets_won: oppSetsWon,
+                        is_winner: mergedSets.is_winner,
+                        event_name: title,
+                        opponent_name: assignment.opponent_name
+                      });
+                    }
                   }
                 } else if (assignment.bracket_type === 'TEAM' && assignment.match_id) {
                   // Team bracket assignment — find the existing team entry (from history) and
@@ -1052,35 +1082,50 @@
                   } else {
                     // Edge case: team match in bracket-assignments but not in history
                     // (e.g. match created after history was fetched) — push it directly
-                    const eventName = assignment.event_name || 'Team Match';
-                    const bracketName = assignment.current_round || 'Team';
-                    const title = `${eventName} - ${bracketName}`;
-                    assignments.push({
-                      type: 'team',
-                      isTeam: true,
-                      title,
-                      subtitle: assignment.opponent_name || 'Opponent',
-                      details: 'Sets: 0-0',
-                      link: `team_card.html?match=${matchId}`,
-                      icon: 'fas fa-users',
-                      color: 'bg-orange-500 hover:bg-orange-600',
-                      urgent: true,
-                      event_date: assignment.event_date,
-                      card_status: 'PENDING',
-                      match_id: matchId,
-                      matchId: matchId,
-                      event_name: title,
-                      team_name: assignment.my_team_name || '',
-                      opponent_team: assignment.opponent_name || 'Opponent',
-                      baleNumber: assignment.bale_number,
-                      bale_number: assignment.bale_number,
-                      lineNumber: assignment.line_number,
-                      line_number: assignment.line_number,
-                      wave: assignment.wave,
-                      sets_won: 0,
-                      opponent_sets_won: 0,
-                      is_winner: false
-                    });
+                    const matchId = assignment.match_id;
+
+                    // Check if this match is actually completed but was filtered out from fullHistory
+                    let historySaysComplete = false;
+                    if (matchId) {
+                      const historyItem = fullHistory.find(h => h.match_id === matchId);
+                      if (historyItem) {
+                        const hs = parseInt(historyItem.sets_won || 0);
+                        const ho = parseInt(historyItem.opponent_sets_won || 0);
+                        if (hs >= 5 || ho >= 5) historySaysComplete = true; // Team matches are best of 5
+                      }
+                    }
+
+                    if (!historySaysComplete) {
+                      const eventName = assignment.event_name || 'Team Match';
+                      const bracketName = assignment.current_round || 'Team';
+                      const title = `${eventName} - ${bracketName}`;
+                      assignments.push({
+                        type: 'team',
+                        isTeam: true,
+                        title,
+                        subtitle: assignment.opponent_name || 'Opponent',
+                        details: 'Sets: 0-0',
+                        link: `team_card.html?match=${matchId}`,
+                        icon: 'fas fa-users',
+                        color: 'bg-orange-500 hover:bg-orange-600',
+                        urgent: true,
+                        event_date: assignment.event_date,
+                        card_status: 'PENDING',
+                        match_id: matchId,
+                        matchId: matchId,
+                        event_name: title,
+                        team_name: assignment.my_team_name || '',
+                        opponent_team: assignment.opponent_name || 'Opponent',
+                        baleNumber: assignment.bale_number,
+                        bale_number: assignment.bale_number,
+                        lineNumber: assignment.line_number,
+                        line_number: assignment.line_number,
+                        wave: assignment.wave,
+                        sets_won: 0,
+                        opponent_sets_won: 0,
+                        is_winner: false
+                      });
+                    }
                   }
                 }
               });
