@@ -2,7 +2,7 @@
 
 **Purpose:** Rapidly onboard into development session without derailing  
 **Use Case:** Start of every AI-assisted session or new developer onboarding  
-**Last Updated:** February 18, 2026
+**Last Updated:** February 19, 2026
 
 ---
 
@@ -69,6 +69,15 @@
 ---
 
 ## 🚨 Status Update (February 2026)
+
+### ✅ Live Action HUD Beta & Search Improvements (February 19, 2026 - Evening)
+- **Live Action HUD (Beta)**: Created `live_action.html` and `js/live_action.js` to provide a read-only, auto-refreshing dashboard for spectators. Displays all Solo and Team matches for a given event.
+- **Click-to-View Scorecards**: Made the HUD match cards clickable. Clicking a match card opens `solo_card.html?match=UUID` or `team_card.html?match=UUID` in read-only mode, showing the detailed end-by-end scorecard without requiring an API key. 
+- **Enhanced Search (OR Logic)**: Upgraded the HUD's search bar to use space-separated OR logic instead of AND logic. Searching "Liana BJV" now matches any archer in the event named Liana OR any match in the BJV division.
+- **Team Roster Search & Display**: Extracted the archer names from the `team_match_archers` array and injected them into the searchable string. Added a comma-separated list of archers underneath the team names on Team match cards (e.g. `Ariana Ramirez, Alina Vizcarra, Liana Bils`).
+- **API Adjustments**: Removed `require_api_key()` from `GET /v1/solo-matches/:id` and `GET /v1/team-matches/:id` in `api/index.php` to enable public read-only access for the scorecards.
+
+**Files Changed:** `live_action.html`, `js/live_action.js`, `api/index.php`, `walkthrough.md`, `version.json`  
 
 ### ✅ Event Prep Fixes & UI Polish (February 19, 2026)
 - **Pending Matches Link Fix**: Modified the `/v1/archers/{id}/bracket-assignments` API to dynamically resolve the active match ID for both Elimination and Swiss brackets. The archer UI now successfully clicks through to `solo_card.html?match=UUID`.

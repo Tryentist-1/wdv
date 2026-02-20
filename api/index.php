@@ -5933,7 +5933,6 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)$#i', $route, $m) && $method === 
 // GET /v1/events/:id/solo-matches - Get all solo matches for an event
 // Query params: bracket_id (optional), status (optional), locked (optional), card_status (optional)
 if (preg_match('#^/v1/events/([0-9a-f-]+)/solo-matches$#i', $route, $m) && $method === 'GET') {
-    require_api_key();
     $eventId = $m[1];
 
     // Parse query parameters
@@ -6122,7 +6121,6 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/solo-matches$#i', $route, $m) && $meth
 
 // GET /v1/events/:id/team-matches - Get all team matches for an event
 if (preg_match('#^/v1/events/([0-9a-f-]+)/team-matches$#i', $route, $m) && $method === 'GET') {
-    require_api_key();
     $eventId = $m[1];
 
     // Parse query parameters
