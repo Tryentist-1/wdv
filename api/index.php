@@ -290,6 +290,37 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
         $soloMatches->execute([$archerData['id'], $archerData['id']]);
         $soloResults = $soloMatches->fetchAll();
 
+        // Pre-fetch all sets for all solo matches to avoid N+1 queries
+        $matchArcherIds = [];
+        foreach ($soloResults as $match) {
+            $isArcher1 = $match['archer1_id'] === $archerData['id'];
+            $matchArcherIds[] = $isArcher1 ? $match['archer1_match_archer_id'] : $match['archer2_match_archer_id'];
+            $matchArcherIds[] = $isArcher1 ? $match['archer2_match_archer_id'] : $match['archer1_match_archer_id'];
+        }
+
+        $setsByMatchArcher = [];
+        if (!empty($matchArcherIds)) {
+            // Keep unique IDs and reindex
+            $matchArcherIds = array_values(array_unique(array_filter($matchArcherIds)));
+            // Chunking in case there are thousands of IDs (rare, but safe)
+            $chunks = array_chunk($matchArcherIds, 500);
+            foreach ($chunks as $chunk) {
+                $inClause = rtrim(str_repeat('?,', count($chunk)), ',');
+                $allSetsStmt = $pdo->prepare("
+                    SELECT match_archer_id, set_number, set_points, set_total
+                    FROM solo_match_sets
+                    WHERE match_archer_id IN ($inClause)
+                    AND set_number <= 5
+                    AND a1 IS NOT NULL AND a1 != ''
+                    ORDER BY set_number
+                ");
+                $allSetsStmt->execute($chunk);
+                while ($row = $allSetsStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $setsByMatchArcher[$row['match_archer_id']][$row['set_number']] = $row;
+                }
+            }
+        }
+
         // Format solo matches for history and calculate accurate totals
         foreach ($soloResults as $match) {
             $isArcher1 = $match['archer1_id'] === $archerData['id'];
@@ -297,35 +328,33 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
             $myMatchArcherId = $isArcher1 ? $match['archer1_match_archer_id'] : $match['archer2_match_archer_id'];
             $opponentMatchArcherId = $isArcher1 ? $match['archer2_match_archer_id'] : $match['archer1_match_archer_id'];
 
-            // Fetch per-set data for both archers and replay match logic.
-            // We stop accumulating set points once either archer reaches 6 (match over).
-            $perSetStmt = $pdo->prepare('
-                SELECT 
-                    sms1.set_number,
-                    COALESCE(sms1.set_points, 0) as my_points,
-                    COALESCE(sms2.set_points, 0) as opp_points,
-                    COALESCE(sms1.set_total, 0) as my_total
-                FROM solo_match_sets sms1
-                LEFT JOIN solo_match_sets sms2 ON sms2.match_archer_id = ? AND sms2.set_number = sms1.set_number
-                WHERE sms1.match_archer_id = ? AND sms1.set_number <= 5
-                AND sms1.a1 IS NOT NULL AND sms1.a1 != \'\'
-                ORDER BY sms1.set_number
-            ');
-            $perSetStmt->execute([$opponentMatchArcherId, $myMatchArcherId]);
-            $sets = $perSetStmt->fetchAll(PDO::FETCH_ASSOC);
+            // Use pre-fetched sets
+            $mySetsRaw = $setsByMatchArcher[$myMatchArcherId] ?? [];
+            $oppSetsRaw = $setsByMatchArcher[$opponentMatchArcherId] ?? [];
 
             $setsWon = 0;
             $opponentSetsWon = 0;
             $totalScore = 0;
             $setsPlayed = 0;
-            foreach ($sets as $set) {
-                // Stop if match is already decided (either archer reached 6)
-                if ($setsWon >= 6 || $opponentSetsWon >= 6)
+
+            // Loop through ordered set numbers 1 to 5 to replay match logic.
+            // We stop accumulating set points once either archer reaches 6 (match over).
+            for ($i = 1; $i <= 5; $i++) {
+                if ($setsWon >= 6 || $opponentSetsWon >= 6) {
                     break;
-                $setsWon += (int) $set['my_points'];
-                $opponentSetsWon += (int) $set['opp_points'];
-                $totalScore += (int) $set['my_total'];
-                $setsPlayed++;
+                }
+
+                // Only count the set if 'mySetsRaw' has data for this set number
+                if (isset($mySetsRaw[$i])) {
+                    $myPoints = (int) ($mySetsRaw[$i]['set_points'] ?? 0);
+                    $oppPoints = isset($oppSetsRaw[$i]) ? (int) ($oppSetsRaw[$i]['set_points'] ?? 0) : 0;
+                    $myTotal = (int) ($mySetsRaw[$i]['set_total'] ?? 0);
+
+                    $setsWon += $myPoints;
+                    $opponentSetsWon += $oppPoints;
+                    $totalScore += $myTotal;
+                    $setsPlayed++;
+                }
             }
             $arrowsShot = $setsPlayed * 3;
 
@@ -538,6 +567,27 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/matches$#i', $route, $m) && $method =
         $matchesStmt->execute([$archerId, $archerId]);
         $matches = $matchesStmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Pre-fetch all sets for these matches to avoid N+1 queries
+        $matchIds = array_column($matches, 'id');
+        $setsByMatchAndArcher = [];
+        if (!empty($matchIds)) {
+            $chunks = array_chunk($matchIds, 500);
+            foreach ($chunks as $chunk) {
+                $inClause = rtrim(str_repeat('?,', count($chunk)), ',');
+                $allSetsStmt = $pdo->prepare("
+                    SELECT sma.match_id, sma.archer_id, sms.set_number, sms.set_total, sms.set_points, sms.xs
+                    FROM solo_match_sets sms
+                    JOIN solo_match_archers sma ON sma.id = sms.match_archer_id
+                    WHERE sma.match_id IN ($inClause)
+                    ORDER BY sms.set_number
+                ");
+                $allSetsStmt->execute($chunk);
+                while ($row = $allSetsStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $setsByMatchAndArcher[$row['match_id']][$row['archer_id']][] = $row;
+                }
+            }
+        }
+
         // Enrich with set scores
         foreach ($matches as &$match) {
             $isArcher1 = $match['archer1_id'] === $archerId;
@@ -547,27 +597,10 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/matches$#i', $route, $m) && $method =
                 ['id' => $match['archer1_id'], 'name' => $match['archer1_name']] :
                 ['id' => $match['archer2_id'], 'name' => $match['archer2_name']];
 
-            // Get my sets
-            $mySetsStmt = $pdo->prepare('
-                SELECT sms.set_number, sms.set_total, sms.set_points, sms.xs
-                FROM solo_match_sets sms
-                JOIN solo_match_archers sma ON sma.id = sms.match_archer_id
-                WHERE sma.match_id = ? AND sma.archer_id = ?
-                ORDER BY sms.set_number
-            ');
-            $mySetsStmt->execute([$match['id'], $archerId]);
-            $mySets = $mySetsStmt->fetchAll(PDO::FETCH_ASSOC);
+            // Use pre-fetched sets
+            $mySets = $setsByMatchAndArcher[$match['id']][$archerId] ?? [];
+            $oppSets = $setsByMatchAndArcher[$match['id']][$opponentId] ?? [];
 
-            // Get opponent sets
-            $oppSetsStmt = $pdo->prepare('
-                SELECT sms.set_number, sms.set_total, sms.set_points, sms.xs
-                FROM solo_match_sets sms
-                JOIN solo_match_archers sma ON sma.id = sms.match_archer_id
-                WHERE sma.match_id = ? AND sma.archer_id = ?
-                ORDER BY sms.set_number
-            ');
-            $oppSetsStmt->execute([$match['id'], $opponentId]);
-            $oppSets = $oppSetsStmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Calculate totals
             $myTotalSetPoints = array_sum(array_column($mySets, 'set_points'));
@@ -5345,8 +5378,8 @@ if (preg_match('#^/v1/archers$#', $route) && $method === 'GET') {
 
         // Status filter: default 'active', pass ?status=all to skip
         if ($statusFilter !== 'all') {
-            $sql .= ' AND LOWER(status) = ?';
-            $params[] = strtolower($statusFilter);
+            $sql .= ' AND status = ?';
+            $params[] = $statusFilter;
         }
 
         if ($gender && in_array($gender, ['M', 'F'])) {
