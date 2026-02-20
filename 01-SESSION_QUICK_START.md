@@ -70,6 +70,12 @@
 
 ## 🚨 Status Update (February 2026)
 
+### ✅ Swiss Bracket Bale Assignment Fix (February 19, 2026)
+- **Persisted Bale Assignments**: Modified the `generate-round` API for Swiss brackets. Rather than defaulting to `startBale = 1` for every new round, the system now queries the previous rounds in the DB to calculate the minimum bale number used by that specific bracket. This ensures archers retain their original bale grouping (e.g., Varsity Girls stay on Bales 3 & 4 instead of resetting to 1).
+
+**Files Changed:** `api/index.php`, `version.json`
+**Full Notes:** [RELEASE_NOTES_v1.0.0_build20260219c.md](RELEASE_NOTES_v1.0.0_build20260219c.md)
+
 ### ✅ Live Action HUD Beta & Search Improvements (February 19, 2026 - Evening)
 - **Live Action HUD (Beta)**: Created `live_action.html` and `js/live_action.js` to provide a read-only, auto-refreshing dashboard for spectators. Displays all Solo and Team matches for a given event.
 - **Click-to-View Scorecards**: Made the HUD match cards clickable. Clicking a match card opens `solo_card.html?match=UUID` or `team_card.html?match=UUID` in read-only mode, showing the detailed end-by-end scorecard without requiring an API key. 

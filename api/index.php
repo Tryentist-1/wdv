@@ -9560,7 +9560,26 @@ ORDER BY swiss_points DESC, swiss_wins DESC, swiss_losses ASC, RAND()
 
         // Bale config from request body or event settings
         $totalBales = isset($roundInput['totalBales']) ? (int) $roundInput['totalBales'] : null;
-        $baleStartNum = isset($roundInput['startBale']) ? (int) $roundInput['startBale'] : 1;
+        $baleStartNum = isset($roundInput['startBale']) ? (int) $roundInput['startBale'] : null;
+
+        if ($baleStartNum === null) {
+            // Try to find the minimum bale number used by this bracket in previous rounds
+            $table = $bracket['bracket_type'] === 'TEAM' ? 'team_matches' : 'solo_matches';
+            $minBaleStmt = $pdo->prepare("
+                SELECT MIN(bale_number) as min_bale 
+                FROM {$table} 
+                WHERE bracket_id = ? AND bale_number IS NOT NULL AND bale_number > 0
+            ");
+            $minBaleStmt->execute([$bracketId]);
+            $minBaleRow = $minBaleStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($minBaleRow && $minBaleRow['min_bale']) {
+                $baleStartNum = (int) $minBaleRow['min_bale'];
+            } else {
+                $baleStartNum = 1; // Fallback
+            }
+        }
+
         if (!$totalBales && $bracket['event_id']) {
             $evtStmt = $pdo->prepare('SELECT total_bales FROM events WHERE id = ?');
             $evtStmt->execute([$bracket['event_id']]);
