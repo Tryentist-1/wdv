@@ -677,8 +677,55 @@
     };
   }
 
+  function customConfirm(title, message, confirmText = 'Confirm', confirmClass = 'bg-danger hover:bg-red-700') {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('confirm-modal');
+      const titleEl = document.getElementById('confirm-modal-title');
+      const msgEl = document.getElementById('confirm-modal-message');
+      const cancelBtn = document.getElementById('confirm-modal-cancel');
+      const okBtn = document.getElementById('confirm-modal-ok');
+
+      // Fallback to native confirm if modal isn't present
+      if (!modal) {
+        resolve(confirm(`${title}\n\n${message}`));
+        return;
+      }
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+      okBtn.textContent = confirmText;
+
+      okBtn.className = `px-4 py-2 text-white rounded font-semibold transition-colors ${confirmClass}`;
+
+      modal.style.display = 'flex';
+
+      const cleanup = () => {
+        modal.style.display = 'none';
+        cancelBtn.onclick = null;
+        okBtn.onclick = null;
+      };
+
+      cancelBtn.onclick = () => {
+        cleanup();
+        resolve(false);
+      };
+
+      okBtn.onclick = () => {
+        cleanup();
+        resolve(true);
+      };
+    });
+  }
+
   async function deleteEvent(eventId, eventName) {
-    if (!confirm(`Are you sure you want to delete "${eventName}"?\n\nThis will delete all rounds and scores for this event.`)) {
+    const isConfirmed = await customConfirm(
+      'Delete Event',
+      `Are you sure you want to delete "${eventName}"?\n\nThis will delete all rounds and scores for this event.`,
+      'Delete Event',
+      'bg-danger hover:bg-red-700'
+    );
+
+    if (!isConfirmed) {
       return;
     }
 
@@ -686,6 +733,8 @@
       await req(`/events/${eventId}`, 'DELETE');
       alert(`Event "${eventName}" deleted successfully.`);
       loadEvents();
+      const editModal = document.getElementById('edit-event-modal');
+      if (editModal) editModal.style.display = 'none';
     } catch (err) {
       alert(`Error deleting event: ${err.message}`);
     }

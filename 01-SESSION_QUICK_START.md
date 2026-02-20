@@ -70,6 +70,12 @@
 
 ## 🚨 Status Update (February 2026)
 
+### ✅ Event Deletion Confirm Bug Fix (February 19, 2026)
+- **iOS PWA Confirm Bug**: Replaced the native `window.confirm()` dialog with a custom HTML modal in the `deleteEvent` workflow to prevent WebKit from instantly dismissing the dialogue in standalone bounds.
+
+**Files Changed:** `coach.html`, `js/coach.js`, `version.json`
+**Full Notes:** [RELEASE_NOTES_v1.0.0_build20260219d.md](RELEASE_NOTES_v1.0.0_build20260219d.md)
+
 ### ✅ Swiss Bracket Bale Assignment Fix (February 19, 2026)
 - **Persisted Bale Assignments**: Modified the `generate-round` API for Swiss brackets. Rather than defaulting to `startBale = 1` for every new round, the system now queries the previous rounds in the DB to calculate the minimum bale number used by that specific bracket. This ensures archers retain their original bale grouping (e.g., Varsity Girls stay on Bales 3 & 4 instead of resetting to 1).
 

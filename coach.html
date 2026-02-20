@@ -1074,6 +1074,21 @@
     </div>
   </div>
 
+  <!-- Generic Confirm Modal -->
+  <div id="confirm-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 z-[70] flex items-center justify-center overflow-y-auto w-full h-full">
+    <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-xl max-w-md w-11/12 shadow-2xl my-8 mx-auto mt-[10vh]">
+      <h3 id="confirm-modal-title" class="text-xl font-bold text-gray-900 dark:text-white mb-4">Confirm</h3>
+      <p id="confirm-modal-message" class="text-gray-700 dark:text-gray-300 mb-6 whitespace-pre-wrap">Are you sure?</p>
+      <div class="flex gap-3 justify-end">
+        <button id="confirm-modal-cancel"
+          class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">Cancel</button>
+        <button id="confirm-modal-ok"
+          class="px-4 py-2 bg-danger hover:bg-red-700 text-white rounded font-semibold transition-colors">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/coach.js"></script>
 </body>
 
