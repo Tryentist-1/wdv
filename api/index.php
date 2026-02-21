@@ -796,7 +796,7 @@ function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void
     foreach ($matches as $match) {
         if ($isTeam) {
             $teamsStmt = $pdo->prepare('
-                SELECT tmt.team_name, tmt.winner
+                SELECT tmt.team_name, tmt.sets_won
                 FROM team_match_teams tmt
                 WHERE tmt.match_id = ?
                 ORDER BY tmt.position
@@ -805,10 +805,12 @@ function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void
             $matchEntries = $teamsStmt->fetchAll(PDO::FETCH_ASSOC);
 
             if (count($matchEntries) === 2) {
-                if ($matchEntries[0]['winner']) {
+                $t1Sets = (int) ($matchEntries[0]['sets_won'] ?? 0);
+                $t2Sets = (int) ($matchEntries[1]['sets_won'] ?? 0);
+                if ($t1Sets > $t2Sets) {
                     $standings[$matchEntries[0]['team_name']]['wins']++;
                     $standings[$matchEntries[1]['team_name']]['losses']++;
-                } elseif ($matchEntries[1]['winner']) {
+                } elseif ($t2Sets > $t1Sets) {
                     $standings[$matchEntries[1]['team_name']]['wins']++;
                     $standings[$matchEntries[0]['team_name']]['losses']++;
                 }

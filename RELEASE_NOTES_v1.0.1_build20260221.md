@@ -15,6 +15,7 @@ This release focuses on refining the Swiss bracket logic to support team competi
 - **Bale Persistence**: Rounds now automatically detect and reuse the bale range from previous rounds in the same bracket.
 
 ### 🐛 Bug Fixes
+- **Team Leaderboard Score Update**: Resolved an issue where team scores failed to update in Swiss brackets. The logic now correctly calculates winners based on `sets_won` instead of an unpopulated legacy column.
 - **Roster Import SQL Error**: Fixed a crash during roster import where the system attempted to insert a string (e.g., "S1") into an integer column (`seed_position`). The system now automatically sanitizes these values by extracting the numeric portion.
 
 ## Files Modified

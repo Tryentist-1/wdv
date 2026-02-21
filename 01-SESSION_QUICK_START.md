@@ -73,6 +73,7 @@
  ## 🚨 Status Update (February 21, 2026)
   
   ### ✅ Bracket Logic Refinements & Team Support (February 21, 2026)
+  - **Team Leaderboard Score Update**: Resolved an issue where team scores failed to update in Swiss brackets. Standings are now correctly recalculated from actual match data using `sets_won`.
   - **Generic Swiss Standings**: Refactored standings calculation to dynamically support both `ARCHER` and `TEAM` brackets.
   - **Team Swiss Support**: Enabled `generate-round` to handle team pairings, including school-balancing logic and roster preservation from previous rounds.
   - **Position-Based Seeding**: Integrated `seed_position` into Swiss tie-breaking and initial round pairings for fairer tournament distribution.
