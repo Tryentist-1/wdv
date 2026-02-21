@@ -757,175 +757,101 @@ function process_round_archer_verification(PDO $pdo, string $roundArcherId, stri
  */
 function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void
 {
-    // Verify bracket is Swiss format
-    $bracketStmt = $pdo->prepare('SELECT bracket_format FROM brackets WHERE id = ?');
+    // Verify bracket is Swiss format and get type
+    $bracketStmt = $pdo->prepare('SELECT bracket_format, bracket_type FROM brackets WHERE id = ?');
     $bracketStmt->execute([$bracketId]);
     $bracket = $bracketStmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$bracket || $bracket['bracket_format'] !== 'SWISS') {
-        return; // Only recalculate Swiss brackets
+        return;
     }
 
+    $isTeam = ($bracket['bracket_type'] ?? 'SOLO') === 'TEAM';
+    $matchTable = $isTeam ? 'team_matches' : 'solo_matches';
+    $entryType = $isTeam ? 'TEAM' : 'ARCHER';
+
     // Get all completed matches for this bracket
-    $matchesStmt = $pdo->prepare('
-        SELECT sm.id, sm.status, sm.card_status
-        FROM solo_matches sm
-        WHERE sm.bracket_id = ? 
-        AND sm.status = "Completed"
-        AND sm.card_status IN ("COMP", "VER")
-    ');
+    $matchesStmt = $pdo->prepare("
+        SELECT m.id, m.status 
+        FROM {$matchTable} m
+        WHERE m.bracket_id = ? 
+        AND m.status = 'Completed'
+    ");
     $matchesStmt->execute([$bracketId]);
     $matches = $matchesStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Initialize win/loss counts for all archers in bracket
     $standings = [];
 
-    // Get all archers in bracket_entries
-    $entriesStmt = $pdo->prepare('SELECT archer_id FROM bracket_entries WHERE bracket_id = ? AND entry_type = "ARCHER"');
-    $entriesStmt->execute([$bracketId]);
+    // Get all entries in bracket_entries
+    $entriesStmt = $pdo->prepare("SELECT id, archer_id, team_name FROM bracket_entries WHERE bracket_id = ? AND entry_type = ?");
+    $entriesStmt->execute([$bracketId, $entryType]);
     $entries = $entriesStmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($entries as $entry) {
-        $standings[$entry['archer_id']] = ['wins' => 0, 'losses' => 0];
+        $key = $isTeam ? $entry['team_name'] : $entry['archer_id'];
+        $standings[$key] = ['wins' => 0, 'losses' => 0];
     }
 
     // Count wins/losses from actual matches
     foreach ($matches as $match) {
-        // Get match archers and determine winner based on cumulative set points
-        $archersStmt = $pdo->prepare('
-            SELECT 
-                sma.archer_id,
-                sma.position,
-                SUM(COALESCE(sms.set_points, 0)) as sets_won
-            FROM solo_match_archers sma
-            LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 5
-                AND sms.a1 IS NOT NULL AND sms.a1 != \'\'
-            WHERE sma.match_id = ?
-            GROUP BY sma.id, sma.position, sma.archer_id
-            ORDER BY sma.position
-        ');
-        $archersStmt->execute([$match['id']]);
-        $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
+        if ($isTeam) {
+            $teamsStmt = $pdo->prepare('
+                SELECT tmt.team_name, tmt.winner
+                FROM team_match_teams tmt
+                WHERE tmt.match_id = ?
+                ORDER BY tmt.position
+            ');
+            $teamsStmt->execute([$match['id']]);
+            $matchEntries = $teamsStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        if (count($archers) === 2) {
-            $archer1Id = $archers[0]['archer_id'];
-            $archer2Id = $archers[1]['archer_id'];
-            // Cap at 6 — match ends when either archer reaches 6 set points
-            $archer1SetsWon = min(6, (int) ($archers[0]['sets_won'] ?? 0));
-            $archer2SetsWon = min(6, (int) ($archers[1]['sets_won'] ?? 0));
+            if (count($matchEntries) === 2) {
+                if ($matchEntries[0]['winner']) {
+                    $standings[$matchEntries[0]['team_name']]['wins']++;
+                    $standings[$matchEntries[1]['team_name']]['losses']++;
+                } elseif ($matchEntries[1]['winner']) {
+                    $standings[$matchEntries[1]['team_name']]['wins']++;
+                    $standings[$matchEntries[0]['team_name']]['losses']++;
+                }
+            }
+        } else {
+            $archersStmt = $pdo->prepare('
+                SELECT sma.archer_id, SUM(COALESCE(sms.set_points, 0)) as sets_won
+                FROM solo_match_archers sma
+                LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 5
+                WHERE sma.match_id = ?
+                GROUP BY sma.id, sma.archer_id, sma.position
+                ORDER BY sma.position
+            ');
+            $archersStmt->execute([$match['id']]);
+            $matchEntries = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Ensure both archers are in standings (in case they were added to match but not bracket_entries)
-            if (!isset($standings[$archer1Id])) {
-                $standings[$archer1Id] = ['wins' => 0, 'losses' => 0];
+            if (count($matchEntries) === 2) {
+                $e1Sets = min(6, (int) ($matchEntries[0]['sets_won'] ?? 0));
+                $e2Sets = min(6, (int) ($matchEntries[1]['sets_won'] ?? 0));
+                if ($e1Sets > $e2Sets) {
+                    $standings[$matchEntries[0]['archer_id']]['wins']++;
+                    $standings[$matchEntries[1]['archer_id']]['losses']++;
+                } elseif ($e2Sets > $e1Sets) {
+                    $standings[$matchEntries[1]['archer_id']]['wins']++;
+                    $standings[$matchEntries[0]['archer_id']]['losses']++;
+                }
             }
-            if (!isset($standings[$archer2Id])) {
-                $standings[$archer2Id] = ['wins' => 0, 'losses' => 0];
-            }
-
-            // Determine winner and update standings
-            if ($archer1SetsWon > $archer2SetsWon) {
-                $standings[$archer1Id]['wins']++;
-                $standings[$archer2Id]['losses']++;
-            } elseif ($archer2SetsWon > $archer1SetsWon) {
-                $standings[$archer2Id]['wins']++;
-                $standings[$archer1Id]['losses']++;
-            }
-            // If tied, neither gets a win or loss (shouldn't happen in completed matches, but safe)
         }
     }
 
     // Update bracket_entries with recalculated values
-    foreach ($standings as $archerId => $stats) {
+    foreach ($standings as $id => $stats) {
         $wins = $stats['wins'];
         $losses = $stats['losses'];
         $points = $wins;
 
-        // Ensure entry exists (create if missing)
-        $checkStmt = $pdo->prepare('SELECT id FROM bracket_entries WHERE bracket_id = ? AND archer_id = ?');
-        $checkStmt->execute([$bracketId, $archerId]);
-        if (!$checkStmt->fetch()) {
-            // Entry doesn't exist, create it
-            global $genUuid;
-            $entryId = $genUuid();
-            $insertStmt = $pdo->prepare('INSERT INTO bracket_entries (id, bracket_id, entry_type, archer_id, swiss_wins, swiss_losses, swiss_points) VALUES (?, ?, "ARCHER", ?, ?, ?, ?)');
-            $insertStmt->execute([$entryId, $bracketId, $archerId, $wins, $losses, $points]);
+        if ($isTeam) {
+            $updateStmt = $pdo->prepare('UPDATE bracket_entries SET swiss_wins = ?, swiss_losses = ?, swiss_points = ? WHERE bracket_id = ? AND team_name = ? AND entry_type = "TEAM"');
+            $updateStmt->execute([$wins, $losses, $points, $bracketId, $id]);
         } else {
-            // Update existing entry
-            $updateStmt = $pdo->prepare('UPDATE bracket_entries SET swiss_wins = ?, swiss_losses = ?, swiss_points = ? WHERE bracket_id = ? AND archer_id = ?');
-            $updateStmt->execute([$wins, $losses, $points, $bracketId, $archerId]);
-            $updateStmt->execute([$wins, $losses, $points, $bracketId, $archerId]);
+            $updateStmt = $pdo->prepare('UPDATE bracket_entries SET swiss_wins = ?, swiss_losses = ?, swiss_points = ? WHERE bracket_id = ? AND archer_id = ? AND entry_type = "ARCHER"');
+            $updateStmt->execute([$wins, $losses, $points, $bracketId, $id]);
         }
-    }
-}
-
-/**
- * Recalculate Swiss standings for TEAM brackets.
- * Uses team_name to distinguish teams from the same school.
- */
-function recalculate_team_swiss_standings(PDO $pdo, string $bracketId): void
-{
-    // Get all completed matches for this bracket
-    $matchesStmt = $pdo->prepare('
-        SELECT tm.id, tm.winner_team_id
-        FROM team_matches tm
-        WHERE tm.bracket_id = ? 
-        AND tm.status = "Completed"
-        AND tm.card_status IN ("COMP", "VER")
-        AND tm.winner_team_id IS NOT NULL
-    ');
-    $matchesStmt->execute([$bracketId]);
-    $matches = $matchesStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Initialize stats for all teams in bracket_entries
-    $standings = [];
-    $entriesStmt = $pdo->prepare('SELECT id, team_name, school_id FROM bracket_entries WHERE bracket_id = ? AND entry_type = "TEAM"');
-    $entriesStmt->execute([$bracketId]);
-    $entries = $entriesStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Map team_id/school to entry_id for quick lookup
-    // Problem: team_match_teams has team_name, bracket_entries has team_name
-    foreach ($entries as $entry) {
-        $key = $entry['team_name'] ?: $entry['school_id']; // Fallback if team_name empty
-        $standings[$key] = ['wins' => 0, 'losses' => 0, 'entry_id' => $entry['id']];
-    }
-
-    foreach ($matches as $match) {
-        // Get teams involved in match
-        $teamsStmt = $pdo->prepare('SELECT id, team_name, school FROM team_match_teams WHERE match_id = ?');
-        $teamsStmt->execute([$match['id']]);
-        $teams = $teamsStmt->fetchAll(PDO::FETCH_ASSOC);
-
-        if (count($teams) !== 2)
-            continue;
-
-        $t1 = $teams[0];
-        $t2 = $teams[1];
-
-        // Key is team_name (e.g. "BHS1") or school if team_name missing
-        $k1 = $t1['team_name'] ?: $t1['school'];
-        $k2 = $t2['team_name'] ?: $t2['school'];
-
-        // Ensure keys exist in standings (might need auto-create in future, but for now skip if missing)
-        if (!isset($standings[$k1]) || !isset($standings[$k2]))
-            continue;
-
-        if ($match['winner_team_id'] === $t1['id']) {
-            $standings[$k1]['wins']++;
-            $standings[$k2]['losses']++;
-        } elseif ($match['winner_team_id'] === $t2['id']) {
-            $standings[$k2]['wins']++;
-            $standings[$k1]['losses']++;
-        }
-    }
-
-    // Update DB
-    foreach ($standings as $key => $stats) {
-        $wins = $stats['wins'];
-        $losses = $stats['losses'];
-        $points = $wins; // 1 point per win for now
-
-        $updateStmt = $pdo->prepare('UPDATE bracket_entries SET swiss_wins = ?, swiss_losses = ?, swiss_points = ? WHERE id = ?');
-        $updateStmt->execute([$wins, $losses, $points, $stats['entry_id']]);
     }
 }
 
@@ -1080,7 +1006,7 @@ function process_team_match_verification(PDO $pdo, string $matchId, string $acti
         $bStmt->execute([$matchId]);
         $bRow = $bStmt->fetch(PDO::FETCH_ASSOC);
         if ($bRow && !empty($bRow['bracket_id'])) {
-            recalculate_team_swiss_standings($pdo, $bRow['bracket_id']);
+            recalculate_swiss_bracket_standings($pdo, $bRow['bracket_id']);
         }
     }
 
@@ -8606,7 +8532,7 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/results$#i', $route, $m) && $method 
         $enrichMatchWithSets = function ($pdo, $match) {
             // Get archer details with sets
             $archersStmt = $pdo->prepare('
-                SELECT sma.*, 
+                SELECT sma.*,
                        a.first_name, a.last_name, a.school as archer_school
                 FROM solo_match_archers sma
                 LEFT JOIN archers a ON a.id = sma.archer_id
@@ -9048,89 +8974,131 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                 $soloByDiv[$division][] = $archer;
             } elseif ($isTeam) {
                 $teamNum = $assignment;
+                // Use assignment (T1, T2...) in teamKey to preserve ordering
                 $teamKey = $archer['school'] . '-' . $archer['gender'] . '-' . $archer['level'] . '-' . $teamNum;
                 $teamByDiv[$division][$teamKey][] = $archer;
             }
         }
 
-        $createdBrackets = [];
+        // Sort solo archers within each division by assignment (S1, S2...)
+        foreach ($soloByDiv as $div => &$divArchers) {
+            usort($divArchers, function ($a, $b) {
+                return strnatcmp($a['assignment'], $b['assignment']);
+            });
+        }
+        unset($divArchers);
+
+        // Sort team keys within each division by team number/position
+        foreach ($teamByDiv as $div => &$divTeams) {
+            uksort($divTeams, function ($a, $b) {
+                return strnatcmp($a, $b); // natural sort on teamKey which ends with T1, T2...
+            });
+        }
+        unset($divTeams);
+
+        // Enforced division order for bracket creation and bale assignment
+        $orderedDivisions = [
+            ['div' => 'GVAR', 'type' => 'SOLO'],
+            ['div' => 'GJV', 'type' => 'SOLO'],
+            ['div' => 'BVAR', 'type' => 'SOLO'],
+            ['div' => 'BJV', 'type' => 'SOLO'],
+            ['div' => 'GVAR', 'type' => 'TEAM'],
+            ['div' => 'GJV', 'type' => 'TEAM'],
+            ['div' => 'BVAR', 'type' => 'TEAM'],
+            ['div' => 'BJV', 'type' => 'TEAM']
+        ];
+
+        $createdBracketsMeta = []; // Temporary storage to process in ordered list
         $warnings = [];
 
         $pdo->beginTransaction();
 
-        // Create Solo Swiss brackets per division
-        foreach ($soloByDiv as $division => $divArchers) {
-            if (count($divArchers) < 2) {
-                $warnings[] = "Solo $division: only " . count($divArchers) . " archer(s), skipped (need at least 2)";
-                continue;
-            }
+        foreach ($orderedDivisions as $order) {
+            $division = $order['div'];
+            $type = $order['type'];
 
-            $bracketId = $genUuid();
-            $pdo->prepare("
-                INSERT INTO brackets (id, event_id, bracket_type, bracket_format, mode, division, bracket_size, status, created_at)
-                VALUES (?, ?, 'SOLO', 'SWISS', 'AUTO', ?, ?, 'OPEN', NOW())
-            ")->execute([$bracketId, $eventId, $division, count($divArchers)]);
-
-            foreach ($divArchers as $archer) {
-                $entryId = $genUuid();
-                $pdo->prepare("
-                    INSERT INTO bracket_entries (id, bracket_id, entry_type, archer_id, seed_position, swiss_wins, swiss_losses, swiss_points, created_at)
-                    VALUES (?, ?, 'ARCHER', ?, NULL, 0, 0, 0, NOW())
-                ")->execute([$entryId, $bracketId, $archer['id']]);
-            }
-
-            $createdBrackets[] = [
-                'bracketId' => $bracketId,
-                'type' => 'SOLO',
-                'division' => $division,
-                'archerCount' => count($divArchers)
-            ];
-        }
-
-        // Create Team Swiss brackets per division
-        foreach ($teamByDiv as $division => $teams) {
-            $validTeams = [];
-            foreach ($teams as $teamKey => $teamArchers) {
-                if (count($teamArchers) !== 3) {
-                    $warnings[] = "Team $teamKey: has " . count($teamArchers) . " archers (expected 3)";
+            if ($type === 'SOLO' && isset($soloByDiv[$division])) {
+                $divArchers = $soloByDiv[$division];
+                if (count($divArchers) < 2) {
+                    $warnings[] = "Solo $division: only " . count($divArchers) . " archer(s), skipped (need at least 2)";
+                    continue;
                 }
-                if (count($teamArchers) >= 2) {
-                    $validTeams[$teamKey] = $teamArchers;
-                }
-            }
 
-            if (count($validTeams) < 2) {
-                $warnings[] = "Team $division: only " . count($validTeams) . " valid team(s), skipped (need at least 2)";
-                continue;
-            }
-
-            $bracketId = $genUuid();
-            $pdo->prepare("
-                INSERT INTO brackets (id, event_id, bracket_type, bracket_format, mode, division, bracket_size, status, created_at)
-                VALUES (?, ?, 'TEAM', 'SWISS', 'AUTO', ?, ?, 'OPEN', NOW())
-            ")->execute([$bracketId, $eventId, $division, count($validTeams)]);
-
-            foreach ($validTeams as $teamKey => $teamArchers) {
-                $entryId = $genUuid();
-                $firstArcher = $teamArchers[0] ?? [];
-                $school = $firstArcher['school'] ?? '';
-                // NEW: Use teamKey as team_name if it's not numeric, otherwise default
-                // In Games logic, teamKey is usually the team name (e.g. "BHS1", "WDV2")
-                $teamName = is_string($teamKey) ? $teamKey : ($school . ' ' . ($teamKey + 1));
-
+                $bracketId = $genUuid();
                 $pdo->prepare("
-                    INSERT INTO bracket_entries (id, bracket_id, entry_type, archer_id, school_id, team_name, seed_position, swiss_wins, swiss_losses, swiss_points, created_at)
-                    VALUES (?, ?, 'TEAM', NULL, ?, ?, NULL, 0, 0, 0, NOW())
-                ")->execute([$entryId, $bracketId, $school, $teamName]);
-            }
+                    INSERT INTO brackets (id, event_id, bracket_type, bracket_format, mode, division, bracket_size, status, created_at)
+                    VALUES (?, ?, 'SOLO', 'SWISS', 'AUTO', ?, ?, 'OPEN', NOW())
+                ")->execute([$bracketId, $eventId, $division, count($divArchers)]);
 
-            $createdBrackets[] = [
-                'bracketId' => $bracketId,
-                'type' => 'TEAM',
-                'division' => $division,
-                'teamCount' => count($validTeams),
-                'teams' => array_keys($validTeams)
-            ];
+                foreach ($divArchers as $archer) {
+                    $entryId = $genUuid();
+                    $seedPos = (int) preg_replace('/[^0-9]/', '', $archer['assignment']);
+                    $pdo->prepare("
+                        INSERT INTO bracket_entries (id, bracket_id, entry_type, archer_id, seed_position, swiss_wins, swiss_losses, swiss_points, created_at)
+                        VALUES (?, ?, 'ARCHER', ?, ?, 0, 0, 0, NOW())
+                    ")->execute([$entryId, $bracketId, $archer['id'], $seedPos]);
+                }
+
+                $createdBracketsMeta[] = [
+                    'bracketId' => $bracketId,
+                    'type' => 'SOLO',
+                    'division' => $division,
+                    'archerCount' => count($divArchers),
+                    'entries' => $divArchers
+                ];
+            } elseif ($type === 'TEAM' && isset($teamByDiv[$division])) {
+                $teams = $teamByDiv[$division];
+                $validTeams = [];
+                foreach ($teams as $teamKey => $teamArchers) {
+                    if (count($teamArchers) !== 3) {
+                        $warnings[] = "Team $teamKey: has " . count($teamArchers) . " archers (expected 3)";
+                    }
+                    if (count($teamArchers) >= 2) {
+                        $validTeams[$teamKey] = $teamArchers;
+                    }
+                }
+
+                if (count($validTeams) < 2) {
+                    $warnings[] = "Team $division: only " . count($validTeams) . " valid team(s), skipped (need at least 2)";
+                    continue;
+                }
+
+                $bracketId = $genUuid();
+                $pdo->prepare("
+                    INSERT INTO brackets (id, event_id, bracket_type, bracket_format, mode, division, bracket_size, status, created_at)
+                    VALUES (?, ?, 'TEAM', 'SWISS', 'AUTO', ?, ?, 'OPEN', NOW())
+                ")->execute([$bracketId, $eventId, $division, count($validTeams)]);
+
+                $teamEntriesMeta = [];
+                foreach ($validTeams as $teamKey => $teamArchers) {
+                    $entryId = $genUuid();
+                    $firstArcher = $teamArchers[0] ?? [];
+                    $school = $firstArcher['school'] ?? '';
+                    $teamName = is_string($teamKey) ? $teamKey : ($school . ' ' . ($teamKey + 1));
+                    $assignment = $firstArcher['assignment'] ?? null; // Use assignment for team as well
+
+                    $seedPos = $assignment ? (int) preg_replace('/[^0-9]/', '', $assignment) : null;
+                    $pdo->prepare("
+                        INSERT INTO bracket_entries (id, bracket_id, entry_type, archer_id, school_id, team_name, seed_position, swiss_wins, swiss_losses, swiss_points, created_at)
+                        VALUES (?, ?, 'TEAM', NULL, ?, ?, ?, 0, 0, 0, NOW())
+                    ")->execute([$entryId, $bracketId, $school, $teamName, $seedPos]);
+
+                    $teamEntriesMeta[] = [
+                        'entryId' => $entryId,
+                        'school_id' => $school,
+                        'team_name' => $teamName,
+                        'archers' => $teamArchers
+                    ];
+                }
+
+                $createdBracketsMeta[] = [
+                    'bracketId' => $bracketId,
+                    'type' => 'TEAM',
+                    'division' => $division,
+                    'teamCount' => count($validTeams),
+                    'entries' => $teamEntriesMeta
+                ];
+            }
         }
 
         $pdo->commit();
@@ -9145,29 +9113,17 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
         $maxMatchesPerBale = 2; // Line 1 + Line 2
         $globalBaleIdx = 0; // Continuous bale index across all brackets
 
-        $generatedMatches = [];
+        $finalBrackets = [];
 
-        // --- Solo Swiss Round 1 ---
-        foreach ($createdBrackets as &$bracket) {
-            if ($bracket['type'] !== 'SOLO')
-                continue;
+        foreach ($createdBracketsMeta as $bracket) {
             $bId = $bracket['bracketId'];
+            $entries = $bracket['entries'];
+            $type = $bracket['type'];
 
-            // Get entries shuffled (Round 1 = random pairing, different schools first)
-            $entryStmt = $pdo->prepare('
-                SELECT be.archer_id, a.first_name, a.last_name, a.school, a.gender
-                FROM bracket_entries be
-                JOIN archers a ON a.id = be.archer_id
-                WHERE be.bracket_id = ? AND be.entry_type = "ARCHER"
-                ORDER BY RAND()
-            ');
-            $entryStmt->execute([$bId]);
-            $entries = $entryStmt->fetchAll(PDO::FETCH_ASSOC);
-
-            if (count($entries) < 2)
+            if (empty($entries))
                 continue;
 
-            // Pair different schools first, then same school
+            // Pair differently schools first, then same school (using pre-sorted entries for position-balancing)
             $paired = [];
             $used = [];
             $n = count($entries);
@@ -9179,7 +9135,11 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                 for ($j = $i + 1; $j < $n; $j++) {
                     if (isset($used[$j]))
                         continue;
-                    if ($entries[$j]['school'] !== $entries[$i]['school']) {
+
+                    $schoolI = ($type === 'SOLO') ? $entries[$i]['school'] : $entries[$i]['school_id'];
+                    $schoolJ = ($type === 'SOLO') ? $entries[$j]['school'] : $entries[$j]['school_id'];
+
+                    if ($schoolJ !== $schoolI) {
                         $bestJ = $j;
                         break;
                     }
@@ -9197,11 +9157,13 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                     $paired[] = [$entries[$i], $entries[$bestJ]];
                     $used[$i] = true;
                     $used[$bestJ] = true;
-                } // Odd archer out = bye (skipped)
+                }
             }
 
-            if (empty($paired))
+            if (empty($paired)) {
+                $finalBrackets[] = $bracket;
                 continue;
+            }
 
             $hasWaveB = $totalBales > 0 && ($globalBaleIdx + count($paired)) > ($totalBales * $maxMatchesPerBale);
             $roundLabel = 'Round 1';
@@ -9209,8 +9171,8 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
 
             $pdo->beginTransaction();
             foreach ($paired as $pair) {
-                $a1 = $pair[0];
-                $a2 = $pair[1];
+                $e1 = $pair[0];
+                $e2 = $pair[1];
                 $mId = $genUuid();
 
                 // Bale assignment
@@ -9236,212 +9198,83 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/import-roster$#i', $route, $m) && $met
                     $globalBaleIdx++;
                 }
 
-                $matchCode = generate_solo_match_code($pdo, $a1['first_name'], $a1['last_name'], $a2['first_name'], $a2['last_name'], date('Y-m-d'));
-
-                $pdo->prepare('
-                    INSERT INTO solo_matches (id, event_id, bracket_id, bracket_match_id, match_type, date, status, max_sets,
-                    bale_number, line_number, wave, created_at, match_code)
-                    VALUES (?, ?, ?, ?, "SOLO_OLYMPIC", CURDATE(), "PENDING", 5, ?, ?, ?, NOW(), ?)
-                ')->execute([$mId, $eventId, $bId, $roundLabel, $baleNumber, $lineNumber, $wave, $matchCode]);
-
-                $pdo->prepare('
-                    INSERT INTO solo_match_archers (id, match_id, archer_id, archer_name, school, gender, position, target_assignment)
-                    VALUES (?, ?, ?, ?, ?, ?, 1, ?)
-                ')->execute([$genUuid(), $mId, $a1['archer_id'], $a1['first_name'] . ' ' . $a1['last_name'], $a1['school'], $a1['gender'], $target1]);
-
-                $pdo->prepare('
-                    INSERT INTO solo_match_archers (id, match_id, archer_id, archer_name, school, gender, position, target_assignment)
-                    VALUES (?, ?, ?, ?, ?, ?, 2, ?)
-                ')->execute([$genUuid(), $mId, $a2['archer_id'], $a2['first_name'] . ' ' . $a2['last_name'], $a2['school'], $a2['gender'], $target2]);
-
-                $bracketMatches[] = [
-                    'matchId' => $mId,
-                    'archer1' => $a1['first_name'] . ' ' . $a1['last_name'],
-                    'archer2' => $a2['first_name'] . ' ' . $a2['last_name'],
-                    'bale' => $baleNumber,
-                    'line' => $lineNumber,
-                    'wave' => $wave
-                ];
-            }
-            $pdo->commit();
-
-            $bracket['round1Matches'] = count($bracketMatches);
-            $bracket['matches'] = $bracketMatches;
-        }
-        unset($bracket);
-
-        // --- Team Swiss Round 1 ---
-        foreach ($createdBrackets as &$bracket) {
-            if ($bracket['type'] !== 'TEAM')
-                continue;
-            $bId = $bracket['bracketId'];
-
-            // Get team entries with their archers
-            $teamEntryStmt = $pdo->prepare('
-                SELECT be.id as entry_id, be.school_id, be.team_name
-                FROM bracket_entries be
-                WHERE be.bracket_id = ? AND be.entry_type = "TEAM"
-                ORDER BY RAND()
-            ');
-            $teamEntryStmt->execute([$bId]);
-            $teamEntries = $teamEntryStmt->fetchAll(PDO::FETCH_ASSOC);
-
-            if (count($teamEntries) < 2)
-                continue;
-
-            // Pair teams (different schools first)
-            $paired = [];
-            $used = [];
-            $n = count($teamEntries);
-            for ($i = 0; $i < $n; $i++) {
-                if (isset($used[$i]))
-                    continue;
-                $bestJ = -1;
-                for ($j = $i + 1; $j < $n; $j++) {
-                    if (isset($used[$j]))
-                        continue;
-                    if ($teamEntries[$j]['school_id'] !== $teamEntries[$i]['school_id']) {
-                        $bestJ = $j;
-                        break;
-                    }
-                }
-                if ($bestJ === -1) {
-                    for ($j = $i + 1; $j < $n; $j++) {
-                        if (!isset($used[$j])) {
-                            $bestJ = $j;
-                            break;
-                        }
-                    }
-                }
-                if ($bestJ !== -1) {
-                    $paired[] = [$teamEntries[$i], $teamEntries[$bestJ]];
-                    $used[$i] = true;
-                    $used[$bestJ] = true;
-                }
-            }
-
-            if (empty($paired))
-                continue;
-
-            $roundLabel = 'Round 1';
-            $bracketMatches = [];
-
-            // Look up the team archers from the soloByDiv/teamByDiv we already have
-            // We need to map school_id back to team archers
-            $divTeams = $teamByDiv[$bracket['division']] ?? [];
-
-            $pdo->beginTransaction();
-            foreach ($paired as $pair) {
-                $t1Entry = $pair[0];
-                $t2Entry = $pair[1];
-                $mId = $genUuid();
-
-                // Bale assignment for team match
-                $baleNumber = null;
-                $lineNumber = null;
-                $wave = null;
-                $targetT1 = null;
-                $targetT2 = null;
-                if ($totalBales > 0) {
-                    $capacity = $totalBales * $maxMatchesPerBale;
-                    $effectiveIdx = $globalBaleIdx;
-                    if ($globalBaleIdx >= $capacity) {
-                        $wave = 'B';
-                        $effectiveIdx = $globalBaleIdx - $capacity;
-                    }
-                    $baleOffset = intdiv($effectiveIdx, $maxMatchesPerBale);
-                    $lineNumber = ($effectiveIdx % $maxMatchesPerBale) + 1;
-                    $baleNumber = 1 + $baleOffset;
-                    $targetT1 = $lineNumber === 1 ? 'A' : 'C';
-                    $targetT2 = $lineNumber === 1 ? 'B' : 'D';
-                    $globalBaleIdx++;
-                }
-
-                // Generate simple match code for team match
-                $matchCode = strtoupper(substr($t1Entry['school_id'], 0, 3) . 'v' . substr($t2Entry['school_id'], 0, 3) . '-' . date('md') . '-' . substr($mId, 0, 4));
-
-                $pdo->prepare('
-                    INSERT INTO team_matches (id, event_id, bracket_id, bracket_match_id, date, location, max_sets, status,
-                    bale_number, line_number, wave, created_at, match_code)
-                    VALUES (?, ?, ?, ?, CURDATE(), NULL, 4, "Not Started", ?, ?, ?, NOW(), ?)
-                ')->execute([$mId, $eventId, $bId, $roundLabel, $baleNumber, $lineNumber, $wave, $matchCode]);
-
-                // Find team archers for each entry by matching school_id to our grouped team data
-                $addTeamToMatch = function ($entry, $position) use ($pdo, $genUuid, $mId, $divTeams) {
-                    $teamId = $genUuid();
-                    $school = $entry['school_id'];
-                    $targetTeamName = $entry['team_name'] ?? $school; // Use the specific team name
-
-                    // Find the team's archers from our grouped data
-                    $teamArchers = [];
-                    foreach ($divTeams as $teamKey => $archers) {
-                        // Reconstruct name to match against targetTeamName
-                        $firstArcher = $archers[0] ?? [];
-                        $s = $firstArcher['school'] ?? '';
-                        $derivedName = is_string($teamKey) ? $teamKey : ($s . ' ' . ($teamKey + 1));
-
-                        if ($derivedName === $targetTeamName) {
-                            $teamArchers = $archers;
-                            break;
-                        }
-                    }
-                    // Fallback if not found (shouldn't happen if data consistent)
-                    if (empty($teamArchers)) {
-                        foreach ($divTeams as $teamKey => $archers) {
-                            if (($archers[0]['school'] ?? '') === $school) {
-                                $teamArchers = $archers;
-                                break;
-                            }
-                        }
-                    }
+                if ($type === 'SOLO') {
+                    $matchCode = generate_solo_match_code($pdo, $e1['first_name'], $e1['last_name'], $e2['first_name'], $e2['last_name'], date('Y-m-d'));
+                    $pdo->prepare('
+                        INSERT INTO solo_matches (id, event_id, bracket_id, bracket_match_id, match_type, date, status, max_sets,
+                        bale_number, line_number, wave, created_at, match_code)
+                        VALUES (?, ?, ?, ?, "SOLO_OLYMPIC", CURDATE(), "PENDING", 5, ?, ?, ?, NOW(), ?)
+                    ')->execute([$mId, $eventId, $bId, $roundLabel, $baleNumber, $lineNumber, $wave, $matchCode]);
 
                     $pdo->prepare('
-                        INSERT INTO team_match_teams (id, match_id, team_name, school, position, target_assignment, created_at)
-                        VALUES (?, ?, ?, ?, ?, NULL, NOW())
-                    ')->execute([$teamId, $mId, $targetTeamName, $school, $position]);
+                        INSERT INTO solo_match_archers (id, match_id, archer_id, archer_name, school, gender, position, target_assignment)
+                        VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+                    ')->execute([$genUuid(), $mId, $e1['id'], $e1['first_name'] . ' ' . $e1['last_name'], $e1['school'], $e1['gender'], $target1]);
 
-                    // Add archers to the team
-                    foreach ($teamArchers as $archerIdx => $archer) {
+                    $pdo->prepare('
+                        INSERT INTO solo_match_archers (id, match_id, archer_id, archer_name, school, gender, position, target_assignment)
+                        VALUES (?, ?, ?, ?, ?, ?, 2, ?)
+                    ')->execute([$genUuid(), $mId, $e2['id'], $e2['first_name'] . ' ' . $e2['last_name'], $e2['school'], $e2['gender'], $target2]);
+
+                    $bracketMatches[] = [
+                        'matchId' => $mId,
+                        'archer1' => $e1['first_name'] . ' ' . $e1['last_name'],
+                        'archer2' => $e2['first_name'] . ' ' . $e2['last_name'],
+                        'bale' => $baleNumber,
+                        'line' => $lineNumber,
+                        'wave' => $wave
+                    ];
+                } else {
+                    $matchCode = strtoupper(substr($e1['school_id'], 0, 3) . 'v' . substr($e2['school_id'], 0, 3) . '-' . date('md') . '-' . substr($mId, 0, 4));
+                    $pdo->prepare('
+                        INSERT INTO team_matches (id, event_id, bracket_id, bracket_match_id, date, location, max_sets, status,
+                        bale_number, line_number, wave, created_at, match_code)
+                        VALUES (?, ?, ?, ?, CURDATE(), NULL, 4, "Not Started", ?, ?, ?, NOW(), ?)
+                    ')->execute([$mId, $eventId, $bId, $roundLabel, $baleNumber, $lineNumber, $wave, $matchCode]);
+
+                    $addTeamToMatch = function ($entry, $position) use ($pdo, $genUuid, $mId) {
+                        $teamId = $genUuid();
+                        $school = $entry['school_id'];
+                        $teamName = $entry['team_name'];
+                        $teamArchers = $entry['archers'];
+
                         $pdo->prepare('
-                            INSERT INTO team_match_archers (id, match_id, team_id, archer_id, archer_name, school, position, created_at)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-                        ')->execute([
-                                    $genUuid(),
-                                    $mId,
-                                    $teamId,
-                                    $archer['id'],
-                                    $archer['first_name'] . ' ' . $archer['last_name'],
-                                    $archer['school'],
-                                    $archerIdx + 1
-                                ]);
-                    }
+                            INSERT INTO team_match_teams (id, match_id, team_name, school, position, target_assignment, created_at)
+                            VALUES (?, ?, ?, ?, ?, NULL, NOW())
+                        ')->execute([$teamId, $mId, $teamName, $school, $position]);
 
-                    return $teamId;
-                };
+                        foreach ($teamArchers as $archerIdx => $archer) {
+                            $pdo->prepare('
+                                INSERT INTO team_match_archers (id, match_id, team_id, archer_id, archer_name, school, position, created_at)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+                            ')->execute([$genUuid(), $mId, $teamId, $archer['id'], $archer['first_name'] . ' ' . $archer['last_name'], $archer['school'], $archerIdx + 1]);
+                        }
+                    };
 
-                $addTeamToMatch($t1Entry, 1);
-                $addTeamToMatch($t2Entry, 2);
+                    $addTeamToMatch($e1, 1);
+                    $addTeamToMatch($e2, 2);
 
-                $bracketMatches[] = [
-
-                    'matchId' => $mId,
-                    'team1' => $t1Entry['school_id'],
-                    'team2' => $t2Entry['school_id'],
-                    'bale' => $baleNumber,
-                    'line' => $lineNumber,
-                    'wave' => $wave
-                ];
+                    $bracketMatches[] = [
+                        'matchId' => $mId,
+                        'team1' => $e1['team_name'],
+                        'team2' => $e2['team_name'],
+                        'bale' => $baleNumber,
+                        'line' => $lineNumber,
+                        'wave' => $wave
+                    ];
+                }
             }
             $pdo->commit();
 
             $bracket['round1Matches'] = count($bracketMatches);
             $bracket['matches'] = $bracketMatches;
+            unset($bracket['entries']); // Clean up internal data
+            $finalBrackets[] = $bracket;
         }
-        unset($bracket);
 
         json_response([
             'message' => 'Roster imported and Round 1 generated',
-            'brackets' => $createdBrackets,
+            'brackets' => $finalBrackets,
             'totalSoloArchers' => array_sum(array_map('count', $soloByDiv)),
             'totalTeams' => array_sum(array_map('count', $teamByDiv)),
             'totalMatchesGenerated' => $globalBaleIdx,
@@ -9483,93 +9316,96 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/generate-round$#i', $route, $m) && $
             exit;
         }
 
-        // AUTO mode check - we allow logic to descend gracefully if mode is missing (older db)
+        // AUTO mode check
         $isAuto = isset($bracket['mode']) && $bracket['mode'] === 'AUTO';
-        // Note: We might allow manual triggering even for OPEN brackets if requested, but for now stick to AUTO plan
-// if (!$isAuto) { json_response(['error' => 'Bracket mode must be AUTO'], 400); exit; }
+
+        $isTeam = ($bracket['bracket_type'] ?? 'SOLO') === 'TEAM';
+        $entryType = $isTeam ? 'TEAM' : 'ARCHER';
 
         // Recalculate standings first to be safe
         recalculate_swiss_bracket_standings($pdo, $bracketId);
 
-        // Get active archers sorted by points
-        $stmt = $pdo->prepare('
-SELECT * FROM bracket_entries
-WHERE bracket_id = ? AND entry_type = "ARCHER"
-ORDER BY swiss_points DESC, swiss_wins DESC, swiss_losses ASC, RAND()
-');
-        $stmt->execute([$bracketId]);
+        // Get active entries sorted by points and seed_position
+        $stmt = $pdo->prepare("
+            SELECT * FROM bracket_entries
+            WHERE bracket_id = ? AND entry_type = ?
+            ORDER BY swiss_points DESC, swiss_wins DESC, swiss_losses ASC, seed_position ASC, RAND()
+        ");
+        $stmt->execute([$bracketId, $entryType]);
         $allEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         if (count($allEntries) < 2) {
-            json_response(['error' => 'Not enough archers to generate a round'], 400);
+            json_response(['error' => 'Not enough entries to generate a round'], 400);
             exit;
         }
 
         // Find existing matches to avoid repeats
-        $existingStmt = $pdo->prepare('
-    SELECT sma1.archer_id as a1, sma2.archer_id as a2
-    FROM solo_matches sm
-    JOIN solo_match_archers sma1 ON sma1.match_id = sm.id AND sma1.position = 1
-    JOIN solo_match_archers sma2 ON sma2.match_id = sm.id AND sma2.position = 2
-    WHERE sm.bracket_id = ?
-    ');
+        $matchTable = $isTeam ? 'team_matches' : 'solo_matches';
+        $matchEntryTable = $isTeam ? 'team_match_teams' : 'solo_match_archers';
+        $entryIdField = $isTeam ? 'team_name' : 'archer_id';
+
+        $existingStmt = $pdo->prepare("
+            SELECT t1.{$entryIdField} as e1, t2.{$entryIdField} as e2
+            FROM {$matchTable} m
+            JOIN {$matchEntryTable} t1 ON t1.match_id = m.id AND t1.position = 1
+            JOIN {$matchEntryTable} t2 ON t2.match_id = m.id AND t2.position = 2
+            WHERE m.bracket_id = ?
+        ");
         $existingStmt->execute([$bracketId]);
         $existingMatches = $existingStmt->fetchAll(PDO::FETCH_ASSOC);
 
         $playedMap = [];
         foreach ($existingMatches as $em) {
-            $k1 = $em['a1'] . ':' . $em['a2'];
-            $k2 = $em['a2'] . ':' . $em['a1'];
+            $k1 = $em['e1'] . ':' . $em['e2'];
+            $k2 = $em['e2'] . ':' . $em['e1'];
             $playedMap[$k1] = true;
             $playedMap[$k2] = true;
         }
 
         // Determine next Round Number
-        $roundStmt = $pdo->prepare('
-    SELECT MAX(CAST(SUBSTRING_INDEX(bracket_match_id, " ", -1) AS UNSIGNED)) as max_round
-    FROM solo_matches
-    WHERE bracket_id = ? AND bracket_match_id LIKE "Round %"
-    ');
+        $roundStmt = $pdo->prepare("
+            SELECT MAX(CAST(SUBSTRING_INDEX(bracket_match_id, ' ', -1) AS UNSIGNED)) as max_round
+            FROM {$matchTable}
+            WHERE bracket_id = ? AND bracket_match_id LIKE 'Round %'
+        ");
         $roundStmt->execute([$bracketId]);
         $res = $roundStmt->fetch(PDO::FETCH_ASSOC);
         $nextRound = ($res['max_round'] ?? 0) + 1;
         $roundLabel = "Round " . $nextRound;
 
-        // PAIRING LOGIC (High-High, avoid repeats)
+        // PAIRING LOGIC
         $pairings = [];
         $usedIndices = [];
         $entriesCount = count($allEntries);
 
-        // Simple greedy pairing
         for ($i = 0; $i < $entriesCount; $i++) {
             if (isset($usedIndices[$i]))
                 continue;
-
             $p1 = $allEntries[$i];
             $bestOpponentIdx = -1;
 
-            // Look for best available opponent (High-High)
-            for ($j = $i + 1; $j < $entriesCount; $j++) {
-                if (isset($usedIndices[$j]))
-                    continue;
-
-                $p2 = $allEntries[$j];
-
-                // Check if already played
-                $key = $p1['archer_id'] . ':' . $p2['archer_id'];
-                if (!isset($playedMap[$key])) {
-                    $bestOpponentIdx = $j;
-                    break; // Found best match
-                }
-            }
-
-            // If no unplayed opponent found, force next available (Rematch)
-            if ($bestOpponentIdx === -1) {
+            // Attempt 0: Different school, not played before
+            // Attempt 1: Not played before
+            // Attempt 2: Best available (rematch)
+            for ($attempts = 0; $attempts < 3; $attempts++) {
                 for ($j = $i + 1; $j < $entriesCount; $j++) {
-                    if (!isset($usedIndices[$j])) {
-                        $bestOpponentIdx = $j;
-                        break;
+                    if (isset($usedIndices[$j]))
+                        continue;
+                    $p2 = $allEntries[$j];
+
+                    $key = $isTeam ? ($p1['team_name'] . ':' . $p2['team_name']) : ($p1['archer_id'] . ':' . $p2['archer_id']);
+                    if ($attempts < 2 && isset($playedMap[$key]))
+                        continue;
+
+                    if ($attempts === 0) {
+                        $s1 = $isTeam ? $p1['school_id'] : ($p1['school_id'] ?? $p1['archer_school'] ?? null);
+                        $s2 = $isTeam ? $p2['school_id'] : ($p2['school_id'] ?? $p2['archer_school'] ?? null);
+                        if ($s1 && $s2 && $s1 === $s2)
+                            continue;
                     }
+
+                    $bestOpponentIdx = $j;
+                    break 2;
                 }
             }
 
@@ -9577,80 +9413,45 @@ ORDER BY swiss_points DESC, swiss_wins DESC, swiss_losses ASC, RAND()
                 $pairings[] = [$p1, $allEntries[$bestOpponentIdx]];
                 $usedIndices[$i] = true;
                 $usedIndices[$bestOpponentIdx] = true;
-            } else {
-                // Odd archer out (Bye) - ignore for now
             }
         }
-
 
         if (empty($pairings)) {
             json_response(['message' => 'No new pairings could be generated.', 'round' => $nextRound], 200);
             exit;
         }
 
-        // CREATE MATCHES with optional bale assignment
         $pdo->beginTransaction();
 
-        // Bale config from request body or event settings
         $totalBales = isset($roundInput['totalBales']) ? (int) $roundInput['totalBales'] : null;
         $baleStartNum = isset($roundInput['startBale']) ? (int) $roundInput['startBale'] : null;
 
         if ($baleStartNum === null) {
-            // Try to find the minimum bale number used by this bracket in previous rounds
-            $table = $bracket['bracket_type'] === 'TEAM' ? 'team_matches' : 'solo_matches';
-            $minBaleStmt = $pdo->prepare("
-                SELECT MIN(bale_number) as min_bale 
-                FROM {$table} 
-                WHERE bracket_id = ? AND bale_number IS NOT NULL AND bale_number > 0
-            ");
+            $minBaleStmt = $pdo->prepare("SELECT MIN(bale_number) as min_bale FROM {$matchTable} WHERE bracket_id = ? AND bale_number > 0");
             $minBaleStmt->execute([$bracketId]);
             $minBaleRow = $minBaleStmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($minBaleRow && $minBaleRow['min_bale']) {
-                $baleStartNum = (int) $minBaleRow['min_bale'];
-            } else {
-                $baleStartNum = 1; // Fallback
-            }
+            $baleStartNum = ($minBaleRow && $minBaleRow['min_bale']) ? (int) $minBaleRow['min_bale'] : 1;
         }
 
         if (!$totalBales && $bracket['event_id']) {
             $evtStmt = $pdo->prepare('SELECT total_bales FROM events WHERE id = ?');
             $evtStmt->execute([$bracket['event_id']]);
             $evtRow = $evtStmt->fetch(PDO::FETCH_ASSOC);
-            if ($evtRow && $evtRow['total_bales']) {
+            if ($evtRow)
                 $totalBales = (int) $evtRow['total_bales'];
-            }
         }
-        $maxMatchesPerBale = 2; // Line 1 + Line 2
+
+        $maxMatchesPerBale = 2;
         $assignBales = $totalBales > 0;
         $hasWaveB = $assignBales && count($pairings) > ($totalBales * $maxMatchesPerBale);
-
-        $matchInsert = $pdo->prepare('
-            INSERT INTO solo_matches (id, event_id, bracket_id, bracket_match_id, match_type, date, status, max_sets,
-            bale_number, line_number, wave, created_at, match_code)
-            VALUES (?, ?, ?, ?, "SOLO_OLYMPIC", CURDATE(), "PENDING", 5, ?, ?, ?, NOW(), ?)
-        ');
-
-        $archerInsert = $pdo->prepare('
-            INSERT INTO solo_match_archers (id, match_id, archer_id, archer_name, school, gender, position, target_assignment)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ');
 
         $createdMatches = [];
 
         foreach ($pairings as $matchIdx => $pair) {
-            $entries = [];
-            foreach ($pair as $p) {
-                $aStmt = $pdo->prepare('SELECT * FROM archers WHERE id = ?');
-                $aStmt->execute([$p['archer_id']]);
-                $entries[] = $aStmt->fetch(PDO::FETCH_ASSOC);
-            }
-
-            $a1 = $entries[0];
-            $a2 = $entries[1];
+            $e1 = $pair[0];
+            $e2 = $pair[1];
             $mId = $genUuid();
 
-            // Calculate bale assignment
             $baleNumber = null;
             $lineNumber = null;
             $wave = null;
@@ -9668,54 +9469,63 @@ ORDER BY swiss_points DESC, swiss_wins DESC, swiss_losses ASC, RAND()
                 $baleOffset = intdiv($effectiveIdx, $maxMatchesPerBale);
                 $lineNumber = ($effectiveIdx % $maxMatchesPerBale) + 1;
                 $baleNumber = $baleStartNum + $baleOffset;
-                // Line 1 = targets A,B; Line 2 = targets C,D
                 $target1 = $lineNumber === 1 ? 'A' : 'C';
                 $target2 = $lineNumber === 1 ? 'B' : 'D';
             }
 
-            $matchCode = generate_solo_match_code(
-                $pdo,
-                $a1['first_name'],
-                $a1['last_name'],
-                $a2['first_name'],
-                $a2['last_name'],
-                date('Y-m-d')
-            );
+            if ($isTeam) {
+                $matchCode = strtoupper(substr($e1['school_id'], 0, 3) . 'v' . substr($e2['school_id'], 0, 3) . '-' . date('md') . '-' . substr($mId, 0, 4));
+                $stmt = $pdo->prepare('INSERT INTO team_matches (id, event_id, bracket_id, bracket_match_id, date, status, max_sets, bale_number, line_number, wave, created_at, match_code) VALUES (?, ?, ?, ?, CURDATE(), "Not Started", 4, ?, ?, ?, NOW(), ?)');
+                $stmt->execute([$mId, $bracket['event_id'], $bracketId, $roundLabel, $baleNumber, $lineNumber, $wave, $matchCode]);
 
-            $matchInsert->execute([$mId, $bracket['event_id'], $bracketId, $roundLabel, $baleNumber, $lineNumber, $wave, $matchCode]);
+                foreach ([1, 2] as $pos) {
+                    $entry = ($pos === 1) ? $e1 : $e2;
+                    $target = ($pos === 1) ? $target1 : $target2;
+                    $teamMatchTeamId = $genUuid();
 
-            // Archer 1
-            $archerInsert->execute([
-                $genUuid(),
-                $mId,
-                $a1['id'],
-                $a1['first_name'] . ' ' . $a1['last_name'],
-                $a1['school'],
-                $a1['gender'],
-                1,
-                $target1
-            ]);
+                    $pdo->prepare('INSERT INTO team_match_teams (id, match_id, team_name, school, position, target_assignment, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())')
+                        ->execute([$teamMatchTeamId, $mId, $entry['team_name'], $entry['school_id'], $pos, $target]);
 
-            // Archer 2
-            $archerInsert->execute([
-                $genUuid(),
-                $mId,
-                $a2['id'],
-                $a2['first_name'] . ' ' . $a2['last_name'],
-                $a2['school'],
-                $a2['gender'],
-                2,
-                $target2
-            ]);
+                    // Look up archers from previous round for this team
+                    $prevArchersStmt = $pdo->prepare('
+                        SELECT archer_id, archer_name, school, position
+                        FROM team_match_archers
+                        WHERE match_id IN (SELECT id FROM team_matches WHERE bracket_id = ?)
+                        AND team_id IN (SELECT id FROM team_match_teams WHERE team_name = ? AND school = ?)
+                        LIMIT 3
+                    ');
+                    $prevArchersStmt->execute([$bracketId, $entry['team_name'], $entry['school_id']]);
+                    $teamArchers = $prevArchersStmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $createdMatches[] = [
-                'matchId' => $mId,
-                'archer1' => $a1['first_name'] . ' ' . $a1['last_name'],
-                'archer2' => $a2['first_name'] . ' ' . $a2['last_name'],
-                'baleNumber' => $baleNumber,
-                'lineNumber' => $lineNumber,
-                'wave' => $wave
-            ];
+                    foreach ($teamArchers as $ta) {
+                        $pdo->prepare('INSERT INTO team_match_archers (id, match_id, team_id, archer_id, archer_name, school, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())')
+                            ->execute([$genUuid(), $mId, $teamMatchTeamId, $ta['archer_id'], $ta['archer_name'], $ta['school'], $ta['position']]);
+                    }
+                }
+
+                $createdMatches[] = ['matchId' => $mId, 'team1' => $e1['team_name'], 'team2' => $e2['team_name'], 'baleNumber' => $baleNumber, 'lineNumber' => $lineNumber, 'wave' => $wave];
+            } else {
+                // SOLO Logic
+                $a1Stmt = $pdo->prepare('SELECT * FROM archers WHERE id = ?');
+                $a1Stmt->execute([$e1['archer_id']]);
+                $a1 = $a1Stmt->fetch(PDO::FETCH_ASSOC);
+                $a2Stmt = $pdo->prepare('SELECT * FROM archers WHERE id = ?');
+                $a2Stmt->execute([$e2['archer_id']]);
+                $a2 = $a2Stmt->fetch(PDO::FETCH_ASSOC);
+
+                $matchCode = generate_solo_match_code($pdo, $a1['first_name'], $a1['last_name'], $a2['first_name'], $a2['last_name'], date('Y-m-d'));
+                $pdo->prepare('INSERT INTO solo_matches (id, event_id, bracket_id, bracket_match_id, match_type, date, status, max_sets, bale_number, line_number, wave, created_at, match_code) VALUES (?, ?, ?, ?, "SOLO_OLYMPIC", CURDATE(), "PENDING", 5, ?, ?, ?, NOW(), ?)')
+                    ->execute([$mId, $bracket['event_id'], $bracketId, $roundLabel, $baleNumber, $lineNumber, $wave, $matchCode]);
+
+                foreach ([1, 2] as $pos) {
+                    $a = ($pos === 1) ? $a1 : $a2;
+                    $t = ($pos === 1) ? $target1 : $target2;
+                    $pdo->prepare('INSERT INTO solo_match_archers (id, match_id, archer_id, archer_name, school, gender, position, target_assignment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+                        ->execute([$genUuid(), $mId, $a['id'], $a['first_name'] . ' ' . $a['last_name'], $a['school'], $a['gender'], $pos, $t]);
+                }
+
+                $createdMatches[] = ['matchId' => $mId, 'archer1' => $a1['first_name'] . ' ' . $a1['last_name'], 'archer2' => $a2['first_name'] . ' ' . $a2['last_name'], 'baleNumber' => $baleNumber, 'lineNumber' => $lineNumber, 'wave' => $wave];
+            }
         }
 
         $pdo->commit();

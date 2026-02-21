@@ -70,7 +70,19 @@
 
 ---
  
- ## 🚨 Status Update (February 20, 2026)
+ ## 🚨 Status Update (February 21, 2026)
+  
+  ### ✅ Bracket Logic Refinements & Team Support (February 21, 2026)
+  - **Generic Swiss Standings**: Refactored standings calculation to dynamically support both `ARCHER` and `TEAM` brackets.
+  - **Team Swiss Support**: Enabled `generate-round` to handle team pairings, including school-balancing logic and roster preservation from previous rounds.
+  - **Position-Based Seeding**: Integrated `seed_position` into Swiss tie-breaking and initial round pairings for fairer tournament distribution.
+  - **Bale Range Persistence**: Optimized bale assignment to persist the starting bale range across multiple rounds of the same bracket.
+  - **Roster Import Bug Fix**: Resolved SQL error during CSV import caused by non-integer values in the `seed_position` column. Extracting numeric portion of `assignment` strings (S1, T1) automatically.
+
+  **Files Changed:** `api/index.php`, `version.json`, `walkthrough.md`, `task.md`
+
+ 
+  ## 🚨 Status Update (February 20, 2026)
  
  ### ✅ Assignment List: Per-Archer Toggles & Navigation Fix (February 20, 2026)
  - **Per-Archer Toggles**: Added Level (VAR/JV) and Status (Act/Ina) toggle buttons directly to archer cards in `assignment_list.html`. Enables rapid individual adjustments without additional navigation.
