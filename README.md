@@ -621,6 +621,6 @@ Copyright © 2025 WDV Archery
 
 ---
 
-**Last Updated:** December 1, 2025  
-**Version:** 1.8.1  
+**Last Updated:** February 2026  
+**Version:** 1.9.5  
 **Status:** Production + 100% Tailwind Migration Complete

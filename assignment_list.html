@@ -43,7 +43,7 @@
         class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 safe-top transition-colors duration-200 z-20">
         <div class="flex items-center justify-between px-4 py-3">
             <div class="flex items-center gap-3">
-                <button onclick="window.history.back()"
+                <button onclick="goBack()"
                     class="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg min-w-[44px] min-h-[44px] transition-colors"
                     aria-label="Go back">
                     <i class="fas fa-arrow-left"></i>
@@ -77,12 +77,14 @@
             </button>
 
             <!-- Level Filter -->
-            <select id="level-filter" onchange="applyFilters()"
-                class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium border-none focus:ring-2 focus:ring-primary focus:outline-none transition-colors min-h-[36px] cursor-pointer">
-                <option value="all">All Levels</option>
-                <option value="VAR">Varsity</option>
-                <option value="JV">JV</option>
-            </select>
+            <div id="level-filter-group" class="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                <button onclick="setLevelFilter('all')" id="level-all-btn"
+                    class="px-2 py-1 rounded-md text-xs font-medium transition-colors bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white">All</button>
+                <button onclick="setLevelFilter('VAR')" id="level-var-btn"
+                    class="px-2 py-1 rounded-md text-xs font-medium transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">VAR</button>
+                <button onclick="setLevelFilter('JV')" id="level-jv-btn"
+                    class="px-2 py-1 rounded-md text-xs font-medium transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">JV</button>
+            </div>
 
             <!-- School Filter -->
             <select id="school-filter" onchange="applyFilters()"
@@ -91,12 +93,14 @@
             </select>
 
             <!-- Status Filter -->
-            <select id="status-filter" onchange="applyFilters()"
-                class="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium border-none focus:ring-2 focus:ring-primary focus:outline-none transition-colors min-h-[36px] cursor-pointer">
-                <option value="all">All Status</option>
-                <option value="active" selected>Active</option>
-                <option value="inactive">Inactive</option>
-            </select>
+            <div id="status-filter-group" class="flex gap-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                <button onclick="setStatusFilter('all')" id="status-all-btn"
+                    class="px-2 py-1 rounded-md text-xs font-medium transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">All</button>
+                <button onclick="setStatusFilter('active')" id="status-active-btn"
+                    class="px-2 py-1 rounded-md text-xs font-medium transition-colors bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white">Active</button>
+                <button onclick="setStatusFilter('inactive')" id="status-inactive-btn"
+                    class="px-2 py-1 rounded-md text-xs font-medium transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Inactive</button>
+            </div>
         </div>
     </header>
 
@@ -138,6 +142,25 @@
         let filteredArchers = []; // Currently displayed archers
         let modifiedArchers = new Map(); // Track modified archers
         let genderFilter = 'all'; // all, M, F
+        let levelFilter = 'all'; // all, VAR, JV
+        let statusFilter = 'active'; // all, active, inactive
+
+        function goBack() {
+            // If we have history and the referrer is from our domain, go back
+            if (window.history.length > 1 && document.referrer && document.referrer.includes(window.location.hostname)) {
+                window.history.back();
+            } else {
+                // Fallback: Back to Coach Console
+                // Check if we have an eventId in the URL to go back to the dashboard
+                const urlParams = new URLSearchParams(window.location.search);
+                const eventId = urlParams.get('event');
+                if (eventId) {
+                    window.location.href = `event_dashboard.html?event=${eventId}`;
+                } else {
+                    window.location.href = 'coach.html';
+                }
+            }
+        }
 
         async function init() {
             // Initialize archer module
@@ -179,6 +202,48 @@
             });
         }
 
+        function setLevelFilter(val) {
+            levelFilter = val;
+
+            // Update UI
+            const btns = {
+                'all': document.getElementById('level-all-btn'),
+                'VAR': document.getElementById('level-var-btn'),
+                'JV': document.getElementById('level-jv-btn')
+            };
+
+            Object.keys(btns).forEach(key => {
+                if (key === val) {
+                    btns[key].className = 'px-2 py-1 rounded-md text-xs font-medium transition-colors bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white';
+                } else {
+                    btns[key].className = 'px-2 py-1 rounded-md text-xs font-medium transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200';
+                }
+            });
+
+            applyFilters();
+        }
+
+        function setStatusFilter(val) {
+            statusFilter = val;
+
+            // Update UI
+            const btns = {
+                'all': document.getElementById('status-all-btn'),
+                'active': document.getElementById('status-active-btn'),
+                'inactive': document.getElementById('status-inactive-btn')
+            };
+
+            Object.keys(btns).forEach(key => {
+                if (key === val) {
+                    btns[key].className = 'px-2 py-1 rounded-md text-xs font-medium transition-colors bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white';
+                } else {
+                    btns[key].className = 'px-2 py-1 rounded-md text-xs font-medium transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200';
+                }
+            });
+
+            applyFilters();
+        }
+
         function toggleGenderFilter() {
             const btn = document.getElementById('gender-filter-btn');
             const label = document.getElementById('gender-label');
@@ -212,9 +277,7 @@
 
         function applyFilters() {
             const search = document.getElementById('search-input').value.toLowerCase();
-            const level = document.getElementById('level-filter').value;
             const school = document.getElementById('school-filter').value;
-            const status = document.getElementById('status-filter').value;
 
             filteredArchers = archerList.filter(archer => {
                 // Search
@@ -229,7 +292,7 @@
                 }
 
                 // Level
-                if (level !== 'all' && archer.level !== level) {
+                if (levelFilter !== 'all' && archer.level !== levelFilter) {
                     return false;
                 }
 
@@ -239,9 +302,9 @@
                 }
 
                 // Status
-                if (status !== 'all') {
+                if (statusFilter !== 'all') {
                     const archerStatus = (archer.status || 'active').toLowerCase();
-                    if (archerStatus !== status) {
+                    if (archerStatus !== statusFilter) {
                         return false;
                     }
                 }
@@ -321,7 +384,24 @@
                                 ${archer.first} ${archer.last}
                             </div>
                             <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                ${archer.gender || 'M'} / ${archer.level || 'VAR'} • ${archer.school || 'N/A'}
+                                ${archer.school || 'N/A'}
+                            </div>
+                            <!-- Per-Archer Toggles -->
+                            <div class="flex items-center gap-2 mt-2">
+                                <!-- Level Toggle -->
+                                <div class="flex bg-gray-100 dark:bg-gray-700 p-0.5 rounded-md">
+                                    <button onclick="setLevel('${archer.extId}', 'VAR')" 
+                                        class="px-1.5 py-0.5 text-[10px] font-bold rounded transition-colors ${archer.level === 'VAR' ? 'bg-white dark:bg-gray-600 shadow-sm text-primary' : 'text-gray-400 hover:text-gray-600'}">VAR</button>
+                                    <button onclick="setLevel('${archer.extId}', 'JV')" 
+                                        class="px-1.5 py-0.5 text-[10px] font-bold rounded transition-colors ${archer.level === 'JV' ? 'bg-white dark:bg-gray-600 shadow-sm text-primary' : 'text-gray-400 hover:text-gray-600'}">JV</button>
+                                </div>
+                                <!-- Status Toggle -->
+                                <div class="flex bg-gray-100 dark:bg-gray-700 p-0.5 rounded-md">
+                                    <button onclick="setStatus('${archer.extId}', 'active')" 
+                                        class="px-1.5 py-0.5 text-[10px] font-bold rounded transition-colors ${(archer.status || 'active') === 'active' ? 'bg-white dark:bg-green-600/20 shadow-sm text-green-600 dark:text-green-400' : 'text-gray-400 hover:text-gray-600'}">Act</button>
+                                    <button onclick="setStatus('${archer.extId}', 'inactive')" 
+                                        class="px-1.5 py-0.5 text-[10px] font-bold rounded transition-colors ${(archer.status || 'active') === 'inactive' ? 'bg-white dark:bg-red-600/20 shadow-sm text-red-600 dark:text-red-400' : 'text-gray-400 hover:text-gray-600'}">Ina</button>
+                                </div>
                             </div>
                         </div>
                         
@@ -383,6 +463,30 @@
             document.getElementById('footer').classList.remove('hidden');
 
             // Auto-save after short delay
+            clearTimeout(window.autoSaveTimeout);
+            window.autoSaveTimeout = setTimeout(() => saveAll(), 1500);
+        };
+
+        window.setLevel = function (extId, level) {
+            const archer = archerList.find(a => a.extId === extId);
+            if (!archer) return;
+
+            archer.level = level;
+            modifiedArchers.set(extId, archer);
+            renderArcherGrid();
+            document.getElementById('footer').classList.remove('hidden');
+            clearTimeout(window.autoSaveTimeout);
+            window.autoSaveTimeout = setTimeout(() => saveAll(), 1500);
+        };
+
+        window.setStatus = function (extId, status) {
+            const archer = archerList.find(a => a.extId === extId);
+            if (!archer) return;
+
+            archer.status = status;
+            modifiedArchers.set(extId, archer);
+            renderArcherGrid();
+            document.getElementById('footer').classList.remove('hidden');
             clearTimeout(window.autoSaveTimeout);
             window.autoSaveTimeout = setTimeout(() => saveAll(), 1500);
         };

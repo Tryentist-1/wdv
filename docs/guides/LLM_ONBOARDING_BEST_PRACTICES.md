@@ -207,7 +207,20 @@
 
 ---
 
-## 🎯 Session Start Template (Enhanced)
+## 🎯 Unified Session Start Protocol (Cursor / Codex / Antigravity)
+
+**For Cursor:**  
+Cursor automatically reads `.cursorrules`, which explicitly instructs it to read the quick start file. You only need to state your goal:  
+> "I'm starting a new session. My goal is: [Task]"
+
+**For Codex / Antigravity / Other LLMs:**  
+These agents require explicit instructions to read the quick start file first:  
+> "Please silently read `01-SESSION_QUICK_START.md` to gain context on the current sprint and constraints. Then, let's work on: [Task]"
+
+---
+
+## 📋 Detailed Session Start Template
+
 
 ```markdown
 Hi! I'm working on the WDV Archery Suite. Quick context:

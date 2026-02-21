@@ -2,6 +2,12 @@
 
 **CRITICAL:** These rules MUST be followed for ALL code changes, commits, and deployments.
 
+## 🤖 SESSION ONBOARDING FOR AI (CURSOR/CODEX)
+
+When starting a new session or answering the first prompt, you MUST:
+1. Silently read `01-SESSION_QUICK_START.md` to understand the current sprint, active work, and constraints.
+2. Proceed with the user's request using the context gained. Do NOT output a summary of the quick start unless asked.
+
 ## 🔴 MANDATORY PRE-COMMIT CHECKS
 
 Before suggesting ANY code changes or commits, you MUST verify:
