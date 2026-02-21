@@ -7357,7 +7357,7 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
         $pdo = db();
 
         // Check if match exists and get current state
-        $checkStmt = $pdo->prepare('SELECT id, event_id, status, locked, card_status, winner_team_id FROM team_matches WHERE id = ? LIMIT 1');
+        $checkStmt = $pdo->prepare('SELECT id, event_id, bracket_id, status, locked, card_status, winner_team_id FROM team_matches WHERE id = ? LIMIT 1');
         $checkStmt->execute([$matchId]);
         $match = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -7448,6 +7448,22 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
         if ($newStatus === 'COMP') {
             $statusStmt = $pdo->prepare('UPDATE team_matches SET status = ? WHERE id = ?');
             $statusStmt->execute(['Completed', $matchId]);
+        }
+
+        // Handle Swiss standings update if setting to COMP for the first time
+        $wasAlreadyComplete = ($match['card_status'] === 'COMP');
+        if ($newStatus === 'COMP' && !$wasAlreadyComplete) {
+            $bracketId = $match['bracket_id'];
+            if ($bracketId) {
+                // Check if bracket is Swiss format
+                $bracketFormatStmt = $pdo->prepare('SELECT bracket_format FROM brackets WHERE id = ?');
+                $bracketFormatStmt->execute([$bracketId]);
+                $bracketFormat = $bracketFormatStmt->fetchColumn();
+
+                if ($bracketFormat === 'SWISS') {
+                    recalculate_swiss_bracket_standings($pdo, $bracketId);
+                }
+            }
         }
 
         // Return updated match
