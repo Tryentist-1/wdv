@@ -690,10 +690,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (soComplete) {
                 if (t1SoTotal > t2SoTotal) {
                     winner = 't1';
+                    t1MatchScore++; // Award tie-breaker point
                     matchOver = true;
                     soWinnerText.textContent = 'T1 Wins S.O.';
                 } else if (t2SoTotal > t1SoTotal) {
                     winner = 't2';
+                    t2MatchScore++; // Award tie-breaker point
                     matchOver = true;
                     soWinnerText.textContent = 'T2 Wins S.O.';
                 } else { // Tied shoot-off total, check highest arrow using the correct tie-break logic
@@ -702,15 +704,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (t1Max > t2Max) {
                         winner = 't1';
+                        t1MatchScore++; // Award tie-breaker point
                         matchOver = true;
                         soWinnerText.textContent = 'T1 Wins (High Arrow)';
                     } else if (t2Max > t1Max) {
                         winner = 't2';
+                        t2MatchScore++; // Award tie-breaker point
                         matchOver = true;
                         soWinnerText.textContent = 'T2 Wins (High Arrow)';
                     } else { // Still tied, must be a judge call
                         if (state.shootOffWinner) {
                             winner = state.shootOffWinner;
+                            if (winner === 't1') t1MatchScore++;
+                            if (winner === 't2') t2MatchScore++;
                             matchOver = true;
                             soWinnerText.textContent = `T${winner === 't1' ? 1 : 2} Wins (Closest)`;
                         } else {
@@ -817,8 +823,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const t1SoTotal = state.scores.so.t1.reduce((sum, s) => sum + parseScoreValue(s), 0);
                 const t2SoTotal = state.scores.so.t2.reduce((sum, s) => sum + parseScoreValue(s), 0);
                 if (t1SoTotal > t2SoTotal || t2SoTotal > t1SoTotal || state.shootOffWinner) {
-                    matchOver = true;
                     winner = state.shootOffWinner || (t1SoTotal > t2SoTotal ? 't1' : 't2');
+                    if (winner === 't1') t1MatchScore++;
+                    if (winner === 't2') t2MatchScore++;
+                    matchOver = true;
                 }
             }
         }

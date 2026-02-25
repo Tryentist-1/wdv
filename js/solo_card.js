@@ -1458,12 +1458,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (soScoreA1 !== '' && soScoreA2 !== '') {
                 if (soValueA1 > soValueA2) {
                     winner = 'a1';
+                    a1MatchScore++; // Award tie-breaker point
                     matchOver = true;
                 } else if (soValueA2 > soValueA1) {
                     winner = 'a2';
+                    a2MatchScore++; // Award tie-breaker point
                     matchOver = true;
                 } else if (state.shootOffWinner) {
                     winner = state.shootOffWinner;
+                    if (winner === 'a1') a1MatchScore++;
+                    if (winner === 'a2') a2MatchScore++;
                     matchOver = true;
                 }
             }

@@ -7214,6 +7214,11 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
                             elseif ($a1SoScore === $a2SoScore && !empty($match['winner_archer_id'])) {
                                 $isComplete = true;
                             }
+
+                            // A match completed via tiebreaker artificially counts as a 6th set point in evaluation
+                            if ($isComplete) {
+                                $matchScore = 6;
+                            }
                         }
                     }
                 }
@@ -7476,6 +7481,11 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
                     $m = $matchRow->fetch(PDO::FETCH_ASSOC);
                     if (!empty($m['shoot_off_winner']))
                         $isComplete = true;
+
+                    // A match completed via tiebreaker artificially counts as a 5th set point in evaluation
+                    if ($isComplete) {
+                        $matchScore = 5;
+                    }
                 }
             }
 
