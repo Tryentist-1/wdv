@@ -1799,7 +1799,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.brackets.forEach(bracket => {
             const option = document.createElement('option');
             option.value = bracket.id;
-            const formatText = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+            const formatText = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : (bracket.bracket_format === 'COMPASS' ? 'Compass' : 'Swiss');
             option.textContent = `${bracket.division} ${formatText} (${bracket.status})`;
             bracketSelect.appendChild(option);
         });
@@ -1956,7 +1956,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const matchInfo = data.assignment.match_id || `Quarter Final ${data.assignment.match_number}`;
                             const bracket = state.brackets.find(b => b.id === state.bracketId);
                             const event = state.events.find(e => e.id === state.eventId);
-                            const formatText = bracket?.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+                            const formatText = bracket?.bracket_format === 'ELIMINATION' ? 'Elimination' : (bracket.bracket_format === 'COMPASS' ? 'Compass' : 'Swiss');
                             const eventName = event?.name || 'Event';
 
                             matchTypeText.textContent = `${formatText} bracket: ${matchInfo} - You (Seed ${data.archer.seed}) vs ${opponent.name} (Seed ${opponent.seed})`;
@@ -1983,7 +1983,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const bracket = state.brackets.find(b => b.id === state.bracketId);
             const event = state.events.find(e => e.id === state.eventId);
             if (bracket && event) {
-                const formatText = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+                const formatText = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : (bracket.bracket_format === 'COMPASS' ? 'Compass' : 'Swiss');
                 matchTypeText.textContent = `${formatText} bracket match in "${event.name}"`;
             }
         } else if (state.eventId) {

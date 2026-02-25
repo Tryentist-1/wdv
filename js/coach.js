@@ -1630,7 +1630,7 @@
     brackets.forEach(bracket => {
       const option = document.createElement('option');
       option.value = bracket.id;
-      const formatName = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+      const formatName = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : (bracket.bracket_format === 'COMPASS' ? 'Compass' : 'Swiss');
       option.textContent = `${formatName} - ${bracket.division || 'N/A'}`;
       if (bracket.id === verifyState.bracketId) {
         option.selected = true;
@@ -3401,8 +3401,8 @@
       };
 
       document.getElementById('generate-bracket-btn').onclick = async () => {
-        if (bracket.bracket_format !== 'ELIMINATION') {
-          alert('Auto-generation only available for ELIMINATION brackets');
+        if (bracket.bracket_format !== 'ELIMINATION' && bracket.bracket_format !== 'COMPASS') {
+          alert('Auto-generation only available for ELIMINATION or COMPASS brackets');
           return;
         }
 

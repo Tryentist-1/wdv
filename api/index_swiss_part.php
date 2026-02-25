@@ -33,7 +33,7 @@ recalculate_swiss_bracket_standings($pdo, $bracketId);
 $stmt = $pdo->prepare('
 SELECT * FROM bracket_entries
 WHERE bracket_id = ? AND entry_type = "ARCHER"
-ORDER BY swiss_points DESC, swiss_wins DESC, swiss_losses ASC, RAND()
+ORDER BY swiss_points DESC, swiss_wins DESC, swiss_losses ASC, seed_position ASC, RAND()
 ');
 $stmt->execute([$bracketId]);
 $allEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
