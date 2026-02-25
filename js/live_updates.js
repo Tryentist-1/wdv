@@ -1017,6 +1017,25 @@
             });
     }
 
+    function removeTeamArcher(matchId, teamId, position) {
+        if (!state.config.enabled) return Promise.resolve(null);
+
+        console.log(`[TeamMatch] Removing archer at pos ${position} from team ${teamId}...`);
+
+        const mappingKey = `team_archer:${matchId}:${teamId}:${position}`;
+        localStorage.removeItem(mappingKey);
+
+        return request(`/team-matches/${matchId}/teams/${teamId}/archers/${position}`, 'DELETE')
+            .then(json => {
+                console.log(`[TeamMatch] ✅ Team archer pos ${position} removed.`);
+                return true;
+            })
+            .catch(e => {
+                console.error(`[TeamMatch] ❌ Failed to remove archer pos ${position}:`, e);
+                return false;
+            });
+    }
+
     function postTeamSet(matchId, teamId, matchArcherId, setNumber, payload) {
         if (!state.config.enabled) {
             console.warn('[TeamMatch] LiveUpdates disabled, skipping set post');
@@ -1113,6 +1132,7 @@
         ensureTeamMatch,
         ensureTeam,
         ensureTeamArcher,
+        removeTeamArcher,
         postTeamSet,
 
         // Reconnect / Hydration

@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         matchArcherIds: { t1: {}, t2: {} }, // { t1: {0: id, 1: id, 2: id}, t2: {...} }
         eventId: null,
         bracketId: null,
+        isCoachMode: false,
         eventName: '',
         bracketName: '',
         syncStatus: { t1: {}, t2: {} },
@@ -307,28 +308,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const today = new Date().toISOString().split('T')[0];
 
             // Create match in database (force new match - don't reuse cache)
-
-            console.log('Creating team match in database...');
-            const matchId = await window.LiveUpdates.ensureTeamMatch({
-                date: today,
-                location: state.location || '',
-                eventId: eventId,
-                bracketId: bracketId,
-                maxSets: 4,
-                forceNew: true  // Always create a new match when starting scoring
-            });
+            let matchId = state.matchId;
 
             if (!matchId) {
-                throw new Error('Failed to create match in database');
-            }
+                console.log('Creating team match in database...');
+                matchId = await window.LiveUpdates.ensureTeamMatch({
+                    date: today,
+                    location: state.location || '',
+                    eventId: eventId,
+                    bracketId: bracketId,
+                    maxSets: 4,
+                    forceNew: true  // Always create a new match when starting scoring
+                });
 
-            state.matchId = matchId;
-            state.eventId = eventId;
+                if (!matchId) {
+                    throw new Error('Failed to create match in database');
+                }
+
+                state.matchId = matchId;
+                state.eventId = eventId;
+            } else {
+                console.log('Using existing team match from database...', matchId);
+            }
 
             // Add teams
             console.log('Adding teams to match...');
-            const team1Id = await window.LiveUpdates.ensureTeam(matchId, 1, null, state.team1[0]?.school || '');
-            const team2Id = await window.LiveUpdates.ensureTeam(matchId, 2, null, state.team2[0]?.school || '');
+            const team1Id = state.teamIds.t1 || await window.LiveUpdates.ensureTeam(matchId, 1, null, state.team1[0]?.school || '');
+            const team2Id = state.teamIds.t2 || await window.LiveUpdates.ensureTeam(matchId, 2, null, state.team2[0]?.school || '');
 
             if (!team1Id || !team2Id) {
                 throw new Error('Failed to add teams to match');
@@ -338,30 +344,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Add archers to teams
             console.log('[TeamCard] Adding archers to teams...');
-            for (let i = 0; i < state.team1.length; i++) {
-                const a1Id = state.team1[i].id;
-                const archerName = `${state.team1[i].first} ${state.team1[i].last}`;
-                console.log(`[TeamCard] Adding Team 1 archer ${i + 1}: ${archerName}`);
-                const matchArcherId1 = await window.LiveUpdates.ensureTeamArcher(matchId, team1Id, a1Id, state.team1[i], i + 1);
-                if (!matchArcherId1) {
-                    throw new Error(`Failed to add archer ${i + 1} to team 1`);
+
+            // Handle Team 1
+            for (let position = 1; position <= 3; position++) {
+                const i = position - 1;
+                if (i < state.team1.length) {
+                    const a1Id = state.team1[i].id;
+                    const archerName = `${state.team1[i].first} ${state.team1[i].last}`;
+                    console.log(`[TeamCard] Adding Team 1 archer ${position}: ${archerName}`);
+                    const matchArcherId1 = await window.LiveUpdates.ensureTeamArcher(matchId, team1Id, a1Id, state.team1[i], position);
+                    if (!matchArcherId1) {
+                        throw new Error(`Failed to add archer ${position} to team 1`);
+                    }
+                    if (!state.matchArcherIds.t1) state.matchArcherIds.t1 = {};
+                    state.matchArcherIds.t1[i] = matchArcherId1;
+                    console.log(`[TeamCard] ✅ Team 1 archer ${position} added: ${matchArcherId1}`);
+                } else if (window.LiveUpdates.removeTeamArcher) {
+                    console.log(`[TeamCard] Removing Team 1 archer ${position} (team size reduced)`);
+                    await window.LiveUpdates.removeTeamArcher(matchId, team1Id, position);
+                    if (state.matchArcherIds.t1 && state.matchArcherIds.t1[i]) {
+                        delete state.matchArcherIds.t1[i];
+                    }
                 }
-                if (!state.matchArcherIds.t1) state.matchArcherIds.t1 = {};
-                state.matchArcherIds.t1[i] = matchArcherId1;
-                console.log(`[TeamCard] ✅ Team 1 archer ${i + 1} added: ${matchArcherId1}`);
             }
 
-            for (let i = 0; i < state.team2.length; i++) {
-                const a2Id = state.team2[i].id;
-                const archerName = `${state.team2[i].first} ${state.team2[i].last}`;
-                console.log(`[TeamCard] Adding Team 2 archer ${i + 1}: ${archerName}`);
-                const matchArcherId2 = await window.LiveUpdates.ensureTeamArcher(matchId, team2Id, a2Id, state.team2[i], i + 1);
-                if (!matchArcherId2) {
-                    throw new Error(`Failed to add archer ${i + 1} to team 2`);
+            // Handle Team 2
+            for (let position = 1; position <= 3; position++) {
+                const i = position - 1;
+                if (i < state.team2.length) {
+                    const a2Id = state.team2[i].id;
+                    const archerName = `${state.team2[i].first} ${state.team2[i].last}`;
+                    console.log(`[TeamCard] Adding Team 2 archer ${position}: ${archerName}`);
+                    const matchArcherId2 = await window.LiveUpdates.ensureTeamArcher(matchId, team2Id, a2Id, state.team2[i], position);
+                    if (!matchArcherId2) {
+                        throw new Error(`Failed to add archer ${position} to team 2`);
+                    }
+                    if (!state.matchArcherIds.t2) state.matchArcherIds.t2 = {};
+                    state.matchArcherIds.t2[i] = matchArcherId2;
+                    console.log(`[TeamCard] ✅ Team 2 archer ${position} added: ${matchArcherId2}`);
+                } else if (window.LiveUpdates.removeTeamArcher) {
+                    console.log(`[TeamCard] Removing Team 2 archer ${position} (team size reduced)`);
+                    await window.LiveUpdates.removeTeamArcher(matchId, team2Id, position);
+                    if (state.matchArcherIds.t2 && state.matchArcherIds.t2[i]) {
+                        delete state.matchArcherIds.t2[i];
+                    }
                 }
-                if (!state.matchArcherIds.t2) state.matchArcherIds.t2 = {};
-                state.matchArcherIds.t2[i] = matchArcherId2;
-                console.log(`[TeamCard] ✅ Team 2 archer ${i + 1} added: ${matchArcherId2}`);
             }
 
             // Initialize scores
@@ -712,9 +739,15 @@ document.addEventListener('DOMContentLoaded', () => {
             matchResultEl.textContent = `Match Over: Team ${displayWinner === 't1' ? 1 : 2} Wins!`;
             matchResultEl.classList.add('text-success');
             matchResultEl.classList.remove('text-gray-500');
-            if (scoreTableContainer) scoreTableContainer.classList.add('match-over-locked');
+            if (scoreTableContainer) {
+                if (!state.isCoachMode) {
+                    scoreTableContainer.classList.add('match-over-locked');
+                } else {
+                    scoreTableContainer.classList.remove('match-over-locked');
+                }
+            }
             const isAlreadyCompleted = state.cardStatus === 'COMP' || state.cardStatus === 'VRFD';
-            if (!isAlreadyCompleted && !state.matchOverModalShown && matchOver) {
+            if (!isAlreadyCompleted && !state.matchOverModalShown && matchOver && !state.isCoachMode) {
                 state.matchOverModalShown = true;
                 const modal = document.getElementById('match-over-modal');
                 const winnerText = document.getElementById('match-over-winner-text');
@@ -868,6 +901,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
+            if (state.isCoachMode) {
+                const reason = prompt("Enter a reason for editing this match score:", "Coach Score Correction");
+                if (reason === null) {
+                    hideCompleteMatchModal();
+                    return; // Cancelled
+                }
+
+                const response = await fetch(`${getApiBase()}/team-matches/${state.matchId}/verify`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        action: 'lock',
+                        verifiedBy: 'Coach',
+                        notes: reason || 'Score correction'
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+
+                alert('✓ Match verified and changes saved.');
+                window.location.href = 'coach.html';
+                return true;
+            }
+
             const response = await fetch(`${getApiBase()}/team-matches/${state.matchId}/status`, {
                 method: 'PATCH',
                 headers: headers,
@@ -911,9 +971,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const isComplete = isMatchComplete();
         const isAlreadyCompleted = state.cardStatus === 'COMP';
         const isVerified = state.cardStatus === 'VRFD';
-        const isLocked = state.locked || isVerified;
+        const isLocked = (state.locked || isVerified) && !state.isCoachMode;
 
-        if (isLocked) {
+        if (state.isCoachMode) {
+            completeBtn.disabled = false;
+            completeBtn.innerHTML = '<i class="fas fa-save mr-1"></i> Save Edits';
+            if (isComplete) {
+                completeBtn.classList.remove('bg-gray-500', 'hover:bg-gray-600', 'bg-blue-500', 'hover:bg-blue-600');
+                completeBtn.classList.add('bg-primary', 'hover:bg-primary-dark');
+            } else {
+                completeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark', 'bg-blue-500', 'hover:bg-blue-600');
+                completeBtn.classList.add('bg-gray-500', 'hover:bg-gray-600');
+            }
+        } else if (isLocked) {
             completeBtn.disabled = true;
             completeBtn.innerHTML = '<i class="fas fa-lock mr-1"></i> Verified';
             completeBtn.classList.remove('bg-primary', 'hover:bg-primary-dark');
@@ -1484,7 +1554,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 8. Set current view
-            state.currentView = 'scoring';
+            // If the match is not started yet, stay on the setup view to allow roster swapping
+            if (match.status === 'Not Started' || match.card_status === 'PENDING') {
+                state.currentView = 'setup';
+                // Trigger an update to the selector so the start button enables properly
+                setTimeout(syncSelectorSelection, 100);
+            } else {
+                state.currentView = 'scoring';
+            }
 
             // 9. Save session for recovery
             saveData();
@@ -1723,6 +1800,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check URL for match ID (e.g., team_card.html?match=UUID)
         const urlParams = new URLSearchParams(window.location.search);
         let urlMatchId = urlParams.get('match');
+        state.isCoachMode = urlParams.get('mode') === 'coach';
 
         // Hash fallback (e.g., #matchId=UUID or #UUID)
         if (!urlMatchId && window.location.hash) {

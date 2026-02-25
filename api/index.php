@@ -6772,6 +6772,46 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers$#i', 
     exit;
 }
 
+// DELETE /v1/team-matches/:id/teams/:teamId/archers/:position - Remove archer from team position
+if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers/([1-3])$#i', $route, $m) && $method === 'DELETE') {
+    $matchId = $m[1];
+    $teamId = $m[2];
+    $position = (int) $m[3];
+
+    try {
+        $pdo = db();
+        // Check auth if needed
+        $matchCheck = $pdo->prepare('SELECT event_id, match_code FROM team_matches WHERE id=?');
+        $matchCheck->execute([$matchId]);
+        $matchData = $matchCheck->fetch();
+
+        if ($matchData && ($matchData['event_id'] || $matchData['match_code'])) {
+            require_api_key();
+        }
+
+        // Get the match_archer_id to delete their sets too
+        $selStmt = $pdo->prepare('SELECT id FROM team_match_archers WHERE team_id=? AND position=?');
+        $selStmt->execute([$teamId, $position]);
+        $archerRow = $selStmt->fetch();
+
+        if ($archerRow) {
+            $matchArcherId = $archerRow['id'];
+            // Delete sets
+            $delSets = $pdo->prepare('DELETE FROM team_match_sets WHERE match_archer_id=?');
+            $delSets->execute([$matchArcherId]);
+            // Delete archer
+            $delArcher = $pdo->prepare('DELETE FROM team_match_archers WHERE id=?');
+            $delArcher->execute([$matchArcherId]);
+        }
+
+        json_response(['success' => true], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+
 // POST /v1/team-matches/:id/teams/:teamId/archers/:archerId/sets - Submit set scores
 if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers/([0-9a-f-]+)/sets$#i', $route, $m) && $method === 'POST') {
     require_api_key();

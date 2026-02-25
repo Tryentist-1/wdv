@@ -1145,8 +1145,10 @@
 
       // Edit Button (Consistent across all states)
       let editButton = '';
-      if (matchType === 'solo' && match.id) {
-        const editUrl = `scorecard_editor.html?match=${match.id}&mode=coach`;
+      if (match.id) {
+        const editUrl = matchType === 'solo'
+          ? `scorecard_editor.html?match=${match.id}&mode=coach`
+          : `team_card.html?match=${match.id}&mode=coach`;
         editButton = `
             <a href="${editUrl}" class="flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="Edit Match">
                 <i class="fas fa-edit"></i>
