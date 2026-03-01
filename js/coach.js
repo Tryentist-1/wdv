@@ -1145,8 +1145,10 @@
 
       // Edit Button (Consistent across all states)
       let editButton = '';
-      if (matchType === 'solo' && match.id) {
-        const editUrl = `scorecard_editor.html?match=${match.id}&mode=coach`;
+      if (match.id) {
+        const editUrl = matchType === 'solo'
+          ? `scorecard_editor.html?match=${match.id}&mode=coach`
+          : `team_card.html?match=${match.id}&mode=coach`;
         editButton = `
             <a href="${editUrl}" class="flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="Edit Match">
                 <i class="fas fa-edit"></i>
@@ -1628,7 +1630,7 @@
     brackets.forEach(bracket => {
       const option = document.createElement('option');
       option.value = bracket.id;
-      const formatName = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : 'Swiss';
+      const formatName = bracket.bracket_format === 'ELIMINATION' ? 'Elimination' : (bracket.bracket_format === 'COMPASS' ? 'Compass' : 'Swiss');
       option.textContent = `${formatName} - ${bracket.division || 'N/A'}`;
       if (bracket.id === verifyState.bracketId) {
         option.selected = true;
@@ -3399,8 +3401,8 @@
       };
 
       document.getElementById('generate-bracket-btn').onclick = async () => {
-        if (bracket.bracket_format !== 'ELIMINATION') {
-          alert('Auto-generation only available for ELIMINATION brackets');
+        if (bracket.bracket_format !== 'ELIMINATION' && bracket.bracket_format !== 'COMPASS') {
+          alert('Auto-generation only available for ELIMINATION or COMPASS brackets');
           return;
         }
 

@@ -772,7 +772,8 @@ function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void
 
     // Get all completed matches for this bracket
     $matchesStmt = $pdo->prepare("
-        SELECT m.id, m.status 
+        SELECT m.id, m.status, 
+        " . ($isTeam ? 'm.winner_team_id as winner_id' : 'm.winner_archer_id as winner_id') . "
         FROM {$matchTable} m
         WHERE m.bracket_id = ? 
         AND m.status = 'Completed'
@@ -796,7 +797,7 @@ function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void
     foreach ($matches as $match) {
         if ($isTeam) {
             $teamsStmt = $pdo->prepare('
-                SELECT tmt.team_name, tmt.sets_won
+                SELECT tmt.id, tmt.team_name, tmt.sets_won
                 FROM team_match_teams tmt
                 WHERE tmt.match_id = ?
                 ORDER BY tmt.position
@@ -813,11 +814,20 @@ function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void
                 } elseif ($t2Sets > $t1Sets) {
                     $standings[$matchEntries[1]['team_name']]['wins']++;
                     $standings[$matchEntries[0]['team_name']]['losses']++;
+                } elseif (!empty($match['winner_id'])) {
+                    // Tie-breaker: shoot-off winner
+                    if ($matchEntries[0]['id'] === $match['winner_id']) {
+                        $standings[$matchEntries[0]['team_name']]['wins']++;
+                        $standings[$matchEntries[1]['team_name']]['losses']++;
+                    } elseif ($matchEntries[1]['id'] === $match['winner_id']) {
+                        $standings[$matchEntries[1]['team_name']]['wins']++;
+                        $standings[$matchEntries[0]['team_name']]['losses']++;
+                    }
                 }
             }
         } else {
             $archersStmt = $pdo->prepare('
-                SELECT sma.archer_id, SUM(COALESCE(sms.set_points, 0)) as sets_won
+                SELECT sma.id, sma.archer_id, SUM(COALESCE(sms.set_points, 0)) as sets_won
                 FROM solo_match_archers sma
                 LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 5
                 WHERE sma.match_id = ?
@@ -836,6 +846,15 @@ function recalculate_swiss_bracket_standings(PDO $pdo, string $bracketId): void
                 } elseif ($e2Sets > $e1Sets) {
                     $standings[$matchEntries[1]['archer_id']]['wins']++;
                     $standings[$matchEntries[0]['archer_id']]['losses']++;
+                } elseif (!empty($match['winner_id'])) {
+                    // Tie-breaker: shoot-off winner
+                    if ($matchEntries[0]['id'] === $match['winner_id']) {
+                        $standings[$matchEntries[0]['archer_id']]['wins']++;
+                        $standings[$matchEntries[1]['archer_id']]['losses']++;
+                    } elseif ($matchEntries[1]['id'] === $match['winner_id']) {
+                        $standings[$matchEntries[1]['archer_id']]['wins']++;
+                        $standings[$matchEntries[0]['archer_id']]['losses']++;
+                    }
                 }
             }
         }
@@ -6772,6 +6791,46 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers$#i', 
     exit;
 }
 
+// DELETE /v1/team-matches/:id/teams/:teamId/archers/:position - Remove archer from team position
+if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers/([1-3])$#i', $route, $m) && $method === 'DELETE') {
+    $matchId = $m[1];
+    $teamId = $m[2];
+    $position = (int) $m[3];
+
+    try {
+        $pdo = db();
+        // Check auth if needed
+        $matchCheck = $pdo->prepare('SELECT event_id, match_code FROM team_matches WHERE id=?');
+        $matchCheck->execute([$matchId]);
+        $matchData = $matchCheck->fetch();
+
+        if ($matchData && ($matchData['event_id'] || $matchData['match_code'])) {
+            require_api_key();
+        }
+
+        // Get the match_archer_id to delete their sets too
+        $selStmt = $pdo->prepare('SELECT id FROM team_match_archers WHERE team_id=? AND position=?');
+        $selStmt->execute([$teamId, $position]);
+        $archerRow = $selStmt->fetch();
+
+        if ($archerRow) {
+            $matchArcherId = $archerRow['id'];
+            // Delete sets
+            $delSets = $pdo->prepare('DELETE FROM team_match_sets WHERE match_archer_id=?');
+            $delSets->execute([$matchArcherId]);
+            // Delete archer
+            $delArcher = $pdo->prepare('DELETE FROM team_match_archers WHERE id=?');
+            $delArcher->execute([$matchArcherId]);
+        }
+
+        json_response(['success' => true], 200);
+    } catch (Exception $e) {
+        json_response(['error' => 'Database error: ' . $e->getMessage()], 500);
+    }
+    exit;
+}
+
+
 // POST /v1/team-matches/:id/teams/:teamId/archers/:archerId/sets - Submit set scores
 if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/teams/([0-9a-f-]+)/archers/([0-9a-f-]+)/sets$#i', $route, $m) && $method === 'POST') {
     require_api_key();
@@ -7155,6 +7214,11 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
                             elseif ($a1SoScore === $a2SoScore && !empty($match['winner_archer_id'])) {
                                 $isComplete = true;
                             }
+
+                            // A match completed via tiebreaker artificially counts as a 6th set point in evaluation
+                            if ($isComplete) {
+                                $matchScore = 6;
+                            }
                         }
                     }
                 }
@@ -7417,6 +7481,11 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
                     $m = $matchRow->fetch(PDO::FETCH_ASSOC);
                     if (!empty($m['shoot_off_winner']))
                         $isComplete = true;
+
+                    // A match completed via tiebreaker artificially counts as a 5th set point in evaluation
+                    if ($isComplete) {
+                        $matchScore = 5;
+                    }
                 }
             }
 
@@ -7909,7 +7978,7 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/archer-assignment/by-name/(.+?)/(.+?
         $seed = $entry['seed_position'];
 
         // For elimination brackets, calculate opponent based on bracket structure
-        if ($bracket['bracket_format'] === 'ELIMINATION') {
+        if ($bracket['bracket_format'] === 'ELIMINATION' || $bracket['bracket_format'] === 'COMPASS') {
             // Standard 8-person elimination bracket structure:
             // Q1: Seed 1 vs Seed 8
             // Q2: Seed 2 vs Seed 7
@@ -8095,8 +8164,8 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/bracket-assignments$#i', $route, $m) 
                 'match_id' => null
             ];
 
-            // For both SWISS and ELIMINATION brackets, find the latest pending match with bale assignment
-            if ($entry['bracket_format'] === 'SWISS' || $entry['bracket_format'] === 'ELIMINATION') {
+            // For SWISS, ELIMINATION, and COMPASS brackets, find the latest pending match with bale assignment
+            if ($entry['bracket_format'] === 'SWISS' || $entry['bracket_format'] === 'ELIMINATION' || $entry['bracket_format'] === 'COMPASS') {
                 $matchStmt = $pdo->prepare('
                     SELECT sm.id as match_id, sm.bale_number, sm.line_number, sm.wave, sm.bracket_match_id,
                            sma_opp.archer_name as opponent_name, sma_opp.archer_id as opponent_id,
@@ -8122,8 +8191,8 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/bracket-assignments$#i', $route, $m) 
                     $assignment['my_target'] = $latestMatch['my_target'];
                     $assignment['opp_target'] = $latestMatch['opp_target'];
 
-                    // For Elimination, we set round for UI display
-                    if ($entry['bracket_format'] === 'ELIMINATION') {
+                    // For Elimination or Compass, we set round for UI display
+                    if ($entry['bracket_format'] === 'ELIMINATION' || $entry['bracket_format'] === 'COMPASS') {
                         $assignment['round'] = $latestMatch['bracket_match_id'] ?: 'Elimination Round';
                         $assignment['opponent'] = [
                             'id' => $latestMatch['opponent_id'],
@@ -8310,8 +8379,8 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/generate$#i', $route, $m) && $method
             exit;
         }
 
-        if ($bracket['bracket_format'] !== 'ELIMINATION') {
-            json_response(['error' => 'Auto-generation only available for ELIMINATION brackets'], 400);
+        if ($bracket['bracket_format'] !== 'ELIMINATION' && $bracket['bracket_format'] !== 'COMPASS') {
+            json_response(['error' => 'Auto-generation only available for ELIMINATION or COMPASS brackets'], 400);
             exit;
         }
 
@@ -8666,7 +8735,7 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/results$#i', $route, $m) && $method 
         }
 
         // Get matches for each round
-        if ($bracket['bracket_format'] === 'ELIMINATION') {
+        if ($bracket['bracket_format'] === 'ELIMINATION' || $bracket['bracket_format'] === 'COMPASS') {
             // Quarter Finals (Q1-Q4)
             $qStmt = $pdo->prepare('
                 SELECT sm.*, sma1.archer_name as archer1_name, sma1.archer_id as archer1_id,
@@ -9563,5 +9632,6 @@ if (preg_match('#^/v1/brackets/([0-9a-f-]+)/generate-round$#i', $route, $m) && $
     }
     exit;
 }
+require __DIR__ . '/index_compass_part.php';
 
 json_response(['error' => 'Not Found', 'route' => $route], 404);
