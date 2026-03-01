@@ -70,7 +70,20 @@
 
 ---
  
- ## 🚨 Status Update (February 21, 2026)
+ ## 🚨 Status Update (March 1, 2026)
+  
+  ### ✅ v1.0.2 — Coach Editing, Compass Format & Tiebreaker Fix (March 1, 2026)
+  - **Coach Roster Editing**: Coaches can now edit and resize team rosters before a match starts using `?mode=coach`. The "Complete" button becomes "Save Edits" in coach mode, calling `/verify` to persist changes.
+  - **Roster Resizing**: New `DELETE /v1/team-matches/:id/teams/:tid/archers/:pos` endpoint allows reducing a team from 3 → 2 archers pre-match.
+  - **Swiss Tie-Breakers**: `update_bracket_standings` now falls back to the shoot-off winner when bracket points are tied, preventing ambiguous Swiss standings.
+  - **Seeded Pairings**: `seed_position` included in Swiss bracket `ORDER BY` for fairer initial round distribution.
+  - **Compass Format**: `COMPASS` recognized as equivalent to `SWISS`/`ELIM` throughout API and UI. New `api/index_compass_part.php` handles 8-participant Compass draw routing for R2/R3.
+  - **Tiebreaker +1 Fix**: Solo and Team scorecards now correctly award +1 to the shoot-off winner, producing accurate `6-5` (solo) and `5-4` (team) finals. Server-side `/verify` hardcodes the evaluated score accordingly.
+
+  **Files Changed:** `api/index.php`, `api/index_compass_part.php` (new), `api/index_swiss_part.php`, `js/team_card.js`, `js/solo_card.js`, `js/coach.js`, `js/live_updates.js`, `version.json`  
+  **Full Notes:** [RELEASE_NOTES_v1.0.2.md](RELEASE_NOTES_v1.0.2.md)
+  
+  ## 🚨 Status Update (February 21, 2026)
   
   ### ✅ Bracket Logic Refinements & Team Support (February 21, 2026)
   - **Team Leaderboard Score Update**: Resolved an issue where team scores failed to update in Swiss brackets. Standings are now correctly recalculated from actual match data using `sets_won`.
