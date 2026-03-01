@@ -310,8 +310,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
                     SELECT match_archer_id, set_number, set_points, set_total
                     FROM solo_match_sets
                     WHERE match_archer_id IN ($inClause)
-                    AND set_number <= 5
-                    AND a1 IS NOT NULL AND a1 != ''
+                    AND set_number <= 6
                     ORDER BY set_number
                 ");
                 $allSetsStmt->execute($chunk);
@@ -339,7 +338,7 @@ if (preg_match('#^/v1/archers/([0-9a-f-]+)/history$#i', $route, $m) && $method =
 
             // Loop through ordered set numbers 1 to 5 to replay match logic.
             // We stop accumulating set points once either archer reaches 6 (match over).
-            for ($i = 1; $i <= 5; $i++) {
+            for ($i = 1; $i <= 6; $i++) {
                 if ($setsWon >= 6 || $opponentSetsWon >= 6) {
                     break;
                 }
@@ -950,6 +949,147 @@ function process_solo_match_verification(PDO $pdo, string $matchId, string $acti
     }
 
     return $updated;
+}
+
+/**
+ * Calculate and update winner field in solo_match_archers based on sets_won.
+ * This ensures the stored winner field matches the actual match result.
+ * 
+ * @param PDO $pdo Database connection
+ * @param string $matchId Match UUID
+ * @return void
+ */
+function update_solo_match_winner(PDO $pdo, string $matchId): void
+{
+    // --- RECALCULATE SET POINTS FROM RAW SCORES (Data Integrity) ---
+    // Before summing up points, ensure they are correct based on the arrow values
+    $setsStmt = $pdo->prepare("SELECT * FROM solo_match_sets WHERE match_id = ? ORDER BY set_number");
+    $setsStmt->execute([$matchId]);
+    $allSets = $setsStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Group by set number
+    $setsByNum = [];
+    foreach ($allSets as $s) {
+        $setsByNum[$s['set_number']][$s['match_archer_id']] = $s;
+    }
+
+    foreach ($setsByNum as $setNum => $pair) {
+        if (count($pair) !== 2)
+            continue; // Need 2 archers for comparison
+
+        // Get the two set records
+        $s1 = array_values($pair)[0];
+        $s2 = array_values($pair)[1];
+
+        // Helper to parse score
+        $parseScore = function ($val) {
+            if ($val === null || $val === '')
+                return 0;
+            if (strtoupper($val) === 'X')
+                return 10;
+            if (strtoupper($val) === 'M')
+                return 0;
+            return (int) $val;
+        };
+
+        // Calculate totals
+        $total1 = $parseScore($s1['a1']) + $parseScore($s1['a2']) + $parseScore($s1['a3']);
+        $total2 = $parseScore($s2['a1']) + $parseScore($s2['a2']) + $parseScore($s2['a3']);
+
+        // Determine correct points
+        $p1 = 1;
+        $p2 = 1;
+        $winPoints = ($setNum == 6) ? 1 : 2; // Shootoff win is 1 match point, regular set win is 2
+        if ($total1 > $total2) {
+            $p1 = $winPoints;
+            $p2 = 0;
+        } elseif ($total2 > $total1) {
+            $p1 = 0;
+            $p2 = $winPoints;
+        }
+
+        // Update if needed
+        if ((int) $s1['set_points'] !== $p1 || (int) $s1['set_total'] !== $total1) {
+            $pdo->prepare("UPDATE solo_match_sets SET set_total=?, set_points=? WHERE id=?")->execute([$total1, $p1, $s1['id']]);
+        }
+        if ((int) $s2['set_points'] !== $p2 || (int) $s2['set_total'] !== $total2) {
+            $pdo->prepare("UPDATE solo_match_sets SET set_total=?, set_points=? WHERE id=?")->execute([$total2, $p2, $s2['id']]);
+        }
+    }
+    // --- END RECALCULATION ---
+
+    // Get both archers with their cumulative set points
+    $archersStmt = $pdo->prepare('
+        SELECT 
+            sma.id,
+            sma.position,
+            SUM(COALESCE(sms.set_points, 0)) as sets_won
+        FROM solo_match_archers sma
+        LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 6
+        WHERE sma.match_id = ?
+        GROUP BY sma.id, sma.position
+        ORDER BY sma.position
+    ');
+    $archersStmt->execute([$matchId]);
+    $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
+
+    if (count($archers) === 2) {
+        // Cap at 6 — match ends when either archer reaches 6 set points
+        $archer1SetsWon = min(6, (int) ($archers[0]['sets_won'] ?? 0));
+        $archer2SetsWon = min(6, (int) ($archers[1]['sets_won'] ?? 0));
+
+        // Let's get bracket_id from match for Swiss bracket updates
+        $matchStmt = $pdo->prepare('SELECT bracket_id FROM solo_matches WHERE id = ? LIMIT 1');
+        $matchStmt->execute([$matchId]);
+        $bracketId = $matchStmt->fetchColumn();
+
+        // Get archer IDs
+        $archer1IdStmt = $pdo->prepare('SELECT archer_id FROM solo_match_archers WHERE id = ?');
+        $archer1IdStmt->execute([$archers[0]['id']]);
+        $archer1Id = $archer1IdStmt->fetchColumn();
+
+        $archer2IdStmt = $pdo->prepare('SELECT archer_id FROM solo_match_archers WHERE id = ?');
+        $archer2IdStmt->execute([$archers[1]['id']]);
+        $archer2Id = $archer2IdStmt->fetchColumn();
+
+        $winnerId = null;
+
+        // Determine winner based on sets won
+        if ($archer1SetsWon > $archer2SetsWon) {
+            // Archer 1 wins
+            $winnerStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 1 WHERE id = ?');
+            $winnerStmt->execute([$archers[0]['id']]);
+            $loserStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 0 WHERE id = ?');
+            $loserStmt->execute([$archers[1]['id']]);
+            $winnerId = $archer1Id;
+        } elseif ($archer2SetsWon > $archer1SetsWon) {
+            // Archer 2 wins
+            $winnerStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 1 WHERE id = ?');
+            $winnerStmt->execute([$archers[1]['id']]);
+            $loserStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 0 WHERE id = ?');
+            $loserStmt->execute([$archers[0]['id']]);
+            $winnerId = $archer2Id;
+        } else {
+            // Tie - reset winner fields
+            $pdo->prepare('UPDATE solo_match_archers SET winner = NULL WHERE match_id = ?')->execute([$matchId]);
+        }
+
+        // Set match explicitly to winner ID or NULL
+        $updateMatch = $pdo->prepare('UPDATE solo_matches SET winner_archer_id = ? WHERE id = ?');
+        $updateMatch->execute([$winnerId, $matchId]);
+
+        // Update Swiss bracket standings if bracket_id exists
+        if ($bracketId && $archer1Id && $archer2Id) {
+            // Check if bracket is Swiss format
+            $bracketFormatStmt = $pdo->prepare('SELECT bracket_format FROM brackets WHERE id = ?');
+            $bracketFormatStmt->execute([$bracketId]);
+            $bracketFormat = $bracketFormatStmt->fetchColumn();
+
+            if ($bracketFormat === 'SWISS') {
+                recalculate_swiss_bracket_standings($pdo, $bracketId);
+            }
+        }
+    }
 }
 
 function process_team_match_verification(PDO $pdo, string $matchId, string $action, string $verifiedBy = '', string $notes = ''): array
@@ -5835,6 +5975,12 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers/([0-9a-f-]+)/sets$#i', $
             $hasScore1 = $s1 && ($s1['a1'] !== null && $s1['a1'] !== '');
             $hasScore2 = $s2 && ($s2['a1'] !== null && $s2['a1'] !== '');
 
+            // For tie-breakers, we might not have a1 but we still want to recalculate if set is complete
+            if ($setNumber === 6) {
+                $hasScore1 = $s1 && (($s1['a1'] !== null && $s1['a1'] !== '') || ($s1['a2'] !== null && $s1['a2'] !== '') || ($s1['a3'] !== null && $s1['a3'] !== ''));
+                $hasScore2 = $s2 && (($s2['a1'] !== null && $s2['a1'] !== '') || ($s2['a2'] !== null && $s2['a2'] !== '') || ($s2['a3'] !== null && $s2['a3'] !== ''));
+            }
+
             if ($hasScore1 && $hasScore2) {
                 $total1 = (int) $s1['set_total'];
                 $total2 = (int) $s2['set_total'];
@@ -5858,9 +6004,19 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/archers/([0-9a-f-]+)/sets$#i', $
         }
         // --- DUAL-UPDATE LOGIC END ---
 
-        // Update match status to In Progress
-        $updateMatch = $pdo->prepare('UPDATE solo_matches SET status="In Progress" WHERE id=? AND status="Not Started"');
-        $updateMatch->execute([$matchId]);
+        // Fetch match to see if it needs full re-evaluation
+        $mStmt = $pdo->prepare('SELECT status, card_status FROM solo_matches WHERE id = ? LIMIT 1');
+        $mStmt->execute([$matchId]);
+        $mRow = $mStmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($mRow && in_array($mRow['card_status'], ['COMP', 'COMPLETED', 'VER', 'VERIFIED', 'VRFD'])) {
+            // Force recalculation of winner and standings for verified/completed cards
+            update_solo_match_winner($pdo, $matchId);
+        } else {
+            // Update match status to In Progress
+            $updateMatch = $pdo->prepare('UPDATE solo_matches SET status="In Progress" WHERE id=? AND status="Not Started"');
+            $updateMatch->execute([$matchId]);
+        }
 
         json_response(['updated' => true], 200);
     } catch (Exception $e) {
@@ -6027,8 +6183,7 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/solo-matches$#i', $route, $m) && $meth
                         COALESCE(sms2.set_total, 0) as a2_total
                     FROM solo_match_sets sms1
                     LEFT JOIN solo_match_sets sms2 ON sms2.match_archer_id = ? AND sms2.set_number = sms1.set_number
-                    WHERE sms1.match_archer_id = ? AND sms1.set_number <= 5
-                    AND sms1.a1 IS NOT NULL AND sms1.a1 != \'\'
+                    WHERE sms1.match_archer_id = ? AND sms1.set_number <= 6
                     ORDER BY sms1.set_number
                 ');
                 $perSetStmt->execute([$archers[1]['id'], $archers[0]['id']]);
@@ -6038,13 +6193,22 @@ if (preg_match('#^/v1/events/([0-9a-f-]+)/solo-matches$#i', $route, $m) && $meth
                 $a2Won = 0;
                 $a1Total = 0;
                 $a2Total = 0;
-                foreach ($matchSets as $s) {
-                    if ($a1Won >= 6 || $a2Won >= 6)
-                        break;
-                    $a1Won += (int) $s['a1_points'];
-                    $a2Won += (int) $s['a2_points'];
-                    $a1Total += (int) $s['a1_total'];
-                    $a2Total += (int) $s['a2_total'];
+                for ($i = 1; $i <= 6; $i++) { // Loop up to 6 sets for solo matches
+                    $setFound = false;
+                    foreach ($matchSets as $s) {
+                        if ((int) $s['set_number'] === $i) {
+                            if ($a1Won >= 6 || $a2Won >= 6)
+                                break;
+                            $a1Won += (int) $s['a1_points'];
+                            $a2Won += (int) $s['a2_points'];
+                            $a1Total += (int) $s['a1_total'];
+                            $a2Total += (int) $s['a2_total'];
+                            $setFound = true;
+                            break;
+                        }
+                    }
+                    if (!$setFound && ($a1Won >= 6 || $a2Won >= 6))
+                        break; // Stop if match already decided
                 }
                 $archers[0]['sets_won'] = $a1Won;
                 $archers[0]['total_score'] = $a1Total;
@@ -6313,7 +6477,7 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/verify$#i', $route, $m) && $meth
         $status = (int) $e->getCode();
         if ($status < 100 || $status > 599)
             $status = 400;
-        json_response(['error' => $e->getMessage()], $status);
+        json_response(['error' => 'Database error: ' . $e->getMessage()], $status);
     }
     exit;
 }
@@ -7001,7 +7165,7 @@ if (preg_match('#^/v1/team-matches/([0-9a-f-]+)/verify$#i', $route, $m) && $meth
         $status = (int) $e->getCode();
         if ($status < 100 || $status > 599)
             $status = 400;
-        json_response(['error' => $e->getMessage()], $status);
+        json_response(['error' => 'Database error: ' . $e->getMessage()], $status);
     }
     exit;
 }
@@ -7160,15 +7324,15 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
                 // Calculate match completion using same logic as client: running match score >= 6
                 // Get both archers and their running_points (match score)
                 $archersStmt = $pdo->prepare('
-                    SELECT 
+                    SELECT
                         sma.id,
                         sma.position,
                         COALESCE(MAX(sms.running_points), 0) as match_score
                     FROM solo_match_archers sma
-                    LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 5
+                    LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 6
                     WHERE sma.match_id = ?
                     GROUP BY sma.id, sma.position
-                    ORDER BY sma.position
+                    ORDER BY sma.id, sma.position
                 ');
                 $archersStmt->execute([$matchId]);
                 $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -7250,138 +7414,7 @@ if (preg_match('#^/v1/solo-matches/([0-9a-f-]+)/status$#i', $route, $m) && $meth
              * @param string $matchId Match UUID
              * @return void
              */
-
-            // --- RECALCULATE SET POINTS FROM RAW SCORES (Data Integrity) ---
-            // Before summing up points, ensure they are correct based on the arrow values
-            $setsStmt = $pdo->prepare("SELECT * FROM solo_match_sets WHERE match_id = ? ORDER BY set_number");
-            $setsStmt->execute([$matchId]);
-            $allSets = $setsStmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // Group by set number
-            $setsByNum = [];
-            foreach ($allSets as $s) {
-                $setsByNum[$s['set_number']][$s['match_archer_id']] = $s;
-            }
-
-            foreach ($setsByNum as $setNum => $pair) {
-                if (count($pair) !== 2)
-                    continue; // Need 2 archers for comparison
-
-                // Get the two set records
-                $s1 = array_values($pair)[0];
-                $s2 = array_values($pair)[1];
-
-                // Helper to parse score
-                $parseScore = function ($val) {
-                    if ($val === null || $val === '')
-                        return 0;
-                    if (strtoupper($val) === 'X')
-                        return 10;
-                    if (strtoupper($val) === 'M')
-                        return 0;
-                    return (int) $val;
-                };
-
-                // Calculate totals
-                $total1 = $parseScore($s1['a1']) + $parseScore($s1['a2']) + $parseScore($s1['a3']);
-                $total2 = $parseScore($s2['a1']) + $parseScore($s2['a2']) + $parseScore($s2['a3']);
-
-                // Determine correct points
-                $p1 = 1;
-                $p2 = 1;
-                if ($total1 > $total2) {
-                    $p1 = 2;
-                    $p2 = 0;
-                } elseif ($total2 > $total1) {
-                    $p1 = 0;
-                    $p2 = 2;
-                }
-
-                // Update if needed
-                if ((int) $s1['set_points'] !== $p1 || (int) $s1['set_total'] !== $total1) {
-                    $pdo->prepare("UPDATE solo_match_sets SET set_total=?, set_points=? WHERE id=?")->execute([$total1, $p1, $s1['id']]);
-                }
-                if ((int) $s2['set_points'] !== $p2 || (int) $s2['set_total'] !== $total2) {
-                    $pdo->prepare("UPDATE solo_match_sets SET set_total=?, set_points=? WHERE id=?")->execute([$total2, $p2, $s2['id']]);
-                }
-            }
-            // --- END RECALCULATION ---
-
-            // Get both archers with their cumulative set points
-            $archersStmt = $pdo->prepare('
-                SELECT 
-                    sma.id,
-                    sma.position,
-                    SUM(COALESCE(sms.set_points, 0)) as sets_won
-                FROM solo_match_archers sma
-                LEFT JOIN solo_match_sets sms ON sms.match_archer_id = sma.id AND sms.set_number <= 6
-                    AND sms.a1 IS NOT NULL AND sms.a1 != \'\'
-                WHERE sma.match_id = ?
-                GROUP BY sma.id, sma.position
-                ORDER BY sma.position
-            ');
-            $archersStmt->execute([$matchId]);
-            $archers = $archersStmt->fetchAll(PDO::FETCH_ASSOC);
-
-            if (count($archers) === 2) {
-                // Cap at 6 — match ends when either archer reaches 6 set points
-                $archer1SetsWon = min(6, (int) ($archers[0]['sets_won'] ?? 0));
-                $archer2SetsWon = min(6, (int) ($archers[1]['sets_won'] ?? 0));
-
-                // Get archer IDs
-                $archer1IdStmt = $pdo->prepare('SELECT archer_id FROM solo_match_archers WHERE id = ?');
-                $archer1IdStmt->execute([$archers[0]['id']]);
-                $archer1Id = $archer1IdStmt->fetchColumn();
-
-                $archer2IdStmt = $pdo->prepare('SELECT archer_id FROM solo_match_archers WHERE id = ?');
-                $archer2IdStmt->execute([$archers[1]['id']]);
-                $archer2Id = $archer2IdStmt->fetchColumn();
-
-                // Get bracket_id from match for Swiss bracket updates
-                $bracketId = $match['bracket_id'] ?? null;
-
-                // Determine winner based on sets won
-                if ($archer1SetsWon > $archer2SetsWon) {
-                    // Archer 1 wins
-                    $winnerStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 1 WHERE id = ?');
-                    $winnerStmt->execute([$archers[0]['id']]);
-                    $loserStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 0 WHERE id = ?');
-                    $loserStmt->execute([$archers[1]['id']]);
-
-                    // Update Swiss bracket standings if bracket_id exists
-                    if ($bracketId && $archer1Id && $archer2Id) {
-                        // Check if bracket is Swiss format
-                        $bracketFormatStmt = $pdo->prepare('SELECT bracket_format FROM brackets WHERE id = ?');
-                        $bracketFormatStmt->execute([$bracketId]);
-                        $bracketFormat = $bracketFormatStmt->fetchColumn();
-
-                        if ($bracketFormat === 'SWISS') {
-                            // Recalculate standings from actual match data (ensures accuracy)
-                            recalculate_swiss_bracket_standings($pdo, $bracketId);
-                        }
-                    }
-                } elseif ($archer2SetsWon > $archer1SetsWon) {
-                    // Archer 2 wins
-                    $winnerStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 1 WHERE id = ?');
-                    $winnerStmt->execute([$archers[1]['id']]);
-                    $loserStmt = $pdo->prepare('UPDATE solo_match_archers SET winner = 0 WHERE id = ?');
-                    $loserStmt->execute([$archers[0]['id']]);
-
-                    // Update Swiss bracket standings if bracket_id exists
-                    if ($bracketId && $archer1Id && $archer2Id) {
-                        // Check if bracket is Swiss format
-                        $bracketFormatStmt = $pdo->prepare('SELECT bracket_format FROM brackets WHERE id = ?');
-                        $bracketFormatStmt->execute([$bracketId]);
-                        $bracketFormat = $bracketFormatStmt->fetchColumn();
-
-                        if ($bracketFormat === 'SWISS') {
-                            // Recalculate standings from actual match data (ensures accuracy)
-                            recalculate_swiss_bracket_standings($pdo, $bracketId);
-                        }
-                    }
-                }
-                // If sets are equal (tied), leave winner field as-is (might be shoot-off scenario handled elsewhere)
-            }
+            update_solo_match_winner($pdo, $matchId);
         }
 
         // Return updated match

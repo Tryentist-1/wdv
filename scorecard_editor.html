@@ -732,7 +732,7 @@
                 if (mode === 'practice') {
                     isLocked = false;
                 } else {
-                    isLocked = currentScorecard.locked || currentScorecard.card_status === 'VER' || currentScorecard.card_status === 'VOID';
+                    isLocked = (currentScorecard.locked == 1 || currentScorecard.locked === true) || currentScorecard.card_status === 'VER' || currentScorecard.card_status === 'VOID';
                 }
 
                 renderSoloMatch();
@@ -764,7 +764,7 @@
             if (mode === 'practice') {
                 isLocked = false;
             } else {
-                isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VOID';
+                isLocked = (card.locked == 1 || card.locked === true) || card.card_status === 'VER' || card.card_status === 'VOID';
             }
 
             const statusBadge = document.getElementById('status-badge');
@@ -1045,12 +1045,12 @@
                 html += `
                     <tr class="border-b-2 border-gray-400 dark:border-gray-500 bg-yellow-50 dark:bg-yellow-900/20">
                         <td class="px-2 py-2 text-center font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-gray-800 dark:text-white border-r border-gray-200 dark:border-gray-600">SO</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so1Scores[0])} border-r border-gray-200 dark:border-gray-600">${formatScore(so1Scores[0])}</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so1Scores[1])} border-r border-gray-200 dark:border-gray-600">${formatScore(so1Scores[1])}</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so1Scores[2])} border-r border-gray-200 dark:border-gray-600">${formatScore(so1Scores[2])}</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so2Scores[0])} border-r border-gray-200 dark:border-gray-600">${formatScore(so2Scores[0])}</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so2Scores[1])} border-r border-gray-200 dark:border-gray-600">${formatScore(so2Scores[1])}</td>
-                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so2Scores[2])} border-r border-gray-200 dark:border-gray-600">${formatScore(so2Scores[2])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so1Scores[0])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" onclick="${isLocked ? '' : `editSoloScore(1, 6, 'a1')`}">${formatScore(so1Scores[0])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so1Scores[1])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" onclick="${isLocked ? '' : `editSoloScore(1, 6, 'a2')`}">${formatScore(so1Scores[1])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so1Scores[2])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" onclick="${isLocked ? '' : `editSoloScore(1, 6, 'a3')`}">${formatScore(so1Scores[2])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so2Scores[0])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" onclick="${isLocked ? '' : `editSoloScore(2, 6, 'a1')`}">${formatScore(so2Scores[0])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so2Scores[1])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" onclick="${isLocked ? '' : `editSoloScore(2, 6, 'a2')`}">${formatScore(so2Scores[1])}</td>
+                        <td class="px-2 py-2 text-center font-bold ${getScoreClass(so2Scores[2])} border-r border-gray-200 dark:border-gray-600 ${isLocked ? '' : 'cursor-pointer hover:opacity-80'}" onclick="${isLocked ? '' : `editSoloScore(2, 6, 'a3')`}">${formatScore(so2Scores[2])}</td>
                         <td class="px-2 py-2 text-center bg-yellow-100 dark:bg-yellow-900/40 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${so1Total > 0 ? so1Total : ''}</td>
                         <td class="px-2 py-2 text-center bg-yellow-100 dark:bg-yellow-900/40 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">${so2Total > 0 ? so2Total : ''}</td>
                         <td class="px-2 py-2 text-center bg-yellow-100 dark:bg-yellow-900/40 text-gray-800 dark:text-white font-bold border-r border-gray-200 dark:border-gray-600">—</td>
@@ -1113,6 +1113,25 @@
                     const points = calculateSetPoints(set1Total, set2Total);
                     setsWonA1 += points.a1;
                     setsWonA2 += points.a2;
+                }
+            }
+
+            // Check for shoot-off (Set 6)
+            if (setsWonA1 === setsWonA2 && setsWonA1 > 0 && setsWonA1 < 6) {
+                const so1 = sets1.find(s => s.set_number === 6);
+                const so2 = sets2.find(s => s.set_number === 6);
+
+                if (so1 && so2) {
+                    const so1Total = so1.set_total || calculateSetTotal([so1.a1 || '', so1.a2 || '', so1.a3 || '']);
+                    const so2Total = so2.set_total || calculateSetTotal([so2.a1 || '', so2.a2 || '', so2.a3 || '']);
+
+                    if (so1Total > 0 && so2Total > 0 && so1Total !== so2Total) {
+                        if (so1Total > so2Total) {
+                            setsWonA1 += 1; // Award tie-breaker point
+                        } else {
+                            setsWonA2 += 1;
+                        }
+                    }
                 }
             }
 
@@ -1388,9 +1407,13 @@
             const otherSet = otherArcher?.sets?.find(s => s.set_number === currentSoloSetNumber);
             const otherSetTotal = otherSet ? (otherSet.set_total || calculateSetTotal([otherSet.a1, otherSet.a2, otherSet.a3])) : 0;
 
-            // Only calculate set points if both archers have scored
-            if (set.a1 != null && set.a2 != null && set.a3 != null && set.set_total > 0) {
-                if (otherSet && otherSet.a1 != null && otherSet.a2 != null && otherSet.a3 != null && otherSetTotal > 0) {
+            // Only calculate set points if both archers have scored. For set 6 (shoot-off), a1 is enough.
+            const isSet6 = currentSoloSetNumber === 6;
+            const set1Complete = isSet6 ? (set.a1 != null && set.set_total > 0) : (set.a1 != null && set.a2 != null && set.a3 != null && set.set_total > 0);
+            const set2Complete = otherSet ? (isSet6 ? (otherSet.a1 != null && otherSetTotal > 0) : (otherSet.a1 != null && otherSet.a2 != null && otherSet.a3 != null && otherSetTotal > 0)) : false;
+
+            if (set1Complete) {
+                if (set2Complete) {
                     const pts = calculateSetPoints(set.set_total, otherSetTotal);
                     if (currentSoloArcherPos === 1) {
                         set.set_points = pts.a1;
@@ -1792,7 +1815,7 @@
 
         document.getElementById('delete-btn')?.addEventListener('click', async () => {
             const card = currentScorecard;
-            const isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VERIFIED';
+            const isLocked = (card.locked == 1 || card.locked === true) || card.card_status === 'VER' || card.card_status === 'VERIFIED';
             const isVerified = card.card_status === 'VER' || card.card_status === 'VERIFIED';
 
             // Check if this is a solo match or ranking round
@@ -2147,7 +2170,7 @@
         document.getElementById('modal-delete-btn').addEventListener('click', async () => {
             // Check if this scorecard can be deleted
             const card = currentScorecard;
-            const isLocked = card.locked || card.card_status === 'VER' || card.card_status === 'VERIFIED';
+            const isLocked = (card.locked == 1 || card.locked === true) || card.card_status === 'VER' || card.card_status === 'VERIFIED';
             const isVerified = card.card_status === 'VER' || card.card_status === 'VERIFIED';
 
             // Check if this is a solo match or ranking round

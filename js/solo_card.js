@@ -1033,9 +1033,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById(`a2-e${i + 1}-setpts`).textContent = endComplete ? a2SetPoints : '';
         }
 
-        document.getElementById('a1-match-score').textContent = a1MatchScore;
-        document.getElementById('a2-match-score').textContent = a2MatchScore;
-
         const shootOffRow = document.getElementById('shoot-off');
         const soWinnerText = document.getElementById('so-winner-text');
         const tieBreakerControls = document.querySelector('.tie-breaker-controls');
@@ -1053,12 +1050,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (soScoreA1 !== '' && soScoreA2 !== '') {
                 if (soValueA1 > soValueA2) {
                     winner = 'a1';
+                    a1MatchScore += 1;
                     matchOver = true;
                     soWinnerText.textContent = "A1 Wins S.O.";
                     tieBreakerControls.classList.add('hidden');
                     tieBreakerControls.classList.remove('inline-block');
                 } else if (soValueA2 > soValueA1) {
                     winner = 'a2';
+                    a2MatchScore += 1;
                     matchOver = true;
                     soWinnerText.textContent = "A2 Wins S.O.";
                     tieBreakerControls.classList.add('hidden');
@@ -1066,6 +1065,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     if (state.shootOffWinner) {
                         winner = state.shootOffWinner;
+                        if (winner === 'a1') a1MatchScore += 1;
+                        if (winner === 'a2') a2MatchScore += 1;
                         matchOver = true;
                         soWinnerText.textContent = `S.O. Tied! ${winner === 'a1' ? 'A1' : 'A2'} Wins (Closest)`;
                         tieBreakerControls.classList.add('hidden');
@@ -1085,6 +1086,9 @@ document.addEventListener('DOMContentLoaded', () => {
             shootOffRow.classList.add('hidden');
             shootOffRow.classList.remove('table-row');
         }
+
+        document.getElementById('a1-match-score').textContent = a1MatchScore;
+        document.getElementById('a2-match-score').textContent = a2MatchScore;
 
         const matchResultEl = document.getElementById('match-result');
         if (matchOver) {
