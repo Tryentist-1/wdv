@@ -7579,14 +7579,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        if (scoringControls.prevEndBtn) {
-            scoringControls.prevEndBtn.textContent = 'Last End';
-            scoringControls.prevEndBtn.onclick = () => changeEnd(-1);
-        }
-        if (scoringControls.nextEndBtn) {
-            scoringControls.nextEndBtn.textContent = 'Next End';
-            scoringControls.nextEndBtn.onclick = () => changeEnd(1);
-        }
+        // Prev/Next End clicks are handled by the delegated footer handler in wireCoreHandlers().
+        // Do NOT add onclick here — that would double-fire changeEnd() and skip 2 ends per tap.
 
         resetModal.cancelBtn.onclick = () => resetModal.element.style.display = 'none';
         resetModal.resetBtn.onclick = () => {
